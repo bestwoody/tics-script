@@ -9,11 +9,18 @@ import (
 
 func Main() {
 	cmds := tools.NewCmds()
-	cmds.Reg("build", "build indexed data from origin data", CmdBuild)
+
+	data := cmds.Sub("data", "data commands")
+	data.Reg("dump", "dump data and verify", CmdDataDump)
+
+	index := cmds.Sub("index", "index commands")
+	index.Reg("build", "build index from origin data", CmdIndexBuild)
+	index.Reg("check", "verify index", CmdIndexCheck)
+
 	cmds.Run(os.Args[1:])
 }
 
-func CmdBuild(args []string) {
+func CmdIndexBuild(args []string) {
 	var out string
 	var in string
 	var gran int
@@ -28,6 +35,23 @@ func CmdBuild(args []string) {
 	tools.ParseFlagOrDie(flag, args, "in", "out", "gran")
 
 	err := Build(in, out, strings.ToLower(compress), gran)
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
+}
+
+func CmdIndexCheck(args []string) {
+	println("TODO")
+}
+
+func CmdDataDump(args []string) {
+	var path string
+	flag := flag.NewFlagSet("", flag.ContinueOnError)
+	flag.StringVar(&path, "path", "db", "file path")
+	tools.ParseFlagOrDie(flag, args, "path")
+
+	err := Dump(path, os.Stdout)
 	if err != nil {
 		println(err.Error())
 		os.Exit(1)
