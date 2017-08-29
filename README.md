@@ -18,7 +18,7 @@
 All
     Partition * N
         DataFile
-            Block * N              - align by 512
+            Block * N              - block align by 512
                 MagicFlag          - uint16
                 CompressType       - uint16
                 RowCount           - uint32, default: 8192
