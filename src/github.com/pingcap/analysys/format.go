@@ -89,13 +89,21 @@ func Write(rows Rows, path string, compress string, gran int) (Index, error) {
 	w := bufio.NewWriterSize(f, BufferSizeWrite)
 
 	offset := uint32(0)
-	index := make(Index, (len(rows) + gran - 1) / gran)
+	count := (len(rows) + gran - 1) / gran
+	index := make(Index, count)
+
+	err = binary.Write(w, binary.LittleEndian, uint16(count))
+	if err != nil {
+		return nil, errors.New("writing block count: " + err.Error())
+	}
+
 	for i := 0; len(rows) != 0; i++ {
 		count := gran
 		if len(rows) < gran {
 			count = len(rows)
 		}
 		block := Block(rows[0: count])
+		// TODO: do real compress
 		n, err := block.Write(w, compress)
 		if err != nil {
 			return nil, err
@@ -137,8 +145,14 @@ func Load(path string) (Rows, error) {
 	}
 	r := bufio.NewReaderSize(f, BufferSizeRead)
 
+	count := uint16(0)
+	err = binary.Read(r, binary.LittleEndian, &count)
+	if err != nil {
+		return nil, errors.New("reading block count: " + err.Error())
+	}
+
 	rows := make(Rows, 0)
-	for {
+	for i := uint16(0); i < count; i++ {
 		block, err := LoadBlock(r)
 		if err != nil {
 			return nil, err
@@ -191,46 +205,6 @@ type IndexEntry struct {
 	Offset uint32
 }
 
-func (self Block) Write(w io.Writer, compress string) (uint32, error) {
-	crc32 := crc32.NewIEEE()
-	w = io.MultiWriter(crc32, w)
-	written := uint32(4)
-
-	err := binary.Write(w, binary.LittleEndian, MagicFlag)
-	if err != nil {
-		return 0, errors.New("writing block magic flag: " + err.Error())
-	}
-	written += 2
-
-	err = binary.Write(w, binary.LittleEndian, uint32(len(self)))
-	if err != nil {
-		return 0, errors.New("writing block size: " + err.Error())
-	}
-	written += 4
-
-	ct := GetCompressType(compress)
-	err = binary.Write(w, binary.LittleEndian, ct)
-	if err != nil {
-		return 0, errors.New("writing block compress type: " + err.Error())
-	}
-	written += 2
-
-	// TODO: do real compress
-	for _, row := range self {
-		n, err := row.Write(w)
-		if err != nil {
-			return written, errors.New("writing block row: " + err.Error())
-		}
-		written += n
-		err = binary.Write(w, binary.LittleEndian, crc32.Sum32())
-		if err != nil {
-			return written, errors.New("writing block checksum: " + err.Error())
-		}
-		written += 4
-	}
-	return written, nil
-}
-
 func (self *Rows) Add(v Row) {
 	*self = append(*self, v)
 }
@@ -249,6 +223,46 @@ func (self Rows) Less(i, j int) bool {
 
 type Rows []Row
 
+func (self Block) Write(w io.Writer, compress string) (uint32, error) {
+	crc32 := crc32.NewIEEE()
+	w = io.MultiWriter(crc32, w)
+	written := uint32(4)
+
+	err := binary.Write(w, binary.LittleEndian, MagicFlag)
+	if err != nil {
+		return 0, errors.New("writing block magic flag: " + err.Error())
+	}
+	written += 2
+
+	ct := GetCompressType(compress)
+	err = binary.Write(w, binary.LittleEndian, ct)
+	if err != nil {
+		return 0, errors.New("writing block compress type: " + err.Error())
+	}
+	written += 2
+
+	err = binary.Write(w, binary.LittleEndian, uint32(len(self)))
+	if err != nil {
+		return 0, errors.New("writing block size: " + err.Error())
+	}
+	written += 4
+
+	for _, row := range self {
+		n, err := row.Write(w)
+		if err != nil {
+			return written, errors.New("writing block row: " + err.Error())
+		}
+		written += n
+	}
+
+	err = binary.Write(w, binary.LittleEndian, crc32.Sum32())
+	if err != nil {
+		return written, errors.New("writing block checksum: " + err.Error())
+	}
+	written += 4
+	return written, nil
+}
+
 func LoadBlock(r io.Reader) (Block, error) {
 	crc32 := crc32.NewIEEE()
 	r = io.TeeReader(r, crc32)
@@ -263,16 +277,16 @@ func LoadBlock(r io.Reader) (Block, error) {
 			strconv.Itoa(int(MagicFlag)) + " VS read:" + strconv.Itoa(int(magic)))
 	}
 
-	count := uint32(0)
-	err = binary.Read(r, binary.LittleEndian, &count)
-	if err != nil {
-		return nil, errors.New("reading block size: " + err.Error())
-	}
-
 	compress := CompressType(0)
 	err = binary.Read(r, binary.LittleEndian, &compress)
 	if err != nil {
 		return nil, errors.New("reading block compress type: " + err.Error())
+	}
+
+	count := uint32(0)
+	err = binary.Read(r, binary.LittleEndian, &count)
+	if err != nil {
+		return nil, errors.New("reading block size: " + err.Error())
 	}
 
 	block := make(Block, count)
@@ -348,7 +362,7 @@ func LoadRow(r io.Reader, row *Row) error {
 	props := make([]byte, cbp)
 	_, err = io.ReadFull(r, props)
 	if err != nil {
-		err = errors.New("reading event props: " + err.Error())
+		err = errors.New("reading event props: " + strconv.Itoa(int(cbp))  + ", " + err.Error())
 	}
 	return err
 }

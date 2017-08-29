@@ -18,6 +18,7 @@
 All
     Partition * N
         DataFile
+            BlockCount             - uint16
             Block * N
                 MagicFlag          - uint16
                 CompressType       - uint16
@@ -34,6 +35,6 @@ All
             IndexEntry * N
                 Timestamp          - uint32
                 BlockOffset        - uint32
-            IndexChecksum          - crc32
+            IndexChecksum          - uint32, crc
 ```
 
