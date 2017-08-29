@@ -18,11 +18,10 @@
 All
     Partition * N
         DataFile
-            BlockCount             - uint16
-            Block * N
+            Block * N              - align by 512
                 MagicFlag          - uint16
                 CompressType       - uint16
-                RowCount           - uint32
+                RowCount           - uint32, default: 8192
                 Row * N
                     Timestamp      - uint32
                     UserId         - uint32

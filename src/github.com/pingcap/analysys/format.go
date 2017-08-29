@@ -14,32 +14,32 @@ import (
 	"github.com/pingcap/analysys/tools"
 )
 
-func Build(in, out string, compress string, gran int) error {
-	rows, err := LoadOrigin(in)
+func Build(in, out string, compress string, gran, align int) error {
+	rows, err := OriginLoad(in)
 	if err != nil {
 		return err
 	}
 
 	sort.Sort(rows)
 
-	index, err := Write(rows, out, compress, gran)
+	index, err := DataWrite(rows, out, compress, gran, align)
 	if err != nil {
 		return err
 	}
 	return index.Write(out + IndexFileSuffix);
 }
 
-func LoadOrigin(path string) (Rows, error) {
+func OriginLoad(path string) (Rows, error) {
 	rows := make(Rows, 0)
 	err := tools.IterLines(path, BufferSizeRead, func(line []byte) error {
-		row, err := Parse(line)
+		row, err := OriginParse(line)
 		rows.Add(row)
 		return err
 	})
 	return rows, err
 }
 
-func Parse(line []byte) (row Row, err error) {
+func OriginParse(line []byte) (row Row, err error) {
 	i := bytes.Index(line, PropsBeginMark)
 	if i < 0 {
 		err = errors.New("props begin mark not found: " + string(line))
@@ -81,20 +81,21 @@ func Parse(line []byte) (row Row, err error) {
 	return row, err
 }
 
-func Write(rows Rows, path string, compress string, gran int) (Index, error) {
+func DataWrite(rows Rows, path string, compress string, gran, align int) (Index, error) {
 	f, err := os.OpenFile(path, os.O_RDWR | os.O_CREATE | os.O_EXCL, 0644)
 	if err != nil {
 		return nil, errors.New("writing sorted data: " + err.Error())
 	}
+	defer f.Close()
 	w := bufio.NewWriterSize(f, BufferSizeWrite)
 
 	offset := uint32(0)
 	count := (len(rows) + gran - 1) / gran
 	index := make(Index, count)
 
-	err = binary.Write(w, binary.LittleEndian, uint16(count))
-	if err != nil {
-		return nil, errors.New("writing block count: " + err.Error())
+	var padding []byte
+	if align > 0 {
+		padding = make([]byte, align)
 	}
 
 	for i := 0; len(rows) != 0; i++ {
@@ -102,8 +103,20 @@ func Write(rows Rows, path string, compress string, gran int) (Index, error) {
 		if len(rows) < gran {
 			count = len(rows)
 		}
+
+		if align > 0 && (int(offset) % align != 0) {
+			n := align - int(offset) % align
+			_, err = w.Write(padding[0: n])
+			if err != nil {
+				return nil, errors.New("writing padding: " + strconv.Itoa(n) + ", " + err.Error())
+			}
+			offset += uint32(n)
+		}
+
 		block := Block(rows[0: count])
+
 		// TODO: do real compress
+
 		n, err := block.Write(w, compress)
 		if err != nil {
 			return nil, err
@@ -117,53 +130,99 @@ func Write(rows Rows, path string, compress string, gran int) (Index, error) {
 	return index, err
 }
 
-func Dump(path string, w io.Writer) error {
-	rows, err := Load(path)
+func DataDump(path string, w io.Writer) error {
+	indexing, err := IndexingLoad(path)
 	if err != nil {
 		return err
 	}
-
 	ts := Timestamp(0)
-	for i, row := range rows {
-		s := row.String()
-		_, err = w.Write([]byte(s + "\n"))
+	for i, _ := range(indexing.Index) {
+		block, err := indexing.Load(i)
 		if err != nil {
 			return err
 		}
-		if row.Ts < ts {
-			return errors.New("backward timestamp: #" + strconv.Itoa(i) + " " + s)
+		for j, row := range block {
+			s := row.String()
+			_, err = w.Write([]byte(s + "\n"))
+			if err != nil {
+				return err
+			}
+			if row.Ts < ts {
+				return errors.New("backward timestamp: block:" +
+					strconv.Itoa(i) + ", row:" + strconv.Itoa(j) + " " + s)
+			}
+			ts = row.Ts
 		}
-		ts = row.Ts
 	}
 	return nil
 }
 
-func Load(path string) (Rows, error) {
+func IndexDump(path string, w io.Writer) error {
+	index, err := IndexLoad(path)
+	if err != nil {
+		return err
+	}
+	for _, entry := range index {
+		_, err = w.Write([]byte(fmt.Sprintf("%v %v\n", entry.Ts, entry.Offset)))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func IndexToBlockCheck(path string, w io.Writer) error {
+	indexing, err := IndexingLoad(path)
+	if err != nil {
+		return err
+	}
+	for i, _ := range(indexing.Index) {
+		_, err := indexing.Load(i)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func IndexingLoad(path string) (*Indexing, error) {
+	index, err := IndexLoad(path + IndexFileSuffix)
+	if err != nil {
+		return nil, err
+	}
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, errors.New("reading data: " + err.Error())
+		return nil, errors.New("opening indexing, reading data: " + err.Error())
 	}
-	r := bufio.NewReaderSize(f, BufferSizeRead)
-
-	count := uint16(0)
-	err = binary.Read(r, binary.LittleEndian, &count)
+	info, err := f.Stat()
 	if err != nil {
-		return nil, errors.New("reading block count: " + err.Error())
+		return nil, errors.New("opening indexing, reading data: " + err.Error())
 	}
+	return &Indexing {index, f, info.Size()}, nil
+}
 
-	rows := make(Rows, 0)
-	for i := uint16(0); i < count; i++ {
-		block, err := LoadBlock(r)
-		if err != nil {
-			return nil, err
-		}
-		if block == nil {
-			break
-		}
-		rows = append(rows, block...)
+func (self *Indexing) Close() error {
+	return self.file.Close()
+}
+
+func (self *Indexing) Load(i int) (Block, error) {
+	if i >= len(self.Index) {
+		return nil, errors.New("indexing load block: #" +
+			strconv.Itoa(i) + " >= " + strconv.Itoa(len(self.Index)))
 	}
+	entry := self.Index[i]
+	end := self.total
+	if i + 1 != len(self.Index) {
+		end = int64(self.Index[i + 1].Offset)
+	}
+	r := io.NewSectionReader(self.file, int64(entry.Offset), end - int64(entry.Offset))
+	return BlockLoad(bufio.NewReaderSize(r, BufferSizeRead))
+}
 
-	return rows, nil
+type Indexing struct {
+	Index Index
+	file *os.File
+	total int64
 }
 
 func (self Index) Write(path string) error {
@@ -178,7 +237,7 @@ func (self Index) Write(path string) error {
 
 	err = binary.Write(w, binary.LittleEndian, uint32(len(self)))
 	if err != nil {
-		return errors.New("writing index size: " + err.Error())
+		return errors.New("writing index entry count: " + err.Error())
 	}
 	for _, v := range self {
 		err = binary.Write(w, binary.LittleEndian, v)
@@ -196,6 +255,44 @@ func (self Index) Write(path string) error {
 		return errors.New("writing index checksum: " + err.Error())
 	}
 	return err
+}
+
+func IndexLoad(path string) (Index, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, errors.New("reading index: " + err.Error())
+	}
+	defer f.Close()
+
+	crc32 := crc32.NewIEEE()
+	r := io.TeeReader(bufio.NewReader(f), crc32)
+
+	count := uint32(0)
+	err = binary.Read(r, binary.LittleEndian, &count)
+	if err != nil {
+		return nil, errors.New("reading index entry count: " + err.Error())
+	}
+
+	index := make(Index, count)
+	for i := uint32(0); i < count; i++ {
+		err = binary.Read(r, binary.LittleEndian, &index[i])
+		if err != nil {
+			return nil, errors.New("reading index: " + err.Error())
+		}
+	}
+
+	c1 := crc32.Sum32()
+	c2 := uint32(0)
+	err = binary.Read(r, binary.LittleEndian, &c2)
+	if err != nil {
+		return nil, errors.New("reading index checksum: " + err.Error())
+	}
+	if c1 != c2 {
+		return nil, errors.New("index checksum not matched: cal:" +
+			strconv.Itoa(int(c1)) + " VS read:" + strconv.Itoa(int(c2)))
+	}
+
+	return index, nil
 }
 
 type Index []IndexEntry
@@ -226,7 +323,7 @@ type Rows []Row
 func (self Block) Write(w io.Writer, compress string) (uint32, error) {
 	crc32 := crc32.NewIEEE()
 	w = io.MultiWriter(crc32, w)
-	written := uint32(4)
+	written := uint32(0)
 
 	err := binary.Write(w, binary.LittleEndian, MagicFlag)
 	if err != nil {
@@ -263,7 +360,7 @@ func (self Block) Write(w io.Writer, compress string) (uint32, error) {
 	return written, nil
 }
 
-func LoadBlock(r io.Reader) (Block, error) {
+func BlockLoad(r io.Reader) (Block, error) {
 	crc32 := crc32.NewIEEE()
 	r = io.TeeReader(r, crc32)
 
@@ -291,7 +388,7 @@ func LoadBlock(r io.Reader) (Block, error) {
 
 	block := make(Block, count)
 	for i := uint32(0); i < count; i++ {
-		err = LoadRow(r, &block[i])
+		err = RowLoad(r, &block[i])
 		if err != nil {
 			return nil, errors.New("reading block row: " + err.Error())
 		}
@@ -303,7 +400,6 @@ func LoadBlock(r io.Reader) (Block, error) {
 	if err != nil {
 		return nil, errors.New("reading block checksum: " + err.Error())
 	}
-
 	if c1 != c2 {
 		return nil, errors.New("block checksum not matched: cal:" +
 			strconv.Itoa(int(c1)) + " VS read:" + strconv.Itoa(int(c2)))
@@ -341,7 +437,7 @@ func (self *Row) PersistSize() uint32 {
 	return uint32(TimestampLen + 4 + 2 + 2 + len(self.Props))
 }
 
-func LoadRow(r io.Reader, row *Row) error {
+func RowLoad(r io.Reader, row *Row) error {
 	err := binary.Read(r, binary.LittleEndian, &row.Ts)
 	if err != nil {
 		return err
@@ -359,8 +455,8 @@ func LoadRow(r io.Reader, row *Row) error {
 	if err != nil {
 		return err
 	}
-	props := make([]byte, cbp)
-	_, err = io.ReadFull(r, props)
+	row.Props = make([]byte, cbp)
+	_, err = io.ReadFull(r, row.Props)
 	if err != nil {
 		err = errors.New("reading event props: " + strconv.Itoa(int(cbp))  + ", " + err.Error())
 	}
