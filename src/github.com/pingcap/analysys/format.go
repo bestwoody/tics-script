@@ -159,16 +159,13 @@ func DataDump(path string, w io.Writer) error {
 
 func IndexDump(path string, w io.Writer) error {
 	index, err := IndexLoad(path)
-	if err != nil {
-		return err
-	}
 	for _, entry := range index {
-		_, err = w.Write([]byte(fmt.Sprintf("%v %v\n", entry.Ts, entry.Offset)))
+		_, err := w.Write([]byte(fmt.Sprintf("%v %v\n", entry.Ts, entry.Offset)))
 		if err != nil {
 			return err
 		}
 	}
-	return nil
+	return err
 }
 
 func IndexToBlockCheck(path string, w io.Writer) error {
@@ -285,10 +282,10 @@ func IndexLoad(path string) (Index, error) {
 	c2 := uint32(0)
 	err = binary.Read(r, binary.LittleEndian, &c2)
 	if err != nil {
-		return nil, errors.New("reading index checksum: " + err.Error())
+		return index, errors.New("reading index checksum: " + err.Error())
 	}
 	if c1 != c2 {
-		return nil, errors.New("index checksum not matched: cal:" +
+		return index, errors.New("index checksum not matched: cal:" +
 			strconv.Itoa(int(c1)) + " VS read:" + strconv.Itoa(int(c2)))
 	}
 
