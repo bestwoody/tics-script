@@ -12,3 +12,13 @@
 
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
+
+# Go compile result
+bin
+pkg
+
+# Test data and result
+data
+db
+db.idx
+origin
