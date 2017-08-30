@@ -3,11 +3,14 @@ package analysys
 import (
 	"flag"
 	"os"
+	"runtime"
 	"strings"
 	"github.com/pingcap/analysys/tools"
 )
 
 func Main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	cmds := tools.NewCmds()
 
 	data := cmds.Sub("data", "data commands")
@@ -36,8 +39,31 @@ func CmdIndexBuild(args []string) {
 	flag.IntVar(&align, "align", 512, "block size/offset align")
 
 	tools.ParseFlagOrDie(flag, args, "in", "out", "compress", "gran", "align")
+	compress = strings.ToLower(compress)
 
-	err := Build(in, out, strings.ToLower(compress), gran, align)
+	build := func(in, out string, compress string, gran, align int) error {
+		file, err := os.Open(in)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		info, err := file.Stat()
+		if err != nil {
+			return err
+		}
+
+		err = os.MkdirAll(out, 0744)
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+
+		if info.IsDir() {
+			return FolderBuild(in, out, compress, gran, align, runtime.NumCPU())
+		}
+		return PartBuild(in, out, compress, gran, align)
+	}
+
+	err := build(in, out, compress, gran, align)
 	if err != nil {
 		println(err.Error())
 		os.Exit(1)
@@ -63,7 +89,25 @@ func CmdDataDump(args []string) {
 	flag.StringVar(&path, "path", "db", "file path")
 	tools.ParseFlagOrDie(flag, args, "path")
 
-	err := DataDump(path, os.Stdout)
+	dump:= func(path string) error {
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		info, err := file.Stat()
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return FolderDump(path, 3, os.Stdout)
+		} else {
+			return PartDump(path, os.Stdout)
+		}
+	}
+
+	err := dump(path)
 	if err != nil {
 		println(err.Error())
 		os.Exit(1)

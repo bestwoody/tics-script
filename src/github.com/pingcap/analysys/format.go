@@ -7,14 +7,149 @@ import (
 	"errors"
 	"hash/crc32"
 	"io"
+	"path/filepath"
 	"fmt"
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"github.com/pingcap/analysys/tools"
 )
 
-func Build(in, out string, compress string, gran, align int) error {
+func FolderBuild(in, out string, compress string, gran, align int, process int) error {
+	in, err := filepath.Abs(in)
+	if err != nil {
+		return err
+	}
+	out, err = filepath.Abs(out)
+	if err != nil {
+		return err
+	}
+
+	ins := make([]string, 0)
+	outs := make([]string, 0)
+
+	err = filepath.Walk(in, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if path == in || strings.HasSuffix(path, IndexFileSuffix) {
+			return nil
+		}
+
+		combined := out + path[len(in):]
+		fd, err := os.Open(combined)
+		if !os.IsNotExist(err) {
+			if err == nil {
+				fd.Close()
+			}
+			return nil
+		}
+		fi, err := os.Open(combined + IndexFileSuffix)
+		if !os.IsNotExist(err) {
+			if err == nil {
+				fi.Close()
+			}
+			return nil
+		}
+
+		ins = append(ins, path)
+		outs = append(outs, combined)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	type Job struct {
+		In string
+		Out string
+	}
+	queue := make(chan Job, process)
+	errs := make(chan error, process)
+	go func() {
+		for i, _ := range ins {
+			queue <- Job {ins[i], outs[i]}
+		}
+	}()
+	for i := 0; i < process; i++ {
+		go func() {
+			for job := range queue {
+				err := PartBuild(job.In, job.Out, compress, gran, align)
+				errs <- err
+			}
+		}()
+	}
+	es := ""
+	for _ = range ins {
+		eg := <-errs
+		if eg != nil {
+			es += eg.Error() + ";"
+		}
+	}
+	if len(es) != 0 {
+		return fmt.Errorf("partially failed: %s", es)
+	}
+	return nil
+}
+
+func FolderDump(path string, backlog int, w io.Writer) error {
+	ts := Timestamp(0)
+	return FolderScan(path, backlog, func(file string, line int, row Row) error {
+		if row.Ts < ts {
+			return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
+		}
+		ts = row.Ts
+		_, err := w.Write([]byte(fmt.Sprintf("%s\n", row.String())))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func FolderScan(in string, backlog int, fun func(file string, line int, row Row) error) error {
+	ins := make([]string, 0)
+	err := filepath.Walk(in, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if path == in || strings.HasSuffix(path, IndexFileSuffix) {
+			return nil
+		}
+		ins = append(ins, path)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	sort.Strings(ins)
+
+	for _, path := range ins {
+		indexing, err := IndexingLoad(path)
+		if err != nil {
+			return err
+		}
+		line := 0
+		for i, _ := range(indexing.Index) {
+			block, err := indexing.Load(i)
+			if err != nil {
+				return err
+			}
+			for _, row := range block {
+				err = fun(path, line, row)
+				if err != nil {
+					return err
+				}
+				line += 1
+			}
+		}
+	}
+	return err
+}
+
+func PartBuild(in, out string, compress string, gran, align int) error {
 	rows, err := OriginLoad(in)
 	if err != nil {
 		return err
@@ -22,7 +157,7 @@ func Build(in, out string, compress string, gran, align int) error {
 
 	sort.Sort(rows)
 
-	index, err := DataWrite(rows, out, compress, gran, align)
+	index, err := PartWrite(rows, out, compress, gran, align)
 	if err != nil {
 		return err
 	}
@@ -81,7 +216,7 @@ func OriginParse(line []byte) (row Row, err error) {
 	return row, err
 }
 
-func DataWrite(rows Rows, path string, compress string, gran, align int) (Index, error) {
+func PartWrite(rows Rows, path string, compress string, gran, align int) (Index, error) {
 	f, err := os.OpenFile(path, os.O_RDWR | os.O_CREATE | os.O_EXCL, 0644)
 	if err != nil {
 		return nil, errors.New("writing sorted data: " + err.Error())
@@ -108,7 +243,7 @@ func DataWrite(rows Rows, path string, compress string, gran, align int) (Index,
 			n := align - int(offset) % align
 			_, err = w.Write(padding[0: n])
 			if err != nil {
-				return nil, errors.New("writing padding: " + strconv.Itoa(n) + ", " + err.Error())
+				return nil, fmt.Errorf("writing padding: %v, %s", n, err.Error())
 			}
 			offset += uint32(n)
 		}
@@ -128,7 +263,7 @@ func DataWrite(rows Rows, path string, compress string, gran, align int) (Index,
 	return index, err
 }
 
-func DataDump(path string, w io.Writer) error {
+func PartDump(path string, w io.Writer) error {
 	indexing, err := IndexingLoad(path)
 	if err != nil {
 		return err
@@ -146,8 +281,7 @@ func DataDump(path string, w io.Writer) error {
 				return err
 			}
 			if row.Ts < ts {
-				return errors.New("backward timestamp: block:" +
-					strconv.Itoa(i) + ", row:" + strconv.Itoa(j) + " " + s)
+				return fmt.Errorf("backward timestamp: block: %v row:%v %s", i, j, s)
 			}
 			ts = row.Ts
 		}
@@ -202,8 +336,7 @@ func (self *Indexing) Close() error {
 
 func (self *Indexing) Load(i int) (Block, error) {
 	if i >= len(self.Index) {
-		return nil, errors.New("indexing load block: #" +
-			strconv.Itoa(i) + " >= " + strconv.Itoa(len(self.Index)))
+		return nil, fmt.Errorf("indexing load block: #%v >= %v", i, len(self.Index))
 	}
 	entry := self.Index[i]
 	end := self.total
@@ -283,8 +416,7 @@ func IndexLoad(path string) (Index, error) {
 		return index, errors.New("reading index checksum: " + err.Error())
 	}
 	if c1 != c2 {
-		return index, errors.New("index checksum not matched: cal:" +
-			strconv.Itoa(int(c1)) + " VS read:" + strconv.Itoa(int(c2)))
+		return index, fmt.Errorf("index checksum not matched: cal:%v VS read:%v", c1, c2)
 	}
 
 	return index, nil
@@ -383,8 +515,7 @@ func BlockLoad(r io.Reader) (Block, error) {
 		return nil, errors.New("reading block magic flag: " + err.Error())
 	}
 	if magic != MagicFlag {
-		return nil, errors.New("magic flag not matched: real:" +
-			strconv.Itoa(int(MagicFlag)) + " VS read:" + strconv.Itoa(int(magic)))
+		return nil, fmt.Errorf("magic flag not matched: real:%v VS read:%v", MagicFlag, magic)
 	}
 
 	compress := CompressType(0)
@@ -420,8 +551,7 @@ func BlockLoad(r io.Reader) (Block, error) {
 		return nil, errors.New("reading block checksum: " + err.Error())
 	}
 	if c1 != c2 {
-		return nil, errors.New("block checksum not matched: cal:" +
-			strconv.Itoa(int(c1)) + " VS read:" + strconv.Itoa(int(c2)))
+		return nil, fmt.Errorf("block checksum not matched: cal:%v VS read:%v", c1, c2)
 	}
 
 	if closer != nil {
@@ -485,7 +615,7 @@ func RowLoad(r io.Reader, row *Row) error {
 	row.Props = make([]byte, cbp)
 	_, err = io.ReadFull(r, row.Props)
 	if err != nil {
-		err = errors.New("reading event props: " + strconv.Itoa(int(cbp))  + ", " + err.Error())
+		err = fmt.Errorf("reading event props, size:%v %s", cbp, err.Error())
 	}
 	return err
 }
