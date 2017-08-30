@@ -35,6 +35,7 @@ func Decompress(t CompressType, r io.Reader) (io.Reader, io.Closer, error) {
 func GetCompressType(name string) (CompressType, error) {
 	names := map[string]CompressType {
 		"": CompressNone,
+		"none": CompressNone,
 		"gzip": CompressGzip,
 		"zlib": CompressZlib,
 		"flate": CompressFlate,

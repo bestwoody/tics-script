@@ -304,6 +304,7 @@ func BlockLoad(r io.Reader) (Block, error) {
 	if err != nil {
 		return nil, errors.New("reading block size: " + err.Error())
 	}
+
 	block := make(Block, count)
 	for i := uint32(0); i < count; i++ {
 		err = RowLoad(w, &block[i])

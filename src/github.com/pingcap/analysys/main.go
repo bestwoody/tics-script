@@ -19,7 +19,6 @@ func Main() {
 	index := cmds.Sub("index", "index commands")
 	index.Reg("build", "build index from origin data", CmdIndexBuild)
 	index.Reg("dump", "dump index and verify", CmdIndexDump)
-	index.Reg("check", "verify index offsets", CmdIndexCheck)
 
 	cmds.Run(os.Args[1:])
 }
@@ -74,30 +73,19 @@ func CmdIndexBuild(args []string) {
 	}
 }
 
-func CmdIndexCheck(args []string) {
-	var path string
-	flag := flag.NewFlagSet("", flag.ContinueOnError)
-	flag.StringVar(&path, "path", "db", "db file path")
-	tools.ParseFlagOrDie(flag, args, "path")
-
-	err := IndexToBlockCheck(path, os.Stdout)
-	if err != nil {
-		println(err.Error())
-		os.Exit(1)
-	}
-}
-
 func CmdDataDump(args []string) {
 	var path string
 	var verify bool
 	var conc int
+	var dry bool
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
 	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+	flag.BoolVar(&dry, "dry", false, "dry run, for correctness check and benchmark")
 
-	tools.ParseFlagOrDie(flag, args, "path", "verify", "conc")
+	tools.ParseFlagOrDie(flag, args, "path", "verify", "conc", "dry")
 
 	dump:= func(path string) error {
 		file, err := os.Open(path)
@@ -114,12 +102,12 @@ func CmdDataDump(args []string) {
 			if conc <= 0 {
 				conc = runtime.NumCPU()
 			}
-			return FolderDump(path, conc, os.Stdout, verify)
+			return FolderDump(path, conc, os.Stdout, verify, dry)
 		} else {
 			if conc <= 0 {
 				conc = 1
 			}
-			return PartDump(path, conc, os.Stdout, verify)
+			return PartDump(path, conc, os.Stdout, verify, dry)
 		}
 	}
 
