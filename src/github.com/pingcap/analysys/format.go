@@ -402,8 +402,8 @@ type Row struct {
 var TimestampNoBound = TimestampBound {TimestampOpenBound, true}
 
 const (
-	BufferSizeRead  = 1024 * 1024
-	BufferSizeWrite = 1024 * 1024
+	BufferSizeRead  = 1024 * 64
+	BufferSizeWrite = 1024 * 64
 
 	IndexFileSuffix = ".idx"
 

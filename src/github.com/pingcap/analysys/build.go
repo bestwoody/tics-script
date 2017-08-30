@@ -143,13 +143,21 @@ func PartBuild(in, out string, compress string, gran, align int) error {
 }
 
 func OriginLoad(path string) (Rows, error) {
-	rows := make(Rows, 0)
-	err := tools.IterLines(path, BufferSizeRead, func(line []byte) error {
-		row, err := OriginParse(line)
-		rows.Add(row)
-		return err
-	})
-	return rows, err
+	builder := RowsBuilder { make(Rows, 0) }
+	err := tools.IterLines(path, builder.Add)
+	return builder.Rows, err
+}
+
+func (self RowsBuilder) Add(line []byte) error {
+	row, err := OriginParse(line)
+	if err == nil {
+		self.Rows.Add(row)
+	}
+	return err
+}
+
+type RowsBuilder struct {
+	Rows Rows
 }
 
 func OriginParse(line []byte) (row Row, err error) {

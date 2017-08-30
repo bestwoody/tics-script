@@ -74,14 +74,14 @@ func ParseFlagOrDie(flag *flag.FlagSet, args []string, flags ...string) {
 	}
 }
 
-func IterLines(file string, bufSize int, fun func([]byte) error) error {
+func IterLines(file string, fun func([]byte) error) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	r := bufio.NewReaderSize(f, bufSize)
+	r := bufio.NewReader(f)
 	for {
 		line, prefix, err := r.ReadLine()
 		if err != nil {
