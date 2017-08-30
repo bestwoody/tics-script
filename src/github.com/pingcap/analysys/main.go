@@ -34,7 +34,7 @@ func CmdIndexBuild(args []string) {
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&in, "in", "origin", "input file path")
 	flag.StringVar(&out, "out", "db", "output path")
-	flag.StringVar(&compress, "compress", "gzip", "compress method, '' means no compress")
+	flag.StringVar(&compress, "compress", "snappy", "compress method, '' means no compress")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 	flag.IntVar(&gran, "gran", 1024 * 8, "index granularity")
 	flag.IntVar(&align, "align", 512, "block size/offset align")
