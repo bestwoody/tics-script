@@ -27,18 +27,20 @@ func Main() {
 func CmdIndexBuild(args []string) {
 	var out string
 	var in string
+	var compress string
+	var conc int
 	var gran int
 	var align int
-	var compress string
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&in, "in", "origin", "input file path")
 	flag.StringVar(&out, "out", "db", "output path")
 	flag.StringVar(&compress, "compress", "gzip", "compress method, '' means no compress")
+	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 	flag.IntVar(&gran, "gran", 1024 * 8, "index granularity")
 	flag.IntVar(&align, "align", 512, "block size/offset align")
 
-	tools.ParseFlagOrDie(flag, args, "in", "out", "compress", "gran", "align")
+	tools.ParseFlagOrDie(flag, args, "in", "out", "compress", "conc", "gran", "align")
 	compress = strings.ToLower(compress)
 
 	build := func(in, out string, compress string, gran, align int) error {
@@ -57,7 +59,10 @@ func CmdIndexBuild(args []string) {
 			if err != nil && !os.IsNotExist(err) {
 				return err
 			}
-			return FolderBuild(in, out, compress, gran, align, runtime.NumCPU())
+			if conc <= 0 {
+				conc = runtime.NumCPU()
+			}
+			return FolderBuild(in, out, compress, gran, align, conc)
 		}
 		return PartBuild(in, out, compress, gran, align)
 	}
