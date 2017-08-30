@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-func FolderDump(path string, backlog int, w io.Writer) error {
+func FolderDump(path string, backlog int, w io.Writer, verify bool) error {
 	ts := Timestamp(0)
 	return FolderScan(path, backlog, func(file string, line int, row Row) error {
-		if row.Ts < ts {
+		if verify && row.Ts < ts {
 			return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
 		}
 		ts = row.Ts
@@ -54,7 +54,6 @@ func FolderScan(in string, backlog int, fun func(file string, line int, row Row)
 	}
 
 	// TODO: parallel, cache, pipeline
-
 
 	for _, rg := range(ranges) {
 		block, err := rg.Indexing.Load(rg.Block)
@@ -130,7 +129,7 @@ type Range struct {
 	Block int
 }
 
-func PartDump(path string, w io.Writer) error {
+func PartDump(path string, w io.Writer, verify bool) error {
 	indexing, err := IndexingLoad(path)
 	if err != nil {
 		return err
@@ -142,13 +141,12 @@ func PartDump(path string, w io.Writer) error {
 			return err
 		}
 		for j, row := range block {
-			s := row.String()
-			_, err = w.Write([]byte(s + "\n"))
+			if verify && row.Ts < ts {
+				return fmt.Errorf("backward timestamp: block: %v row:%v %s", i, j, row.String())
+			}
+			_, err := w.Write([]byte(fmt.Sprintf("%s\n", row.String())))
 			if err != nil {
 				return err
-			}
-			if row.Ts < ts {
-				return fmt.Errorf("backward timestamp: block: %v row:%v %s", i, j, s)
 			}
 			ts = row.Ts
 		}

@@ -84,9 +84,11 @@ func CmdIndexCheck(args []string) {
 
 func CmdDataDump(args []string) {
 	var path string
+	var verify bool
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
-	tools.ParseFlagOrDie(flag, args, "path")
+	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
+	tools.ParseFlagOrDie(flag, args, "path", "verify")
 
 	dump:= func(path string) error {
 		file, err := os.Open(path)
@@ -100,9 +102,9 @@ func CmdDataDump(args []string) {
 		}
 
 		if info.IsDir() {
-			return FolderDump(path, 3, os.Stdout)
+			return FolderDump(path, 3, os.Stdout, verify)
 		} else {
-			return PartDump(path, os.Stdout)
+			return PartDump(path, os.Stdout, verify)
 		}
 	}
 
