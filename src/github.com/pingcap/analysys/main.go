@@ -31,11 +31,11 @@ func CmdIndexBuild(args []string) {
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&in, "in", "origin", "input file path")
 	flag.StringVar(&out, "out", "db", "output path")
-	flag.IntVar(&gran, "gran", 8192, "index granularity")
+	flag.StringVar(&compress, "compress", "gzip", "compress method, '' means no compress")
+	flag.IntVar(&gran, "gran", 1024 * 8, "index granularity")
 	flag.IntVar(&align, "align", 512, "block size/offset align")
-	flag.StringVar(&compress, "compress", "", "compress method, '' means no compress")
 
-	tools.ParseFlagOrDie(flag, args, "in", "out", "gran", "align")
+	tools.ParseFlagOrDie(flag, args, "in", "out", "compress", "gran", "align")
 
 	err := Build(in, out, strings.ToLower(compress), gran, align)
 	if err != nil {

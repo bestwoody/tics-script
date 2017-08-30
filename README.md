@@ -18,17 +18,17 @@
 All
     Partition * N
         DataFile
-            Block * N              - block align by 512
+            Block * N              - align by 512
                 MagicFlag          - uint16
                 CompressType       - uint16
-                RowCount           - uint32, default: 8192
-                Row * N
-                    Timestamp      - uint32
-                    UserId         - uint32
-                    EventId        - uint16
-                    EventPropsLen  - uint16
-                    EventProps     - []byte, json format (TODO: map<k,v>)
-                BlockChecksum      - crc32
+                RowCount           - uint32, def: 64k    --
+                Row * N                                   |
+                    Timestamp      - uint32               |
+                    UserId         - uint32               |  <- compressed
+                    EventId        - uint16               |
+                    EventPropsLen  - uint16               |
+                    EventProps     - []byte, json         |
+                BlockChecksum      - origin data crc32 ----
         IndexFile
             EntryCount             - uint32
             IndexEntry * N

@@ -115,8 +115,6 @@ func DataWrite(rows Rows, path string, compress string, gran, align int) (Index,
 
 		block := Block(rows[0: count])
 
-		// TODO: do real compress
-
 		n, err := block.Write(w, compress)
 		if err != nil {
 			return nil, err
@@ -251,7 +249,7 @@ func (self Index) Write(path string) error {
 	if err != nil {
 		return errors.New("writing index checksum: " + err.Error())
 	}
-	return err
+	return nil
 }
 
 func IndexLoad(path string) (Index, error) {
@@ -318,8 +316,7 @@ func (self Rows) Less(i, j int) bool {
 type Rows []Row
 
 func (self Block) Write(w io.Writer, compress string) (uint32, error) {
-	crc32 := crc32.NewIEEE()
-	w = io.MultiWriter(crc32, w)
+	dest := w
 	written := uint32(0)
 
 	err := binary.Write(w, binary.LittleEndian, MagicFlag)
@@ -328,39 +325,58 @@ func (self Block) Write(w io.Writer, compress string) (uint32, error) {
 	}
 	written += 2
 
-	ct := GetCompressType(compress)
+	ct, err := GetCompressType(compress)
+	if err != nil {
+		return written, err
+	}
 	err = binary.Write(w, binary.LittleEndian, ct)
 	if err != nil {
-		return 0, errors.New("writing block compress type: " + err.Error())
+		return written, errors.New("writing block compress type: " + err.Error())
 	}
 	written += 2
+
+	buf := bytes.NewBuffer(nil)
+	w, closer, err := Compress(ct, buf)
+	if err != nil {
+		return written, err
+	}
+
+	crc32 := crc32.NewIEEE()
+	w = io.MultiWriter(crc32, w)
 
 	err = binary.Write(w, binary.LittleEndian, uint32(len(self)))
 	if err != nil {
 		return 0, errors.New("writing block size: " + err.Error())
 	}
-	written += 4
-
 	for _, row := range self {
-		n, err := row.Write(w)
+		_, err := row.Write(w)
 		if err != nil {
 			return written, errors.New("writing block row: " + err.Error())
 		}
-		written += n
 	}
-
-	err = binary.Write(w, binary.LittleEndian, crc32.Sum32())
+	crc := crc32.Sum32()
+	err = binary.Write(w, binary.LittleEndian, crc)
 	if err != nil {
 		return written, errors.New("writing block checksum: " + err.Error())
 	}
-	written += 4
-	return written, nil
+
+	if closer != nil {
+		err = closer.Close()
+		if err != nil {
+			return written, errors.New("closing block compresser: " + err.Error())
+		}
+	}
+
+	n, err := io.Copy(dest, buf)
+	if err != nil {
+		return written, errors.New("writing compressed data: " + err.Error())
+	}
+	written += uint32(n)
+
+	return written, err
 }
 
 func BlockLoad(r io.Reader) (Block, error) {
-	crc32 := crc32.NewIEEE()
-	r = io.TeeReader(r, crc32)
-
 	magic := uint16(0)
 	err := binary.Read(r, binary.LittleEndian, &magic)
 	if err != nil {
@@ -377,15 +393,21 @@ func BlockLoad(r io.Reader) (Block, error) {
 		return nil, errors.New("reading block compress type: " + err.Error())
 	}
 
+	w, closer, err := Decompress(compress, r)
+	if err != nil {
+		return nil, err
+	}
+	crc32 := crc32.NewIEEE()
+	w = io.TeeReader(w , crc32)
+
 	count := uint32(0)
-	err = binary.Read(r, binary.LittleEndian, &count)
+	err = binary.Read(w, binary.LittleEndian, &count)
 	if err != nil {
 		return nil, errors.New("reading block size: " + err.Error())
 	}
-
 	block := make(Block, count)
 	for i := uint32(0); i < count; i++ {
-		err = RowLoad(r, &block[i])
+		err = RowLoad(w, &block[i])
 		if err != nil {
 			return nil, errors.New("reading block row: " + err.Error())
 		}
@@ -393,7 +415,7 @@ func BlockLoad(r io.Reader) (Block, error) {
 
 	c1 := crc32.Sum32()
 	c2 := uint32(0)
-	err = binary.Read(r, binary.LittleEndian, &c2)
+	err = binary.Read(w, binary.LittleEndian, &c2)
 	if err != nil {
 		return nil, errors.New("reading block checksum: " + err.Error())
 	}
@@ -401,6 +423,14 @@ func BlockLoad(r io.Reader) (Block, error) {
 		return nil, errors.New("block checksum not matched: cal:" +
 			strconv.Itoa(int(c1)) + " VS read:" + strconv.Itoa(int(c2)))
 	}
+
+	if closer != nil {
+		err = closer.Close()
+		if err != nil {
+			return nil, errors.New("closing block decompresser: " + err.Error())
+		}
+	}
+
 	return block, nil
 }
 
