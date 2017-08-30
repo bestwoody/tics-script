@@ -59,7 +59,10 @@ func CmdIndexBuild(args []string) {
 				return err
 			}
 			if conc <= 0 {
-				conc = runtime.NumCPU()
+				conc = runtime.NumCPU() / 4
+			}
+			if conc < 4 {
+				conc = 3
 			}
 			return FolderBuild(in, out, compress, gran, align, conc)
 		}
