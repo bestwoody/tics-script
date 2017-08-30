@@ -2,14 +2,15 @@ package analysys
 
 import (
 	"bytes"
+	"bufio"
 	"errors"
+	"io"
 	"path/filepath"
 	"fmt"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-	"github.com/pingcap/analysys/tools"
 )
 
 func FolderBuild(in, out string, compress string, gran, align int, conc int) error {
@@ -143,21 +144,35 @@ func PartBuild(in, out string, compress string, gran, align int) error {
 }
 
 func OriginLoad(path string) (Rows, error) {
-	builder := RowsBuilder { make(Rows, 0) }
-	err := tools.IterLines(path, builder.Add)
-	return builder.Rows, err
-}
-
-func (self RowsBuilder) Add(line []byte) error {
-	row, err := OriginParse(line)
-	if err == nil {
-		self.Rows.Add(row)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
 	}
-	return err
-}
+	defer f.Close()
 
-type RowsBuilder struct {
-	Rows Rows
+	rows := make(Rows, 0)
+
+	r := bufio.NewReader(f)
+	for {
+		line, prefix, err := r.ReadLine()
+		if err != nil {
+			if err != io.EOF {
+				return nil, err
+			} else {
+				return rows, nil
+			}
+		}
+		if prefix {
+			return nil, errors.New("line too long")
+		}
+
+		row, err := OriginParse(line)
+		if err != nil {
+			return nil, err
+		}
+		rows.Add(row)
+	}
+	return rows, nil
 }
 
 func OriginParse(line []byte) (row Row, err error) {

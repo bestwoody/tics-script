@@ -1,11 +1,8 @@
 package tools
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
-	"errors"
-	"io"
 	"os"
 )
 
@@ -72,32 +69,4 @@ func ParseFlagOrDie(flag *flag.FlagSet, args []string, flags ...string) {
 		display()
 		os.Exit(1)
 	}
-}
-
-func IterLines(file string, fun func([]byte) error) error {
-	f, err := os.Open(file)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	r := bufio.NewReader(f)
-	for {
-		line, prefix, err := r.ReadLine()
-		if err != nil {
-			if err != io.EOF {
-				return err
-			} else {
-				return nil
-			}
-		}
-		if prefix {
-			return errors.New("line too long")
-		}
-		err = fun(line)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
