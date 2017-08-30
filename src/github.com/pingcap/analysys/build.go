@@ -12,7 +12,7 @@ import (
 	"github.com/pingcap/analysys/tools"
 )
 
-func FolderBuild(in, out string, compress string, gran, align int, process int) error {
+func FolderBuild(in, out string, compress string, gran, align int, conc int) error {
 	in, err := filepath.Abs(in)
 	if err != nil {
 		return err
@@ -61,21 +61,59 @@ func FolderBuild(in, out string, compress string, gran, align int, process int) 
 		In string
 		Out string
 	}
-	queue := make(chan Job, process)
-	errs := make(chan error, process)
+
+	files := make(chan Job, conc)
 	go func() {
 		for i, _ := range ins {
-			queue <-Job {ins[i], outs[i]}
+			files <-Job {ins[i], outs[i]}
 		}
 	}()
-	for i := 0; i < process; i++ {
+
+	type Loaded struct {
+		In string
+		Out string
+		Rows Rows
+		Err error
+	}
+	loadeds := make(chan Loaded, conc)
+	for i := 0; i < conc; i++ {
 		go func() {
-			for job := range queue {
-				err := PartBuild(job.In, job.Out, compress, gran, align)
-				errs <-err
+			for job := range files {
+				rows, err := OriginLoad(job.In)
+				loadeds <-Loaded {job.In, job.Out, rows, err}
 			}
 		}()
 	}
+
+	sorteds := make(chan Loaded, conc)
+	for i := 0; i < conc; i++ {
+		go func() {
+			for job := range loadeds {
+				if job.Err == nil {
+					sort.Sort(job.Rows)
+				}
+				sorteds <- job
+			}
+		}()
+	}
+
+	errs := make(chan error, conc)
+	for i := 0; i < conc; i++ {
+		go func() {
+			for job := range sorteds {
+				if job.Err != nil {
+					errs <- job.Err
+					continue
+				}
+				index, err := PartWrite(job.Rows, job.Out, compress, gran, align)
+				if err == nil {
+					err = index.Write(job.Out + IndexFileSuffix)
+				}
+				errs <- err
+			}
+		}()
+	}
+
 	es := ""
 	for _ = range ins {
 		eg := <-errs
@@ -101,7 +139,7 @@ func PartBuild(in, out string, compress string, gran, align int) error {
 	if err != nil {
 		return err
 	}
-	return index.Write(out + IndexFileSuffix);
+	return index.Write(out + IndexFileSuffix)
 }
 
 func OriginLoad(path string) (Rows, error) {
