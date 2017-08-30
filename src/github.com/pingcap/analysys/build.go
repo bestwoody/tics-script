@@ -65,14 +65,14 @@ func FolderBuild(in, out string, compress string, gran, align int, process int) 
 	errs := make(chan error, process)
 	go func() {
 		for i, _ := range ins {
-			queue <- Job {ins[i], outs[i]}
+			queue <-Job {ins[i], outs[i]}
 		}
 	}()
 	for i := 0; i < process; i++ {
 		go func() {
 			for job := range queue {
 				err := PartBuild(job.In, job.Out, compress, gran, align)
-				errs <- err
+				errs <-err
 			}
 		}()
 	}

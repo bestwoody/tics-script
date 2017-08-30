@@ -7,11 +7,12 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 )
 
-func FolderDump(path string, backlog int, w io.Writer, verify bool) error {
+func FolderDump(path string, conc int, w io.Writer, verify bool) error {
 	ts := Timestamp(0)
-	return FolderScan(path, backlog, func(file string, line int, row Row) error {
+	return FolderScan(path, conc, func(file string, line int, row Row) error {
 		if verify && row.Ts < ts {
 			return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
 		}
@@ -24,7 +25,7 @@ func FolderDump(path string, backlog int, w io.Writer, verify bool) error {
 	})
 }
 
-func FolderScan(in string, backlog int, fun func(file string, line int, row Row) error) error {
+func FolderScan(in string, conc int, fun func(file string, line int, row Row) error) error {
 	ins := make([]string, 0)
 	err := filepath.Walk(in, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -48,24 +49,67 @@ func FolderScan(in string, backlog int, fun func(file string, line int, row Row)
 	}
 	defer cache.Close()
 
-	ranges, err := cache.All()
+	jobs, err := cache.All()
 	if err != nil {
 		return err
 	}
 
-	// TODO: parallel, cache, pipeline
+	queue := make(chan Range, conc)
 
-	for _, rg := range(ranges) {
-		block, err := rg.Indexing.Load(rg.Block)
-		if err != nil {
-			return err
+	go func() {
+		for _, job := range jobs {
+			queue <-job
 		}
-		for i, row := range block {
-			err = fun(rg.File, i, row)
-			if err != nil {
-				return err
+	}()
+
+	errs := make(chan error, conc)
+
+	type LoadedBlock struct {
+		File string
+		Block Block
+	}
+	blocks := make(chan LoadedBlock, conc)
+
+	for i := 0; i < conc; i++ {
+		go func() {
+			for job := range queue {
+				block, err := job.Indexing.Load(job.Block)
+				if err == nil {
+					blocks <-LoadedBlock {job.File, block}
+				}
+				errs <-err
+			}
+		}()
+	}
+
+	es := ""
+	go func() {
+		for _ = range jobs {
+			eg := <-errs
+			if eg != nil {
+				es += eg.Error() + ";"
 			}
 		}
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(len(jobs))
+	go func() {
+		for block := range blocks {
+			for i, row := range block.Block {
+				err = fun(block.File, i, row)
+				if err != nil {
+					break
+				}
+			}
+			wg.Done()
+		}
+	}()
+
+	wg.Wait()
+
+	if len(es) != 0 {
+		return fmt.Errorf("partially failed: %s", es)
 	}
 	return err
 }
@@ -76,13 +120,13 @@ func (self Cache) All() ([]Range, error) {
 
 func (self Cache) Find(lower, upper TimestampBound) ([]Range, error) {
 	ranges := make([]Range, 0)
-	for _, file := range(self.files) {
+	for _, file := range self.files {
 		indexing, err := self.indexing(file)
 		if err != nil {
 			return nil, err
 		}
 		blocks := indexing.Interset(lower, upper)
-		for i := range(blocks) {
+		for i := range blocks {
 			ranges = append(ranges, Range {file, indexing, i})
 		}
 	}

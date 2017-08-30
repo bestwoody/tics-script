@@ -90,9 +90,13 @@ func CmdIndexCheck(args []string) {
 func CmdDataDump(args []string) {
 	var path string
 	var verify bool
+	var conc int
+
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
 	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
+	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+
 	tools.ParseFlagOrDie(flag, args, "path", "verify")
 
 	dump:= func(path string) error {
@@ -107,7 +111,10 @@ func CmdDataDump(args []string) {
 		}
 
 		if info.IsDir() {
-			return FolderDump(path, 3, os.Stdout, verify)
+			if conc <= 0 {
+				conc = runtime.NumCPU()
+			}
+			return FolderDump(path, conc, os.Stdout, verify)
 		} else {
 			return PartDump(path, os.Stdout, verify)
 		}
