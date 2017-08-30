@@ -10,19 +10,27 @@ import (
 	"sync"
 )
 
+func (self RowsPrinter) Print(file string, line int, row Row) error {
+	if self.verify && row.Ts < self.ts {
+		return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
+	}
+	self.ts = row.Ts
+	_, err := self.w.Write([]byte(fmt.Sprintf("%s\n", row.String())))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type RowsPrinter struct {
+	w io.Writer
+	verify bool
+	ts Timestamp
+}
+
 func FolderDump(path string, conc int, w io.Writer, verify bool) error {
-	ts := Timestamp(0)
-	return FolderScan(path, conc, func(file string, line int, row Row) error {
-		if verify && row.Ts < ts {
-			return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
-		}
-		ts = row.Ts
-		_, err := w.Write([]byte(fmt.Sprintf("%s\n", row.String())))
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	printer := RowsPrinter {w, verify, Timestamp(0)}
+	return FolderScan(path, conc, printer.Print)
 }
 
 func FolderScan(in string, conc int, fun func(file string, line int, row Row) error) error {
@@ -42,8 +50,11 @@ func FolderScan(in string, conc int, fun func(file string, line int, row Row) er
 	}
 
 	sort.Strings(ins)
+	return FilesScan(ins, conc, fun)
+}
 
-	cache, err := CacheLoad(ins)
+func FilesScan(files []string, conc int, fun func(file string, line int, row Row) error) error {
+	cache, err := CacheLoad(files)
 	if err != nil {
 		return err
 	}
@@ -173,7 +184,15 @@ type Range struct {
 	Block int
 }
 
-func PartDump(path string, w io.Writer, verify bool) error {
+func PartDump(path string, conc int, w io.Writer, verify bool) error {
+	if conc == 1 {
+		return PartDumpSync(path, w, verify)
+	}
+	printer := RowsPrinter {w, verify, Timestamp(0)}
+	return FilesScan([]string {path}, conc, printer.Print)
+}
+
+func PartDumpSync(path string, w io.Writer, verify bool) error {
 	indexing, err := IndexingLoad(path)
 	if err != nil {
 		return err

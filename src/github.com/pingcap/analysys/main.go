@@ -97,7 +97,7 @@ func CmdDataDump(args []string) {
 	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 
-	tools.ParseFlagOrDie(flag, args, "path", "verify")
+	tools.ParseFlagOrDie(flag, args, "path", "verify", "conc")
 
 	dump:= func(path string) error {
 		file, err := os.Open(path)
@@ -116,7 +116,10 @@ func CmdDataDump(args []string) {
 			}
 			return FolderDump(path, conc, os.Stdout, verify)
 		} else {
-			return PartDump(path, os.Stdout, verify)
+			if conc <= 0 {
+				conc = 1
+			}
+			return PartDump(path, conc, os.Stdout, verify)
 		}
 	}
 
