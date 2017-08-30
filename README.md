@@ -21,7 +21,7 @@ All
             Block * N              - align by 512
                 MagicFlag          - uint16
                 CompressType       - uint16
-                RowCount           - uint32, def: 64k    --
+                RowCount           - uint32, def: 8192   --
                 Row * N                                   |
                     Timestamp      - uint32               |
                     UserId         - uint32               |  <- compressed
@@ -34,6 +34,7 @@ All
             IndexEntry * N
                 Timestamp          - uint32
                 BlockOffset        - uint32
+            IndexEntry             - the end of the N-st Entry
             IndexChecksum          - uint32, crc
 ```
 

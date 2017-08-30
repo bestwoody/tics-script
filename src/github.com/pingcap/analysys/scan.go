@@ -42,29 +42,92 @@ func FolderScan(in string, backlog int, fun func(file string, line int, row Row)
 
 	sort.Strings(ins)
 
+	cache, err := CacheLoad(ins)
+	if err != nil {
+		return err
+	}
+	defer cache.Close()
+
+	ranges, err := cache.All()
+	if err != nil {
+		return err
+	}
+
 	// TODO: parallel, cache, pipeline
 
-	for _, path := range ins {
-		indexing, err := IndexingLoad(path)
+
+	for _, rg := range(ranges) {
+		block, err := rg.Indexing.Load(rg.Block)
 		if err != nil {
 			return err
 		}
-		line := 0
-		for i, _ := range(indexing.Index) {
-			block, err := indexing.Load(i)
+		for i, row := range block {
+			err = fun(rg.File, i, row)
 			if err != nil {
 				return err
-			}
-			for _, row := range block {
-				err = fun(path, line, row)
-				if err != nil {
-					return err
-				}
-				line += 1
 			}
 		}
 	}
 	return err
+}
+
+func (self Cache) All() ([]Range, error) {
+	return self.Find(TimestampNoBound, TimestampNoBound)
+}
+
+func (self Cache) Find(lower, upper TimestampBound) ([]Range, error) {
+	ranges := make([]Range, 0)
+	for _, file := range(self.files) {
+		indexing, err := self.indexing(file)
+		if err != nil {
+			return nil, err
+		}
+		blocks := indexing.Interset(lower, upper)
+		for i := range(blocks) {
+			ranges = append(ranges, Range {file, indexing, i})
+		}
+	}
+	return ranges, nil
+}
+
+func (self Cache) indexing(path string) (*Indexing, error) {
+	indexing, ok := self.indexings[path]
+	if !ok {
+		var err error
+		indexing, err = IndexingLoad(path)
+		if err != nil {
+			return nil, err
+		}
+		self.indexings[path] = indexing
+	}
+	return indexing, nil
+}
+
+func (self Cache) Close() error {
+	var err error
+	for _, indexing := range self.indexings {
+		e := indexing.Close()
+		if e != nil {
+			err = e
+		}
+	}
+	return err
+}
+
+func CacheLoad(files []string) (Cache, error) {
+	return Cache {files, make(map[string]*Indexing, 0)}, nil
+}
+
+// TODO: cache freq blocks
+type Cache struct {
+	files []string
+	indexings map[string]*Indexing
+}
+
+type Range struct {
+	File string
+	Indexing *Indexing
+	Block int
 }
 
 func PartDump(path string, w io.Writer) error {
@@ -73,7 +136,7 @@ func PartDump(path string, w io.Writer) error {
 		return err
 	}
 	ts := Timestamp(0)
-	for i, _ := range(indexing.Index) {
+	for i := 0; i < indexing.Blocks(); i++ {
 		block, err := indexing.Load(i)
 		if err != nil {
 			return err
@@ -109,7 +172,7 @@ func IndexToBlockCheck(path string, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for i, _ := range(indexing.Index) {
+	for i := 0; i < indexing.Blocks(); i++ {
 		_, err := indexing.Load(i)
 		if err != nil {
 			return err

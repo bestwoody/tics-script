@@ -27,19 +27,39 @@ func IndexingLoad(path string) (*Indexing, error) {
 	return &Indexing {index, f, info.Size()}, nil
 }
 
+func (self *Indexing) Interset(lower, upper TimestampBound) []int {
+	blocks := make([]int, 0)
+	for i := 0; i < self.Blocks(); i++ {
+		begin := self.Index[i].Ts
+		end := self.Index[i + 1].Ts
+		if !lower.IsOpen() && (end < lower.Ts || (end == lower.Ts && !lower.Included)) {
+			continue
+		}
+		if !upper.IsOpen() && (begin > upper.Ts || (begin == upper.Ts && !upper.Included)) {
+			continue
+		}
+		blocks = append(blocks, i)
+	}
+	return blocks
+}
+
 func (self *Indexing) Close() error {
 	return self.file.Close()
 }
 
+func (self *Indexing) Blocks() int {
+	if len(self.Index) == 0 {
+		return 0
+	}
+	return len(self.Index) - 1
+}
+
 func (self *Indexing) Load(i int) (Block, error) {
-	if i >= len(self.Index) {
+	if i >= len(self.Index) - 1 {
 		return nil, fmt.Errorf("indexing load block: #%v >= %v", i, len(self.Index))
 	}
 	entry := self.Index[i]
-	end := self.total
-	if i + 1 != len(self.Index) {
-		end = int64(self.Index[i + 1].Offset)
-	}
+	end := int64(self.Index[i + 1].Offset)
 	r := io.NewSectionReader(self.file, int64(entry.Offset), end - int64(entry.Offset))
 	return BlockLoad(bufio.NewReaderSize(r, BufferSizeRead))
 }
@@ -67,6 +87,7 @@ func PartWrite(rows Rows, path string, compress string, gran, align int) (Index,
 		padding = make([]byte, align)
 	}
 
+	ts := Timestamp(0)
 	for i := 0; len(rows) != 0; i++ {
 		count := gran
 		if len(rows) < gran {
@@ -91,7 +112,10 @@ func PartWrite(rows Rows, path string, compress string, gran, align int) (Index,
 		rows = rows[count: len(rows)]
 		index[i] = IndexEntry {block[0].Ts, offset}
 		offset += n
+		ts = block[len(block) - 1].Ts
 	}
+
+	index = append(index, IndexEntry {ts, offset})
 
 	err = w.Flush()
 	return index, err
@@ -375,12 +399,27 @@ type Row struct {
 	Props []byte
 }
 
+var TimestampNoBound = TimestampBound {TimestampOpenBound, true}
+
 const (
 	BufferSizeRead  = 1024 * 1024
 	BufferSizeWrite = 1024 * 1024
+
 	IndexFileSuffix = ".idx"
-	TimestampLen = 4
+
 	MagicFlag = uint16(37492)
+
+	TimestampLen = 4
+	TimestampOpenBound = Timestamp(0)
 )
+
+func (self TimestampBound) IsOpen() bool {
+	return self.Ts == TimestampOpenBound
+}
+
+type TimestampBound struct {
+	Ts Timestamp
+	Included bool
+}
 
 type Timestamp uint32

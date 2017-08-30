@@ -52,12 +52,11 @@ func CmdIndexBuild(args []string) {
 			return err
 		}
 
-		err = os.MkdirAll(out, 0744)
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-
 		if info.IsDir() {
+			err = os.MkdirAll(out, 0744)
+			if err != nil && !os.IsNotExist(err) {
+				return err
+			}
 			return FolderBuild(in, out, compress, gran, align, runtime.NumCPU())
 		}
 		return PartBuild(in, out, compress, gran, align)
