@@ -59,10 +59,7 @@ func CmdIndexBuild(args []string) {
 				return err
 			}
 			if conc <= 0 {
-				conc = runtime.NumCPU() / 4
-			}
-			if conc < 4 {
-				conc = 3
+				conc = runtime.NumCPU() / 4 + 2
 			}
 			return FolderBuild(in, out, compress, gran, align, conc)
 		}
@@ -103,7 +100,7 @@ func CmdDataDump(args []string) {
 
 		if info.IsDir() {
 			if conc <= 0 {
-				conc = runtime.NumCPU()
+				conc = runtime.NumCPU() / 2 + 2
 			}
 			return FolderDump(path, conc, os.Stdout, verify, dry)
 		} else {
