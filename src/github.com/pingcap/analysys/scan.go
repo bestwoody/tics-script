@@ -12,7 +12,7 @@ import (
 )
 
 func FolderDump(path string, conc int, pred Predicate, w io.Writer, verify, dry bool) error {
-	printer := RowsPrinter {w, Timestamp(0), verify, dry}
+	printer := RowPrinter {w, Timestamp(0), verify, dry}
 	return FolderScan(path, conc, pred, printer.Sink())
 }
 
@@ -215,31 +215,6 @@ type LoadedBlock struct {
 	Block Block
 }
 
-func (self *RowsPrinter) Print(file string, line int, row Row) error {
-	if self.verify && row.Ts < self.ts {
-		return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
-	}
-	self.ts = row.Ts
-	if !self.dry {
-		_, err := self.w.Write([]byte(fmt.Sprintf("%s\n", row.String())))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (self RowsPrinter) Sink() ScanSink {
-	return ScanSink {self.Print, nil, false}
-}
-
-type RowsPrinter struct {
-	w io.Writer
-	ts Timestamp
-	verify bool
-	dry bool
-}
-
 type ScanSink struct {
 	ByRow func(file string, line int, row Row) error
 	ByBlock func(file string, block Block) error
@@ -309,7 +284,7 @@ func PartDump(path string, conc int, pred Predicate, w io.Writer, verify, dry bo
 	if conc == 1 {
 		return PartDumpSync(path, w, verify)
 	}
-	printer := RowsPrinter {w, Timestamp(0), verify, dry}
+	printer := RowPrinter {w, Timestamp(0), verify, dry}
 	return FilesScan([]string {path}, conc, pred, printer.Sink())
 }
 
