@@ -50,6 +50,11 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		return nil
 	}
 
+	// Wait for all jobs are done
+	var wg sync.WaitGroup
+	// Wait for all errors are handled
+	var ew sync.WaitGroup
+
 	// Jobs to do
 	queue := make(chan UnloadBlock, conc * 4)
 	go func() {
@@ -60,17 +65,18 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 
 	// Collecting errors
 	errs := make(chan error, conc * 4)
+	em := map[string]bool {}
 	var es string
 	go func() {
-		for _ = range jobs {
-			eg := <-errs
-			if eg != nil {
-				if len(es) > 1024 {
-					es += "..."
-				} else {
-					es += eg.Error() + ";"
+		for err := range errs {
+			if err != nil {
+				s := err.Error()
+				if _, ok := em[s]; !ok {
+					em[s] = true
+					es += s + ";"
 				}
 			}
+			ew.Done()
 		}
 	}()
 
@@ -85,6 +91,7 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 				} else {
 					blocks <-LoadedBlock {}
 				}
+				ew.Add(1)
 				errs <-err
 			}
 		}()
@@ -104,12 +111,11 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 			reordereds <-reorderer.Pop()
 		}
 		if reorderer.Len() > 0 {
-			panic("should never happen: reorderer.stage > 0")
+			panic("should never happen: reorderer.holdeds > 0")
 		}
 	}()
 
 	// Output blocks
-	var wg sync.WaitGroup
 	wg.Add(len(jobs))
 	go func() {
 		for block := range reordereds {
@@ -125,12 +131,15 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 				}
 			}
 			if err != nil {
+				ew.Add(1)
 				errs <-err
 			}
 			wg.Done()
 		}
 	}()
+
 	wg.Wait()
+	ew.Wait()
 
 	if len(es) != 0 {
 		return fmt.Errorf("partially failed: %s", es)
@@ -139,38 +148,38 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 }
 
 func (self *BlockReorderer) Len() int {
-	return self.stage.Len()
+	return self.holdeds.Len()
 }
 
 func (self *BlockReorderer) Push(x interface{}) {
 	block := x.(LoadedBlock)
-	heap.Push(&self.stage, block)
+	heap.Push(&self.holdeds, block)
 }
 
 func (self *BlockReorderer) Ready() bool {
 	if self.Len() <= 0 {
 		return false
 	}
-	top := self.stage[0]
+	top := self.holdeds[0]
 	expected := self.origin[self.current]
 	return top.File == expected.File && top.Order == expected.Order
 }
 
 func (self *BlockReorderer) Pop() LoadedBlock {
 	self.current += 1
-	return heap.Pop(&self.stage).(LoadedBlock)
+	return heap.Pop(&self.holdeds).(LoadedBlock)
 }
 
 func NewBlockReorderer(origin []UnloadBlock) *BlockReorderer {
 	self := &BlockReorderer {origin, 0, LoadedBlocks{}}
-	heap.Init(&self.stage)
+	heap.Init(&self.holdeds)
 	return self
 }
 
 type BlockReorderer struct {
 	origin []UnloadBlock
 	current int
-	stage LoadedBlocks
+	holdeds LoadedBlocks
 }
 
 func (self *LoadedBlocks) Pop() interface{} {
