@@ -2,9 +2,10 @@ package analysys
 
 import (
 	"flag"
-	"os"
 	"runtime"
+	"os"
 	"strings"
+	"time"
 	"github.com/pingcap/analysys/tools"
 )
 
@@ -75,17 +76,21 @@ func CmdIndexBuild(args []string) {
 
 func CmdDataDump(args []string) {
 	var path string
-	var verify bool
+	var from string
+	var to string
 	var conc int
+	var verify bool
 	var dry bool
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
-	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
+	flag.StringVar(&from, "from", "", "data begin time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included")
+	flag.StringVar(&to, "to", "", "data end time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included" )
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
 	flag.BoolVar(&dry, "dry", false, "dry run, for correctness check and benchmark")
 
-	tools.ParseFlagOrDie(flag, args, "path", "verify", "conc", "dry")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc", "verify", "dry")
 
 	dump:= func(path string) error {
 		file, err := os.Open(path)
@@ -98,16 +103,26 @@ func CmdDataDump(args []string) {
 			return err
 		}
 
+		var pred Predicate
+		pred.Lower, err = ParseDateTime(from)
+		if err != nil {
+			return err
+		}
+		pred.Upper, err = ParseDateTime(to)
+		if err != nil {
+			return err
+		}
+
 		if info.IsDir() {
 			if conc <= 0 {
 				conc = runtime.NumCPU() / 2 + 2
 			}
-			return FolderDump(path, conc, os.Stdout, verify, dry)
+			return FolderDump(path, conc, pred, os.Stdout, verify, dry)
 		} else {
 			if conc <= 0 {
 				conc = 1
 			}
-			return PartDump(path, conc, os.Stdout, verify, dry)
+			return PartDump(path, conc, pred, os.Stdout, verify, dry)
 		}
 	}
 
@@ -129,4 +144,22 @@ func CmdIndexDump(args []string) {
 		println(err.Error())
 		os.Exit(1)
 	}
+}
+
+func ParseDateTime(s string) (TimestampBound, error) {
+	if len(s) == 0 {
+		return TimestampNoBound, nil
+	}
+	var bound TimestampBound
+	bound.Included = true
+	if s[0] == '-' {
+		s = s[1: len(s) - 1]
+		bound.Included = false
+	}
+	t, err := time.Parse("2006-01-02 15:04:05", s)
+	if err != nil {
+		return TimestampNoBound, err
+	}
+	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Second))
+	return bound, nil
 }

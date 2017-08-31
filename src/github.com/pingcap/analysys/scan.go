@@ -35,12 +35,12 @@ type RowsPrinter struct {
 	dry bool
 }
 
-func FolderDump(path string, conc int, w io.Writer, verify, dry bool) error {
+func FolderDump(path string, conc int, pred Predicate, w io.Writer, verify, dry bool) error {
 	printer := RowsPrinter {w, Timestamp(0), verify, dry}
-	return FolderScan(path, conc, printer.Sink())
+	return FolderScan(path, conc, pred, printer.Sink())
 }
 
-func FolderScan(in string, conc int, sink ScanSink) error {
+func FolderScan(in string, conc int, pred Predicate, sink ScanSink) error {
 	ins := make([]string, 0)
 	err := filepath.Walk(in, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -55,19 +55,18 @@ func FolderScan(in string, conc int, sink ScanSink) error {
 	if err != nil {
 		return err
 	}
-
 	sort.Strings(ins)
-	return FilesScan(ins, conc, sink)
+	return FilesScan(ins, conc, pred, sink)
 }
 
-func FilesScan(files []string, conc int, sink ScanSink) error {
+func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 	cache, err := CacheLoad(files)
 	if err != nil {
 		return err
 	}
 	defer cache.Close()
 
-	jobs, err := cache.All()
+	jobs, err := cache.Find(pred.Lower, pred.Upper)
 	if err != nil {
 		return err
 	}
@@ -209,12 +208,12 @@ type Range struct {
 	Block int
 }
 
-func PartDump(path string, conc int, w io.Writer, verify, dry bool) error {
+func PartDump(path string, conc int, pred Predicate, w io.Writer, verify, dry bool) error {
 	if conc == 1 {
 		return PartDumpSync(path, w, verify)
 	}
 	printer := RowsPrinter {w, Timestamp(0), verify, dry}
-	return FilesScan([]string {path}, conc, printer.Sink())
+	return FilesScan([]string {path}, conc, pred, printer.Sink())
 }
 
 func PartDumpSync(path string, w io.Writer, verify bool) error {
@@ -251,4 +250,9 @@ func IndexDump(path string, w io.Writer) error {
 		}
 	}
 	return err
+}
+
+type Predicate struct {
+	Lower TimestampBound
+	Upper TimestampBound
 }
