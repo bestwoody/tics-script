@@ -4,36 +4,12 @@ import (
 	"io"
 	"path/filepath"
 	"fmt"
+	"container/heap"
 	"os"
 	"sort"
 	"strings"
 	"sync"
 )
-
-func (self RowsPrinter) Print(file string, line int, row Row) error {
-	if self.verify && row.Ts < self.ts {
-		return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
-	}
-	self.ts = row.Ts
-	if !self.dry {
-		_, err := self.w.Write([]byte(fmt.Sprintf("%s\n", row.String())))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (self RowsPrinter) Sink() ScanSink {
-	return ScanSink { self.Print, nil, false}
-}
-
-type RowsPrinter struct {
-	w io.Writer
-	ts Timestamp
-	verify bool
-	dry bool
-}
 
 func FolderDump(path string, conc int, pred Predicate, w io.Writer, verify, dry bool) error {
 	printer := RowsPrinter {w, Timestamp(0), verify, dry}
@@ -74,7 +50,7 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		return nil
 	}
 
-	queue := make(chan UnloadBlock, conc)
+	queue := make(chan UnloadBlock, conc * 4)
 
 	go func() {
 		for _, job := range jobs {
@@ -82,7 +58,7 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		}
 	}()
 
-	blocks := make(chan LoadedBlock, conc * 2)
+	blocks := make(chan LoadedBlock, conc * 4)
 	errs := make(chan error, conc)
 
 	for i := 0; i < conc; i++ {
@@ -113,15 +89,20 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		}
 	}()
 
-	reordereds := make(chan LoadedBlock, conc)
+	reordereds := make(chan LoadedBlock, conc * 4)
 	reorderer := NewBlockReorderer(jobs)
 	go func() {
 		for block := range blocks {
 			reorderer.Push(block)
+			for reorderer.Ready() {
+				reordereds <-reorderer.Pop()
+			}
+		}
+		for reorderer.Ready() {
 			reordereds <-reorderer.Pop()
-			//for reorderer.Ready() {
-			//	reordereds <-reorderer.Pop()
-			//}
+		}
+		if reorderer.Len() > 0 {
+			panic("should never happen: reorderer.stage > 0")
 		}
 	}()
 
@@ -151,32 +132,98 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 	return nil
 }
 
-func (self *BlockReorderer) Push(block LoadedBlock) {
-	self.stage = append(self.stage, block)
+func (self *BlockReorderer) Len() int {
+	return self.stage.Len()
+}
+
+func (self *BlockReorderer) Push(x interface{}) {
+	block := x.(LoadedBlock)
+	heap.Push(&self.stage, block)
 }
 
 func (self *BlockReorderer) Ready() bool {
-	return len(self.stage) > 0
+	if self.Len() <= 0 {
+		return false
+	}
+	top := self.stage[0]
+	expect := self.origin[self.current]
+	return top.File == expect.File && top.Order == expect.Order
 }
 
 func (self *BlockReorderer) Pop() LoadedBlock {
-	return self.stage[0]
+	self.current += 1
+	block := heap.Pop(&self.stage).(LoadedBlock)
+	return block
 }
 
 func NewBlockReorderer(origin []UnloadBlock) *BlockReorderer {
-	return &BlockReorderer {origin, make([]LoadedBlock, 0)}
+	self := &BlockReorderer {origin, 0, LoadedBlocks{}}
+	heap.Init(&self.stage)
+	return self
 }
 
-// TODO: use priority queue
 type BlockReorderer struct {
 	origin []UnloadBlock
-	stage []LoadedBlock
+	current int
+	stage LoadedBlocks
 }
+
+func (self *LoadedBlocks) Pop() interface{} {
+	old := *self
+	n := len(old)
+	block := old[n - 1]
+	*self = old[0: n - 1]
+	return block
+}
+
+func (self *LoadedBlocks) Push(x interface{}) {
+	block := x.(LoadedBlock)
+	*self = append(*self, block)
+}
+
+func (self LoadedBlocks) Len() int {
+	return len(self)
+}
+
+func (self LoadedBlocks) Less(i, j int) bool {
+	return self[i].File < self[j].File || (self[i].File == self[j].File && self[i].Order < self[j].Order)
+}
+
+func (self LoadedBlocks) Swap(i, j int) {
+	self[i], self[j] = self[j], self[i]
+}
+
+type LoadedBlocks []LoadedBlock
 
 type LoadedBlock struct {
 	File string
 	Order int
 	Block Block
+}
+
+func (self RowsPrinter) Print(file string, line int, row Row) error {
+	if self.verify && row.Ts < self.ts {
+		return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
+	}
+	self.ts = row.Ts
+	if !self.dry {
+		_, err := self.w.Write([]byte(fmt.Sprintf("%s\n", row.String())))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (self RowsPrinter) Sink() ScanSink {
+	return ScanSink { self.Print, nil, false}
+}
+
+type RowsPrinter struct {
+	w io.Writer
+	ts Timestamp
+	verify bool
+	dry bool
 }
 
 type ScanSink struct {
