@@ -50,31 +50,16 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		return nil
 	}
 
+	// Jobs to do
 	queue := make(chan UnloadBlock, conc * 4)
-
 	go func() {
 		for _, job := range jobs {
 			queue <-job
 		}
 	}()
 
-	blocks := make(chan LoadedBlock, conc * 4)
-	errs := make(chan error, conc)
-
-	for i := 0; i < conc; i++ {
-		go func() {
-			for job := range queue {
-				block, err := job.Indexing.Load(job.Order)
-				if err == nil {
-					blocks <-LoadedBlock {job.File, job.Order, block}
-				} else {
-					blocks <-LoadedBlock {}
-				}
-				errs <-err
-			}
-		}()
-	}
-
+	// Collecting errors
+	errs := make(chan error, conc * 4)
 	var es string
 	go func() {
 		for _ = range jobs {
@@ -89,6 +74,23 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		}
 	}()
 
+	// Read and decode blocks
+	blocks := make(chan LoadedBlock, conc * 4)
+	for i := 0; i < conc; i++ {
+		go func() {
+			for job := range queue {
+				block, err := job.Indexing.Load(job.Order)
+				if err == nil {
+					blocks <-LoadedBlock {job.File, job.Order, block}
+				} else {
+					blocks <-LoadedBlock {}
+				}
+				errs <-err
+			}
+		}()
+	}
+
+	// Reorder blocks
 	reordereds := make(chan LoadedBlock, conc * 4)
 	reorderer := NewBlockReorderer(jobs)
 	go func() {
@@ -106,12 +108,14 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		}
 	}()
 
+	// Output blocks
 	var wg sync.WaitGroup
 	wg.Add(len(jobs))
 	go func() {
 		for block := range reordereds {
+			var err error
 			if sink.IsByBlock {
-				sink.ByBlock(block.File, block.Block)
+				err = sink.ByBlock(block.File, block.Block)
 			} else {
 				for i, row := range block.Block {
 					err = sink.ByRow(block.File, i, row)
@@ -120,16 +124,18 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 					}
 				}
 			}
+			if err != nil {
+				errs <-err
+			}
 			wg.Done()
 		}
 	}()
-
 	wg.Wait()
 
 	if len(es) != 0 {
 		return fmt.Errorf("partially failed: %s", es)
 	}
-	return nil
+	return err
 }
 
 func (self *BlockReorderer) Len() int {
@@ -146,14 +152,13 @@ func (self *BlockReorderer) Ready() bool {
 		return false
 	}
 	top := self.stage[0]
-	expect := self.origin[self.current]
-	return top.File == expect.File && top.Order == expect.Order
+	expected := self.origin[self.current]
+	return top.File == expected.File && top.Order == expected.Order
 }
 
 func (self *BlockReorderer) Pop() LoadedBlock {
 	self.current += 1
-	block := heap.Pop(&self.stage).(LoadedBlock)
-	return block
+	return heap.Pop(&self.stage).(LoadedBlock)
 }
 
 func NewBlockReorderer(origin []UnloadBlock) *BlockReorderer {
@@ -201,7 +206,7 @@ type LoadedBlock struct {
 	Block Block
 }
 
-func (self RowsPrinter) Print(file string, line int, row Row) error {
+func (self *RowsPrinter) Print(file string, line int, row Row) error {
 	if self.verify && row.Ts < self.ts {
 		return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
 	}
@@ -216,7 +221,7 @@ func (self RowsPrinter) Print(file string, line int, row Row) error {
 }
 
 func (self RowsPrinter) Sink() ScanSink {
-	return ScanSink { self.Print, nil, false}
+	return ScanSink {self.Print, nil, false}
 }
 
 type RowsPrinter struct {
@@ -279,7 +284,7 @@ func CacheLoad(files []string) (Cache, error) {
 	return Cache {files, make(map[string]*Indexing, 0)}, nil
 }
 
-// TODO: cache freq blocks
+// TODO: Cache freq blocks (LRU, memory control)
 type Cache struct {
 	files []string
 	indexings map[string]*Indexing
@@ -327,9 +332,9 @@ func PartDumpSync(path string, w io.Writer, verify bool) error {
 func IndexDump(path string, w io.Writer) error {
 	index, err := IndexLoad(path)
 	for _, entry := range index {
-		_, err := w.Write([]byte(fmt.Sprintf("%v %v\n", entry.Ts, entry.Offset)))
+		_, err = w.Write([]byte(fmt.Sprintf("%v %v\n", entry.Ts, entry.Offset)))
 		if err != nil {
-			return err
+			break
 		}
 	}
 	return err

@@ -49,6 +49,7 @@ func CmdIndexBuild(args []string) {
 			return err
 		}
 		defer file.Close()
+
 		info, err := file.Stat()
 		if err != nil {
 			return err
@@ -98,6 +99,7 @@ func CmdDataDump(args []string) {
 			return err
 		}
 		defer file.Close()
+
 		info, err := file.Stat()
 		if err != nil {
 			return err
@@ -150,12 +152,14 @@ func ParseDateTime(s string) (TimestampBound, error) {
 	if len(s) == 0 {
 		return TimestampNoBound, nil
 	}
+
 	var bound TimestampBound
 	bound.Included = true
 	if s[0] == '-' {
 		s = s[1: len(s) - 1]
 		bound.Included = false
 	}
+
 	t, err := time.Parse("2006-01-02 15:04:05", s)
 	if err != nil {
 		return TimestampNoBound, err

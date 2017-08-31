@@ -225,7 +225,7 @@ func (self Block) Write(w io.Writer, compress string) (uint32, error) {
 	}
 	written += 2
 
-	ct, err := GetCompressType(compress)
+	ct, err := RegisteredCompressers.GetCompressType(compress)
 	if err != nil {
 		return written, err
 	}
@@ -236,7 +236,7 @@ func (self Block) Write(w io.Writer, compress string) (uint32, error) {
 	written += 2
 
 	buf := bytes.NewBuffer(nil)
-	w, closer, err := Compress(ct, buf)
+	w, closer, err := RegisteredCompressers.Compress(ct, buf)
 	if err != nil {
 		return written, err
 	}
@@ -292,7 +292,7 @@ func BlockLoad(r io.Reader) (Block, error) {
 		return nil, errors.New("reading block compress type: " + err.Error())
 	}
 
-	w, closer, err := Decompress(compress, r)
+	w, closer, err := RegisteredCompressers.Decompress(compress, r)
 	if err != nil {
 		return nil, err
 	}
@@ -336,27 +336,41 @@ func BlockLoad(r io.Reader) (Block, error) {
 type Block []Row
 
 func (self *Row) Write(w io.Writer) (uint32, error) {
+	written := uint32(0)
 	err := binary.Write(w, binary.LittleEndian, self.Ts)
 	if err != nil {
-		return 0, err
+		return written, err
 	}
+	written += TimestampLen
+
 	err = binary.Write(w, binary.LittleEndian, self.Id)
 	if err != nil {
-		return 0, err
+		return written, err
 	}
+	written += 4
+
 	err = binary.Write(w, binary.LittleEndian, self.Event)
 	if err != nil {
-		return 0, err
+		return written, err
 	}
+	written += 2
+
 	err = binary.Write(w, binary.LittleEndian, uint16(len(self.Props)))
 	if err != nil {
-		return 0, err
+		return written, err
 	}
+	written += 2
+
 	_, err = w.Write(self.Props)
 	if err != nil {
-		return 0, errors.New("writing event props: " + err.Error())
+		return written, errors.New("writing event props: " + err.Error())
 	}
-	return self.PersistSize(), nil
+	written += uint32(len(self.Props))
+
+	if written != self.PersistSize() {
+		panic("Row.Write: wrong written size")
+	}
+	return written, nil
 }
 
 func (self *Row) PersistSize() uint32 {
