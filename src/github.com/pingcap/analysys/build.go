@@ -115,7 +115,7 @@ func FolderBuild(in, out string, compress string, gran, align int, conc int) err
 		}()
 	}
 
-	es := ""
+	var es string
 	for _ = range ins {
 		eg := <-errs
 		if eg != nil {

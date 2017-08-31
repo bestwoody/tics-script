@@ -74,7 +74,7 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		return nil
 	}
 
-	queue := make(chan Range, conc)
+	queue := make(chan UnloadBlock, conc)
 
 	go func() {
 		for _, job := range jobs {
@@ -82,20 +82,15 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		}
 	}()
 
-	type LoadedBlock struct {
-		File string
-		Block Block
-	}
-	blocks := make(chan LoadedBlock, conc)
-
+	blocks := make(chan LoadedBlock, conc * 2)
 	errs := make(chan error, conc)
 
 	for i := 0; i < conc; i++ {
 		go func() {
 			for job := range queue {
-				block, err := job.Indexing.Load(job.Block)
+				block, err := job.Indexing.Load(job.Order)
 				if err == nil {
-					blocks <-LoadedBlock {job.File, block}
+					blocks <-LoadedBlock {job.File, job.Order, block}
 				} else {
 					blocks <-LoadedBlock {}
 				}
@@ -104,20 +99,36 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		}()
 	}
 
-	es := ""
+	var es string
 	go func() {
 		for _ = range jobs {
 			eg := <-errs
 			if eg != nil {
-				es += eg.Error() + ";"
+				if len(es) > 1024 {
+					es += "..."
+				} else {
+					es += eg.Error() + ";"
+				}
 			}
+		}
+	}()
+
+	reordereds := make(chan LoadedBlock, conc)
+	reorderer := NewBlockReorderer(jobs)
+	go func() {
+		for block := range blocks {
+			reorderer.Push(block)
+			reordereds <-reorderer.Pop()
+			//for reorderer.Ready() {
+			//	reordereds <-reorderer.Pop()
+			//}
 		}
 	}()
 
 	var wg sync.WaitGroup
 	wg.Add(len(jobs))
 	go func() {
-		for block := range blocks {
+		for block := range reordereds {
 			if sink.IsByBlock {
 				sink.ByBlock(block.File, block.Block)
 			} else {
@@ -135,12 +146,37 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 	wg.Wait()
 
 	if len(es) != 0 {
-		if len(es) > 1024 {
-			es = es[0: 1024] + "..."
-		}
 		return fmt.Errorf("partially failed: %s", es)
 	}
-	return err
+	return nil
+}
+
+func (self *BlockReorderer) Push(block LoadedBlock) {
+	self.stage = append(self.stage, block)
+}
+
+func (self *BlockReorderer) Ready() bool {
+	return len(self.stage) > 0
+}
+
+func (self *BlockReorderer) Pop() LoadedBlock {
+	return self.stage[0]
+}
+
+func NewBlockReorderer(origin []UnloadBlock) *BlockReorderer {
+	return &BlockReorderer {origin, make([]LoadedBlock, 0)}
+}
+
+// TODO: use priority queue
+type BlockReorderer struct {
+	origin []UnloadBlock
+	stage []LoadedBlock
+}
+
+type LoadedBlock struct {
+	File string
+	Order int
+	Block Block
 }
 
 type ScanSink struct {
@@ -149,12 +185,12 @@ type ScanSink struct {
 	IsByBlock bool
 }
 
-func (self Cache) All() ([]Range, error) {
+func (self Cache) All() ([]UnloadBlock, error) {
 	return self.Find(TimestampNoBound, TimestampNoBound)
 }
 
-func (self Cache) Find(lower, upper TimestampBound) ([]Range, error) {
-	ranges := make([]Range, 0)
+func (self Cache) Find(lower, upper TimestampBound) ([]UnloadBlock, error) {
+	ranges := make([]UnloadBlock, 0)
 	for _, file := range self.files {
 		indexing, err := self.indexing(file)
 		if err != nil {
@@ -162,7 +198,7 @@ func (self Cache) Find(lower, upper TimestampBound) ([]Range, error) {
 		}
 		blocks := indexing.Interset(lower, upper)
 		for i := range blocks {
-			ranges = append(ranges, Range {file, indexing, i})
+			ranges = append(ranges, UnloadBlock {file, i, indexing})
 		}
 	}
 	return ranges, nil
@@ -202,10 +238,10 @@ type Cache struct {
 	indexings map[string]*Indexing
 }
 
-type Range struct {
+type UnloadBlock struct {
 	File string
+	Order int
 	Indexing *Indexing
-	Block int
 }
 
 func PartDump(path string, conc int, pred Predicate, w io.Writer, verify, dry bool) error {
