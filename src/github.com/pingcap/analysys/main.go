@@ -89,19 +89,11 @@ func CmdQuery(args []string) {
 		for i := 0; i <= len(eseq); i++ {
 			score, ok := result[uint16(i)]
 			if ok {
-				if i == 0 {
-					fmt.Printf("-    \t%v\t%v\n", i, score)
-				} else {
-					event := eseq[i - 1]
-					fmt.Printf("%v\t%v\t%v\n", event, i, score)
+				event := "-"
+				if i != 0 {
+					event = fmt.Sprintf("%v", eseq[i - 1])
 				}
-			} else {
-				if i == 0 {
-					fmt.Printf("-    \t%v\t-\n", i)
-				} else {
-					event := eseq[i - 1]
-					fmt.Printf("%v\t%v\t-\n", event, i)
-				}
+				fmt.Printf("%v\t#%v\t%v\t%v\n", event, i, score.Val, score.Acc)
 			}
 		}
 		return nil
