@@ -73,9 +73,23 @@ func CmdQuery(args []string) {
 			return err
 		}
 		result := tracer.Result()
-		fmt.Printf("results: %v\n", len(result))
-		for score, users := range result {
-			fmt.Printf("%v %v\n", score, users)
+		for i := uint16(0); i < uint16(len(result)); i++ {
+			score, ok := result[uint16(i)]
+			if ok {
+				if i == 0 {
+					fmt.Printf("-    \t%v\t%v\n", i, score)
+				} else {
+					event := eseq[i - 1]
+					fmt.Printf("%v\t%v\t%v\n", event, i, score)
+				}
+			} else {
+				if i == 0 {
+					fmt.Printf("-    \t%v\t-\n", i, score)
+				} else {
+					event := eseq[i - 1]
+					fmt.Printf("%v\t%v\t-\n", event, i)
+				}
+			}
 		}
 		return nil
 	}
