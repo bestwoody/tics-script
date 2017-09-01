@@ -39,8 +39,8 @@ func CmdQuery(args []string) {
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
-	flag.StringVar(&from, "from", "", "data begin time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included")
-	flag.StringVar(&to, "to", "", "data end time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included" )
+	flag.StringVar(&from, "from", "", "data begin time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included")
+	flag.StringVar(&to, "to", "", "data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included" )
 	flag.StringVar(&events, "events", "", "query events, seperated by ','")
 	flag.IntVar(&window, "window", 60 * 24, "window size in minutes")
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
@@ -123,8 +123,8 @@ func CmdDataDump(args []string) {
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
-	flag.StringVar(&from, "from", "", "data begin time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included")
-	flag.StringVar(&to, "to", "", "data end time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included" )
+	flag.StringVar(&from, "from", "", "data begin time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included")
+	flag.StringVar(&to, "to", "", "data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included" )
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
 	flag.BoolVar(&dry, "dry", false, "dry run, for correctness check and benchmark")
@@ -274,8 +274,8 @@ func ParseDateTime(s string) (TimestampBound, error) {
 
 	var bound TimestampBound
 	bound.Included = true
-	if s[0] == '-' {
-		s = s[1: len(s)]
+	if s[len(s) - 1] == '-' {
+		s = s[0: len(s) - 1]
 		bound.Included = false
 	}
 
