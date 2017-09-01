@@ -64,13 +64,18 @@ func CmdQuery(args []string) {
 		}
 		conc = AutoDectectConc(conc, isdir)
 
-		tracer := NewTraceUsers(eseq, Timestamp(window * 60 * int(time.Millisecond)))
+		tracer, err := NewTraceUsers(eseq, Timestamp(window * 60 * 1000))
+		if err != nil {
+			return err
+		}
+
 		var sink ScanSink
 		if byblock {
 			sink = tracer.ByBlock()
 		} else {
 			sink = tracer.ByRow()
 		}
+
 		if isdir {
 			err = FolderScan(path, conc, pred, sink)
 		} else {
@@ -79,8 +84,9 @@ func CmdQuery(args []string) {
 		if err != nil {
 			return err
 		}
+
 		result := tracer.Result()
-		for i := uint16(0); i < uint16(len(result)); i++ {
+		for i := 0; i <= len(eseq); i++ {
 			score, ok := result[uint16(i)]
 			if ok {
 				if i == 0 {
@@ -91,7 +97,7 @@ func CmdQuery(args []string) {
 				}
 			} else {
 				if i == 0 {
-					fmt.Printf("-    \t%v\t-\n", i, score)
+					fmt.Printf("-    \t%v\t-\n", i)
 				} else {
 					event := eseq[i - 1]
 					fmt.Printf("%v\t%v\t-\n", event, i)

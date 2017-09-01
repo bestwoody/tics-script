@@ -56,12 +56,15 @@ func (self TraceUsers) ByRow() ScanSink {
 	return ScanSink {self.OnRow, nil, false}
 }
 
-func NewTraceUsers(events []EventId, window Timestamp) *TraceUsers {
+func NewTraceUsers(events []EventId, window Timestamp) (*TraceUsers, error) {
 	tq := &TraceQuery {events, map[EventId]int{}, window}
 	for i, event := range events {
 		tq.events[event] = i
 	}
-	return &TraceUsers {tq, map[UserId]*TraceUser {}}
+	if len(tq.events) != len(events) {
+		return nil, fmt.Errorf("duplicated event: %v", events)
+	}
+	return &TraceUsers {tq, map[UserId]*TraceUser {}}, nil
 }
 
 type TraceUsers struct {
@@ -86,7 +89,6 @@ func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
 	for i, _ := range self.query.seq {
 		blank := true
 		for j, et := range self.events[i] {
-			// Find the first matched event's ts
 			// TODO: > or >= ?
 			if et >= lower {
 				lower = et
