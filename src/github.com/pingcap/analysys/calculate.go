@@ -7,48 +7,90 @@ import (
 	"fmt"
 )
 
-func (self *TraceUsers) Calculate(file string, line int, row Row) error {
-	user, ok := self.users[UserId(row.Id)]
+func (self TraceUsers) Result() map[uint16]int {
+	result := map[uint16]int {}
+	for _, user := range self.users {
+		score := user.score
+		if _, ok := result[score]; !ok {
+			result[score] = 1
+		} else {
+			result[score] += 1
+		}
+	}
+	return result
+}
+
+func (self *TraceUsers) OnRow(file string, block int, line int, row Row) error {
+	user, ok := self.users[row.Id]
 	if !ok {
-		user = NewTraceUser(self.query, self.window)
+		user = NewTraceUser(self.query)
+		self.users[row.Id] = user
 	}
 	user.OnEvent(row.Ts, row.Event)
 	return nil
 }
 
-func (self TraceUsers) ByRow() ScanSink {
-	return ScanSink {self.Calculate, nil, false}
+func (self *TraceUsers) OnBlock() (blocks chan LoadedBlock, result chan error) {
+	blocks = make(chan LoadedBlock)
+	result = make(chan error)
+	go func() {
+		var err error
+		for block := range blocks {
+			for i, row := range block.Block {
+				err = self.OnRow(block.File, block.Order, i, row)
+				if err != nil {
+					break
+				}
+			}
+			result <-err
+		}
+	}()
+	return blocks, result
 }
 
-func NewTraceUsers(query []EventId, window Timestamp) *TraceUsers {
-	return &TraceUsers {query, window, map[UserId]*TraceUser {}}
+func (self TraceUsers) ByBlock() ScanSink {
+	return ScanSink {nil, self.OnBlock, true}
+}
+
+func (self TraceUsers) ByRow() ScanSink {
+	return ScanSink {self.OnRow, nil, false}
+}
+
+func NewTraceUsers(events []EventId, window Timestamp) *TraceUsers {
+	tq := &TraceQuery {events, map[EventId]int{}, window}
+	for i, event := range events {
+		tq.events[event] = i
+	}
+	return &TraceUsers {tq, map[UserId]*TraceUser {}}
 }
 
 type TraceUsers struct {
-	query []EventId
-	window Timestamp
+	query *TraceQuery
 	users map[UserId]*TraceUser
 }
 
 func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
-	if self.score >= uint16(len(self.query)) {
+	if self.score >= uint16(len(self.query.events)) {
 		return
 	}
+
+	index, ok := self.query.events[event]
+	if !ok {
+		return
+	}
+	self.events[index] = append(self.events[index], ts)
+
 	score := uint16(0)
-	lower := ts - self.window
-	none := true
-	for i, it := range self.query {
-		if it == event {
-			self.events[i] = append(self.events[i], ts)
-		}
-		if none && i != 0 {
-			continue
-		}
+	lower := ts - self.query.window
+
+	for i, _ := range self.query.seq {
+		blank := true
 		for j, et := range self.events[i] {
+			// Find the first matched event's ts
 			// TODO: > or >= ?
 			if et >= lower {
 				lower = et
-				none = false
+				blank = false
 				score = uint16(i + 1)
 				if j != 0 {
 					self.events[i] = self.events[i][j:]
@@ -56,8 +98,9 @@ func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
 				break
 			}
 		}
-		if none {
+		if blank {
 			self.events[i] = nil
+			break
 		}
 	}
 
@@ -66,23 +109,28 @@ func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
 	}
 }
 
-func NewTraceUser(query []EventId, window Timestamp) *TraceUser {
-	return &TraceUser {query, window, make(EventLinks, len(query)), 0}
+func NewTraceUser(query *TraceQuery) *TraceUser {
+	return &TraceUser {query, make(EventLinks, len(query.events)), 0}
 }
 
 type TraceUser struct {
-	query []EventId
-	window Timestamp
+	query *TraceQuery
 	events EventLinks
 	score uint16
+}
+
+type TraceQuery struct {
+	seq []EventId
+	events map[EventId]int
+	window Timestamp
 }
 
 type EventLinks []EventLink
 type EventLink []Timestamp
 
-func (self *RowPrinter) Print(file string, line int, row Row) error {
+func (self *RowPrinter) Print(file string, block int, line int, row Row) error {
 	if self.verify && row.Ts < self.ts {
-		return fmt.Errorf("backward timestamp, file:%v line:%v", file, line)
+		return fmt.Errorf("backward timestamp, file:%v block%v line:[%v]", file, block, line)
 	}
 	self.ts = row.Ts
 	if !self.dry {

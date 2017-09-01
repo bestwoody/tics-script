@@ -47,8 +47,6 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 
 	// Wait for all jobs are done
 	var wg sync.WaitGroup
-	// Wait for all errors are handled
-	var ew sync.WaitGroup
 
 	// Jobs to do
 	queue := make(chan UnloadBlock, conc * 4)
@@ -57,6 +55,9 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 			queue <-job
 		}
 	}()
+
+	// Wait for all errors are handled
+	var ew sync.WaitGroup
 
 	// Collecting errors
 	errs := make(chan error, conc * 4)
@@ -110,16 +111,36 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 		}
 	}()
 
+	// Wait for all errors are handled
+	var sw sync.WaitGroup
+
+	// Async output blocks
+	var sbch chan LoadedBlock
+	var sech chan error
+	if sink.IsByBlock {
+		sw.Add(len(jobs))
+		sbch, sech = sink.OnBlock()
+		go func() {
+			for _ = range jobs {
+				err := <-sech
+				if err != nil {
+					errs <-err
+				}
+				sw.Done()
+			}
+		}()
+	}
+
 	// Output blocks
 	wg.Add(len(jobs))
 	go func() {
 		for block := range reordereds {
 			var err error
 			if sink.IsByBlock {
-				err = sink.ByBlock(block.File, block.Block)
+				sbch <- block
 			} else {
 				for i, row := range block.Block {
-					err = sink.ByRow(block.File, i, row)
+					err = sink.OnRow(block.File, block.Order, i, row)
 					if err != nil {
 						break
 					}
@@ -134,6 +155,7 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 	}()
 
 	wg.Wait()
+	sw.Wait()
 	ew.Wait()
 
 	if len(es) != 0 {
@@ -211,8 +233,8 @@ type LoadedBlock struct {
 }
 
 type ScanSink struct {
-	ByRow func(file string, line int, row Row) error
-	ByBlock func(file string, block Block) error
+	OnRow func(file string, block int, line int, row Row) error
+	OnBlock func() (blocks chan LoadedBlock, result chan error)
 	IsByBlock bool
 }
 

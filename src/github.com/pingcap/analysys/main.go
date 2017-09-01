@@ -14,7 +14,7 @@ import (
 func Main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	cmds := tools.NewCmds()
+	cmds := tools.NewCmds(false)
 	cmds.Reg("query", "execute query", CmdQuery)
 
 	data := cmds.Sub("data", "data commands")
@@ -35,42 +35,72 @@ func CmdQuery(args []string) {
 	var window int
 	var exp string
 	var conc int
+	var byblock bool
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
 	flag.StringVar(&from, "from", "", "data begin time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included")
 	flag.StringVar(&to, "to", "", "data end time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included" )
 	flag.StringVar(&events, "events", "", "query events, seperated by ','")
-	flag.IntVar(&window, "window", 60 * 60 * 24, "window size")
+	flag.IntVar(&window, "window", 60 * 24, "window size in minutes")
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+	flag.BoolVar(&byblock, "byblock", false, "Async calculate, block by block")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc")
-
-	pred, err := ParseArgsPredicate(from, to)
-	if err != nil {
-		return
-	}
-	isdir, err := IsDir(path)
-	if err != nil {
-		return
-	}
-	eseq, err := ParseArgsEvents(events)
-	if err != nil {
-		return
-	}
-	conc = AutoDectectConc(conc, isdir)
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "byblock")
 
 	query := func() error {
-		tracer := NewTraceUsers(eseq, Timestamp(window))
-		sink := tracer.ByRow()
-		if isdir {
-			return FolderScan(path, conc, pred, sink)
-		} else {
-			return FilesScan([]string {path}, conc, pred, sink)
+		pred, err := ParseArgsPredicate(from, to)
+		if err != nil {
+			return err
 		}
+		isdir, err := IsDir(path)
+		if err != nil {
+			return err
+		}
+		eseq, err := ParseArgsEvents(events)
+		if err != nil {
+			return err
+		}
+		conc = AutoDectectConc(conc, isdir)
+
+		tracer := NewTraceUsers(eseq, Timestamp(window * 60 * int(time.Millisecond)))
+		var sink ScanSink
+		if byblock {
+			sink = tracer.ByBlock()
+		} else {
+			sink = tracer.ByRow()
+		}
+		if isdir {
+			err = FolderScan(path, conc, pred, sink)
+		} else {
+			err = FilesScan([]string {path}, conc, pred, sink)
+		}
+		if err != nil {
+			return err
+		}
+		result := tracer.Result()
+		for i := uint16(0); i < uint16(len(result)); i++ {
+			score, ok := result[uint16(i)]
+			if ok {
+				if i == 0 {
+					fmt.Printf("-    \t%v\t%v\n", i, score)
+				} else {
+					event := eseq[i - 1]
+					fmt.Printf("%v\t%v\t%v\n", event, i, score)
+				}
+			} else {
+				if i == 0 {
+					fmt.Printf("-    \t%v\t-\n", i, score)
+				} else {
+					event := eseq[i - 1]
+					fmt.Printf("%v\t%v\t-\n", event, i)
+				}
+			}
+		}
+		return nil
 	}
-	err = query()
+	err := query()
 	if err != nil {
 		println(err.Error())
 		os.Exit(1)
@@ -95,17 +125,17 @@ func CmdDataDump(args []string) {
 
 	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc", "verify", "dry")
 
-	pred, err := ParseArgsPredicate(from, to)
-	if err != nil {
-		return
-	}
-	isdir, err := IsDir(path)
-	if err != nil {
-		return
-	}
-	conc = AutoDectectConc(conc, isdir)
-
 	dump := func() error {
+		pred, err := ParseArgsPredicate(from, to)
+		if err != nil {
+			return err
+		}
+		isdir, err := IsDir(path)
+		if err != nil {
+			return err
+		}
+		conc = AutoDectectConc(conc, isdir)
+
 		sink := RowPrinter{os.Stdout, Timestamp(0), verify, dry}.ByRow()
 		if isdir {
 			return FolderScan(path, conc, pred, sink)
@@ -113,7 +143,7 @@ func CmdDataDump(args []string) {
 			return FilesScan([]string {path}, conc, pred, sink)
 		}
 	}
-	err = dump()
+	err := dump()
 	if err != nil {
 		println(err.Error())
 		os.Exit(1)
@@ -247,6 +277,6 @@ func ParseDateTime(s string) (TimestampBound, error) {
 	if err != nil {
 		return TimestampNoBound, err
 	}
-	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Second))
+	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Millisecond))
 	return bound, nil
 }
