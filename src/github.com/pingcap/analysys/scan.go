@@ -83,6 +83,7 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 			for job := range queue {
 				block, err := job.Indexing.Load(job.Order)
 				if err == nil {
+					block = pred.Interset(block)
 					blocks <-LoadedBlock {job.File, job.Order, block}
 				} else {
 					blocks <-LoadedBlock {}
@@ -306,6 +307,32 @@ func IndexDump(path string, w io.Writer) error {
 		}
 	}
 	return err
+}
+
+func (self Predicate) Interset(block Block) Block {
+	if len(block) == 0 {
+		return nil
+	}
+	if !self.Lower.IsOpen() {
+		lower := sort.Search(len(block), func(i int) bool {
+			return block[i].Ts > self.Lower.Ts || (block[i].Ts == self.Lower.Ts && self.Lower.Included)
+		})
+		if lower < 0 {
+			return nil
+		}
+		if lower != 0 {
+			block = block[lower:]
+		}
+	}
+	if !self.Upper.IsOpen() {
+		upper := sort.Search(len(block), func(i int) bool {
+			return block[i].Ts > self.Upper.Ts || (block[i].Ts == self.Upper.Ts && !self.Upper.Included)
+		})
+		if upper >= 0 {
+			block = block[0: upper]
+		}
+	}
+	return block
 }
 
 type Predicate struct {

@@ -269,8 +269,14 @@ func ParseDateTime(s string) (TimestampBound, error) {
 	var bound TimestampBound
 	bound.Included = true
 	if s[0] == '-' {
-		s = s[1: len(s) - 1]
+		s = s[1: len(s)]
 		bound.Included = false
+	}
+
+	ts, err := strconv.ParseUint(s, 10, 64)
+	if err == nil {
+		bound.Ts = Timestamp(ts)
+		return bound, nil
 	}
 
 	t, err := time.Parse("2006-01-02 15:04:05", s)
