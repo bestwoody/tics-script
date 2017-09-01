@@ -15,7 +15,9 @@ func Main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	cmds := tools.NewCmds(false)
-	cmds.Reg("query", "execute query", CmdQuery)
+	query := cmds.Sub("query", "execute query")
+	query.Reg("cal", "calculate analysys OLAP reward", CmdQueryCal)
+	query.Reg("count", "calculate rows count", CmdQueryCount)
 
 	data := cmds.Sub("data", "data commands")
 	data.Reg("dump", "dump data and verify", CmdDataDump)
@@ -27,7 +29,7 @@ func Main() {
 	cmds.Run(os.Args[1:])
 }
 
-func CmdQuery(args []string) {
+func CmdQueryCal(args []string) {
 	var path string
 	var from string
 	var to string
@@ -49,60 +51,73 @@ func CmdQuery(args []string) {
 
 	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "byblock")
 
-	query := func() error {
-		pred, err := ParseArgsPredicate(from, to)
-		if err != nil {
-			return err
-		}
-		isdir, err := IsDir(path)
-		if err != nil {
-			return err
-		}
-		eseq, err := ParseArgsEvents(events)
-		if err != nil {
-			return err
-		}
-		conc = AutoDectectConc(conc, isdir)
+	pred, err := ParseArgsPredicate(from, to)
+	CheckError(err)
+	isdir, err := IsDir(path)
+	CheckError(err)
+	eseq, err := ParseArgsEvents(events)
+	CheckError(err)
+	conc = AutoDectectConc(conc, isdir)
+	CheckError(err)
 
-		tracer, err := NewTraceUsers(eseq, Timestamp(window * 60 * 1000))
-		if err != nil {
-			return err
-		}
+	tracer, err := NewTraceUsers(eseq, Timestamp(window * 60 * 1000))
+	CheckError(err)
 
-		var sink ScanSink
-		if byblock {
-			sink = tracer.ByBlock()
-		} else {
-			sink = tracer.ByRow()
-		}
-
-		if isdir {
-			err = FolderScan(path, conc, pred, sink)
-		} else {
-			err = FilesScan([]string {path}, conc, pred, sink)
-		}
-		if err != nil {
-			return err
-		}
-
-		result := tracer.Result()
-		for i := 0; i <= len(eseq); i++ {
-			score, ok := result[uint16(i)]
-			if ok {
-				event := "-"
-				if i != 0 {
-					event = fmt.Sprintf("%v", eseq[i - 1])
-				}
-				fmt.Printf("%v\t#%v\t%v\t%v\n", event, i, score.Val, score.Acc)
-			}
-		}
-		return nil
+	var sink ScanSink
+	if byblock {
+		sink = tracer.ByBlock()
+	} else {
+		sink = tracer.ByRow()
 	}
-	err := query()
-	if err != nil {
-		println(err.Error())
-		os.Exit(1)
+
+	if isdir {
+		err = FolderScan(path, conc, pred, sink)
+	} else {
+		err = FilesScan([]string {path}, conc, pred, sink)
 	}
+	CheckError(err)
+
+	result := tracer.Result()
+	for i := 0; i <= len(eseq); i++ {
+		score := result[uint16(i)]
+		event := "-"
+		if i != 0 {
+			event = fmt.Sprintf("%v", eseq[i - 1])
+		}
+		fmt.Printf("%v\t#%v\t%v\t%v\n", event, i, score.Val, score.Acc)
+	}
+}
+
+func CmdQueryCount(args []string) {
+	var path string
+	var from string
+	var to string
+	var conc int
+
+	flag := flag.NewFlagSet("", flag.ContinueOnError)
+	flag.StringVar(&path, "path", "db", "file path")
+	flag.StringVar(&from, "from", "", "data begin time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included")
+	flag.StringVar(&to, "to", "", "data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included" )
+	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc")
+
+	pred, err := ParseArgsPredicate(from, to)
+	CheckError(err)
+	isdir, err := IsDir(path)
+	CheckError(err)
+	conc = AutoDectectConc(conc, isdir)
+
+	counter := NewRowCounter()
+	sink := counter.ByRow()
+	if isdir {
+		err = FolderScan(path, conc, pred, sink)
+	} else {
+		err = FilesScan([]string {path}, conc, pred, sink)
+	}
+	CheckError(err)
+	fmt.Printf("rows\t%v\nusers\t%v\nevents\t%v\nfiles\t%v\nblocks\t%v\n",
+		counter.Rows, counter.Users, counter.Events, counter.Files, counter.Blocks)
 }
 
 func CmdDataDump(args []string) {
@@ -123,29 +138,19 @@ func CmdDataDump(args []string) {
 
 	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc", "verify", "dry")
 
-	dump := func() error {
-		pred, err := ParseArgsPredicate(from, to)
-		if err != nil {
-			return err
-		}
-		isdir, err := IsDir(path)
-		if err != nil {
-			return err
-		}
-		conc = AutoDectectConc(conc, isdir)
+	pred, err := ParseArgsPredicate(from, to)
+	CheckError(err)
+	isdir, err := IsDir(path)
+	CheckError(err)
+	conc = AutoDectectConc(conc, isdir)
 
-		sink := RowPrinter{os.Stdout, Timestamp(0), verify, dry}.ByRow()
-		if isdir {
-			return FolderScan(path, conc, pred, sink)
-		} else {
-			return FilesScan([]string {path}, conc, pred, sink)
-		}
+	sink := RowPrinter{os.Stdout, Timestamp(0), verify, dry}.ByRow()
+	if isdir {
+		err = FolderScan(path, conc, pred, sink)
+	} else {
+		err = FilesScan([]string {path}, conc, pred, sink)
 	}
-	err := dump()
-	if err != nil {
-		println(err.Error())
-		os.Exit(1)
-	}
+	CheckError(err)
 }
 
 func CmdIndexDump(args []string) {
@@ -153,12 +158,8 @@ func CmdIndexDump(args []string) {
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db.idx", "file path")
 	tools.ParseFlagOrDie(flag, args, "path")
-
 	err := IndexDump(path, os.Stdout)
-	if err != nil {
-		println(err.Error())
-		os.Exit(1)
-	}
+	CheckError(err)
 }
 
 func CmdIndexBuild(args []string) {
@@ -180,27 +181,20 @@ func CmdIndexBuild(args []string) {
 	tools.ParseFlagOrDie(flag, args, "in", "out", "compress", "conc", "gran", "align")
 	compress = strings.ToLower(compress)
 
-	build := func(in, out string, compress string, gran, align int) error {
-		isdir, err := IsDir(in)
-		if err != nil {
-			return err
+	isdir, err := IsDir(in)
+	CheckError(err)
+	if isdir {
+		err = os.MkdirAll(out, 0744)
+		if os.IsExist(err) {
+			err = nil
 		}
-		if isdir {
-			err = os.MkdirAll(out, 0744)
-			if err != nil && !os.IsNotExist(err) {
-				return err
-			}
-			conc = AutoDectectConc(conc, isdir)
-			return FolderBuild(in, out, compress, gran, align, conc)
-		}
-		return PartBuild(in, out, compress, gran, align)
+		CheckError(err)
+		conc = AutoDectectConc(conc, isdir)
+		err = FolderBuild(in, out, compress, gran, align, conc)
+	} else {
+		err = PartBuild(in, out, compress, gran, align)
 	}
-
-	err := build(in, out, compress, gran, align)
-	if err != nil {
-		println(err.Error())
-		os.Exit(1)
-	}
+	CheckError(err)
 }
 
 func ParseArgsPredicate(from, to string) (pred Predicate, err error) {
@@ -283,4 +277,11 @@ func ParseDateTime(s string) (TimestampBound, error) {
 	}
 	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Millisecond))
 	return bound, nil
+}
+
+func CheckError(err error) {
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
 }

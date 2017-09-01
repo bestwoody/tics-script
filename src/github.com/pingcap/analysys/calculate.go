@@ -59,11 +59,11 @@ func (self *TraceUsers) OnBlock() (blocks chan LoadedBlock, result chan error) {
 	return blocks, result
 }
 
-func (self TraceUsers) ByBlock() ScanSink {
+func (self *TraceUsers) ByBlock() ScanSink {
 	return ScanSink {nil, self.OnBlock, true}
 }
 
-func (self TraceUsers) ByRow() ScanSink {
+func (self *TraceUsers) ByRow() ScanSink {
 	return ScanSink {self.OnRow, nil, false}
 }
 
@@ -139,6 +139,49 @@ type TraceQuery struct {
 
 type EventLinks []EventLink
 type EventLink []Timestamp
+
+func (self *RowCounter) OnRow(file string, block int, line int, row Row) error {
+	self.users[row.Id] = true
+	self.events[row.Event] = true
+	self.files[file] = true
+	self.blocks[BlockLocation{file, block}] = true
+	self.Rows += 1
+	self.Users = len(self.users)
+	self.Events = len(self.events)
+	self.Files = len(self.files)
+	self.Blocks = len(self.blocks)
+	return nil
+}
+
+func (self *RowCounter) ByRow() ScanSink {
+	return ScanSink {self.OnRow, nil, false}
+}
+
+func NewRowCounter() *RowCounter {
+	return &RowCounter{
+		users: map[UserId]bool {},
+		events: map[EventId]bool {},
+		files: map[string]bool {},
+		blocks: map[BlockLocation]bool {},
+	}
+}
+
+type RowCounter struct {
+	users map[UserId]bool
+	events map[EventId]bool
+	files map[string]bool
+	blocks map[BlockLocation]bool
+	Rows int
+	Users int
+	Events int
+	Files int
+	Blocks int
+}
+
+type BlockLocation struct {
+	File string
+	Block int
+}
 
 func (self *RowPrinter) Print(file string, block int, line int, row Row) error {
 	if self.verify && row.Ts < self.ts {
