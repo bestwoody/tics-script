@@ -41,7 +41,7 @@ func CmdQuery(args []string) {
 	flag.StringVar(&from, "from", "", "data begin time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included")
 	flag.StringVar(&to, "to", "", "data end time, '-YYYY-MM-DD HH:MM:SS', starts with '-' means not included" )
 	flag.StringVar(&events, "events", "", "query events, seperated by ','")
-	flag.IntVar(&window, "window", 60 * 60 * 24, "window size")
+	flag.IntVar(&window, "window", 60 * 24, "window size in minutes")
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 
@@ -62,7 +62,7 @@ func CmdQuery(args []string) {
 		}
 		conc = AutoDectectConc(conc, isdir)
 
-		tracer := NewTraceUsers(eseq, Timestamp(window))
+		tracer := NewTraceUsers(eseq, Timestamp(window * 60 * int(time.Millisecond)))
 		sink := tracer.ByRow()
 		if isdir {
 			err = FolderScan(path, conc, pred, sink)
@@ -270,6 +270,6 @@ func ParseDateTime(s string) (TimestampBound, error) {
 	if err != nil {
 		return TimestampNoBound, err
 	}
-	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Second))
+	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Millisecond))
 	return bound, nil
 }

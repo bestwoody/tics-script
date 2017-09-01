@@ -345,7 +345,7 @@ const (
 
 	MagicFlag = uint16(37492)
 
-	TimestampLen = 4
+	TimestampLen = 8
 	TimestampOpenBound = Timestamp(0)
 )
 
@@ -358,4 +358,4 @@ type TimestampBound struct {
 	Included bool
 }
 
-type Timestamp uint32
+type Timestamp uint64
