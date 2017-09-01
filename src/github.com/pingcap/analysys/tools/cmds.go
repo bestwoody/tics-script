@@ -9,14 +9,15 @@ import (
 type Cmd func([]string)
 
 type Cmds struct {
-	path     string
-	cmds     map[string]Cmd
+	path string
+	cmds map[string]Cmd
 	children map[string]*Cmds
-	help     map[string]string
+	help map[string]string
+	interactive bool
 }
 
-func NewCmds() *Cmds {
-	return &Cmds{"", make(map[string]Cmd), make(map[string]*Cmds), make(map[string]string)}
+func NewCmds(interactive bool) *Cmds {
+	return &Cmds{"", make(map[string]Cmd), make(map[string]*Cmds), make(map[string]string), interactive}
 }
 
 func (p *Cmds) Reg(cmd string, help string, fun func([]string)) {
@@ -30,7 +31,7 @@ func (p *Cmds) Sub(cmd string, help string) *Cmds {
 	if len(p.path) == 0 {
 		path = cmd
 	}
-	child := &Cmds{path, make(map[string]Cmd), make(map[string]*Cmds), make(map[string]string)}
+	child := &Cmds{path, make(map[string]Cmd), make(map[string]*Cmds), make(map[string]string), p.interactive}
 	p.children[cmd] = child
 	return child
 }
@@ -97,8 +98,12 @@ func (p *Cmds) Help(simple bool) {
 
 func (p *Cmds) Run(cmds []string) {
 	if len(cmds) == 0 {
-		p.Loop()
-		return
+		if p.interactive {
+			p.Loop()
+			return
+		} else {
+			cmds = []string{"?"}
+		}
 	}
 	cmd, cmds := cmds[0], cmds[1:]
 	if fun, ok := p.cmds[cmd]; ok {

@@ -14,7 +14,7 @@ import (
 func Main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	cmds := tools.NewCmds()
+	cmds := tools.NewCmds(false)
 	cmds.Reg("query", "execute query", CmdQuery)
 
 	data := cmds.Sub("data", "data commands")
