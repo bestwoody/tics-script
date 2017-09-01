@@ -89,8 +89,7 @@ func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
 	for i, _ := range self.query.seq {
 		blank := true
 		for j, et := range self.events[i] {
-			// TODO: > or >= ?
-			if et >= lower {
+			if et > lower {
 				lower = et
 				blank = false
 				score = uint16(i + 1)
