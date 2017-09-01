@@ -218,9 +218,9 @@ func OriginParse(line []byte) (row Row, err error) {
 		return
 	}
 
-	row.Id = uint32(id)
+	row.Id = UserId(id)
 	row.Ts = Timestamp(ts / 1000)
-	row.Event = uint16(event)
+	row.Event = EventId(event)
 	row.Props = props
 	return row, err
 }

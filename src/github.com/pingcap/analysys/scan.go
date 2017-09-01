@@ -11,11 +11,6 @@ import (
 	"sync"
 )
 
-func FolderDump(path string, conc int, pred Predicate, w io.Writer, verify, dry bool) error {
-	printer := RowPrinter {w, Timestamp(0), verify, dry}
-	return FolderScan(path, conc, pred, printer.Sink())
-}
-
 func FolderScan(in string, conc int, pred Predicate, sink ScanSink) error {
 	ins := make([]string, 0)
 	err := filepath.Walk(in, func(path string, info os.FileInfo, err error) error {
@@ -278,39 +273,6 @@ type UnloadBlock struct {
 	File string
 	Order int
 	Indexing *Indexing
-}
-
-func PartDump(path string, conc int, pred Predicate, w io.Writer, verify, dry bool) error {
-	if conc == 1 {
-		return PartDumpSync(path, w, verify)
-	}
-	printer := RowPrinter {w, Timestamp(0), verify, dry}
-	return FilesScan([]string {path}, conc, pred, printer.Sink())
-}
-
-func PartDumpSync(path string, w io.Writer, verify bool) error {
-	indexing, err := IndexingLoad(path)
-	if err != nil {
-		return err
-	}
-	ts := Timestamp(0)
-	for i := 0; i < indexing.Blocks(); i++ {
-		block, err := indexing.Load(i)
-		if err != nil {
-			return err
-		}
-		for j, row := range block {
-			if verify && row.Ts < ts {
-				return fmt.Errorf("backward timestamp: block: %v row:%v %s", i, j, row.String())
-			}
-			_, err := w.Write([]byte(fmt.Sprintf("%s\n", row.String())))
-			if err != nil {
-				return err
-			}
-			ts = row.Ts
-		}
-	}
-	return nil
 }
 
 func IndexDump(path string, w io.Writer) error {
