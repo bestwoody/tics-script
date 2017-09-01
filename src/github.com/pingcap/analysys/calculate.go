@@ -20,7 +20,7 @@ func (self TraceUsers) Result() map[uint16]int {
 	return result
 }
 
-func (self *TraceUsers) Calculate(file string, line int, row Row) error {
+func (self *TraceUsers) OnRow(file string, block int, line int, row Row) error {
 	user, ok := self.users[row.Id]
 	if !ok {
 		user = NewTraceUser(self.query)
@@ -30,8 +30,30 @@ func (self *TraceUsers) Calculate(file string, line int, row Row) error {
 	return nil
 }
 
+func (self *TraceUsers) OnBlock() (blocks chan LoadedBlock, result chan error) {
+	blocks = make(chan LoadedBlock)
+	result = make(chan error)
+	go func() {
+		var err error
+		for block := range blocks {
+			for i, row := range block.Block {
+				err = self.OnRow(block.File, block.Order, i, row)
+				if err != nil {
+					break
+				}
+			}
+			result <-err
+		}
+	}()
+	return blocks, result
+}
+
+func (self TraceUsers) ByBlock() ScanSink {
+	return ScanSink {nil, self.OnBlock, true}
+}
+
 func (self TraceUsers) ByRow() ScanSink {
-	return ScanSink {self.Calculate, nil, false}
+	return ScanSink {self.OnRow, nil, false}
 }
 
 func NewTraceUsers(events []EventId, window Timestamp) *TraceUsers {
@@ -106,9 +128,9 @@ type TraceQuery struct {
 type EventLinks []EventLink
 type EventLink []Timestamp
 
-func (self *RowPrinter) Print(file string, line int, row Row) error {
+func (self *RowPrinter) Print(file string, block int, line int, row Row) error {
 	if self.verify && row.Ts < self.ts {
-		return fmt.Errorf("backward timestamp, file:%v line:%v", file, line)
+		return fmt.Errorf("backward timestamp, file:%v block%v line:[%v]", file, block, line)
 	}
 	self.ts = row.Ts
 	if !self.dry {

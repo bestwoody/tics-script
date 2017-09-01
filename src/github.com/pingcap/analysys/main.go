@@ -35,6 +35,7 @@ func CmdQuery(args []string) {
 	var window int
 	var exp string
 	var conc int
+	var byblock bool
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
@@ -44,8 +45,9 @@ func CmdQuery(args []string) {
 	flag.IntVar(&window, "window", 60 * 24, "window size in minutes")
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+	flag.BoolVar(&byblock, "byblock", false, "Async calculate, block by block")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "byblock")
 
 	query := func() error {
 		pred, err := ParseArgsPredicate(from, to)
@@ -63,7 +65,12 @@ func CmdQuery(args []string) {
 		conc = AutoDectectConc(conc, isdir)
 
 		tracer := NewTraceUsers(eseq, Timestamp(window * 60 * int(time.Millisecond)))
-		sink := tracer.ByRow()
+		var sink ScanSink
+		if byblock {
+			sink = tracer.ByBlock()
+		} else {
+			sink = tracer.ByRow()
+		}
 		if isdir {
 			err = FolderScan(path, conc, pred, sink)
 		} else {
