@@ -47,30 +47,39 @@ func CmdQuery(args []string) {
 
 	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc")
 
-	pred, err := ParseArgsPredicate(from, to)
-	if err != nil {
-		return
-	}
-	isdir, err := IsDir(path)
-	if err != nil {
-		return
-	}
-	eseq, err := ParseArgsEvents(events)
-	if err != nil {
-		return
-	}
-	conc = AutoDectectConc(conc, isdir)
-
 	query := func() error {
+		pred, err := ParseArgsPredicate(from, to)
+		if err != nil {
+			return err
+		}
+		isdir, err := IsDir(path)
+		if err != nil {
+			return err
+		}
+		eseq, err := ParseArgsEvents(events)
+		if err != nil {
+			return err
+		}
+		conc = AutoDectectConc(conc, isdir)
+
 		tracer := NewTraceUsers(eseq, Timestamp(window))
 		sink := tracer.ByRow()
 		if isdir {
-			return FolderScan(path, conc, pred, sink)
+			err = FolderScan(path, conc, pred, sink)
 		} else {
-			return FilesScan([]string {path}, conc, pred, sink)
+			err = FilesScan([]string {path}, conc, pred, sink)
 		}
+		if err != nil {
+			return err
+		}
+		result := tracer.Result()
+		fmt.Printf("results: %v\n", len(result))
+		for score, users := range result {
+			fmt.Printf("%v %v\n", score, users)
+		}
+		return nil
 	}
-	err = query()
+	err := query()
 	if err != nil {
 		println(err.Error())
 		os.Exit(1)
@@ -95,17 +104,17 @@ func CmdDataDump(args []string) {
 
 	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc", "verify", "dry")
 
-	pred, err := ParseArgsPredicate(from, to)
-	if err != nil {
-		return
-	}
-	isdir, err := IsDir(path)
-	if err != nil {
-		return
-	}
-	conc = AutoDectectConc(conc, isdir)
-
 	dump := func() error {
+		pred, err := ParseArgsPredicate(from, to)
+		if err != nil {
+			return err
+		}
+		isdir, err := IsDir(path)
+		if err != nil {
+			return err
+		}
+		conc = AutoDectectConc(conc, isdir)
+
 		sink := RowPrinter{os.Stdout, Timestamp(0), verify, dry}.ByRow()
 		if isdir {
 			return FolderScan(path, conc, pred, sink)
@@ -113,7 +122,7 @@ func CmdDataDump(args []string) {
 			return FilesScan([]string {path}, conc, pred, sink)
 		}
 	}
-	err = dump()
+	err := dump()
 	if err != nil {
 		println(err.Error())
 		os.Exit(1)

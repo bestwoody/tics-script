@@ -7,6 +7,19 @@ import (
 	"fmt"
 )
 
+func (self TraceUsers) Result() map[uint16]int {
+	result := map[uint16]int {}
+	for _, user := range self.users {
+		score := user.score
+		if _, ok := result[score]; !ok {
+			result[score] = 1
+		} else {
+			result[score] += 1
+		}
+	}
+	return result
+}
+
 func (self *TraceUsers) Calculate(file string, line int, row Row) error {
 	user, ok := self.users[UserId(row.Id)]
 	if !ok {
