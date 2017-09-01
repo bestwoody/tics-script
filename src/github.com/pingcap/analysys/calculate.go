@@ -7,13 +7,90 @@ import (
 	"fmt"
 )
 
+func (self *TraceUsers) Calculate(file string, line int, row Row) error {
+	user, ok := self.users[UserId(row.Id)]
+	if !ok {
+		user = NewTraceUser(self.query, self.window)
+	}
+	user.OnEvent(row.Ts, row.Event)
+	return nil
+}
+
+func (self TraceUsers) ByRow() ScanSink {
+	return ScanSink {self.Calculate, nil, false}
+}
+
+func NewTraceUsers(query []EventId, window Timestamp) *TraceUsers {
+	return &TraceUsers {query, window, map[UserId]*TraceUser {}}
+}
+
+type TraceUsers struct {
+	query []EventId
+	window Timestamp
+	users map[UserId]*TraceUser
+}
+
+func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
+	if self.score >= uint16(len(self.query)) {
+		return
+	}
+	score := uint16(0)
+	lower := ts - self.window
+	none := true
+	for i, it := range self.query {
+		if it == event {
+			self.events[i] = append(self.events[i], ts)
+		}
+		if none && i != 0 {
+			continue
+		}
+		for j, et := range self.events[i] {
+			// TODO: > or >= ?
+			if et >= lower {
+				lower = et
+				none = false
+				score = uint16(i + 1)
+				if j != 0 {
+					self.events[i] = self.events[i][j:]
+				}
+				break
+			}
+		}
+		if none {
+			self.events[i] = nil
+		}
+	}
+
+	if score > self.score {
+		self.score = score
+	}
+}
+
+func NewTraceUser(query []EventId, window Timestamp) *TraceUser {
+	return &TraceUser {query, window, make(EventLinks, len(query)), 0}
+}
+
+type TraceUser struct {
+	query []EventId
+	window Timestamp
+	events EventLinks
+	score uint16
+}
+
+type EventLinks []EventLink
+type EventLink []Timestamp
+
 func (self *RowPrinter) Print(file string, line int, row Row) error {
 	if self.verify && row.Ts < self.ts {
-		return fmt.Errorf("backward timestamp, file:%v line:%v %s", file, line, row.String())
+		return fmt.Errorf("backward timestamp, file:%v line:%v", file, line)
 	}
 	self.ts = row.Ts
 	if !self.dry {
-		_, err := self.w.Write([]byte(fmt.Sprintf("%s\n", row.String())))
+		err := row.Dump(self.w)
+		if err != nil {
+			return err
+		}
+		_, err = self.w.Write(Endl)
 		if err != nil {
 			return err
 		}
@@ -21,7 +98,7 @@ func (self *RowPrinter) Print(file string, line int, row Row) error {
 	return nil
 }
 
-func (self RowPrinter) Sink() ScanSink {
+func (self RowPrinter) ByRow() ScanSink {
 	return ScanSink {self.Print, nil, false}
 }
 
@@ -100,13 +177,23 @@ func RowLoad(r io.Reader, row *Row) error {
 	return err
 }
 
-func (self *Row) String() string {
-	return fmt.Sprintf("%v %v %v %s", self.Ts, self.Id, self.Event, string(self.Props))
+func (self *Row) Dump(w io.Writer) error {
+	_, err := fmt.Fprintf(w, "%d %d %d ", self.Ts, self.Id, self.Event)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(self.Props)
+	return err
 }
 
 type Row struct {
 	Ts Timestamp
-	Id uint32
-	Event uint16
+	Id UserId
+	Event EventId
 	Props []byte
 }
+
+type UserId uint32
+type EventId uint16
+
+var Endl = []byte("\n")
