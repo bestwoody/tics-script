@@ -279,7 +279,8 @@ func ParseDateTime(s string) (TimestampBound, error) {
 	if err != nil {
 		return TimestampNoBound, err
 	}
-	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Millisecond))
+	// Manually change timezone, for platform compatibility
+	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Millisecond)) - Timestamp(time.Hour * 8 / time.Millisecond)
 	return bound, nil
 }
 
