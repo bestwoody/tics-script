@@ -188,7 +188,7 @@ func (self *RowPrinter) Print(file string, block int, line int, row Row) error {
 		return fmt.Errorf("backward timestamp, file:%v block%v line:[%v]", file, block, line)
 	}
 	self.ts = row.Ts
-	if !self.dry {
+	if !self.dry && (self.user == 0 || self.user == row.Id) && (self.event == 0 || self.event == row.Event) {
 		err := row.Dump(self.w)
 		if err != nil {
 			return err
@@ -208,6 +208,8 @@ func (self RowPrinter) ByRow() ScanSink {
 type RowPrinter struct {
 	w io.Writer
 	ts Timestamp
+	user UserId
+	event EventId
 	verify bool
 	dry bool
 }

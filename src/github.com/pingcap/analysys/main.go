@@ -125,6 +125,8 @@ func CmdDataDump(args []string) {
 	var from string
 	var to string
 	var conc int
+	var user int
+	var event int
 	var verify bool
 	var dry bool
 
@@ -132,11 +134,13 @@ func CmdDataDump(args []string) {
 	flag.StringVar(&path, "path", "db", "file path")
 	flag.StringVar(&from, "from", "", "data begin time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included")
 	flag.StringVar(&to, "to", "", "data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included" )
+	flag.IntVar(&user, "user", 0, "only rows of this user, '0' means all")
+	flag.IntVar(&event, "event", 0, "only rows of this event, '0' means all")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
 	flag.BoolVar(&dry, "dry", false, "dry run, for correctness check and benchmark")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc", "verify", "dry")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "user", "event", "conc", "verify", "dry")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -144,7 +148,7 @@ func CmdDataDump(args []string) {
 	CheckError(err)
 	conc = AutoDectectConc(conc, isdir)
 
-	sink := RowPrinter{os.Stdout, Timestamp(0), verify, dry}.ByRow()
+	sink := RowPrinter{os.Stdout, Timestamp(0), UserId(user), EventId(event), verify, dry}.ByRow()
 	if isdir {
 		err = FolderScan(path, conc, pred, sink)
 	} else {
