@@ -281,7 +281,6 @@ func ParseDateTime(s string) (TimestampBound, error) {
 	}
 	// Manually change timezone, for platform compatibility
 	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Millisecond)) - Timestamp(time.Hour * 8 / time.Millisecond)
-	println(bound.Ts)
 	return bound, nil
 }
 
