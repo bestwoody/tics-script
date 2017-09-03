@@ -81,7 +81,7 @@ func CmdQueryCal(args []string) {
 
 	result := tracer.Result()
 	for i := 0; i <= len(eseq); i++ {
-		score := result[uint16(i)]
+		score := result[i]
 		event := "-"
 		if i != 0 {
 			event = fmt.Sprintf("%v", eseq[i - 1])

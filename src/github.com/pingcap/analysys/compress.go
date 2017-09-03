@@ -37,7 +37,9 @@ func (self *Compressers)  Decompress(t CompressType, r io.Reader) (io.Reader, io
 	if !ok {
 		return nil, nil, fmt.Errorf("compress method #%v not supported", t)
 	}
-	return compresser.Decompress(r)
+	reader, closer, err := compresser.Decompress(r)
+	closer = EnsureCloser(closer)
+	return reader, closer, err
 }
 
 func (self *Compressers) Compress(t CompressType, w io.Writer) (io.Writer, io.Closer, error) {
@@ -45,7 +47,9 @@ func (self *Compressers) Compress(t CompressType, w io.Writer) (io.Writer, io.Cl
 	if !ok {
 		return nil, nil, fmt.Errorf("compress method #%v not supported", t)
 	}
-	return compresser.Compress(w)
+	writer, closer, err := compresser.Compress(w)
+	closer = EnsureCloser(closer)
+	return writer, closer, err
 }
 
 func (self *Compressers) Reg(compresser Compresser) {
@@ -58,6 +62,19 @@ type Compressers struct {
 	names map[string]CompressType
 	compressers map[CompressType]Compresser
 }
+
+func EnsureCloser(c io.Closer) io.Closer {
+	if c != nil {
+		return c
+	}
+	return &NopCloser{}
+}
+
+func (self NopCloser) Close() error {
+	return nil
+}
+
+type NopCloser struct {}
 
 func (self CompresserSnappy) Compress(w io.Writer) (io.Writer, io.Closer, error) {
 	s := snappy.NewBufferedWriter(w)

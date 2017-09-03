@@ -5,7 +5,7 @@
 ***** 持久化格式设计与实现：文件格式，目录组织
 ***** 并发策略设计与实现：多文件、文件内并发，达到可用效率
 ****- 谓词下推：时间主键已用于剪枝、下推，事件属性表达式未下推
-***** 漏斗计算：计算正确
+***** 漏斗计算：已验证正确
 ----- 集群功能：RPC，分桶导入数据
 
 ***** 单机命令行工具集
@@ -64,19 +64,20 @@
             Block * N              - align by 512
                 MagicFlag          - uint16
                 CompressType       - uint16, def: snappy
-                RowCount           - uint32, def: 8192         ----
-                Row * N                                           |
-                    Timestamp      - uint32                       |
-                    UserId         - uint32                    compressed
-                    EventId        - uint16                       |
-                    EventPropsLen  - uint16                       |
-                    EventProps     - []byte, json                 |
+                RowCount           - uint32, def: 8192
+                Row * N                                         ---  ---
+                    Timestamp      - uint32                       |    | compressed
+                    UserId         - uint32                       |    |
+                    EventId        - uint16                       |    |
+                    EventPropsLen  - uint16                       |    |
+                    EventProps     - []byte, json                 |  ---
                 BlockChecksum      - origin data crc32 <-- crc32 -|
         IndexFile
             EntryCount             - uint32
-            IndexEntry * N                                     ----
+            IndexEntry * N                                      ---
                 Timestamp          - uint32                       |
                 BlockOffset        - uint32                       |
+                BlockSize          - uint32                       |
             IndexEntry             - the end of the N-st Entry    |
             IndexChecksum          - uint32            <-- crc32 -|
 ```

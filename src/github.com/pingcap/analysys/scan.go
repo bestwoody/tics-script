@@ -81,21 +81,17 @@ func FilesScan(files []string, conc int, bulk bool, pred Predicate, sink ScanSin
 	for i := 0; i < conc; i++ {
 		go func() {
 			for job := range queue {
-				var loaded LoadedBlock
+				loaded := LoadedBlock {job.File, job.Order, nil, nil}
 				if bulk {
-					block, err := job.Indexing.BulkLoad(job.Order)
+					loaded.data, err = job.Indexing.BulkLoad(job.Order)
 					if err == nil {
-						loaded = LoadedBlock {job.File, job.Order, nil, block}
 						loaded.Block, loaded.data, err = BlockBulkLoad(loaded.data)
-						if err == nil {
-							loaded.Block = pred.Interset(loaded.Block)
-						}
 					}
 				} else {
-					block, err := job.Indexing.Load(job.Order)
-					if err == nil {
-						loaded = LoadedBlock {job.File, job.Order, block, nil}
-					}
+					loaded.Block, err = job.Indexing.Load(job.Order)
+				}
+				if err == nil {
+					loaded.Block = pred.Interset(loaded.Block)
 				}
 				blocks <-loaded
 				ew.Add(1)
