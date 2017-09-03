@@ -37,6 +37,7 @@ func CmdQueryCal(args []string) {
 	var window int
 	var exp string
 	var conc int
+	var bulk bool
 	var byblock bool
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
@@ -47,9 +48,10 @@ func CmdQueryCal(args []string) {
 	flag.IntVar(&window, "window", 60 * 24, "window size in minutes")
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 	flag.BoolVar(&byblock, "byblock", false, "Async calculate, block by block")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "byblock")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "bulk", "byblock")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -71,15 +73,15 @@ func CmdQueryCal(args []string) {
 	}
 
 	if isdir {
-		err = FolderScan(path, conc, pred, sink)
+		err = FolderScan(path, conc, bulk, pred, sink)
 	} else {
-		err = FilesScan([]string {path}, conc, pred, sink)
+		err = FilesScan([]string {path}, conc, bulk, pred, sink)
 	}
 	CheckError(err)
 
 	result := tracer.Result()
 	for i := 0; i <= len(eseq); i++ {
-		score := result[uint16(i)]
+		score := result[i]
 		event := "-"
 		if i != 0 {
 			event = fmt.Sprintf("%v", eseq[i - 1])
@@ -93,14 +95,16 @@ func CmdQueryCount(args []string) {
 	var from string
 	var to string
 	var conc int
+	var bulk bool
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
 	flag.StringVar(&from, "from", "", "data begin time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included")
 	flag.StringVar(&to, "to", "", "data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included" )
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc", "bulk")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -111,9 +115,9 @@ func CmdQueryCount(args []string) {
 	counter := NewRowCounter()
 	sink := counter.ByRow()
 	if isdir {
-		err = FolderScan(path, conc, pred, sink)
+		err = FolderScan(path, conc, bulk, pred, sink)
 	} else {
-		err = FilesScan([]string {path}, conc, pred, sink)
+		err = FilesScan([]string {path}, conc, bulk, pred, sink)
 	}
 	CheckError(err)
 	fmt.Printf("rows\t%v\nusers\t%v\nevents\t%v\nfiles\t%v\nblocks\t%v\n",
@@ -124,9 +128,10 @@ func CmdDataDump(args []string) {
 	var path string
 	var from string
 	var to string
-	var conc int
 	var user int
 	var event int
+	var conc int
+	var bulk bool
 	var verify bool
 	var dry bool
 
@@ -137,10 +142,11 @@ func CmdDataDump(args []string) {
 	flag.IntVar(&user, "user", 0, "only rows of this user, '0' means all")
 	flag.IntVar(&event, "event", 0, "only rows of this event, '0' means all")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
 	flag.BoolVar(&dry, "dry", false, "dry run, for correctness check and benchmark")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "user", "event", "conc", "verify", "dry")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "user", "event", "conc", "bulk", "verify", "dry")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -150,9 +156,9 @@ func CmdDataDump(args []string) {
 
 	sink := RowPrinter{os.Stdout, Timestamp(0), UserId(user), EventId(event), verify, dry}.ByRow()
 	if isdir {
-		err = FolderScan(path, conc, pred, sink)
+		err = FolderScan(path, conc, bulk, pred, sink)
 	} else {
-		err = FilesScan([]string {path}, conc, pred, sink)
+		err = FilesScan([]string {path}, conc, bulk, pred, sink)
 	}
 	CheckError(err)
 }

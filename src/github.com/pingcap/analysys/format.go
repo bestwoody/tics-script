@@ -9,6 +9,7 @@ import (
 	"io"
 	"fmt"
 	"os"
+	"unsafe"
 )
 
 func IndexingLoad(path string) (*Indexing, error) {
@@ -54,13 +55,23 @@ func (self *Indexing) Blocks() int {
 	return len(self.Index) - 1
 }
 
+func (self *Indexing) BulkLoad(i int) ([]byte, error) {
+	if i >= len(self.Index) - 1 {
+		return nil, fmt.Errorf("indexing load block: #%v >= %v", i, len(self.Index))
+	}
+	entry := self.Index[i]
+	data := make([]byte, entry.Size)
+	r := io.NewSectionReader(self.file, int64(entry.Offset), int64(entry.Size))
+	_, err := io.ReadFull(r, data)
+	return data, err
+}
+
 func (self *Indexing) Load(i int) (Block, error) {
 	if i >= len(self.Index) - 1 {
 		return nil, fmt.Errorf("indexing load block: #%v >= %v", i, len(self.Index))
 	}
 	entry := self.Index[i]
-	end := int64(self.Index[i + 1].Offset)
-	r := io.NewSectionReader(self.file, int64(entry.Offset), end - int64(entry.Offset))
+	r := io.NewSectionReader(self.file, int64(entry.Offset), int64(entry.Size))
 	return BlockLoad(bufio.NewReaderSize(r, BufferSizeRead))
 }
 
@@ -110,12 +121,12 @@ func PartWrite(rows Rows, path string, compress string, gran, align int) (Index,
 			return nil, err
 		}
 		rows = rows[count: len(rows)]
-		index[i] = IndexEntry {block[0].Ts, offset}
-		offset += n
+		index[i] = IndexEntry {block[0].Ts, offset, uint32(n)}
+		offset += uint32(n)
 		ts = block[len(block) - 1].Ts
 	}
 
-	index = append(index, IndexEntry {ts, offset})
+	index = append(index, IndexEntry {ts, offset, 0})
 
 	err = w.Flush()
 	return index, err
@@ -195,6 +206,7 @@ type Index []IndexEntry
 type IndexEntry struct {
 	Ts Timestamp
 	Offset uint32
+	Size uint32
 }
 
 func (self *Rows) Add(v Row) {
@@ -215,9 +227,8 @@ func (self Rows) Less(i, j int) bool {
 
 type Rows []Row
 
-func (self Block) Write(w io.Writer, compress string) (uint32, error) {
-	dest := w
-	written := uint32(0)
+func (self Block) Write(w io.Writer, compress string) (int, error) {
+	written := 0
 
 	err := binary.Write(w, binary.LittleEndian, MagicFlag)
 	if err != nil {
@@ -235,6 +246,15 @@ func (self Block) Write(w io.Writer, compress string) (uint32, error) {
 	}
 	written += 2
 
+	err = binary.Write(w, binary.LittleEndian, uint32(len(self)))
+	if err != nil {
+		return 0, errors.New("writing block size: " + err.Error())
+	}
+	written += 4
+
+	origin := w
+
+	// TODO: pipeline write
 	buf := bytes.NewBuffer(nil)
 	w, closer, err := RegisteredCompressers.Compress(ct, buf)
 	if err != nil {
@@ -244,39 +264,81 @@ func (self Block) Write(w io.Writer, compress string) (uint32, error) {
 	crc32 := crc32.NewIEEE()
 	w = io.MultiWriter(crc32, w)
 
-	err = binary.Write(w, binary.LittleEndian, uint32(len(self)))
-	if err != nil {
-		return 0, errors.New("writing block size: " + err.Error())
-	}
-	for _, row := range self {
+	for i, row := range self {
 		_, err := row.Write(w)
 		if err != nil {
-			return written, errors.New("writing block row: " + err.Error())
+			return written, fmt.Errorf("writing block row #%v: %s", i, err.Error())
 		}
 	}
-	crc := crc32.Sum32()
-	err = binary.Write(w, binary.LittleEndian, crc)
+
+	err = closer.Close()
 	if err != nil {
-		return written, errors.New("writing block checksum: " + err.Error())
+		return written, errors.New("closing compresser: " + err.Error())
 	}
 
-	if closer != nil {
-		err = closer.Close()
-		if err != nil {
-			return written, errors.New("closing block compresser: " + err.Error())
-		}
-	}
-
-	n, err := io.Copy(dest, buf)
+	n, err := io.Copy(origin, buf)
 	if err != nil {
 		return written, errors.New("writing compressed data: " + err.Error())
 	}
-	written += uint32(n)
+	written += int(n)
+
+	crc := crc32.Sum32()
+	err = binary.Write(origin, binary.LittleEndian, crc)
+	if err != nil {
+		return written, errors.New("writing block checksum: " + err.Error())
+	}
+	written += 4
 
 	return written, err
 }
 
+func BlockBulkLoad(data []byte) (Block, []byte, error) {
+	magic := *(*uint16)(unsafe.Pointer(&data[0]))
+	if magic != MagicFlag {
+		return nil, nil, fmt.Errorf("magic flag not matched: real:%v VS read:%v", MagicFlag, magic)
+	}
+	compress := *(*CompressType)(unsafe.Pointer(&data[2]))
+	count := *(*uint32)(unsafe.Pointer(&data[4]))
+	crc := *(*uint32)(unsafe.Pointer(&data[len(data) - 4]))
+
+	data = data[8: len(data) - 4]
+	var decoded []byte
+
+	if compress == CompressNone {
+		decoded = data
+	} else {
+		buf := bytes.NewBuffer(nil)
+		r, closer, err := RegisteredCompressers.Decompress(compress, bytes.NewReader(data))
+		if err != nil {
+			return nil, nil, fmt.Errorf("opening decompresser: %s", err.Error())
+		}
+		defer closer.Close()
+
+		_, err = io.Copy(buf, r)
+		if err != nil {
+			return nil, nil, fmt.Errorf("decompressing: %s", err.Error())
+		}
+		decoded = buf.Bytes()
+	}
+
+	c2 := crc32.ChecksumIEEE(decoded)
+	if crc != c2 {
+		return nil, nil, fmt.Errorf("block checksum not matched: cal:%v VS read:%v", crc, c2)
+	}
+
+	curr := 0
+	block := make(Block, count)
+	for i := 0; i < len(block); i++ {
+		var row Row
+		n := RowBulkLoad(decoded[curr: len(decoded)], &row)
+		curr += int(n)
+		block[i] = row
+	}
+	return block, decoded, nil
+}
+
 func BlockLoad(r io.Reader) (Block, error) {
+	origin := r
 	magic := uint16(0)
 	err := binary.Read(r, binary.LittleEndian, &magic)
 	if err != nil {
@@ -292,42 +354,37 @@ func BlockLoad(r io.Reader) (Block, error) {
 		return nil, errors.New("reading block compress type: " + err.Error())
 	}
 
-	w, closer, err := RegisteredCompressers.Decompress(compress, r)
-	if err != nil {
-		return nil, err
-	}
-	crc32 := crc32.NewIEEE()
-	w = io.TeeReader(w , crc32)
-
 	count := uint32(0)
-	err = binary.Read(w, binary.LittleEndian, &count)
+	err = binary.Read(r, binary.LittleEndian, &count)
 	if err != nil {
 		return nil, errors.New("reading block size: " + err.Error())
 	}
 
+	r, closer, err := RegisteredCompressers.Decompress(compress, r)
+	if err != nil {
+		return nil, err
+	}
+	defer closer.Close()
+
+	crc32 := crc32.NewIEEE()
+	r = io.TeeReader(r , crc32)
+
 	block := make(Block, count)
 	for i := uint32(0); i < count; i++ {
-		err = RowLoad(w, &block[i])
+		err = RowLoad(r, &block[i])
 		if err != nil {
-			return nil, errors.New("reading block row: " + err.Error())
+			return nil, fmt.Errorf("reading block row #%v: %s", i, err.Error())
 		}
 	}
 
 	c1 := crc32.Sum32()
 	c2 := uint32(0)
-	err = binary.Read(w, binary.LittleEndian, &c2)
+	err = binary.Read(origin, binary.LittleEndian, &c2)
 	if err != nil {
 		return nil, errors.New("reading block checksum: " + err.Error())
 	}
 	if c1 != c2 {
 		return nil, fmt.Errorf("block checksum not matched: cal:%v VS read:%v", c1, c2)
-	}
-
-	if closer != nil {
-		err = closer.Close()
-		if err != nil {
-			return nil, errors.New("closing block decompresser: " + err.Error())
-		}
 	}
 
 	return block, nil

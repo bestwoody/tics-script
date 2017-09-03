@@ -5,12 +5,13 @@ import (
 	"errors"
 	"io"
 	"fmt"
+	"unsafe"
 )
 
-func (self TraceUsers) Result() map[uint16]ScoredUsers {
-	result := map[uint16]ScoredUsers {}
+func (self TraceUsers) Result() map[int]ScoredUsers {
+	result := map[int]ScoredUsers {}
 	for i, _ := range self.query.seq {
-		result[uint16(i)] = ScoredUsers {0, 0}
+		result[i] = ScoredUsers {0, 0}
 	}
 	for _, user := range self.users {
 		score := user.score
@@ -19,9 +20,9 @@ func (self TraceUsers) Result() map[uint16]ScoredUsers {
 	}
 	acc := 0
 	for i := len(self.query.seq); i >= 0; i-- {
-		users := result[uint16(i)]
+		users := result[i]
 		acc += users.Val
-		result[uint16(i)] = ScoredUsers {users.Val, acc}
+		result[i] = ScoredUsers {users.Val, acc}
 	}
 	return result
 }
@@ -84,7 +85,7 @@ type TraceUsers struct {
 }
 
 func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
-	if self.score >= uint16(len(self.query.events)) {
+	if self.score >= len(self.query.events) {
 		return
 	}
 
@@ -94,7 +95,7 @@ func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
 	}
 	self.events[index] = append(self.events[index], ts)
 
-	score := uint16(0)
+	score := 0
 	lower := ts - self.query.window
 
 	for i, _ := range self.query.seq {
@@ -103,7 +104,7 @@ func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
 			if et > lower {
 				lower = et
 				blank = false
-				score = uint16(i + 1)
+				score = i + 1
 				if j != 0 {
 					self.events[i] = self.events[i][j:]
 				}
@@ -128,7 +129,7 @@ func NewTraceUser(query *TraceQuery) *TraceUser {
 type TraceUser struct {
 	query *TraceQuery
 	events EventLinks
-	score uint16
+	score int
 }
 
 type TraceQuery struct {
@@ -214,8 +215,8 @@ type RowPrinter struct {
 	dry bool
 }
 
-func (self *Row) Write(w io.Writer) (uint32, error) {
-	written := uint32(0)
+func (self *Row) Write(w io.Writer) (int, error) {
+	written := 0
 	err := binary.Write(w, binary.LittleEndian, self.Ts)
 	if err != nil {
 		return written, err
@@ -226,25 +227,25 @@ func (self *Row) Write(w io.Writer) (uint32, error) {
 	if err != nil {
 		return written, err
 	}
-	written += 4
+	written += UserIdLen
 
 	err = binary.Write(w, binary.LittleEndian, self.Event)
 	if err != nil {
 		return written, err
 	}
-	written += 2
+	written += EventIdLen
 
 	err = binary.Write(w, binary.LittleEndian, uint16(len(self.Props)))
 	if err != nil {
 		return written, err
 	}
-	written += 2
+	written += CbpLen
 
 	_, err = w.Write(self.Props)
 	if err != nil {
 		return written, errors.New("writing event props: " + err.Error())
 	}
-	written += uint32(len(self.Props))
+	written += len(self.Props)
 
 	if written != self.PersistSize() {
 		panic("Row.Write: wrong written size")
@@ -252,8 +253,17 @@ func (self *Row) Write(w io.Writer) (uint32, error) {
 	return written, nil
 }
 
-func (self *Row) PersistSize() uint32 {
-	return uint32(TimestampLen + 4 + 2 + 2 + len(self.Props))
+func (self *Row) PersistSize() int {
+	return TimestampLen + UserIdLen + EventIdLen + CbpLen + len(self.Props)
+}
+
+func RowBulkLoad(data []byte, row *Row) int {
+	info := (*RowInfo)(unsafe.Pointer(&data[0]))
+	dest := (*RowInfo)(unsafe.Pointer(row))
+	*dest = *info
+	cbi := uint16(unsafe.Sizeof(*info))
+	row.Props = data[cbi: cbi + info.Cbp]
+	return row.PersistSize()
 }
 
 func RowLoad(r io.Reader, row *Row) error {
@@ -291,6 +301,13 @@ func (self *Row) Dump(w io.Writer) error {
 	return err
 }
 
+type RowInfo struct {
+	Ts Timestamp
+	Id UserId
+	Event EventId
+	Cbp uint16
+}
+
 type Row struct {
 	Ts Timestamp
 	Id UserId
@@ -298,7 +315,11 @@ type Row struct {
 	Props []byte
 }
 
+var Endl = []byte("\n")
+
+var UserIdLen = int(unsafe.Sizeof(UserId(0)))
+var EventIdLen = int(unsafe.Sizeof(EventId(0)))
+var CbpLen = int(unsafe.Sizeof(uint16(0)))
+
 type UserId uint32
 type EventId uint16
-
-var Endl = []byte("\n")

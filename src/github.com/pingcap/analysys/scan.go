@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-func FolderScan(in string, conc int, pred Predicate, sink ScanSink) error {
+func FolderScan(in string, conc int, bulk bool, pred Predicate, sink ScanSink) error {
 	ins := make([]string, 0)
 	err := filepath.Walk(in, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -27,10 +27,10 @@ func FolderScan(in string, conc int, pred Predicate, sink ScanSink) error {
 		return err
 	}
 	sort.Strings(ins)
-	return FilesScan(ins, conc, pred, sink)
+	return FilesScan(ins, conc, bulk, pred, sink)
 }
 
-func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
+func FilesScan(files []string, conc int, bulk bool, pred Predicate, sink ScanSink) error {
 	cache, err := CacheLoad(files)
 	if err != nil {
 		return err
@@ -81,13 +81,19 @@ func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 	for i := 0; i < conc; i++ {
 		go func() {
 			for job := range queue {
-				block, err := job.Indexing.Load(job.Order)
-				if err == nil {
-					block = pred.Interset(block)
-					blocks <-LoadedBlock {job.File, job.Order, block}
+				loaded := LoadedBlock {job.File, job.Order, nil, nil}
+				if bulk {
+					loaded.data, err = job.Indexing.BulkLoad(job.Order)
+					if err == nil {
+						loaded.Block, loaded.data, err = BlockBulkLoad(loaded.data)
+					}
 				} else {
-					blocks <-LoadedBlock {}
+					loaded.Block, err = job.Indexing.Load(job.Order)
 				}
+				if err == nil {
+					loaded.Block = pred.Interset(loaded.Block)
+				}
+				blocks <-loaded
 				ew.Add(1)
 				errs <-err
 			}
@@ -231,6 +237,7 @@ type LoadedBlock struct {
 	File string
 	Order int
 	Block Block
+	data []byte
 }
 
 type ScanSink struct {
