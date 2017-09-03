@@ -241,19 +241,7 @@ func ParseArgsEvents(s string) ([]EventId, error) {
 }
 
 func AutoDectectConc(conc int, isdir bool) int {
-	if conc != 0 {
-		return conc
-	}
-	if isdir {
-		if conc <= 0 {
-			conc = runtime.NumCPU() / 2 + 2
-		}
-	} else {
-		if conc <= 0 {
-			conc = 1
-		}
-	}
-	return conc
+	return runtime.NumCPU()
 }
 
 func IsDir(path string) (bool, error) {
