@@ -259,8 +259,10 @@ func (self *Row) PersistSize() int {
 
 func RowBulkLoad(data []byte, row *Row) int {
 	info := (*RowInfo)(unsafe.Pointer(&data[0]))
-	cbi := int(unsafe.Sizeof(*info))
-	row.Props = data[cbi: info.Cbp]
+	dest := (*RowInfo)(unsafe.Pointer(row))
+	*dest = *info
+	cbi := uint16(unsafe.Sizeof(*info))
+	row.Props = data[cbi: cbi + info.Cbp]
 	return row.PersistSize()
 }
 
