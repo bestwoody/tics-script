@@ -62,7 +62,7 @@ func CmdQueryCal(args []string) {
 	conc = AutoDectectConc(conc, isdir)
 	CheckError(err)
 
-	tracer, err := NewTraceUsers(eseq, Timestamp(window * 60 * 1000))
+	tracer, err := NewBaseCalc(eseq, Timestamp(window * 60 * 1000))
 	CheckError(err)
 
 	var sink ScanSink

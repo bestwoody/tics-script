@@ -241,10 +241,13 @@ type LoadedBlock struct {
 }
 
 type ScanSink struct {
-	OnRow func(file string, block int, line int, row Row) error
-	OnBlock func() (blocks chan LoadedBlock, result chan error)
+	OnRow FunOnRow
+	OnBlock FunOnBlock
 	IsByBlock bool
 }
+
+type FunOnRow func(file string, block int, line int, row Row) error
+type FunOnBlock func() (blocks chan LoadedBlock, result chan error)
 
 func (self Cache) All() ([]UnloadBlock, error) {
 	return self.Find(TimestampNoBound, TimestampNoBound)
