@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"fmt"
+	"unsafe"
 )
 
 func (self TraceUsers) Result() map[uint16]ScoredUsers {
@@ -253,7 +254,21 @@ func (self *Row) Write(w io.Writer) (uint32, error) {
 }
 
 func (self *Row) PersistSize() uint32 {
-	return uint32(TimestampLen + 4 + 2 + 2 + len(self.Props))
+	return uint32(TimestampLen + UserIdLen + EventIdLen + CbpLen + len(self.Props))
+}
+
+func RowBulkLoad(data []byte, row *Row) uint32 {
+	curr := 0
+	row.Ts = *(*Timestamp)(unsafe.Pointer(&data[curr]))
+	curr += TimestampLen
+	row.Id = *(*UserId)(unsafe.Pointer(&data[curr]))
+	curr += UserIdLen
+	row.Event = *(*EventId)(unsafe.Pointer(&data[curr]))
+	curr += EventIdLen
+	cbp := *(*uint16)(unsafe.Pointer(&data[curr]))
+	curr += CbpLen
+	row.Props = data[curr: cbp]
+	return row.PersistSize()
 }
 
 func RowLoad(r io.Reader, row *Row) error {
@@ -298,7 +313,11 @@ type Row struct {
 	Props []byte
 }
 
+var Endl = []byte("\n")
+
+var UserIdLen = int(unsafe.Sizeof(UserId(0)))
+var EventIdLen = int(unsafe.Sizeof(EventId(0)))
+var CbpLen = int(unsafe.Sizeof(uint16(0)))
+
 type UserId uint32
 type EventId uint16
-
-var Endl = []byte("\n")
