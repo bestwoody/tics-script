@@ -142,11 +142,14 @@ type EventLinks []EventLink
 type EventLink []Timestamp
 
 func (self *RowCounter) OnRow(file string, block int, line int, row Row) error {
+	self.Rows += 1
+	if self.fast {
+		return nil
+	}
 	self.users[row.Id] = true
 	self.events[row.Event] = true
 	self.files[file] = true
 	self.blocks[BlockLocation{file, block}] = true
-	self.Rows += 1
 	self.Users = len(self.users)
 	self.Events = len(self.events)
 	self.Files = len(self.files)
@@ -158,8 +161,9 @@ func (self *RowCounter) ByRow() ScanSink {
 	return ScanSink {self.OnRow, nil, false}
 }
 
-func NewRowCounter() *RowCounter {
+func NewRowCounter(fast bool) *RowCounter {
 	return &RowCounter{
+		fast: fast,
 		users: map[UserId]bool {},
 		events: map[EventId]bool {},
 		files: map[string]bool {},
@@ -168,6 +172,7 @@ func NewRowCounter() *RowCounter {
 }
 
 type RowCounter struct {
+	fast bool
 	users map[UserId]bool
 	events map[EventId]bool
 	files map[string]bool

@@ -49,7 +49,7 @@ func CmdQueryCal(args []string) {
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
-	flag.BoolVar(&byblock, "byblock", false, "Async calculate, block by block")
+	flag.BoolVar(&byblock, "byblock", true, "Async calculate, block by block")
 
 	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "bulk", "byblock")
 
@@ -94,6 +94,7 @@ func CmdQueryCount(args []string) {
 	var path string
 	var from string
 	var to string
+	var fast bool
 	var conc int
 	var bulk bool
 
@@ -101,10 +102,11 @@ func CmdQueryCount(args []string) {
 	flag.StringVar(&path, "path", "db", "file path")
 	flag.StringVar(&from, "from", "", "data begin time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included")
 	flag.StringVar(&to, "to", "", "data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included" )
+	flag.BoolVar(&fast, "fast", false, "just count the rows")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc", "bulk")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "fast", "conc", "bulk")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -112,7 +114,7 @@ func CmdQueryCount(args []string) {
 	CheckError(err)
 	conc = AutoDectectConc(conc, isdir)
 
-	counter := NewRowCounter()
+	counter := NewRowCounter(fast)
 	sink := counter.ByRow()
 	if isdir {
 		err = FolderScan(path, conc, bulk, pred, sink)
@@ -120,8 +122,12 @@ func CmdQueryCount(args []string) {
 		err = FilesScan([]string {path}, conc, bulk, pred, sink)
 	}
 	CheckError(err)
-	fmt.Printf("rows\t%v\nusers\t%v\nevents\t%v\nfiles\t%v\nblocks\t%v\n",
-		counter.Rows, counter.Users, counter.Events, counter.Files, counter.Blocks)
+	if fast {
+		fmt.Printf("%v\n", counter.Rows)
+	} else {
+		fmt.Printf("rows\t%v\nusers\t%v\nevents\t%v\nfiles\t%v\nblocks\t%v\n",
+			counter.Rows, counter.Users, counter.Events, counter.Files, counter.Blocks)
+	}
 }
 
 func CmdDataDump(args []string) {
