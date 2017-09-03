@@ -306,6 +306,13 @@ func (self *Row) Dump(w io.Writer) error {
 	return err
 }
 
+type RowInfo struct {
+	Ts Timestamp
+	Id UserId
+	Event EventId
+	Cbp uint16
+}
+
 type Row struct {
 	Ts Timestamp
 	Id UserId
