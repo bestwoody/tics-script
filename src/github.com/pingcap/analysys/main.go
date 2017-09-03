@@ -79,7 +79,8 @@ func CmdQueryCal(args []string) {
 	}
 	CheckError(err)
 
-	result := tracer.Result()
+	result := NewAccResult(len(eseq))
+	tracer.Result(result)
 	for i := 0; i <= len(eseq); i++ {
 		score := result[i]
 		event := "-"

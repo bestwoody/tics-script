@@ -8,28 +8,216 @@ import (
 	"unsafe"
 )
 
-func (self TraceUsers) Result() map[int]ScoredUsers {
-	result := map[int]ScoredUsers {}
-	for i, _ := range self.query.seq {
-		result[i] = ScoredUsers {0, 0}
+func (self PageTraceUsers) Result(result AccResult) {
+	for _, page := range self.pages {
+		page.Result(self.usersPerPage, result)
 	}
-	for _, user := range self.users {
-		score := user.score
-		users := result[score]
-		result[score] = ScoredUsers {users.Val + 1, 0}
-	}
-	acc := 0
-	for i := len(self.query.seq); i >= 0; i-- {
-		users := result[i]
-		acc += users.Val
-		result[i] = ScoredUsers {users.Val, acc}
-	}
-	return result
+	result.CalAcc(len(self.query.seq))
 }
 
-type ScoredUsers struct {
-	Val int
-	Acc int
+func (self *PageTraceUsers) OnRow(file string, block int, line int, row Row) error {
+	eventIndex, ok := self.query.events[row.Event]
+	if !ok {
+		return nil
+	}
+
+	pageIndex := int(row.Id) / self.usersPerPage
+	if pageIndex >= len(self.pages) {
+		self.pages = append(self.pages, make([]*PageUsers, pageIndex + 1 - len(self.pages))...)
+	}
+
+	page := self.pages[pageIndex]
+	if page == nil {
+		page = NewPageUsers(UserId(pageIndex * self.usersPerPage),
+			self.usersPerPage, self.userIdInterval, self.eventsMaxLen, self.query)
+		self.pages[pageIndex] = page
+	}
+
+	err := page.OnEvent(row.Id, row.Ts, eventIndex)
+	if err == ErrRingBufferOverflow {
+		// TODO: save to exception
+	}
+	return err
+}
+
+func (self *PageTraceUsers) OnBlock() (blocks chan LoadedBlock, result chan error) {
+	blocks = make(chan LoadedBlock)
+	result = make(chan error)
+	go func() {
+		var err error
+		for block := range blocks {
+			for i, row := range block.Block {
+				err = self.OnRow(block.File, block.Order, i, row)
+				if err != nil {
+					break
+				}
+			}
+			result <-err
+		}
+	}()
+	return blocks, result
+}
+
+func (self *PageTraceUsers) ByBlock() ScanSink {
+	return ScanSink {nil, self.OnBlock, true}
+}
+
+func (self *PageTraceUsers) ByRow() ScanSink {
+	return ScanSink {self.OnRow, nil, false}
+}
+
+// TODO: sampling
+func NewPageTraceUsers(
+	events []EventId,
+	window Timestamp,
+	userIdInterval int,
+	usersPerPage int,
+	eventsMaxLen int) (*PageTraceUsers, error) {
+
+	tq := &TraceQuery {events, map[EventId]int{}, window}
+	for i, event := range events {
+		tq.events[event] = i
+	}
+	if len(tq.events) != len(events) {
+		return nil, fmt.Errorf("duplicated event: %v", events)
+	}
+	return &PageTraceUsers {
+		tq,
+		make([]*PageUsers, 0),
+		userIdInterval,
+		usersPerPage,
+		eventsMaxLen,
+	}, nil
+}
+
+type PageTraceUsers struct {
+	query *TraceQuery
+	pages []*PageUsers
+	userIdInterval int
+	usersPerPage int
+	eventsMaxLen int
+}
+
+func (self *PageUsers) Result(usersPerPage int, result AccResult) {
+	for i := 0; i < usersPerPage; i ++ {
+		user := self.user(i)
+		if user.id != 0 {
+			result.Increase(int(user.score))
+		}
+	}
+}
+
+func (self *PageUsers) OnEvent(id UserId, ts Timestamp, event int) error {
+	userIndex := int(id - self.start) / self.userIdInterval
+	user := self.user(userIndex)
+	if user.id == 0 {
+		user.id = id
+	} else if user.id != id {
+		return fmt.Errorf("wrong page write, should never happen")
+	}
+	if int(user.score) >= len(self.query.events) {
+		return nil
+	}
+
+	ring := self.ring(userIndex, event)
+	overflow := RingBufferAdd(ring, self.event(userIndex, event), ts)
+	if overflow {
+		return ErrRingBufferOverflow
+	}
+
+	score := uint16(0)
+	lower := ts - self.query.window
+	blank := false
+
+	for i, _ := range self.query.seq {
+		lower, blank = RingBufferPruge(ring, self.event(userIndex, i), lower)
+		if !blank {
+			score = uint16(i) + 1
+		} else {
+			break
+		}
+	}
+
+	if score > user.score {
+		user.score = score
+	}
+	return nil
+}
+
+var ErrRingBufferOverflow = errors.New("ring buffer overflow")
+
+func (self *PageUsers) user(user int) *PageUser {
+	return (*PageUser)(unsafe.Pointer(&self.data[user]))
+}
+
+func (self *PageUsers) ring(user int, event int) *PageEventRing {
+	return (*PageEventRing)(unsafe.Pointer(&self.data[user + PageUserLen]))
+}
+
+func (self *PageUsers) event(user int, event int) unsafe.Pointer {
+	return unsafe.Pointer(&self.data[user + PageUserLen + self.unitEvent * event])
+}
+
+func (self *PageUsers) Alloc() {
+	if self.data == nil {
+		self.data = make([]byte, self.usersPerPage * self.unitUser)
+	}
+}
+
+func RingBufferAdd(ring *PageEventRing, buf unsafe.Pointer, ts Timestamp) (overflow bool) {
+	// TODO
+	return
+}
+
+func RingBufferPruge(ring *PageEventRing, buf unsafe.Pointer, lower Timestamp) (newLower Timestamp, blank bool) {
+	// TODO
+	return
+}
+
+type PageEventRing struct {
+	start int16
+	end int16
+}
+const PageEventRingLen = 4
+
+func NewPageUsers(start UserId, usersPerPage int, userIdInterval int, eventsMaxLen int, query *TraceQuery) *PageUsers {
+	unitEvent := eventsMaxLen * TimestampLen + PageEventRingLen
+	return &PageUsers {
+		start,
+		usersPerPage,
+		userIdInterval,
+		eventsMaxLen,
+		unitEvent * len(query.seq) + PageUserLen,
+		unitEvent,
+		query,
+		nil,
+	}
+}
+
+const PageUserLen = 8
+
+type PageUser struct {
+	id UserId
+	score uint16
+	reserved uint16
+}
+
+type PageUsers struct {
+	start UserId
+	usersPerPage int
+	userIdInterval int
+	eventsMaxLen int
+	unitUser int
+	unitEvent int
+	query *TraceQuery
+	data []byte
+}
+
+func (self TraceUsers) Result(result AccResult) {
+	for _, user := range self.users {
+		result.Increase(int(user.score))
+	}
+	result.CalAcc(len(self.query.seq))
 }
 
 func (self *TraceUsers) OnRow(file string, block int, line int, row Row) error {
@@ -84,8 +272,36 @@ type TraceUsers struct {
 	users map[UserId]*TraceUser
 }
 
+func (self AccResult) CalAcc(max int) {
+	acc := 0
+	for i := max; i >= 0; i-- {
+		users := self[i]
+		acc += users.Val
+		self[i] = ScoredUsers {users.Val, acc}
+	}
+}
+
+func (self AccResult) Increase(score int) {
+	self[score] = ScoredUsers {self[score].Val + 1, 0}
+}
+
+func NewAccResult(max int) AccResult {
+	result := make(AccResult)
+	for i := 0; i <= max; i++ {
+		result[i] = ScoredUsers {0, 0}
+	}
+	return result
+}
+
+type AccResult map[int]ScoredUsers
+
+type ScoredUsers struct {
+	Val int
+	Acc int
+}
+
 func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
-	if self.score >= len(self.query.events) {
+	if self.score >= uint16(len(self.query.events)) {
 		return
 	}
 
@@ -95,7 +311,7 @@ func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
 	}
 	self.events[index] = append(self.events[index], ts)
 
-	score := 0
+	score := uint16(0)
 	lower := ts - self.query.window
 
 	for i, _ := range self.query.seq {
@@ -104,7 +320,7 @@ func (self *TraceUser) OnEvent(ts Timestamp, event EventId) {
 			if et > lower {
 				lower = et
 				blank = false
-				score = i + 1
+				score = uint16(i) + 1
 				if j != 0 {
 					self.events[i] = self.events[i][j:]
 				}
@@ -129,7 +345,7 @@ func NewTraceUser(query *TraceQuery) *TraceUser {
 type TraceUser struct {
 	query *TraceQuery
 	events EventLinks
-	score int
+	score uint16
 }
 
 type TraceQuery struct {
