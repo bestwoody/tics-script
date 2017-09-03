@@ -48,7 +48,7 @@ func CmdQueryCal(args []string) {
 	flag.IntVar(&window, "window", 60 * 24, "window size in minutes")
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
-	flag.BoolVar(&bulk, "bulk", false, "use block bulk loading")
+	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 	flag.BoolVar(&byblock, "byblock", false, "Async calculate, block by block")
 
 	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "bulk", "byblock")
@@ -102,7 +102,7 @@ func CmdQueryCount(args []string) {
 	flag.StringVar(&from, "from", "", "data begin time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included")
 	flag.StringVar(&to, "to", "", "data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included" )
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
-	flag.BoolVar(&bulk, "bulk", false, "use block bulk loading")
+	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 
 	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc", "bulk")
 
@@ -142,7 +142,7 @@ func CmdDataDump(args []string) {
 	flag.IntVar(&user, "user", 0, "only rows of this user, '0' means all")
 	flag.IntVar(&event, "event", 0, "only rows of this event, '0' means all")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
-	flag.BoolVar(&bulk, "bulk", false, "use block bulk loading")
+	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
 	flag.BoolVar(&dry, "dry", false, "dry run, for correctness check and benchmark")
 
