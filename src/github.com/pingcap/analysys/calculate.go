@@ -7,6 +7,12 @@ import (
 )
 
 func (self PagedCalc) Result(result AccResult) {
+	if self.samples != nil {
+		self.sampleCalc.Result(result)
+		return
+	}
+	// TODO: impl
+	return
 	for _, page := range self.pages {
 		page.Result(self.usersPerPage, result)
 	}
@@ -14,11 +20,46 @@ func (self PagedCalc) Result(result AccResult) {
 }
 
 func (self *PagedCalc) OnRow(file string, block int, line int, row Row) error {
-	eventIndex, ok := self.query.events[row.Event]
-	if !ok {
+	eventIndex := self.query.EventIndex(row.Event)
+	if eventIndex < 0 {
 		return nil
 	}
 
+	if self.eventsMaxLen > 0 {
+		return self.handle(file, block, line, row, eventIndex)
+	}
+
+	err := self.sampleCalc.OnRow(file, block, line, row)
+	if err != nil {
+		return err
+	}
+
+	self.samples = append(self.samples, row)
+	self.sampleCalc.OnRow(file, block, line, row)
+
+	if self.sampleCalc.sampling.Count >= MaxSamplingCount ||
+		(self.sampleCalc.sampling.Count > 0 && len(self.samples) > MaxSamplesCount) {
+
+		self.eventsMaxLen = int(float64(self.sampleCalc.sampling.Max) * 1.5)
+		println(self.eventsMaxLen, self.sampleCalc.sampling.Count, "XX")
+		if self.eventsMaxLen < EventsMinLen {
+			self.eventsMaxLen = EventsMinLen
+		}
+		self.samples = nil
+		self.sampleCalc = nil
+
+		var err error
+		for _, row := range self.samples {
+			err = self.handle("", -1, -1, row, self.query.EventIndex(row.Event))
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (self *PagedCalc) handle(file string, block int, line int, row Row, event int) error {
 	pageIndex := int(row.Id) / self.usersPerPage
 	if pageIndex >= len(self.pages) {
 		self.pages = append(self.pages, make([]*Page, pageIndex + 1 - len(self.pages))...)
@@ -31,7 +72,11 @@ func (self *PagedCalc) OnRow(file string, block int, line int, row Row) error {
 		self.pages[pageIndex] = page
 	}
 
-	err := page.OnEvent(row.Id, row.Ts, eventIndex)
+	// TODO: impl
+	self.acc += 1
+	return nil
+
+	err := page.OnEvent(row.Id, row.Ts, event)
 	if err == ErrRingBufferOverflow {
 		// TODO: save to exception
 	}
@@ -46,36 +91,44 @@ func (self *PagedCalc) ByRow() ScanSink {
 	return ScanSink {self.OnRow, nil, false}
 }
 
-// TODO: sampling
 func NewPagedCalc(
-	events []EventId,
-	window Timestamp,
+	query *CalcQuery,
 	userIdInterval int,
 	usersPerPage int,
-	eventsMaxLen int) (*PagedCalc, error) {
+	eventsMaxLen int) *PagedCalc {
 
-	tq := &TraceQuery {events, map[EventId]int{}, window}
-	for i, event := range events {
-		tq.events[event] = i
+	var samples []Row
+	var sampleCalc *BaseCalc
+	if eventsMaxLen < 0 {
+		samples = make([]Row, 0, MaxSamplesCount)
+		sampleCalc = NewBaseCalc(query, true)
 	}
-	if len(tq.events) != len(events) {
-		return nil, fmt.Errorf("duplicated event: %v", events)
-	}
+
 	return &PagedCalc {
-		tq,
+		query,
 		make([]*Page, 0),
 		userIdInterval,
 		usersPerPage,
 		eventsMaxLen,
-	}, nil
+		samples,
+		sampleCalc,
+		0,
+	}
 }
 
+const MaxSamplingCount = 1024 * 8
+const MaxSamplesCount = 1024 * 64
+const EventsMinLen = 4
+
 type PagedCalc struct {
-	query *TraceQuery
+	query *CalcQuery
 	pages []*Page
 	userIdInterval int
 	usersPerPage int
 	eventsMaxLen int
+	samples []Row
+	sampleCalc *BaseCalc
+	acc int
 }
 
 func (self *Page) Result(usersPerPage int, result AccResult) {
@@ -95,7 +148,7 @@ func (self *Page) OnEvent(id UserId, ts Timestamp, event int) error {
 	} else if user.id != id {
 		return fmt.Errorf("wrong page write, should never happen")
 	}
-	if int(user.score) >= len(self.query.events) {
+	if int(user.score) >= len(self.query.seq) {
 		return nil
 	}
 
@@ -136,7 +189,7 @@ func (self *Page) event(user int, event int) unsafe.Pointer {
 	return unsafe.Pointer(&self.data[user + PageUserLen + self.unitEvent * event])
 }
 
-func NewPage(start UserId, usersPerPage int, userIdInterval int, eventsMaxLen int, query *TraceQuery) *Page {
+func NewPage(start UserId, usersPerPage int, userIdInterval int, eventsMaxLen int, query *CalcQuery) *Page {
 	unitEvent := eventsMaxLen * TimestampLen + PageEventRingLen
 	unitUser := unitEvent * len(query.seq) + PageUserLen
 	return &Page {
@@ -158,7 +211,7 @@ type Page struct {
 	eventsMaxLen int
 	unitEvent int
 	unitUser int
-	query *TraceQuery
+	query *CalcQuery
 	data []byte
 }
 
@@ -195,12 +248,16 @@ func (self BaseCalc) Result(result AccResult) {
 }
 
 func (self *BaseCalc) OnRow(file string, block int, line int, row Row) error {
+	eventIndex := self.query.EventIndex(row.Event)
+	if eventIndex < 0 {
+		return nil
+	}
 	user, ok := self.users[row.Id]
 	if !ok {
 		user = NewBaseCalcUser(self.query)
 		self.users[row.Id] = user
 	}
-	user.OnEvent(row.Ts, row.Event)
+	user.OnEvent(row.Ts, eventIndex, self.sampling)
 	return nil
 }
 
@@ -212,39 +269,37 @@ func (self *BaseCalc) ByRow() ScanSink {
 	return ScanSink {self.OnRow, nil, false}
 }
 
-func NewBaseCalc(events []EventId, window Timestamp) (*BaseCalc, error) {
-	tq := &TraceQuery {events, map[EventId]int{}, window}
-	for i, event := range events {
-		tq.events[event] = i
+func NewBaseCalc(query *CalcQuery, sampling bool) *BaseCalc {
+	var dsp *Sampling
+	if sampling {
+		dsp = &Sampling {}
 	}
-	if len(tq.events) != len(events) {
-		return nil, fmt.Errorf("duplicated event: %v", events)
-	}
-	return &BaseCalc {tq, map[UserId]*BaseCalcUser {}}, nil
+	return &BaseCalc {query, map[UserId]*BaseCalcUser {}, dsp}
 }
 
 type BaseCalc struct {
-	query *TraceQuery
+	query *CalcQuery
 	users map[UserId]*BaseCalcUser
+	sampling *Sampling
 }
 
-func (self *BaseCalcUser) OnEvent(ts Timestamp, event EventId) {
-	if self.score >= uint16(len(self.query.events)) {
+func (self *BaseCalcUser) OnEvent(ts Timestamp, index int, sampling *Sampling) {
+	if self.score >= uint16(len(self.query.seq)) {
 		return
 	}
 
-	index, ok := self.query.events[event]
-	if !ok {
-		return
-	}
 	self.events[index] = append(self.events[index], ts)
 
 	score := uint16(0)
 	lower := ts - self.query.window
 
 	for i, _ := range self.query.seq {
+		if sampling != nil {
+			sampling.Add(len(self.events[i]))
+		}
 		blank := true
 		for j, et := range self.events[i] {
+			// TODO: > or >= ?
 			if et > lower {
 				lower = et
 				blank = false
@@ -266,14 +321,26 @@ func (self *BaseCalcUser) OnEvent(ts Timestamp, event EventId) {
 	}
 }
 
-func NewBaseCalcUser(query *TraceQuery) *BaseCalcUser {
-	return &BaseCalcUser {query, make(EventLinks, len(query.events)), 0}
+func NewBaseCalcUser(query *CalcQuery) *BaseCalcUser {
+	return &BaseCalcUser {query, make(EventLinks, len(query.seq)), 0}
 }
 
 type BaseCalcUser struct {
-	query *TraceQuery
+	query *CalcQuery
 	events EventLinks
 	score uint16
+}
+
+func (self *Sampling) Add(n int) {
+	if n > self.Max {
+		self.Max = n
+	}
+	self.Count += 1
+}
+
+type Sampling struct {
+	Max int
+	Count int
 }
 
 func (self AccResult) CalAcc(max int) {
@@ -304,9 +371,33 @@ type ScoredUsers struct {
 	Acc int
 }
 
-type TraceQuery struct {
+func (self CalcQuery) EventIndex(event EventId) int {
+	if int(event) >= len(self.events) {
+		return -1
+	}
+	return self.events[int(event)]
+}
+
+func NewCalcQuery(events []EventId, window Timestamp) *CalcQuery {
+	self := &CalcQuery {events, nil, window}
+
+	// TODO: page can save some mem
+	for i, event := range events {
+		if int(event) >= len(self.events) {
+			padding := make([]int, int(event) + 1 - len(self.events))
+			for i, _ := range padding {
+				padding[i] = -1
+			}
+			self.events = append(self.events, padding...)
+		}
+		self.events[event] = i
+	}
+	return self
+}
+
+type CalcQuery struct {
 	seq []EventId
-	events map[EventId]int
+	events []int
 	window Timestamp
 }
 

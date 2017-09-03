@@ -37,6 +37,7 @@ func CmdQueryCal(args []string) {
 	var window int
 	var exp string
 	var conc int
+	var ringlen int
 	var bulk bool
 	var byblock bool
 
@@ -48,10 +49,11 @@ func CmdQueryCal(args []string) {
 	flag.IntVar(&window, "window", 60 * 24, "window size in minutes")
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+	flag.IntVar(&ringlen, "ringlen", -1, "size of ring buffer, '-1' means auto sampling")
 	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 	flag.BoolVar(&byblock, "byblock", true, "Async calculate, block by block")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "bulk", "byblock")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "ringlen", "bulk", "byblock")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -62,14 +64,24 @@ func CmdQueryCal(args []string) {
 	conc = AutoDectectConc(conc, isdir)
 	CheckError(err)
 
-	tracer, err := NewBaseCalc(eseq, Timestamp(window * 60 * 1000))
-	CheckError(err)
+	set := map[EventId]bool {}
+	for _, event := range eseq {
+		set[event] = true
+	}
+	if len(set) != len(eseq) {
+		CheckError(fmt.Errorf("duplicated event: %v", events))
+	}
+
+	query := NewCalcQuery(eseq, Timestamp(window * 60 * 1000))
+
+	calc := NewPagedCalc(query, 1, 1024 * 4, -1)
+	//calc := NewBaseCalc(query, false)
 
 	var sink ScanSink
 	if byblock {
-		sink = tracer.ByBlock()
+		sink = calc.ByBlock()
 	} else {
-		sink = tracer.ByRow()
+		sink = calc.ByRow()
 	}
 
 	if isdir {
@@ -80,7 +92,7 @@ func CmdQueryCal(args []string) {
 	CheckError(err)
 
 	result := NewAccResult(len(eseq))
-	tracer.Result(result)
+	calc.Result(result)
 	for i := 0; i <= len(eseq); i++ {
 		score := result[i]
 		event := "-"
