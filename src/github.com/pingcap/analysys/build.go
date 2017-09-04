@@ -34,15 +34,15 @@ func FolderBuild(in, out string, compress string, gran, align int, conc int) err
 			return nil
 		}
 
-		combined := out + path[len(in):]
-		fd, err := os.Open(combined)
+		output := out + path[len(in):]
+		fd, err := os.Open(output)
 		if !os.IsNotExist(err) {
 			if err == nil {
 				fd.Close()
 			}
 			return nil
 		}
-		fi, err := os.Open(combined + IndexFileSuffix)
+		fi, err := os.Open(output + IndexFileSuffix)
 		if !os.IsNotExist(err) {
 			if err == nil {
 				fi.Close()
@@ -51,18 +51,22 @@ func FolderBuild(in, out string, compress string, gran, align int, conc int) err
 		}
 
 		ins = append(ins, path)
-		outs = append(outs, combined)
+		outs = append(outs, output)
 		return nil
 	})
 	if err != nil {
 		return err
 	}
 
+	return FilesBuild(ins, outs, compress, gran, align, conc)
+}
+
+func FilesBuild(ins, outs []string, compress string, gran, align int, conc int) error {
+	// Jobs todo
 	type Job struct {
 		In string
 		Out string
 	}
-
 	files := make(chan Job, conc)
 	go func() {
 		for i, _ := range ins {
@@ -70,6 +74,7 @@ func FolderBuild(in, out string, compress string, gran, align int, conc int) err
 		}
 	}()
 
+	// Files loading
 	type Loaded struct {
 		In string
 		Out string
@@ -86,6 +91,7 @@ func FolderBuild(in, out string, compress string, gran, align int, conc int) err
 		}()
 	}
 
+	// Sort rows of one file
 	sorteds := make(chan Loaded, conc)
 	for i := 0; i < conc; i++ {
 		go func() {
@@ -98,6 +104,7 @@ func FolderBuild(in, out string, compress string, gran, align int, conc int) err
 		}()
 	}
 
+	// Write sorted data file and index file
 	errs := make(chan error, conc)
 	for i := 0; i < conc; i++ {
 		go func() {
@@ -115,7 +122,8 @@ func FolderBuild(in, out string, compress string, gran, align int, conc int) err
 		}()
 	}
 
-	es := ""
+	// Collecting errors
+	var es string
 	for _ = range ins {
 		eg := <-errs
 		if eg != nil {
@@ -210,9 +218,9 @@ func OriginParse(line []byte) (row Row, err error) {
 		return
 	}
 
-	row.Id = uint32(id)
-	row.Ts = Timestamp(ts / 1000)
-	row.Event = uint16(event)
+	row.Id = UserId(id)
+	row.Ts = Timestamp(ts)
+	row.Event = EventId(event)
 	row.Props = props
 	return row, err
 }
