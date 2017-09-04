@@ -76,22 +76,41 @@ func FilesScan(files []string, conc int, bulk bool, pred Predicate, sink ScanSin
 		}
 	}()
 
-	// Read and decode blocks
+	// Read blocks, and (when not on bulk load mode) decode blocks
 	blocks := make(chan LoadedBlock, conc * 4)
+	var decodings chan LoadedBlock
 	for i := 0; i < conc; i++ {
 		go func() {
 			for job := range queue {
 				loaded := LoadedBlock {job.File, job.Order, nil, nil}
 				if bulk {
 					loaded.data, err = job.Indexing.BulkLoad(job.Order)
-					if err == nil {
-						loaded.Block, loaded.data, err = BlockBulkLoad(loaded.data)
-					}
+					decodings <-loaded
+					ew.Add(1)
+					errs <-err
 				} else {
 					loaded.Block, err = job.Indexing.Load(job.Order)
+					if err == nil {
+						loaded.Block = pred.Interset(loaded.Block)
+					}
+					blocks <-loaded
+					ew.Add(1)
+					errs <-err
 				}
-				if err == nil {
-					loaded.Block = pred.Interset(loaded.Block)
+			}
+		}()
+	}
+
+	// Decode blocks (bulk load mode)
+	if bulk {
+		decodings = make(chan LoadedBlock, conc * 4)
+		go func() {
+			for loaded := range decodings {
+				if loaded.data != nil {
+					loaded.Block, loaded.data, err = BlockBulkLoad(loaded.data)
+					if err == nil {
+						loaded.Block = pred.Interset(loaded.Block)
+					}
 				}
 				blocks <-loaded
 				ew.Add(1)
