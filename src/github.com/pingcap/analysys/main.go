@@ -37,6 +37,8 @@ func CmdQueryCal(args []string) {
 	var window int
 	var exp string
 	var conc int
+	var uj int
+	var ringlen int
 	var bulk bool
 	var byblock bool
 
@@ -48,10 +50,12 @@ func CmdQueryCal(args []string) {
 	flag.IntVar(&window, "window", 60 * 24, "window size in minutes")
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
+	flag.IntVar(&ringlen, "ringlen", -1, "size of ring buffer, '-1' means auto sampling")
+	flag.IntVar(&uj, "uj", 1, "user id interval len")
 	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
-	flag.BoolVar(&byblock, "byblock", false, "Async calculate, block by block")
+	flag.BoolVar(&byblock, "byblock", true, "Async calculate, block by block")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "bulk", "byblock")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "ringlen", "uj", "bulk", "byblock")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -62,14 +66,25 @@ func CmdQueryCal(args []string) {
 	conc = AutoDectectConc(conc, isdir)
 	CheckError(err)
 
-	tracer, err := NewTraceUsers(eseq, Timestamp(window * 60 * 1000))
-	CheckError(err)
+	set := map[EventId]bool {}
+	for _, event := range eseq {
+		set[event] = true
+	}
+	if len(set) != len(eseq) {
+		CheckError(fmt.Errorf("duplicated event: %v", events))
+	}
+
+	query := NewCalcQuery(eseq, Timestamp(window * 60 * 1000))
+
+	//calc := NewBaseCalc(query)
+	//calc := NewStartLinkCalc(query)
+	calc := NewPagedCalc(query)
 
 	var sink ScanSink
 	if byblock {
-		sink = tracer.ByBlock()
+		sink = calc.ByBlock()
 	} else {
-		sink = tracer.ByRow()
+		sink = calc.ByRow()
 	}
 
 	if isdir {
@@ -79,7 +94,8 @@ func CmdQueryCal(args []string) {
 	}
 	CheckError(err)
 
-	result := tracer.Result()
+	result := NewAccResult(len(eseq))
+	calc.Result(result)
 	for i := 0; i <= len(eseq); i++ {
 		score := result[i]
 		event := "-"
@@ -94,6 +110,7 @@ func CmdQueryCount(args []string) {
 	var path string
 	var from string
 	var to string
+	var fast bool
 	var conc int
 	var bulk bool
 
@@ -101,10 +118,11 @@ func CmdQueryCount(args []string) {
 	flag.StringVar(&path, "path", "db", "file path")
 	flag.StringVar(&from, "from", "", "data begin time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included")
 	flag.StringVar(&to, "to", "", "data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included" )
+	flag.BoolVar(&fast, "fast", false, "just count the rows")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "conc", "bulk")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "fast", "conc", "bulk")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -112,7 +130,7 @@ func CmdQueryCount(args []string) {
 	CheckError(err)
 	conc = AutoDectectConc(conc, isdir)
 
-	counter := NewRowCounter()
+	counter := NewRowCounter(fast)
 	sink := counter.ByRow()
 	if isdir {
 		err = FolderScan(path, conc, bulk, pred, sink)
@@ -120,8 +138,12 @@ func CmdQueryCount(args []string) {
 		err = FilesScan([]string {path}, conc, bulk, pred, sink)
 	}
 	CheckError(err)
-	fmt.Printf("rows\t%v\nusers\t%v\nevents\t%v\nfiles\t%v\nblocks\t%v\n",
-		counter.Rows, counter.Users, counter.Events, counter.Files, counter.Blocks)
+	if fast {
+		fmt.Printf("%v\n", counter.Rows)
+	} else {
+		fmt.Printf("rows\t%v\nusers\t%v\nevents\t%v\nfiles\t%v\nblocks\t%v\n",
+			counter.Rows, counter.Users, counter.Events, counter.Files, counter.Blocks)
+	}
 }
 
 func CmdDataDump(args []string) {
@@ -235,19 +257,7 @@ func ParseArgsEvents(s string) ([]EventId, error) {
 }
 
 func AutoDectectConc(conc int, isdir bool) int {
-	if conc != 0 {
-		return conc
-	}
-	if isdir {
-		if conc <= 0 {
-			conc = runtime.NumCPU() / 2 + 2
-		}
-	} else {
-		if conc <= 0 {
-			conc = 1
-		}
-	}
-	return conc
+	return runtime.NumCPU()
 }
 
 func IsDir(path string) (bool, error) {
