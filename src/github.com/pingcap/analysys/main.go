@@ -76,8 +76,9 @@ func CmdQueryCal(args []string) {
 
 	query := NewCalcQuery(eseq, Timestamp(window * 60 * 1000))
 
-	//calc := NewPagedCalc(query, uj, 1024 * 4, ringlen)
-	calc := NewBaseCalc(query, false)
+	//calc := NewBaseCalc(query)
+	//calc := NewStartLinkCalc(query)
+	calc := NewPagedCalc(query)
 
 	var sink ScanSink
 	if byblock {

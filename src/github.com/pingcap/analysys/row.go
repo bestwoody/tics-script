@@ -8,12 +8,33 @@ import (
 	"unsafe"
 )
 
-func ByBlock(fun FunOnRow) FunOnBlock {
-	sink := BlockSink {fun}
+func ByBlock(fun func(LoadedBlock)) FunOnBlock {
+	sink := BlockSink {fun, make(chan LoadedBlock), make(chan error)}
 	return sink.OnBlock
 }
 
 func (self BlockSink) OnBlock() (blocks chan LoadedBlock, result chan error) {
+	go func() {
+		for block := range self.blocks {
+			self.handle(block)
+			self.errors <-nil
+		}
+	}()
+	return self.blocks, self.errors
+}
+
+type BlockSink struct {
+	handle func(block LoadedBlock)
+	blocks chan LoadedBlock
+	errors chan error
+}
+
+func BlockToRow(fun FunOnRow) FunOnBlock {
+	sink := BlockRowSink {fun}
+	return sink.OnBlock
+}
+
+func (self BlockRowSink) OnBlock() (blocks chan LoadedBlock, result chan error) {
 	blocks = make(chan LoadedBlock)
 	result = make(chan error)
 	go func() {
@@ -31,7 +52,7 @@ func (self BlockSink) OnBlock() (blocks chan LoadedBlock, result chan error) {
 	return blocks, result
 }
 
-type BlockSink struct {
+type BlockRowSink struct {
 	OnRow func(file string, block int, line int, row Row) error
 }
 
@@ -213,6 +234,9 @@ type Row struct {
 	Event EventId
 	Props []byte
 }
+
+const InvalidEventId = uint16(0)
+const InvalidTimestamp = Timestamp(0)
 
 var Endl = []byte("\n")
 
