@@ -70,7 +70,7 @@ func CmdQueryCal(args []string) {
 		CheckError(fmt.Errorf("duplicated event: %v", events))
 	}
 
-	query := NewCalcQuery(eseq, Timestamp(window * 60 * 1000))
+	query := NewCalcQuery(eseq, ToInnerUnit(Timestamp(window * 60 * 1000)))
 
 	var calc interface {
 		ByBlock() ScanSink
@@ -294,7 +294,7 @@ func ParseDateTime(s string) (TimestampBound, error) {
 
 	ts, err := strconv.ParseUint(s, 10, 64)
 	if err == nil {
-		bound.Ts = Timestamp(ts)
+		bound.Ts = ToInnerUnit(Timestamp(ts))
 		return bound, nil
 	}
 
@@ -304,6 +304,7 @@ func ParseDateTime(s string) (TimestampBound, error) {
 	}
 	// Manually change timezone, for platform compatibility
 	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Millisecond)) - Timestamp(time.Hour * 8 / time.Millisecond)
+	bound.Ts = ToInnerUnit(bound.Ts)
 	return bound, nil
 }
 
