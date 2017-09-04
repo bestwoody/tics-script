@@ -7,14 +7,14 @@ func (self *PagedCalc) OnRow(file string, block int, line int, row Row) error {
 }
 
 func (self *PagedCalc) handle(block LoadedBlock) {
+	els := len(self.query.seq)
+	pge := len(self.query.seq) * self.pgs
+
 	for _, row := range block.Block {
 		index := self.query.EventIndex(row.Event)
 		if index < 0 {
 			continue
 		}
-
-		els := len(self.query.seq)
-		pge := len(self.query.seq) * self.pgs
 
 		pgi := int(row.Id) / self.pgs
 		if pgi >= len(self.pages) {
