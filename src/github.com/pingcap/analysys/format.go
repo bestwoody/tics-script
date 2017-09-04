@@ -402,7 +402,6 @@ const (
 
 	MagicFlag = uint16(37492)
 
-	TimestampLen = 8
 	TimestampOpenBound = Timestamp(0)
 )
 
@@ -415,4 +414,8 @@ type TimestampBound struct {
 	Included bool
 }
 
-type Timestamp uint64
+func ToInnerUnit(t Timestamp) Timestamp {
+	return t / 1000
+}
+const TimestampLen = 4
+type Timestamp uint32
