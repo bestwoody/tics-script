@@ -18,9 +18,7 @@ func Main() {
 	query := cmds.Sub("query", "execute query")
 	query.Reg("cal", "calculate analysys OLAP reward", CmdQueryCal)
 	query.Reg("count", "calculate rows count", CmdQueryCount)
-
-	data := cmds.Sub("data", "data commands")
-	data.Reg("dump", "dump data and verify", CmdDataDump)
+	query.Reg("dump", "dump data and verify", CmdQueryDump)
 
 	index := cmds.Sub("index", "index commands")
 	index.Reg("build", "build index from origin data", CmdIndexBuild)
@@ -37,8 +35,7 @@ func CmdQueryCal(args []string) {
 	var window int
 	var exp string
 	var conc int
-	var uj int
-	var ringlen int
+	var calculator string
 	var bulk bool
 	var byblock bool
 
@@ -50,12 +47,11 @@ func CmdQueryCal(args []string) {
 	flag.IntVar(&window, "window", 60 * 24, "window size in minutes")
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
-	flag.IntVar(&ringlen, "ringlen", -1, "size of ring buffer, '-1' means auto sampling")
-	flag.IntVar(&uj, "uj", 1, "user id interval len")
+	flag.StringVar(&calculator, "calc", "paged", "choose calculator from [base, startlink, paged]")
 	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 	flag.BoolVar(&byblock, "byblock", true, "Async calculate, block by block")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "ringlen", "uj", "bulk", "byblock")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "calc",  "bulk", "byblock")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -76,9 +72,20 @@ func CmdQueryCal(args []string) {
 
 	query := NewCalcQuery(eseq, Timestamp(window * 60 * 1000))
 
-	//calc := NewBaseCalc(query)
-	//calc := NewStartLinkCalc(query)
-	calc := NewPagedCalc(query)
+	var calc interface {
+		ByBlock() ScanSink
+		ByRow() ScanSink
+		Result(AccResult)
+	}
+
+	switch calculator {
+	case "startlink":
+		calc = NewStartLinkCalc(query)
+	case "paged":
+		calc = NewPagedCalc(query)
+	default:
+		calc = NewBaseCalc(query)
+	}
 
 	var sink ScanSink
 	if byblock {
@@ -96,13 +103,13 @@ func CmdQueryCal(args []string) {
 
 	result := NewAccResult(len(eseq))
 	calc.Result(result)
-	for i := 0; i <= len(eseq); i++ {
+	for i := 1; i <= len(eseq); i++ {
 		score := result[i]
 		event := "-"
 		if i != 0 {
 			event = fmt.Sprintf("%v", eseq[i - 1])
 		}
-		fmt.Printf("%v\t#%v\t%v\t%v\n", event, i, score.Val, score.Acc)
+		fmt.Printf("%v\t#%v\t%v\n", event, i, score.Acc)
 	}
 }
 
@@ -146,7 +153,7 @@ func CmdQueryCount(args []string) {
 	}
 }
 
-func CmdDataDump(args []string) {
+func CmdQueryDump(args []string) {
 	var path string
 	var from string
 	var to string
