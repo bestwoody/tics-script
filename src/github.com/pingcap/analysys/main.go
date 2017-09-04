@@ -18,9 +18,7 @@ func Main() {
 	query := cmds.Sub("query", "execute query")
 	query.Reg("cal", "calculate analysys OLAP reward", CmdQueryCal)
 	query.Reg("count", "calculate rows count", CmdQueryCount)
-
-	data := cmds.Sub("data", "data commands")
-	data.Reg("dump", "dump data and verify", CmdDataDump)
+	query.Reg("dump", "dump data and verify", CmdQueryDump)
 
 	index := cmds.Sub("index", "index commands")
 	index.Reg("build", "build index from origin data", CmdIndexBuild)
@@ -155,7 +153,7 @@ func CmdQueryCount(args []string) {
 	}
 }
 
-func CmdDataDump(args []string) {
+func CmdQueryDump(args []string) {
 	var path string
 	var from string
 	var to string
