@@ -37,6 +37,7 @@ func CmdQueryCal(args []string) {
 	var window int
 	var exp string
 	var conc int
+	var uj int
 	var ringlen int
 	var bulk bool
 	var byblock bool
@@ -50,10 +51,11 @@ func CmdQueryCal(args []string) {
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 	flag.IntVar(&ringlen, "ringlen", -1, "size of ring buffer, '-1' means auto sampling")
+	flag.IntVar(&uj, "uj", 1, "user id interval len")
 	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 	flag.BoolVar(&byblock, "byblock", true, "Async calculate, block by block")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "ringlen", "bulk", "byblock")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "ringlen", "uj", "bulk", "byblock")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -74,8 +76,8 @@ func CmdQueryCal(args []string) {
 
 	query := NewCalcQuery(eseq, Timestamp(window * 60 * 1000))
 
-	calc := NewPagedCalc(query, 1, 1024 * 4, -1)
-	//calc := NewBaseCalc(query, false)
+	//calc := NewPagedCalc(query, uj, 1024 * 4, ringlen)
+	calc := NewBaseCalc(query, false)
 
 	var sink ScanSink
 	if byblock {

@@ -131,6 +131,7 @@ func FilesScan(files []string, conc int, bulk bool, pred Predicate, sink ScanSin
 			for _ = range jobs {
 				err := <-sech
 				if err != nil {
+					ew.Add(1)
 					errs <-err
 				}
 				sw.Done()
