@@ -219,7 +219,7 @@ func OriginParse(line []byte) (row Row, err error) {
 	}
 
 	row.Id = UserId(id)
-	row.Ts = ToInnerUnit(Timestamp(ts))
+	row.Ts = MillisecondToInnerUnit(ts)
 	row.Event = EventId(event)
 	row.Props = props
 	return row, err

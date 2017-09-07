@@ -1,7 +1,10 @@
 package analysys
 
 import (
+	"bufio"
+	"errors"
 	"flag"
+	"io"
 	"fmt"
 	"runtime"
 	"os"
@@ -23,6 +26,9 @@ func Main() {
 	index := cmds.Sub("index", "index commands")
 	index.Reg("build", "build index from origin data", CmdIndexBuild)
 	index.Reg("dump", "dump index and verify", CmdIndexDump)
+
+	util := cmds.Sub("util", "util commands")
+	util.Reg("normalize", "normalize origin data (from stdin) and print", CmdUtilNormalize)
 
 	cmds.Run(os.Args[1:])
 }
@@ -70,7 +76,7 @@ func CmdQueryCal(args []string) {
 		CheckError(fmt.Errorf("duplicated event: %v", events))
 	}
 
-	query := NewCalcQuery(eseq, ToInnerUnit(Timestamp(window * 60 * 1000)))
+	query := NewCalcQuery(eseq, MillisecondToInnerUnit(uint64(window * 60 * 1000)))
 
 	var calc interface {
 		ByBlock() ScanSink
@@ -236,6 +242,27 @@ func CmdIndexBuild(args []string) {
 	CheckError(err)
 }
 
+func CmdUtilNormalize(args []string) {
+	r := bufio.NewReader(os.Stdin)
+	for {
+		line, prefix, err := r.ReadLine()
+		if err != nil {
+			if err != io.EOF {
+				CheckError(err)
+			} else {
+				return
+			}
+		}
+		if prefix {
+			err = errors.New("line too long")
+			CheckError(err)
+		}
+		row, err := OriginParse(line)
+		CheckError(err)
+		fmt.Fprintf(os.Stdout, "%v,%v,%v,%v\n", row.Ts, row.Id, row.Event, string(row.Props))
+	}
+}
+
 func ParseArgsPredicate(from, to string) (pred Predicate, err error) {
 	pred.Lower, err = ParseDateTime(from)
 	if err != nil {
@@ -292,9 +319,10 @@ func ParseDateTime(s string) (TimestampBound, error) {
 		bound.Included = false
 	}
 
+	// Asume "args format and unit" = "inner unit"
 	ts, err := strconv.ParseUint(s, 10, 64)
 	if err == nil {
-		bound.Ts = ToInnerUnit(Timestamp(ts))
+		bound.Ts = MillisecondToInnerUnit(uint64(ts))
 		return bound, nil
 	}
 
@@ -303,8 +331,8 @@ func ParseDateTime(s string) (TimestampBound, error) {
 		return TimestampNoBound, err
 	}
 	// Manually change timezone, for platform compatibility
-	bound.Ts = Timestamp(int64(t.UnixNano()) / int64(time.Millisecond)) - Timestamp(time.Hour * 8 / time.Millisecond)
-	bound.Ts = ToInnerUnit(bound.Ts)
+	tzd := uint64(time.Hour * 8 / time.Millisecond)
+	bound.Ts = MillisecondToInnerUnit(uint64(t.UnixNano()) / uint64(time.Millisecond) - tzd)
 	return bound, nil
 }
 

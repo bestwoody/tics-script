@@ -414,8 +414,8 @@ type TimestampBound struct {
 	Included bool
 }
 
-func ToInnerUnit(t Timestamp) Timestamp {
-	return t / 1000
+func MillisecondToInnerUnit(ts uint64) Timestamp {
+	return Timestamp(ts / 1000)
 }
 const TimestampLen = 4
 type Timestamp uint32
