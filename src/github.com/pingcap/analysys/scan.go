@@ -129,9 +129,6 @@ func FilesScan(files []string, conc int, bulk bool, pred Predicate, sink ScanSin
 				reordereds <-reorderer.Pop()
 			}
 		}
-		for reorderer.Ready() {
-			reordereds <-reorderer.Pop()
-		}
 		if reorderer.Len() > 0 {
 			panic("should never happen: reorderer.holdeds > 0")
 		}
