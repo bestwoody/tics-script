@@ -414,6 +414,9 @@ type TimestampBound struct {
 	Included bool
 }
 
+func InnerUnitToNano(ts Timestamp) int64 {
+	return int64(ts) * 1e9
+}
 func MillisecondToInnerUnit(ts uint64) Timestamp {
 	return Timestamp(ts / 1000)
 }

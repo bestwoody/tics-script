@@ -2,6 +2,7 @@ package analysys
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"flag"
 	"io"
@@ -28,7 +29,7 @@ func Main() {
 	index.Reg("dump", "dump index and verify", CmdIndexDump)
 
 	util := cmds.Sub("util", "util commands")
-	util.Reg("normalize", "normalize origin data (from stdin) and print", CmdUtilNormalize)
+	util.Reg("toch", "transform origin data (from stdin) to clickhouse csv", CmdUtilToChFormat)
 
 	cmds.Run(os.Args[1:])
 }
@@ -242,7 +243,7 @@ func CmdIndexBuild(args []string) {
 	CheckError(err)
 }
 
-func CmdUtilNormalize(args []string) {
+func CmdUtilToChFormat(args []string) {
 	r := bufio.NewReader(os.Stdin)
 	for {
 		line, prefix, err := r.ReadLine()
@@ -259,7 +260,9 @@ func CmdUtilNormalize(args []string) {
 		}
 		row, err := OriginParse(line)
 		CheckError(err)
-		fmt.Fprintf(os.Stdout, "%v,%v,%v,%v\n", row.Ts, row.Id, row.Event, string(row.Props))
+		t := time.Unix(0, InnerUnitToNano(row.Ts)).Format("2006-01-02")
+		prop := string(bytes.Replace(row.Props, []byte(","), []byte(";"), -1))
+		fmt.Fprintf(os.Stdout, "%v,%v,%v,%v,%v\n", t, row.Ts, row.Id, row.Event, prop)
 	}
 }
 
@@ -319,7 +322,7 @@ func ParseDateTime(s string) (TimestampBound, error) {
 		bound.Included = false
 	}
 
-	// Asume "args format and unit" = "inner unit"
+	// Assume "args format and unit" = "inner unit"
 	ts, err := strconv.ParseUint(s, 10, 64)
 	if err == nil {
 		bound.Ts = MillisecondToInnerUnit(uint64(ts))
