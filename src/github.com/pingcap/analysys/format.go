@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"unsafe"
+	"github.com/golang/snappy"
 )
 
 func IndexingLoad(path string) (*Indexing, error) {
@@ -116,7 +117,12 @@ func PartWrite(rows Rows, path string, compress string, gran, align int) (Index,
 
 		block := Block(rows[0: count])
 
-		n, err := block.Write(w, compress)
+		var n int
+		if compress == "snappy" {
+			n, err = block.BulkWrite(w, compress)
+		} else {
+			n, err = block.Write(w, compress)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -227,6 +233,61 @@ func (self Rows) Less(i, j int) bool {
 
 type Rows []Row
 
+func (self Block) BulkWrite(w io.Writer, compress string) (int, error) {
+	written := 0
+
+	err := binary.Write(w, binary.LittleEndian, MagicFlag)
+	if err != nil {
+		return 0, errors.New("writing block magic flag: " + err.Error())
+	}
+	written += 2
+
+	ct, err := RegisteredCompressers.GetCompressType(compress)
+	if err != nil {
+		return written, err
+	}
+	if ct != CompressSnappy {
+		return written, errors.New("bulk write only support snappy")
+	}
+
+	err = binary.Write(w, binary.LittleEndian, ct)
+	if err != nil {
+		return written, errors.New("writing block compress type: " + err.Error())
+	}
+	written += 2
+
+	err = binary.Write(w, binary.LittleEndian, uint32(len(self)))
+	if err != nil {
+		return 0, errors.New("writing block size: " + err.Error())
+	}
+	written += 4
+
+	buf := bytes.NewBuffer(nil)
+	for i, row := range self {
+		_, err := row.Write(buf)
+		if err != nil {
+			return written, fmt.Errorf("writing block row #%v: %s", i, err.Error())
+		}
+	}
+	data := buf.Bytes()
+	crc := crc32.ChecksumIEEE(data)
+
+	coded := snappy.Encode(nil, data)
+	n, err := w.Write(coded)
+	if err != nil {
+		return written, errors.New("writing compressed data: " + err.Error())
+	}
+	written += int(n)
+
+	err = binary.Write(w, binary.LittleEndian, crc)
+	if err != nil {
+		return written, errors.New("writing block checksum: " + err.Error())
+	}
+	written += 4
+
+	return written, err
+}
+
 func (self Block) Write(w io.Writer, compress string) (int, error) {
 	written := 0
 
@@ -306,6 +367,12 @@ func BlockBulkLoad(data []byte) (Block, []byte, error) {
 
 	if compress == CompressNone {
 		decoded = data
+	} else if compress == CompressSnappy {
+		var err error
+		decoded, err = snappy.Decode(nil, data)
+		if err != nil {
+			return nil, nil, fmt.Errorf("snappy decompress failed: %s", err.Error())
+		}
 	} else {
 		buf := bytes.NewBuffer(nil)
 		r, closer, err := RegisteredCompressers.Decompress(compress, bytes.NewReader(data))
@@ -415,7 +482,7 @@ type TimestampBound struct {
 }
 
 func ToInnerUnit(t Timestamp) Timestamp {
-	return t / 1000
+	return t
 }
-const TimestampLen = 4
-type Timestamp uint32
+const TimestampLen = 8
+type Timestamp uint64
