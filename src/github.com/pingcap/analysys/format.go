@@ -481,8 +481,11 @@ type TimestampBound struct {
 	Included bool
 }
 
-func ToInnerUnit(t Timestamp) Timestamp {
-	return t
+func InnerUnitToNano(ts Timestamp) int64 {
+	return int64(ts) * 1e6
+}
+func MillisecondToInnerUnit(ts uint64) Timestamp {
+	return Timestamp(ts)
 }
 const TimestampLen = 8
 type Timestamp uint64
