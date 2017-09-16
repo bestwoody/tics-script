@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"unsafe"
-	"github.com/golang/snappy"
 )
 
 func IndexingLoad(path string) (*Indexing, error) {
@@ -56,7 +55,7 @@ func (self *Indexing) Blocks() int {
 	return len(self.Index) - 1
 }
 
-func (self *Indexing) BulkLoad(i int) ([]byte, error) {
+func (self *Indexing) Load(i int) ([]byte, error) {
 	if i >= len(self.Index) - 1 {
 		return nil, fmt.Errorf("indexing load block: #%v >= %v", i, len(self.Index))
 	}
@@ -65,15 +64,6 @@ func (self *Indexing) BulkLoad(i int) ([]byte, error) {
 	r := io.NewSectionReader(self.file, int64(entry.Offset), int64(entry.Size))
 	_, err := io.ReadFull(r, data)
 	return data, err
-}
-
-func (self *Indexing) Load(i int) (Block, error) {
-	if i >= len(self.Index) - 1 {
-		return nil, fmt.Errorf("indexing load block: #%v >= %v", i, len(self.Index))
-	}
-	entry := self.Index[i]
-	r := io.NewSectionReader(self.file, int64(entry.Offset), int64(entry.Size))
-	return BlockLoad(bufio.NewReaderSize(r, BufferSizeRead))
 }
 
 type Indexing struct {
@@ -116,13 +106,7 @@ func PartWrite(rows Rows, path string, compress string, gran, align int) (Index,
 		}
 
 		block := Block(rows[0: count])
-
-		var n int
-		if compress == "snappy" {
-			n, err = block.BulkWrite(w, compress)
-		} else {
-			n, err = block.Write(w, compress)
-		}
+		n, err := block.Write(w, compress)
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +217,7 @@ func (self Rows) Less(i, j int) bool {
 
 type Rows []Row
 
-func (self Block) BulkWrite(w io.Writer, compress string) (int, error) {
+func (self Block) Write(w io.Writer, compress string) (int, error) {
 	written := 0
 
 	err := binary.Write(w, binary.LittleEndian, MagicFlag)
@@ -245,9 +229,6 @@ func (self Block) BulkWrite(w io.Writer, compress string) (int, error) {
 	ct, err := RegisteredCompressers.GetCompressType(compress)
 	if err != nil {
 		return written, err
-	}
-	if ct != CompressSnappy {
-		return written, errors.New("bulk write only support snappy")
 	}
 
 	err = binary.Write(w, binary.LittleEndian, ct)
@@ -272,7 +253,14 @@ func (self Block) BulkWrite(w io.Writer, compress string) (int, error) {
 	data := buf.Bytes()
 	crc := crc32.ChecksumIEEE(data)
 
-	coded := snappy.Encode(nil, data)
+	compresser, err := RegisteredCompressers.Get(ct)
+	if err != nil {
+		return written, err
+	}
+	coded, err := compresser.Compress(data)
+	if err != nil {
+		return written, errors.New("compressing data: " + err.Error())
+	}
 	n, err := w.Write(coded)
 	if err != nil {
 		return written, errors.New("writing compressed data: " + err.Error())
@@ -288,72 +276,7 @@ func (self Block) BulkWrite(w io.Writer, compress string) (int, error) {
 	return written, err
 }
 
-func (self Block) Write(w io.Writer, compress string) (int, error) {
-	written := 0
-
-	err := binary.Write(w, binary.LittleEndian, MagicFlag)
-	if err != nil {
-		return 0, errors.New("writing block magic flag: " + err.Error())
-	}
-	written += 2
-
-	ct, err := RegisteredCompressers.GetCompressType(compress)
-	if err != nil {
-		return written, err
-	}
-	err = binary.Write(w, binary.LittleEndian, ct)
-	if err != nil {
-		return written, errors.New("writing block compress type: " + err.Error())
-	}
-	written += 2
-
-	err = binary.Write(w, binary.LittleEndian, uint32(len(self)))
-	if err != nil {
-		return 0, errors.New("writing block size: " + err.Error())
-	}
-	written += 4
-
-	origin := w
-
-	// TODO: pipeline write
-	buf := bytes.NewBuffer(nil)
-	w, closer, err := RegisteredCompressers.Compress(ct, buf)
-	if err != nil {
-		return written, err
-	}
-
-	crc32 := crc32.NewIEEE()
-	w = io.MultiWriter(crc32, w)
-
-	for i, row := range self {
-		_, err := row.Write(w)
-		if err != nil {
-			return written, fmt.Errorf("writing block row #%v: %s", i, err.Error())
-		}
-	}
-
-	err = closer.Close()
-	if err != nil {
-		return written, errors.New("closing compresser: " + err.Error())
-	}
-
-	n, err := io.Copy(origin, buf)
-	if err != nil {
-		return written, errors.New("writing compressed data: " + err.Error())
-	}
-	written += int(n)
-
-	crc := crc32.Sum32()
-	err = binary.Write(origin, binary.LittleEndian, crc)
-	if err != nil {
-		return written, errors.New("writing block checksum: " + err.Error())
-	}
-	written += 4
-
-	return written, err
-}
-
-func BlockBulkLoad(data []byte) (Block, []byte, error) {
+func BlockLoad(data []byte) (Block, []byte, error) {
 	magic := *(*uint16)(unsafe.Pointer(&data[0]))
 	if magic != MagicFlag {
 		return nil, nil, fmt.Errorf("magic flag not matched: real:%v VS read:%v", MagicFlag, magic)
@@ -365,27 +288,13 @@ func BlockBulkLoad(data []byte) (Block, []byte, error) {
 	data = data[8: len(data) - 4]
 	var decoded []byte
 
-	if compress == CompressNone {
-		decoded = data
-	} else if compress == CompressSnappy {
-		var err error
-		decoded, err = snappy.Decode(nil, data)
-		if err != nil {
-			return nil, nil, fmt.Errorf("snappy decompress failed: %s", err.Error())
-		}
-	} else {
-		buf := bytes.NewBuffer(nil)
-		r, closer, err := RegisteredCompressers.Decompress(compress, bytes.NewReader(data))
-		if err != nil {
-			return nil, nil, fmt.Errorf("opening decompresser: %s", err.Error())
-		}
-		defer closer.Close()
-
-		_, err = io.Copy(buf, r)
-		if err != nil {
-			return nil, nil, fmt.Errorf("decompressing: %s", err.Error())
-		}
-		decoded = buf.Bytes()
+	compresser, err := RegisteredCompressers.Get(compress)
+	if err != nil {
+		return nil, nil, err
+	}
+	decoded, err = compresser.Decompress(data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("decompress failed: %s", err.Error())
 	}
 
 	c2 := crc32.ChecksumIEEE(decoded)
@@ -397,64 +306,11 @@ func BlockBulkLoad(data []byte) (Block, []byte, error) {
 	block := make(Block, count)
 	for i := 0; i < len(block); i++ {
 		var row Row
-		n := RowBulkLoad(decoded[curr: len(decoded)], &row)
+		n := RowLoad(decoded[curr: len(decoded)], &row)
 		curr += int(n)
 		block[i] = row
 	}
 	return block, decoded, nil
-}
-
-func BlockLoad(r io.Reader) (Block, error) {
-	origin := r
-	magic := uint16(0)
-	err := binary.Read(r, binary.LittleEndian, &magic)
-	if err != nil {
-		return nil, errors.New("reading block magic flag: " + err.Error())
-	}
-	if magic != MagicFlag {
-		return nil, fmt.Errorf("magic flag not matched: real:%v VS read:%v", MagicFlag, magic)
-	}
-
-	compress := CompressType(0)
-	err = binary.Read(r, binary.LittleEndian, &compress)
-	if err != nil {
-		return nil, errors.New("reading block compress type: " + err.Error())
-	}
-
-	count := uint32(0)
-	err = binary.Read(r, binary.LittleEndian, &count)
-	if err != nil {
-		return nil, errors.New("reading block size: " + err.Error())
-	}
-
-	r, closer, err := RegisteredCompressers.Decompress(compress, r)
-	if err != nil {
-		return nil, err
-	}
-	defer closer.Close()
-
-	crc32 := crc32.NewIEEE()
-	r = io.TeeReader(r , crc32)
-
-	block := make(Block, count)
-	for i := uint32(0); i < count; i++ {
-		err = RowLoad(r, &block[i])
-		if err != nil {
-			return nil, fmt.Errorf("reading block row #%v: %s", i, err.Error())
-		}
-	}
-
-	c1 := crc32.Sum32()
-	c2 := uint32(0)
-	err = binary.Read(origin, binary.LittleEndian, &c2)
-	if err != nil {
-		return nil, errors.New("reading block checksum: " + err.Error())
-	}
-	if c1 != c2 {
-		return nil, fmt.Errorf("block checksum not matched: cal:%v VS read:%v", c1, c2)
-	}
-
-	return block, nil
 }
 
 type Block []Row

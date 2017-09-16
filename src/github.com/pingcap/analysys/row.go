@@ -177,39 +177,13 @@ func (self *Row) PersistSize() int {
 	return TimestampLen + UserIdLen + EventIdLen + CbpLen + len(self.Props)
 }
 
-func RowBulkLoad(data []byte, row *Row) int {
+func RowLoad(data []byte, row *Row) int {
 	info := (*RowInfo)(unsafe.Pointer(&data[0]))
 	dest := (*RowInfo)(unsafe.Pointer(row))
 	*dest = *info
 	cbi := uint16(unsafe.Sizeof(*info))
 	row.Props = data[cbi: cbi + info.Cbp]
 	return row.PersistSize()
-}
-
-func RowLoad(r io.Reader, row *Row) error {
-	err := binary.Read(r, binary.LittleEndian, &row.Ts)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(r, binary.LittleEndian, &row.Id)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(r, binary.LittleEndian, &row.Event)
-	if err != nil {
-		return err
-	}
-	cbp := uint16(0)
-	err = binary.Read(r, binary.LittleEndian, &cbp)
-	if err != nil {
-		return err
-	}
-	row.Props = make([]byte, cbp)
-	_, err = io.ReadFull(r, row.Props)
-	if err != nil {
-		err = fmt.Errorf("reading event props, size:%v %s", cbp, err.Error())
-	}
-	return err
 }
 
 func (self *Row) Dump(w io.Writer) error {

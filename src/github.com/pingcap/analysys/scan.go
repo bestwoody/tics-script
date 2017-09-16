@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-func FolderScan(in string, conc int, bulk bool, pred Predicate, sink ScanSink) error {
+func FolderScan(in string, conc int, pred Predicate, sink ScanSink) error {
 	ins := make([]string, 0)
 	err := filepath.Walk(in, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -27,10 +27,10 @@ func FolderScan(in string, conc int, bulk bool, pred Predicate, sink ScanSink) e
 		return err
 	}
 	sort.Strings(ins)
-	return FilesScan(ins, conc, bulk, pred, sink)
+	return FilesScan(ins, conc, pred, sink)
 }
 
-func FilesScan(files []string, conc int, bulk bool, pred Predicate, sink ScanSink) error {
+func FilesScan(files []string, conc int, pred Predicate, sink ScanSink) error {
 	cache, err := CacheLoad(files)
 	if err != nil {
 		return err
@@ -76,48 +76,36 @@ func FilesScan(files []string, conc int, bulk bool, pred Predicate, sink ScanSin
 		}
 	}()
 
-	// Read blocks, and (when not on bulk load mode) decode blocks
+	// Read blocks
 	blocks := make(chan LoadedBlock, conc * 4)
 	var decodings chan LoadedBlock
 	for i := 0; i < conc; i++ {
 		go func() {
 			for job := range queue {
 				loaded := LoadedBlock {job.File, job.Order, nil, nil}
-				if bulk {
-					loaded.data, err = job.Indexing.BulkLoad(job.Order)
-					decodings <-loaded
-					ew.Add(1)
-					errs <-err
-				} else {
-					loaded.Block, err = job.Indexing.Load(job.Order)
-					if err == nil {
-						loaded.Block = pred.Interset(loaded.Block)
-					}
-					blocks <-loaded
-					ew.Add(1)
-					errs <-err
-				}
-			}
-		}()
-	}
-
-	// Decode blocks (bulk load mode)
-	if bulk {
-		decodings = make(chan LoadedBlock, conc * 4)
-		go func() {
-			for loaded := range decodings {
-				if loaded.data != nil {
-					loaded.Block, loaded.data, err = BlockBulkLoad(loaded.data)
-					if err == nil {
-						loaded.Block = pred.Interset(loaded.Block)
-					}
-				}
-				blocks <-loaded
+				loaded.data, err = job.Indexing.Load(job.Order)
+				decodings <-loaded
 				ew.Add(1)
 				errs <-err
 			}
 		}()
 	}
+
+	// Decode blocks
+	decodings = make(chan LoadedBlock, conc * 4)
+	go func() {
+		for loaded := range decodings {
+			if loaded.data != nil {
+				loaded.Block, loaded.data, err = BlockLoad(loaded.data)
+				if err == nil {
+					loaded.Block = pred.Interset(loaded.Block)
+				}
+			}
+			blocks <-loaded
+			ew.Add(1)
+			errs <-err
+		}
+	}()
 
 	// Reorder blocks
 	reordereds := make(chan LoadedBlock, conc * 4)
