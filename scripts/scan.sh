@@ -7,8 +7,6 @@ set -eu
 
 # bin/analysys query dump ?
 #
-# -bulk
-#   use block bulk loading (default true)
 # -conc int
 #   conrrent threads, '0' means auto detect
 # -dry
@@ -26,7 +24,7 @@ set -eu
 # -verify
 #   verify timestamp ascending (default true)
 #
-#shortcut: <path> <from> <to> <user> <event> <conc> <bulk> <verify> <dry>
+#shortcut: <path> <from> <to> <user> <event> <conc> <verify> <dry>
 
 bin/analysys query dump \
 	-path="$db" \
@@ -35,6 +33,5 @@ bin/analysys query dump \
 	-user=0 \
 	-event=0 \
 	-conc=0 \
-	-bulk=true \
 	-verify=true \
 	-dry=false \

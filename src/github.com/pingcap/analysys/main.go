@@ -43,7 +43,6 @@ func CmdQueryCal(args []string) {
 	var exp string
 	var conc int
 	var calculator string
-	var bulk bool
 	var byblock bool
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
@@ -55,10 +54,9 @@ func CmdQueryCal(args []string) {
 	flag.StringVar(&exp, "exp", "", "query data where expression is true")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
 	flag.StringVar(&calculator, "calc", "paged", "choose calculator from [base, startlink, paged]")
-	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 	flag.BoolVar(&byblock, "byblock", true, "Async calculate, block by block")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "calc",  "bulk", "byblock")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "events", "window", "exp", "conc", "calc",  "byblock")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -102,9 +100,9 @@ func CmdQueryCal(args []string) {
 	}
 
 	if isdir {
-		err = FolderScan(path, conc, bulk, pred, sink)
+		err = FolderScan(path, conc, pred, sink)
 	} else {
-		err = FilesScan([]string {path}, conc, bulk, pred, sink)
+		err = FilesScan([]string {path}, conc, pred, sink)
 	}
 	CheckError(err)
 
@@ -126,7 +124,6 @@ func CmdQueryCount(args []string) {
 	var to string
 	var fast bool
 	var conc int
-	var bulk bool
 
 	flag := flag.NewFlagSet("", flag.ContinueOnError)
 	flag.StringVar(&path, "path", "db", "file path")
@@ -134,9 +131,8 @@ func CmdQueryCount(args []string) {
 	flag.StringVar(&to, "to", "", "data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included" )
 	flag.BoolVar(&fast, "fast", false, "just count the rows")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
-	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "fast", "conc", "bulk")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "fast", "conc")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -147,9 +143,9 @@ func CmdQueryCount(args []string) {
 	counter := NewRowCounter(fast)
 	sink := counter.ByRow()
 	if isdir {
-		err = FolderScan(path, conc, bulk, pred, sink)
+		err = FolderScan(path, conc, pred, sink)
 	} else {
-		err = FilesScan([]string {path}, conc, bulk, pred, sink)
+		err = FilesScan([]string {path}, conc, pred, sink)
 	}
 	CheckError(err)
 	if fast {
@@ -167,7 +163,6 @@ func CmdQueryDump(args []string) {
 	var user int
 	var event int
 	var conc int
-	var bulk bool
 	var verify bool
 	var dry bool
 
@@ -178,11 +173,10 @@ func CmdQueryDump(args []string) {
 	flag.IntVar(&user, "user", 0, "only rows of this user, '0' means all")
 	flag.IntVar(&event, "event", 0, "only rows of this event, '0' means all")
 	flag.IntVar(&conc, "conc", 0, "conrrent threads, '0' means auto detect")
-	flag.BoolVar(&bulk, "bulk", true, "use block bulk loading")
 	flag.BoolVar(&verify, "verify", true, "verify timestamp ascending")
 	flag.BoolVar(&dry, "dry", false, "dry run, for correctness check and benchmark")
 
-	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "user", "event", "conc", "bulk", "verify", "dry")
+	tools.ParseFlagOrDie(flag, args, "path", "from", "to", "user", "event", "conc", "verify", "dry")
 
 	pred, err := ParseArgsPredicate(from, to)
 	CheckError(err)
@@ -192,9 +186,9 @@ func CmdQueryDump(args []string) {
 
 	sink := RowPrinter{os.Stdout, Timestamp(0), UserId(user), EventId(event), verify, dry}.ByRow()
 	if isdir {
-		err = FolderScan(path, conc, bulk, pred, sink)
+		err = FolderScan(path, conc, pred, sink)
 	} else {
-		err = FilesScan([]string {path}, conc, bulk, pred, sink)
+		err = FilesScan([]string {path}, conc, pred, sink)
 	}
 	CheckError(err)
 }

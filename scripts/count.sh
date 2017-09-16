@@ -7,8 +7,6 @@ set -eu
 
 # bin/analysys query count ?
 #
-# -bulk
-#   use block bulk loading (default true)
 # -conc int
 #   conrrent threads, '0' means auto detect
 # -fast
@@ -20,7 +18,7 @@ set -eu
 # -to string
 #   data end time, 'YYYY-MM-DD HH:MM:SS-', ends with '-' means not included
 #
-#shortcut: <path> <from> <to> <fast> <conc> <bulk>
+#shortcut: <path> <from> <to> <fast> <conc>
 
 bin/analysys query count \
 	-path="$db" \
@@ -28,4 +26,3 @@ bin/analysys query count \
 	-to="" \
 	-fast=false \
 	-conc=0 \
-	-bulk=true

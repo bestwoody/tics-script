@@ -2,8 +2,6 @@ set -eu
 
 # bin/analysys query cal ?
 #
-# -bulk
-#   use block bulk loading (default true)
 # -byblock
 #   Async calculate, block by block (default true)
 # -calc string
@@ -23,7 +21,7 @@ set -eu
 # -window int
 #   window size in minutes (default 1440)
 #
-# shortcut: <path> <from> <to> <events> <window> <exp> <conc> <calc> <bulk> <byblock>
+# shortcut: <path> <from> <to> <events> <window> <exp> <conc> <calc> <byblock>
 
 #- Q1 -
 
