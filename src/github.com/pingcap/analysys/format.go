@@ -129,7 +129,7 @@ func (self Index) Write(path string) error {
 	}
 	defer f.Close()
 
-	crc32 := crc32.NewIEEE()
+	crc32 := crc32.New(CastagnoliTable)
 	w := bufio.NewWriterSize(io.MultiWriter(f, crc32), BufferSizeWrite)
 
 	err = binary.Write(w, binary.LittleEndian, uint32(len(self)))
@@ -161,7 +161,7 @@ func IndexLoad(path string) (Index, error) {
 	}
 	defer f.Close()
 
-	crc32 := crc32.NewIEEE()
+	crc32 := crc32.New(CastagnoliTable)
 	r := io.TeeReader(bufio.NewReader(f), crc32)
 
 	count := uint32(0)
@@ -251,7 +251,7 @@ func (self Block) Write(w io.Writer, compress string) (int, error) {
 		}
 	}
 	data := buf.Bytes()
-	crc := crc32.ChecksumIEEE(data)
+	crc := crc32.Checksum(data, CastagnoliTable)
 
 	compresser, err := RegisteredCompressers.Get(ct)
 	if err != nil {
@@ -297,7 +297,7 @@ func BlockLoad(data []byte) (Block, []byte, error) {
 		return nil, nil, fmt.Errorf("decompress failed: %s", err.Error())
 	}
 
-	c2 := crc32.ChecksumIEEE(decoded)
+	c2 := crc32.Checksum(decoded, CastagnoliTable)
 	if crc != c2 {
 		return nil, nil, fmt.Errorf("block checksum not matched: cal:%v VS read:%v", crc, c2)
 	}
@@ -316,6 +316,8 @@ func BlockLoad(data []byte) (Block, []byte, error) {
 type Block []Row
 
 var TimestampNoBound = TimestampBound {TimestampOpenBound, true}
+
+var CastagnoliTable = crc32.MakeTable(crc32.Castagnoli)
 
 const (
 	BufferSizeRead  = 1024 * 64

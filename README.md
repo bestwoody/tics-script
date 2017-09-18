@@ -80,6 +80,8 @@
                 BlockSize          - uint32                       |
             IndexEntry             - the end of the N-st Entry    |
             IndexChecksum          - uint32            <-- crc32 -|
+
+crc32: use castagnoli polynomials, same as sse4.
 ```
 
 ## 测试状况
