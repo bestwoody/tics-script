@@ -1,5 +1,8 @@
 in="$1"
 out="data/db"
+if [ ! -z "$2" ]; then
+	out="$2"
+fi
 
 set -eu
 
@@ -35,5 +38,3 @@ bin/analysys index build \
 	-conc=0 \
 	-gran=8192 \
 	-align=512 \
-
-
