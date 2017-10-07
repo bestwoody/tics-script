@@ -7,7 +7,7 @@ fi
 set -eu
 
 if [ -z "$in" ]; then
-	echo "usage: <bin> data-source-file" >&2
+	echo "usage: <bin> data-source-file output-file" >&2
 	exit 1
 fi
 

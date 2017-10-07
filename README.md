@@ -64,6 +64,7 @@
             Block * N              - align by 512
                 MagicFlag          - uint16
                 CompressType       - uint16, def: snappy
+                OriginSize         - uint64, only use in cxx version
                 RowCount           - uint32, def: 8192
                 Row * N                                         ---  ---
                     Timestamp      - uint32                       |    | compressed
