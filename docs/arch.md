@@ -10,9 +10,9 @@
    |
    |
 +--v-------------------------+
-|                            |  Data buffer:
-|  Bin log:                  |    Fetch data as quick as possible,
-|    File or service         |    buffering data
+|                            |
+|  Binlog:                   |
+|    File or service         |
 |                            |
 +--^-------------------------+
    |
