@@ -17,7 +17,7 @@
 +--^-------------------------+
    |
    |
-+----------------------------+
++--+-------------------------+
 |                            |  Magic Writer and Engine can be in the
 |  Magic Writer:             |  same process
 |    Poll and write data to  |
@@ -58,7 +58,7 @@
    |        |
    |        |
    |        |
-+--v-------------------------------------+
++--v--------+----------------------------+
 |                                        |  Latch Service and Engine can be in
 |  Latch Service:                        |  the same process
 |    Coordinator of reader an writer(s)  |
