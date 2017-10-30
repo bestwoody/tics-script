@@ -1,5 +1,6 @@
 # Connect CH to Spark
-## Process and data relations
+
+## Processes and data relation
 ```
 +-----------------------------------------------+
 |                                               |
@@ -10,7 +11,7 @@
 |  +----------------------------------|------+  |
 |  |                                  |      |  |
 |  |  Spark-Magic Client:           Decode   |  |
-|  |    In process jar package        |      |  |
+|  |    In process '.jar' package     |      |  |
 |  |                                  |      |  |
 |  +---+------------------------------|------+  |
 |      |                              |         |
@@ -82,4 +83,66 @@
 +---------------------------+
 
 -->: Calling direction or data flow
+```
+
+## Code bases and modules relation
+```
++---------------------------------------------+
+|                                             |
+|  Community version modules                  |
+|                                             |
+|  +-----------------+   +-----------------+  |
+|  |  CH             |   |  Spark          |  |
+|  +---^-------------+   +-----------------+  |
+|      |                                      |
++------|--------------------------------------+
+       |
++------|--------------------------------------+
+|      |                                      |
+|      | Keep syncing                         |
+|      |                                      |
+|  +---v-----------------------------------+  |
+|  |  Patched CH:                          |  |
+|  |    Update/delete support              |  |
+|  |    Wire storage layer to Connectors   |  |
+|  +---------------------------------------+  |
+|                                             |
+|  +---------------------------------------+  |
+|  |  Magic API Connector:                 |  |
+|  |    Magic protocol (write/scan)        |  |
+|  |    Arrow format encoding              |  |
+|  |    Export API to '.so'                |  |
+|  +---------------------------------------+  |
+|                                             |
+|  Repo of CH engine (ch.so)                  |
+|                                             |
++---------------------------------------------+
+
++---------------------------------------------+
+|                                             |
+|  Common modules for all engines             |
+|                                             |
+|  +---------------------------------------+  |
+|  |  Magic Writer:                        |  |
+|  |    Link to <engine>.so                |  |
+|  |    Read Binlog                        |  |
+|  |    Use Magic API, write to engine     |  |
+|  +---------------------------------------+  |
+|                                             |
+|  +---------------------------------------+  |
+|  |  Spark-Magic Client:                  |  |
+|  |    Jar package for Spark              |  |
+|  |    Link to <engine>.so with JNI       |  |
+|  |    Wire Spark to Magic protocol       |  |
+|  |    Decode Arrow format to RDD         |  |
+|  +---------------------------------------+  |
+|                                             |
+|  +---------------------------------------+  |
+|  |  Latch Service:                       |  |
+|  |    Can be called by rpc               |  |
+|  |    Acquire/release data latches       |  |
+|  |    TBD                                |  |
+|  +---------------------------------------+  |
+|                                             |
++---------------------------------------------+
 ```
