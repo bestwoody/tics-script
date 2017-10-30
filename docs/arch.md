@@ -17,7 +17,7 @@
 +--^-------------------------+
    |
    |
-+----------------------------+
++--+-------------------------+
 |                            |  Magic Writer and Engine can be in the
 |  Magic Writer:             |  same process
 |    Poll and write data to  |
@@ -46,9 +46,9 @@
    |      |                  |  |                   |  |
    |   |  |  Magic Connector |  |  CH Connector     |
    |      |                  |  |                   |  |
-   |   |  +------------------+  +-------------------+
+   |   |  +--------+---------+  +--------+----------+
    |               |                     |             |
-   |   |  +------------------+  +-------------------+
+   |   |  +--------+---------+  +--------+----------+
    |      |                  |  |                   |  |
    |   |  |  Magic Engine    |  |  CH Engine        |
    |      |                  |  |                   |  |
@@ -58,12 +58,13 @@
    |        |
    |        |
    |        |
-+--v-------------------------------------+
-|                                        |  Latch Service and Engine can be in
-|  Latch Service:                        |  the same process
-|    Coordinator of reader an writer(s)  |
-|                                        |
-+--^-------------------------------------+
++--|--------|----------------------------+
+|  |        |                            |  Latch Service and Engine can be in
+|  |        |   Latch Service:           |  the same process
+|  +--------+     Coordinator of reader  |
+|  |              an writer(s)           |
+|  |                                     |
++--|-------------------------------------+
    |
    |
    | Caculator Engine protocol, eg: Spark RDD
