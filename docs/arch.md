@@ -6,23 +6,15 @@
 |                |         +--------------+         |                |
 |                |                                  |                |
 |                +---------------------------------->                |
-+-------+--------+           Write/Query            +-------+--------+
-        |                                                   |
-        |                                                   |
-+ - - - | - - - - - - - - - - - - - - - - - - - - - - - - - | - - - - +
-|       |                                                   |
-        |                 Data buffer:                      |         |
-|  +----v---------------+    Fetch data as       +----------v------+
-   |                    |    quick as possible,  |                 |  |
-|  |  Bin log:          |    buffering data      |  Magic Syncer:  |
-   |    File or service |                        |    Raft learner |  |
-|  |                    |    (Transaction safe)  |                 |
-   +--------------------+                        +-----------------+  |
-|
-+ - - - ^ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
-        |                       We only need one buffer, how to choose:
-        |                         1. Throughput
-        |                         2. Start with the easy one: Bin log
++-------+--------+           Write/Query            +----------------+
+        |
+        |
++-------v--------------------+
+|                            |  Data buffer:
+|  Bin log:                  |    Fetch data as quick as possible,
+|    File or service         |    buffering data
+|                            |
++-------^--------------------+
         |
         |
 +----------------------------+
@@ -65,7 +57,7 @@
 + - - - ^ - - - - - - - - - - - - - - - - - - - +
         |
         |
-        | Caculator Engine protocal, eg: Spark RDD
+        | Caculator Engine protocol, eg: Spark RDD
         |
         |
 + - - - + - - - - - - - - - - - - - - - - - - - +
