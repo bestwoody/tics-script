@@ -1,5 +1,5 @@
 # JNI and Arrow Bench Result
-* Hardware: `MacBookPro 15' 2015` `4 Phy Cores` `16G Mem`
+* Hardware: `MacBookPro 15' 2015` `4 Phy Cores, 2.5GHZ` `16G Mem`
 
 ## JNI Call
 * Test cast: `int sum(int, int)`
