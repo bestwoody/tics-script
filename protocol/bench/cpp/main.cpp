@@ -9,6 +9,14 @@ JNIEXPORT jdouble JNICALL Java_pingcap_com_MagicProtoBench_sumDouble(JNIEnv *env
     return a + b;
 }
 
+JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProtoBench_alloc(JNIEnv *env, jobject obj, jint size) {
+    void *buf = malloc(size);
+    jbyteArray result = env->NewByteArray(size);
+    env->SetByteArrayRegion(result, 0, size, (jbyte*)buf);
+    free(buf);
+    return result;
+}
+
 int main() {
     jdouble result = 0;
     for (long i = 0; i < 1000000000; i++)

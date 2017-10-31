@@ -6,8 +6,8 @@ public class App {
 	}
 
 	public static void main(String[] args) {
-		if (args.length != 2) {
-			System.out.println("usage: <bin> sum-int|sum-double times");
+		if (args.length < 2) {
+			System.out.println("usage: <bin> sum-int|sum-double|bytes times");
 			System.exit(-1);
 		}
 
@@ -26,6 +26,18 @@ public class App {
 			double result = 0;
 			for (int i = 0; i < times; i++) {
 				result = bench.sumDouble(2.3, 3.2);
+			}
+		}
+
+		if (cmd.equals("bytes")) {
+			if (args.length < 3) {
+				System.out.println("usage: <bin> bytes times size");
+				System.exit(-1);
+			}
+			int size = Integer.parseInt(args[2]);
+			byte[] result;
+			for (int i = 0; i < times; i++) {
+				result = bench.alloc(size);
 			}
 		}
 	}

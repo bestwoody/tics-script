@@ -31,4 +31,4 @@ target
 build
 
 # JNI compile result
-protocol/c
+protocol/c-jni
