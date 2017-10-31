@@ -3,7 +3,7 @@ project(MagicProtoBench VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -pthread -O3")
 
-include_directories(../../c)
+include_directories(../../c-jni)
 aux_source_directory(./ DIR_SRCS)
 
 find_package(JNI)
@@ -12,3 +12,4 @@ if (JNI_FOUND)
 endif()
 
 add_library(bench SHARED ${DIR_SRCS})
+add_executable(main ${DIR_SRCS})

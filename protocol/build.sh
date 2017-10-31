@@ -9,7 +9,7 @@ for file in src/main/java/pingcap/com/*.java; do
 	tmp=`basename $tmp`
 	old=`pwd`
 	cd src/main/java
-	javah -d ../../../../c pingcap.com.$tmp
+	javah -d ../../../../c-jni pingcap.com.$tmp
 	cd $old
 done
 

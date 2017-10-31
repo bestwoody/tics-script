@@ -6,16 +6,39 @@ public class App {
 	}
 
 	public static void main(String[] args) {
-		if (args.length != 1) {
-			System.out.println("usage: <bin> times");
+		if (args.length < 2) {
+			System.out.println("usage: <bin> sum-int|sum-double|bytes times");
 			System.exit(-1);
 		}
 
-		int times = Integer.parseInt(args[0]);
+		String cmd = args[0];
+		int times = Integer.parseInt(args[1]);
 		MagicProtoBench bench = new MagicProtoBench();
-		double result = 0;
-		for (int i = 0; i < times; i++) {
-			result = bench.sum(2.0, 3.0);
+
+		if (cmd.equals("sum-int")) {
+			int result = 0;
+			for (int i = 0; i < times; i++) {
+				result = bench.sumInt(3, 2);
+			}
+		}
+
+		if (cmd.equals("sum-double")) {
+			double result = 0;
+			for (int i = 0; i < times; i++) {
+				result = bench.sumDouble(2.3, 3.2);
+			}
+		}
+
+		if (cmd.equals("bytes")) {
+			if (args.length < 3) {
+				System.out.println("usage: <bin> bytes times size");
+				System.exit(-1);
+			}
+			int size = Integer.parseInt(args[2]);
+			byte[] result;
+			for (int i = 0; i < times; i++) {
+				result = bench.alloc(size);
+			}
 		}
 	}
 }
