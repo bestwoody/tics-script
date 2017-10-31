@@ -3,6 +3,7 @@
 *.dll
 *.so
 *.dylib
+*.class
 
 # Test binary, build with `go test -c`
 *.test
@@ -22,3 +23,6 @@ data
 db
 db.idx
 origin
+
+# Java compile result
+target
