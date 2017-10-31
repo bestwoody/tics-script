@@ -130,7 +130,7 @@
 |  +---------------------------------------+  |
 |                                             |
 |  +---------------------------------------+  |
-|  |  Spark-Magic Client:                  |  |
+|  |  Spark-Magic Connector:               |  |
 |  |    Jar package for Spark              |  |
 |  |    Link to <engine>.so with JNI       |  |
 |  |    Wire Spark to Magic protocol       |  |
