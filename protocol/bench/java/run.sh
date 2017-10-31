@@ -1,4 +1,5 @@
-times="$1"
+cmd="$1"
+times="$2"
 
 set -eu
 
@@ -13,4 +14,4 @@ if [ -f "$lib" ]; then
 	cp $lib .
 fi
 
-java -cp MagicProtoBench-1.0.jar:lib/* pingcap.com/App $times
+java -cp MagicProtoBench-1.0.jar:lib/* pingcap.com/App $cmd $times

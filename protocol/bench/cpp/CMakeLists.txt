@@ -12,3 +12,4 @@ if (JNI_FOUND)
 endif()
 
 add_library(bench SHARED ${DIR_SRCS})
+add_executable(main ${DIR_SRCS})

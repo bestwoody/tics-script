@@ -26,3 +26,9 @@ origin
 
 # Java compile result
 target
+
+# C++ compile result
+build
+
+# JNI compile result
+protocol/c
