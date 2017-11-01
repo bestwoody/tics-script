@@ -13,3 +13,5 @@ endif()
 
 add_library(bench SHARED ${DIR_SRCS})
 add_executable(main ${DIR_SRCS})
+target_link_libraries(bench arrow)
+target_link_libraries(main arrow)
