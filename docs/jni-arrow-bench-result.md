@@ -19,7 +19,7 @@
 * best perform: 500K row per call.
 
 ## JNI Arrow Simple Array Transfer and Decode
-* Alloc arrow-arry in `.so`, (copy and) return serialized bytes to java, no decoding
+* Alloc arrow-arry in `.so`, (copy and) return serialized bytes to java, and decode in java
 * Test cast: `byte[] getInt64Array(int rows)`
 * 1K rows per call, 1 core: 130MB/s, 17e6 rows/s
 * 1M rows per call, 1 core: 300MB/s, 39e6 rows/s
