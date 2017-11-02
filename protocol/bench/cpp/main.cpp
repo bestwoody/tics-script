@@ -51,6 +51,10 @@ JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProtoBench_benchArrowArray(JN
     if (!status.ok())
         return result;
     auto cb = serialized->size();
+    uint8_t *data = (uint8_t*)serialized->data();
+    std::cout << "serialized size: " << serialized->size() << std::endl;
+    for (size_t i = 0; i < cb; i++)
+        std::cout << size_t(*(data + i)) << std::endl;
 
     // Copy to JNI byte[]
     void *buf = malloc(cb);
