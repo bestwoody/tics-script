@@ -23,4 +23,4 @@ main()
 }
 
 set -eu
-main "clickhouse" "clickhouse"
+main "clickhouse" "ch"
