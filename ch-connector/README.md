@@ -3,7 +3,7 @@
 ## First time clone this repo
 * `repo/ch-connector> git submodule update`
     * Fetch ClickHouse (and the other submodules)
-* `repo/ch-connector> cd clickhouse && clickhouse-init.sh`
+* `repo/ch-connector> clickhouse-init.sh`
     * Fetch ClickHouse submodules
 
 ## Developing
