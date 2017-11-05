@@ -16,3 +16,16 @@
     * Extract all modifications to dir `delta`
 * `repo/ch-connector> git add delta/* && git commit -m "..."`
     * Commit it
+* Do not commit modifications in `clickhouse` submodule
+
+## Merge from official repo
+* `repo/ch-connector> clickhouse-reset.sh`
+    * Remove modifications in `clickhouse` submodule
+* `repo/ch-connector> git pull ...`
+    * Update `clickhouse` submodule from official remote repo
+* `repo/ch-connector> git add clickhouse && git commit -m "..."`
+    * Commit submodule updates
+* `repo/ch-connector> delta-apply.sh`
+    * Redo all modifications
+* `repo/ch-connector> cd clickhouse && git diff`
+    * Manually check modifications
