@@ -16,7 +16,7 @@
     * Extract all modifications to dir `delta`
 * `repo/ch-connector> git add delta/* && git commit -m "..."`
     * Commit it
-* Do not commit modifications in `clickhouse` submodule
+* Make sure: do NOT commit modifications in `clickhouse` submodule
 
 ## Merge from official repo
 * `repo/ch-connector> clickhouse-reset.sh`
