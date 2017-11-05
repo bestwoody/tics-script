@@ -1,3 +1,4 @@
 [submodule "ch-connector/clickhouse"]
 	path = ch-connector/clickhouse
 	url = git@github.com:yandex/clickhouse
+	ignore = dirty
