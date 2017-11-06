@@ -23,11 +23,9 @@ import org.apache.arrow.vector.VectorLoader;
 import org.apache.arrow.vector.NullableBigIntVector;
 
 public class App {
-	static {
-		System.loadLibrary("bench");
-	}
-
 	public static void main(String[] args) throws Exception {
+		System.loadLibrary("bench");
+
 		if (args.length < 2) {
 			System.out.println("usage: <bin> sum-int|sum-double|bytes|arrow-array times");
 			System.exit(-1);
@@ -105,6 +103,5 @@ public class App {
 			}
 			System.out.println("total size: " + cb);
 		}
-
 	}
 }

@@ -4,12 +4,12 @@ set -eu
 
 cd target
 
-lib_path="../../cpp/build"
-lib="$lib_path/libbench.dylib"
+lib_path="../../../ch-connector/build/dbms/src/Magic"
+lib="$lib_path/libch.dylib"
 if [ -f "$lib" ]; then
 	cp $lib .
 fi
-lib="$lib_path/libbench.so"
+lib="$lib_path/libch.so"
 if [ -f "$lib" ]; then
 	cp $lib .
 fi
