@@ -2,9 +2,13 @@
 
 void dumpTable(const char *name)
 {
-    // Ref: TCPHandler
-    //   Query: state.io = executeQuery(state.query, query_context, false, state.stage);
-    //   Output: processOrdinaryQuery
+    // string query = "SELECT * FROM ";
+    // query += name;
+    // auto context = Context::createGlobal(...)
+    // auto result = executeQuery(query, context, false);
+    // for:
+    //   auto block = result.in.read();
+    //   (output)
 }
 
 int main(int argc, char ** argv)
