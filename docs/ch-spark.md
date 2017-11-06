@@ -104,7 +104,7 @@
 |  +---v-----------------------------------+  |
 |  |  Patched CH:                          |  |
 |  |    Update/delete support              |  |
-|  |    Wire storage layer to Connectors   |  |
+|  |    Wire SQL layer to Connectors       |  |
 |  +---------------------------------------+  |
 |                                             |
 |  +---------------------------------------+  |
