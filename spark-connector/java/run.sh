@@ -4,7 +4,7 @@ set -eu
 
 cd target
 
-lib_path="../../../ch-connector/build/dbms/src/Server"
+lib_path="../../../ch-connector/build/dbms/src/Magic"
 lib="$lib_path/libch.dylib"
 if [ -f "$lib" ]; then
 	cp $lib .
