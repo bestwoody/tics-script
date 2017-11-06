@@ -4,11 +4,12 @@ set -eu
 
 cd target
 
-lib=../../cpp/build/libbench.dylib
+lib_path="../../cpp/build"
+lib="$lib_path/libbench.dylib"
 if [ -f "$lib" ]; then
 	cp $lib .
 fi
-lib=../../cpp/build/libbench.so
+lib="$lib_path/libbench.so"
 if [ -f "$lib" ]; then
 	cp $lib .
 fi
