@@ -4,7 +4,7 @@ untracked_reset()
 
 	if [ -d "$untracked" ]; then
 		find "$untracked" -type f | while read file; do
-			untracked_extract "$file"
+			untracked_reset "$file"
 		done
 	else
 		rm "$untracked"
