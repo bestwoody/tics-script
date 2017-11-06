@@ -1,14 +1,20 @@
 #include <iostream>
 
+#include <Interpreters/Context.h>
+#include <DataStreams/IBlockOutputStream.h>
+#include <DataStreams/copyData.h>
+
 void dumpTable(const char *name)
 {
+    // class BlockOutputStreamPrintRows : IBlockOutputStream {...};
+    //
     // string query = "SELECT * FROM ";
     // query += name;
     // auto context = Context::createGlobal(...)
-    // auto result = executeQuery(query, context, false);
-    // for:
-    //   auto block = result.in.read();
-    //   (output)
+    //
+    // auto in = executeQuery(query, context, false);
+    // auto out = BlockOutputStreamPrintRows(...);
+    // copyData(in, out)
 }
 
 int main(int argc, char ** argv)
