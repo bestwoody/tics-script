@@ -9,7 +9,7 @@ void dumpTable(const char *name)
 
 int main(int argc, char ** argv)
 {
-    if (args_ <= 1)
+    if (argc <= 1)
         return 0;
 
     // NOTE: for developing, fully scan specified table.
