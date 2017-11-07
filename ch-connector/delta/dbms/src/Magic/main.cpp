@@ -15,7 +15,7 @@ class BlockOutputStreamPrintRows : public DB::IBlockOutputStream
 {
     void write(const DB::Block & block) override
     {
-        for (size_t i = 0; i < block.rows(); i++)
+       for (size_t i = 0; i < block.rows(); i++)
         {
             for (size_t j = 0; j < block.columns(); j++)
             {
@@ -32,7 +32,7 @@ class BlockOutputStreamPrintRows : public DB::IBlockOutputStream
     }
 };
 
-void dumpTable(const char *name)
+void dumpTableImpl(const char *name)
 {
     std::string query = "SELECT * FROM ";
     query += name;
@@ -41,6 +41,20 @@ void dumpTable(const char *name)
     auto result = DB::executeQuery(query, context, false);
     BlockOutputStreamPrintRows out;
     DB::copyData(*result.in, out);
+}
+
+void dumpTable(const char *name)
+{
+    try
+    {
+        dumpTableImpl(name);
+    }
+    catch (DB::Exception e)
+    {
+        std::cerr << DB::getCurrentExceptionMessage(true, true) << std::endl;
+        //std::cerr << "Exception " << e.name() << "(" << e.className() << "), stack:" << std::endl;
+        //std::cerr << e.getStackTrace().toString() << std::endl;
+    }
 }
 
 }
