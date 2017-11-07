@@ -1,1 +1,1 @@
-build/dbms/src/Magic/ch-raw "SELECT * FROM test.test"
+build/dbms/src/Magic/ch-raw "SELECT * FROM default.test"
