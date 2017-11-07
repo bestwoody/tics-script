@@ -32,39 +32,37 @@ class BlockOutputStreamPrintRows : public DB::IBlockOutputStream
     }
 };
 
-void dumpTableImpl(const char *name)
+void queryDumpImpl(const char *query)
 {
-    std::string query = "SELECT * FROM ";
-    query += name;
-
     auto context = DB::Context::createGlobal();
     auto result = DB::executeQuery(query, context, false);
     BlockOutputStreamPrintRows out;
     DB::copyData(*result.in, out);
 }
 
-void dumpTable(const char *name)
+int queryDump(const char *query)
 {
     try
     {
-        dumpTableImpl(name);
+        queryDumpImpl(name);
     }
     catch (DB::Exception e)
     {
         std::cerr << DB::getCurrentExceptionMessage(true, true) << std::endl;
-        //std::cerr << "Exception " << e.name() << "(" << e.className() << "), stack:" << std::endl;
-        //std::cerr << e.getStackTrace().toString() << std::endl;
+        return -1;
     }
+    return 0;
 }
 
 }
 
 int main(int argc, char ** argv)
 {
-    if (argc <= 1)
-        return 0;
+    if (argc <= 1) {
+        std::cerr << "usage: <bin> query" << std::endl;
+        return -1;
+    }
 
     // NOTE: for developing, fully scan specified table.
-    Magic::dumpTable(argv[1]);
-    return 0;
+    return Magic::queryDump(argv[1]);
 }
