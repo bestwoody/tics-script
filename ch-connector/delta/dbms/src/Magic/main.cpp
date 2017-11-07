@@ -44,7 +44,7 @@ int queryDump(const char *query)
 {
     try
     {
-        queryDumpImpl(name);
+        queryDumpImpl(query);
     }
     catch (DB::Exception e)
     {
