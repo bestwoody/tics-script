@@ -1,20 +1,30 @@
 #include <iostream>
 
 #include <Interpreters/Context.h>
+#include <Interpreters/executeQuery.h>
 #include <DataStreams/IBlockOutputStream.h>
 #include <DataStreams/copyData.h>
 
+namespace Magic {
+
+class BlockOutputStreamPrintRows : public DB::IBlockOutputStream
+{
+    void write(const DB::Block & block) override
+    {
+    }
+};
+
 void dumpTable(const char *name)
 {
-    // class BlockOutputStreamPrintRows : IBlockOutputStream {...};
-    //
-    // string query = "SELECT * FROM ";
-    // query += name;
-    // auto context = Context::createGlobal(...)
-    //
-    // auto in = executeQuery(query, context, false);
-    // auto out = BlockOutputStreamPrintRows(...);
-    // copyData(in, out)
+    std::string query = "SELECT * FROM ";
+    query += name;
+
+    auto context = DB::Context::createGlobal();
+    auto result = DB::executeQuery(query, context, false);
+    BlockOutputStreamPrintRows out;
+    DB::copyData(*result.in, out);
+}
+
 }
 
 int main(int argc, char ** argv)
@@ -23,6 +33,6 @@ int main(int argc, char ** argv)
         return 0;
 
     // NOTE: for developing, fully scan specified table.
-    dumpTable(argv[1]);
+    Magic::dumpTable(argv[1]);
     return 0;
 }
