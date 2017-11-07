@@ -19,6 +19,3 @@ target_link_libraries(ch-raw
     clickhouse-performance-test
     clickhouse-extract-from-config
     clickhouse-compressor-lib)
-
-add_dependencies(ch ch-raw)
-

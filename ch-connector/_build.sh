@@ -13,14 +13,12 @@ make_ch()
 	cd "$old"
 }
 
-main()
+build_ch()
 {
-	local target="$1"
+	local target_dir="$1"
 	local build_target="$2"
 
 	mkdir -p "build"
-	make_ch "build" "../$target" "$build_target"
+	make_ch "build" "../$target_dir" "$build_target"
 }
-
-set -eu
-main "clickhouse" "ch"
+export -f build_ch
