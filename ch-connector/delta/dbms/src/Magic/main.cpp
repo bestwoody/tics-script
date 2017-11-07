@@ -8,6 +8,8 @@
 #include <Interpreters/Context.h>
 #include <Interpreters/executeQuery.h>
 
+#include "Context.h"
+
 namespace Magic {
 
 // Not a effective impl, for test/dev only.
@@ -32,19 +34,20 @@ class BlockOutputStreamPrintRows : public DB::IBlockOutputStream
     }
 };
 
-void queryDumpImpl(const char *query)
+void queryDumpImpl(std::string path, std::string query)
 {
-    auto context = DB::Context::createGlobal();
-    auto result = DB::executeQuery(query, context, false);
+    DB::Application app(path);
+
+    auto result = DB::executeQuery(query, app.context(), false);
     BlockOutputStreamPrintRows out;
     DB::copyData(*result.in, out);
 }
 
-int queryDump(const char *query)
+int queryDump(const char * path, const char * query)
 {
     try
     {
-        queryDumpImpl(query);
+        queryDumpImpl(path, query);
     }
     catch (DB::Exception e)
     {
@@ -58,11 +61,11 @@ int queryDump(const char *query)
 
 int main(int argc, char ** argv)
 {
-    if (argc <= 1) {
-        std::cerr << "usage: <bin> query" << std::endl;
+    if (argc <= 2) {
+        std::cerr << "usage: <bin> db-path query" << std::endl;
         return -1;
     }
 
     // NOTE: for developing, fully scan specified table.
-    return Magic::queryDump(argv[1]);
+    return Magic::queryDump(argv[1], argv[2]);
 }
