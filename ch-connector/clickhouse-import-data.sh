@@ -18,5 +18,5 @@ if [ -f "$schema" ]; then
 fi
 
 if [ -f "$data" ]; then
-	cat "$data" | "$bin" client --query="INSERT INTO default.$name FORMAT CSV"
+	cat "$data" | "$bin" client --query="INSERT INTO $name FORMAT CSV"
 fi
