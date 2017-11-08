@@ -12,51 +12,19 @@
 
 namespace Magic {
 
-// Not a effective impl, for test/dev only.
-class BlockOutputStreamPrintRows : public DB::IBlockOutputStream
+void queryDumpImpl(int argc, char ** argv, char * query)
 {
-    void write(const DB::Block & block) override
-    {
-       for (size_t i = 0; i < block.rows(); i++)
-        {
-            for (size_t j = 0; j < block.columns(); j++)
-            {
-                DB::ColumnWithTypeAndName data = block.getByPosition(i);
-
-                // TODO: support more types
-                if (data.type->getName() == "Int64") {
-                    auto column = typeid_cast<DB::ColumnInt64 *>(data.column.get());
-                    std::cout << column->getElement(j) << "\t";
-                }
-            }
-            std::cout << std::endl;
-        }
-    }
-};
-
-void _queryDumpImpl(std::string path, std::string query)
-{
-    DB::Application app(path);
-
+    DB::Application app(argc, argv);
     auto result = DB::executeQuery(query, app.context(), false);
-    BlockOutputStreamPrintRows out;
+    BlockOutputStreamPrintRows out(std::cout);
     DB::copyData(*result.in, out);
 }
 
-void queryDumpImpl(std::string path, std::string query)
-{
-    auto context = DB::createContext(path);
-
-    auto result = DB::executeQuery(query, *context, false);
-    BlockOutputStreamPrintRows out;
-    DB::copyData(*result.in, out);
-}
-
-int queryDump(const char * path, const char * query)
+int queryDump(int argc, char ** argv, char * query)
 {
     try
     {
-        queryDumpImpl(path, query);
+        queryDumpImpl(argc, argv, query);
     }
     catch (DB::Exception e)
     {
@@ -70,11 +38,12 @@ int queryDump(const char * path, const char * query)
 
 int main(int argc, char ** argv)
 {
-    if (argc <= 2) {
-        std::cerr << "usage: <bin> db-path query" << std::endl;
+    // TODO: handle args manually, not by BaseDaemon
+
+    if (argc != 5 || std::string(argv[1]) != "--config-file" || std::string(argv[3]) != "--query") {
+        std::cerr << "usage: <bin> --config-file <config-file> --query <query>" << std::endl;
         return -1;
     }
 
-    // NOTE: for developing, fully scan specified table.
-    return Magic::queryDump(argv[1], argv[2]);
+    return Magic::queryDump(argc - 2, argv, argv[4]);
 }

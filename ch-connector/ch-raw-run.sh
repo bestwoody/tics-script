@@ -1,1 +1,1 @@
-build/dbms/src/Magic/ch-raw "./running/clickhouse/db" "SELECT * FROM test"
+build/dbms/src/Magic/ch-raw --config-file "running/config/config.xml" --query "SELECT * FROM test"
