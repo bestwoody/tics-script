@@ -39,7 +39,7 @@
 namespace DB
 {
 
-std::unique_ptr<Context> _createContext(std::string db_path)
+std::unique_ptr<Context> createContext(std::string db_path)
 {
     auto context = std::make_unique<DB::Context>(DB::Context::createGlobal());
     context->setGlobalContext(*context);

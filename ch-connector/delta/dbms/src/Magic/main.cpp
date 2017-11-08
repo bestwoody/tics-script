@@ -34,11 +34,20 @@ class BlockOutputStreamPrintRows : public DB::IBlockOutputStream
     }
 };
 
-void queryDumpImpl(std::string path, std::string query)
+void _queryDumpImpl(std::string path, std::string query)
 {
     DB::Application app(path);
 
     auto result = DB::executeQuery(query, app.context(), false);
+    BlockOutputStreamPrintRows out;
+    DB::copyData(*result.in, out);
+}
+
+void queryDumpImpl(std::string path, std::string query)
+{
+    auto context = DB::createContext(path);
+
+    auto result = DB::executeQuery(query, *context, false);
     BlockOutputStreamPrintRows out;
     DB::copyData(*result.in, out);
 }
