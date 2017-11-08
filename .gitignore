@@ -33,6 +33,7 @@ build
 # JNI compile result
 protocol/c-jni
 
-# ch-connector compile result
+# ch-connector compile result and running data dir
 ch-connector/build
 ch-connector/origin
+ch-connector/running

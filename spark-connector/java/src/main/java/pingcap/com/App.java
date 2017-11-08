@@ -39,12 +39,8 @@ public class App {
 			System.out.print("libch version: " + magic.version());
 		}
 
-		if (cmd.equals("scanAll")) {
-			System.out.print("scanAll: TODO");
-		}
-
-		if (cmd.equals("scan")) {
-			System.out.print("scan: TODO");
+		if (cmd.equals("query")) {
+			System.out.print("query: TODO");
 		}
 	}
 }
