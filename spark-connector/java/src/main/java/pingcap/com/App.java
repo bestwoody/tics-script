@@ -25,7 +25,7 @@ import org.apache.arrow.vector.NullableBigIntVector;
 public class App {
 	public static void main(String[] args) throws Exception {
 		if (args.length < 1) {
-			System.out.println("usage: <bin> version|scanAll|scan");
+			System.out.println("usage: <bin> version|query");
 			System.exit(-1);
 		}
 
@@ -40,7 +40,12 @@ public class App {
 		}
 
 		if (cmd.equals("query")) {
-			System.out.print("query: TODO");
+			if (args.length < 2) {
+				System.out.println("usage: <bin> query <query-string>");
+				System.exit(-1);
+			}
+			String query = args[1];
+			magic.query(query);
 		}
 	}
 }
