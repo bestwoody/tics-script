@@ -24,11 +24,10 @@
 * Use the right way to specify compiler
     * Cmake args `CMAKE_C_COMPILER` `DCMAKE_CXX_COMPILER`
         * OK if project has no submodule.
-        * Not OK if project has submodule.
+        * Not OK if project has submodule, because cmake args not pass though submodules
     * Env var `CC` `CXX`
         * OK
 * Make sure include paths are in right order.
     * The first one must be the g++ include dir
 * Flatbuffer bug:
-    * Assume using clang when building on Mac OS
-
+    * Assume using clang when building on Mac OS, and use some clang-only compiler args
