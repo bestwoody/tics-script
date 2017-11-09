@@ -4,7 +4,8 @@ target_link_libraries(ch
     clickhouse-client
     clickhouse-local
     clickhouse-extract-from-config
-    clickhouse-compressor-lib)
+    clickhouse-compressor-lib
+    arrow)
 add_subdirectory(JNI)
 
 add_executable(ch-raw main.cpp)
