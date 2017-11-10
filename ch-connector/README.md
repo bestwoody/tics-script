@@ -6,7 +6,7 @@
     * Git submodule of `theflash` repo
 * `delta`
     * Patch source code
-    * `clickhouse` + `delta` = CH-Connector
+    * `clickhouse` + `delta` = `CH-Connector`
 * `running`
     * Running env
     * Test data set, configs, etc
