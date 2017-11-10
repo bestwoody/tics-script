@@ -30,6 +30,8 @@
         * OK
 * Make sure the compiler include paths are in right order.
     * The first one must be the g++ include dir
+* Disable `__float128` support
+    * Remove `_GLIBCXX_USE_FLOAT128` marco in `<g++ include dir>/.../c++config.h`
 * Arrow building problem:
     * Cmake args like `-DARROW_WITH_SNAPPY=off` do not functional
     * Because `ARROW_BUILD_TESTS` will open it again, and `ARROW_BUILD_TESTS` is on by default
@@ -48,4 +50,5 @@
     * Arrow depend on it.
     * Assume using clang when building on Mac OS, fail to build:
         * Use clang-only compiler arg: `-stdlib=libc++`
+            * Source: [CMakeLists.txt#L109](https://github.com/google/flatbuffers/blob/d233b38008f30cb671fe03f14963806ffcbf99cb/CMakeLists.txt#L109)
         * Fix: manually remove this arg from `<flatbuffers>/CMakeLists.txt`
