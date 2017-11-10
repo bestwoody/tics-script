@@ -22,11 +22,11 @@
 
 ## Notes of g++ on Mac OS
 * Use the right way to specify compiler
-    * Cmake args `CMAKE_C_COMPILER` `DCMAKE_CXX_COMPILER`
+    * Cmake args `CMAKE_C_COMPILER=gcc-6` `DCMAKE_CXX_COMPILER=g++-6`
         * OK if project has no submodule.
         * Not OK if project has submodule:
             * Cmake args not pass though submodules
-    * Env vars `CC` `CXX`
+    * Env vars `CC=gcc-6` `CXX=g++-6`
         * OK
 * Make sure the compiler include paths are in right order.
     * The first one must be the g++ include dir
@@ -41,6 +41,7 @@
         * Type definitions `adler32_combine64`
         * Deferrent checking steps cause `adler32_combine64`'s prototype not match it's impl.
         * Work around: pass args `-DARROW_BUILD_TESTS=off` and `-DARROW_WITH_SNAPPY=off` to cmake
+            * For developing only
     * Checking list
         * Platform
         * System source files
