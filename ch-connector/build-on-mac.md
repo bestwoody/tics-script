@@ -1,9 +1,9 @@
 # Build projects on Mac OS (with g++-6)
 
 ## Build CH
-* Building CH strickly require g++(not clang with g++ alias)
+* Building CH strickly require g++(not clang wrap in g++ alias)
 * Follow instructings on CH docs
-* Or just `ch-connector> ./clickhouse-build.sh`
+* Or just run `ch-connector> ./clickhouse-build.sh`
 
 ## Build POC projects
 * No special things.
