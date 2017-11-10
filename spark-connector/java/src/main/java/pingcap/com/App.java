@@ -45,7 +45,11 @@ public class App {
 				System.exit(-1);
 			}
 			String query = args[1];
-			magic.query(query);
+			long token = magic.query(query);
+			BlockStream stream = new BlockStream(magic, token);
+			// TODO: print schema and rows
+			stream.schema();
+			stream.next();
 		}
 	}
 }
