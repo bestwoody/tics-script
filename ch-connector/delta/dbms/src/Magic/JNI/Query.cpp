@@ -4,8 +4,100 @@
 #include "arrow/builder.h"
 #include "arrow/ipc/writer.h"
 
-JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, jobject obj, jstring query)
+namespace Magic {
+
+class Sessions
 {
+public:
+    class Session
+    {
+    };
+
+    Sessions() : id_gen(10000)
+    {
+    }
+
+    void init(const char * config)
+    {
+        // TODO
+        // config => args
+        // app = new Application(args)
+    }
+
+    int64_t newSession(const char * query)
+    {
+        // TODO
+        // auto result = DB::executeQuery(query, app.context(), false);
+        // auto session = make_share<Session>(result)
+        // lock_guard
+        // sessions[id_gen++] = session
+    }
+
+    void closeSession(int64_t token)
+    {
+        // TODO
+        // sessions.remove(token);
+        // if .. app.cancel(...);
+    }
+
+    void close()
+    {
+        // TODO
+        // close app
+        // check all sessions are closed
+    }
+
+    static Sessions* global()
+    {
+        static Sessions instance;
+        return &instance;
+    }
+
+private:
+    std::shared_ptr<DB::Application> app;
+    std::unordered_map<int64_t, std::shared_ptr<Session>> sessions;
+    long id_gen;
+};
+
+}
+
+JNIEXPORT void JNICALL Java_pingcap_com_MagicProto_init(JNIEnv * env, jobject obj, jstring config)
+{
+    auto sessions = Magic::Sessions::global();
+    sessions->init();
+}
+
+JNIEXPORT void JNICALL Java_pingcap_com_MagicProto_finish(JNIEnv * env, jobject obj)
+{
+    sessions->close();
+}
+
+JNIEXPORT jlong JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, jobject obj, jstring query)
+{
+    auto query_string = env->GetStringUTFChars(query, false);
+    if (!query_string)
+        return -1;
+    auto sessions = Magic::Sessions::global();
+    // TODO: auto token = sessions->newSession(query);
+    env->ReleaseStringUTFChars(query_string, str);
+    return token;
+}
+
+JNIEXPORT void JNICALL Java_pingcap_com_MagicProto_close(JNIEnv * env, jobject obj, jlong token)
+{
+    auto sessions = Magic::Sessions::global();
+    // TODO: sessions->closeSession(token);
+}
+
+JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_next(JNIEnv * env, jobject obj, jlong token)
+{
+    auto sessions = Magic::Sessions::global();
+    // TODO
+    // auto session = sessions->session(token);
+    // session.result => arrow encoding => result
+
+    // test mock below:
+
     // TODO: test: return java nil
     jbyteArray result = 0;
     ::arrow::Status status;
@@ -41,5 +133,16 @@ JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, job
     result = env->NewByteArray(cb);
     env->SetByteArrayRegion(result, 0, cb, (jbyte*)data);
     free(buf);
+    return result;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_schema(JNIEnv * env, jobject obj, jlong token)
+{
+    auto sessions = Magic::Sessions::global();
+    // TODO
+    // auto session = sessions->session(token);
+    // session.result.sample => arrow encoding => result
+
+    jbyteArray result = 0;
     return result;
 }
