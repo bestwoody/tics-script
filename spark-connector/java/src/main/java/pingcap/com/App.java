@@ -23,6 +23,11 @@ import org.apache.arrow.vector.VectorLoader;
 import org.apache.arrow.vector.NullableBigIntVector;
 
 public class App {
+	public static BlockStream query(String query) throws Exception {
+		long token = magic.query(query);
+		return new BlockStream(magic, token);
+	}
+
 	public static void main(String[] args) throws Exception {
 		if (args.length < 1) {
 			System.out.println("usage: <bin> version|query");
@@ -44,12 +49,8 @@ public class App {
 				System.out.println("usage: <bin> query <query-string>");
 				System.exit(-1);
 			}
-			String query = args[1];
-			long token = magic.query(query);
-			BlockStream stream = new BlockStream(magic, token);
-			// TODO: print schema and rows
-			stream.schema();
-			stream.next();
+			BlockStream stream = query(args[1]);
+			stream.dump();
 		}
 	}
 }

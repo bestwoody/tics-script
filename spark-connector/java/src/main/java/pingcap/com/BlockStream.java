@@ -27,6 +27,7 @@ public class BlockStream {
 	private MagicProto magic;
 	private long token;
 	private BufferAllocator alloc;
+	private Schema schema;
 
 	public BlockStream(MagicProto magic, long token) {
 		this.magic = magic;
@@ -34,24 +35,44 @@ public class BlockStream {
 		this.alloc = new RootAllocator(Long.MAX_VALUE);
 	}
 
-	public void schema() {
-		// TODO
+	private Schema schema() {
+		if (schema != null) {
+			return schema;
+		}
+		byte[] data = magic.schema;
+		// decode arrow
+		// scheme = ...
+		return shcema;
 	}
 
-	public void next() throws Exception {
+	public VectorSchemaRoot next() throws Exception {
 		byte[] result = magic.next(token);
 		ByteArrayInputStream in = new ByteArrayInputStream(result);
 		ReadChannel channel = new ReadChannel(Channels.newChannel(in));
 		ArrowRecordBatch batch = (ArrowRecordBatch)MessageSerializer.deserializeMessageBatch(channel, alloc);
-		ArrowType art = new Int(64, true);
-		FieldType type = new FieldType(true, art, null, null);
-		Schema schema = new Schema(asList(new Field("f0", type, new ArrayList<Field>())));
+
+		Schema schema = schema();
 		VectorSchemaRoot root = VectorSchemaRoot.create(schema, alloc);
 		VectorLoader loader = new VectorLoader(root);
 		loader.load(batch);
-		NullableBigIntVector.Accessor acc = ((NullableBigIntVector)root.getVector("f0")).getAccessor();
-		for (int j = 0; j < acc.getValueCount(); j++) {
-			assert acc.get(j) == j;
-		}
+		return root;
+	}
+
+	public void dump() {
+		// TODO
+		Schema schema = schema();
+		// print ...
+		for () {
+			VectorSchemaRoot block = next();
+			if (block == null) {
+				break;
+			}
+
+			for (...) {
+				NullableBigIntVector.Accessor acc = ((NullableBigIntVector)root.getVector(col)).getAccessor();
+				for (int j = 0; j < acc.getValueCount(); j++) {
+					System.out.println(acc.get(j));
+				}
+			}
 	}
 }
