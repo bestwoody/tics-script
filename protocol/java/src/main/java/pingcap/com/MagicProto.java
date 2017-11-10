@@ -10,10 +10,25 @@ package pingcap.com;
 public class MagicProto {
 	/**
 	 * Get storage version.
+	 * can call before `init`
 	 *
 	 * @return version string
 	 */
 	public native String version();
+
+	/**
+	 * Init this class instance.
+	 * must call before any other calls.
+	 *
+	 * @config the config file, or the root config file if there are more then one config file
+	 */
+	public native void init(String config);
+
+	/**
+	 * Destory this class instance.
+	 * must not call any method after this call..
+	 */
+	public native void finish();
 
 	/**
 	 * Execute and open a query.
