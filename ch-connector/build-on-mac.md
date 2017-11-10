@@ -5,7 +5,7 @@
 * Follow instructings on CH docs
 * Or just run `ch-connector> ./clickhouse-build.sh`
 
-## Build POC projects
+## Build POC projects (Benchmark, Protocol, etc)
 * No special things.
 * Normally, run `./build.sh` will be fine.
 
