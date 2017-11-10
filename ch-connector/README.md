@@ -3,6 +3,7 @@
 ## Dir notes:
 * `clickhouse`
     * The official repo
+    * Git submodule of `theflash` repo
 * `delta`
     * Patch source code
     * `clickhouse` + `delta` = CH-Connector
