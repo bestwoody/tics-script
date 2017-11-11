@@ -34,9 +34,12 @@ public class MagicProto {
 	 * Execute and open a query.
 	 *
 	 * @query the query string, eg: "SELECT * FROM test".
-	 * @return token, must close later.
+	 * @return
+	 *   token, must close later.
+	 *   if token < 0, means an error ocurred.
 	 *
-	 *  TODO: use AST query args
+	 * TODO: use AST query args
+	 * TODO: define error codes, and a method to get error detail
 	 */
 	public native long query(String query);
 
