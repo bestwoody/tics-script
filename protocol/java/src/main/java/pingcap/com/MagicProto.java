@@ -5,6 +5,7 @@ package pingcap.com;
  *
  * use to communicate with storage layer
  * thread safe, we should only create one instance on one config (file).
+ * operations on one query are not thread safe
  *
  * TODO: define Exceptions
  */
