@@ -36,13 +36,14 @@ public class BlockStream {
 	}
 
 	private Schema schema() {
-		if (schema != null) {
-			return schema;
+		if (schema == null) {
+			// TODO: maybe better: Schema::deserialize(ByteBuffer buffer)
+			byte[] result = magic.schema();
+			ByteArrayInputStream in = new ByteArrayInputStream(result);
+			ReadChannel channel = new ReadChannel(Channels.newChannel(in));
+			schema = MessageSerializer.deserializeSchema(channel);
 		}
-		byte[] data = magic.schema;
-		// decode arrow
-		// scheme = ...
-		return shcema;
+		return schema;
 	}
 
 	public VectorSchemaRoot next() throws Exception {
@@ -51,28 +52,46 @@ public class BlockStream {
 		ReadChannel channel = new ReadChannel(Channels.newChannel(in));
 		ArrowRecordBatch batch = (ArrowRecordBatch)MessageSerializer.deserializeMessageBatch(channel, alloc);
 
-		Schema schema = schema();
 		VectorSchemaRoot root = VectorSchemaRoot.create(schema, alloc);
 		VectorLoader loader = new VectorLoader(root);
 		loader.load(batch);
 		return root;
 	}
 
+	// TODO: handle more types
 	public void dump() {
-		// TODO
+		System.out.println("Schema:");
 		Schema schema = schema();
-		// print ...
-		for () {
+		List<Field> fields = schema.getFields();
+		int i = 0;
+		for (Field field: fields) {
+			System.out.println("#" + i + " " + field.getName() + " nullable:" + field.isNullable());
+			i += 1;
+		}
+		System.out.println("");
+
+		for (true) {
 			VectorSchemaRoot block = next();
 			if (block == null) {
 				break;
 			}
 
-			for (...) {
-				NullableBigIntVector.Accessor acc = ((NullableBigIntVector)root.getVector(col)).getAccessor();
-				for (int j = 0; j < acc.getValueCount(); j++) {
-					System.out.println(acc.get(j));
+			List<FieldVector> columns = block.getFieldVectors();
+			int j = 0;
+			for (FieldVector column: columns) {
+				Field field = fields.get(j);
+				if (field.getName() == "BigInt") {
+					if (field.isNullable()) {
+						NullableBigIntVector.Accessor acc = ((NullableBigIntVector)column).getAccessor();
+						for (int j = 0; j < acc.getValueCount(); j++) {
+							System.out.println(acc.get(j));
+						}
+					} else {
+						// TODO
+					}
 				}
+				j += 1;
+				System.out.println("");
 			}
 	}
 }
