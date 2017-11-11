@@ -196,7 +196,15 @@ public:
 
     ~Application()
     {
+        close();
+    }
+
+    void close()
+    {
+        if (!global_context)
+            return;
         global_context->shutdown();
+        global_context = 0;
     }
 
     Context & context()
