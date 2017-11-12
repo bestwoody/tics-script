@@ -15,4 +15,5 @@ POC:
 Online:
 ----- Binlog Writer
 ----- Latch Service
+----- Detail test
 ```
