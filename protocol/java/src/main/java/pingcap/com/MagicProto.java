@@ -7,7 +7,7 @@ package pingcap.com;
  * thread safe, we should only create one instance on one config (file).
  * operations on one query are not thread safe
  *
- * TODO: define Exceptions
+ * TODO: feature: cancal query
  */
 public class MagicProto {
 	/**
@@ -52,7 +52,7 @@ public class MagicProto {
 	 *   error detail string.
 	 *   return null if no error ocurred.
 	 */
-	public native void error(long token);
+	public native String error(long token);
 
 	/**
 	 * Close an opened query, no matter it finished or not.

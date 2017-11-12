@@ -10,7 +10,9 @@
 
 #include "Context.h"
 
-namespace Magic {
+
+namespace Magic
+{
 
 void queryDumpImpl(int argc, char ** argv, char * query)
 {
@@ -19,6 +21,7 @@ void queryDumpImpl(int argc, char ** argv, char * query)
     BlockOutputStreamPrintRows out(std::cout);
     DB::copyData(*result.in, out);
 }
+
 
 int queryDump(int argc, char ** argv, char * query)
 {
@@ -35,6 +38,7 @@ int queryDump(int argc, char ** argv, char * query)
 }
 
 }
+
 
 int main(int argc, char ** argv)
 {

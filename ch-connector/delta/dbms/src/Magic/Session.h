@@ -4,8 +4,8 @@
 #include "arrow/builder.h"
 #include "arrow/ipc/writer.h"
 
-namespace Magic {
-
+namespace Magic
+{
 
 class Session
 {
@@ -149,6 +149,5 @@ private:
     std::string error;
     SchemaPtr schema;
 };
-
 
 }

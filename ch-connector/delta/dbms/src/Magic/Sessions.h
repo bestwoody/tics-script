@@ -11,30 +11,36 @@ public:
 
     void init(const char * config)
     {
-        const char * args[] = {"--config-file", config};
-        app = new Application(args);
+        // Why Poco use non-const args?
+        std::string flag = "--config-file";
+        std::string arg = config;
+        char * args[] = {(char *)flag.c_str(), (char *)arg.c_str()};
+        app = std::make_shared<DB::Application>(2, args);
     }
 
     int64_t newSession(const char * query)
     {
-        // TODO: lock_guard
-        auto result = DB::executeQuery(query, app.context(), false);
+        auto result = DB::executeQuery(query, app->context(), false);
         auto session = std::make_shared<Session>(result);
-        sessions[id_gen++] = session;
+        auto token = id_gen++;
+        // TODO: lock_guard
+        sessions[token] = session;
+        return token;
     }
 
     void closeSession(int64_t token)
     {
-        // TODO: if .. app.cancel(...);
         // TODO: lock_guard
         sessions.erase(token);
     }
 
-    Session * getSession(int64_t token)
+    std::shared_ptr<Session> getSession(int64_t token)
     {
         // TODO: lock_guard
         auto it = sessions.find(token);
-        return (it == sessions.end()) ? NULL : (&*it);
+        if (it == sessions.end())
+            return NULL;
+        return it->second;
     }
 
     void close()
