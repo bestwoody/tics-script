@@ -17,7 +17,7 @@
     <max_concurrent_queries>100</max_concurrent_queries>
     <uncompressed_cache_size>8589934592</uncompressed_cache_size>
     <mark_cache_size>5368709120</mark_cache_size>
-    <path>/data/coding/theflash/ch-connector/running/clickhouse/db</path>
+    <path>/tmp/running/clickhouse/db</path>
     <tmp_path>/tmp/clickhouse</tmp_path>
     <users_config>users.xml</users_config>
     <default_profile>default</default_profile>
