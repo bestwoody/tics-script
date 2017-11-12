@@ -7,9 +7,11 @@ OLAP project for TiDB
 
 ## Progress
 ```
+(POC)
 ****- Magic Protocol
-**--- CH-Magic Connector
+****- CH-Magic Connector
 *---- Spark-Magic Connector
+(Online)
 ----- Binlog Writer
 ----- Latch Service
 ```
