@@ -59,10 +59,16 @@ public class BlockStream {
 		return root;
 	}
 
+	// Just for test
 	// TODO: handle more types
 	public void dump() throws Exception {
 		System.out.println("Schema:");
 		Schema schema = schema();
+		if (schema == null) {
+			System.out.println("get schema failed:");
+			System.out.println(magic.error(token));
+			return;
+		}
 		List<Field> fields = schema.getFields();
 		int i = 0;
 		for (Field field: fields) {
@@ -74,6 +80,10 @@ public class BlockStream {
 		while (true) {
 			VectorSchemaRoot block = next();
 			if (block == null) {
+				String error = magic.error(token);
+				if (error != null) {
+					System.out.println("get block failed: " + error);
+				}
 				break;
 			}
 
