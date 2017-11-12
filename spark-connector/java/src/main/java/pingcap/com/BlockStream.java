@@ -21,6 +21,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType.Int;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorLoader;
 import org.apache.arrow.vector.NullableBigIntVector;
+import org.apache.arrow.vector.FieldVector;
 
 
 public class BlockStream {
@@ -35,10 +36,10 @@ public class BlockStream {
 		this.alloc = new RootAllocator(Long.MAX_VALUE);
 	}
 
-	private Schema schema() {
+	private Schema schema() throws Exception {
 		if (schema == null) {
 			// TODO: maybe better: Schema::deserialize(ByteBuffer buffer)
-			byte[] result = magic.schema();
+			byte[] result = magic.schema(token);
 			ByteArrayInputStream in = new ByteArrayInputStream(result);
 			ReadChannel channel = new ReadChannel(Channels.newChannel(in));
 			schema = MessageSerializer.deserializeSchema(channel);
@@ -59,7 +60,7 @@ public class BlockStream {
 	}
 
 	// TODO: handle more types
-	public void dump() {
+	public void dump() throws Exception {
 		System.out.println("Schema:");
 		Schema schema = schema();
 		List<Field> fields = schema.getFields();
@@ -70,7 +71,7 @@ public class BlockStream {
 		}
 		System.out.println("");
 
-		for (true) {
+		while (true) {
 			VectorSchemaRoot block = next();
 			if (block == null) {
 				break;
@@ -83,8 +84,8 @@ public class BlockStream {
 				if (field.getName() == "BigInt") {
 					if (field.isNullable()) {
 						NullableBigIntVector.Accessor acc = ((NullableBigIntVector)column).getAccessor();
-						for (int j = 0; j < acc.getValueCount(); j++) {
-							System.out.println(acc.get(j));
+						for (int k = 0; k < acc.getValueCount(); ++k) {
+							System.out.println(acc.get(k));
 						}
 					} else {
 						// TODO
@@ -93,5 +94,6 @@ public class BlockStream {
 				j += 1;
 				System.out.println("");
 			}
+		}
 	}
 }
