@@ -24,16 +24,17 @@ public:
         {
             auto result = DB::executeQuery(query, app->context(), false);
             session = std::make_shared<Session>(result);
+            std::unique_lock<std::mutex> lock{mtx};
+            auto token = id_gen++;
+            sessions[token] = session;
+            return token;
         }
         catch (const DB::Exception & e)
         {
-            session = std::make_shared<Session>(e.displayText());
+            // TODO: error string
+            std::cerr << "libch new session: " << e.displayText() << std::endl;
+            return -1;
         }
-
-        std::unique_lock<std::mutex> lock{mtx};
-        auto token = id_gen++;
-        sessions[token] = session;
-        return token;
     }
 
     void closeSession(int64_t token)
@@ -54,7 +55,11 @@ public:
     void close()
     {
         // TODO: check all sessions are closed
+        std::unique_lock<std::mutex> lock{mtx};
+        if (!app)
+            return;
         app->close();
+        app = NULL;
     }
 
     static Sessions* global()

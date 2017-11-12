@@ -68,7 +68,7 @@ public:
 
             for (size_t i = 0; i < block.columns(); ++i)
             {
-                auto & column = result.in_sample.getByPosition(i);
+                auto & column = block.getByPosition(i);
                 auto array = columnToArrowArray(column.type, column.column, block.rows());
                 arrays.push_back(array);
             }
@@ -133,6 +133,28 @@ private:
                 return NULL;
             }
         }
+        else if (name == "String")
+        {
+            const auto & data = typeid_cast<DB::ColumnString &>(*column);
+            arrow::StringBuilder builder;
+            for (size_t i = 0; i < rows; ++i)
+            {
+                auto ref = data.getDataAt(i);
+                auto val = ref.toString();
+                status = builder.Append(val);
+                if (!status.ok())
+                {
+                    error = "arrow::StringBuilder.Append " + status.ToString();
+                    return NULL;
+                }
+            }
+            status = builder.Finish(&array);
+            if (!status.ok())
+            {
+                error = "arrow::StringBuilder.Finish" + status.ToString();
+                return NULL;
+            }
+        }
 
         return array;
     }
@@ -143,6 +165,8 @@ private:
         auto name = type->getName();
         if (name == "Int64")
             return arrow::int64();
+        if (name == "String")
+            return arrow::utf8();
         return arrow::null();
     }
 

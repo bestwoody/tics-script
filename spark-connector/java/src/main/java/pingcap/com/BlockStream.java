@@ -20,9 +20,16 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.ArrowType.Int;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorLoader;
-import org.apache.arrow.vector.NullableBigIntVector;
 import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.ValueVector;
 
+import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.VarCharVector;
+
+import org.apache.arrow.vector.NullableBigIntVector;
+import org.apache.arrow.vector.NullableVarCharVector;
+
+import org.apache.arrow.vector.types.pojo.ArrowType;
 
 public class BlockStream {
 	private MagicProto magic;
@@ -49,6 +56,10 @@ public class BlockStream {
 
 	public VectorSchemaRoot next() throws Exception {
 		byte[] result = magic.next(token);
+		if (result == null) {
+			return null;
+		}
+
 		ByteArrayInputStream in = new ByteArrayInputStream(result);
 		ReadChannel channel = new ReadChannel(Channels.newChannel(in));
 		ArrowRecordBatch batch = (ArrowRecordBatch)MessageSerializer.deserializeMessageBatch(channel, alloc);
@@ -60,22 +71,19 @@ public class BlockStream {
 	}
 
 	// Just for test
-	// TODO: handle more types
 	public void dump() throws Exception {
-		System.out.println("Schema:");
 		Schema schema = schema();
 		if (schema == null) {
-			System.out.println("get schema failed:");
-			System.out.println(magic.error(token));
+			System.out.println("get schema failed: " + magic.error(token));
 			return;
 		}
 		List<Field> fields = schema.getFields();
 		int i = 0;
 		for (Field field: fields) {
-			System.out.println("#" + i + " " + field.getName() + " nullable:" + field.isNullable());
+			System.out.println("#" + i + " name=\"" + field.getName() + "\" type=" +
+				field.getType().getTypeID() + " nullable=" + field.isNullable());
 			i += 1;
 		}
-		System.out.println("");
 
 		while (true) {
 			VectorSchemaRoot block = next();
@@ -86,24 +94,25 @@ public class BlockStream {
 				}
 				break;
 			}
+			System.out.println("======");
 
 			List<FieldVector> columns = block.getFieldVectors();
 			int j = 0;
 			for (FieldVector column: columns) {
-				Field field = fields.get(j);
-				if (field.getName() == "BigInt") {
-					if (field.isNullable()) {
-						NullableBigIntVector.Accessor acc = ((NullableBigIntVector)column).getAccessor();
-						for (int k = 0; k < acc.getValueCount(); ++k) {
-							System.out.println(acc.get(k));
-						}
-					} else {
-						// TODO
-					}
+				Field field = column.getField();
+				String name = field.getName();
+				String type = field.getType().getTypeID().toString();
+				System.out.println("#" + j + " \"" + name + "\"");
+				System.out.println("------");
+				ValueVector.Accessor acc = column.getAccessor();
+				for (int k = 0; k < acc.getValueCount(); ++k) {
+					System.out.println(acc.getObject(k));
 				}
+				System.out.println("------");
 				j += 1;
-				System.out.println("");
 			}
+
+			System.out.println("======");
 		}
 	}
 }
