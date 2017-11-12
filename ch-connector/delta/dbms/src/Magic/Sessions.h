@@ -13,11 +13,7 @@ public:
 
     void init(const char * config)
     {
-        // Why Poco use non-const args?
-        std::string flag = "--config-file";
-        std::string arg = config;
-        char * args[] = {(char *)flag.c_str(), (char *)arg.c_str()};
-        app = std::make_shared<DB::Application>(2, args);
+        app = std::make_shared<DB::Application>(config);
     }
 
     int64_t newSession(const char * query)

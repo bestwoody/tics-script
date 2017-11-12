@@ -16,7 +16,8 @@ namespace Magic
 
 void queryDumpImpl(int argc, char ** argv, char * query)
 {
-    DB::Application app(argc, argv);
+    // TODO
+    DB::Application app("/data/coding/theflash/ch-connector/running/config/config.xml");
     auto result = DB::executeQuery(query, app.context(), false);
     BlockOutputStreamPrintRows out(std::cout);
     DB::copyData(*result.in, out);

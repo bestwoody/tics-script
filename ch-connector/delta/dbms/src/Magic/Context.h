@@ -64,9 +64,13 @@ namespace DB
 class Application : public BaseDaemon
 {
 public:
-    // TODO: manually create config and context
-    Application(int argc, char ** argv) : BaseDaemon() {
-        BaseDaemon::run(argc, argv);
+    Application(std::string config) : BaseDaemon()
+    {
+        // Why Poco use non-const args?
+        std::string pwd = "";
+        std::string flag = "--config-file";
+        char * args[] = {(char *)pwd.c_str(), (char *)flag.c_str(), (char *)config.c_str()};
+        BaseDaemon::run(3, args);
     }
 
     int main(const std::vector<std::string> & args) override
