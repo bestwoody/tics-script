@@ -1,4 +1,6 @@
 #include <unordered_map>
+#include <mutex>
+
 #include "Context.h"
 #include "Session.h"
 
@@ -23,20 +25,20 @@ public:
         auto result = DB::executeQuery(query, app->context(), false);
         auto session = std::make_shared<Session>(result);
         auto token = id_gen++;
-        // TODO: lock_guard
+        std::unique_lock<std::mutex> lock{mtx};
         sessions[token] = session;
         return token;
     }
 
     void closeSession(int64_t token)
     {
-        // TODO: lock_guard
+        std::unique_lock<std::mutex> lock{mtx};
         sessions.erase(token);
     }
 
     std::shared_ptr<Session> getSession(int64_t token)
     {
-        // TODO: lock_guard
+        std::unique_lock<std::mutex> lock{mtx};
         auto it = sessions.find(token);
         if (it == sessions.end())
             return NULL;
@@ -59,6 +61,7 @@ private:
     std::shared_ptr<DB::Application> app;
     std::unordered_map<int64_t, std::shared_ptr<Session>> sessions;
     long id_gen;
+    mutable std::mutex mtx;
 };
 
 }
