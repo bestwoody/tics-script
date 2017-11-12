@@ -22,10 +22,20 @@ public:
 
     int64_t newSession(const char * query)
     {
-        auto result = DB::executeQuery(query, app->context(), false);
-        auto session = std::make_shared<Session>(result);
-        auto token = id_gen++;
+        std::shared_ptr<Session> session;
+
+        try
+        {
+            auto result = DB::executeQuery(query, app->context(), false);
+            session = std::make_shared<Session>(result);
+        }
+        catch (const DB::Exception & e)
+        {
+            session = std::make_shared<Session>(e.displayText());
+        }
+
         std::unique_lock<std::mutex> lock{mtx};
+        auto token = id_gen++;
         sessions[token] = session;
         return token;
     }

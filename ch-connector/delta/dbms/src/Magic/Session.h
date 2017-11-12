@@ -14,6 +14,8 @@ public:
     using BlockPtr = std::shared_ptr<arrow::RecordBatch>;
     using BufferPtr = std::shared_ptr<arrow::Buffer>;
 
+    Session(const std::string & error_) : error(error_) {}
+
     Session(const DB::BlockIO & result_) : result(result_)
     {
         try
