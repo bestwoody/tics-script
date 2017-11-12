@@ -41,11 +41,23 @@ public class App {
 
 		if (cmd.equals("query")) {
 			if (args.length < 2) {
-				System.out.println("usage: <bin> query <query-string>");
+				System.out.println("usage: <bin> query <db-path> <query-string>");
 				System.exit(-1);
 			}
-			String query = args[1];
-			magic.query(query);
+			String path = args[1];
+			String query = args[2];
+
+			magic.init(path);
+
+			long token = magic.query(query);
+			if (token <= 0) {
+				System.out.println(query + " failed, code: " + token);
+				System.exit(-1);
+			}
+			BlockStream stream = new BlockStream(magic, token);
+			stream.dump();
 		}
+
+		magic.finish();
 	}
 }
