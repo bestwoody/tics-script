@@ -13,11 +13,7 @@ public:
 
     void init(const char * config)
     {
-        // Why Poco use non-const args?
-        std::string flag = "--config-file";
-        std::string arg = config;
-        char * args[] = {(char *)flag.c_str(), (char *)arg.c_str()};
-        app = std::make_shared<DB::Application>(2, args);
+        app = std::make_shared<DB::Application>(config);
     }
 
     int64_t newSession(const char * query)
@@ -28,16 +24,17 @@ public:
         {
             auto result = DB::executeQuery(query, app->context(), false);
             session = std::make_shared<Session>(result);
+            std::unique_lock<std::mutex> lock{mtx};
+            auto token = id_gen++;
+            sessions[token] = session;
+            return token;
         }
         catch (const DB::Exception & e)
         {
-            session = std::make_shared<Session>(e.displayText());
+            // TODO: error string
+            std::cerr << "libch new session: " << e.displayText() << std::endl;
+            return -1;
         }
-
-        std::unique_lock<std::mutex> lock{mtx};
-        auto token = id_gen++;
-        sessions[token] = session;
-        return token;
     }
 
     void closeSession(int64_t token)
@@ -58,7 +55,11 @@ public:
     void close()
     {
         // TODO: check all sessions are closed
+        std::unique_lock<std::mutex> lock{mtx};
+        if (!app)
+            return;
         app->close();
+        app = NULL;
     }
 
     static Sessions* global()

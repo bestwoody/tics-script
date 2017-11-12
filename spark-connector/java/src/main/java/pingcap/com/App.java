@@ -37,18 +37,20 @@ public class App {
 
 		if (cmd.equals("version")) {
 			System.out.print("libch version: " + magic.version());
+			return;
 		}
 
 		if (cmd.equals("query")) {
-			if (args.length < 2) {
+			if (args.length < 3) {
 				System.out.println("usage: <bin> query <db-path> <query-string>");
 				System.exit(-1);
 			}
 			String path = args[1];
 			String query = args[2];
 
-			magic.init(path);
+			System.out.println("[" + query + "]");
 
+			magic.init(path);
 			long token = magic.query(query);
 			if (token <= 0) {
 				System.out.println(query + " failed, code: " + token);
@@ -56,8 +58,8 @@ public class App {
 			}
 			BlockStream stream = new BlockStream(magic, token);
 			stream.dump();
-		}
 
-		magic.finish();
+			magic.finish();
+		}
 	}
 }

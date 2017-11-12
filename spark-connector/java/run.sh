@@ -1,1 +1,5 @@
-./_run.sh query ../../ch-connector/running/config/config.xml "SELECT * FROM test"
+config=`pwd`
+config=`dirname "$config"`
+config="`dirname $config`/ch-connector/running/config/config.xml"
+
+./_run.sh query "$config" "SELECT * FROM test"
