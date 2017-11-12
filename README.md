@@ -15,5 +15,7 @@ POC:
 Online:
 ----- Binlog Writer
 ----- Latch Service
+----- Transaction(batch level) supporting
+***-- Data update supporting
 ----- Detail test
 ```
