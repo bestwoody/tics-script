@@ -23,26 +23,40 @@ public class MagicProto {
 	 * must call before any other calls.
 	 *
 	 * @config the config file, or the root config file if there are more then one config file
+	 * @return error string, is null if all good.
 	 */
-	public native void init(String config);
+	public static class InitResult {
+		String error;
+	}
+	public native InitResult init(String config);
 
 	/**
 	 * Destory this class instance.
 	 * must not call any method after this call..
+	 *
+	 * @return error string, is null if all good.
 	 */
-	public native void finish();
+	public static class FinishResult {
+		String error;
+	}
+	public native FinishResult finish();
 
 	/**
 	 * Execute and open a query.
 	 *
 	 * @query the query string, eg: "SELECT * FROM test".
 	 * @return
-	 *   token, must close later.
-	 *   if token < 0, means an error ocurred, call "error" to fetch detail error info.
+	 *   QueryResult instance, if return null means some wrong with the code.
+	 *   QueryResult.error, is null if all good.
+	 *   QueryResult.token, must close later.
 	 *
 	 * TODO: use AST query args
 	 */
-	public native long query(String query);
+	public static class QueryResult {
+		public String error;
+		public long token;
+	};
+	public native QueryResult query(String query);
 
 	/**
 	 * Check and get executing error.

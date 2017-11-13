@@ -14,9 +14,9 @@ schema="running/data/$name.schema"
 data="running/data/$name.data"
 
 if [ -f "$schema" ]; then
-	"$bin" client --query="`cat $schema`"
+	DYLD_LIBRARY_PATH="" "$bin" client --query="`cat $schema`"
 fi
 
 if [ -f "$data" ]; then
-	cat "$data" | "$bin" client --query="INSERT INTO $name FORMAT CSV"
+	cat "$data" | DYLD_LIBRARY_PATH="" "$bin" client --query="INSERT INTO $name FORMAT CSV"
 fi

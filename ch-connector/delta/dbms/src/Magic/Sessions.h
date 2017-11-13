@@ -11,12 +11,26 @@ class Sessions
 public:
     Sessions() : id_gen(10000) {}
 
-    void init(const char * config)
+    std::string init(const char * config)
     {
-        app = std::make_shared<DB::Application>(config);
+        std::string error;
+        try
+        {
+            app = std::make_shared<DB::Application>(config);
+        }
+        catch (const DB::Exception & e)
+        {
+            error = e.displayText();
+        }
+        return error;
     }
 
-    int64_t newSession(const char * query)
+    struct QueryResult
+    {
+        std::string error;
+        long token;
+    };
+    QueryResult newSession(const char * query)
     {
         std::shared_ptr<Session> session;
 
@@ -27,13 +41,11 @@ public:
             std::unique_lock<std::mutex> lock{mtx};
             auto token = id_gen++;
             sessions[token] = session;
-            return token;
+            return QueryResult{"", token};
         }
         catch (const DB::Exception & e)
         {
-            // TODO: error string
-            std::cerr << "libch new session: " << e.displayText() << std::endl;
-            return -1;
+            return QueryResult{e.displayText(), -1};
         }
     }
 
@@ -52,14 +64,23 @@ public:
         return it->second;
     }
 
-    void close()
+    std::string close()
     {
         // TODO: check all sessions are closed
         std::unique_lock<std::mutex> lock{mtx};
         if (!app)
-            return;
-        app->close();
+            return "app instance is null";
+        std::string error;
+        try
+        {
+            app->close();
+        }
+        catch (const DB::Exception & e)
+        {
+            error = e.displayText();
+        }
         app = NULL;
+        return error;
     }
 
     static Sessions* global()
