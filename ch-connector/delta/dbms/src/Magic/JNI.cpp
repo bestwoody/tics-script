@@ -36,31 +36,77 @@ JNIEXPORT jstring JNICALL Java_pingcap_com_MagicProto_version(JNIEnv * env, jobj
 }
 
 
-JNIEXPORT void JNICALL Java_pingcap_com_MagicProto_init(JNIEnv * env, jobject obj, jstring config)
+JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_init(JNIEnv * env, jobject obj, jstring config)
 {
+    jclass resultNull = NULL;
+    jclass result = env->FindClass("pingcap/com/MagicProto$InitResult");
+    if (!result)
+        return resultNull;
+    jfieldID errorId = env->GetFieldID(result, "error", "Ljava/lang/String;");
+    if (!errorId)
+        return resultNull;
+
     auto sessions = Magic::Sessions::global();
     auto config_cstr = env->GetStringUTFChars(config, 0);
-    sessions->init(config_cstr);
+    auto error = sessions->init(config_cstr);
     env->ReleaseStringUTFChars(config, config_cstr);
+
+    if (!error.empty())
+        env->SetObjectField(result, errorId, env->NewStringUTF(error.c_str()));
+    return result;
 }
 
 
-JNIEXPORT void JNICALL Java_pingcap_com_MagicProto_finish(JNIEnv * env, jobject obj)
+JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_finish(JNIEnv * env, jobject obj)
 {
+    jclass resultNull = NULL;
+    jclass result = env->FindClass("pingcap/com/MagicProto$FinishResult");
+    if (!result)
+        return resultNull;
+    jfieldID errorId = env->GetFieldID(result, "error", "Ljava/lang/String;");
+    if (!errorId)
+        return resultNull;
+
     auto sessions = Magic::Sessions::global();
-    sessions->close();
+    auto error = sessions->close();
+
+    if (!error.empty())
+        env->SetObjectField(result, errorId, env->NewStringUTF(error.c_str()));
+    return result;
 }
 
 
-JNIEXPORT jlong JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, jobject obj, jstring query)
+JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, jobject obj, jstring query)
 {
+    jclass resultNull = NULL;
+    jclass result = env->FindClass("pingcap/com/MagicProto$QueryResult");
+    if (!result)
+        return resultNull;
+    jfieldID errorId = env->GetFieldID(result, "error", "Ljava/lang/String;");
+    if (!errorId)
+        return resultNull;
+    jfieldID tokenId = env->GetFieldID(result, "token", "J");
+    if (!tokenId)
+        return resultNull;
+
+    std::string error;
+    jlong token = -1;
     auto query_cstr = env->GetStringUTFChars(query, 0);
-    if (!query_cstr)
-        return -1;
-    auto sessions = Magic::Sessions::global();
-    auto token = sessions->newSession(query_cstr);
-    env->ReleaseStringUTFChars(query, query_cstr);
-    return token;
+    if (query_cstr)
+    {
+        auto sessions = Magic::Sessions::global();
+        auto session = sessions->newSession(query_cstr);
+        env->ReleaseStringUTFChars(query, query_cstr);
+        token = session.token;
+        error = session.error;
+    } else {
+        error = "env->GetStringUTFChars() failed";
+    }
+
+    if (!error.empty())
+        env->SetObjectField(result, errorId, env->NewStringUTF(error.c_str()));
+    env->SetLongField(result, tokenId, token);
+    return result;
 }
 
 

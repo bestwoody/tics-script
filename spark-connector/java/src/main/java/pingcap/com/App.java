@@ -50,16 +50,26 @@ public class App {
 
 			System.out.println("[" + query + "]");
 
-			magic.init(path);
-			long token = magic.query(query);
-			if (token <= 0) {
-				System.out.println(query + " failed, code: " + token);
+			MagicProto.InitResult initResult = magic.init(path);
+			if (initResult.error != null) {
+				System.out.println("init failed: " + initResult.error);
 				System.exit(-1);
 			}
-			BlockStream stream = new BlockStream(magic, token);
+
+			MagicProto.QueryResult queryResult = magic.query(query);
+			if (queryResult.error != null) {
+				System.out.println("query failed: " + queryResult.error);
+				System.exit(-1);
+			}
+
+			BlockStream stream = new BlockStream(magic, queryResult.token);
 			stream.dump();
 
-			magic.finish();
+			MagicProto.FinishResult finishResult = magic.finish();
+			if (finishResult.error != null) {
+				System.out.println("finish failed: " + finishResult.error);
+				System.exit(-1);
+			}
 		}
 	}
 }
