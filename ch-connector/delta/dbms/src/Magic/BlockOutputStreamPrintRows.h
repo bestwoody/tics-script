@@ -23,11 +23,17 @@ public:
                 DB::ColumnWithTypeAndName data = block.getByPosition(j);
                 auto name = data.type->getName();
 
-                // TODO: support more types
+                // TODO: support all types
+                // TODO: check by id, not by name
                 if (name == "String")
                 {
                     const auto & column = typeid_cast<DB::ColumnString &>(*data.column);
                     print(i, j, column.getDataAt(i).toString());
+                }
+                else if (name == "DateTime")
+                {
+                    const auto & column = typeid_cast<DB::ColumnUInt32 &>(*data.column);
+                    print(i, j, column.getElement(i));
                 }
                 else if (name == "Int8")
                 {
