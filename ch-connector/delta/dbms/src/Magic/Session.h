@@ -108,8 +108,10 @@ private:
     // TODO: faster copy
     // TODO: handle all types
     // TODO: use template + trait for faster and cleaner code
+    // TODO: check by id, not by name
     std::shared_ptr<arrow::Array> columnToArrowArray(DB::DataTypePtr & type, DB::ColumnPtr & column, size_t rows)
     {
+        auto pool = arrow::default_memory_pool();
         auto name = type->getName();
         std::shared_ptr<arrow::Array> array;
         arrow::Status status;
@@ -126,6 +128,23 @@ private:
                 if (!status.ok())
                 {
                     error = "arrow::StringBuilder.Append " + status.ToString();
+                    return NULL;
+                }
+            }
+            status = builder.Finish(&array);
+        }
+        else if (name == "DateTime")
+        {
+            const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
+            arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::SECOND), pool);
+            for (size_t i = 0; i < rows; ++i)
+            {
+                // TODO: check overflow and convert to int32 may be better.
+                uint32_t val = data.getElement(i);
+                status = builder.Append(val);
+                if (!status.ok())
+                {
+                    error = "arrow::Time64Builder.Append " + status.ToString();
                     return NULL;
                 }
             }
@@ -291,11 +310,14 @@ private:
     }
 
     // TODO: handle all types
+    // TODO: check by id, not by name
     static std::shared_ptr<arrow::DataType> dataTypeToArrowType(DB::DataTypePtr & type)
     {
         auto name = type->getName();
         if (name == "String")
             return arrow::utf8();
+        else if (name == "DateTime")
+            return arrow::time64(arrow::TimeUnit::SECOND);
         else if (name == "Int8")
             return arrow::int8();
         else if (name == "Int16")
