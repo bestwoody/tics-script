@@ -65,6 +65,12 @@ public class App {
 			BlockStream stream = new BlockStream(magic, queryResult.token);
 			stream.dump();
 
+			MagicProto.CloseResult closeResult = magic.close(queryResult.token);
+			if (closeResult.error != null) {
+				System.out.println("close failed: " + closeResult.error);
+				System.exit(-1);
+			}
+
 			MagicProto.FinishResult finishResult = magic.finish();
 			if (finishResult.error != null) {
 				System.out.println("finish failed: " + finishResult.error);
