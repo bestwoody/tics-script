@@ -15,7 +15,6 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorLoader;
 
-
 public class Magic {
 	public static class MagicException extends Exception {
 		public MagicException(String msg) {
