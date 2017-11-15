@@ -9,8 +9,6 @@ import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.ValueVector;
 
 public class BlockStream {
-	private Magic.Query query;
-
 	public BlockStream(Magic.Query query) {
 		this.query = query;
 	}
@@ -52,4 +50,6 @@ public class BlockStream {
 			System.out.println("======");
 		}
 	}
+
+	private Magic.Query query;
 }

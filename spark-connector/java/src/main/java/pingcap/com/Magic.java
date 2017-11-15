@@ -24,10 +24,6 @@ public class Magic {
 	}
 
 	public class Query {
-		public final Magic magic;
-		public final long token;
-		public Schema schema;
-
 		public Query(Magic magic, long token) {
 			this.magic = magic;
 			this.token = token;
@@ -47,10 +43,11 @@ public class Magic {
 		public void close() throws MagicException {
 			magic.close(token);
 		}
-	}
 
-	public final MagicProto lib;
-	private BufferAllocator alloc;
+		public final Magic magic;
+		private final long token;
+		private Schema schema;
+	}
 
 	public Magic() {
 		System.loadLibrary("ch");
@@ -122,4 +119,7 @@ public class Magic {
 			throw new MagicException("finish failed: " + result.error);
 		}
 	}
+
+	public final MagicProto lib;
+	private final BufferAllocator alloc;
 }
