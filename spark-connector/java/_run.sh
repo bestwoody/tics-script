@@ -1,6 +1,7 @@
 arg1="$1"
 arg2="$2"
 arg3="$3"
+arg4="$4"
 
 set -eu
 
@@ -16,4 +17,4 @@ if [ -f "$lib" ]; then
 	cp $lib .
 fi
 
-java -cp MagicProtoBench-1.0.jar:lib/* pingcap.com/App "$arg1" "$arg2" "$arg3"  2>&1 | grep -v 'SLF4J: '
+java -cp MagicProtoBench-1.0.jar:lib/* pingcap.com/App "$arg1" "$arg2" "$arg3" "$arg4" 2>&1 | grep -v 'SLF4J: '
