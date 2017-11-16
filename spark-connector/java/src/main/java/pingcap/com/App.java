@@ -46,9 +46,16 @@ public class App {
 		}
 	}
 
+	public static void exec(Magic magic, String query) throws Exception {
+		System.out.println("[" + query + "]");
+		Magic.Query result = magic.query(query);
+		dump(result);
+		result.close();
+	}
+
 	public static void main(String[] args) throws Exception {
 		if (args.length < 1) {
-			System.out.println("usage: <bin> version|query");
+			System.out.println("usage: <bin> version|cli|query|querys");
 			System.exit(-1);
 		}
 
@@ -60,20 +67,37 @@ public class App {
 			return;
 		}
 
+		if (args.length < 2) {
+			System.out.println("usage: <bin> cmd <db-path> ...");
+			System.exit(-1);
+		}
+
+		String path = args[1];
+		magic.init(path);
+
+		if (cmd.equals("cli")) {
+			// TODO
+			return;
+		}
+
 		if (cmd.equals("query")) {
 			if (args.length < 3) {
 				System.out.println("usage: <bin> query <db-path> <query-string>");
 				System.exit(-1);
 			}
-			String path = args[1];
+			exec(magic, args[2]);
+		}
+
+		if (cmd.equals("querys")) {
+			if (args.length < 4) {
+				System.out.println("usage: <bin> query <db-path> <query-string> <times>");
+				System.exit(-1);
+			}
 			String query = args[2];
-
-			System.out.println("[" + query + "]");
-			magic.init(path);
-
-			Magic.Query result = magic.query(query);
-			dump(result);
-			result.close();
+			int times = Integer.parseInt(args[3]);
+			for (int i = 0; i < times; ++i) {
+				exec(magic, query);
+			}
 		}
 
 		magic.close();
