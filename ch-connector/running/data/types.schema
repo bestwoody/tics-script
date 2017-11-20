@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS types (
 	str String,
+	ts  DateTime,
 	i8  Int8,
 	i16 Int16,
 	i32 Int32,
