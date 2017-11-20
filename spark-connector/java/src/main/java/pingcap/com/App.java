@@ -2,6 +2,7 @@ package pingcap.com;
 
 import java.util.List;
 import java.util.Scanner;
+import java.lang.Character;
 
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -39,7 +40,12 @@ public class App {
 				dump(field, j);
 				ValueVector.Accessor acc = column.getAccessor();
 				for (int k = 0; k < acc.getValueCount(); ++k) {
-					System.out.println("    " + acc.getObject(k));
+					Object v = acc.getObject(k);
+					if (v instanceof Character) {
+						System.out.println("    " + (int)(Character)v);
+					} else {
+						System.out.println("    " + acc.getObject(k).toString());
+					}
 				}
 				j += 1;
 				if (j != columns.size()) {
