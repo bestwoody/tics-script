@@ -1,2 +1,2 @@
 set -eu
-build/dbms/src/Server/clickhouse client
+DYLD_LIBRARY_PATH="" build/dbms/src/Server/clickhouse client
