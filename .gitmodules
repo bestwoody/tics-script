@@ -2,3 +2,6 @@
 	path = ch-connector/clickhouse
 	url = git@github.com:yandex/clickhouse
 	ignore = dirty
+[submodule "benchmark/tpch-dbgen"]
+	path = benchmark/tpch-dbgen
+	url = git@github.com:electrum/tpch-dbgen
