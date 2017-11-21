@@ -11,16 +11,28 @@ fi
 
 bin="build/dbms/src/Server/clickhouse"
 
-gen="running/data/$name.sh"
-if [ ! -f "$gen" ]; then
-	gen=""
-else
-	gen="bash $gen"
-fi
-
+gen=""
 data="running/data/$name.data"
 if [ -f "$data" ]; then
 	gen="cat $data"
+fi
+
+if [ -z "$gen" ]; then
+	gen="running/data/$name.sh"
+	if [ ! -f "$gen" ]; then
+		gen=""
+	else
+		gen="bash $gen"
+	fi
+fi
+
+if [ -z "$gen" ]; then
+	gen="running/data/$name.py"
+	if [ ! -f "$gen" ]; then
+		gen=""
+	else
+		gen="python $gen"
+	fi
 fi
 
 if [ -z "$gen" ]; then
