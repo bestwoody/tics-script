@@ -8,7 +8,7 @@ OLAP project for TiDB
 ## Progress
 ```
 POC:
-****- Magic Protocol
+***** Magic Protocol
 ****- CH-Magic Connector
 *---- Spark-Magic Connector
 
