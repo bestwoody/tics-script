@@ -56,12 +56,9 @@ public class App {
 					}
 				}
 				j += 1;
-				if (j != columns.size()) {
-					System.out.println("    ------");
-				}
 			}
 
-			System.out.println();
+			System.out.println("    ---");
 		}
 
 		System.out.println("[query done]");
