@@ -6,8 +6,6 @@ package pingcap.com;
  * use to communicate with storage layer
  * thread safe, we should only create one instance on one config (file).
  * operations on one query are not thread safe
- *
- * TODO: feature: cancal query
  */
 public class MagicProto {
 	/**
@@ -42,6 +40,13 @@ public class MagicProto {
 	public native FinishResult finish();
 
 	/**
+	 * List all unclosed querys (just the querys start with MagicProtocol)
+	 *
+	 * @return array of query tokens
+	 */
+	public native long[] querys();
+
+	/**
 	 * Execute and open a query.
 	 *
 	 * @query the query string, eg: "SELECT * FROM test".
@@ -70,6 +75,7 @@ public class MagicProto {
 
 	/**
 	 * Close an opened query, no matter it finished or not.
+	 * if query result data are not all fetched, close means cancal the query.
 	 *
 	 * @token the query token.
 	 * @return
