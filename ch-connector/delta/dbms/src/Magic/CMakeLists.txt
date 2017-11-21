@@ -1,6 +1,6 @@
 #file(GLOB_RECURSE magic-patch *.cpp)
 #add_library(ch SHARED ${magic-patch})
-add_library(ch SHARED JNI.cpp)
+add_library(ch SHARED JNI.cpp Bench.cpp)
 
 target_link_libraries(ch
     clickhouse-client

@@ -44,7 +44,11 @@ public class MagicProto {
 	 *
 	 * @return array of query tokens
 	 */
-	public native long[] querys();
+	public static class QuerysResult {
+		String error;
+		long[] tokens;
+	}
+	public native QuerysResult querys();
 
 	/**
 	 * Execute and open a query.
