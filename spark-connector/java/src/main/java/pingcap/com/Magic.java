@@ -58,14 +58,26 @@ public class Magic {
 		return lib.version();
 	}
 
-	public void init(String path) throws MagicException {
+	public void init(String path) {
+		this.path = path;
+	}
+
+	public void _init() throws MagicException {
+		if (inited) {
+			return;
+		}
+		if (path == null) {
+			throw new MagicException("init failed: path not set");
+		}
 		MagicProto.InitResult result = lib.init(path);
 		if (result.error != null) {
 			throw new MagicException("init failed: " + result.error);
 		}
+		inited = true;
 	}
 
 	public Query query(String query) throws MagicException {
+		_init();
 		MagicProto.QueryResult result = lib.query(query);
 		if (result.error != null) {
 			throw new MagicException("query failed: " + result.error);
@@ -74,6 +86,9 @@ public class Magic {
 	}
 
 	public Schema schema(long token) throws IOException, MagicException {
+		if (!inited) {
+			throw new MagicException("get schema failed: uninited");
+		}
 		// TODO: maybe better: Schema::deserialize(ByteBuffer buffer)
 		byte[] result = lib.schema(token);
 		if (result == null) {
@@ -85,6 +100,9 @@ public class Magic {
 	}
 
 	public VectorSchemaRoot next(Schema schema, long token) throws IOException, MagicException {
+		if (!inited) {
+			throw new MagicException("get next block failed: uninited");
+		}
 		byte[] result = lib.next(token);
 		if (result == null) {
 			String error = lib.error(token);
@@ -105,6 +123,9 @@ public class Magic {
 	}
 
 	public void close(long token) throws MagicException {
+		if (!inited) {
+			return;
+		}
 		lib.close(token);
 		String error = lib.error(token);
 		if (error != null) {
@@ -120,5 +141,7 @@ public class Magic {
 	}
 
 	public final MagicProto lib;
+	private String path;
+	private boolean inited;
 	private final BufferAllocator alloc;
 }
