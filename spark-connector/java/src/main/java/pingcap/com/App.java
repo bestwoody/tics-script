@@ -99,7 +99,10 @@ public class App {
 			while (true) {
 				Scanner reader = new Scanner(System.in);
 				String line = reader.nextLine();
-				if (line.equals("quit")) {
+				if (line.equals("help")) {
+					System.out.println("[usage: help|quit|to-log|no-decode|gc|version|bench]");
+					continue;
+				} else if (line.equals("quit")) {
 					return 0;
 				} else if (line.equals("to-log")) {
 					System.out.println("[redirecting output to magic-java.log]");
@@ -119,15 +122,18 @@ public class App {
 					System.out.println("    " + magic.version());
 					continue;
 				} else if (line.equals("bench")) {
-					System.out.println("[enter simple data bench mode, type 'exit' to exit]");
+					System.out.println("[enter simple data bench mode, type 'quit' to exit]");
 					while (true) {
 						line = reader.nextLine();
 						if (line.equals("exit")) {
+							System.out.println("[leave simple data bench mode]");
 							break;
 						}
 						int code = Bench.run(line.split(" "));
 						System.out.println("[bench done: " + code + "]");
 					}
+					continue;
+				} else if (line.equals("")) {
 					continue;
 				}
 				System.out.println();
