@@ -3,6 +3,9 @@ package pingcap.com;
 import java.util.List;
 import java.util.Scanner;
 import java.lang.Character;
+import java.io.File;
+import java.io.PrintStream;
+import java.io.FileOutputStream;
 
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -94,14 +97,18 @@ public class App {
 				String line = reader.nextLine();
 				if (line.equals("quit")) {
 					return;
+				} else if (line.equals("redirect")) {
+					System.out.println("[redirecting output to magic-java.log]");
+					System.setOut(new PrintStream(new File("magic-java.log")));
+					continue;
 				}
 				System.out.println();
 				try {
 					exec(magic, line);
 				} catch (Exception e) {
-					System.out.println("[exception]");
-					System.out.println("    " + e);
-					System.out.println();
+					System.err.println("[exception]");
+					System.err.println("    " + e);
+					System.err.println();
 					System.exit(-1);
 				}
 			}
