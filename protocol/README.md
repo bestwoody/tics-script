@@ -4,9 +4,16 @@
 * May switch to TCP later.
 
 ## Progress
+JNI
 ```
-OK Codec
-OK IPC
-OK Error Handling
-OK Benchmark, TPS + Throughput
+** Codec
+** IPC
+** Error Handling
+** Benchmark, TPS + Throughput
+```
+TCP
+```
+** Codec
+-- IPC
+-- Benchmark, TPS + Throughput
 ```

@@ -16,17 +16,21 @@
 
 ## Progress
 ```
-OK Codec
-OK JNI
-OK Types supported: Essential
+** Codec
+** Types supported: Essential
 -- Types supported: Full
      - DateTime
      - Bool
      - Decimal
      - Nested types
-*- Benchmark
+-- Benchmark
+-- Optimization
+     - Faster data copy
+```
+JNI only (suspended by now)
+```
+** JNI
 -- Optimization
      - Memory usage control
      - Disable background threads
-     - Faster data copy
 ```
