@@ -7,6 +7,20 @@
 
 #include "Server/IServer.h"
 
+namespace Magic
+{
+    namespace Protocol
+    {
+        enum
+        {
+            End = 0,
+            Error = 1,
+            Schema = 2,
+            Data = 3
+        };
+    }
+}
+
 namespace CurrentMetrics
 {
     extern const Metric TCPConnection;

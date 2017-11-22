@@ -16,6 +16,7 @@
 #include <Interpreters/executeQuery.h>
 
 #include "TCPArrowHandler.h"
+#include "Session.h"
 
 namespace DB
 {
@@ -84,38 +85,26 @@ void TCPArrowHandler::runImpl()
 }
 
 
-// TODO: use arrow
+// TODO: async encoding
 void TCPArrowHandler::processOrdinaryQuery()
 {
-    /// Pull query execution result, if exists, and send it to network.
-    if (state.io.in)
+    Magic::Session session(state.io);
+
+    auto schema = session.getEncodedSchema();
+    writeVarUInt(::Magic::Protocol::Schema, *out);
+    out->write((const char*)schema->data(), schema->size());
+    out->next();
+
+    while (true)
     {
-        AsynchronousBlockInputStream async_in(state.io.in);
-        async_in.readPrefix();
-
-        while (true)
-        {
-            Block block;
-
-            while (true)
-            {
-                if (async_in.poll(query_context.getSettingsRef().interactive_delay / 1000))
-                {
-                    /// There is the following result block.
-                    block = async_in.read();
-                    break;
-                }
-            }
-
-            sendData(block);
-            if (!block)
-                break;
-        }
-
-        async_in.readSuffix();
+        auto block = session.getEncodedBlock();
+        writeVarUInt(::Magic::Protocol::Data, *out);
+        out->write((const char*)block->data(), block->size());
+        out->next();
     }
 
-    state.io.onFinish();
+    writeVarUInt(::Magic::Protocol::End, *out);
+    out->next();
 }
 
 
