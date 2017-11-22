@@ -18,18 +18,13 @@ private:
 
 public:
     explicit TCPArrowHandlerFactory(IServer & server_)
-        : server(server_)
-        , log(&Logger::get("TCPArrowHandlerFactory"))
+        : server(server_), log(&Logger::get("TCPArrowHandlerFactory"))
     {
     }
 
     Poco::Net::TCPServerConnection * createConnection(const Poco::Net::StreamSocket & socket) override
     {
-        LOG_TRACE(log,
-            "TCP Arrow Request. "
-                << "Address: "
-                << socket.peerAddress().toString());
-
+        LOG_TRACE(log, "TCP Arrow Request. " << "Address: " << socket.peerAddress().toString());
         return new TCPArrowHandler(server, socket);
     }
 };
