@@ -2,20 +2,21 @@
 OLAP project for TiDB
 
 ## Design
-* [The big picture](https://github.com/pingcap/theflash/blob/master/docs/the-big-picture.md)
-* [The CH-Spark solution](https://github.com/pingcap/theflash/blob/master/docs/ch-spark-tcp.md)
+* [The big picture](./docs/the-big-picture.md)
+* [The CH-Spark solution](./docs/ch-spark-tcp.md)
+* [More docs](./docs)
 
 ## Progress
 ```
 POC:
-***** Magic Protocol
+****- Magic Protocol
 ****- CH-Magic Connector
-*---- Spark-Magic Connector
+----- Spark-Magic Connector
 
 Online:
 ----- Binlog Writer
 ----- Latch Service
 ----- Transaction(batch level) supporting
 ***-- Data update supporting
------ Detail test
+----- Fully test
 ```

@@ -4,9 +4,21 @@
 * May switch to TCP later.
 
 ## Progress
+JNI
 ```
-OK Codec
-OK IPC
-OK Error Handling
-OK Benchmark, TPS + Throughput
+** Codec
+** JNI
+** Error Handling
+** Cancal query
+-- Query progress report
+** Benchmark, TPS + Throughput
+```
+TCP
+```
+** Codec
+** TCP
+-- Error Handling
+-- Benchmark, TPS + Throughput
+-- Cancal query
+-- Query progress report
 ```

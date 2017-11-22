@@ -4,6 +4,7 @@
 
 ## Current Supported
 * String
+* DateTime (Has bugs, working on it)
 * Int8
 * Int16
 * Int32
@@ -28,13 +29,13 @@
     * Int16
     * Int32
     * Int64
+    * Float32
+    * Float64
 * All supported but Spark
     * UInt8
     * UInt16
     * UInt32
     * UInt64
-    * Float32
-    * Float64
 * Arrow specific
     * Bool: TODO
     * Binary: TODO
