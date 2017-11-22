@@ -1,6 +1,6 @@
-# Dev on ClickHouse and keep syncing with the official repo
+# Dev on ClickHouse and keep syncing with the official repository
 
-## First time clone this repo
+## First time clone this repository
 * `repo/ch-connector> git submodule update`
     * Fetch ClickHouse (and the other submodules)
 * `repo/ch-connector> ./clickhouse-init.sh`
@@ -19,11 +19,11 @@
     * If there are removed or relocated files, we should delete it in `delta/...` manually, before Committing
 * Make sure: do NOT commit modifications in `clickhouse` submodule
 
-## Merge from official repo
+## Merge from official repository
 * `repo/ch-connector> ./clickhouse-reset.sh`
     * Remove modifications in `clickhouse` submodule
 * `repo/ch-connector> git pull ...`
-    * Update `clickhouse` submodule from official remote repo
+    * Update `clickhouse` submodule from official remote repository
 * `repo/ch-connector> git add clickhouse && git commit -m "..."`
     * Commit submodule updates
 * `repo/ch-connector> ./delta-apply.sh`

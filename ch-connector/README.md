@@ -2,8 +2,8 @@
 
 ## Dir notes:
 * `clickhouse`
-    * The official repo
-    * Git submodule of `theflash` repo
+    * The official repository
+    * Git submodule of `theflash` repository
 * `delta`
     * Patch source code
     * `clickhouse` + `delta` = `CH-Connector`
@@ -11,7 +11,7 @@
     * Running env
     * Test data set, configs, etc
 
-## Dev on ClickHouse and keep syncing with the official repo
+## Dev on ClickHouse and keep syncing with the official repository
 * See [dev-on-ch](./dev-on-ch.md)
 
 ## Progress
