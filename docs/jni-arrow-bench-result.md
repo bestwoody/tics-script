@@ -2,7 +2,7 @@
 * Hardware: `MacBookPro 15' 2015` `4 Phy Cores, 2.5GHZ` `16G Mem`
 
 ## JNI Call
-* Test cast: `int sum(int, int)`
+* Test case: `int sum(int, int)`
 * 7e7 TPS on 1 core
 
 ## JNI Memory IO Thoughput
