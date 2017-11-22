@@ -1,14 +1,5 @@
 #include "pingcap_com_MagicProto.h"
 #include "Sessions.h"
-
-#include <Common/typeid_cast.h>
-#include <Core/ColumnWithTypeAndName.h>
-#include <Columns/ColumnsNumber.h>
-#include <DataStreams/IBlockOutputStream.h>
-#include <DataStreams/copyData.h>
-#include <Interpreters/Context.h>
-#include <Interpreters/executeQuery.h>
-
 #include "Context.h"
 
 

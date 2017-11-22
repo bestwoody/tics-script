@@ -1,4 +1,11 @@
-#include "pingcap_com_MagicProto.h"
+#pragma once
+
+#include <Common/typeid_cast.h>
+
+#include <Core/ColumnWithTypeAndName.h>
+#include <Columns/ColumnsNumber.h>
+#include <Columns/ColumnString.h>
+#include <DataStreams/IBlockOutputStream.h>
 
 #include "arrow/array.h"
 #include "arrow/builder.h"
@@ -61,8 +68,11 @@ public:
         try
         {
             DB::Block block = result.in->read();
-            if (!block)
+            if (!block) {
+                result.in->readSuffix();
+                result.onFinish();
                 return NULL;
+            }
             std::vector<std::shared_ptr<arrow::Array>> arrays;
             arrow::Status status;
 
