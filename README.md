@@ -2,9 +2,9 @@
 OLAP project for TiDB
 
 ## Design
-* [The big picture](https://github.com/pingcap/theflash/blob/master/docs/the-big-picture.md)
-* [The CH-Spark solution](https://github.com/pingcap/theflash/blob/master/docs/ch-spark-tcp.md)
-* [More docs](https://github.com/pingcap/theflash/blob/master/docs)
+* [The big picture](./docs/the-big-picture.md)
+* [The CH-Spark solution](./docs/ch-spark-tcp.md)
+* [More docs](./docs)
 
 ## Progress
 ```
