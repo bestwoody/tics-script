@@ -7,13 +7,18 @@
 JNI
 ```
 ** Codec
-** IPC
+** JNI
 ** Error Handling
+** Cancal query
+-- Query progress report
 ** Benchmark, TPS + Throughput
 ```
 TCP
 ```
 ** Codec
--- IPC
+** TCP
+-- Error Handling
 -- Benchmark, TPS + Throughput
+-- Cancal query
+-- Query progress report
 ```

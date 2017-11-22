@@ -10,7 +10,7 @@ OLAP project for TiDB
 ```
 POC:
 ****- Magic Protocol
-***-- CH-Magic Connector
+****- CH-Magic Connector
 ----- Spark-Magic Connector
 
 Online:
@@ -18,5 +18,5 @@ Online:
 ----- Latch Service
 ----- Transaction(batch level) supporting
 ***-- Data update supporting
------ Detail test
+----- Fully test
 ```

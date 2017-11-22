@@ -17,6 +17,7 @@
 ## Progress
 ```
 ** Codec
+** IPC (JNI, TCP Server)
 ** Types supported: Essential
 -- Types supported: Full
      - DateTime
@@ -29,7 +30,6 @@
 ```
 JNI only (suspended by now)
 ```
-** JNI
 -- Optimization
      - Memory usage control
      - Disable background threads
