@@ -2,20 +2,16 @@
 
 #include <common/logger_useful.h>
 
-#include <Poco/Net/NetException.h>
-
 #include <Core/Protocol.h>
 
 #include <Common/ClickHouseRevision.h>
 #include <Common/Stopwatch.h>
-#include <Common/NetException.h>
 
 #include <IO/ReadBufferFromPocoSocket.h>
 #include <IO/WriteBufferFromPocoSocket.h>
 #include <IO/copyData.h>
 
 #include <DataStreams/AsynchronousBlockInputStream.h>
-#include <DataStreams/NativeBlockInputStream.h>
 #include <DataStreams/NativeBlockOutputStream.h>
 #include <Interpreters/executeQuery.h>
 
