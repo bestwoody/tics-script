@@ -26,13 +26,7 @@ namespace DB
 
 namespace ErrorCodes
 {
-    extern const int UNKNOWN_DATABASE;
-    extern const int UNKNOWN_EXCEPTION;
-    extern const int UNKNOWN_PACKET_FROM_CLIENT;
     extern const int POCO_EXCEPTION;
-    extern const int STD_EXCEPTION;
-    extern const int SOCKET_TIMEOUT;
-    extern const int UNEXPECTED_PACKET_FROM_CLIENT;
 }
 
 
@@ -73,25 +67,18 @@ void TCPArrowHandler::runImpl()
 
         try
         {
-            /// Restore context of request.
             query_context = connection_context;
-
             readStringBinary(state.query, *in);
-
-            /// Reset the input stream, as we received an empty block while receiving external table data.
-            /// So, the stream has been marked as cancelled and we can't read from it anymore.
-            state.block_in.reset();
-            state.maybe_compressed_in.reset();  /// For more accurate accounting by MemoryTracker.
-
             state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
 
             if (state.io.out)
-                throw Exception("tcp-arrow protocol do not support insert query");
+                throw Exception("TCPArrowHandler do not support insert query.");
 
             processOrdinaryQuery();
         }
         catch (...)
         {
+            LOG_ERROR(log, "Exception, TODO: details.");
             state.io.onException();
         }
 
@@ -135,16 +122,16 @@ void TCPArrowHandler::processOrdinaryQuery()
     state.io.onFinish();
 }
 
-// TODO: use Arrow
+
 void TCPArrowHandler::sendData(Block & block)
 {
-    initBlockOutput();
+    if (!state.block_out)
+        state.block_out = std::make_shared<NativeBlockOutputStream>(*out, DBMS_MIN_REVISION_WITH_SERVER_TIMEZONE);
 
     writeVarUInt(Protocol::Server::Data, *out);
     writeStringBinary("", *out);
 
     state.block_out->write(block);
-    state.maybe_compressed_out->next();
     out->next();
 }
 
@@ -170,28 +157,5 @@ void TCPArrowHandler::run()
         }
     }
 }
-
-
-void TCPArrowHandler::initBlockOutput()
-{
-    if (state.block_out)
-        return;
-    state.maybe_compressed_out = out;
-    state.block_out = std::make_shared<NativeBlockOutputStream>(
-        *state.maybe_compressed_out,
-        DBMS_MIN_REVISION_WITH_SERVER_TIMEZONE);
-}
-
-
-void TCPArrowHandler::initBlockInput()
-{
-    if (state.block_in)
-        return;
-    state.maybe_compressed_in = in;
-    state.block_in = std::make_shared<NativeBlockInputStream>(
-        *state.maybe_compressed_in,
-        DBMS_MIN_REVISION_WITH_SERVER_TIMEZONE);
-}
-
 
 }

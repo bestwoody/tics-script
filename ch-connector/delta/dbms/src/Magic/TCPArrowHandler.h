@@ -22,10 +22,7 @@ namespace DB
 
 struct ArrowQueryState
 {
-    std::shared_ptr<ReadBuffer> maybe_compressed_in;
-    BlockInputStreamPtr block_in;
-
-    std::shared_ptr<WriteBuffer> maybe_compressed_out;
+    // TODO: use Arrow
     BlockOutputStreamPtr block_out;
 
     String query;
