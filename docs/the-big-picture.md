@@ -62,7 +62,7 @@
 +--|--------|----------------------------+
 |  |        |                            |  Latch Service and Engine can be in
 |  |        |   Latch Service:           |  the same process
-|  +--------+     Coordinator of reader  |
+|  +--------+     Coordinator of readers |
 |  |              an writer(s)           |
 |  |                                     |
 +--|-------------------------------------+
