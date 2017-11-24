@@ -1,5 +1,5 @@
 # The Flash
-OLAP project for TiDB
+An OLAP project of TiDB
 
 ## Design
 * [The big picture](./docs/the-big-picture.md)
