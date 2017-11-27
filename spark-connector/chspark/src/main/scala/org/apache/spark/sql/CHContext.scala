@@ -18,11 +18,14 @@ package org.apache.spark.sql
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 
+import org.apache.spark.sql.ch.CHRelation
+import org.apache.spark.sql.ch.CHStrategy
+
 class CHContext (val session: SparkSession) extends Serializable with Logging {
   val sqlContext: SQLContext = session.sqlContext
   //val conf: SparkConf = session.sparkContext.conf
 
-  // session.experimental.extraStrategies ++= Seq(new Strategy(sqlContext))
+  session.experimental.extraStrategies ++= Seq(new CHStrategy(sqlContext))
 
   def chMapDatabase(): Unit = {
     val name = "test"

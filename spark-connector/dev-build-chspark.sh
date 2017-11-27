@@ -16,5 +16,5 @@ if [ ! -d "$spark_jp" ]; then
 fi
 cp "chspark/target/chspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" "$spark_jp/"
 
-echo ""
+echo
 echo "OK"

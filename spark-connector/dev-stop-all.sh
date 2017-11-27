@@ -12,5 +12,5 @@ if [ "$master_check" != "0" ]; then
 	echo "stop master failed: $master_check" >&2
 fi
 
-echo ""
+echo
 echo "OK"
