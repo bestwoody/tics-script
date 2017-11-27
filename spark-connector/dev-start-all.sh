@@ -19,5 +19,5 @@ if [ "$slave_check" != "1" ]; then
 	exit 1
 fi
 
-echo "" >&2
-echo "OK" >&2
+echo ""
+echo "OK"
