@@ -7,14 +7,12 @@ set -eu
 
 cd target
 
-lib_path="../../ch-connector/build/dbms/src/Magic"
+lib_path="../../../ch-connector/build/dbms/src/Magic"
 lib="$lib_path/libch.dylib"
-echo $lib
 if [ -f "$lib" ]; then
 	cp $lib .
 fi
 lib="$lib_path/libch.so"
-echo $lib
 if [ -f "$lib" ]; then
 	cp $lib .
 fi
