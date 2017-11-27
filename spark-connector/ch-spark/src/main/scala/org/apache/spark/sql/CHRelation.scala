@@ -13,10 +13,14 @@
  * limitations under the License.
  */
 
-import org.apache.spark.sql.SQLContext
+package org.apache.spark.sql
+
+//import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 
-class Relation() extends BaseRelation {
-  // override lazy val schema: StructType = TiUtils.getSchemaFromTable(table)
+class CHRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
+  // TODO
+  // override lazy val schema: StructType = Utils.getSchemaFromTable(table)
+  override lazy val schema: StructType = null
 }

@@ -17,7 +17,7 @@ package org.apache.spark.sql
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-//import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 //import org.apache.spark.sql.internal.SQLConf
 //import org.apache.spark.sql.types._
@@ -26,7 +26,7 @@ class CHStrategy(context: SQLContext) extends Strategy with Logging {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     plan match {
       // TODO: fetch data
-      case LogicalRelation(CHRelation()) => Nil
+      case LogicalRelation(relation: CHRelation, _, _) => Nil
       case _ => Nil
     }
   }

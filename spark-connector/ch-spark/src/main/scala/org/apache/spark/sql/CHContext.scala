@@ -18,8 +18,6 @@ package org.apache.spark.sql
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 
-import org.apache.spark.sql.ch.Relation
-
 class CHContext (val session: SparkSession) extends Serializable with Logging {
   val sqlContext: SQLContext = session.sqlContext
   val conf: SparkConf = session.sparkContext.conf
@@ -28,7 +26,7 @@ class CHContext (val session: SparkSession) extends Serializable with Logging {
 
   def chMapDatabase(): Unit = {
     val name = "test"
-    val rel = new Relation(name)
+    val rel = new CHRelation(name)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 }
