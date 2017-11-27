@@ -37,3 +37,6 @@ protocol/c-jni
 ch-connector/build
 ch-connector/origin
 ch-connector/running
+
+# spark-connector running data dir
+spark-connector/spark-warehouse
