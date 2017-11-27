@@ -31,7 +31,7 @@ import org.apache.spark.unsafe.types.UTF8String
 class CHStrategy(context: SQLContext) extends Strategy with Logging {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     plan match {
-      case LogicalRelation(relation: CHRelation, output: Seq[Attribute], _) => MockPlan(output, context) :: Nil
+      case LogicalRelation(relation: CHRelation, _, _) => MockPlan(Nil, context) :: Nil
       case _ => Nil
     }
   }
@@ -39,8 +39,9 @@ class CHStrategy(context: SQLContext) extends Strategy with Logging {
 
 case class MockPlan(output: Seq[Attribute], context: SQLContext) extends SparkPlan {
   override protected def doExecute(): RDD[InternalRow] = {
-    val row = InternalRow.apply(UTF8String.fromString("aaabbb"))
-    context.sparkContext.parallelize(Seq(row))
+    val row1 = InternalRow.apply(UTF8String.fromString("aaa"))
+    val row2 = InternalRow.apply(UTF8String.fromString("bbb"))
+    context.sparkContext.parallelize(Seq(row1, row2))
   }
   override def children: Seq[SparkPlan] = Nil
 }
