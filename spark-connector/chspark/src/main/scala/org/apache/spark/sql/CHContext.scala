@@ -20,7 +20,7 @@ import org.apache.spark.internal.Logging
 
 class CHContext (val session: SparkSession) extends Serializable with Logging {
   val sqlContext: SQLContext = session.sqlContext
-  val conf: SparkConf = session.sparkContext.conf
+  //val conf: SparkConf = session.sparkContext.conf
 
   // session.experimental.extraStrategies ++= Seq(new Strategy(sqlContext))
 
@@ -28,5 +28,9 @@ class CHContext (val session: SparkSession) extends Serializable with Logging {
     val name = "test"
     val rel = new CHRelation(name)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
+  }
+
+  def sql(sqlText: String): DataFrame = {
+    sqlContext.sql(sqlText)
   }
 }
