@@ -2,7 +2,7 @@ set -eu
 
 old=`pwd`
 cd chspark
-mvn package
+mvn clean package
 cd "$old"
 
 spark_jp=""

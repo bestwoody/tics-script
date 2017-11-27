@@ -17,10 +17,19 @@ package org.apache.spark.sql
 
 //import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.types.MetadataBuilder
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.StructField
+import org.apache.spark.{SparkConf, sql}
 
 class CHRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
   // TODO
   // override lazy val schema: StructType = Utils.getSchemaFromTable(table)
-  override lazy val schema: StructType = null
+  override lazy val schema: StructType = {
+    val fields = new Array[StructField](1)
+    val name="col1"
+    val metadata = new MetadataBuilder().putString("name", name).build()
+    fields(0) = StructField(name, sql.types.StringType, nullable = true, metadata)
+    new StructType(fields)
+  }
 }
