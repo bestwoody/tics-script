@@ -38,5 +38,9 @@ ch-connector/build
 ch-connector/origin
 ch-connector/running
 
+# tpch generated data
+benchmark/loading/tpch-*
+benchmark/loading/backup
+
 # spark-connector running data dir
 spark-connector/spark-warehouse
