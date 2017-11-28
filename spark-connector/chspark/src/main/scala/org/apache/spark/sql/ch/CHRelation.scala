@@ -24,6 +24,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.sources.BaseRelation
 
+
 class CHRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
   override lazy val schema: StructType = {
     val fields = new Array[StructField](1)
