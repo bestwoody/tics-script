@@ -20,8 +20,7 @@ import org.apache.spark._
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.types.MetadataBuilder
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.{StructType, StructField, StringType}
 import org.apache.spark.sql.sources.BaseRelation
 
 
@@ -30,7 +29,7 @@ class CHRelation(tableName: String)(@transient val sqlContext: SQLContext) exten
     val fields = new Array[StructField](1)
     val name="col1"
     val metadata = new MetadataBuilder().putString("name", name).build()
-    fields(0) = StructField(name, sql.types.StringType, nullable = true, metadata)
+    fields(0) = StructField(name, StringType, nullable = true, metadata)
     new StructType(fields)
   }
 }
