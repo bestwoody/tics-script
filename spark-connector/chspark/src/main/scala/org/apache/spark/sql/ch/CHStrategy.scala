@@ -17,22 +17,14 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.Strategy
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.{Row, Strategy, SQLContext, SparkSession}
+import org.apache.spark.sql.execution.{SparkPlan, RDDConversions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeProjection}
 
-import org.apache.spark.sql.execution.RDDConversions
 import org.apache.spark.sql.types.StringType
-
-import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
-import org.apache.spark.unsafe.types.UTF8String
 
 
 class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
@@ -42,7 +34,12 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     //}.toSeq.flatten
 
     plan match {
-      case LogicalRelation(relation: CHRelation, _, _) => CHPlan(Nil, sparkSession) :: Nil
+      case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => {
+        output match {
+          case Some(v) => CHPlan(rel.output, sparkSession) :: Nil
+          case _ => CHPlan(rel.output, sparkSession) :: Nil
+        }
+      }
       case _ => Nil
     }
   }
@@ -50,7 +47,16 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
 
 case class CHPlan(output: Seq[Attribute], sparkSession: SparkSession) extends SparkPlan {
   override protected def doExecute(): RDD[InternalRow] = {
-    RDDConversions.rowToRowRdd(new CHRDD(sparkSession), Seq(StringType))
+    val result = RDDConversions.rowToRowRdd(new CHRDD(sparkSession), Seq(StringType))
+    result.mapPartitionsWithIndexInternal { (partition, iter) =>
+      val proj = UnsafeProjection.create(schema)
+      proj.initialize(partition)
+      iter.map {
+        r => {
+          proj(r)
+        }
+      }
+    }
   }
   override def children: Seq[SparkPlan] = Nil
 }
