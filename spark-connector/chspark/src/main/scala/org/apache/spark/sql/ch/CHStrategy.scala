@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, Strategy, SQLContext, SparkSession}
+import org.apache.spark.sql.{Strategy, SparkSession}
 import org.apache.spark.sql.execution.{SparkPlan, RDDConversions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.catalyst.InternalRow

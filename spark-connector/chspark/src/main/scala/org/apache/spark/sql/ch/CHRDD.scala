@@ -18,7 +18,6 @@ package org.apache.spark.sql.ch
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
-import org.apache.spark.sql.catalyst.InternalRow
 
 
 class CHRDD(@transient private val sparkSession: SparkSession)
