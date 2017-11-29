@@ -9,6 +9,9 @@ delta_apply()
 			mkdir -p "$backup_path"
 			cp "$origin_file" "$backup_file"
 		fi
+
+		local origin_path=`dirname "$origin_file"`
+		mkdir -p "$origin_path"
 		cp "$delta_file" "$origin_file"
 	done
 }

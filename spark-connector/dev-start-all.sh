@@ -1,4 +1,11 @@
-ip=`ifconfig | grep -i mask | grep broadcast | grep inet | awk '{print $2}'`
+ip=""
+if [ `uname` == "Darwin" ]; then
+	ip=`ifconfig | grep -i mask | grep broadcast | grep inet | awk '{print $2}'`
+else
+	ip=`ifconfig | grep -i mask | grep cast | grep inet | awk '{print $2}' | awk -F 'addr:' '{print $2}'`
+fi
+echo "local ip: $ip"
+
 ip_check="`echo $ip | wc -l | awk '{print $1}'`"
 if [ "$ip_check" != "1" ]; then
 	echo "get local ip failed: $ip_check" >&2
