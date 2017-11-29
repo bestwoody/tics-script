@@ -1,7 +1,7 @@
 # Dev on ClickHouse and keep syncing with the official repository
 
 ## First time clone this repository
-* `repo/ch-connector> git submodule update`
+* `repo/ch-connector> git submodule init && git submodule update`
     * Fetch ClickHouse (and the other submodules)
 * `repo/ch-connector> ./clickhouse-init.sh`
     * Fetch ClickHouse submodules
