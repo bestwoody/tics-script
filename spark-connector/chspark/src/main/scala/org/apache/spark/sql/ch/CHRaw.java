@@ -16,7 +16,7 @@
 package org.apache.spark.sql.ch;
 
 
-public CHRaw {
+public class CHRaw {
 	private static void dump(Field field, int order) {
 		System.out.println("    #" + order + " name:\"" + field.getName() + "\" type:" +
 			field.getType().getTypeID() + " nullable:" + field.isNullable());
