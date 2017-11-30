@@ -92,6 +92,7 @@ void TCPArrowHandler::processOrdinaryQuery()
 
     auto schema = session.getEncodedSchema();
     writeVarUInt(::Magic::Protocol::ArrowSchema, *out);
+    writeVarUInt((size_t)schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
     out->next();
 
@@ -99,6 +100,7 @@ void TCPArrowHandler::processOrdinaryQuery()
     {
         auto block = session.getEncodedBlock();
         writeVarUInt(::Magic::Protocol::ArrowData, *out);
+        writeVarUInt((size_t)block->size(), *out);
         out->write((const char*)block->data(), block->size());
         out->next();
     }
