@@ -65,7 +65,7 @@ void TCPArrowHandler::runImpl()
         try
         {
             query_context = connection_context;
-            readStringBinary(state.query, *in);
+            recvQuery();
             state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
 
             if (state.io.out)
@@ -91,14 +91,16 @@ void TCPArrowHandler::processOrdinaryQuery()
     Magic::Session session(state.io);
 
     auto schema = session.getEncodedSchema();
-    writeVarUInt(::Magic::Protocol::Schema, *out);
+    writeVarUInt(::Magic::Protocol::ArrowSchema, *out);
+    writeVarUInt((size_t)schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
     out->next();
 
     while (true)
     {
         auto block = session.getEncodedBlock();
-        writeVarUInt(::Magic::Protocol::Data, *out);
+        writeVarUInt(::Magic::Protocol::ArrowData, *out);
+        writeVarUInt((size_t)block->size(), *out);
         out->write((const char*)block->data(), block->size());
         out->next();
     }
@@ -107,6 +109,16 @@ void TCPArrowHandler::processOrdinaryQuery()
     out->next();
 }
 
+
+void TCPArrowHandler::recvQuery()
+{
+    size_t flag = 0;
+    readVarUInt(flag, *in);
+    if (flag != ::Magic::Protocol::Utf8Query)
+        throw Exception("TCPArrowHandler only receive query string.");
+
+    readStringBinary(state.query, *in);
+}
 
 void TCPArrowHandler::sendData(Block & block)
 {

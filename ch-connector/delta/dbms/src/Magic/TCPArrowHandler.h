@@ -15,8 +15,9 @@ namespace Magic
         {
             End = 0,
             Error = 1,
-            Schema = 2,
-            Data = 3
+            Utf8Query = 2,
+            ArrowSchema = 3,
+            ArrowData = 4,
         };
     }
 }
@@ -78,6 +79,7 @@ private:
     void runImpl();
 
     void processOrdinaryQuery();
+    void recvQuery();
     void sendData(Block & block);
 
     void initBlockInput();
