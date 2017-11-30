@@ -15,6 +15,9 @@
 
 package org.apache.spark.sql.ch;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
@@ -105,29 +108,4 @@ public class CHClient {
 
 	private VectorSchemaRoot cache;
 	private Schema schema;
-
-	public static void main(String[] args) throws Exception {
-		if (args.length < 2) {
-			System.out.println("usage: <bin> query ch-host [port]");
-			System.exit(-1);
-		}
-
-		String query = args[0];
-		String host = args[1];
-		int port = 9001;
-		if (args.length > 2) {
-			port = Integer.parseInt(args[2]);
-		}
-
-		CHClient client = new CHClient(query, host, port);
-
-		String sentence;
-		String modifiedSentence;
-		BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-
-		writer.writeBytes(query + "\n");
-
-		// TODO
-		// auto data = reader.readBytes();
-	}
 }
