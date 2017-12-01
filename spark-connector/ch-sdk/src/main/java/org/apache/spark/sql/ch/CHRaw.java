@@ -87,7 +87,7 @@ public class CHRaw {
 			port = Integer.parseInt(args[2]);
 		}
 
-		CHClient client = new CHClient(query, host, port);
+		CHClient client = new CHClient(query, host, port, null);
 		dump(client, true);
 		client.close();
 	}

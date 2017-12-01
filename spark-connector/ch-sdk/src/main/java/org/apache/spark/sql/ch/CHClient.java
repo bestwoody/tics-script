@@ -36,12 +36,23 @@ public class CHClient {
 	private final int PackageTypeArrowSchema = 3;
 	private final int PackageTypeArrowData = 4;
 
-	public CHClient(String query, String host, int port) throws Exception {
+	public static class CHClientException extends Exception {
+		public CHClientException(String msg) {
+			super(msg);
+		}
+	}
+
+	public CHClient(String query, String host, int port, ArrowDecoder arrowDecoder) throws Exception {
 		this.query = query;
 		this.socket = new Socket(host, port);
 		this.writer = new DataOutputStream(socket.getOutputStream());
 		this.reader = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 		this.finished = false;
+
+		if (arrowDecoder == null) {
+			arrowDecoder = new ArrowDecoder();
+		}
+		this.arrowDecoder = arrowDecoder;
 
 		sendQuery(query);
 		fetchSchema();
@@ -68,7 +79,7 @@ public class CHClient {
 		}
 		if (decoded.error != null) {
 			finished = true;
-			throw new Exception(decoded.error);
+			throw new CHClientException(decoded.error);
 		}
 		return decoded.block;
 	}
@@ -138,12 +149,12 @@ public class CHClient {
 		if (decoding.type == PackageTypeUtf8Error) {
 			decodeds.put(new Decoded(new String(decoding.data)));
 		} else if (decoding.type == PackageTypeArrowData) {
-			decodeds.put(new Decoded(decodeBlock(decoding.data)));
+			decodeds.put(new Decoded(arrowDecoder.decodeBlock(schema, decoding.data)));
 		} else if (decoding.type == PackageTypeEnd) {
 			decodeds.put(new Decoded());
 			return false;
 		} else {
-			throw new Exception("Unknown package, type: " + decoding.type);
+			throw new CHClientException("Unknown package, type: " + decoding.type);
 		}
 		return true;
 	}
@@ -151,19 +162,12 @@ public class CHClient {
 	private void fetchSchema() throws Exception {
 		int type = reader.readInt();
 		if (type != PackageTypeArrowSchema) {
-			throw new Exception("No received schema.");
+			throw new CHClientException("No received schema.");
 		}
 		int size = reader.readInt();
 		byte[] data = new byte[size];
 		reader.readFully(data);
-		// TODO: decode to schema
-		System.out.println("TODO: handleSchema, size: " + data.length);
-	}
-
-	private VectorSchemaRoot decodeBlock(byte[] data) {
-		// TODO: decode to cache
-		System.out.println("TODO: handleBlock, size: " + data.length);
-		return null;
+		schema = arrowDecoder.decodeSchema(data);
 	}
 
 	private static class Decoding {
@@ -199,6 +203,8 @@ public class CHClient {
 	private DataInputStream reader;
 	private Schema schema;
 	private boolean finished;
+
+	private ArrowDecoder arrowDecoder;
 
 	private BlockingQueue<Decoding> decodings;
 	private BlockingQueue<Decoded> decodeds;
