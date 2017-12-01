@@ -11,6 +11,7 @@
     <organization>
         <name>PingCAP</name>
     </organization>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -20,6 +21,7 @@
         <scala.binary.version>2.11</scala.binary.version>
         <scala.version>2.11</scala.version>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -96,23 +98,19 @@
         </dependency>
         <dependency>
             <groupId>org.powermock</groupId>
-            <artifactId>powermock-module-junit4</artifactId>
-            <version>1.6.6</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
             <artifactId>powermock-api-mockito</artifactId>
             <version>1.5.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
+
     <build>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
         </resources>
+
         <extensions>
             <extension>
                 <groupId>kr.motd.maven</groupId>
@@ -120,6 +118,7 @@
                 <version>1.4.1.Final</version>
             </extension>
         </extensions>
+
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
@@ -180,38 +179,11 @@
                     </archive>
                 </configuration>
             </plugin>
-            <!-- Source Plug-in -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.1.2</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <!-- Clean Plug-in -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>2.4.1</version>
-            </plugin>
-            <!-- Javadoc Plug-in -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.8</version>
-                <configuration>
-                    <charset>UTF-8</charset>
-                    <encoding>UTF-8</encoding>
-                    <docencoding>UTF-8</docencoding>
-                    <locale>zh_CN</locale>
-                </configuration>
             </plugin>
             <!-- Assembly Plug-in -->
             <plugin>
