@@ -15,15 +15,32 @@
 
 package org.apache.spark.sql.ch;
 
+import java.util.List;
+
+import io.netty.buffer.ArrowBuf;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.file.ReadChannel;
+import org.apache.arrow.vector.stream.MessageSerializer;
+import org.apache.arrow.vector.schema.ArrowRecordBatch;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.FieldType;
+import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.ArrowType.Int;
+import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.VectorLoader;
+import org.apache.arrow.vector.NullableBigIntVector;
 
 public class CHRaw {
+/*
 	private static void dump(Field field, int order) {
 		System.out.println("    #" + order + " name:\"" + field.getName() + "\" type:" +
 			field.getType().getTypeID() + " nullable:" + field.isNullable());
 	}
 
-	private static void dump(Magic.Query query, boolean decode) throws Exception {
-		Schema schema = query.schema();
+	private static void dump(CHClient client, boolean decode) throws Exception {
+		Schema schema = client.getSchema();
 		List<Field> fields = schema.getFields();
 		int i = 0;
 		if (decode) {
@@ -34,8 +51,8 @@ public class CHRaw {
 			}
 		}
 
-		while (true) {
-			VectorSchemaRoot block = query.next();
+		while (client.hasNext()) {
+			VectorSchemaRoot block = client.next();
 			if (block == null) {
 				break;
 			}
@@ -85,11 +102,12 @@ public class CHRaw {
 		Schema schema = client.getSchema();
 		dump(schema);
 
-		for (client.hasNext()) {
+		while (client.hasNext()) {
 			VectorSchemaRoot block = client.next();
 			dump(block, true);
 		}
 
 		client.close();
 	}
+*/
 }
