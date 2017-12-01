@@ -26,6 +26,7 @@ origin
 
 # Java compile result
 target
+dependency-reduced-pom.xml
 
 # C++ compile result
 build
