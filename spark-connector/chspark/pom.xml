@@ -75,6 +75,12 @@
             <version>${spark.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>pingcap.com</groupId>
+            <artifactId>CHSDK</artifactId>
+            <version>1.0</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- for test -->
         <dependency>
