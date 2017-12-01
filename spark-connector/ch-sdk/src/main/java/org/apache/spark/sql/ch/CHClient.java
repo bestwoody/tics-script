@@ -15,6 +15,10 @@
 
 package org.apache.spark.sql.ch;
 
+import java.net.Socket;
+import java.io.DataOutputStream;
+import java.io.BufferedReader;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -23,6 +27,7 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 
 
 public class CHClient {
+/*
 	private enum PackageType {
 		End(0),
 		Utf8Error(1),
@@ -44,7 +49,7 @@ public class CHClient {
 		startDecodePackages();
 	}
 
-	public close() {
+	public void close() {
 		socket.close();
 	}
 
@@ -104,7 +109,7 @@ public class CHClient {
 			int size = reader.readInt();
 			data = reader.readBytes(size);
 		}
-		decodings.put(new Decoding(type, data))
+		decodings.put(new Decoding(type, data));
 		return type != PackageType.Utf8Error;
 	}
 
@@ -126,7 +131,7 @@ public class CHClient {
 	private void fetchSchema() {
 		int type = reader.readInt();
 		if (type != PackageType.Schema) {
-			throw Exception("No received schema.")
+			throw Exception("No received schema.");
 		}
 		int size = reader.readInt();
 		byte[] data = reader.readBytes(size);
@@ -176,4 +181,5 @@ public class CHClient {
 
 	private BlockingQueue<Decoding> decodings;
 	private BlockingQueue<Decoded> decodeds;
+*/
 }
