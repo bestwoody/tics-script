@@ -1,6 +1,11 @@
 set -eu
 
 old=`pwd`
+
+cd ch-sdk
+mvn install
+cd "$old"
+
 cd chspark
 mvn clean package
 cd "$old"
