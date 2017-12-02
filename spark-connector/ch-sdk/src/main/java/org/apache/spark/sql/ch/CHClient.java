@@ -49,6 +49,9 @@ public class CHClient {
 		this.reader = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 		this.finished = false;
 
+		this.decodeds = new LinkedBlockingQueue();
+		this.decodings = new LinkedBlockingQueue();
+
 		if (arrowDecoder == null) {
 			arrowDecoder = new ArrowDecoder();
 		}
@@ -164,7 +167,7 @@ public class CHClient {
 	private void fetchSchema() throws Exception {
 		long type = reader.readLong();
 		if (type != PackageTypeArrowSchema) {
-			throw new CHClientException("No received schema.");
+			throw new CHClientException("Received package, but not schema, type: " + type);
 		}
 		long size = reader.readLong();
 		// TODO: overflow check

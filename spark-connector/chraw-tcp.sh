@@ -8,3 +8,4 @@ java \
 	-cp ch-sdk/target/*:ch-sdk/target/lib/* \
 	org.apache.spark.sql.ch/CHRaw \
 	"$query" "$host" "$port" \
+	2>&1 | grep -v 'SLF4J'

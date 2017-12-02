@@ -127,6 +127,8 @@ void TCPArrowHandler::processOrdinaryQuery()
     while (true)
     {
         auto block = session.getEncodedBlock();
+        if (!block)
+            break;
         writeInt64(::Magic::Protocol::ArrowData, *out);
         writeInt64(block->size(), *out);
         out->write((const char*)block->data(), block->size());
