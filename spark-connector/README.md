@@ -15,6 +15,7 @@
 *- Bytes -> ArrowFormat -> SparkRows
 ** Execute query and fetch data from CH service
 -- CH Cluster support
+-- Predicate pushdown
 -- Integration test
 -- TPCH benchmark
 ```
