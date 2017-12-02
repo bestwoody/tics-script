@@ -48,6 +48,10 @@ inline void readString(std::string & x, ReadBuffer & istr)
     istr.readStrict(&x[0], size);
 }
 
+inline void writeInt64(Int64 val, WriteBuffer & ostr)
+{
+    ostr.write((const char*)&val, sizeof(val));
+}
 
 void TCPArrowHandler::runImpl()
 {
@@ -115,26 +119,21 @@ void TCPArrowHandler::processOrdinaryQuery()
     Magic::Session session(state.io);
 
     auto schema = session.getEncodedSchema();
-    size_t val = ::Magic::Protocol::ArrowSchema;
-    out->write((const char*)&val, sizeof(val));
-    val = schema->size();
-    out->write((const char*)&val, sizeof(val));
+    writeInt64(::Magic::Protocol::ArrowSchema, *out);
+    writeInt64(schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
     out->next();
 
     while (true)
     {
         auto block = session.getEncodedBlock();
-        val = ::Magic::Protocol::ArrowData;
-        out->write((const char*)&val, sizeof(val));
-        val = block->size();
-        out->write((const char*)&val, sizeof(val));
+        writeInt64(::Magic::Protocol::ArrowData, *out);
+        writeInt64(block->size(), *out);
         out->write((const char*)block->data(), block->size());
         out->next();
     }
 
-    val = ::Magic::Protocol::End;
-    out->write((const char*)&val, sizeof(val));
+    writeInt64(::Magic::Protocol::End, *out);
     out->next();
 }
 

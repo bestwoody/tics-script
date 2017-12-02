@@ -46,6 +46,7 @@ benchmark/loading/backup
 # spark-connector running data dir
 spark-connector/spark-warehouse
 
-# IDE files
+# IDE or editor files
 .idea
 *.iml
+*.swp
