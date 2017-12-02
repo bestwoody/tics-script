@@ -12,8 +12,8 @@
 ## Progress
 ```
 ** Mock table in spark
--- Arrow codec in scala
--- Execute query and fetch data from CH service
+*- Bytes -> ArrowFormat -> SparkRows
+** Execute query and fetch data from CH service
 -- Integration test
 -- TPCH benchmark
 ```
