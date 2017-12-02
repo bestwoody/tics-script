@@ -30,11 +30,11 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 
 
 public class CHClient {
-	private final int PackageTypeEnd = 0;
-	private final int PackageTypeUtf8Error = 1;
-	private final int PackageTypeUtf8Query = 2;
-	private final int PackageTypeArrowSchema = 3;
-	private final int PackageTypeArrowData = 4;
+	private final long PackageTypeEnd = 0;
+	private final long PackageTypeUtf8Error = 1;
+	private final long PackageTypeUtf8Query = 2;
+	private final long PackageTypeArrowSchema = 3;
+	private final long PackageTypeArrowData = 4;
 
 	public static class CHClientException extends Exception {
 		public CHClientException(String msg) {
@@ -85,11 +85,12 @@ public class CHClient {
 	}
 
 	private void sendQuery(String query) throws IOException {
-		int val = PackageTypeUtf8Query;
-		writer.writeInt(val);
+		long val = PackageTypeUtf8Query;
+		writer.writeLong(val);
 		val = query.length();
-		writer.writeInt(val);
+		writer.writeLong(val);
 		writer.writeBytes(query);
+		writer.flush();
 	}
 
 	private void startFetchPackages() {
@@ -129,15 +130,16 @@ public class CHClient {
 	}
 
 	private boolean fetchPackage() throws InterruptedException, IOException {
-		int type = reader.readInt();
+		long type = reader.readLong();
 		if (type == PackageTypeEnd) {
 			decodings.put(new Decoding(type, null));
 			return false;
 		}
 		byte[] data = null;
 		if (type != PackageTypeEnd) {
-			int size = reader.readInt();
-			data = new byte[size];
+			long size = reader.readLong();
+			// TODO: overflow check
+			data = new byte[(int)size];
 			reader.readFully(data);
 		}
 		decodings.put(new Decoding(type, data));
@@ -160,23 +162,24 @@ public class CHClient {
 	}
 
 	private void fetchSchema() throws Exception {
-		int type = reader.readInt();
+		long type = reader.readLong();
 		if (type != PackageTypeArrowSchema) {
 			throw new CHClientException("No received schema.");
 		}
-		int size = reader.readInt();
-		byte[] data = new byte[size];
+		long size = reader.readLong();
+		// TODO: overflow check
+		byte[] data = new byte[(int)size];
 		reader.readFully(data);
 		schema = arrowDecoder.decodeSchema(data);
 	}
 
 	private static class Decoding {
-		Decoding(int type, byte[] data) {
+		Decoding(long type, byte[] data) {
 			this.type = type;
 			this.data = data;
 		}
 
-		private int type;
+		private long type;
 		private byte[] data;
 	}
 

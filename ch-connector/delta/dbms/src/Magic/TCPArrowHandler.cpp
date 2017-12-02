@@ -26,6 +26,32 @@ namespace ErrorCodes
     extern const int POCO_EXCEPTION;
 }
 
+inline Int64 readInt64(ReadBuffer & istr)
+{
+    Int64 x = 0;
+    for (size_t i = 0; i < 8; ++i)
+    {
+        if (istr.eof())
+            throwReadAfterEOF();
+
+        UInt8 byte = *istr.position();
+        ++istr.position();
+        x |= (byte) << (8 * (7 - i));
+    }
+    return x;
+}
+
+inline void readString(std::string & x, ReadBuffer & istr)
+{
+    Int64 size = readInt64(istr);
+    x.resize(size);
+    istr.readStrict(&x[0], size);
+}
+
+inline void writeInt64(Int64 val, WriteBuffer & ostr)
+{
+    ostr.write((const char*)&val, sizeof(val));
+}
 
 void TCPArrowHandler::runImpl()
 {
@@ -50,7 +76,8 @@ void TCPArrowHandler::runImpl()
     connection_context.setUser("default", "", socket().peerAddress(), "");
     connection_context.setCurrentDatabase("default");
 
-    while (1)
+    bool failed = false;
+    while (!failed)
     {
         /// We are waiting for a packet from the client. Thus, every `POLL_INTERVAL` seconds check whether we need to shut down.
         while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(global_settings.poll_interval * 1000000) && !server.isCancelled());
@@ -77,6 +104,7 @@ void TCPArrowHandler::runImpl()
         {
             LOG_ERROR(log, "Exception, TODO: details.");
             state.io.onException();
+            failed = true;
         }
 
         watch.stop();
@@ -91,45 +119,31 @@ void TCPArrowHandler::processOrdinaryQuery()
     Magic::Session session(state.io);
 
     auto schema = session.getEncodedSchema();
-    writeVarUInt(::Magic::Protocol::ArrowSchema, *out);
-    writeVarUInt((size_t)schema->size(), *out);
+    writeInt64(::Magic::Protocol::ArrowSchema, *out);
+    writeInt64(schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
     out->next();
 
     while (true)
     {
         auto block = session.getEncodedBlock();
-        writeVarUInt(::Magic::Protocol::ArrowData, *out);
-        writeVarUInt((size_t)block->size(), *out);
+        writeInt64(::Magic::Protocol::ArrowData, *out);
+        writeInt64(block->size(), *out);
         out->write((const char*)block->data(), block->size());
         out->next();
     }
 
-    writeVarUInt(::Magic::Protocol::End, *out);
+    writeInt64(::Magic::Protocol::End, *out);
     out->next();
 }
 
 
 void TCPArrowHandler::recvQuery()
 {
-    size_t flag = 0;
-    readVarUInt(flag, *in);
+    Int64 flag = readInt64(*in);
     if (flag != ::Magic::Protocol::Utf8Query)
         throw Exception("TCPArrowHandler only receive query string.");
-
-    readStringBinary(state.query, *in);
-}
-
-void TCPArrowHandler::sendData(Block & block)
-{
-    if (!state.block_out)
-        state.block_out = std::make_shared<NativeBlockOutputStream>(*out, DBMS_MIN_REVISION_WITH_SERVER_TIMEZONE);
-
-    writeVarUInt(Protocol::Server::Data, *out);
-    writeStringBinary("", *out);
-
-    state.block_out->write(block);
-    out->next();
+    readString(state.query, *in);
 }
 
 

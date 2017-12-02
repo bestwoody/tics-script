@@ -80,7 +80,6 @@ private:
 
     void processOrdinaryQuery();
     void recvQuery();
-    void sendData(Block & block);
 
     void initBlockInput();
     void initBlockOutput();
