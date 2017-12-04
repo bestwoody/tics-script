@@ -159,6 +159,7 @@ void TCPArrowHandler::processOrdinaryQuery()
     }
 
     writeInt64(::Magic::Protocol::End, *out);
+    // Every package has a size
     writeInt64(0, *out);
     out->next();
 }
