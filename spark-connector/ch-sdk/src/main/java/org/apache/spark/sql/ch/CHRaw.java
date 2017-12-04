@@ -76,19 +76,20 @@ public class CHRaw {
 
 	public static void main(String[] args) throws Exception {
 		if (args.length < 2) {
-			System.out.println("usage: <bin> query ch-host [port]");
+			System.out.println("usage: <bin> query 'decode' ch-host [port]");
 			System.exit(-1);
 		}
 
 		String query = args[0];
-		String host = args[1];
+		boolean decode = Boolean.parseBoolean(args[1]);
+		String host = args[2];
 		int port = 9001;
-		if (args.length > 2) {
-			port = Integer.parseInt(args[2]);
+		if (args.length > 3) {
+			port = Integer.parseInt(args[3]);
 		}
 
 		CHResponse result = new CHResponse(query, host, port, null);
-		dump(result, true);
+		dump(result, decode);
 		result.close();
 	}
 }
