@@ -132,7 +132,7 @@ public class CHResponse {
 		worker.start();
 	}
 
-	private boolean fetchPackage() throws InterruptedException, IOException {
+	private boolean fetchPackage() throws Exception {
 		long type = reader.readLong();
 		if (type == PackageTypeEnd) {
 			decodings.put(new Decoding(type, null));
@@ -141,7 +141,9 @@ public class CHResponse {
 		byte[] data = null;
 		if (type != PackageTypeEnd) {
 			long size = reader.readLong();
-			// TODO: overflow check
+			if (size >= Integer.MAX_VALUE) {
+				throw new CHResponseException("Package too big, size: " + size);
+			}
 			data = new byte[(int)size];
 			reader.readFully(data);
 		}
@@ -153,6 +155,7 @@ public class CHResponse {
 		Decoding decoding = decodings.take();
 		if (decoding.type == PackageTypeUtf8Error) {
 			decodeds.put(new Decoded(new String(decoding.data)));
+			return false;
 		} else if (decoding.type == PackageTypeArrowData) {
 			decodeds.put(new Decoded(arrowDecoder.decodeBlock(schema, decoding.data)));
 		} else if (decoding.type == PackageTypeEnd) {
@@ -166,13 +169,19 @@ public class CHResponse {
 
 	private void fetchSchema() throws Exception {
 		long type = reader.readLong();
+		long size = reader.readLong();
+		if (size >= Integer.MAX_VALUE) {
+			throw new CHResponseException("Package too big, size: " + size);
+		}
+		byte[] data = new byte[(int)size];
+		reader.readFully(data);
+		if (type == PackageTypeUtf8Error) {
+			throw new CHResponseException("Error from storage: " + new String(data));
+		}
 		if (type != PackageTypeArrowSchema) {
 			throw new CHResponseException("Received package, but not schema, type: " + type);
 		}
-		long size = reader.readLong();
-		// TODO: overflow check
-		byte[] data = new byte[(int)size];
-		reader.readFully(data);
+		
 		schema = arrowDecoder.decodeSchema(data);
 	}
 
