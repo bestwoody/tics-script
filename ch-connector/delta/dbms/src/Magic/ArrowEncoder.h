@@ -14,16 +14,16 @@
 namespace Magic
 {
 
-class Session
+class ArrowEncoder
 {
 public:
     using SchemaPtr = std::shared_ptr<arrow::Schema>;
     using BlockPtr = std::shared_ptr<arrow::RecordBatch>;
     using BufferPtr = std::shared_ptr<arrow::Buffer>;
 
-    Session(const std::string & error_) : error(error_) {}
+    ArrowEncoder(const std::string & error_) : error(error_) {}
 
-    Session(const DB::BlockIO & result_) : result(result_)
+    ArrowEncoder(const DB::BlockIO & result_) : result(result_)
     {
         try
         {
