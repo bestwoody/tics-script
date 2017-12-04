@@ -16,7 +16,7 @@
 #include <Interpreters/executeQuery.h>
 
 #include "TCPArrowHandler.h"
-#include "Session.h"
+#include "AsyncArrowEncoder.h"
 
 namespace DB
 {
@@ -48,9 +48,15 @@ inline void readString(std::string & x, ReadBuffer & istr)
     istr.readStrict(&x[0], size);
 }
 
-inline void writeInt64(Int64 val, WriteBuffer & ostr)
+// TODO: use big-endian now, may be use little-endian is better
+inline void writeInt64(Int64 x, WriteBuffer & ostr)
 {
-    ostr.write((const char*)&val, sizeof(val));
+    UInt8 byte = 0;
+    for (size_t i = 0; i < 8; ++i)
+    {
+        byte = (x >> (8 * (7 - i))) & 0xFF;
+        ostr.write((const char*)&byte, 1);
+    }
 }
 
 void TCPArrowHandler::runImpl()
@@ -100,11 +106,13 @@ void TCPArrowHandler::runImpl()
 
             processOrdinaryQuery();
         }
-        catch (...)
+        catch (Exception e)
         {
-            LOG_ERROR(log, "Exception, TODO: details.");
+            auto msg = DB::getCurrentExceptionMessage(true, true);
+            LOG_ERROR(log, msg);
             state.io.onException();
             failed = true;
+            sendError(msg);
         }
 
         watch.stop();
@@ -113,12 +121,22 @@ void TCPArrowHandler::runImpl()
 }
 
 
-// TODO: async encoding
 void TCPArrowHandler::processOrdinaryQuery()
 {
-    Magic::Session session(state.io);
+    Magic::AsyncArrowEncoder encoder(state.io);
 
-    auto schema = session.getEncodedSchema();
+    if (encoder.hasError())
+    {
+        sendError(encoder.getErrorString());
+        return;
+    }
+
+    auto schema = encoder.getEncodedSchema();
+    if (encoder.hasError())
+    {
+        sendError(encoder.getErrorString());
+        return;
+    }
     writeInt64(::Magic::Protocol::ArrowSchema, *out);
     writeInt64(schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
@@ -126,7 +144,12 @@ void TCPArrowHandler::processOrdinaryQuery()
 
     while (true)
     {
-        auto block = session.getEncodedBlock();
+        auto block = encoder.getPreparedEncodedBlock();
+        if (encoder.hasError())
+        {
+            sendError(encoder.getErrorString());
+            return;
+        }
         if (!block)
             break;
         writeInt64(::Magic::Protocol::ArrowData, *out);
@@ -136,6 +159,8 @@ void TCPArrowHandler::processOrdinaryQuery()
     }
 
     writeInt64(::Magic::Protocol::End, *out);
+    // Every package has a size
+    writeInt64(0, *out);
     out->next();
 }
 
@@ -146,6 +171,15 @@ void TCPArrowHandler::recvQuery()
     if (flag != ::Magic::Protocol::Utf8Query)
         throw Exception("TCPArrowHandler only receive query string.");
     readString(state.query, *in);
+}
+
+
+void TCPArrowHandler::sendError(const std::string & msg)
+{
+    writeInt64(::Magic::Protocol::Utf8Error, *out);
+    writeInt64(msg.size(), *out);
+    out->write((const char*)msg.c_str(), msg.size());
+    out->next();
 }
 
 

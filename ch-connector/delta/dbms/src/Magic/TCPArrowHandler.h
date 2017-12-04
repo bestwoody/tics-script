@@ -3,6 +3,7 @@
 #include <Poco/Net/TCPServerConnection.h>
 
 #include <Common/CurrentMetrics.h>
+
 #include <DataStreams/BlockIO.h>
 
 #include "Server/IServer.h"
@@ -14,7 +15,7 @@ namespace Magic
         enum
         {
             End = 0,
-            Error = 1,
+            Utf8Error = 1,
             Utf8Query = 2,
             ArrowSchema = 3,
             ArrowData = 4,
@@ -80,6 +81,7 @@ private:
 
     void processOrdinaryQuery();
     void recvQuery();
+    void sendError(const std::string & msg);
 
     void initBlockInput();
     void initBlockOutput();

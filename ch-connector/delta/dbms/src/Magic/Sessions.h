@@ -2,13 +2,15 @@
 #include <mutex>
 
 #include "Context.h"
-#include "Session.h"
+#include "ArrowEncoder.h"
 
 namespace Magic {
 
 class Sessions
 {
 public:
+    using Session = ArrowEncoder;
+
     Sessions() : id_gen(10000) {}
 
     std::string init(const char * config)

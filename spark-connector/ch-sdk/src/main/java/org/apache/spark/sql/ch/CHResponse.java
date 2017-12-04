@@ -29,20 +29,20 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 
-public class CHClient {
+public class CHResponse {
 	private final long PackageTypeEnd = 0;
 	private final long PackageTypeUtf8Error = 1;
 	private final long PackageTypeUtf8Query = 2;
 	private final long PackageTypeArrowSchema = 3;
 	private final long PackageTypeArrowData = 4;
 
-	public static class CHClientException extends Exception {
-		public CHClientException(String msg) {
+	public static class CHResponseException extends Exception {
+		public CHResponseException(String msg) {
 			super(msg);
 		}
 	}
 
-	public CHClient(String query, String host, int port, ArrowDecoder arrowDecoder) throws Exception {
+	public CHResponse(String query, String host, int port, ArrowDecoder arrowDecoder) throws Exception {
 		this.query = query;
 		this.socket = new Socket(host, port);
 		this.writer = new DataOutputStream(socket.getOutputStream());
@@ -82,7 +82,7 @@ public class CHClient {
 		}
 		if (decoded.error != null) {
 			finished = true;
-			throw new CHClientException(decoded.error);
+			throw new CHResponseException(decoded.error);
 		}
 		return decoded.block;
 	}
@@ -132,7 +132,7 @@ public class CHClient {
 		worker.start();
 	}
 
-	private boolean fetchPackage() throws InterruptedException, IOException {
+	private boolean fetchPackage() throws Exception {
 		long type = reader.readLong();
 		if (type == PackageTypeEnd) {
 			decodings.put(new Decoding(type, null));
@@ -141,7 +141,9 @@ public class CHClient {
 		byte[] data = null;
 		if (type != PackageTypeEnd) {
 			long size = reader.readLong();
-			// TODO: overflow check
+			if (size >= Integer.MAX_VALUE) {
+				throw new CHResponseException("Package too big, size: " + size);
+			}
 			data = new byte[(int)size];
 			reader.readFully(data);
 		}
@@ -153,26 +155,33 @@ public class CHClient {
 		Decoding decoding = decodings.take();
 		if (decoding.type == PackageTypeUtf8Error) {
 			decodeds.put(new Decoded(new String(decoding.data)));
+			return false;
 		} else if (decoding.type == PackageTypeArrowData) {
 			decodeds.put(new Decoded(arrowDecoder.decodeBlock(schema, decoding.data)));
 		} else if (decoding.type == PackageTypeEnd) {
 			decodeds.put(new Decoded());
 			return false;
 		} else {
-			throw new CHClientException("Unknown package, type: " + decoding.type);
+			throw new CHResponseException("Unknown package, type: " + decoding.type);
 		}
 		return true;
 	}
 
 	private void fetchSchema() throws Exception {
 		long type = reader.readLong();
-		if (type != PackageTypeArrowSchema) {
-			throw new CHClientException("Received package, but not schema, type: " + type);
-		}
 		long size = reader.readLong();
-		// TODO: overflow check
+		if (size >= Integer.MAX_VALUE) {
+			throw new CHResponseException("Package too big, size: " + size);
+		}
 		byte[] data = new byte[(int)size];
 		reader.readFully(data);
+		if (type == PackageTypeUtf8Error) {
+			throw new CHResponseException("Error from storage: " + new String(data));
+		}
+		if (type != PackageTypeArrowSchema) {
+			throw new CHResponseException("Received package, but not schema, type: " + type);
+		}
+		
 		schema = arrowDecoder.decodeSchema(data);
 	}
 
