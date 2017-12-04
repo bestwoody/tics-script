@@ -4,7 +4,7 @@
 
 ## Current Supported
 * String
-* DateTime (Has bugs, working on it)
+* DateTime
 * Int8
 * Int16
 * Int32

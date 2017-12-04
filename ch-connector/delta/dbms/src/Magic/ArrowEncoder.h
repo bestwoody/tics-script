@@ -165,7 +165,7 @@ private:
         else if (name == "DateTime")
         {
             const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
-            arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::SECOND), pool);
+            arrow::Time32Builder builder(arrow::time32(arrow::TimeUnit::SECOND), pool);
             for (size_t i = 0; i < rows; ++i)
             {
                 // TODO: check overflow and convert to int32 may be better.
@@ -173,7 +173,7 @@ private:
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    setError("arrow::Time64Builder.Append " + status.ToString());
+                    setError("arrow::Time32Builder.Append " + status.ToString());
                     return NULL;
                 }
             }

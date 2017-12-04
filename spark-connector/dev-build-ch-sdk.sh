@@ -1,7 +1,7 @@
 set -eu
 
 cd ch-sdk
-mvn install
+mvn clean install
 
 echo
 echo "OK"
