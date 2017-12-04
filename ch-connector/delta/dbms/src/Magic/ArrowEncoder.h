@@ -1,5 +1,8 @@
 #pragma once
 
+#include <condition_variable>
+#include <mutex>
+
 #include <Common/typeid_cast.h>
 
 #include <Core/ColumnWithTypeAndName.h>
@@ -14,6 +17,7 @@
 namespace Magic
 {
 
+// TODO: handle cancallation
 class ArrowEncoder
 {
 public:
@@ -41,7 +45,7 @@ public:
         }
         catch (const DB::Exception & e)
         {
-            error = e.displayText();
+            setError(e.displayText());
         }
     }
 
@@ -57,7 +61,7 @@ public:
         auto status = arrow::ipc::SerializeSchema(*schema, pool, &serialized);
         if (!status.ok())
         {
-            error = "arrow::ipc::SerializeSchema " + status.ToString();
+            setError("arrow::ipc::SerializeSchema " + status.ToString());
             return NULL;
         }
         return serialized;
@@ -87,7 +91,7 @@ public:
         }
         catch (const DB::Exception & e)
         {
-            error = e.displayText();
+            setError(e.displayText());
         }
 
         return NULL;
@@ -103,16 +107,31 @@ public:
         auto status = arrow::ipc::SerializeRecordBatch(*block, pool, &serialized);
         if (!status.ok())
         {
-            error = "arrow::ipc::SerializeRecordBatch " + status.ToString();
+            setError("arrow::ipc::SerializeRecordBatch " + status.ToString());
             return NULL;
         }
         return serialized;
     }
 
-    const std::string & getErrorString()
+    bool hasError()
     {
+        std::unique_lock<std::mutex> lock{mutex};
+        return !error.empty();
+    }
+
+    std::string getErrorString()
+    {
+        std::unique_lock<std::mutex> lock{mutex};
         return error;
     }
+
+protected:
+    void setError(const std::string msg)
+    {
+        std::unique_lock<std::mutex> lock{mutex};
+        error = msg;
+    }
+
 
 private:
     // TODO: faster copy
@@ -137,7 +156,7 @@ private:
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    error = "arrow::StringBuilder.Append " + status.ToString();
+                    setError("arrow::StringBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -154,7 +173,7 @@ private:
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    error = "arrow::Time64Builder.Append " + status.ToString();
+                    setError("arrow::Time64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -169,7 +188,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::Int8Builder.Append " + status.ToString();
+                    setError("arrow::Int8Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -184,7 +203,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::Int16Builder.Append " + status.ToString();
+                    setError("arrow::Int16Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -199,7 +218,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::Int32Builder.Append " + status.ToString();
+                    setError("arrow::Int32Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -214,7 +233,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::Int64Builder.Append " + status.ToString();
+                    setError("arrow::Int64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -229,7 +248,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::UInt8Builder.Append " + status.ToString();
+                    setError("arrow::UInt8Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -244,7 +263,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::UInt16Builder.Append " + status.ToString();
+                    setError("arrow::UInt16Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -259,7 +278,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::UInt32Builder.Append " + status.ToString();
+                    setError("arrow::UInt32Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -274,7 +293,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::UInt64Builder.Append " + status.ToString();
+                    setError("arrow::UInt64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -289,7 +308,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::FloatBuilder.Append " + status.ToString();
+                    setError("arrow::FloatBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -304,7 +323,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    error = "arrow::DoubleBuilder.Append " + status.ToString();
+                    setError("arrow::DoubleBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -313,7 +332,7 @@ private:
 
         if (!status.ok())
         {
-            error = "arrow::StringBuilder.Finish" + status.ToString();
+            setError("arrow::StringBuilder.Finish" + status.ToString());
             return NULL;
         }
         return array;
@@ -353,8 +372,10 @@ private:
 
 private:
     DB::BlockIO result;
-    std::string error;
     SchemaPtr schema;
+
+    mutable std::mutex mutex;
+    std::string error;
 };
 
 }

@@ -106,11 +106,13 @@ void TCPArrowHandler::runImpl()
 
             processOrdinaryQuery();
         }
-        catch (...)
+        catch (Exception e)
         {
-            LOG_ERROR(log, "Exception, TODO: details.");
+            auto msg = DB::getCurrentExceptionMessage(true, true);
+            LOG_ERROR(log, msg);
             state.io.onException();
             failed = true;
+            sendError(msg);
         }
 
         watch.stop();
@@ -119,12 +121,22 @@ void TCPArrowHandler::runImpl()
 }
 
 
-// TODO: async encoding
 void TCPArrowHandler::processOrdinaryQuery()
 {
     Magic::AsyncArrowEncoder encoder(state.io);
 
+    if (encoder.hasError())
+    {
+        sendError(encoder.getErrorString());
+        return;
+    }
+
     auto schema = encoder.getEncodedSchema();
+    if (encoder.hasError())
+    {
+        sendError(encoder.getErrorString());
+        return;
+    }
     writeInt64(::Magic::Protocol::ArrowSchema, *out);
     writeInt64(schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
@@ -133,6 +145,11 @@ void TCPArrowHandler::processOrdinaryQuery()
     while (true)
     {
         auto block = encoder.getPreparedEncodedBlock();
+        if (encoder.hasError())
+        {
+            sendError(encoder.getErrorString());
+            return;
+        }
         if (!block)
             break;
         writeInt64(::Magic::Protocol::ArrowData, *out);
@@ -153,6 +170,15 @@ void TCPArrowHandler::recvQuery()
     if (flag != ::Magic::Protocol::Utf8Query)
         throw Exception("TCPArrowHandler only receive query string.");
     readString(state.query, *in);
+}
+
+
+void TCPArrowHandler::sendError(const std::string & msg)
+{
+    writeInt64(::Magic::Protocol::Utf8Error, *out);
+    writeInt64(msg.size(), *out);
+    out->write((const char*)msg.c_str(), msg.size());
+    out->next();
 }
 
 

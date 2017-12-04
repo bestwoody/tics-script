@@ -16,6 +16,9 @@ public:
 
     AsyncArrowEncoder(const DB::BlockIO & result) : ArrowEncoder(result), encodeds(5)
     {
+        if (hasError())
+            return;
+
         thread = std::thread([&]
         {
             while (true)
