@@ -8,3 +8,6 @@
 [submodule "spark-connector/spark"]
 	path = spark-connector/spark
 	url = git@github.com:apache/spark
+[submodule "ch-connector/arrow"]
+	path = ch-connector/arrow
+	url = git@github.com:apache/arrow
