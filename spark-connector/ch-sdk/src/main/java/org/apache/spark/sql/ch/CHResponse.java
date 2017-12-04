@@ -29,20 +29,20 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 
-public class CHClient {
+public class CHResponse {
 	private final long PackageTypeEnd = 0;
 	private final long PackageTypeUtf8Error = 1;
 	private final long PackageTypeUtf8Query = 2;
 	private final long PackageTypeArrowSchema = 3;
 	private final long PackageTypeArrowData = 4;
 
-	public static class CHClientException extends Exception {
-		public CHClientException(String msg) {
+	public static class CHResponseException extends Exception {
+		public CHResponseException(String msg) {
 			super(msg);
 		}
 	}
 
-	public CHClient(String query, String host, int port, ArrowDecoder arrowDecoder) throws Exception {
+	public CHResponse(String query, String host, int port, ArrowDecoder arrowDecoder) throws Exception {
 		this.query = query;
 		this.socket = new Socket(host, port);
 		this.writer = new DataOutputStream(socket.getOutputStream());
@@ -82,7 +82,7 @@ public class CHClient {
 		}
 		if (decoded.error != null) {
 			finished = true;
-			throw new CHClientException(decoded.error);
+			throw new CHResponseException(decoded.error);
 		}
 		return decoded.block;
 	}
@@ -159,7 +159,7 @@ public class CHClient {
 			decodeds.put(new Decoded());
 			return false;
 		} else {
-			throw new CHClientException("Unknown package, type: " + decoding.type);
+			throw new CHResponseException("Unknown package, type: " + decoding.type);
 		}
 		return true;
 	}
@@ -167,7 +167,7 @@ public class CHClient {
 	private void fetchSchema() throws Exception {
 		long type = reader.readLong();
 		if (type != PackageTypeArrowSchema) {
-			throw new CHClientException("Received package, but not schema, type: " + type);
+			throw new CHResponseException("Received package, but not schema, type: " + type);
 		}
 		long size = reader.readLong();
 		// TODO: overflow check

@@ -29,8 +29,8 @@ public class CHRaw {
 			field.getType().getTypeID() + " nullable:" + field.isNullable());
 	}
 
-	private static void dump(CHClient client, boolean decode) throws Exception {
-		Schema schema = client.getSchema();
+	private static void dump(CHResponse result, boolean decode) throws Exception {
+		Schema schema = result.getSchema();
 		List<Field> fields = schema.getFields();
 		int i = 0;
 		if (decode) {
@@ -41,8 +41,8 @@ public class CHRaw {
 			}
 		}
 
-		while (client.hasNext()) {
-			VectorSchemaRoot block = client.next();
+		while (result.hasNext()) {
+			VectorSchemaRoot block = result.next();
 			if (block == null) {
 				break;
 			}
@@ -87,8 +87,8 @@ public class CHRaw {
 			port = Integer.parseInt(args[2]);
 		}
 
-		CHClient client = new CHClient(query, host, port, null);
-		dump(client, true);
-		client.close();
+		CHResponse result = new CHResponse(query, host, port, null);
+		dump(result, true);
+		result.close();
 	}
 }
