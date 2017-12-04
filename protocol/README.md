@@ -22,7 +22,7 @@ TCP
 ```
 ** Codec
 ** TCP
--- Error Handling
+** Error Handling
 -- Benchmark, TPS + Throughput
 -- Cancal query
 -- Query progress report

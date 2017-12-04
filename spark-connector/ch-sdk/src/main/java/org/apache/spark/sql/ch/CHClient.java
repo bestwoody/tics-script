@@ -16,8 +16,11 @@
 package org.apache.spark.sql.ch;
 
 import java.net.Socket;
+
 import java.io.DataOutputStream;
-import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.BufferedInputStream;
+import java.io.IOException;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -27,21 +30,32 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 
 
 public class CHClient {
-/*
-	private enum PackageType {
-		End(0),
-		Utf8Error(1),
-		Utf8Query(2),
-		ArrowSchema(3),
-		ArrowData(4)
+	private final long PackageTypeEnd = 0;
+	private final long PackageTypeUtf8Error = 1;
+	private final long PackageTypeUtf8Query = 2;
+	private final long PackageTypeArrowSchema = 3;
+	private final long PackageTypeArrowData = 4;
+
+	public static class CHClientException extends Exception {
+		public CHClientException(String msg) {
+			super(msg);
+		}
 	}
 
-	public CHClient(String query, String host, int port) throws Exception {
+	public CHClient(String query, String host, int port, ArrowDecoder arrowDecoder) throws Exception {
 		this.query = query;
 		this.socket = new Socket(host, port);
 		this.writer = new DataOutputStream(socket.getOutputStream());
-		this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		this.reader = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 		this.finished = false;
+
+		this.decodeds = new LinkedBlockingQueue();
+		this.decodings = new LinkedBlockingQueue();
+
+		if (arrowDecoder == null) {
+			arrowDecoder = new ArrowDecoder();
+		}
+		this.arrowDecoder = arrowDecoder;
 
 		sendQuery(query);
 		fetchSchema();
@@ -49,7 +63,7 @@ public class CHClient {
 		startDecodePackages();
 	}
 
-	public void close() {
+	public void close() throws IOException {
 		socket.close();
 	}
 
@@ -68,90 +82,107 @@ public class CHClient {
 		}
 		if (decoded.error != null) {
 			finished = true;
-			throw Exception(decoded.error);
+			throw new CHClientException(decoded.error);
 		}
 		return decoded.block;
 	}
 
-	private void sendQuery() {
-		int val = PackageType.Utf8Query;
-		writer.writeBytes(flag);
-		int val = query.length;
-		writer.writeBytes(val);
+	private void sendQuery(String query) throws IOException {
+		long val = PackageTypeUtf8Query;
+		writer.writeLong(val);
+		val = query.length();
+		writer.writeLong(val);
 		writer.writeBytes(query);
+		writer.flush();
 	}
 
 	private void startFetchPackages() {
 		Thread worker = new Thread(new Runnable() {
-			public void run() throws Exception {
-				while (fetchPackage());
+			public void run() {
+				try {
+					while (fetchPackage());
+				}
+				catch (Exception e) {
+					try {
+						decodings.put(new Decoding(PackageTypeUtf8Error, e.toString().getBytes()));
+					}
+					catch (Exception _) {
+					}
+				}
 			}});
 		worker.start();
 	}
 
-	private void startDecodePackage() {
+	private void startDecodePackages() {
 		// TODO: multi decode workers, or just one is fine, need to run a benchmark
 		// NOTE: if we use multi workers, reordering is needed
 		Thread worker = new Thread(new Runnable() {
-			public void run() throws Exception {
-				while (decodePackage());
+			public void run() {
+				try {
+					while (decodePackage());
+				}
+				catch (Exception e) {
+					try {
+						decodings.put(new Decoding(PackageTypeUtf8Error, e.toString().getBytes()));
+					}
+					catch (Exception _) {
+					}
+				}
 			}});
 		worker.start();
 	}
 
-	private boolean fetchPackage() throws Exception {
-		int type = reader.readInt();
-		if (type == PackageType.End) {
+	private boolean fetchPackage() throws InterruptedException, IOException {
+		long type = reader.readLong();
+		if (type == PackageTypeEnd) {
+			decodings.put(new Decoding(type, null));
 			return false;
 		}
 		byte[] data = null;
-		if (type != PackageType.End) {
-			int size = reader.readInt();
-			data = reader.readBytes(size);
+		if (type != PackageTypeEnd) {
+			long size = reader.readLong();
+			// TODO: overflow check
+			data = new byte[(int)size];
+			reader.readFully(data);
 		}
 		decodings.put(new Decoding(type, data));
-		return type != PackageType.Utf8Error;
+		return type != PackageTypeUtf8Error;
 	}
 
 	private boolean decodePackage() throws Exception {
 		Decoding decoding = decodings.take();
-		if (decoding.type == PackageType.Utf8Error) {
-			decodeds.put(new Decoded(String(decoding.data)));
-		} else if (type == PackageType.ArrowData) {
-			decodeds.put(new Decoded(decodeBlock(decoding.data)));
-		} else if (type == PackageType.End) {
+		if (decoding.type == PackageTypeUtf8Error) {
+			decodeds.put(new Decoded(new String(decoding.data)));
+		} else if (decoding.type == PackageTypeArrowData) {
+			decodeds.put(new Decoded(arrowDecoder.decodeBlock(schema, decoding.data)));
+		} else if (decoding.type == PackageTypeEnd) {
 			decodeds.put(new Decoded());
 			return false;
 		} else {
-			throw Exception("Unknown package, type: " + type);
+			throw new CHClientException("Unknown package, type: " + decoding.type);
 		}
 		return true;
 	}
 
-	private void fetchSchema() {
-		int type = reader.readInt();
-		if (type != PackageType.Schema) {
-			throw Exception("No received schema.");
+	private void fetchSchema() throws Exception {
+		long type = reader.readLong();
+		if (type != PackageTypeArrowSchema) {
+			throw new CHClientException("Received package, but not schema, type: " + type);
 		}
-		int size = reader.readInt();
-		byte[] data = reader.readBytes(size);
-		// TODO: decode to schema
-		System.out.println("TODO: handleSchema, size: " + data.length);
-	}
-
-	private VectorSchemaRoot decodeBlock(byte[] data) {
-		// TODO: decode to cache
-		System.out.println("TODO: handleBlock, size: " + data.length);
-		return null;
+		long size = reader.readLong();
+		// TODO: overflow check
+		byte[] data = new byte[(int)size];
+		reader.readFully(data);
+		schema = arrowDecoder.decodeSchema(data);
 	}
 
 	private static class Decoding {
-		Decoding(int type, byte[] data) {
+		Decoding(long type, byte[] data) {
 			this.type = type;
 			this.data = data;
 		}
 
-		private int type;
+		private long type;
 		private byte[] data;
 	}
 
@@ -175,11 +206,12 @@ public class CHClient {
 	private String query;
 	private Socket socket;
 	private DataOutputStream writer;
-	private BufferedReader reader;
+	private DataInputStream reader;
 	private Schema schema;
 	private boolean finished;
 
+	private ArrowDecoder arrowDecoder;
+
 	private BlockingQueue<Decoding> decodings;
 	private BlockingQueue<Decoded> decodeds;
-*/
 }
