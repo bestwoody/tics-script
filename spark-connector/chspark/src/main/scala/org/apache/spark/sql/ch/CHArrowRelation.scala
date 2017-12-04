@@ -12,24 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.spark.sql.ch
 
-// TODO: more specific import
 import org.apache.spark._
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.sources.BaseRelation
 
-
-class CHRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
+class CHArrowRelation(tableName: String) (@transient val sqlContext: SQLContext) extends BaseRelation {
   override lazy val schema: StructType = {
     val fields = new Array[StructField](1)
-    val name="col1"
+    val name = "number"
     val metadata = new MetadataBuilder().putString("name", name).build()
-    fields(0) = StructField(name, StringType, nullable = true, metadata)
-//    fields(0) = StructField(name, IntegerType, nullable = true, metadata)
+    fields(0) = StructField(name, IntegerType, nullable = true, metadata)
     new StructType(fields)
   }
 }
-

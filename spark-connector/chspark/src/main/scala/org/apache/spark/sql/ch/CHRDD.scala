@@ -24,7 +24,15 @@ class CHRDD(@transient private val sparkSession: SparkSession)
   extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
-    val iterator = Iterator("aaa", "bbb", "ccc")
+//    val iterator = Iterator("aaa", "bbb", "ccc")
+//    override def hasNext: Boolean = iterator.hasNext
+//    override def next(): Row = Row.fromSeq(Seq(iterator.next))
+
+    val bytes = ArrowDecode.recordBatch()
+    // string
+    val iterator = Iterator(new String(bytes))
+    // int
+//    val iterator = bytes.map(_.toInt).toIterator
     override def hasNext: Boolean = iterator.hasNext
     override def next(): Row = Row.fromSeq(Seq(iterator.next))
   }
