@@ -20,8 +20,8 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.ch.CHStrategy
 
 import org.apache.spark.sql.ch.CHRelation
-import org.apache.spark.sql.ch.MockArrowRelation
-import org.apache.spark.sql.ch.MockSimpleRelation
+import org.apache.spark.sql.ch.mock.MockArrowRelation
+import org.apache.spark.sql.ch.mock.MockSimpleRelation
 
 
 class CHContext (val sparkSession: SparkSession) extends Serializable with Logging {

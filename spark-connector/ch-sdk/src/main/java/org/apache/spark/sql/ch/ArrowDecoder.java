@@ -29,26 +29,26 @@ import org.apache.arrow.vector.VectorLoader;
 
 
 public class ArrowDecoder {
-	public ArrowDecoder() {
-		alloc = new RootAllocator(Long.MAX_VALUE);
-	}
+    public ArrowDecoder() {
+        alloc = new RootAllocator(Long.MAX_VALUE);
+    }
 
-	public Schema decodeSchema(byte[] data) throws IOException {
-		ByteArrayInputStream in = new ByteArrayInputStream(data);
-		ReadChannel channel = new ReadChannel(Channels.newChannel(in));
-		return MessageSerializer.deserializeSchema(channel);
-	}
+    public Schema decodeSchema(byte[] data) throws IOException {
+        ByteArrayInputStream in = new ByteArrayInputStream(data);
+        ReadChannel channel = new ReadChannel(Channels.newChannel(in));
+        return MessageSerializer.deserializeSchema(channel);
+    }
 
-	public VectorSchemaRoot decodeBlock(Schema schema, byte[] data) throws IOException {
-		ByteArrayInputStream in = new ByteArrayInputStream(data);
-		ReadChannel channel = new ReadChannel(Channels.newChannel(in));
-		ArrowRecordBatch batch = (ArrowRecordBatch)MessageSerializer.deserializeMessageBatch(channel, alloc);
+    public VectorSchemaRoot decodeBlock(Schema schema, byte[] data) throws IOException {
+        ByteArrayInputStream in = new ByteArrayInputStream(data);
+        ReadChannel channel = new ReadChannel(Channels.newChannel(in));
+        ArrowRecordBatch batch = (ArrowRecordBatch)MessageSerializer.deserializeMessageBatch(channel, alloc);
 
-		VectorSchemaRoot block = VectorSchemaRoot.create(schema, alloc);
-		VectorLoader loader = new VectorLoader(block);
-		loader.load(batch);
-		return block;
-	}
+        VectorSchemaRoot block = VectorSchemaRoot.create(schema, alloc);
+        VectorLoader loader = new VectorLoader(block);
+        loader.load(batch);
+        return block;
+    }
 
-	private final BufferAllocator alloc;
+    private final BufferAllocator alloc;
 }

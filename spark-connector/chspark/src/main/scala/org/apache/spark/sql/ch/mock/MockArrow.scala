@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.ch
+package org.apache.spark.sql.ch.mock
+
+import java.io.IOException
 
 import org.apache.spark.Partition
 import org.apache.spark.TaskContext
@@ -37,23 +39,28 @@ import org.apache.spark.sql.types.MetadataBuilder
 import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType, StructType}
 
 
-class TypesTestRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
+class MockArrowRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
   override lazy val schema: StructType = {
     val fields = new Array[StructField](1)
     val name="col1"
     val metadata = new MetadataBuilder().putString("name", name).build()
-    // TODO: Make a schema with multi columns
+    // val ft = FloatType
+    // val ft = StringType
+    // val ft = IntegerType
     val ft = DoubleType
     fields(0) = StructField(name, ft, nullable = true, metadata)
     new StructType(fields)
   }
 }
 
-case class TypesTestPlan(output: Seq[Attribute], sparkSession: SparkSession) extends SparkPlan {
+case class MockArrowPlan(output: Seq[Attribute], sparkSession: SparkSession) extends SparkPlan {
   override protected def doExecute(): RDD[InternalRow] = {
     // TODO: Get type info from schema
-    val types = Seq(DoubleType)
-    val result = RDDConversions.rowToRowRdd(new TypesTestRDD(sparkSession), types)
+    // val ft = FloatType
+    // val ft = StringType
+    // val ft = IntegerType
+    val ft = DoubleType
+    val result = RDDConversions.rowToRowRdd(new MockArrowRDD(sparkSession), Seq(ft))
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)
       proj.initialize(partition)
@@ -63,12 +70,22 @@ case class TypesTestPlan(output: Seq[Attribute], sparkSession: SparkSession) ext
   override def children: Seq[SparkPlan] = Nil
 }
 
-class TypesTestRDD(@transient private val sparkSession: SparkSession)
+class MockArrowRDD(@transient private val sparkSession: SparkSession)
   extends RDD[Row](sparkSession.sparkContext, Nil) {
 
+  @throws[IOException]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
-    // TODO: Generate table data with multi columns
-    val iterator = Iterator(11.11, 22.22, 33.33)
+    val bytes = ArrowEncoder.recordBatch()
+
+    // float
+    // val iterator = Iterator(ByteUtil.getFloat(bytes))
+    // string
+    // val iterator = Iterator(new String(bytes))
+    // int
+    // val iterator = bytes.map(_.toInt).toIterator
+    // double
+    val iterator = Iterator(ByteUtil.getDouble(bytes))
+
     override def hasNext: Boolean = iterator.hasNext
     override def next(): Row = Row.fromSeq(Seq(iterator.next))
   }
