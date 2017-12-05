@@ -47,6 +47,10 @@
                                     <pattern>io.netty</pattern>
                                     <shadedPattern>io.netty.netty4chsdk</shadedPattern>
                                 </relocation>
+                                <relocation>
+                                    <pattern>com.fasterxml.jackson</pattern>
+                                    <shadedPattern>com.fasterxml.jacksonchsdk</shadedPattern>
+                                </relocation>
                             </relocations>
                             <createSourcesJar>true</createSourcesJar>
                             <shadeSourcesContent>true</shadeSourcesContent>
