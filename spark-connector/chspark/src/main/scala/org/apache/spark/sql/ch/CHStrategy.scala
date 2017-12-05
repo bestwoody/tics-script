@@ -23,6 +23,13 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.expressions.Attribute
 
+import org.apache.spark.sql.ch.mock.MockSimpleRelation
+import org.apache.spark.sql.ch.mock.MockSimplePlan
+import org.apache.spark.sql.ch.mock.MockArrowRelation
+import org.apache.spark.sql.ch.mock.MockArrowPlan
+import org.apache.spark.sql.ch.mock.TypesTestRelation
+import org.apache.spark.sql.ch.mock.TypesTestPlan
+
 
 class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {

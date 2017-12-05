@@ -20,6 +20,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
 import java.io.IOException
 
+
 class CHRDD(@transient private val sparkSession: SparkSession)
   extends RDD[Row](sparkSession.sparkContext, Nil) {
 
@@ -33,6 +34,6 @@ class CHRDD(@transient private val sparkSession: SparkSession)
 
   override protected def getPartitions: Array[Partition] = {
     // TODO: Read cluster info from CH masterH
-    Array(new SimplePartition(0))
+    Array(new CHPartition(0))
   }
 }

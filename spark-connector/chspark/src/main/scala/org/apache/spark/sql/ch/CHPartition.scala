@@ -18,6 +18,7 @@ package org.apache.spark.sql.ch
 import org.apache.spark.Partition
 
 
-class SimplePartition(val idx: Int) extends Partition {
+// TODO: Read cluster info from CH masterH
+class CHPartition(val idx: Int) extends Partition {
   override def index: Int = idx
 }

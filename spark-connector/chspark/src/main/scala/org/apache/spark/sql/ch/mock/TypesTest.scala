@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.ch
+package org.apache.spark.sql.ch.mock
 
 import org.apache.spark.Partition
 import org.apache.spark.TaskContext
@@ -33,33 +33,27 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.types.MetadataBuilder
-import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType}
+import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType, StructType}
 
 
-class MockSimpleRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
+class TypesTestRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
   override lazy val schema: StructType = {
     val fields = new Array[StructField](1)
     val name="col1"
     val metadata = new MetadataBuilder().putString("name", name).build()
-    // val ft = FloatType
-    // val ft = StringType
-    // val ft = IntegerType
+    // TODO: Make a schema with multi columns
     val ft = DoubleType
     fields(0) = StructField(name, ft, nullable = true, metadata)
     new StructType(fields)
   }
 }
 
-case class MockSimplePlan(output: Seq[Attribute], sparkSession: SparkSession) extends SparkPlan {
+case class TypesTestPlan(output: Seq[Attribute], sparkSession: SparkSession) extends SparkPlan {
   override protected def doExecute(): RDD[InternalRow] = {
     // TODO: Get type info from schema
-    // val ft = FloatType
-    // val ft = StringType
-    // val ft = IntegerType
-    val ft = DoubleType
-    val result = RDDConversions.rowToRowRdd(new MockSimpleRDD(sparkSession), Seq(ft))
+    val types = Seq(DoubleType)
+    val result = RDDConversions.rowToRowRdd(new TypesTestRDD(sparkSession), types)
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)
       proj.initialize(partition)
@@ -69,13 +63,11 @@ case class MockSimplePlan(output: Seq[Attribute], sparkSession: SparkSession) ex
   override def children: Seq[SparkPlan] = Nil
 }
 
-class MockSimpleRDD(@transient private val sparkSession: SparkSession)
+class TypesTestRDD(@transient private val sparkSession: SparkSession)
   extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
-    // val iterator = Iterator(1.1, 2.2, 3.3)
-    // val iterator = Iterator("aaa", "bbb", "ccc")
-    // val iterator = Iterator(3, 6, 9)
+    // TODO: Generate table data with multi columns
     val iterator = Iterator(11.11, 22.22, 33.33)
     override def hasNext: Boolean = iterator.hasNext
     override def next(): Row = Row.fromSeq(Seq(iterator.next))
