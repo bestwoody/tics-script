@@ -30,11 +30,11 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType, StructType}
 
 
-case class CHPlan(output: Seq[Attribute], sparkSession: SparkSession) extends SparkPlan {
+case class CHPlan(output: Seq[Attribute], sparkSession: SparkSession, tableInfo: CHRelation) extends SparkPlan {
   override protected def doExecute(): RDD[InternalRow] = {
-    // TODO: get types info from schema
+    // TODO: get types info from schema or from tableInfo
     val types = Seq(StringType)
-    val result = RDDConversions.rowToRowRdd(new CHRDD(sparkSession), types)
+    val result = RDDConversions.rowToRowRdd(new CHRDD(sparkSession, tableInfo), types)
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)
       proj.initialize(partition)

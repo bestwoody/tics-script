@@ -25,13 +25,7 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 
 
 object ArrowConverter {
-  def toFields(schema: Schema): Array[StructField] = {
-    // TODO: NOW
-    // Convert arrow-schema to spark-fields
-    new Array[StructField](0)
-  }
-
-  def toRows(block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
+  def toRows(schema: Schema, block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
     // TODO: NOW
     // Convert arrow-columns to spark-rows
     override def hasNext: Boolean = false
