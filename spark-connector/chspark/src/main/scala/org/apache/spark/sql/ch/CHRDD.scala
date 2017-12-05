@@ -15,23 +15,44 @@
 
 package org.apache.spark.sql.ch
 
-import java.io.IOException
-
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
 
+import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 
-class CHRDD(@transient private val sparkSession: SparkSession)
+class CHRDD(@transient private val sparkSession: SparkSession, @transient private val tableInfo: CHRelation)
   extends RDD[Row](sparkSession.sparkContext, Nil) {
 
-  @throws[IOException]
-  override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
-    // TODO: Read data from CH
-    val block: VectorSchemaRoot = null
-    ArrowConverter.toRows(block)
+  @throws[Exception]
+  override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
+    // TODO: Predicate push down
+    // TODO: Error handling (Exception)
+
+    // TODO: Share ArrowDecoder
+    val resp = new CHResponse("select * from " + tableInfo.table, tableInfo.host, tableInfo.port, null)
+
+    val schema: Schema = resp.getSchema()
+    var blockIter: Iterator[Row] = null
+
+    override def hasNext: Boolean = {
+      if (blockIter != null && !blockIter.hasNext) {
+        blockIter = null
+      }
+      (blockIter != null || resp.hasNext)
+    }
+
+    // TODO: Async convert
+    override def next(): Row = blockIter match {
+      case null => {
+        blockIter = ArrowConverter.toRows(schema, resp.next)
+        // TODO: Empty check
+        blockIter.next
+      }
+      case _ => blockIter.next
+    }
   }
 
   override protected def getPartitions: Array[Partition] = {

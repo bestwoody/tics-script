@@ -41,7 +41,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
       case rel@LogicalRelation(relation: TypesTestRelation, output: Option[Seq[Attribute]], _) =>
         TypesTestPlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) =>
-        CHPlan(rel.output, sparkSession) :: Nil
+        CHPlan(rel.output, sparkSession, relation) :: Nil
       case _ => Nil
     }
   }

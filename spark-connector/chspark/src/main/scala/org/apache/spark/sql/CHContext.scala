@@ -39,9 +39,9 @@ class CHContext (val sparkSession: SparkSession) extends Serializable with Loggi
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
-  def mapCHTable(address: String, database: String, table: String): Unit = {
+  def mapCHTable(host: String, port: Int, database: String, table: String): Unit = {
     val conf: SparkConf = sparkSession.sparkContext.conf
-    val rel = new CHRelation(address, database, table)(sqlContext, conf)
+    val rel = new CHRelation(host, port, database, table)(sqlContext, conf)
     // TODO: More precise table name
     sqlContext.baseRelationToDataFrame(rel).createTempView(table)
   }

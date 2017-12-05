@@ -24,12 +24,13 @@ import org.apache.spark.sql.types.StructType
 import org.apache.arrow.vector.types.pojo.Schema;
 
 
-class CHRelation(address: String, database: String, tableName: String)
+class CHRelation(val host: String, val port: Int, val database: String, val table: String)
   (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
 
   override lazy val schema: StructType = {
     // TODO: Get schema from CH table
     val schema: Schema = null
-    new StructType(ArrowConverter.toFields(schema))
+    val fields = new Array[StructField](0)
+    new StructType(fields)
   }
 }
