@@ -15,21 +15,23 @@
 
 package org.apache.spark.sql.ch
 
+import java.io.IOException
+
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
-import java.io.IOException
+
+import org.apache.arrow.vector.VectorSchemaRoot;
 
 
 class CHRDD(@transient private val sparkSession: SparkSession)
   extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   @throws[IOException]
-  override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
+  override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
     // TODO: Read data from CH
-    val iterator = Iterator("x")
-    override def hasNext: Boolean = iterator.hasNext
-    override def next(): Row = Row.fromSeq(Seq(iterator.next))
+    val block: VectorSchemaRoot = null
+    ArrowConverter.toRows(block)
   }
 
   override protected def getPartitions: Array[Partition] = {

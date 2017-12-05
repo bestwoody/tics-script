@@ -15,21 +15,26 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.catalyst.InternalRow
 
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.vector.VectorSchemaRoot;
 
 
-class CHRelation(address: String, database: String, tableName: String)
-  (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
+object ArrowConverter {
+  def toFields(schema: Schema): Array[StructField] = {
+    // TODO: NOW
+    // Convert arrow-schema to spark-fields
+    new Array[StructField](0)
+  }
 
-  override lazy val schema: StructType = {
-    // TODO: Get schema from CH table
-    val schema: Schema = null
-    new StructType(ArrowConverter.toFields(schema))
+  def toRows(block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
+    // TODO: NOW
+    // Convert arrow-columns to spark-rows
+    override def hasNext: Boolean = false
+    override def next(): Row = null
   }
 }
