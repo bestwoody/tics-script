@@ -11,3 +11,4 @@
 [submodule "ch-connector/arrow"]
 	path = ch-connector/arrow
 	url = git@github.com:apache/arrow
+	ignore = dirty

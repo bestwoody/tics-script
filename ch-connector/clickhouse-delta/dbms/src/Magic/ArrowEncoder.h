@@ -168,7 +168,7 @@ private:
             arrow::Time32Builder builder(arrow::time32(arrow::TimeUnit::SECOND), pool);
             for (size_t i = 0; i < rows; ++i)
             {
-                // TODO: check overflow and convert to int32 may be better.
+                // TODO: Check overflow
                 uint32_t val = data.getElement(i);
                 status = builder.Append(val);
                 if (!status.ok())

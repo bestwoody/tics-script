@@ -6,7 +6,7 @@ update_submodule()
 	local old=`pwd`
 	cd "$path"
 	echo `pwd`"> git submodule update"
-	git submodule update
+	git submodule update --init
 	cd "$old"
 }
 
