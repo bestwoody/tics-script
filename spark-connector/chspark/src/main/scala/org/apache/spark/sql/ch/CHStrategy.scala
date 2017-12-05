@@ -19,11 +19,13 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SparkSession, Strategy}
 import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
+import org.apache.spark.sql.{SparkSession, Strategy}
+import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeProjection}
-import org.apache.spark.sql.types.{IntegerType, StringType}
+import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType}
 
 
 class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
@@ -47,7 +49,9 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
 
 case class CHPlan(output: Seq[Attribute], sparkSession: SparkSession) extends SparkPlan {
   override protected def doExecute(): RDD[InternalRow] = {
-    val result = RDDConversions.rowToRowRdd(new CHRDD(sparkSession), Seq(StringType))
+    val result = RDDConversions.rowToRowRdd(new CHRDD(sparkSession), Seq(DoubleType))
+//    val result = RDDConversions.rowToRowRdd(new CHRDD(sparkSession), Seq(FloatType))
+//    val result = RDDConversions.rowToRowRdd(new CHRDD(sparkSession), Seq(StringType))
 //    val result = RDDConversions.rowToRowRdd(new CHRDD(sparkSession), Seq(IntegerType))
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)

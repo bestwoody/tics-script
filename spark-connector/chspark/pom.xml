@@ -102,6 +102,14 @@
             <version>1.5.1</version>
             <scope>test</scope>
         </dependency>
+        <!-- arrow-vector -->
+        <dependency>
+            <groupId>org.apache.arrow</groupId>
+            <artifactId>arrow-vector</artifactId>
+            <version>0.7.1</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>

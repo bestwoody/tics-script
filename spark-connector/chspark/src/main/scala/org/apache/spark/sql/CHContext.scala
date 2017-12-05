@@ -32,6 +32,7 @@ class CHContext (val sparkSession: SparkSession) extends Serializable with Loggi
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
+
   def chArrowDatabase(): Unit = {
     val name = "arrow"
     val rel = new CHArrowRelation(name)(sqlContext)

@@ -27,7 +27,9 @@ class CHRelation(tableName: String)(@transient val sqlContext: SQLContext) exten
     val fields = new Array[StructField](1)
     val name="col1"
     val metadata = new MetadataBuilder().putString("name", name).build()
-    fields(0) = StructField(name, StringType, nullable = true, metadata)
+    fields(0) = StructField(name, DoubleType, nullable = true, metadata)
+//    fields(0) = StructField(name, FloatType, nullable = true, metadata)
+//    fields(0) = StructField(name, StringType, nullable = true, metadata)
 //    fields(0) = StructField(name, IntegerType, nullable = true, metadata)
     new StructType(fields)
   }
