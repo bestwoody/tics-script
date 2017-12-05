@@ -15,23 +15,19 @@
 
 package org.apache.spark.sql.ch
 
-// TODO: more specific import
-import org.apache.spark._
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.types._
 import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.StructType
 
 
-class CHRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
+class CHRelation(address: String, database: String, tableName: String)
+  (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
+
   override lazy val schema: StructType = {
-    val fields = new Array[StructField](1)
-    val name="col1"
-    val metadata = new MetadataBuilder().putString("name", name).build()
-    fields(0) = StructField(name, DoubleType, nullable = true, metadata)
-//    fields(0) = StructField(name, FloatType, nullable = true, metadata)
-//    fields(0) = StructField(name, StringType, nullable = true, metadata)
-//    fields(0) = StructField(name, IntegerType, nullable = true, metadata)
+    // TODO: Get schema from CH table
+    val fields = new Array[StructField](0)
     new StructType(fields)
   }
 }
-

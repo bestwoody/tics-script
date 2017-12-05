@@ -12,11 +12,11 @@
     * Build it
 
 ## Commit modifications
-* `repo/ch-connector> ./delta-extract.sh`
-    * Extract all modifications to dir `delta`
-* `repo/ch-connector> git add delta/* && git commit -m "..."`
+* `repo/ch-connector> ./clickhouse-delta-extract.sh`
+    * Extract all modifications to dir `clickhouse-delta`
+* `repo/ch-connector> git add clickhouse-delta/* && git commit -m "..."`
     * Commit it
-    * If there are removed or relocated files, we should delete it in `delta/...` manually, before Committing
+    * If there are removed or relocated files, we should delete it in `clickhouse-delta/...` manually, before Committing
 * Make sure: do NOT commit modifications in `clickhouse` submodule
 
 ## Merge from official repository
@@ -26,7 +26,7 @@
     * Update `clickhouse` submodule from official remote repository
 * `repo/ch-connector> git add clickhouse && git commit -m "..."`
     * Commit submodule updates
-* `repo/ch-connector> ./delta-apply.sh`
+* `repo/ch-connector> ./clickhouse-delta-apply.sh`
     * Redo all modifications
 * `repo/ch-connector> cd clickhouse && git diff`
     * Manually check modifications

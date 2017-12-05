@@ -17,26 +17,33 @@ package org.apache.spark.sql
 
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.ch.{CHArrowRelation, CHRelation, CHStrategy}
+import org.apache.spark.sql.ch.CHStrategy
+
+import org.apache.spark.sql.ch.CHRelation
+import org.apache.spark.sql.ch.MockArrowRelation
+import org.apache.spark.sql.ch.MockSimpleRelation
 
 
 class CHContext (val sparkSession: SparkSession) extends Serializable with Logging {
   val sqlContext: SQLContext = sparkSession.sqlContext
-  //val conf: SparkConf = sparkSession.sparkContext.conf
 
   sparkSession.experimental.extraStrategies ++= Seq(new CHStrategy(sparkSession))
 
-  def chMapDatabase(): Unit = {
-    val name = "test"
-    val rel = new CHRelation(name)(sqlContext)
+  def mockSimpleTable(name: String): Unit = {
+    val rel = new MockSimpleRelation(name)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
-
-  def chArrowDatabase(): Unit = {
-    val name = "arrow"
-    val rel = new CHArrowRelation(name)(sqlContext)
+  def mockArrowTable(name: String): Unit = {
+    val rel = new MockArrowRelation(name)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
+  }
+
+  def mapCHTable(address: String, database: String, table: String): Unit = {
+    val conf: SparkConf = sparkSession.sparkContext.conf
+    val rel = new CHRelation(address, database, table)(sqlContext, conf)
+    // TODO: More precise table name
+    sqlContext.baseRelationToDataFrame(rel).createTempView(table)
   }
 
   def sql(sqlText: String): DataFrame = {

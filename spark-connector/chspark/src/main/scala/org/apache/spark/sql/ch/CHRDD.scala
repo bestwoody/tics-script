@@ -14,6 +14,7 @@
  */
 
 package org.apache.spark.sql.ch
+
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
@@ -24,26 +25,14 @@ class CHRDD(@transient private val sparkSession: SparkSession)
 
   @throws[IOException]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
-//    val iterator = Iterator("aaa", "bbb", "ccc")
-//    override def hasNext: Boolean = iterator.hasNext
-//    override def next(): Row = Row.fromSeq(Seq(iterator.next))
-
-    val bytes = ArrowDecode.recordBatch()
-
-    //double
-    val iterator = Iterator(ByteUtil.getDouble(bytes))
-    // float
-//    val iterator = Iterator(ByteUtil.getFloat(bytes))
-    // string
-//    val iterator = Iterator(new String(bytes))
-    // int
-//    val iterator = bytes.map(_.toInt).toIterator
+    // TODO: Read data from CH
+    val iterator = Iterator("x")
     override def hasNext: Boolean = iterator.hasNext
     override def next(): Row = Row.fromSeq(Seq(iterator.next))
-
   }
 
   override protected def getPartitions: Array[Partition] = {
-    Array(new CHPartition(0))
+    // TODO: Read cluster info from CH masterH
+    Array(new SimplePartition(0))
   }
 }
