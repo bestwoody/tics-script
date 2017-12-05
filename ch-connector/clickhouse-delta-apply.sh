@@ -1,7 +1,7 @@
 delta_apply()
 {
 	local target="$1"
-	find "delta" -type f | while read delta_file; do
+	find "clickhouse-delta" -type f | while read delta_file; do
 		local origin_file="$target""${delta_file#*delta}"
 		if [ -f "$origin_file" ]; then
 			local backup_file="origin${delta_file#*delta}"

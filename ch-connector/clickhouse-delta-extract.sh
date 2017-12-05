@@ -1,6 +1,6 @@
 delta_ensure_not_changed()
 {
-	local delta=`git status delta/*`
+	local delta=`git status clickhouse-delta/*`
 	local not_staged=`echo "$delta" | grep "Changes not staged"`
 	local untracked=`echo "$delta" | grep "Untracked"`
 	if [ ! -z "$not_staged" ] || [ ! -z "$untracked" ]; then
@@ -14,7 +14,7 @@ delta_cp()
 	local target="$1"
 	local modified="$2"
 
-	local delta="../delta/${modified#*$target}"
+	local delta="../clickhouse-delta/${modified#*$target}"
 	local path=`dirname "$delta"`
 	mkdir -p "$path"
 	cp "$modified" "$delta"
