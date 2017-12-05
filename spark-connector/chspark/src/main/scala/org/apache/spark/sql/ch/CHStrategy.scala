@@ -31,6 +31,8 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         MockSimplePlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(relation: MockArrowRelation, output: Option[Seq[Attribute]], _) =>
         MockArrowPlan(rel.output, sparkSession) :: Nil
+      case rel@LogicalRelation(relation: TypesTestRelation, output: Option[Seq[Attribute]], _) =>
+        TypesTestPlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) =>
         CHPlan(rel.output, sparkSession) :: Nil
       case _ => Nil
