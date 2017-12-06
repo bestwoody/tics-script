@@ -19,9 +19,8 @@ import org.apache.arrow.vector.types.FloatingPointPrecision
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types._
-import org.apache.arrow.vector.types.pojo.{ArrowType, FieldType, Schema}
-import org.apache.arrow.vector.types.pojo.FieldType
+import org.apache.spark.sql.types.{StructType,StructField}
+import org.apache.arrow.vector.types.pojo.{Schema}
 
 
 class CHRelation(val host: String, val port: Int, val database: String, val table: String)

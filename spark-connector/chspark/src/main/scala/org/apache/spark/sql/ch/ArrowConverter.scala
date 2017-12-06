@@ -20,7 +20,8 @@ import java.util
 import org.apache.arrow.vector.types.FloatingPointPrecision
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructField, StructType}
+import org.apache.spark.sql.types.{DoubleType,StringType,IntegerType,FloatType}
 import org.apache.arrow.vector.types.pojo.{ArrowType, Schema}
 import org.apache.arrow.vector.{FieldVector, VectorSchemaRoot};
 
@@ -49,7 +50,7 @@ object ArrowConverter {
       case arrowString => StringType
       case arrowInt => IntegerType
       case arrowFloat => FloatType
-      case _ => throw new Exception(s"no macth dataType")
+      case _ => throw new Exception("No macthed DataType.")
     }
 }
 
@@ -61,4 +62,3 @@ object ArrowConverter {
     override def next(): Row = null
   }
 }
-
