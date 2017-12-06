@@ -28,7 +28,6 @@ import org.apache.arrow.vector.{FieldVector, VectorSchemaRoot};
 
 object ArrowConverter {
   def toFields(schema: Schema, table: String): StructType = {
-    // TODO: Get schema from CH table
     val schema: Schema = null
     val fields = new Array[StructField](schema.getFields.size)
     val metadata = new MetadataBuilder().putString("name", table).build()
@@ -37,19 +36,18 @@ object ArrowConverter {
       fields(i) = StructField(field.getName(), matchFieldType(field.getFieldType.getType), nullable = true, metadata)
     }
     new StructType(fields)
-
   }
 
   def matchFieldType(arrowType: ArrowType): DataType = {
-    val arrowDouble = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE)
-    val arrowInt = new ArrowType.Int(8, true)
     val arrowString = new ArrowType.Utf8
+    val arrowInt = new ArrowType.Int(8, true)
     val arrowFloat = new ArrowType.FloatingPoint(FloatingPointPrecision.SINGLE)
+    val arrowDouble = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE)
     arrowType match {
-      case arrowDouble => DoubleType
       case arrowString => StringType
       case arrowInt => IntegerType
       case arrowFloat => FloatType
+      case arrowDouble => DoubleType
       case _ => throw new Exception("No macthed DataType.")
     }
 }
