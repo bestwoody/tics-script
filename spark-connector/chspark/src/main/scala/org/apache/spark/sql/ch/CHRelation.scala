@@ -34,4 +34,3 @@ class CHRelation(val host: String, val port: Int, val database: String, val tabl
   }
 }
 
-
