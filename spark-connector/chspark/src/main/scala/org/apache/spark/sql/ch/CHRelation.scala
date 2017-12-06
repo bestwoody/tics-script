@@ -15,13 +15,13 @@
 
 package org.apache.spark.sql.ch
 
+import org.apache.arrow.vector.types.FloatingPointPrecision
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.types.StructType
-
-import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.spark.sql.types._
+import org.apache.arrow.vector.types.pojo.{ArrowType, FieldType, Schema}
+import org.apache.arrow.vector.types.pojo.FieldType
 
 
 class CHRelation(val host: String, val port: Int, val database: String, val table: String)
@@ -34,3 +34,5 @@ class CHRelation(val host: String, val port: Int, val database: String, val tabl
     new StructType(fields)
   }
 }
+
+

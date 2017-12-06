@@ -20,20 +20,15 @@ import java.io.IOException
 import org.apache.spark.Partition
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
-
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.SparkSession
-
 import org.apache.spark.sql.execution.RDDConversions
 import org.apache.spark.sql.execution.SparkPlan
-
 import org.apache.spark.sql.sources.BaseRelation
-
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
-
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.MetadataBuilder
 import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType, StructType}
