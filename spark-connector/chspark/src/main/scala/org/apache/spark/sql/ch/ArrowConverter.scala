@@ -18,11 +18,11 @@ package org.apache.spark.sql.ch
 import java.util
 
 import org.apache.arrow.vector.types.FloatingPointPrecision
+import org.apache.arrow.vector.types.pojo.ArrowType.ArrowTypeID
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructField, StructType}
-import org.apache.spark.sql.types.{DoubleType, StringType, IntegerType, FloatType}
-
+import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType}
 import org.apache.arrow.vector.types.pojo.{ArrowType, Schema}
 import org.apache.arrow.vector.{FieldVector, VectorSchemaRoot}
 
@@ -36,21 +36,17 @@ object ArrowConverter {
     val metadata = new MetadataBuilder().putString("name", table).build()
     for (i <- 0 to schema.getFields().size()) {
       val field = schema.getFields.get(i)
-      fields(i) = StructField(field.getName(), matchFieldType(field.getFieldType.getType), nullable = true, metadata)
+      fields(i) = StructField(field.getName(), matchFieldType(field.getType.getTypeID), nullable = true, metadata)
     }
     new StructType(fields)
   }
 
-  def matchFieldType(arrowType: ArrowType): DataType = {
-    val arrowString = new ArrowType.Utf8
-    val arrowInt = new ArrowType.Int(8, true)
-    val arrowFloat = new ArrowType.FloatingPoint(FloatingPointPrecision.SINGLE)
-    val arrowDouble = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE)
+  def matchFieldType(arrowType: ArrowTypeID ): DataType = {
     arrowType match {
-      case arrowString => StringType
-      case arrowInt => IntegerType
-      case arrowFloat => FloatType
-      case arrowDouble => DoubleType
+      case ArrowType.ArrowTypeID.Utf8 => StringType
+      case ArrowType.ArrowTypeID.Int => IntegerType
+      case ArrowType.ArrowTypeID.FloatingPoint => FloatType
+      case ArrowType.ArrowTypeID.FloatingPoint  => DoubleType
       case _ => throw new Exception("No macthed DataType.")
     }
   }
