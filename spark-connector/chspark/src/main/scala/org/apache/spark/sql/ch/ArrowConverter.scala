@@ -31,17 +31,17 @@ import scala.collection.mutable.ArrayBuffer
 
 object ArrowConverter {
   def toFields(schema: Schema, table: String): StructType = {
-    val schema: Schema = null
+    val metadata = new MetadataBuilder().putString("name", table).build
     val fields = new Array[StructField](schema.getFields.size)
-    val metadata = new MetadataBuilder().putString("name", table).build()
-    for (i <- 0 to schema.getFields().size()) {
+    for (i <- 0 to schema.getFields.size) {
       val field = schema.getFields.get(i)
-      fields(i) = StructField(field.getName(), matchFieldType(field.getType.getTypeID), nullable = true, metadata)
+      fields(i) = StructField(field.getName, fieldType(field.getType.getTypeID), field.isNullable, metadata)
     }
     new StructType(fields)
   }
 
-  def matchFieldType(arrowType: ArrowTypeID ): DataType = {
+  def fieldType(arrowType: ArrowTypeID): DataType = {
+    // TODO: Handle all types
     arrowType match {
       case ArrowType.ArrowTypeID.Utf8 => StringType
       case ArrowType.ArrowTypeID.Int => IntegerType
@@ -51,48 +51,20 @@ object ArrowConverter {
     }
   }
 
-  def matchDataTypeToArray(dataType: DataType, values: Any): String = {
-    dataType match {
-      case StringType => values.toString
-      case IntegerType => values.toString
-      case FloatType => values.toString
-      case DoubleType => values.toString
-      case _ => throw new Exception("Unsupported types DataType.")
-    }
-  }
-
   def toRows(schema: Schema, table: String, block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
-    // TODO: NOW
-    // Convert arrow-columns to spark-rows
-    private val structType: StructType = toFields(schema, table)
-    private val dataTypes: Array[DataType] = structType.fields.map(_.dataType)
-    private val vectors: util.List[FieldVector] = block.getFieldVectors
+    val vectors: util.List[FieldVector] = block.getFieldVectors
+    var curr = 0;
 
-    val rowArray = new Array[ArrayBuffer[String]](vectors.size())
-    if (vectors.isEmpty) {
-      Nil
-    } else {
-      for (i <- 0 to vectors.size()) {
-        val fieldVector = vectors.get(i)
-        val accessor = fieldVector.getAccessor
-        val dataType = dataTypes(i)
-        for (j <- 0 to accessor.getValueCount) {
-          val value = accessor.getObject(j)
-          val fieldValue = matchDataTypeToArray(dataType, value)
-          rowArray(j) = new ArrayBuffer[String](i) += fieldValue
-        }
-      }
+    override def hasNext: Boolean = {
+      !vectors.isEmpty && (curr != vectors(0).size)
     }
 
-    val iterator = rowArray.iterator
-
-    override def hasNext: Boolean = false
-
-    override def next(): Row = toSparkRow(iterator.next)
-
-    def toSparkRow(row: ArrayBuffer[String]): Row = {
-      val rowlines = row.map(p => Row(p))
-      Row.fromSeq(rowlines)
+    override def next(): Row = {
+      val row = new Array[Any](vectors.size)
+      for (i <- 0 to vectors.size) {
+        row(i) = vectors.get(i).getAccessor.getObject(curr)
+      }
+      Row.fromSeq(row)
     }
   }
 }

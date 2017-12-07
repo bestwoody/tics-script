@@ -33,4 +33,8 @@ object CHSql {
   def desc(database: String, table: String): String = {
     "DESC " + tableRef(database, table)
   }
+
+  def allScan(database: String, table: String): String = {
+    "SELECT * FROM " + tableRef(database, table)
+  }
 }

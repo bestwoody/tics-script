@@ -32,7 +32,7 @@ class CHRDD(@transient private val sparkSession: SparkSession, @transient privat
     // TODO: Error handling (Exception)
 
     // TODO: Share ArrowDecoder
-    val resp = new CHResponse("select * from " + tableInfo.table, tableInfo.host, tableInfo.port, null)
+    val resp = new CHResponse(CHSql.allScan(tableInfo.database, tableInfo.table), tableInfo.host, tableInfo.port, null)
 
     val schema: Schema = resp.getSchema()
     var blockIter: Iterator[Row] = null
