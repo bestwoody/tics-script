@@ -38,13 +38,13 @@ public class BuildSchema {
     }
     public static Schema typesTestSchema() {
         Schema schema = new Schema(asList(
-            field("string",new Utf8()),
-            field("int8",new Int(8,true)),
-            field("int6",new Int(16,true)),
-            field("int32",new Int(32,true)),
-            field("int64",new Int(64,true)),
+            field("string", new Utf8()),
+            field("int8", new Int(8,true)),
+            field("int6", new Int(16,true)),
+            field("int32", new Int(32,true)),
+            field("int64", new Int(64,true)),
             field("float32", new FloatingPoint(FloatingPointPrecision.SINGLE)),
-            field("float64",new FloatingPoint(FloatingPointPrecision.DOUBLE))
+            field("float64", new FloatingPoint(FloatingPointPrecision.DOUBLE))
         ));
         return schema;
     }
