@@ -11,7 +11,7 @@ An OLAP project of TiDB
 POC:
 ***** Magic Protocol
 ***** CH-Magic Connector
-*---- Spark-Magic Connector
+**--- Spark-Magic Connector
 
 Online:
 ----- Binlog Writer
