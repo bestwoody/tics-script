@@ -19,14 +19,14 @@ import org.apache.arrow.vector.types.FloatingPointPrecision
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types.{StructType,StructField}
-import org.apache.arrow.vector.types.pojo.{Schema}
+import org.apache.spark.sql.types.{StructType, StructField}
+import org.apache.arrow.vector.types.pojo.Schema
 
 
 class CHRelation(val host: String, val port: Int, val database: String, val table: String)
   (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
 
   override lazy val schema: StructType = {
-    new StructType(getFields(host, port, database, table))
+    new StructType(CHUtil.getFields(host, port, database, table))
   }
 }

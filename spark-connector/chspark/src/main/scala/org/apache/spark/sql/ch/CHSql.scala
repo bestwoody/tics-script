@@ -18,7 +18,7 @@ package org.apache.spark.sql.ch
 
 
 object CHSql {
-  def mappedTableName(database: String, table: String) {
+  def mappedTableName(database: String, table: String): String = {
     table
   }
 

@@ -30,6 +30,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 object ArrowConverter {
+/*
   def toFields(schema: Schema, table: String): StructType = {
     val metadata = new MetadataBuilder().putString("name", table).build
     val fields = new Array[StructField](schema.getFields.size)
@@ -44,25 +45,39 @@ object ArrowConverter {
     // TODO: Handle all types
     arrowType match {
       case ArrowType.ArrowTypeID.Utf8 => StringType
-      case ArrowType.ArrowTypeID.Int => IntegerType
-      case ArrowType.ArrowTypeID.FloatingPoint => FloatType
+      //case ArrowType.ArrowTypeID.DateTime => DateTimeType
+      //case ArrowType.ArrowTypeID.Int8 => IntegerType
+      //case ArrowType.ArrowTypeID.Int16 => IntegerType
+      case ArrowType.ArrowTypeID.Int32 => IntegerType
+      case ArrowType.ArrowTypeID.Int64 => IntegerType
+      //case ArrowType.ArrowTypeID.UInt8 => IntegerType
+      //case ArrowType.ArrowTypeID.UInt16 => IntegerType
+      //case ArrowType.ArrowTypeID.UInt32 => IntegerType
+      //case ArrowType.ArrowTypeID.UInt64 => IntegerType
+      //case ArrowType.ArrowTypeID.FloatingPoint => FloatType
       case ArrowType.ArrowTypeID.FloatingPoint  => DoubleType
       case _ => throw new Exception("No macthed DataType.")
     }
   }
-
+*/
   def toRows(schema: Schema, table: String, block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
-    val vectors: util.List[FieldVector] = block.getFieldVectors
+    val columns = block.getFieldVectors
     var curr = 0;
+    val rows = if (!columns.isEmpty) {
+      columns.get(0).getAccessor.getValueCount - 1
+    } else {
+      0
+    }
 
     override def hasNext: Boolean = {
-      !vectors.isEmpty && (curr != vectors(0).size)
+      curr + 1 < rows
     }
 
     override def next(): Row = {
-      val row = new Array[Any](vectors.size)
-      for (i <- 0 to vectors.size) {
-        row(i) = vectors.get(i).getAccessor.getObject(curr)
+      val row = new Array[Any](columns.size)
+      // TODO: Use map instead
+      for (i <- 0 to row.length) {
+        row(i) = columns.get(i).getAccessor.getObject(curr)
       }
       Row.fromSeq(row)
     }

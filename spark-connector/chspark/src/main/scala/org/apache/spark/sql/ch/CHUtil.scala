@@ -15,64 +15,72 @@
 
 package org.apache.spark.sql.ch
 
+import org.apache.arrow.vector.VectorSchemaRoot;
+
+import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.MetadataBuilder
+
+import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, LongType, StringType}
+
 
 object CHUtil {
-  def getFields(database: String, table: String, host: String, port: int): Array[StructField] = {
+  def getFields(host: String, port: Int, database: String, table: String): Array[StructField] = {
     val mappedTableName = CHSql.mappedTableName(database, table)
     val metadata = new MetadataBuilder().putString("name", mappedTableName).build()
 
     val resp = new CHResponse(CHSql.desc(database, table), host, port, null)
     var fields = new Array[StructField](0)
 
-    var names: List[String] = new List[String]()
-    var types: List[String] = new List[String]()
+    var names = new Array[String](0)
+    var types = new Array[String](0)
 
-    while (resp.hasNext) {
-      val block: VectorSchemaRoot = resp.next
-      if (block == null) {
-          break
-      }
+    var block: VectorSchemaRoot = resp.next
 
+    while (resp.hasNext && (block != null)) {
       val columns = block.getFieldVectors
-      if columns.length < 3 {
-        throw Exception("Send desc table to get schema failed")
+      if (columns.size < 2) {
+        // TODO: Exception classify
+        throw new Exception("Send desc table to get schema failed")
       }
 
-      val accNames = columns.get(0).getAccessor;
+      val accNames = columns.get(0).getAccessor();
       for (i <- 0 to accNames.getValueCount) {
-          names.append((String)accNames.getObject(i))
+          names :+= accNames.getObject(i).asInstanceOf[String]
       }
       val accTypes = columns.get(0).getAccessor;
       for (i <- 0 to accTypes.getValueCount) {
-          names.append((String)accTypes.getObject(i))
+          types :+= accTypes.getObject(i).asInstanceOf[String]
       }
+
+      block = resp.next
     }
 
     for (i <- 0 to names.length) {
       // TODO: Get nullable info (from where?)
-      val field = StructField(names(i), stringToFileType(types(i)), nullable = true, metadata)
-      field.append(field)
+      val field = StructField(names(i), stringToFieldType(types(i)), nullable = true, metadata)
+      fields :+= field
     }
 
     fields
   }
 
-  def stringToFieldType(name: String): FieldType = {
+  def stringToFieldType(name: String): DataType = {
     // TODO: Support all types
     name match {
-      "String" => StringType
-      //"DateTime"
-      //"Int8"
-      //"Int16"
-      "Int32" => IntegetType
-      "Int64" => LongType
-      //"UInt8"
-      //"UInt16"
-      //"UInt32"
-      //"UInt64"
-      "Float32" => FloatType
-      "Float64" => DoubleTYpe
-      _ => throw Exception("stringToFieldType unhandled type name: " + name)
+      case "String" => StringType
+      // case "DateTime"
+      // case "Int8"
+      // case "Int16"
+      case "Int32" => IntegerType
+      case "Int64" => LongType
+      // case "UInt8"
+      // case "UInt16"
+      // case "UInt32"
+      // case "UInt64"
+      case "Float32" => FloatType
+      case "Float64" => DoubleType
+      case _ => throw new Exception("stringToFieldType unhandled type name: " + name)
     }
   }
 }
