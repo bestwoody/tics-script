@@ -65,10 +65,10 @@ object ArrowConverter {
     }
   }
 
-  def toRows(schema: Schema, block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
+  def toRows(schema: Schema, table: String, block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
     // TODO: NOW
     // Convert arrow-columns to spark-rows
-    private val structType: StructType = toFields(schema, "test")
+    private val structType: StructType = toFields(schema, table)
     private val dataTypes: Array[DataType] = structType.fields.map(_.dataType)
     private val vectors: util.List[FieldVector] = block.getFieldVectors
 
