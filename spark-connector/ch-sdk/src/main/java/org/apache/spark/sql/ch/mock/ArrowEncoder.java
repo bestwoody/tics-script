@@ -83,11 +83,10 @@ public class ArrowEncoder {
     }
 
     public static byte[] recordBatch() throws IOException {
-        byte[] values = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+        byte[] values = new byte[] {1, 2, 3};
         float[] floatType = new float[] {12.3f, 24.3f, 34.5f};
         double[] douleType = new double[] {13.34, 25.6, 23.5};
         String[] stringTypr = new String[] {"SDSD", "DSDSV", "DSCFSD"};
-
         byte[] floatBytes = ByteUtil.getBytes(floatType[0]);
         byte[] doubleBytes = ByteUtil.getBytes(douleType[0]);
         ByteArrayOutputStream out = encode(doubleBytes);
