@@ -15,18 +15,15 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.arrow.vector.types.FloatingPointPrecision
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types.{StructType, StructField}
-import org.apache.arrow.vector.types.pojo.Schema
 
+class CHTableRef(val host: String, val port: Int, val database: String, val table: String) extends Serializable {
+  val mappedName = table
 
-class CHRelation(val table: CHTableRef)
-  (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
-
-  override lazy val schema: StructType = {
-    new StructType(CHUtil.getFields(table))
+  val absName = {
+    if (database == null || database.isEmpty) {
+      table
+    } else {
+      database + "." + table
+    }
   }
 }

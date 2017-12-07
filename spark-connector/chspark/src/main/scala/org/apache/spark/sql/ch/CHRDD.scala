@@ -23,7 +23,7 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 
-class CHRDD(@transient private val sparkSession: SparkSession, @transient private val tableInfo: CHRelation)
+class CHRDD(@transient private val sparkSession: SparkSession, val table: CHTableRef)
   extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   @throws[Exception]
@@ -31,27 +31,37 @@ class CHRDD(@transient private val sparkSession: SparkSession, @transient privat
     // TODO: Predicate push down
     // TODO: Error handling (Exception)
 
-    // TODO: Share ArrowDecoder
-    val resp = new CHResponse("select * from " + tableInfo.table, tableInfo.host, tableInfo.port, null)
+    val sql = CHSql.allScan(table.absName)
+    val resp = new CHResponse(sql, table.host, table.port, CHEnv.arrowDecoder)
 
-    val schema: Schema = resp.getSchema()
-    var blockIter: Iterator[Row] = null
+    val schema: Schema = resp.getSchema
+
+    private def getBlock(): Iterator[Row] = {
+      if (resp.hasNext) {
+        val block = resp.next
+        if (block != null) {
+          ArrowConverter.toRows(schema, table.absName, block)
+        } else {
+          null
+        }
+      } else {
+        null
+      }
+    }
+
+    var blockIter: Iterator[Row] = getBlock
 
     override def hasNext: Boolean = {
-      if (blockIter != null && !blockIter.hasNext) {
-        blockIter = null
-      }
-      (blockIter != null || resp.hasNext)
+      blockIter != null && resp.hasNext
     }
 
     // TODO: Async convert
-    override def next(): Row = blockIter match {
-      case null => {
-        blockIter = ArrowConverter.toRows(schema, tableInfo.table, resp.next)
-        // TODO: Empty check
-        blockIter.next
+    override def next(): Row = {
+      val result = blockIter.next
+      if (!blockIter.hasNext) {
+        blockIter = getBlock
       }
-      case _ => blockIter.next
+      result
     }
   }
 

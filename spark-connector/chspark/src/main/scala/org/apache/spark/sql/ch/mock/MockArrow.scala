@@ -75,19 +75,9 @@ class MockArrowRDD(@transient private val sparkSession: SparkSession)
 
   @throws[IOException]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
-    val bytes = ArrowEncoder.recordBatch()
-
-    // float
-    // val iterator = Iterator(ByteUtil.getFloat(bytes))
-    // string
-    // val iterator = Iterator(new String(bytes))
-    // int
-    // val iterator = bytes.map(_.toInt).toIterator
-    // double
-    val iterator = Iterator(ByteUtil.getDouble(bytes))
-
-    override def hasNext: Boolean = iterator.hasNext
-    override def next(): Row = Row.fromSeq(Seq(iterator.next))
+    // TODO: Use java arrow builders to generate test data
+    override def hasNext: Boolean = false
+    override def next(): Row = null
   }
 
   override protected def getPartitions: Array[Partition] = {

@@ -13,15 +13,18 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.ch;
+package org.apache.spark.sql.ch
 
 
-// TODO: Move to test scope
-public class ArrowCodecTest {
-    public static void main(String[] args) {
-        // TODO
-        // byte[] = encode
-        // data = decode
-        // assert
+object CHEnv {
+  private var arrowDecoderInstance: ArrowDecoder = null
+
+  def arrowDecoder: ArrowDecoder = {
+    this.synchronized {
+      if (arrowDecoderInstance == null) {
+        arrowDecoderInstance = new ArrowDecoder()
+      }
+      arrowDecoderInstance
     }
+  }
 }

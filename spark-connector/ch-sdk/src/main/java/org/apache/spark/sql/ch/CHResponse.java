@@ -29,6 +29,7 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 
+// TODO: Rpc retry
 public class CHResponse {
     private final long PackageTypeEnd = 0;
     private final long PackageTypeUtf8Error = 1;
