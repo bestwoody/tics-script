@@ -15,7 +15,6 @@
 
 package org.apache.spark.sql.ch.mock;
 
-
 import java.nio.charset.Charset;
 
 
