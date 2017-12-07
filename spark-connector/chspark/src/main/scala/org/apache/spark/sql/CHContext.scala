@@ -20,6 +20,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.ch.CHStrategy
 
 import org.apache.spark.sql.ch.CHRelation
+import org.apache.spark.sql.ch.CHSql
 import org.apache.spark.sql.ch.mock.MockArrowRelation
 import org.apache.spark.sql.ch.mock.MockSimpleRelation
 
@@ -42,8 +43,7 @@ class CHContext (val sparkSession: SparkSession) extends Serializable with Loggi
   def mapCHTable(host: String, port: Int, database: String, table: String): Unit = {
     val conf: SparkConf = sparkSession.sparkContext.conf
     val rel = new CHRelation(host, port, database, table)(sqlContext, conf)
-    // TODO: More precise table name
-    sqlContext.baseRelationToDataFrame(rel).createTempView(table)
+    sqlContext.baseRelationToDataFrame(rel).createTempView(CHSql.mappedTableName(database, table))
   }
 
   def sql(sqlText: String): DataFrame = {
