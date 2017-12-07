@@ -15,8 +15,6 @@
 
 package org.apache.spark.sql.ch.mock;
 
-import io.netty.buffer.ArrowBuf;
-import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.Charset;
 
