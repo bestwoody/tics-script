@@ -30,36 +30,6 @@ import scala.collection.mutable.ArrayBuffer
 
 
 object ArrowConverter {
-/*
-  def toFields(schema: Schema, table: String): StructType = {
-    val metadata = new MetadataBuilder().putString("name", table).build
-    val fields = new Array[StructField](schema.getFields.size)
-    for (i <- 0 to schema.getFields.size) {
-      val field = schema.getFields.get(i)
-      fields(i) = StructField(field.getName, fieldType(field.getType.getTypeID), field.isNullable, metadata)
-    }
-    new StructType(fields)
-  }
-
-  def fieldType(arrowType: ArrowTypeID): DataType = {
-    // TODO: Handle all types
-    arrowType match {
-      case ArrowType.ArrowTypeID.Utf8 => StringType
-      //case ArrowType.ArrowTypeID.DateTime => DateTimeType
-      //case ArrowType.ArrowTypeID.Int8 => IntegerType
-      //case ArrowType.ArrowTypeID.Int16 => IntegerType
-      case ArrowType.ArrowTypeID.Int32 => IntegerType
-      case ArrowType.ArrowTypeID.Int64 => IntegerType
-      //case ArrowType.ArrowTypeID.UInt8 => IntegerType
-      //case ArrowType.ArrowTypeID.UInt16 => IntegerType
-      //case ArrowType.ArrowTypeID.UInt32 => IntegerType
-      //case ArrowType.ArrowTypeID.UInt64 => IntegerType
-      //case ArrowType.ArrowTypeID.FloatingPoint => FloatType
-      case ArrowType.ArrowTypeID.FloatingPoint  => DoubleType
-      case _ => throw new Exception("No macthed DataType.")
-    }
-  }
-*/
   def toRows(schema: Schema, table: String, block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
     val columns = block.getFieldVectors
     var curr = 0;
@@ -76,7 +46,7 @@ object ArrowConverter {
     override def next(): Row = {
       val row = new Array[Any](columns.size)
       // TODO: Use map instead
-      for (i <- 0 to row.length) {
+      for (i <- 0 until row.length) {
         row(i) = columns.get(i).getAccessor.getObject(curr)
       }
       Row.fromSeq(row)

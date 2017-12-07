@@ -21,6 +21,7 @@ import org.apache.spark.sql.ch.CHStrategy
 
 import org.apache.spark.sql.ch.CHRelation
 import org.apache.spark.sql.ch.CHSql
+import org.apache.spark.sql.ch.CHTableRef
 import org.apache.spark.sql.ch.mock.MockArrowRelation
 import org.apache.spark.sql.ch.mock.MockSimpleRelation
 
@@ -30,20 +31,21 @@ class CHContext (val sparkSession: SparkSession) extends Serializable with Loggi
 
   sparkSession.experimental.extraStrategies ++= Seq(new CHStrategy(sparkSession))
 
-  def mockSimpleTable(name: String): Unit = {
+  def mockSimpleTable(name: String = "test"): Unit = {
     val rel = new MockSimpleRelation(name)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
-  def mockArrowTable(name: String): Unit = {
+  def mockArrowTable(name: String = "arrow"): Unit = {
     val rel = new MockArrowRelation(name)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
-  def mapCHTable(host: String, port: Int, database: String, table: String): Unit = {
+  def mapCHTable(host: String = "127.0.0.1", port: Int = 9006, database: String = null, table: String = "types"): Unit = {
+    val tableRef = new CHTableRef(host, port, database, table)
     val conf: SparkConf = sparkSession.sparkContext.conf
-    val rel = new CHRelation(host, port, database, table)(sqlContext, conf)
-    sqlContext.baseRelationToDataFrame(rel).createTempView(CHSql.mappedTableName(database, table))
+    val rel = new CHRelation(tableRef)(sqlContext, conf)
+    sqlContext.baseRelationToDataFrame(rel).createTempView(tableRef.mappedName)
   }
 
   def sql(sqlText: String): DataFrame = {

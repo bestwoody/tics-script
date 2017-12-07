@@ -25,11 +25,10 @@ import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, LongType,
 
 
 object CHUtil {
-  def getFields(host: String, port: Int, database: String, table: String): Array[StructField] = {
-    val mappedTableName = CHSql.mappedTableName(database, table)
-    val metadata = new MetadataBuilder().putString("name", mappedTableName).build()
+  def getFields(table: CHTableRef): Array[StructField] = {
+    val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
 
-    val resp = new CHResponse(CHSql.desc(database, table), host, port, null)
+    val resp = new CHResponse(CHSql.desc(table.absName), table.host, table.port, CHEnv.arrowDecoder)
     var fields = new Array[StructField](0)
 
     var names = new Array[String](0)
@@ -45,18 +44,18 @@ object CHUtil {
       }
 
       val accNames = columns.get(0).getAccessor();
-      for (i <- 0 to accNames.getValueCount) {
-          names :+= accNames.getObject(i).asInstanceOf[String]
+      for (i <- 0 until accNames.getValueCount) {
+          names :+= accNames.getObject(i).toString
       }
-      val accTypes = columns.get(0).getAccessor;
-      for (i <- 0 to accTypes.getValueCount) {
-          types :+= accTypes.getObject(i).asInstanceOf[String]
+      val accTypes = columns.get(1).getAccessor;
+      for (i <- 0 until accTypes.getValueCount) {
+          types :+= accTypes.getObject(i).toString
       }
 
       block = resp.next
     }
 
-    for (i <- 0 to names.length) {
+    for (i <- 0 until names.length) {
       // TODO: Get nullable info (from where?)
       val field = StructField(names(i), stringToFieldType(types(i)), nullable = true, metadata)
       fields :+= field

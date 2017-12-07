@@ -15,18 +15,16 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.arrow.vector.types.FloatingPointPrecision
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types.{StructType, StructField}
-import org.apache.arrow.vector.types.pojo.Schema
 
+object CHEnv {
+  private var arrowDecoderInstance: ArrowDecoder = null
 
-class CHRelation(val table: CHTableRef)
-  (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
-
-  override lazy val schema: StructType = {
-    new StructType(CHUtil.getFields(table))
+  def arrowDecoder: ArrowDecoder = {
+    this.synchronized {
+      if (arrowDecoderInstance == null) {
+        arrowDecoderInstance = new ArrowDecoder()
+      }
+      arrowDecoderInstance
+    }
   }
 }

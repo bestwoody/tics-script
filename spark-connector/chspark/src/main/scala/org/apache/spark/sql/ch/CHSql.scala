@@ -18,23 +18,11 @@ package org.apache.spark.sql.ch
 
 
 object CHSql {
-  def mappedTableName(database: String, table: String): String = {
-    table
+  def desc(table: String): String = {
+    "DESC " + table
   }
 
-  def tableRef(database: String, table: String): String = {
-    if (database == null || database.isEmpty) {
-      table
-    } else {
-      database + "." + table
-    }
-  }
-
-  def desc(database: String, table: String): String = {
-    "DESC " + tableRef(database, table)
-  }
-
-  def allScan(database: String, table: String): String = {
-    "SELECT * FROM " + tableRef(database, table)
+  def allScan(table: String): String = {
+    "SELECT * FROM " + table
   }
 }
