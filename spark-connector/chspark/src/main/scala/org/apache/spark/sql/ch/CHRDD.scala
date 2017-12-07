@@ -47,7 +47,7 @@ class CHRDD(@transient private val sparkSession: SparkSession, @transient privat
     // TODO: Async convert
     override def next(): Row = blockIter match {
       case null => {
-        blockIter = ArrowConverter.toRows(schema, resp.next)
+        blockIter = ArrowConverter.toRows(schema, tableInfo.table, resp.next)
         // TODO: Empty check
         blockIter.next
       }

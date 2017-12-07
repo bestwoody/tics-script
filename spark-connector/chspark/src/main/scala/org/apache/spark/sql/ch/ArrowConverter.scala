@@ -18,12 +18,15 @@ package org.apache.spark.sql.ch
 import java.util
 
 import org.apache.arrow.vector.types.FloatingPointPrecision
+import org.apache.arrow.vector.types.pojo.ArrowType.ArrowTypeID
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructField, StructType}
-import org.apache.spark.sql.types.{DoubleType,StringType,IntegerType,FloatType}
+import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType}
 import org.apache.arrow.vector.types.pojo.{ArrowType, Schema}
-import org.apache.arrow.vector.{FieldVector, VectorSchemaRoot};
+import org.apache.arrow.vector.{FieldVector, VectorSchemaRoot}
+
+import scala.collection.mutable.ArrayBuffer
 
 
 object ArrowConverter {
@@ -33,30 +36,63 @@ object ArrowConverter {
     val metadata = new MetadataBuilder().putString("name", table).build()
     for (i <- 0 to schema.getFields().size()) {
       val field = schema.getFields.get(i)
-      fields(i) = StructField(field.getName(), matchFieldType(field.getFieldType.getType), nullable = true, metadata)
+      fields(i) = StructField(field.getName(), matchFieldType(field.getType.getTypeID), nullable = true, metadata)
     }
     new StructType(fields)
   }
 
-  def matchFieldType(arrowType: ArrowType): DataType = {
-    val arrowString = new ArrowType.Utf8
-    val arrowInt = new ArrowType.Int(8, true)
-    val arrowFloat = new ArrowType.FloatingPoint(FloatingPointPrecision.SINGLE)
-    val arrowDouble = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE)
+  def matchFieldType(arrowType: ArrowTypeID ): DataType = {
     arrowType match {
-      case arrowString => StringType
-      case arrowInt => IntegerType
-      case arrowFloat => FloatType
-      case arrowDouble => DoubleType
+      case ArrowType.ArrowTypeID.Utf8 => StringType
+      case ArrowType.ArrowTypeID.Int => IntegerType
+      case ArrowType.ArrowTypeID.FloatingPoint => FloatType
+      case ArrowType.ArrowTypeID.FloatingPoint  => DoubleType
       case _ => throw new Exception("No macthed DataType.")
     }
-}
+  }
 
-  def toRows(schema: Schema, block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
+  def matchDataTypeToArray(dataType: DataType, values: Any): String = {
+    dataType match {
+      case StringType => values.toString
+      case IntegerType => values.toString
+      case FloatType => values.toString
+      case DoubleType => values.toString
+      case _ => throw new Exception("Unsupported types DataType.")
+    }
+  }
+
+  def toRows(schema: Schema, table: String, block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
     // TODO: NOW
     // Convert arrow-columns to spark-rows
+    private val structType: StructType = toFields(schema, table)
+    private val dataTypes: Array[DataType] = structType.fields.map(_.dataType)
     private val vectors: util.List[FieldVector] = block.getFieldVectors
+
+    val rowArray = new Array[ArrayBuffer[String]](vectors.size())
+    if (vectors.isEmpty) {
+      Nil
+    } else {
+      for (i <- 0 to vectors.size()) {
+        val fieldVector = vectors.get(i)
+        val accessor = fieldVector.getAccessor
+        val dataType = dataTypes(i)
+        for (j <- 0 to accessor.getValueCount) {
+          val value = accessor.getObject(j)
+          val fieldValue = matchDataTypeToArray(dataType, value)
+          rowArray(j) = new ArrayBuffer[String](i) += fieldValue
+        }
+      }
+    }
+
+    val iterator = rowArray.iterator
+
     override def hasNext: Boolean = false
-    override def next(): Row = null
+
+    override def next(): Row = toSparkRow(iterator.next)
+
+    def toSparkRow(row: ArrayBuffer[String]): Row = {
+      val rowlines = row.map(p => Row(p))
+      Row.fromSeq(rowlines)
+    }
   }
 }
