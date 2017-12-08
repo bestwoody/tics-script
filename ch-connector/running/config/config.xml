@@ -2,7 +2,7 @@
 <yandex>
     <logger>
         <level>trace</level>
-        <log>/tmp/clickhouse/running/server.log</log>
+        <!--log>/tmp/clickhouse/running/server.log</log-->
         <errorlog>/tmp/clickhouse/running/server-err.log</errorlog>
         <size>1000M</size>
         <count>10</count>

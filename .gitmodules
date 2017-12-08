@@ -1,14 +1,16 @@
 [submodule "ch-connector/clickhouse"]
 	path = ch-connector/clickhouse
-	url = git@github.com:yandex/clickhouse
+	url = http://github.com/yandex/clickhouse
 	ignore = dirty
 [submodule "benchmark/tpch-dbgen"]
 	path = benchmark/tpch-dbgen
-	url = git@github.com:electrum/tpch-dbgen
+	url = http://github.com/electrum/tpch-dbgen
+	ignore = dirty
 [submodule "spark-connector/spark"]
 	path = spark-connector/spark
-	url = git@github.com:apache/spark
+	url = http://github.com/apache/spark
+	ignore = dirty
 [submodule "ch-connector/arrow"]
 	path = ch-connector/arrow
-	url = git@github.com:apache/arrow
+	url = http://github.com/apache/arrow
 	ignore = dirty
