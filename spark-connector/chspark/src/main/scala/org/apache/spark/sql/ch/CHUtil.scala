@@ -21,7 +21,7 @@ import org.apache.spark.sql.types.DataType
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.MetadataBuilder
 
-import org.apache.spark.sql.types.{StringType}
+import org.apache.spark.sql.types.{StringType, TimestampType}
 import org.apache.spark.sql.types.{FloatType, DoubleType}
 import org.apache.spark.sql.types.{ByteType, ShortType, IntegerType, LongType}
 
@@ -67,19 +67,18 @@ object CHUtil {
   }
 
   def stringToFieldType(name: String): DataType = {
-    // TODO: Support all types
-    // TODO: Promote u8 and u32
     // May have bugs: promote unsiged types, and ignore uint64 overflow
+    // TODO: Support all types
     name match {
       case "String" => StringType
-      // case "DateTime"
+      case "DateTime" => TimestampType
       case "Int8" => ByteType
       case "Int16" => ShortType
       case "Int32" => IntegerType
       case "Int64" => LongType
-      case "UInt8" => ByteType
+      case "UInt8" => IntegerType
       case "UInt16" => IntegerType
-      case "UInt32" => IntegerType
+      case "UInt32" => LongType
       case "UInt64" => LongType
       case "Float32" => FloatType
       case "Float64" => DoubleType
