@@ -27,8 +27,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 
-import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType, StructType}
-
 
 case class CHPlan(output: Seq[Attribute], @transient private val sparkSession: SparkSession,
   @transient private val table: CHTableRef) extends SparkPlan {

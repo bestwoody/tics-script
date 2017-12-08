@@ -15,18 +15,22 @@
 
 package org.apache.spark.sql.ch
 
-import java.util
+import java.lang.Character
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructField, StructType}
-import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType}
+//import org.apache.spark.sql.types.{StringType}
+//import org.apache.spark.sql.types.{FloatType, DoubleType}
+//import org.apache.spark.sql.types.{ShortType, IntegerType, LongType}
 
+import org.apache.arrow.vector.FieldVector
+import org.apache.arrow.vector.VectorSchemaRoot
 import org.apache.arrow.vector.util.Text;
 import org.apache.arrow.vector.types.FloatingPointPrecision
+import org.apache.arrow.vector.types.pojo.Schema
+import org.apache.arrow.vector.types.pojo.ArrowType
 import org.apache.arrow.vector.types.pojo.ArrowType.ArrowTypeID
-import org.apache.arrow.vector.types.pojo.{ArrowType, Schema}
-import org.apache.arrow.vector.{FieldVector, VectorSchemaRoot}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -59,6 +63,9 @@ object ArrowConverter {
     // TODO: Handle all types
     value match {
       case text: Text => text.toString
+      case char: Character => {
+        Character.getNumericValue(char)
+      }
       case _ => value
     }
   }
