@@ -12,7 +12,7 @@
 ## Progress
 ```
 ** Mock table in spark
-*- Bytes -> ArrowFormat -> SparkRows
+** Bytes -> ArrowFormat -> SparkRows
 ** Execute query and fetch data from CH service
 -- CH Cluster support
 -- Predicate pushdown

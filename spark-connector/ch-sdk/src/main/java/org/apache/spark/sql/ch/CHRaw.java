@@ -16,8 +16,7 @@
 package org.apache.spark.sql.ch;
 
 import java.util.List;
-import java.util.Date;
-import java.text.SimpleDateFormat;
+import java.sql.Timestamp;
 
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -27,8 +26,6 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 
 public class CHRaw {
-    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-
     private static void dump(Field field, int order) {
         System.out.println("    #" + order + " name:\"" + field.getName() + "\" type:" +
                 field.getType().getTypeID() + " nullable:" + field.isNullable());
@@ -68,11 +65,9 @@ public class CHRaw {
                     if (v instanceof Character) {
                         System.out.println("    " + (int)(Character)v);
                     } else if (type == ArrowType.ArrowTypeID.Time) {
-                        long ts = (Integer)v;
-                        //System.out.println("    " + sdf.format(new Date(ts * 1000)));
-                        System.out.println("    " + ts);
+                        System.out.println("    " + new Timestamp((Long)v * 1000));
                     } else {
-                        System.out.println("    " + acc.getObject(k).toString());
+                        System.out.println("    " + v.toString());
                     }
                 }
                 j += 1;
