@@ -165,15 +165,14 @@ private:
         else if (name == "DateTime")
         {
             const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
-            arrow::Time32Builder builder(arrow::time32(arrow::TimeUnit::SECOND), pool);
+            arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), pool);
             for (size_t i = 0; i < rows; ++i)
             {
-                // TODO: Check overflow
                 uint32_t val = data.getElement(i);
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    setError("arrow::Time32Builder.Append " + status.ToString());
+                    setError("arrow::Time64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -346,7 +345,7 @@ private:
         if (name == "String")
             return arrow::utf8();
         else if (name == "DateTime")
-            return arrow::time64(arrow::TimeUnit::SECOND);
+            return arrow::time64(arrow::TimeUnit::NANO);
         else if (name == "Int8")
             return arrow::int8();
         else if (name == "Int16")

@@ -16,6 +16,7 @@
 package org.apache.spark.sql.ch
 
 import java.lang.Character
+import java.sql.Timestamp
 
 import org.apache.spark.sql.Row
 
@@ -61,40 +62,46 @@ object ArrowConverter {
   }
 
   private def fromArrow(arrowType: ArrowType, value: Any): Any = {
-    // TODO: Handle all types
-    value match {
-      case text: Text => text.toString
-      case int8: Byte => {
-        if (arrowType.asInstanceOf[ArrowType.Int].getIsSigned) {
-          int8
-        } else {
-          if (int8 >= 0) {
-            int8.asInstanceOf[Int]
-          } else {
-            int8.asInstanceOf[Int] + uint8Reverser
+    arrowType match {
+      case time: ArrowType.Time => new Timestamp(value.asInstanceOf[Long] * 1000)
+      case _ => {
+        value match {
+          case text: Text => text.toString
+          case int8: Byte => {
+            if (arrowType.asInstanceOf[ArrowType.Int].getIsSigned) {
+              int8
+            } else {
+              if (int8 >= 0) {
+                int8.asInstanceOf[Int]
+              } else {
+                int8.asInstanceOf[Int] + uint8Reverser
+              }
+            }
           }
-        }
-      }
-      case char: Character => {
-        val int16 = Character.getNumericValue(char)
-        if (int16 >= 0) {
-          int16.asInstanceOf[Int]
-        } else {
-          int16.asInstanceOf[Int] + uint16Reverser
-        }
-      }
-      case int32: Int => {
-        if (arrowType.asInstanceOf[ArrowType.Int].getIsSigned) {
-          int32
-        } else {
-          if (int32 >= 0) {
-            int32.asInstanceOf[Long]
-          } else {
-            int32.asInstanceOf[Long] + uint32Reverser
+          case char: Character => {
+            val int16 = Character.getNumericValue(char)
+            if (int16 >= 0) {
+              int16.asInstanceOf[Int]
+            } else {
+              int16.asInstanceOf[Int] + uint16Reverser
+            }
           }
+          case int32: Int => {
+            if (arrowType.isInstanceOf[ArrowType.Time]) {
+              int32
+            } else if (arrowType.asInstanceOf[ArrowType.Int].getIsSigned) {
+              int32
+            } else {
+              if (int32 >= 0) {
+                int32.asInstanceOf[Long]
+              } else {
+                int32.asInstanceOf[Long] + uint32Reverser
+              }
+            }
+          }
+          case _ => value
         }
       }
-      case _ => value
     }
   }
 }
