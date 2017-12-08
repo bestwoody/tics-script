@@ -1,3 +1,7 @@
+set -eu
+
+./dev-stop-all.sh
+
 ip=""
 if [ `uname` == "Darwin" ]; then
 	ip=`ifconfig | grep -i mask | grep broadcast | grep inet | awk '{print $2}'`
