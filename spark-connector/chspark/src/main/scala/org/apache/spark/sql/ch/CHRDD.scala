@@ -23,8 +23,8 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 
-class CHRDD(@transient private val sparkSession: SparkSession, val table: CHTableRef)
-  extends RDD[Row](sparkSession.sparkContext, Nil) {
+class CHRDD(@transient private val sparkSession: SparkSession, val table: CHTableRef,
+  @transient private val requiredColumns: Seq[String]) extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   @throws[Exception]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
