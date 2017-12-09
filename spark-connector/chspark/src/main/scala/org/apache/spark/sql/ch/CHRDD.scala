@@ -24,14 +24,14 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 
 
 class CHRDD(@transient private val sparkSession: SparkSession, val table: CHTableRef,
-  @transient private val requiredColumns: Seq[String]) extends RDD[Row](sparkSession.sparkContext, Nil) {
+  private val requiredColumns: Seq[String]) extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   @throws[Exception]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
     // TODO: Predicate push down
     // TODO: Error handling (Exception)
 
-    val sql = CHSql.allScan(table.absName)
+    val sql = CHSql.scan(table.absName, requiredColumns)
     val resp = new CHResponse(sql, table.host, table.port, CHEnv.arrowDecoder)
 
     val schema: Schema = resp.getSchema

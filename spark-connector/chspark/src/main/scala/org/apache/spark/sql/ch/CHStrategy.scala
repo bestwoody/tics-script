@@ -50,7 +50,9 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
             val projectSet = AttributeSet(projectList.flatMap(_.references))
             val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
             val requiredColumns = (projectSet ++ filterSet).toSeq.map(_.name)
-            CHPlan(rel.output, sparkSession, relation.table, requiredColumns) :: Nil
+            val nameSet = requiredColumns.toSet
+            val output = rel.output.filter(attr => nameSet(attr.name))
+            CHPlan(output, sparkSession, relation.table, output.map(_.name).toSeq) :: Nil
           case _ => Nil
         }
       }
