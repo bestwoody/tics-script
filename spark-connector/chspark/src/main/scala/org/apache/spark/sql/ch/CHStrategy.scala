@@ -20,8 +20,12 @@ import org.apache.spark.sql.Strategy
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.AttributeSet
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.NamedExpression
 
 import org.apache.spark.sql.ch.mock.MockSimpleRelation
 import org.apache.spark.sql.ch.mock.MockSimplePlan
@@ -33,16 +37,25 @@ import org.apache.spark.sql.ch.mock.TypesTestPlan
 
 class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-    plan match {
+    plan.collectFirst {
       case rel@LogicalRelation(relation: MockSimpleRelation, output: Option[Seq[Attribute]], _) =>
         MockSimplePlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(relation: MockArrowRelation, output: Option[Seq[Attribute]], _) =>
         MockArrowPlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(relation: TypesTestRelation, output: Option[Seq[Attribute]], _) =>
         TypesTestPlan(rel.output, sparkSession) :: Nil
-      case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) =>
-        CHPlan(rel.output, sparkSession, relation.table) :: Nil
-      case _ => Nil
-    }
+      case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => {
+        plan match {
+          case PhysicalOperation(projectList, filterPredicates, LogicalRelation(_: CHRelation, _, _)) =>
+            val projectSet = AttributeSet(projectList.flatMap(_.references))
+            val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
+            val requiredColumns = (projectSet ++ filterSet).toSeq.map(_.name)
+            val nameSet = requiredColumns.toSet
+            val output = rel.output.filter(attr => nameSet(attr.name))
+            CHPlan(output, sparkSession, relation.table, output.map(_.name).toSeq) :: Nil
+          case _ => Nil
+        }
+      }
+    }.toSeq.flatten
   }
 }

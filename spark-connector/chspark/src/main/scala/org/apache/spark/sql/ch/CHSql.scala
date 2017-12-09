@@ -22,7 +22,11 @@ object CHSql {
     "DESC " + table
   }
 
-  def allScan(table: String): String = {
+  def scan(table: String): String = {
     "SELECT * FROM " + table
+  }
+
+  def scan(table: String, columns: Seq[String]): String = {
+    "SELECT " + columns.mkString(", ") + " FROM " + table
   }
 }
