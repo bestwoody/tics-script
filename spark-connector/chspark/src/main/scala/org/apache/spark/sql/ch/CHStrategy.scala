@@ -87,6 +87,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
 
     // println("PROBE Prjections: " + projectList)
     // println("PROBE Predicates: " + filterPredicates)
+
     // println("PROBE Pushdown:   " + pushdownFilters)
     // println("PROBE Residual:   " + residualFilters)
     // println("PROBE FiltersStr: " + filtersString)

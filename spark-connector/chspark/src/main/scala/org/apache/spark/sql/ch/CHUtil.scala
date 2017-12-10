@@ -29,7 +29,19 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.expressions.IsNotNull
+import org.apache.spark.sql.catalyst.expressions.Add
+import org.apache.spark.sql.catalyst.expressions.Subtract
+import org.apache.spark.sql.catalyst.expressions.Multiply
+import org.apache.spark.sql.catalyst.expressions.Divide
+import org.apache.spark.sql.catalyst.expressions.Remainder
+import org.apache.spark.sql.catalyst.expressions.Alias
+import org.apache.spark.sql.catalyst.expressions.GreaterThan
+import org.apache.spark.sql.catalyst.expressions.GreaterThanOrEqual
 import org.apache.spark.sql.catalyst.expressions.LessThan
+import org.apache.spark.sql.catalyst.expressions.LessThanOrEqual
+import org.apache.spark.sql.catalyst.expressions.EqualTo
+import org.apache.spark.sql.catalyst.expressions.Not
+import org.apache.spark.sql.catalyst.expressions.Cast
 
 
 object CHUtil {
@@ -72,35 +84,96 @@ object CHUtil {
     fields
   }
 
+  // TODO: Pushdown more, like `In`
   def isSupportedFilter(exp: Expression): Boolean = {
     // println("PROBE isSupportedFilter:" + exp.getClass.getName + ", " + exp)
     exp match {
       case _: Literal => true
       case _: AttributeReference => true
+      case _: Cast => true
       // TODO: Don't pushdown IsNotNull maybe better
-      case IsNotNull(_) => true
-      case LessThan(lhs, rhs) => isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case IsNotNull(child) =>
+        isSupportedFilter(child)
+      case Add(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case Subtract(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case Multiply(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case Divide(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case Remainder(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      // TODO: Check Alias's handling is OK
+      case Alias(child, name) =>
+        isSupportedFilter(child)
+      case GreaterThan(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case GreaterThanOrEqual(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case LessThan(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case LessThanOrEqual(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case EqualTo(lhs, rhs) =>
+        isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      // TODO: !=
+      case Not(child) =>
+        isSupportedFilter(child)
       case _ => false
     }
   }
 
   def getFilterString(filters: Seq[Expression]): String = {
-    filters.map(x => {
-      val s = getFilterString(x)
-      s match {
-        case null => null
-        case _ => "(" + s + ")"
-      }
+    filters.map(filter => {
+      "(" + getFilterString(filter) + ")"
     }).mkString(" AND ")
   }
 
-  private def getFilterString(exp: Expression): String = {
-    exp match {
-      case Literal(value, dataType) => sparkValueToString(value, dataType)
-      case attr: AttributeReference => attr.name
-      case IsNotNull(v) => getFilterString(v) + " IS NOT NULL"
-      case LessThan(lhs, rhs) => getFilterString(lhs) + " < " + getFilterString(rhs)
+  private def getFilterString(filter: Expression): String = {
+    filter match {
+      case Literal(value, dataType) =>
+        sparkValueToString(value, dataType)
+      case attr: AttributeReference =>
+        attr.name
+      case Cast(child, dataType) =>
+        getCastString(getFilterString(child), dataType)
+      case IsNotNull(child) =>
+        getFilterString(child) + " IS NOT NULL"
+      case Add(lhs, rhs) =>
+        getFilterString(lhs) + " + " + getFilterString(rhs)
+      case Subtract(lhs, rhs) =>
+        getFilterString(lhs) + " - " + getFilterString(rhs)
+      case Multiply(lhs, rhs) =>
+        getFilterString(lhs) + " * " + getFilterString(rhs)
+      case Divide(lhs, rhs) =>
+        getFilterString(lhs) + " / " + getFilterString(rhs)
+      // TODO: Check Remainder's handling is OK
+      case Remainder(lhs, rhs) =>
+        getFilterString(lhs) + " % " + getFilterString(rhs)
+      // TODO: Check Alias's handling is OK
+      case Alias(child, name) =>
+        getFilterString(child) + " AS " + name
+      case GreaterThan(lhs, rhs) =>
+        getFilterString(lhs) + " > " + getFilterString(rhs)
+      case GreaterThanOrEqual(lhs, rhs) =>
+        getFilterString(lhs) + " >= " + getFilterString(rhs)
+      case LessThan(lhs, rhs) =>
+        getFilterString(lhs) + " < " + getFilterString(rhs)
+      case LessThanOrEqual(lhs, rhs) =>
+        getFilterString(lhs) + " <= " + getFilterString(rhs)
+      case EqualTo(lhs, rhs) =>
+        getFilterString(lhs) + " = " + getFilterString(rhs)
+      // case Not(EqualTo(lhs), rhs) =>
+      //  getFilterString(lhs) + " != " + getFilterString(rhs)
+      case Not(child) =>
+        "NOT " + getFilterString(child)
     }
+  }
+
+  private def getCastString(value: String, dataType: DataType) = {
+    // TODO: Handle cast
+    value
   }
 
   private def stringToSparkType(name: String): DataType = {
