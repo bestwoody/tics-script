@@ -18,14 +18,17 @@ package org.apache.spark.sql.ch
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.Strategy
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.execution.FilterExec
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.AttributeSet
-import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.NamedExpression
+
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.And
 
 import org.apache.spark.sql.ch.mock.MockSimpleRelation
 import org.apache.spark.sql.ch.mock.MockSimplePlan
@@ -37,7 +40,7 @@ import org.apache.spark.sql.ch.mock.TypesTestPlan
 
 class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-    plan match {
+    plan.collectFirst {
       case rel@LogicalRelation(relation: MockSimpleRelation, _: Option[Seq[Attribute]], _) =>
         MockSimplePlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(relation: MockArrowRelation, _: Option[Seq[Attribute]], _) =>
@@ -51,8 +54,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
           case _ => Nil
         }
       }
-      case _ => Nil
-    }
+    }.toSeq.flatten
   }
 
   private def createCHPlan(
@@ -64,24 +66,25 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     val projectSet = AttributeSet(projectList.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
     val requiredColumns = (projectSet ++ filterSet).toSeq.map(_.name)
+
     val nameSet = requiredColumns.toSet
-
     var output = relation.output.filter(attr => nameSet(attr.name))
-
     // TODO: Choose the smallest column (in prime keys, or the timestamp key of MergeTree) as dummy output
     if (output.length == 0) {
       output = Seq(relation.output(0))
     }
 
-    val filterString = CHUtil.getFilterString(filterPredicates)
+    val (pushdownFilters: Seq[Expression], residualFilters: Seq[Expression]) =
+      filterPredicates.partition((expression: Expression) => CHUtil.isSupportedFilter(expression))
+    val residualFilter: Option[Expression] = residualFilters.reduceLeftOption(And)
 
-    //println("PROBE Prjections: " + projectList)
-    //println("PROBE Predicates: " + filterPredicates)
-    //filterPredicates.foreach(x => {
-    //  println("PROBE Classes: " + x.getClass.getName + ", " + x)
-    //})
-    //println("PROBE Filter: " + filterString)
+    val filterString = if (pushdownFilters.length == 0) {
+      null
+    } else {
+      CHUtil.getFilterString(pushdownFilters)
+    }
 
-    CHPlan(output, sparkSession, table, output.map(_.name).toSeq, filterString)
+    val rdd = CHPlan(output, sparkSession, table, output.map(_.name).toSeq, null)
+    residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
   }
 }

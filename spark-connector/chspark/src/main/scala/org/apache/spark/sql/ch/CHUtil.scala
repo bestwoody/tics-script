@@ -87,7 +87,30 @@ object CHUtil {
     }
   }
 
-  def getFilterString(filterPredicates: Seq[Expression]): String = {
-    null
+  def getFilterString(filter: Seq[Expression]): String = {
+    println("FF:" + filter)
+    val strs = filter.map(x => {
+      val s = getFilterString(x)
+      println("X: " + x + " => " + s)
+      s match {
+        case null => null
+        case _ => "(" + s + ")"
+      }
+    })
+    println("SS:" + strs)
+    val strSet = strs.toSet
+    if (strSet(null)) {
+      null
+    } else {
+      strs.mkString(" AND ")
+    }
+  }
+
+  def getFilterString(filter: Expression): String = {
+    "<TODO>"
+  }
+
+  def isSupportedFilter(filter: Expression): Boolean = {
+    false
   }
 }
