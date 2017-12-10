@@ -31,11 +31,13 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 case class CHPlan(output: Seq[Attribute],
   @transient private val sparkSession: SparkSession,
   @transient private val table: CHTableRef,
-  @transient private val requiredColumns: Seq[String]) extends SparkPlan {
+  @transient private val requiredColumns: Seq[String],
+  @transient private val filterString: String) extends SparkPlan {
 
   override protected def doExecute(): RDD[InternalRow] = {
     val types = schema.fields.map(_.dataType)
-    val result = RDDConversions.rowToRowRdd(new CHRDD(sparkSession, table, requiredColumns), types)
+    val rdd = new CHRDD(sparkSession, table, requiredColumns, filterString)
+    val result = RDDConversions.rowToRowRdd(rdd, types)
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)
       proj.initialize(partition)

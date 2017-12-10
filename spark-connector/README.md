@@ -14,8 +14,8 @@
 ** Mock table in spark
 ** Bytes -> ArrowFormat -> SparkRows
 ** Execute query and fetch data from CH service
+** Predicate pushdown
 -- CH Cluster support
--- Predicate pushdown
 -- Integration test
 -- TPCH benchmark
 ```

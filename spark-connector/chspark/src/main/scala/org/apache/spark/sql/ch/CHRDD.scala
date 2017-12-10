@@ -23,15 +23,18 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 
-class CHRDD(@transient private val sparkSession: SparkSession, val table: CHTableRef,
-  private val requiredColumns: Seq[String]) extends RDD[Row](sparkSession.sparkContext, Nil) {
+class CHRDD(
+  @transient private val sparkSession: SparkSession,
+  val table: CHTableRef,
+  private val requiredColumns: Seq[String],
+  private val filterString: String) extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   @throws[Exception]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
     // TODO: Predicate push down
     // TODO: Error handling (Exception)
 
-    val sql = CHSql.scan(table.absName, requiredColumns)
+    val sql = CHSql.scan(table.absName, requiredColumns, filterString)
     val resp = new CHResponse(sql, table.host, table.port, CHEnv.arrowDecoder)
 
     val schema: Schema = resp.getSchema
