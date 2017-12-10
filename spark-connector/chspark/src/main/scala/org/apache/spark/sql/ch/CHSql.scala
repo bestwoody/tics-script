@@ -23,17 +23,26 @@ object CHSql {
   }
 
   def scan(table: String): String = {
-    "SELECT * FROM " + table
+    scan(table, null, null)
   }
 
   def scan(table: String, columns: Seq[String]): String = {
-    "SELECT " + columns.mkString(", ") + " FROM " + table
+    scan(table, columns, null)
+  }
+
+  def scan(table: String, filter: String): String = {
+    scan(table, null, filter)
   }
 
   def scan(table: String, columns: Seq[String], filter: String): String = {
-    filter match {
-      case null => scan(table, columns)
-      case _ => "SELECT " + columns.mkString(", ") + " FROM " + table + " WHERE " + filter
+    val filterStr = filter match {
+      case null => ""
+      case _ => " WHERE " + filter
     }
+    val columnsStr = columns match {
+      case null => "*"
+      case _ => columns.mkString(", ")
+    }
+    "SELECT " + columnsStr + " FROM " + table + filterStr
   }
 }

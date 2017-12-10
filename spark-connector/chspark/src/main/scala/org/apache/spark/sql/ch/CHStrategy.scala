@@ -37,12 +37,12 @@ import org.apache.spark.sql.ch.mock.TypesTestPlan
 
 class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-    plan.collectFirst {
-      case rel@LogicalRelation(relation: MockSimpleRelation, output: Option[Seq[Attribute]], _) =>
+    plan match {
+      case rel@LogicalRelation(relation: MockSimpleRelation, _: Option[Seq[Attribute]], _) =>
         MockSimplePlan(rel.output, sparkSession) :: Nil
-      case rel@LogicalRelation(relation: MockArrowRelation, output: Option[Seq[Attribute]], _) =>
+      case rel@LogicalRelation(relation: MockArrowRelation, _: Option[Seq[Attribute]], _) =>
         MockArrowPlan(rel.output, sparkSession) :: Nil
-      case rel@LogicalRelation(relation: TypesTestRelation, output: Option[Seq[Attribute]], _) =>
+      case rel@LogicalRelation(relation: TypesTestRelation, _: Option[Seq[Attribute]], _) =>
         TypesTestPlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => {
         plan match {
@@ -51,7 +51,8 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
           case _ => Nil
         }
       }
-    }.toSeq.flatten
+      case _ => Nil
+    }
   }
 
   private def createCHPlan(
@@ -67,12 +68,9 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
 
     var output = relation.output.filter(attr => nameSet(attr.name))
 
-    // TODO: Choose the smallest column as dummy output
+    // TODO: Choose the smallest column (in prime keys, or the timestamp key of MergeTree) as dummy output
     if (output.length == 0) {
       output = Seq(relation.output(0))
-    }
-    if (output.length == 0) {
-      output = relation.output
     }
 
     val filterString = CHUtil.getFilterString(filterPredicates)
