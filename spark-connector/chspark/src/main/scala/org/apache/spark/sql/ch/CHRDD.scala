@@ -15,6 +15,8 @@
 
 package org.apache.spark.sql.ch
 
+import scala.collection.mutable.ListBuffer
+
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
@@ -25,7 +27,7 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 
 class CHRDD(
   @transient private val sparkSession: SparkSession,
-  val table: CHTableRef,
+  val tables: Seq[CHTableRef],
   private val requiredColumns: Seq[String],
   private val filterString: String) extends RDD[Row](sparkSession.sparkContext, Nil) {
 
@@ -34,6 +36,7 @@ class CHRDD(
     // TODO: Predicate push down
     // TODO: Error handling (Exception)
 
+    val table = tables(split.asInstanceOf[CHPartition].index)
     val sql = CHSql.scan(table.absName, requiredColumns, filterString)
     val resp = new CHResponse(sql, table.host, table.port, CHEnv.arrowDecoder)
 
@@ -68,8 +71,17 @@ class CHRDD(
     }
   }
 
+  override protected def getPreferredLocations(split: Partition): Seq[String] =
+    tables(split.asInstanceOf[CHPartition].index).host :: Nil
+
   override protected def getPartitions: Array[Partition] = {
     // TODO: Read cluster info from CH masterH
-    Array(new CHPartition(0))
+    val result = new ListBuffer[CHPartition]
+    var index = 0
+    tables.foreach(table => {
+      result.append(new CHPartition(index))
+      index += 1
+    })
+    result.toArray
   }
 }
