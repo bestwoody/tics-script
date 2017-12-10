@@ -23,10 +23,11 @@ import org.apache.spark.sql.types.{StructType, StructField}
 import org.apache.arrow.vector.types.pojo.Schema
 
 
-class CHRelation(val table: CHTableRef)
+class CHRelation(val tables: Seq[CHTableRef])
   (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
 
+  // TODO: Parallel check tables' schema are the same
   override lazy val schema: StructType = {
-    new StructType(CHUtil.getFields(table))
+    new StructType(CHUtil.getFields(tables(0)))
   }
 }

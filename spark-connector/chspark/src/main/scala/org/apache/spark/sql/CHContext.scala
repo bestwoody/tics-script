@@ -41,11 +41,29 @@ class CHContext (val sparkSession: SparkSession) extends Serializable with Loggi
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
-  def mapCHTable(host: String = "127.0.0.1", port: Int = 9006, database: String = null, table: String = "types"): Unit = {
-    val tableRef = new CHTableRef(host, port, database, table)
+  def mapCHTable(
+    host: String = "127.0.0.1",
+    port: Int = 9006,
+    database: String = null,
+    table: String): Unit = {
+
     val conf: SparkConf = sparkSession.sparkContext.conf
-    val rel = new CHRelation(tableRef)(sqlContext, conf)
+    val tableRef = new CHTableRef(host, port, database, table)
+    val rel = new CHRelation(Seq(tableRef))(sqlContext, conf)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRef.mappedName)
+  }
+
+  def mapCHClusterTable(
+    hosts: String = "127.0.0.1",
+    port: Int = 9006,
+    database: String = null,
+    table: String): Unit = {
+
+    val conf: SparkConf = sparkSession.sparkContext.conf
+    val tableRefList: Seq[CHTableRef] =
+      hosts.split(",").map(host => new CHTableRef(host, port, database, table))
+    val rel = new CHRelation(tableRefList)(sqlContext, conf)
+    sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList(0).mappedName)
   }
 
   def sql(sqlText: String): DataFrame = {

@@ -50,7 +50,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
       case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => {
         plan match {
           case PhysicalOperation(projectList, filterPredicates, LogicalRelation(_: CHRelation, _, _)) =>
-            createCHPlan(relation.table, rel, projectList, filterPredicates) :: Nil
+            createCHPlan(relation.tables, rel, projectList, filterPredicates) :: Nil
           case _ => Nil
         }
       }
@@ -58,7 +58,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   }
 
   private def createCHPlan(
-    table: CHTableRef,
+    tables: Seq[CHTableRef],
     relation: LogicalRelation,
     projectList: Seq[NamedExpression],
     filterPredicates: Seq[Expression]): SparkPlan = {
@@ -92,7 +92,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     // println("PROBE Residual:   " + residualFilters)
     // println("PROBE FiltersStr: " + filtersString)
 
-    val rdd = CHPlan(output, sparkSession, table, output.map(_.name).toSeq, filtersString)
+    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name).toSeq, filtersString)
     residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
   }
 }
