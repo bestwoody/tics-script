@@ -47,15 +47,43 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
       case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => {
         plan match {
           case PhysicalOperation(projectList, filterPredicates, LogicalRelation(_: CHRelation, _, _)) =>
-            val projectSet = AttributeSet(projectList.flatMap(_.references))
-            val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
-            val requiredColumns = (projectSet ++ filterSet).toSeq.map(_.name)
-            val nameSet = requiredColumns.toSet
-            val output = rel.output.filter(attr => nameSet(attr.name))
-            CHPlan(output, sparkSession, relation.table, output.map(_.name).toSeq) :: Nil
+            createCHPlan(relation.table, rel, projectList, filterPredicates) :: Nil
           case _ => Nil
         }
       }
     }.toSeq.flatten
+  }
+
+  private def createCHPlan(
+    table: CHTableRef,
+    relation: LogicalRelation,
+    projectList: Seq[NamedExpression],
+    filterPredicates: Seq[Expression]): SparkPlan = {
+
+    val projectSet = AttributeSet(projectList.flatMap(_.references))
+    val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
+    val requiredColumns = (projectSet ++ filterSet).toSeq.map(_.name)
+    val nameSet = requiredColumns.toSet
+
+    var output = relation.output.filter(attr => nameSet(attr.name))
+
+    // TODO: Choose the smallest column as dummy output
+    if (output.length == 0) {
+      output = Seq(relation.output(0))
+    }
+    if (output.length == 0) {
+      output = relation.output
+    }
+
+    val filterString = CHUtil.getFilterString(filterPredicates)
+
+    //println("PROBE Prjections: " + projectList)
+    //println("PROBE Predicates: " + filterPredicates)
+    //filterPredicates.foreach(x => {
+    //  println("PROBE Classes: " + x.getClass.getName + ", " + x)
+    //})
+    //println("PROBE Filter: " + filterString)
+
+    CHPlan(output, sparkSession, table, output.map(_.name).toSeq, filterString)
   }
 }

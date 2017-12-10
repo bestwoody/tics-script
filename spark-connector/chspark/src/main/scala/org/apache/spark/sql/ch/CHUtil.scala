@@ -24,6 +24,7 @@ import org.apache.spark.sql.types.MetadataBuilder
 import org.apache.spark.sql.types.{StringType, TimestampType}
 import org.apache.spark.sql.types.{FloatType, DoubleType}
 import org.apache.spark.sql.types.{ByteType, ShortType, IntegerType, LongType}
+import org.apache.spark.sql.catalyst.expressions.Expression
 
 
 object CHUtil {
@@ -84,5 +85,9 @@ object CHUtil {
       case "Float64" => DoubleType
       case _ => throw new Exception("stringToFieldType unhandled type name: " + name)
     }
+  }
+
+  def getFilterString(filterPredicates: Seq[Expression]): String = {
+    null
   }
 }

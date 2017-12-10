@@ -29,4 +29,11 @@ object CHSql {
   def scan(table: String, columns: Seq[String]): String = {
     "SELECT " + columns.mkString(", ") + " FROM " + table
   }
+
+  def scan(table: String, columns: Seq[String], filter: String): String = {
+    filter match {
+      case null => scan(table, columns)
+      case _ => "SELECT " + columns.mkString(", ") + " FROM " + table + " WHERE " + filter
+    }
+  }
 }
