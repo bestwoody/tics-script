@@ -8,6 +8,11 @@ if [ `uname` == "Darwin" ]; then
 else
 	ip=`ifconfig | grep -i mask | grep cast | grep inet | awk '{print $2}' | awk -F 'addr:' '{print $2}'`
 fi
+
+if [ -z "$ip" ]; then
+	ip="127.0.0.1"
+fi
+
 echo "local ip: $ip"
 
 ip_check="`echo $ip | wc -l | awk '{print $1}'`"

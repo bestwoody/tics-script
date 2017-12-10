@@ -24,7 +24,12 @@ import org.apache.spark.sql.types.MetadataBuilder
 import org.apache.spark.sql.types.{StringType, TimestampType}
 import org.apache.spark.sql.types.{FloatType, DoubleType}
 import org.apache.spark.sql.types.{ByteType, ShortType, IntegerType, LongType}
+
 import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.Literal
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.expressions.IsNotNull
+import org.apache.spark.sql.catalyst.expressions.LessThan
 
 
 object CHUtil {
@@ -60,14 +65,45 @@ object CHUtil {
 
     for (i <- 0 until names.length) {
       // TODO: Get nullable info (from where?)
-      val field = StructField(names(i), stringToFieldType(types(i)), nullable = true, metadata)
+      val field = StructField(names(i), stringToSparkType(types(i)), nullable = true, metadata)
       fields :+= field
     }
 
     fields
   }
 
-  def stringToFieldType(name: String): DataType = {
+  def isSupportedFilter(exp: Expression): Boolean = {
+    // println("PROBE isSupportedFilter:" + exp.getClass.getName + ", " + exp)
+    exp match {
+      case _: Literal => true
+      case _: AttributeReference => true
+      // TODO: Don't pushdown IsNotNull maybe better
+      case IsNotNull(_) => true
+      case LessThan(lhs, rhs) => isSupportedFilter(lhs) && isSupportedFilter(rhs)
+      case _ => false
+    }
+  }
+
+  def getFilterString(filters: Seq[Expression]): String = {
+    filters.map(x => {
+      val s = getFilterString(x)
+      s match {
+        case null => null
+        case _ => "(" + s + ")"
+      }
+    }).mkString(" AND ")
+  }
+
+  private def getFilterString(exp: Expression): String = {
+    exp match {
+      case Literal(value, dataType) => sparkValueToString(value, dataType)
+      case attr: AttributeReference => attr.name
+      case IsNotNull(v) => getFilterString(v) + " IS NOT NULL"
+      case LessThan(lhs, rhs) => getFilterString(lhs) + " < " + getFilterString(rhs)
+    }
+  }
+
+  private def stringToSparkType(name: String): DataType = {
     // May have bugs: promote unsiged types, and ignore uint64 overflow
     // TODO: Support all types
     name match {
@@ -87,30 +123,14 @@ object CHUtil {
     }
   }
 
-  def getFilterString(filter: Seq[Expression]): String = {
-    println("FF:" + filter)
-    val strs = filter.map(x => {
-      val s = getFilterString(x)
-      println("X: " + x + " => " + s)
-      s match {
-        case null => null
-        case _ => "(" + s + ")"
-      }
-    })
-    println("SS:" + strs)
-    val strSet = strs.toSet
-    if (strSet(null)) {
+  private def sparkValueToString(value: Any, dataType: DataType): String = {
+    if (dataType == null) {
       null
     } else {
-      strs.mkString(" AND ")
+      dataType match {
+        case StringType => "\"" + value.toString + "\""
+        case _ => value.toString
+      }
     }
-  }
-
-  def getFilterString(filter: Expression): String = {
-    "<TODO>"
-  }
-
-  def isSupportedFilter(filter: Expression): Boolean = {
-    false
   }
 }

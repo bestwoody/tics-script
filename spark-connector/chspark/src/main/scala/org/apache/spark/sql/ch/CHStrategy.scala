@@ -69,6 +69,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
 
     val nameSet = requiredColumns.toSet
     var output = relation.output.filter(attr => nameSet(attr.name))
+
     // TODO: Choose the smallest column (in prime keys, or the timestamp key of MergeTree) as dummy output
     if (output.length == 0) {
       output = Seq(relation.output(0))
@@ -78,13 +79,19 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
       filterPredicates.partition((expression: Expression) => CHUtil.isSupportedFilter(expression))
     val residualFilter: Option[Expression] = residualFilters.reduceLeftOption(And)
 
-    val filterString = if (pushdownFilters.length == 0) {
+    val filtersString = if (pushdownFilters.length == 0) {
       null
     } else {
       CHUtil.getFilterString(pushdownFilters)
     }
 
-    val rdd = CHPlan(output, sparkSession, table, output.map(_.name).toSeq, null)
+    // println("PROBE Prjections: " + projectList)
+    // println("PROBE Predicates: " + filterPredicates)
+    // println("PROBE Pushdown:   " + pushdownFilters)
+    // println("PROBE Residual:   " + residualFilters)
+    // println("PROBE FiltersStr: " + filtersString)
+
+    val rdd = CHPlan(output, sparkSession, table, output.map(_.name).toSeq, filtersString)
     residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
   }
 }
