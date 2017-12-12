@@ -8,6 +8,7 @@
 #include <Core/ColumnWithTypeAndName.h>
 #include <Columns/ColumnsNumber.h>
 #include <Columns/ColumnString.h>
+#include <Columns/ColumnFixedString.h>
 #include <DataStreams/IBlockOutputStream.h>
 
 #include "arrow/array.h"
@@ -162,6 +163,24 @@ private:
             }
             status = builder.Finish(&array);
         }
+        else if (std::string(type->getFamilyName()) == "FixedString")
+        {
+            const auto & data = typeid_cast<DB::ColumnFixedString &>(*column);
+            arrow::StringBuilder builder;
+            for (size_t i = 0; i < rows; ++i)
+            {
+                auto ref = data.getDataAt(i);
+                auto val = ref.toString();
+                status = builder.Append(val);
+                if (!status.ok())
+                {
+                    setError("arrow::StringBuilder.Append " + status.ToString());
+                    return NULL;
+                }
+            }
+            status = builder.Finish(&array);
+        }
+
         else if (name == "DateTime")
         {
             const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
@@ -170,6 +189,23 @@ private:
             {
                 uint32_t val = data.getElement(i);
                 status = builder.Append(val);
+                if (!status.ok())
+                {
+                    setError("arrow::Time64Builder.Append " + status.ToString());
+                    return NULL;
+                }
+            }
+            status = builder.Finish(&array);
+        }
+        else if (name == "Date")
+        {
+            static uint32_t date_to_sec = 24 * 60 * 60;
+            const auto & data = typeid_cast<DB::ColumnUInt16 &>(*column);
+            arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), pool);
+            for (size_t i = 0; i < rows; ++i)
+            {
+                uint16_t val = data.getElement(i);
+                status = builder.Append(date_to_sec * val);
                 if (!status.ok())
                 {
                     setError("arrow::Time64Builder.Append " + status.ToString());
@@ -344,7 +380,11 @@ private:
         auto name = type->getName();
         if (name == "String")
             return arrow::utf8();
+        else if (std::string(type->getFamilyName()) == "FixedString")
+            return arrow::utf8();
         else if (name == "DateTime")
+            return arrow::time64(arrow::TimeUnit::NANO);
+        else if (name == "Date")
             return arrow::time64(arrow::TimeUnit::NANO);
         else if (name == "Int8")
             return arrow::int8();

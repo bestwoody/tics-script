@@ -179,20 +179,25 @@ object CHUtil {
   private def stringToSparkType(name: String): DataType = {
     // May have bugs: promote unsiged types, and ignore uint64 overflow
     // TODO: Support all types
-    name match {
-      case "String" => StringType
-      case "DateTime" => TimestampType
-      case "Int8" => ByteType
-      case "Int16" => ShortType
-      case "Int32" => IntegerType
-      case "Int64" => LongType
-      case "UInt8" => IntegerType
-      case "UInt16" => IntegerType
-      case "UInt32" => LongType
-      case "UInt64" => LongType
-      case "Float32" => FloatType
-      case "Float64" => DoubleType
-      case _ => throw new Exception("stringToFieldType unhandled type name: " + name)
+    if (name.startsWith("FixedString")) {
+      StringType
+    } else {
+      name match {
+        case "String" => StringType
+        case "DateTime" => TimestampType
+        case "Date" => TimestampType
+        case "Int8" => ByteType
+        case "Int16" => ShortType
+        case "Int32" => IntegerType
+        case "Int64" => LongType
+        case "UInt8" => IntegerType
+        case "UInt16" => IntegerType
+        case "UInt32" => LongType
+        case "UInt64" => LongType
+        case "Float32" => FloatType
+        case "Float64" => DoubleType
+        case _ => throw new Exception("stringToFieldType unhandled type name: " + name)
+      }
     }
   }
 
