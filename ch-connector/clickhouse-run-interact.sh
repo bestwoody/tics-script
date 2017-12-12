@@ -1,2 +1,3 @@
 set -eu
-DYLD_LIBRARY_PATH="" build/dbms/src/Server/clickhouse client
+source _env.sh
+build/dbms/src/Server/clickhouse client

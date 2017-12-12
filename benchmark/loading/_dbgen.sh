@@ -2,7 +2,7 @@ source _meta.sh
 
 dbgen_bin()
 {
-	$dbgen_dir/dbgen -b $dbgen_dir/dists.dss $@  2>/dev/null
+	$dbgen_dir/dbgen -f -b $dbgen_dir/dists.dss $@  2>/dev/null
 }
 export -f dbgen_bin
 

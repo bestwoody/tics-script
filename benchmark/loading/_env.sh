@@ -1,4 +1,8 @@
 source _helper.sh
+source _vars.sh
+
+export chbin="$repo_dir/ch-connector/build/dbms/src/Server/clickhouse"
+export chserver="127.0.0.1"
 
 export dbgen_dir="$repo_dir/tpch-dbgen"
 export meta_dir="$this_dir/meta"

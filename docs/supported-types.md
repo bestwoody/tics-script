@@ -17,7 +17,7 @@
 * Float64
 
 ## TPCH Need
-* Int
+* Int(32)
 * String
 * Double
 * Date
@@ -60,3 +60,18 @@
     * BigDecimal
     * Date
     * Timestamp
+
+## From CH types to Spark types, convertion:
+* `CH => Spark`:
+    * `String => StringType`
+    * `DateTime => TimestampType`
+    * `Int8 => ByteType`
+    * `Int16 => ShortType`
+    * `Int32 => IntegerType`
+    * `Int64 => LongType`
+    * `UInt8 => IntegerType`, promoted
+    * `UInt16 => IntegerType`, promoted
+    * `UInt32 => LongType`, promoted
+    * `UInt64 => LongType`, may overflow, unchecked
+    * `Float32 => FloatType`
+    * `Float64 => DoubleType`
