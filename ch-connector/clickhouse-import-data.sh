@@ -1,8 +1,8 @@
-set -e
-
 name="$1"
 
-set -u
+source ./_env.sh
+
+set -eu
 
 if [ -z "$name" ]; then
 	echo "usage: <bin> data-name(in running/data)" >&2
@@ -45,4 +45,4 @@ if [ -f "$schema" ]; then
 	DYLD_LIBRARY_PATH="" "$bin" client --query="`cat $schema`"
 fi
 
-$gen | DYLD_LIBRARY_PATH="" "$bin" client --query="INSERT INTO $name FORMAT CSV"
+$gen | "$bin" client --query="INSERT INTO $name FORMAT CSV"

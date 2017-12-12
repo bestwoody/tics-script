@@ -1,4 +1,7 @@
 set -eu
 
+source ./_env.sh
+
 mkdir -p "running/clickhouse/db"
-DYLD_LIBRARY_PATH="" build/dbms/src/Server/clickhouse server --config-file "running/config/config.xml"
+
+build/dbms/src/Server/clickhouse server --config-file "running/config/config.xml"

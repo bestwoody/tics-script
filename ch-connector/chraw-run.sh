@@ -1,5 +1,11 @@
 query="$1"
+
+set -eu
+
+source ./_env.sh
+
 if [ -z "$query" ]; then
 	query="SELECT * FROM test"
 fi
-DYLD_LIBRARY_PATH="" build/dbms/src/Magic/ch-raw "running/config/config.xml" "$query"
+
+build/dbms/src/Magic/ch-raw "running/config/config.xml" "$query"
