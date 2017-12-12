@@ -13,7 +13,7 @@ trans_blocks()
 			echo "$file: not found" >&2
 			return 1
 		fi
-		cat "$file" | python "$transformer_dir/$table.py" > "$data" &
+		cat "$file" | python "$meta_dir/trans/$table.py" > "$data" &
 	done
 
 	wait_sub_procs

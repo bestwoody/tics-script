@@ -22,9 +22,11 @@ dbgen_all_in_one()
 		return 1
 	fi
 
+	local old=`pwd`
 	mkdir -p "$dir"
 	cd "$dir"
 	dbgen_bin -s "$tpch_scale"
+	cd "$old"
 }
 export -f dbgen_all_in_one
 
@@ -43,9 +45,11 @@ dbgen_table_in_one()
 		return 1
 	fi
 
+	local old=`pwd`
 	mkdir -p "$dir"
 	cd "$dir"
 	dbgen_bin -s "$tpch_scale" $flag
+	cd "$old"
 }
 export -f dbgen_table_in_one
 
@@ -70,6 +74,7 @@ dbgen_table_blocks()
 		return 1
 	fi
 
+	local old=`pwd`
 	mkdir -p "$dir"
 	cd "$dir"
 
@@ -79,6 +84,7 @@ dbgen_table_blocks()
 	done
 
 	wait_sub_procs
+	cd "$old"
 }
 export -f dbgen_table_blocks
 

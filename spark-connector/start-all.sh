@@ -1,6 +1,6 @@
 set -eu
 
-./dev-stop-all.sh
+./stop-all.sh
 
 ip=""
 if [ `uname` == "Darwin" ]; then

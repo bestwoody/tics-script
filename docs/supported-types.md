@@ -4,7 +4,9 @@
 
 ## Current Supported
 * String
+* FixedString(Family)
 * DateTime
+* Date
 * Int8
 * Int16
 * Int32
@@ -64,7 +66,9 @@
 ## From CH types to Spark types, convertion:
 * `CH => Spark`:
     * `String => StringType`
-    * `DateTime => TimestampType`
+    * `FixedString => StringType`
+    * `DateTime => TimestampType`, promoted
+    * `Date => TimestampType`, promoted
     * `Int8 => ByteType`
     * `Int16 => ShortType`
     * `Int32 => IntegerType`

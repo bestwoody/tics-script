@@ -18,6 +18,9 @@
 bin
 pkg
 
+# Python compile result
+*.pyc
+
 # Test data and result
 data
 db

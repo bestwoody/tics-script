@@ -2,8 +2,8 @@
 <yandex>
     <logger>
         <level>trace</level>
-        <log>/data/submd/repos/theflash/ch-connector/running/server.log</log>
-        <errorlog>/data/submd/repos/theflash/ch-connector/running/server-err.log</errorlog>
+        <log>/data/ch-server/server.log</log>
+        <errorlog>/data/ch-server/server-err.log</errorlog>
         <size>1000M</size>
         <count>10</count>
     </logger>
@@ -18,8 +18,8 @@
     <max_concurrent_queries>100</max_concurrent_queries>
     <uncompressed_cache_size>8589934592</uncompressed_cache_size>
     <mark_cache_size>5368709120</mark_cache_size>
-    <path>/data/submd/repos/theflash/ch-connector/running/db</path>
-    <tmp_path>/data/submd/repos/theflash/ch-connector/running/tmp</tmp_path>
+    <path>/data/ch-server/db</path>
+    <tmp_path>/data/ch-server/tmp</tmp_path>
     <users_config>users.xml</users_config>
     <default_profile>default</default_profile>
     <default_database>default</default_database>
