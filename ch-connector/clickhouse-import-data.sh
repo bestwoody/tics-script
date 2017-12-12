@@ -1,6 +1,6 @@
 name="$1"
 
-source ./_env.sh
+source _env.sh
 
 set -eu
 

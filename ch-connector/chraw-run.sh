@@ -2,7 +2,7 @@ query="$1"
 
 set -eu
 
-source ./_env.sh
+source _env.sh
 
 if [ -z "$query" ]; then
 	query="SELECT * FROM test"
