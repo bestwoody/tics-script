@@ -2,6 +2,7 @@ source _helper.sh
 
 export dbgen_dir="$repo_dir/tpch-dbgen"
 export meta_dir="$this_dir/meta"
+export transformer_dir="$this_dir/meta/trans"
 
 export db_prefix="tpch"
 export tpch_scale="1"
