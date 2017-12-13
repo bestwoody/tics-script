@@ -206,7 +206,7 @@ object CHUtil {
       null
     } else {
       dataType match {
-        case StringType => "\"" + value.toString + "\""
+        case StringType => "'" + value.toString + "'"
         case _ => value.toString
       }
     }
