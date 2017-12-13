@@ -69,6 +69,13 @@
     * `FixedString => StringType`
     * `DateTime => TimestampType`, promoted
     * `Date => TimestampType`, promoted
+        * Since we convert both `DateTime` and `Date` to `TimstampType`, this will happend:
+            * `CREATE TABLE T (D1 DateTime, D2 Date)`
+            * `scala> spark.sql("DESC T")`: D1 Timestamp, D2 Timestamp
+            * `scala> spark.sql("SELECT * FROM T WHERE D1 < '1980-01-01'")`: OK
+            * `scala> spark.sql("SELECT * FROM T WHERE D1 < '1980-01-01 00:00:00'")`: OK
+            * `scala> spark.sql("SELECT * FROM T WHERE D2 < '1980-01-01'")`: OK
+            * `scala> spark.sql("SELECT * FROM T WHERE D2 < '1980-01-01 00:00:00'")`: ERROR
     * `Int8 => ByteType`
     * `Int16 => ShortType`
     * `Int32 => IntegerType`
