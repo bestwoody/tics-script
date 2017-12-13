@@ -16,6 +16,6 @@
 ** Execute query and fetch data from CH service
 ** Predicate pushdown
 ** CH Cluster support
--- Integration test
+*- Integration test
 -- TPCH benchmark
 ```
