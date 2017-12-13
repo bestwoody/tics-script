@@ -414,7 +414,7 @@ private:
         else if (name == "Float64")
             return arrow::float64();
         else
-            throw Exception(std::string("dataTypeToArrowType failed: ") + name);
+            throw DB::Exception(std::string("dataTypeToArrowType failed: ") + name);
         return arrow::null();
     }
 
