@@ -43,7 +43,7 @@ public class CHResponse {
         }
     }
 
-    public CHResponse(String query, String host, int port, ArrowDecoder arrowDecoder) throws Exception {
+    public CHResponse(String query, String host, int port) throws Exception {
         this.query = query;
         this.socket = new Socket(host, port);
         this.writer = new DataOutputStream(socket.getOutputStream());
@@ -52,11 +52,6 @@ public class CHResponse {
 
         this.decodeds = new LinkedBlockingQueue();
         this.decodings = new LinkedBlockingQueue();
-
-        if (arrowDecoder == null) {
-            arrowDecoder = new ArrowDecoder();
-        }
-        this.arrowDecoder = arrowDecoder;
 
         sendQuery(query);
         fetchSchema();
@@ -158,6 +153,7 @@ public class CHResponse {
             decodeds.put(new Decoded(new String(decoding.data)));
             return false;
         } else if (decoding.type == PackageTypeArrowData) {
+            ArrowDecoder arrowDecoder = new ArrowDecoder();
             decodeds.put(new Decoded(arrowDecoder.decodeBlock(schema, decoding.data)));
         } else if (decoding.type == PackageTypeEnd) {
             decodeds.put(new Decoded());
@@ -182,6 +178,8 @@ public class CHResponse {
         if (type != PackageTypeArrowSchema) {
             throw new CHResponseException("Received package, but not schema, type: " + type);
         }
+
+        ArrowDecoder arrowDecoder = new ArrowDecoder();
         schema = arrowDecoder.decodeSchema(data);
     }
 
@@ -218,8 +216,6 @@ public class CHResponse {
     private DataInputStream reader;
     private Schema schema;
     private boolean finished;
-
-    private ArrowDecoder arrowDecoder;
 
     private BlockingQueue<Decoding> decodings;
     private BlockingQueue<Decoded> decodeds;

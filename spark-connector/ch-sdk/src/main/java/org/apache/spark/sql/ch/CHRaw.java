@@ -93,7 +93,7 @@ public class CHRaw {
             port = Integer.parseInt(args[3]);
         }
 
-        CHResponse result = new CHResponse(query, host, port, null);
+        CHResponse result = new CHResponse(query, host, port);
         dump(result, decode);
         result.close();
     }

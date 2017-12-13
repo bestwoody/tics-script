@@ -48,7 +48,7 @@ object CHUtil {
   def getFields(table: CHTableRef): Array[StructField] = {
     val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
 
-    val resp = new CHResponse(CHSql.desc(table.absName), table.host, table.port, CHEnv.arrowDecoder)
+    val resp = new CHResponse(CHSql.desc(table.absName), table.host, table.port)
     var fields = new Array[StructField](0)
 
     var names = new Array[String](0)

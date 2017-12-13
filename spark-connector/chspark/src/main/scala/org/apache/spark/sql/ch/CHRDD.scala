@@ -38,7 +38,7 @@ class CHRDD(
 
     val table = tables(split.asInstanceOf[CHPartition].index)
     val sql = CHSql.scan(table.absName, requiredColumns, filterString)
-    val resp = new CHResponse(sql, table.host, table.port, CHEnv.arrowDecoder)
+    val resp = new CHResponse(sql, table.host, table.port)
 
     val schema: Schema = resp.getSchema
 
