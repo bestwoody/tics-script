@@ -16,7 +16,10 @@
 package org.apache.spark.sql.ch;
 
 import java.util.List;
+import java.util.Scanner;
 import java.sql.Timestamp;
+import java.io.File;
+import java.io.PrintStream;
 
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -31,8 +34,8 @@ public class CHRaw {
                 field.getType().getTypeID() + " nullable:" + field.isNullable());
     }
 
-    private static void dump(CHResponse result, boolean decode) throws Exception {
-        Schema schema = result.getSchema();
+    private static void dump(CHExecutor executor, boolean decode) throws Exception {
+        Schema schema = executor.getSchema();
         List<Field> fields = schema.getFields();
         int i = 0;
         if (decode) {
@@ -43,18 +46,23 @@ public class CHRaw {
             }
         }
 
-        while (result.hasNext()) {
-            VectorSchemaRoot block = result.next();
-            if (block == null) {
+        while (executor.hasNext()) {
+            CHExecutor.Result block = executor.decode(executor.next());
+            if (block.isEmpty()) {
                 break;
             }
+            if (block.error != null) {
+                throw new Exception(block.error);
+            }
             if (!decode) {
+                System.out.println("[fetched block]");
                 continue;
             }
             System.out.println("[result]");
 
-            List<FieldVector> columns = block.getFieldVectors();
+            List<FieldVector> columns = block.block.getFieldVectors();
             int j = 0;
+
             for (FieldVector column: columns) {
                 Field field = column.getField();
                 ArrowType.ArrowTypeID type = field.getType().getTypeID();
@@ -79,22 +87,84 @@ public class CHRaw {
         System.out.println("[query done]");
     }
 
-    public static void main(String[] args) throws Exception {
-        if (args.length < 2) {
-            System.out.println("usage: <bin> query 'decode' ch-host [port]");
-            System.exit(-1);
-        }
-
-        String query = args[0];
-        boolean decode = Boolean.parseBoolean(args[1]);
-        String host = args[2];
-        int port = 9001;
-        if (args.length > 3) {
-            port = Integer.parseInt(args[3]);
-        }
-
-        CHResponse result = new CHResponse(query, host, port);
+    private void exec(String query) throws Exception {
+        CHExecutor result = new CHExecutor(query, host, port);
         dump(result, decode);
         result.close();
+    }
+
+    public int loop(String[] args) throws Exception {
+        if (args.length < 2) {
+            System.out.println("usage: <bin> ch-host cli|query|querys");
+            return -1;
+        }
+
+        String host = args[0];
+        int port = 9006;
+
+        String cmd = args[1];
+
+        if (cmd.equals("cli")) {
+            System.out.println("[intereact mode, type 'quit' to exit]");
+            while (true) {
+                Scanner reader = new Scanner(System.in);
+                String line = reader.nextLine();
+                if (line.equals("help")) {
+                    System.out.println("[usage: help|quit|to-log|no-decode|bench]");
+                    continue;
+                } else if (line.equals("quit")) {
+                    return 0;
+                } else if (line.equals("to-log")) {
+                    System.out.println("[redirecting output to chraw-java.log]");
+                    System.setOut(new PrintStream(new File("chraw-java.log")));
+                    continue;
+                } else if (line.equals("no-decode")) {
+                    System.out.println("[throughput bench mode, disable data decoding and printing]");
+                    decode = false;
+                    continue;
+                } else if (line.equals("")) {
+                    continue;
+                }
+                System.out.println();
+                exec(line);
+            }
+        }
+
+        if (cmd.equals("query")) {
+            if (args.length < 3) {
+                System.out.println("usage: <bin> ch-host query <query-string>");
+                return -1;
+            }
+            exec(args[2]);
+        }
+
+        if (cmd.equals("querys")) {
+            if (args.length < 4) {
+                System.out.println("usage: <bin> ch-host querys <query-string> <times>");
+                return -1;
+            }
+            String query = args[2];
+            int times = Integer.parseInt(args[3]);
+            for (int i = 0; i < times; ++i) {
+                exec(query);
+            }
+        }
+
+        return 0;
+    }
+
+    public CHRaw() {
+    }
+
+    private String host = "127.0.0.1";
+    private int port = 9006;
+    private boolean decode = true;
+
+    public static void main(String[] args) throws Exception {
+        CHRaw ch = new CHRaw();
+        int code = ch.loop(args);
+        if (code != 0) {
+            System.exit(code);
+        }
     }
 }
