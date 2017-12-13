@@ -34,33 +34,40 @@ public class CHRaw {
                 field.getType().getTypeID() + " nullable:" + field.isNullable());
     }
 
-    private static void dump(CHExecutor executor, boolean decode) throws Exception {
+    private static void dump(CHParallel executor, boolean decode) throws Exception {
         Schema schema = executor.getSchema();
         List<Field> fields = schema.getFields();
-        int i = 0;
         if (decode) {
             System.out.println("[schema]");
+            int i = 0;
             for (Field field: fields) {
                 dump(field, i);
                 i += 1;
             }
         }
 
+        int index = 0;
         while (executor.hasNext()) {
-            CHExecutor.Result block = executor.decode(executor.next());
+            CHExecutor.Result block = executor.next();
             if (block.isEmpty()) {
                 break;
             }
             if (block.error != null) {
                 throw new Exception(block.error);
             }
-            if (!decode) {
-                System.out.println("[fetched block]");
-                continue;
-            }
-            System.out.println("[result]");
 
             List<FieldVector> columns = block.block.getFieldVectors();
+
+            if (!decode) {
+                int rows = columns.get(0).getAccessor().getValueCount();
+                System.out.println("[fetched block #" + index + ", " + rows + " rows]");
+                index += 1;
+                block.close();
+                continue;
+            }
+
+            System.out.println("[result]");
+
             int j = 0;
 
             for (FieldVector column: columns) {
@@ -81,6 +88,7 @@ public class CHRaw {
                 j += 1;
             }
 
+            block.close();
             System.out.println("    ---");
         }
 
@@ -88,7 +96,7 @@ public class CHRaw {
     }
 
     private void exec(String query) throws Exception {
-        CHExecutor result = new CHExecutor(query, host, port);
+        CHParallel result = new CHParallel(query, host, port, 4);
         dump(result, decode);
         result.close();
     }

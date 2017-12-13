@@ -22,9 +22,6 @@ import java.io.DataInputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
@@ -62,12 +59,22 @@ public class CHExecutor {
         boolean isEmpty() {
             return error == null && block == null;
         }
+        boolean isLast() {
+            return error != null || block == null;
+        }
+        void close() {
+            if (block != null) {
+                block.close();
+                block = null;
+            }
+        }
 
         public final String error;
-        public final  VectorSchemaRoot block;
+        public VectorSchemaRoot block;
     }
 
     public CHExecutor(String query, String host, int port) throws IOException, CHExecutorException {
+        this.arrowDecoder = new ArrowDecoder();
         this.query = query;
         this.socket = new Socket(host, port);
         this.writer = new DataOutputStream(socket.getOutputStream());
@@ -79,6 +86,7 @@ public class CHExecutor {
     }
 
     public void close() throws IOException {
+        arrowDecoder.close();
         socket.close();
     }
 
@@ -90,45 +98,52 @@ public class CHExecutor {
         return !finished;
     }
 
-    public Package next() {
+    public Package safeNext() {
         try {
-            long type = reader.readLong();
-            if (type == PackageTypeEnd) {
-                finished = true;
-                return new Package(type, null);
-            }
-            byte[] data = null;
-            long size = reader.readLong();
-            if (size >= Integer.MAX_VALUE) {
-                throw new CHExecutorException("Package too big, size: " + size);
-            }
-            if (size > 0) {
-                data = new byte[(int)size];
-                reader.readFully(data);
-            }
-            finished = (type == PackageTypeUtf8Error);
-            return new Package(type, data);
+            return next();
         } catch (Exception e) {
             finished = true;
             return new Package(PackageTypeUtf8Error, e.toString().getBytes());
         }
     }
 
-    // Thread safe method
-    public Result decode(Package decoding) {
+    public Package next() throws IOException, CHExecutorException {
+        long type = reader.readLong();
+        if (type == PackageTypeEnd) {
+            finished = true;
+            return new Package(type, null);
+        }
+        byte[] data = null;
+        long size = reader.readLong();
+        if (size >= Integer.MAX_VALUE) {
+            throw new CHExecutorException("Package too big, size: " + size);
+        }
+        if (size > 0) {
+            data = new byte[(int)size];
+            reader.readFully(data);
+        }
+        finished = (type == PackageTypeUtf8Error);
+        return new Package(type, data);
+    }
+
+    public Result safeDecode(Package decoding) {
         try {
-            if (decoding.type == PackageTypeUtf8Error) {
-                return new Result(new String(decoding.data));
-            } else if (decoding.type == PackageTypeArrowData) {
-                ArrowDecoder arrowDecoder = new ArrowDecoder();
-                return new Result(arrowDecoder.decodeBlock(schema, decoding.data));
-            } else if (decoding.type == PackageTypeEnd) {
-                return new Result();
-            } else {
-                return new Result("Unknown package, type: " + decoding.type);
-            }
+            return decode(decoding);
         } catch (Exception e) {
             return new Result(e.toString());
+        }
+    }
+
+    public Result decode(Package decoding) throws IOException {
+        if (decoding.type == PackageTypeUtf8Error) {
+            return new Result(new String(decoding.data));
+        } else if (decoding.type == PackageTypeArrowData) {
+            ArrowDecoder arrowDecoder = new ArrowDecoder();
+            return new Result(arrowDecoder.decodeBlock(schema, decoding.data));
+        } else if (decoding.type == PackageTypeEnd) {
+            return new Result();
+        } else {
+            return new Result("Unknown package, type: " + decoding.type);
         }
     }
 
@@ -157,11 +172,11 @@ public class CHExecutor {
             throw new CHExecutorException("Received package, but not schema, type: " + type);
         }
 
-        ArrowDecoder arrowDecoder = new ArrowDecoder();
         schema = arrowDecoder.decodeSchema(data);
     }
 
     public final String query;
+    private ArrowDecoder arrowDecoder;
     private Socket socket;
     private DataOutputStream writer;
     private DataInputStream reader;

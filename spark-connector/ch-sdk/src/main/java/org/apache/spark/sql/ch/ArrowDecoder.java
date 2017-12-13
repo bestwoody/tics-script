@@ -47,7 +47,16 @@ public class ArrowDecoder {
         VectorSchemaRoot block = VectorSchemaRoot.create(schema, alloc);
         VectorLoader loader = new VectorLoader(block);
         loader.load(batch);
+
+        channel.close();
+        in.close();
+        batch.close();
+
         return block;
+    }
+
+    public void close() {
+        alloc.close();
     }
 
     private final BufferAllocator alloc;
