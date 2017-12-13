@@ -85,6 +85,8 @@ public:
             {
                 auto & column = block.getByPosition(i);
                 auto array = columnToArrowArray(column.type, column.column, block.rows());
+                if (!array)
+                    return NULL;
                 arrays.push_back(array);
             }
 
@@ -157,7 +159,7 @@ private:
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    setError("arrow::StringBuilder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::StringBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -174,7 +176,7 @@ private:
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    setError("arrow::StringBuilder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::StringBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -191,7 +193,7 @@ private:
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    setError("arrow::Time64Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::Time64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -208,7 +210,7 @@ private:
                 status = builder.Append(date_to_sec * val);
                 if (!status.ok())
                 {
-                    setError("arrow::Time64Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::Time64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -223,7 +225,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::Int8Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::Int8Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -238,7 +240,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::Int16Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::Int16Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -253,7 +255,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::Int32Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::Int32Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -268,7 +270,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::Int64Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::Int64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -283,7 +285,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::UInt8Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::UInt8Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -298,7 +300,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::UInt16Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::UInt16Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -313,7 +315,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::UInt32Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::UInt32Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -328,7 +330,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::UInt64Builder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::UInt64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -343,7 +345,7 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::FloatBuilder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::FloatBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -358,16 +360,21 @@ private:
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("arrow::DoubleBuilder.Append " + status.ToString());
+                    setError("columnToArrowArray, arrow::DoubleBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
             status = builder.Finish(&array);
         }
-
-        if (!status.ok())
+        else
         {
-            setError("arrow::StringBuilder.Finish" + status.ToString());
+            setError(std::string("columnToArrowArray failed, unhandled type name: ") + name);
+            return NULL;
+        }
+
+        if (!status.ok() || array == NULL)
+        {
+            setError("columnToArrowArray unhandled error, status: " + status.ToString());
             return NULL;
         }
         return array;
@@ -406,6 +413,8 @@ private:
             return arrow::float32();
         else if (name == "Float64")
             return arrow::float64();
+        else
+            throw Exception(std::string("dataTypeToArrowType failed: ") + name);
         return arrow::null();
     }
 
