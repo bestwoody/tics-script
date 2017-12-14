@@ -60,7 +60,7 @@ public class CHParallel {
         }
     }
 
-    public CHExecutor.Result next() throws InterruptedException, CHExecutor.CHExecutorException {
+    public VectorSchemaRoot next() throws InterruptedException, CHExecutor.CHExecutorException {
         CHExecutor.Result decoded = decodeds.take();
         if (decoded.isEmpty()) {
             synchronized(this) {
@@ -72,7 +72,7 @@ public class CHParallel {
             }
             throw new CHExecutor.CHExecutorException(decoded.error);
         }
-        return decoded;
+        return decoded.block;
     }
 
     private void startFetch() {

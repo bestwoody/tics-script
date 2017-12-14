@@ -33,12 +33,11 @@ class CHRDD(
 
   @throws[Exception]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
-    // TODO: Predicate push down
     // TODO: Error handling (Exception)
 
     val table = tables(split.asInstanceOf[CHPartition].index)
     val sql = CHSql.scan(table.absName, requiredColumns, filterString)
-    val resp = new CHResponse(sql, table.host, table.port)
+    val resp = new CHParallel(sql, table.host, table.port, 4)
 
     val schema: Schema = resp.getSchema
 
@@ -65,6 +64,7 @@ class CHRDD(
     override def next(): Row = {
       val result = blockIter.next
       if (!blockIter.hasNext) {
+        blockIter.asInstanceOf[CHRows].close
         blockIter = getBlock
       }
       result
