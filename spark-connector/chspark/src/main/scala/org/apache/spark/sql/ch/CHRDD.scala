@@ -61,6 +61,7 @@ class CHRDD(
     }
 
     // TODO: Async convert
+    // TODO: Parallel convert
     override def next(): Row = {
       val result = blockIter.next
       if (!blockIter.hasNext) {
