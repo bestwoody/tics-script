@@ -48,31 +48,33 @@ object CHUtil {
   def getFields(table: CHTableRef): Array[StructField] = {
     val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
 
-    val resp = new CHResponse(CHSql.desc(table.absName), table.host, table.port, CHEnv.arrowDecoder)
+    val resp = new CHParallel(CHSql.desc(table.absName), table.host, table.port, 1)
     var fields = new Array[StructField](0)
 
     var names = new Array[String](0)
     var types = new Array[String](0)
 
-    var block: VectorSchemaRoot = resp.next
+    var block: VectorSchemaRoot = null
 
-    while (resp.hasNext && (block != null)) {
-      val columns = block.getFieldVectors
-      if (columns.size < 2) {
-        // TODO: Exception classify
-        throw new Exception("Send desc table to get schema failed")
-      }
-
-      val accNames = columns.get(0).getAccessor();
-      for (i <- 0 until accNames.getValueCount) {
-          names :+= accNames.getObject(i).toString
-      }
-      val accTypes = columns.get(1).getAccessor;
-      for (i <- 0 until accTypes.getValueCount) {
-          types :+= accTypes.getObject(i).toString
-      }
-
+    while (resp.hasNext) {
       block = resp.next
+      if (block != null) {
+        val columns = block.getFieldVectors
+        if (columns.size < 2) {
+          // TODO: Exception classify
+          throw new Exception("Send desc table to get schema failed")
+        }
+
+        val accNames = columns.get(0).getAccessor();
+        for (i <- 0 until accNames.getValueCount) {
+            names :+= accNames.getObject(i).toString
+        }
+        val accTypes = columns.get(1).getAccessor;
+        for (i <- 0 until accTypes.getValueCount) {
+            types :+= accTypes.getObject(i).toString
+        }
+        block.close
+      }
     }
 
     for (i <- 0 until names.length) {

@@ -26,9 +26,42 @@ import org.apache.arrow.vector.util.Text;
 import org.apache.arrow.vector.types.pojo.Schema
 import org.apache.arrow.vector.types.pojo.ArrowType
 import org.apache.arrow.vector.types.pojo.ArrowType.ArrowTypeID
+import org.apache.spark.sql.catalyst.expressions.GenericRow
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
+
+
+class CHRows(private val schema: Schema, private val table: String, private val block: VectorSchemaRoot)
+  extends Iterator[Row] {
+
+  val columns = block.getFieldVectors
+  val fieldTypes = columns.asScala.map(x => x.getField.getType)
+
+  var curr = 0;
+  val rows = if (!columns.isEmpty) {
+    columns.get(0).getAccessor.getValueCount
+  } else {
+    0
+  }
+
+  override def hasNext: Boolean = {
+    curr < rows
+  }
+
+  override def next(): Row = {
+    val fields = new Array[Any](columns.size)
+    for (i <- 0 until fields.length) {
+      fields(i) = ArrowConverter.fromArrow(fieldTypes(i), columns.get(i).getAccessor.getObject(curr))
+    }
+    curr += 1
+    new GenericRow(fields)
+  }
+
+  def close(): Unit = {
+    block.close
+  }
+}
 
 object ArrowConverter {
   // TODO: Faster algorithm
@@ -36,32 +69,9 @@ object ArrowConverter {
   val uint16Reverser: Int = 0x10000
   val uint32Reverser: Long = 0x100000000L
 
-  def toRows(schema: Schema, table: String, block: VectorSchemaRoot): Iterator[Row] = new Iterator[Row] {
-    val columns = block.getFieldVectors
-    val fieldTypes = columns.asScala.map(x => x.getField.getType)
+  def toRows(schema: Schema, table: String, block: VectorSchemaRoot): Iterator[Row] = new CHRows(schema, table, block)
 
-    var curr = 0;
-    val rows = if (!columns.isEmpty) {
-      columns.get(0).getAccessor.getValueCount
-    } else {
-      0
-    }
-
-    override def hasNext: Boolean = {
-      curr < rows
-    }
-
-    override def next(): Row = {
-      val fields = new Array[Any](columns.size)
-      for (i <- 0 until fields.length) {
-        fields(i) = fromArrow(fieldTypes(i), columns.get(i).getAccessor.getObject(curr))
-      }
-      curr += 1
-      Row.fromSeq(fields)
-    }
-  }
-
-  private def fromArrow(arrowType: ArrowType, value: Any): Any = {
+  def fromArrow(arrowType: ArrowType, value: Any): Any = {
     arrowType match {
       case time: ArrowType.Time => new Timestamp(value.asInstanceOf[Long] * 1000)
       case _ => {
