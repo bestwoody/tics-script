@@ -39,11 +39,7 @@ class CHRows(private val schema: Schema, private val table: String, private val 
   val fieldTypes = columns.asScala.map(x => x.getField.getType)
 
   var curr = 0;
-  val rows = if (!columns.isEmpty) {
-    columns.get(0).getAccessor.getValueCount
-  } else {
-    0
-  }
+  val rows = block.getRowCount
 
   override def hasNext: Boolean = {
     curr < rows
@@ -59,6 +55,9 @@ class CHRows(private val schema: Schema, private val table: String, private val 
   }
 
   def close(): Unit = {
+    for (i <- 0 until columns.size) {
+      columns.get(i).close
+    }
     block.close
   }
 }
