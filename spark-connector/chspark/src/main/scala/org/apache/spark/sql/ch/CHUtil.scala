@@ -75,10 +75,10 @@ object CHUtil {
         for (i <- 0 until accTypes.getValueCount) {
             types :+= accTypes.getObject(i).toString
         }
-        block.close
       }
-      resp.close
+      block.close
     }
+    resp.close
 
     for (i <- 0 until names.length) {
       // TODO: Get nullable info (from where?)
