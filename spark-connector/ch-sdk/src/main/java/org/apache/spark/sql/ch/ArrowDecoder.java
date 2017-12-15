@@ -18,6 +18,7 @@ package org.apache.spark.sql.ch;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.nio.channels.Channels;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.file.ReadChannel;
@@ -29,8 +30,16 @@ import org.apache.arrow.vector.VectorLoader;
 
 
 public class ArrowDecoder {
+    private final static long MB_IN_BYTES = 1024 * 1024;
+    private final static long MAX_ALLOC = MB_IN_BYTES * 1024 * 2;
+    private final static RootAllocator rootAllocator = new RootAllocator(MAX_ALLOC);
+    private final static AtomicInteger allocId = new AtomicInteger(0);
+
     public ArrowDecoder() {
-        alloc = new RootAllocator(Long.MAX_VALUE);
+        alloc = rootAllocator.newChildAllocator(
+            "ChildAlloc" + allocId.incrementAndGet(),
+            0,
+            MB_IN_BYTES * 8);
     }
 
     public Schema decodeSchema(byte[] data) throws IOException {
