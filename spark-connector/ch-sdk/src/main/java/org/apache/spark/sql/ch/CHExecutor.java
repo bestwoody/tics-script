@@ -114,6 +114,7 @@ public class CHExecutor {
         try {
             return next();
         } catch (Exception e) {
+            // e.printStackTrace();
             finished = true;
             return new Package(PackageTypeUtf8Error, e.toString().getBytes());
         }
@@ -142,6 +143,7 @@ public class CHExecutor {
         try {
             return decode(decoding);
         } catch (Exception e) {
+            // e.printStackTrace();
             return new Result(e);
         }
     }
@@ -151,8 +153,7 @@ public class CHExecutor {
             return new Result(new IOException(new String(decoding.data)));
         } else if (decoding.type == PackageTypeArrowData) {
             ArrowDecoder decoder = new ArrowDecoder();
-            Result result = new Result(decoder.decodeBlock(schema, decoding.data), decoder);
-            return result;
+            return new Result(decoder.decodeBlock(schema, decoding.data), decoder);
         } else if (decoding.type == PackageTypeEnd) {
             return new Result();
         } else {
