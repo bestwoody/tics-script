@@ -39,8 +39,8 @@ public class CHParallel {
         this.query = query;
         this.finished = false;
 
-        this.decodeds = new LinkedBlockingQueue();
-        this.decodings = new LinkedBlockingQueue();
+        this.decodeds = new LinkedBlockingQueue(48);
+        this.decodings = new LinkedBlockingQueue(48);
 
         startFetch();
         startDecode(threads);
