@@ -30,14 +30,16 @@ import org.apache.arrow.vector.VectorLoader;
 
 
 public class ArrowDecoder {
-    private final static RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
+    private final static long MB_IN_BYTES = 1024 * 1024;
+    private final static long MAX_ALLOC = MB_IN_BYTES * 1024 * 2;
+    private final static RootAllocator rootAllocator = new RootAllocator(MAX_ALLOC);
     private final static AtomicInteger allocId = new AtomicInteger(0);
 
     public ArrowDecoder() {
         alloc = rootAllocator.newChildAllocator(
             "ChildAlloc" + allocId.incrementAndGet(),
             0,
-            Long.MAX_VALUE);
+            MB_IN_BYTES * 8);
     }
 
     public Schema decodeSchema(byte[] data) throws IOException {
