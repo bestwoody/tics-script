@@ -30,8 +30,8 @@ import org.apache.arrow.vector.VectorLoader;
 
 
 public class ArrowDecoder {
-    private final RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
-    private AtomicInteger allocId = new AtomicInteger(0);
+    private final static RootAllocator rootAllocator = new RootAllocator(Long.MAX_VALUE);
+    private final static AtomicInteger allocId = new AtomicInteger(0);
 
     public ArrowDecoder() {
         alloc = rootAllocator.newChildAllocator(
