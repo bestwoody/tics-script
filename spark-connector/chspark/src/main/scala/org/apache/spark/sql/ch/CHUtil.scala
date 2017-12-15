@@ -62,6 +62,8 @@ object CHUtil {
         val columns = block.getFieldVectors
         if (columns.size < 2) {
           // TODO: Exception classify
+          block.close
+          resp.close
           throw new Exception("Send desc table to get schema failed")
         }
 
@@ -75,6 +77,7 @@ object CHUtil {
         }
         block.close
       }
+      resp.close
     }
 
     for (i <- 0 until names.length) {

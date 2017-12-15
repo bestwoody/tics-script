@@ -55,6 +55,9 @@ class CHRows(private val schema: Schema, private val table: String, private val 
   }
 
   def close(): Unit = {
+    for (i <- 0 until columns.size) {
+      columns.get(i).close
+    }
     block.close
   }
 }

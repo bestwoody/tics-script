@@ -62,11 +62,15 @@ class CHRDD(
 
     // TODO: Async convert
     // TODO: Parallel convert
+    // TODO: This iterating is shit, fix it
     override def next(): Row = {
       val result = blockIter.next
       if (!blockIter.hasNext) {
         blockIter.asInstanceOf[CHRows].close
         blockIter = getBlock
+        if (blockIter == null) {
+          resp.close
+        }
       }
       result
     }

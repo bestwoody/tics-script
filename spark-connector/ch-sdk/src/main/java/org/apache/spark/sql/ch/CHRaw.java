@@ -72,6 +72,7 @@ public class CHRaw {
                 ArrowType.ArrowTypeID type = field.getType().getTypeID();
                 dump(field, j);
                 ValueVector.Accessor acc = column.getAccessor();
+
                 for (int k = 0; k < acc.getValueCount(); ++k) {
                     Object v = acc.getObject(k);
                     if (v instanceof Character) {
@@ -82,6 +83,10 @@ public class CHRaw {
                         System.out.println("    " + v.toString());
                     }
                 }
+
+                // TODO: no need
+                column.clear();
+                column.close();
                 j += 1;
             }
 
