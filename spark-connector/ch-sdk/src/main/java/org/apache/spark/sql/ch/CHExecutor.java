@@ -48,17 +48,20 @@ public class CHExecutor {
     }
 
     public static class Result {
-        Result(VectorSchemaRoot block) {
+        Result(VectorSchemaRoot block, ArrowDecoder buffer) {
             this.error = null;
             this.block = block;
+            this.buffer = buffer;
         }
         Result(Exception ex) {
             this.error = ex;
             this.block = null;
+            this.buffer = null;
         }
         Result() {
             this.error = null;
             this.block = null;
+            this.buffer = null;
         }
         boolean isEmpty() {
             return error == null && block == null;
@@ -71,10 +74,15 @@ public class CHExecutor {
                 block.close();
                 block = null;
             }
+            if (buffer != null) {
+                buffer.close();
+                buffer = null;
+            }
         }
 
         public final Exception error;
         public VectorSchemaRoot block;
+        private ArrowDecoder buffer;
     }
 
     public CHExecutor(String query, String host, int port) throws IOException, CHExecutorException {
@@ -142,10 +150,8 @@ public class CHExecutor {
         if (decoding.type == PackageTypeUtf8Error) {
             return new Result(new IOException(new String(decoding.data)));
         } else if (decoding.type == PackageTypeArrowData) {
-            ArrowDecoder arrowDecoder = new ArrowDecoder();
-            Result result = new Result(arrowDecoder.decodeBlock(schema, decoding.data));
-            result.close();
-            arrowDecoder.close();
+            ArrowDecoder decoder = new ArrowDecoder();
+            Result result = new Result(decoder.decodeBlock(schema, decoding.data), decoder);
             return result;
         } else if (decoding.type == PackageTypeEnd) {
             return new Result();
@@ -183,13 +189,13 @@ public class CHExecutor {
     }
 
     public final String query;
-    private ArrowDecoder arrowDecoder;
     private Socket socket;
     private DataOutputStream writer;
     private DataInputStream reader;
     private Schema schema;
     private boolean finished;
 
+    private ArrowDecoder arrowDecoder;
     private static final long PackageTypeEnd = 0;
     private static final long PackageTypeUtf8Error = 1;
     private static final long PackageTypeUtf8Query = 2;

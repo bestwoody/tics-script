@@ -54,16 +54,16 @@ object CHUtil {
     var names = new Array[String](0)
     var types = new Array[String](0)
 
-    var block: VectorSchemaRoot = null
+    var block: CHExecutor.Result = null
 
     while (resp.hasNext) {
       block = resp.next
       if (block != null) {
-        val columns = block.getFieldVectors
+        val columns = block.block.getFieldVectors
         if (columns.size < 2) {
-          // TODO: Exception classify
           block.close
           resp.close
+          // TODO: Exception classify
           throw new Exception("Send desc table to get schema failed")
         }
 
@@ -75,9 +75,11 @@ object CHUtil {
         for (i <- 0 until accTypes.getValueCount) {
             types :+= accTypes.getObject(i).toString
         }
+
+        block.close
       }
-      block.close
     }
+
     resp.close
 
     for (i <- 0 until names.length) {

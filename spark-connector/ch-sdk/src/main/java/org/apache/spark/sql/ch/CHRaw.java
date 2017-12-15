@@ -48,12 +48,12 @@ public class CHRaw {
 
         int index = 0;
         while (executor.hasNext()) {
-            VectorSchemaRoot block = executor.next();
+            CHExecutor.Result block = executor.next();
             if (block == null) {
                 break;
             }
 
-            List<FieldVector> columns = block.getFieldVectors();
+            List<FieldVector> columns = block.block.getFieldVectors();
 
             if (!decode) {
                 int rows = columns.get(0).getAccessor().getValueCount();

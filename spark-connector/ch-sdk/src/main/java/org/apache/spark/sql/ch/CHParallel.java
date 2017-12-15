@@ -60,19 +60,20 @@ public class CHParallel {
         }
     }
 
-    public VectorSchemaRoot next() throws InterruptedException, CHExecutor.CHExecutorException {
+    public CHExecutor.Result next() throws InterruptedException, CHExecutor.CHExecutorException {
         CHExecutor.Result decoded = decodeds.take();
         if (decoded.isEmpty()) {
             synchronized(this) {
                 finished = true;
             }
+            return null;
         } else if (decoded.error != null) {
             synchronized(this) {
                 finished = true;
             }
             throw new CHExecutor.CHExecutorException(decoded.error);
         }
-        return decoded.block;
+        return decoded;
     }
 
     private void startFetch() {

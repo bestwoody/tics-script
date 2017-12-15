@@ -32,14 +32,14 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
 
 
-class CHRows(private val schema: Schema, private val table: String, private val block: VectorSchemaRoot)
+class CHRows(private val schema: Schema, private val table: String, private val block: CHExecutor.Result)
   extends Iterator[Row] {
 
-  val columns = block.getFieldVectors
+  val columns = block.block.getFieldVectors
   val fieldTypes = columns.asScala.map(x => x.getField.getType)
 
   var curr = 0;
-  val rows = block.getRowCount
+  val rows = block.block.getRowCount
 
   override def hasNext: Boolean = {
     curr < rows
@@ -68,7 +68,7 @@ object ArrowConverter {
   val uint16Reverser: Int = 0x10000
   val uint32Reverser: Long = 0x100000000L
 
-  def toRows(schema: Schema, table: String, block: VectorSchemaRoot): Iterator[Row] = new CHRows(schema, table, block)
+  def toRows(schema: Schema, table: String, block: CHExecutor.Result): Iterator[Row] = new CHRows(schema, table, block)
 
   def fromArrow(arrowType: ArrowType, value: Any): Any = {
     arrowType match {
