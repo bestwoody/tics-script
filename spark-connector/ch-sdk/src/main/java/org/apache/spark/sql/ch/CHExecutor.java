@@ -31,6 +31,10 @@ public class CHExecutor {
         public CHExecutorException(String msg) {
             super(msg);
         }
+
+        public CHExecutorException(Exception ex) {
+            super(ex);
+        }
     }
 
     public static class Package {
@@ -48,8 +52,8 @@ public class CHExecutor {
             this.error = null;
             this.block = block;
         }
-        Result(String error) {
-            this.error = error;
+        Result(Exception ex) {
+            this.error = ex;
             this.block = null;
         }
         Result() {
@@ -69,7 +73,7 @@ public class CHExecutor {
             }
         }
 
-        public final String error;
+        public final Exception error;
         public VectorSchemaRoot block;
     }
 
@@ -130,20 +134,20 @@ public class CHExecutor {
         try {
             return decode(decoding);
         } catch (Exception e) {
-            return new Result(e.toString());
+            return new Result(e);
         }
     }
 
     public Result decode(Package decoding) throws IOException {
         if (decoding.type == PackageTypeUtf8Error) {
-            return new Result(new String(decoding.data));
+            return new Result(new IOException(new String(decoding.data)));
         } else if (decoding.type == PackageTypeArrowData) {
             ArrowDecoder arrowDecoder = new ArrowDecoder();
             return new Result(arrowDecoder.decodeBlock(schema, decoding.data));
         } else if (decoding.type == PackageTypeEnd) {
             return new Result();
         } else {
-            return new Result("Unknown package, type: " + decoding.type);
+            return new Result(new IOException("Unknown package, type: " + decoding.type));
         }
     }
 
