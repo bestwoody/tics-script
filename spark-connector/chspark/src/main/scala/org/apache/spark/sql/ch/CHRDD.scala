@@ -43,7 +43,7 @@ class CHRDD(
 
     private def getBlock(): Iterator[Row] = {
       if (resp.hasNext) {
-        val block = resp.next
+        val block: CHExecutor.Result = resp.next
         if (block != null) {
           ArrowConverter.toRows(schema, table.absName, block)
         } else {
