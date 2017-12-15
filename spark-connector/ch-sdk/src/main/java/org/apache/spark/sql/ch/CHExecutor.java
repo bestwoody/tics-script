@@ -114,7 +114,6 @@ public class CHExecutor {
         try {
             return next();
         } catch (Exception e) {
-            // e.printStackTrace();
             finished = true;
             return new Package(PackageTypeUtf8Error, e.toString().getBytes());
         }
@@ -143,7 +142,6 @@ public class CHExecutor {
         try {
             return decode(decoding);
         } catch (Exception e) {
-            // e.printStackTrace();
             return new Result(e);
         }
     }
