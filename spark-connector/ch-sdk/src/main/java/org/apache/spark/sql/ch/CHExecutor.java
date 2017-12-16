@@ -151,8 +151,7 @@ public class CHExecutor {
             return new Result(new IOException(new String(decoding.data)));
         } else if (decoding.type == PackageTypeArrowData) {
             ArrowDecoder decoder = new ArrowDecoder();
-            Result result = new Result(decoder.decodeBlock(schema, decoding.data), decoder);
-            return result;
+            return new Result(decoder.decodeBlock(schema, decoding.data), decoder);
         } else if (decoding.type == PackageTypeEnd) {
             return new Result();
         } else {
