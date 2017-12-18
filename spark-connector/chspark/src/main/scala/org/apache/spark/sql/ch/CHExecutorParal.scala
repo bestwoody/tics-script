@@ -38,63 +38,75 @@ class CHExecutorParal(
     private val executor = new CHExecutor(query, host, port)
 
     // TODO: throws
-    def close(): Unit = executor.close()
+    def close(): Unit = executor.close
 
-    def getSchema(): Schema = executor.getSchema()
+    def getSchema(): Schema = executor.getSchema
 
     def hasNext(): Boolean = {
-        this.synchronized {
-            return !finished;
-        }
+      return !finished;
     }
 
-    // TODO: throws InterruptedException, CHExecutor.CHExecutorException {
+    // TODO: throws InterruptedException, CHExecutor.CHExecutorException
     def next(): CHExecutor.Result = {
-        val decoded: CHExecutor.Result = decodeds.take()
-        if (decoded.isEmpty()) {
-            this.synchronized {
-                finished = true
-            }
+        val decoded: CHExecutor.Result = decodeds.take
+        if (decoded.isEmpty) {
+            finishAll
             null
         } else if (decoded.error != null) {
-            this.synchronized {
-                finished = true
-            }
+            finishAll
             throw new CHExecutor.CHExecutorException(decoded.error)
-            null
         } else {
           decoded
         }
     }
 
-    private def startFetch(): Unit = {
-      val worker = new Thread {
-        override def run {
-            while (executor.hasNext()) {
-              decodings.put(executor.safeNext())
-            }
-        }
-      }
-      worker.start()
+    private def finishAll(): Unit = {
+      finished = true
+      decoders.foreach(_.interrupt)
     }
 
-    private def startDecode(threads: Int) {
-      // TODO: Multi threads
-      // TODO: Reorder blocks maybe faster, in some cases
-      val worker = new Thread {
+    // TODO: May need multi threads fetcher
+    private def startFetch(): Unit = {
+      val fetcher = new Thread {
         override def run {
+          try {
+            while (!finished && executor.hasNext) {
+              decodings.put(executor.safeNext)
+            }
+          } catch {
+            case _: InterruptedException => {}
+            case e: Any => throw e
+          }
+        }
+      }
+      fetcher.start
+    }
+
+    // TODO: Reorder blocks may faster, in some cases
+    private def startDecode(threads: Int): Array[Thread] = {
+      val decoders = new Array[Thread](threads);
+      for (i <- 0 until threads) {
+        decoders(i) = new Thread {
+          override def run {
             var decoding: CHExecutor.Package = null
             var decoded: CHExecutor.Result = null
-            while (decoded == null || !decoded.isLast()) {
-              decoding = decodings.take()
-              decoded = executor.safeDecode(decoding)
-              decodeds.put(decoded)
+            try {
+              while (!finished && (decoded == null || !decoded.isLast)) {
+                decoding = decodings.take
+                decoded = executor.safeDecode(decoding)
+                decodeds.put(decoded)
+              }
+            } catch {
+              case _: InterruptedException => {}
+              case e: Any => throw e
             }
+          }
         }
+        decoders(i).start
       }
-      worker.start()
+      decoders
     }
 
+    val decoders = startDecode(threads)
     startFetch()
-    startDecode(threads)
 }
