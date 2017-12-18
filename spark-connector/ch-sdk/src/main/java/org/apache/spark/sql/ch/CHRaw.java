@@ -34,7 +34,7 @@ public class CHRaw {
                 field.getType().getTypeID() + " nullable:" + field.isNullable());
     }
 
-    private static void dump(CHParallel executor, boolean decode) throws Exception {
+    private static void dump(CHExecutorAsync executor, boolean decode) throws Exception {
         Schema schema = executor.getSchema();
         List<Field> fields = schema.getFields();
         if (decode) {
@@ -47,18 +47,19 @@ public class CHRaw {
         }
 
         int index = 0;
+        long rows = 0;
         while (executor.hasNext()) {
             CHExecutor.Result block = executor.next();
             if (block == null) {
+                System.out.println("[fetched blocks: " + (index + 1) + ", " + rows + " rows]");
                 break;
             }
 
             List<FieldVector> columns = block.block.getFieldVectors();
 
             if (!decode) {
-                int rows = columns.get(0).getAccessor().getValueCount();
-                System.out.println("[fetched block #" + index + ", " + rows + " rows]");
                 index += 1;
+                rows += columns.get(0).getAccessor().getValueCount();
                 block.close();
                 continue;
             }
@@ -98,7 +99,7 @@ public class CHRaw {
     }
 
     private void exec(String query) throws Exception {
-        CHParallel result = new CHParallel(query, host, port, 4);
+        CHExecutorAsync result = new CHExecutorAsync(query, host, port);
         dump(result, decode);
         result.close();
     }

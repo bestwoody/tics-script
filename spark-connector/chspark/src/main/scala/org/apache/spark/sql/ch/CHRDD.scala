@@ -37,15 +37,13 @@ class CHRDD(
 
     val table = tables(split.asInstanceOf[CHPartition].index)
     val sql = CHSql.scan(table.absName, requiredColumns, filterString)
-    val resp = new CHParallel(sql, table.host, table.port, 4)
-
-    val schema: Schema = resp.getSchema
+    val resp = new CHExecutorParal(sql, table.host, table.port, table.absName, 8)
 
     private def getBlock(): Iterator[Row] = {
       if (resp.hasNext) {
-        val block: CHExecutor.Result = resp.next
+        val block = resp.next
         if (block != null) {
-          ArrowConverter.toRows(schema, table.absName, block)
+          block.encoded
         } else {
           null
         }

@@ -4,7 +4,6 @@
 
 ## Current Supported
 * String
-* FixedString(Family)
 * DateTime
 * Date
 * Int8
@@ -24,7 +23,7 @@
 * Double
 * Date
 
-## Type deferrence from CH, Arrow and Spark
+## Type difference from CH, Arrow and Spark
 * All supported
     * String
     * Int8
@@ -66,7 +65,7 @@
 ## From CH types to Spark types, convertion:
 * `CH => Spark`:
     * `String => StringType`
-    * `FixedString => StringType`
+    * `FixedString(n) => StringType`
     * `DateTime => TimestampType`, promoted
     * `Date => TimestampType`, promoted
         * Since we convert both `DateTime` and `Date` to `TimstampType`, this will happend:
