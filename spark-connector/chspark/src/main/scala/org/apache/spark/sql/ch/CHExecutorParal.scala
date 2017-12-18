@@ -62,6 +62,7 @@ class CHExecutorParal(
   // TODO: throws InterruptedException, CHExecutor.CHExecutorException
   def next(): Result = {
       val decoded = decodeds.take
+      // TODO: BUG: The end block may come earlier than normal block
       if (decoded.isEmpty) {
           finishAll
           null
