@@ -15,11 +15,6 @@
 
 package org.apache.spark.sql.ch;
 
-import java.net.Socket;
-
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.lang.InterruptedException;
 
@@ -30,9 +25,8 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
 
-// TODO: Rpc retry
-public class CHParallel {
-    public CHParallel(String query, String host, int port, int threads)
+public class CHExecutorAsync {
+    public CHExecutorAsync(String query, String host, int port)
         throws IOException, CHExecutor.CHExecutorException {
 
         this.executor = new CHExecutor(query, host, port);
@@ -43,7 +37,7 @@ public class CHParallel {
         this.decodings = new LinkedBlockingQueue(32);
 
         startFetch();
-        startDecode(threads);
+        startDecode();
     }
 
     public void close() throws IOException {
@@ -89,9 +83,7 @@ public class CHParallel {
         worker.start();
     }
 
-    private void startDecode(int threads) {
-        // TODO: Multi threads
-        // TODO: Reorder blocks maybe faster, in some cases
+    private void startDecode() {
         Thread worker = new Thread(new Runnable() {
             public void run() {
                 try {

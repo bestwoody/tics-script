@@ -34,7 +34,7 @@ public class CHRaw {
                 field.getType().getTypeID() + " nullable:" + field.isNullable());
     }
 
-    private static void dump(CHParallel executor, boolean decode) throws Exception {
+    private static void dump(CHExecutorAsync executor, boolean decode) throws Exception {
         Schema schema = executor.getSchema();
         List<Field> fields = schema.getFields();
         if (decode) {
@@ -98,7 +98,7 @@ public class CHRaw {
     }
 
     private void exec(String query) throws Exception {
-        CHParallel result = new CHParallel(query, host, port, 4);
+        CHExecutorAsync result = new CHExecutorAsync(query, host, port);
         dump(result, decode);
         result.close();
     }
