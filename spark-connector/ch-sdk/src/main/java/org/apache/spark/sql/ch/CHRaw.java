@@ -47,18 +47,19 @@ public class CHRaw {
         }
 
         int index = 0;
+        long rows = 0;
         while (executor.hasNext()) {
             CHExecutor.Result block = executor.next();
             if (block == null) {
+                System.out.println("[fetched blocks: " + (index + 1) + ", " + rows + " rows]");
                 break;
             }
 
             List<FieldVector> columns = block.block.getFieldVectors();
 
             if (!decode) {
-                int rows = columns.get(0).getAccessor().getValueCount();
-                System.out.println("[fetched block #" + index + ", " + rows + " rows]");
                 index += 1;
+                rows += columns.get(0).getAccessor().getValueCount();
                 block.close();
                 continue;
             }
