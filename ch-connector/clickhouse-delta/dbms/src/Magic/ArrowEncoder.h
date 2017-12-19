@@ -57,6 +57,9 @@ public:
 
     BufferPtr getEncodedSchema()
     {
+        if (!schema)
+            return NULL;
+
         std::shared_ptr<arrow::Buffer> serialized;
         auto pool = arrow::default_memory_pool();
         auto status = arrow::ipc::SerializeSchema(*schema, pool, &serialized);

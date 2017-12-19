@@ -12,23 +12,27 @@ namespace Magic
 class AsyncArrowEncoder : public ArrowEncoder
 {
 public:
-    AsyncArrowEncoder(const std::string & error) : ArrowEncoder(error), encodeds(3) {}
+    AsyncArrowEncoder(const std::string & error) : ArrowEncoder(error), encodeds(32) {}
 
-    AsyncArrowEncoder(const DB::BlockIO & result) : ArrowEncoder(result), encodeds(5)
+    AsyncArrowEncoder(const DB::BlockIO & result) : ArrowEncoder(result), encodeds(32)
     {
         if (hasError())
             return;
 
-        thread = std::thread([&]
+        vector<thread> encoders(4);
+        for (auto it = loaders.begin(); it != loaders.end(); ++it)
         {
-            while (true)
+            *it = thread([&] {
             {
-                auto block = ArrowEncoder::getEncodedBlock();
-                encodeds.push(block);
-                if (!block)
-                    break;
-            }
-        });
+                while (true)
+                {
+                    auto block = ArrowEncoder::getEncodedBlock();
+                    encodeds.push(block);
+                    if (!block)
+                        break;
+                }
+            });
+        }
 
         // TODO: thread.join, when we support cancallation.
     }
@@ -50,7 +54,7 @@ private:
     BufferPtr getEncodedBlock();
 
     ConcurrentBoundedQueue<BufferPtr> encodeds;
-    std::thread thread;
+    std::thread encoders;
 };
 
 }
