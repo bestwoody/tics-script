@@ -14,15 +14,16 @@ class AsyncArrowEncoder : public ArrowEncoder
 public:
     AsyncArrowEncoder(const std::string & error) : ArrowEncoder(error), encodeds(32) {}
 
-    AsyncArrowEncoder(const DB::BlockIO & result) : ArrowEncoder(result), encodeds(32)
+    AsyncArrowEncoder(DB::BlockIO & result) : ArrowEncoder(result), encodeds(32)
     {
         if (hasError())
             return;
 
-        vector<thread> encoders(4);
-        for (auto it = loaders.begin(); it != loaders.end(); ++it)
+        // TODO: concurrent count
+        encoders.resize(1);
+        for (auto it = encoders.begin(); it != encoders.end(); ++it)
         {
-            *it = thread([&] {
+            *it = std::thread([&]
             {
                 while (true)
                 {
@@ -47,14 +48,15 @@ public:
     ~AsyncArrowEncoder()
     {
         // Don't check encodeds.size(), in case query is cancalled.
-        thread.join();
+        for (auto it = encoders.begin(); it != encoders.end(); ++it)
+            it->join();
     }
 
 private:
     BufferPtr getEncodedBlock();
 
     ConcurrentBoundedQueue<BufferPtr> encodeds;
-    std::thread encoders;
+    std::vector<std::thread> encoders;
 };
 
 }

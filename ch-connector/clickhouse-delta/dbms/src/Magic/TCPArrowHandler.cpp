@@ -136,7 +136,8 @@ void TCPArrowHandler::runImpl()
 
 void TCPArrowHandler::processOrdinaryQuery()
 {
-    Magic::AsyncArrowEncoder encoder(state.io);
+    //Magic::AsyncArrowEncoder encoder(state.io);
+    Magic::ArrowEncoder encoder(state.io);
 
     if (encoder.hasError())
         throw Exception(encoder.getErrorString());
@@ -153,7 +154,8 @@ void TCPArrowHandler::processOrdinaryQuery()
 
     while (true)
     {
-        auto block = encoder.getPreparedEncodedBlock();
+        //auto block = encoder.getPreparedEncodedBlock();
+        auto block = encoder.getEncodedBlock();
         if (encoder.hasError())
             throw Exception(encoder.getErrorString());
         if (!block)
