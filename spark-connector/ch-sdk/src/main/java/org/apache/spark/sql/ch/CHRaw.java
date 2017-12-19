@@ -34,7 +34,7 @@ public class CHRaw {
                 field.getType().getTypeID() + " nullable:" + field.isNullable());
     }
 
-    private static void dump(CHExecutorAsync executor, boolean decode) throws Exception {
+    private static void dump(CHExecutor executor, boolean decode) throws Exception {
         Schema schema = executor.getSchema();
         List<Field> fields = schema.getFields();
         if (decode) {
@@ -49,8 +49,8 @@ public class CHRaw {
         int index = 0;
         long rows = 0;
         while (executor.hasNext()) {
-            CHExecutor.Result block = executor.next();
-            if (block == null) {
+            CHExecutor.Result block = executor.decode(executor.safeNext());
+            if (block.isEmpty()) {
                 System.out.println("[fetched blocks: " + (index + 1) + ", " + rows + " rows]");
                 break;
             }
@@ -99,7 +99,7 @@ public class CHRaw {
     }
 
     private void exec(String query) throws Exception {
-        CHExecutorAsync result = new CHExecutorAsync(query, host, port);
+        CHExecutor result = new CHExecutor(query, host, port);
         dump(result, decode);
         result.close();
     }
