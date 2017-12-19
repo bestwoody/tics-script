@@ -48,18 +48,18 @@ object CHUtil {
   def getFields(table: CHTableRef): Array[StructField] = {
     val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
 
-    val resp = new CHExecutorAsync(CHSql.desc(table.absName), table.host, table.port)
+    val resp = new CHExecutorParall(CHSql.desc(table.absName), table.host, table.port, table.absName, 1)
     var fields = new Array[StructField](0)
 
     var names = new Array[String](0)
     var types = new Array[String](0)
 
-    var block: CHExecutor.Result = null
+    var block: resp.Result = null
 
     while (resp.hasNext) {
       block = resp.next
       if (block != null) {
-        val columns = block.block.getFieldVectors
+        val columns = block.decoded.block.getFieldVectors
         if (columns.size < 2) {
           block.close
           resp.close

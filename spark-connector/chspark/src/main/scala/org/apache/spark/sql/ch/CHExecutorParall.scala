@@ -27,14 +27,14 @@ import org.apache.spark.sql.Row
 
 
 // TODO: May need rpc retry.
-class CHExecutorParal(
+class CHExecutorParall(
   val query: String,
   val host: String,
   val port: Int,
   val table: String,
   val threads: Int) {
 
-  class Result(schema: Schema, table: String, decoded: CHExecutor.Result) {
+  class Result(schema: Schema, table: String, val decoded: CHExecutor.Result) {
     val error = decoded.error
     val isEmpty = decoded.isEmpty
 
@@ -42,6 +42,13 @@ class CHExecutorParal(
       null
     } else {
       ArrowConverter.toRows(schema, table, decoded)
+    }
+
+    // TODO: Better way to close it
+    def close(): Unit = if (encoded != null) {
+      encoded.asInstanceOf[CHRows].close
+    } else {
+      decoded.close
     }
   }
 
