@@ -48,7 +48,7 @@ inline void readString(std::string & x, ReadBuffer & istr)
     istr.readStrict(&x[0], size);
 }
 
-// TODO: use big-endian now, may be use little-endian is better
+// TODO: Use big-endian now, may be use little-endian is better
 inline void writeInt64(Int64 x, WriteBuffer & ostr)
 {
     UInt8 byte = 0;
@@ -72,6 +72,14 @@ void TCPArrowHandler::runImpl()
 
     in = std::make_shared<ReadBufferFromPocoSocket>(socket());
     out = std::make_shared<WriteBufferFromPocoSocket>(socket());
+
+    while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(global_settings.poll_interval * 1000000) && !server.isCancelled());
+
+    if (server.isCancelled())
+    {
+        LOG_WARNING(log, "Server have been cancelled.");
+        return;
+    }
 
     if (in->eof())
     {
@@ -98,7 +106,10 @@ void TCPArrowHandler::runImpl()
         try
         {
             query_context = connection_context;
+
+            // Protocol: Receive query string
             recvQuery();
+
             state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
 
             if (state.io.out)
@@ -112,6 +123,8 @@ void TCPArrowHandler::runImpl()
             LOG_ERROR(log, msg);
             state.io.onException();
             failed = true;
+
+            // Protocol: Send error string
             sendError(msg);
         }
 
@@ -126,17 +139,13 @@ void TCPArrowHandler::processOrdinaryQuery()
     Magic::AsyncArrowEncoder encoder(state.io);
 
     if (encoder.hasError())
-    {
-        sendError(encoder.getErrorString());
-        return;
-    }
+        throw Exception(encoder.getErrorString());
 
     auto schema = encoder.getEncodedSchema();
     if (encoder.hasError())
-    {
-        sendError(encoder.getErrorString());
-        return;
-    }
+        throw Exception(encoder.getErrorString());
+
+    // Protocol: Send encoded schema
     writeInt64(::Magic::Protocol::ArrowSchema, *out);
     writeInt64(schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
@@ -146,20 +155,19 @@ void TCPArrowHandler::processOrdinaryQuery()
     {
         auto block = encoder.getPreparedEncodedBlock();
         if (encoder.hasError())
-        {
-            sendError(encoder.getErrorString());
-            return;
-        }
+            throw Exception(encoder.getErrorString());
         if (!block)
             break;
+
+        // Protocol: Send encoded bock
         writeInt64(::Magic::Protocol::ArrowData, *out);
         writeInt64(block->size(), *out);
         out->write((const char*)block->data(), block->size());
         out->next();
     }
 
+    // Protocol: Send ending mark
     writeInt64(::Magic::Protocol::End, *out);
-    // Every package has a size
     writeInt64(0, *out);
     out->next();
 }
