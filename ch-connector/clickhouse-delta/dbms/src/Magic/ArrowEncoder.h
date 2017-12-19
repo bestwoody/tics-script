@@ -14,7 +14,7 @@
 #include "arrow/builder.h"
 #include "arrow/ipc/writer.h"
 
-#include "AsyncBlockIO.h"
+#include "SafeBlockIO.h"
 
 
 namespace Magic
@@ -33,7 +33,7 @@ public:
     {
         try
         {
-            input = std::make_shared<AsyncBlockIO>(input_);
+            input = std::make_shared<SafeBlockIO>(input_);
             auto sample = input->sample();
             std::vector<std::shared_ptr<arrow::Field>> fields;
             for (size_t i = 0; i < sample.columns(); ++i)
@@ -77,10 +77,6 @@ public:
         try
         {
             DB::Block block = input->read();
-
-            // TODO: get batch size, to mark the stream end
-            // if (!block)
-            //     input->blocks() ...
             if (!block)
                 return NULL;
 
@@ -134,6 +130,11 @@ public:
     {
         std::unique_lock<std::mutex> lock{mutex};
         return error;
+    }
+
+    size_t blocks()
+    {
+        return input->blocks();
     }
 
 protected:
@@ -443,7 +444,7 @@ private:
     }
 
 private:
-    std::shared_ptr<AsyncBlockIO> input;
+    std::shared_ptr<SafeBlockIO> input;
     SchemaPtr schema;
 
     mutable std::mutex mutex;

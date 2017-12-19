@@ -1,27 +1,25 @@
 #pragma once
 
 #include <DataStreams/BlockIO.h>
-#include <DataStreams/AsynchronousBlockInputStream.h>
 
 namespace Magic
 {
 
-class AsyncBlockIO
+class SafeBlockIO
 {
 public:
     enum { UnknownSize = size_t(-1) };
 
-    AsyncBlockIO(DB::BlockIO & origin_) : origin(origin_), input(origin.in), closed(false),
-        block_count(0), batch_count(0), interactive_delay_ms(300)
+    SafeBlockIO(DB::BlockIO & input_) : input(input_), closed(false), block_count(0), batch_count(0)
     {
         std::lock_guard<std::mutex> lock(mutex);
-        input.readPrefix();
+        input.in->readPrefix();
     }
 
     DB::Block sample()
     {
         std::lock_guard<std::mutex> lock(mutex);
-        return origin.in_sample;
+        return input.in_sample;
     }
 
     void read(std::vector<DB::Block> & dest, bool & closed, size_t batch_size = 4)
@@ -34,16 +32,7 @@ public:
 
         while (dest.size() != batch_size)
         {
-            DB::Block block;
-            while (true)
-            {
-                if (input.poll(interactive_delay_ms))
-                {
-                    block = input.read();
-                    break;
-                }
-            }
-
+            DB::Block block = input.in->read();
             if (!block)
             {
                 closed = true;
@@ -68,15 +57,7 @@ public:
         DB::Block block;
         if (closed)
             return block;
-
-        while (true)
-        {
-            if (input.poll(interactive_delay_ms))
-            {
-                block = input.read();
-                break;
-            }
-        }
+        block = input.in->read();
 
         if (!block)
         {
@@ -120,19 +101,17 @@ private:
     {
         if (closed)
             return;
-        input.cancel();
-        input.readSuffix();
+        input.in->readSuffix();
         if (exception)
-            origin.onException();
-        origin.onFinish();
+            input.onException();
+        input.onFinish();
         closed = true;
     }
 
 private:
     std::mutex mutex;
 
-    DB::BlockIO & origin;
-    DB::AsynchronousBlockInputStream input;
+    DB::BlockIO & input;
     bool closed;
     size_t block_count;
     size_t batch_count;
