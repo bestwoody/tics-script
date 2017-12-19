@@ -11,12 +11,11 @@
 #include <IO/WriteBufferFromPocoSocket.h>
 #include <IO/copyData.h>
 
-#include <DataStreams/AsynchronousBlockInputStream.h>
 #include <DataStreams/NativeBlockOutputStream.h>
 #include <Interpreters/executeQuery.h>
 
 #include "TCPArrowHandler.h"
-#include "AsyncArrowEncoder.h"
+#include "ArrowEncoderParall.h"
 
 namespace DB
 {
@@ -136,8 +135,7 @@ void TCPArrowHandler::runImpl()
 
 void TCPArrowHandler::processOrdinaryQuery()
 {
-    //Magic::AsyncArrowEncoder encoder(state.io);
-    Magic::ArrowEncoder encoder(state.io);
+    Magic::ArrowEncoderParall encoder(state.io);
 
     if (encoder.hasError())
         throw Exception(encoder.getErrorString());
@@ -154,14 +152,14 @@ void TCPArrowHandler::processOrdinaryQuery()
 
     while (true)
     {
-        //auto block = encoder.getPreparedEncodedBlock();
-        auto block = encoder.getEncodedBlock();
+        auto block = encoder.getPreparedEncodedBlock();
         if (encoder.hasError())
             throw Exception(encoder.getErrorString());
         if (!block)
             break;
 
         // Protocol: Send encoded bock
+        // TODO: May block forever, if client dead
         writeInt64(::Magic::Protocol::ArrowData, *out);
         writeInt64(block->size(), *out);
         out->write((const char*)block->data(), block->size());

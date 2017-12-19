@@ -35,15 +35,12 @@ int queryDump(const char * config, char * query)
 
 }
 
-
+// TODO: handle args manually, not by BaseDaemon
 int main(int argc, char ** argv)
 {
-    // TODO: handle args manually, not by BaseDaemon
-
     if (argc != 3) {
         std::cerr << "usage: <bin> config-file query-string" << std::endl;
         return -1;
     }
-
     return Magic::queryDump(argv[1], argv[2]);
 }
