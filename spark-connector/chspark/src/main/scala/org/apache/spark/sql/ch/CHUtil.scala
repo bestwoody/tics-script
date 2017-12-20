@@ -67,11 +67,11 @@ object CHUtil {
           throw new Exception("Send desc table to get schema failed")
         }
 
-        val accNames = columns.get(0).getAccessor();
+        val accNames = columns.get(0).getAccessor()
         for (i <- 0 until accNames.getValueCount) {
             names :+= accNames.getObject(i).toString
         }
-        val accTypes = columns.get(1).getAccessor;
+        val accTypes = columns.get(1).getAccessor
         for (i <- 0 until accTypes.getValueCount) {
             types :+= accTypes.getObject(i).toString
         }

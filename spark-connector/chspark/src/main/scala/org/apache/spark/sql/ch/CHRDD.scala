@@ -37,16 +37,11 @@ class CHRDD(
 
     val table = tables(split.asInstanceOf[CHPartition].index)
     val sql = CHSql.scan(table.absName, requiredColumns, filterString)
-    val resp = new CHExecutorParall(sql, table.host, table.port, table.absName, 8)
+    val resp = new CHExecutorParall(sql, table.host, table.port, table.absName, 4)
 
     private def getBlock(): Iterator[Row] = {
       if (resp.hasNext) {
-        val block = resp.next
-        if (block != null) {
-          block.encoded
-        } else {
-          null
-        }
+        resp.next.encoded
       } else {
         null
       }
@@ -55,7 +50,7 @@ class CHRDD(
     var blockIter: Iterator[Row] = getBlock
 
     override def hasNext: Boolean = {
-      blockIter != null && resp.hasNext
+      (blockIter != null && blockIter.hasNext) || resp.hasNext
     }
 
     // TODO: Async convert
