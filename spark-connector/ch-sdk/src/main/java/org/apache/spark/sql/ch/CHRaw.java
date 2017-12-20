@@ -59,7 +59,9 @@ public class CHRaw {
 
             if (!decode) {
                 index += 1;
-                rows += columns.get(0).getAccessor().getValueCount();
+                if (!columns.isEmpty()) {
+                    rows += columns.get(0).getAccessor().getValueCount();
+                }
                 block.close();
                 continue;
             }
