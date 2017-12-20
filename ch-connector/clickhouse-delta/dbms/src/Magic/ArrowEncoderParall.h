@@ -11,10 +11,10 @@ namespace Magic
 class ArrowEncoderParall : public ArrowEncoder
 {
 public:
-    ArrowEncoderParall(const std::string & error) : ArrowEncoder(error), encodeds(64, 32) {}
+    ArrowEncoderParall(const std::string & error) : ArrowEncoder(error) {}
 
     // TODO: Detect concurrent count
-    ArrowEncoderParall(DB::BlockIO & result, size_t conc = 8) : ArrowEncoder(result), encodeds(99999, 32)
+    ArrowEncoderParall(DB::BlockIO & result, size_t conc = 8) : ArrowEncoder(result), encodeds(0, conc * 4)
     {
         if (hasError())
             return;
