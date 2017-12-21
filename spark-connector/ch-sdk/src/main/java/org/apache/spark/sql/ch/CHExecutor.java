@@ -38,30 +38,38 @@ public class CHExecutor {
     }
 
     public static class Package {
-        Package(long type, byte[] data) {
+        Package(long type, byte[] data, int id) {
             this.type = type;
             this.data = data;
+            this.id = id;
+        }
+        boolean isLast() {
+            return type == PackageTypeEnd || type == PackageTypeUtf8Error;
         }
 
         private long type;
         private byte[] data;
+        public int id;
     }
 
     public static class Result {
-        Result(VectorSchemaRoot block, ArrowDecoder buffer) {
+        Result(VectorSchemaRoot block, ArrowDecoder buffer, int id) {
             this.error = null;
             this.block = block;
             this.buffer = buffer;
+            this.id = id;
         }
         Result(Exception ex) {
             this.error = ex;
             this.block = null;
             this.buffer = null;
+            this.id = -1;
         }
         Result() {
             this.error = null;
             this.block = null;
             this.buffer = null;
+            this.id = -1;
         }
         boolean isEmpty() {
             return error == null && block == null;
@@ -83,6 +91,7 @@ public class CHExecutor {
         public final Exception error;
         public VectorSchemaRoot block;
         private ArrowDecoder buffer;
+        public int id;
     }
 
     public CHExecutor(String query, String host, int port) throws IOException, CHExecutorException {
@@ -92,6 +101,7 @@ public class CHExecutor {
         this.writer = new DataOutputStream(socket.getOutputStream());
         this.reader = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
         this.finished = false;
+        this.idgen = 0;
 
         sendQuery(query);
         fetchSchema();
@@ -115,7 +125,7 @@ public class CHExecutor {
             return next();
         } catch (Exception e) {
             finished = true;
-            return new Package(PackageTypeUtf8Error, e.toString().getBytes());
+            return new Package(PackageTypeUtf8Error, e.toString().getBytes(), -1);
         }
     }
 
@@ -123,8 +133,9 @@ public class CHExecutor {
         long type = reader.readLong();
         if (type == PackageTypeEnd) {
             finished = true;
-            return new Package(type, null);
+            return new Package(type, null, -1);
         }
+
         byte[] data = null;
         long size = reader.readLong();
         if (size >= Integer.MAX_VALUE) {
@@ -134,8 +145,15 @@ public class CHExecutor {
             data = new byte[(int)size];
             reader.readFully(data);
         }
+
         finished = (type == PackageTypeUtf8Error);
-        return new Package(type, data);
+
+        int id = -1;
+        if (!finished) {
+            id = idgen;
+            idgen += 1;
+        }
+        return new Package(type, data, id);
     }
 
     public Result safeDecode(Package decoding) {
@@ -151,7 +169,7 @@ public class CHExecutor {
             return new Result(new IOException(new String(decoding.data)));
         } else if (decoding.type == PackageTypeArrowData) {
             ArrowDecoder decoder = new ArrowDecoder();
-            return new Result(decoder.decodeBlock(schema, decoding.data), decoder);
+            return new Result(decoder.decodeBlock(schema, decoding.data), decoder, decoding.id);
         } else if (decoding.type == PackageTypeEnd) {
             return new Result();
         } else {
@@ -193,6 +211,7 @@ public class CHExecutor {
     private DataInputStream reader;
     private Schema schema;
     private boolean finished;
+    private int idgen;
 
     private ArrowDecoder arrowDecoder;
     private static final long PackageTypeEnd = 0;

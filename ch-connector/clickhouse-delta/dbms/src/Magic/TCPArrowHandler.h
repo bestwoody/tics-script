@@ -23,12 +23,15 @@ namespace Magic
     }
 }
 
+
 namespace CurrentMetrics
 {
     extern const Metric TCPConnection;
 }
 
+
 namespace Poco { class Logger; }
+
 
 namespace DB
 {
@@ -36,9 +39,6 @@ namespace DB
 
 struct ArrowQueryState
 {
-    // TODO: use Arrow
-    BlockOutputStreamPtr block_out;
-
     String query;
     BlockIO io;
 

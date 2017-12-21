@@ -27,14 +27,14 @@ import org.apache.spark.sql.Row
 
 
 // TODO: May need rpc retry.
-class CHExecutorParal(
+class CHExecutorParall(
   val query: String,
   val host: String,
   val port: Int,
   val table: String,
   val threads: Int) {
 
-  class Result(schema: Schema, table: String, decoded: CHExecutor.Result) {
+  class Result(schema: Schema, table: String, val decoded: CHExecutor.Result) {
     val error = decoded.error
     val isEmpty = decoded.isEmpty
 
@@ -43,12 +43,25 @@ class CHExecutorParal(
     } else {
       ArrowConverter.toRows(schema, table, decoded)
     }
+
+    // TODO: Better way to close it
+    def close(): Unit = if (encoded != null) {
+      encoded.asInstanceOf[CHRows].close
+    } else {
+      decoded.close
+    }
   }
 
-  private var finished: Boolean = false
+  private var inputBlocks: Long = 0
+  private var outputBlocks: Long = 0
+  private var totalBlocks: Long = -1
+
   private val decodings: BlockingQueue[CHExecutor.Package] = new LinkedBlockingQueue[CHExecutor.Package](32)
   private val decodeds: BlockingQueue[Result] = new LinkedBlockingQueue[Result](32)
   private val executor = new CHExecutor(query, host, port)
+
+  startDecode()
+  startFetch()
 
   // TODO: throws
   def close(): Unit = executor.close
@@ -56,27 +69,20 @@ class CHExecutorParal(
   def getSchema(): Schema = executor.getSchema
 
   def hasNext(): Boolean = {
-    return !finished;
+    this.synchronized {
+      return totalBlocks < 0 || outputBlocks < totalBlocks
+    }
   }
 
   // TODO: throws InterruptedException, CHExecutor.CHExecutorException
   def next(): Result = {
       val decoded = decodeds.take
-      // TODO: BUG: The end block may come earlier than normal block
-      if (decoded.isEmpty) {
-          finishAll
-          null
-      } else if (decoded.error != null) {
-          finishAll
+      if (decoded.error != null) {
           throw new CHExecutor.CHExecutorException(decoded.error)
       } else {
+        outputBlocks += 1
         decoded
       }
-  }
-
-  private def finishAll(): Unit = {
-    finished = true
-    decoders.foreach(_.interrupt)
   }
 
   // TODO: May need multi threads fetcher
@@ -84,8 +90,19 @@ class CHExecutorParal(
     val fetcher = new Thread {
       override def run {
         try {
-          while (!finished && executor.hasNext) {
-            decodings.put(executor.safeNext)
+          while (executor.hasNext) {
+            val block = executor.safeNext
+            if (!block.isLast) {
+              decodings.put(block)
+              inputBlocks += 1
+            } else {
+              for (i <- 0 until threads) {
+                decodings.put(block)
+              }
+              this.synchronized {
+                totalBlocks = inputBlocks
+              }
+            }
           }
         } catch {
           case _: InterruptedException => {}
@@ -97,18 +114,18 @@ class CHExecutorParal(
   }
 
   // TODO: Reorder blocks may faster, in some cases
-  private def startDecode(threads: Int): Array[Thread] = {
+  private def startDecode(): Array[Thread] = {
     val decoders = new Array[Thread](threads);
     for (i <- 0 until threads) {
       decoders(i) = new Thread {
         override def run {
-          var decoding: CHExecutor.Package = null
           var decoded: CHExecutor.Result = null
           try {
-            while (!finished && (decoded == null || !decoded.isLast)) {
-              decoding = decodings.take
-              decoded = executor.safeDecode(decoding)
-              decodeds.put(new Result(executor.getSchema, table, decoded))
+            while (decoded == null || !decoded.isLast) {
+              decoded = executor.safeDecode(decodings.take)
+              if (!decoded.isEmpty) {
+                decodeds.put(new Result(executor.getSchema, table, decoded))
+              }
             }
           } catch {
             case _: InterruptedException => {}
@@ -120,7 +137,4 @@ class CHExecutorParal(
     }
     decoders
   }
-
-  val decoders = startDecode(threads)
-  startFetch()
 }

@@ -9,16 +9,17 @@
 #include <Columns/ColumnsNumber.h>
 #include <Columns/ColumnString.h>
 #include <Columns/ColumnFixedString.h>
-#include <DataStreams/IBlockOutputStream.h>
 
 #include "arrow/array.h"
 #include "arrow/builder.h"
 #include "arrow/ipc/writer.h"
 
+#include "SafeBlockIO.h"
+
+
 namespace Magic
 {
 
-// TODO: handle cancallation
 class ArrowEncoder
 {
 public:
@@ -28,16 +29,16 @@ public:
 
     ArrowEncoder(const std::string & error_) : error(error_) {}
 
-    ArrowEncoder(const DB::BlockIO & result_) : result(result_)
+    ArrowEncoder(DB::BlockIO & input_)
     {
         try
         {
-            result.in->readPrefix();
-
+            input = std::make_shared<SafeBlockIO>(input_);
+            auto sample = input->sample();
             std::vector<std::shared_ptr<arrow::Field>> fields;
-            for (size_t i = 0; i < result.in_sample.columns(); ++i)
+            for (size_t i = 0; i < sample.columns(); ++i)
             {
-                auto & column = result.in_sample.getByPosition(i);
+                auto & column = sample.getByPosition(i);
                 auto type = dataTypeToArrowType(column.type);
                 auto field = arrow::field(column.name, type, column.type->isNullable());
                 fields.push_back(field);
@@ -46,7 +47,7 @@ public:
         }
         catch (const DB::Exception & e)
         {
-            setError(e.displayText());
+            onError(e.displayText());
         }
     }
 
@@ -57,12 +58,15 @@ public:
 
     BufferPtr getEncodedSchema()
     {
+        if (!schema)
+            return NULL;
+
         std::shared_ptr<arrow::Buffer> serialized;
         auto pool = arrow::default_memory_pool();
         auto status = arrow::ipc::SerializeSchema(*schema, pool, &serialized);
         if (!status.ok())
         {
-            setError("arrow::ipc::SerializeSchema " + status.ToString());
+            onError("arrow::ipc::SerializeSchema " + status.ToString());
             return NULL;
         }
         return serialized;
@@ -72,29 +76,29 @@ public:
     {
         try
         {
-            DB::Block block = result.in->read();
-            if (!block) {
-                result.in->readSuffix();
-                result.onFinish();
+            DB::Block block = input->read();
+            if (!block)
                 return NULL;
-            }
+
             std::vector<std::shared_ptr<arrow::Array>> arrays;
             arrow::Status status;
 
+            size_t rows = 0;
             for (size_t i = 0; i < block.columns(); ++i)
             {
                 auto & column = block.getByPosition(i);
-                auto array = columnToArrowArray(column.type, column.column, block.rows());
+                rows += column.column->size();
+                auto array = columnToArrowArray(column.type, column.column);
                 if (!array)
                     return NULL;
                 arrays.push_back(array);
             }
 
-            return std::make_shared<arrow::RecordBatch>(schema, block.rows(), arrays);
+            return std::make_shared<arrow::RecordBatch>(schema, rows, arrays);
         }
         catch (const DB::Exception & e)
         {
-            setError(e.displayText());
+            onError(e.displayText());
         }
 
         return NULL;
@@ -110,7 +114,7 @@ public:
         auto status = arrow::ipc::SerializeRecordBatch(*block, pool, &serialized);
         if (!status.ok())
         {
-            setError("arrow::ipc::SerializeRecordBatch " + status.ToString());
+            onError("arrow::ipc::SerializeRecordBatch " + status.ToString());
             return NULL;
         }
         return serialized;
@@ -128,11 +132,17 @@ public:
         return error;
     }
 
+    size_t blocks()
+    {
+        return input->blocks();
+    }
+
 protected:
-    void setError(const std::string msg)
+    void onError(const std::string msg)
     {
         std::unique_lock<std::mutex> lock{mutex};
         error = msg;
+        input->cancal(true);
     }
 
 
@@ -141,7 +151,8 @@ private:
     // TODO: handle all types
     // TODO: use template + trait for faster and cleaner code
     // TODO: check by id, not by name
-    std::shared_ptr<arrow::Array> columnToArrowArray(DB::DataTypePtr & type, DB::ColumnPtr & column, size_t rows)
+    // TODO: only fetch types once
+    std::shared_ptr<arrow::Array> columnToArrowArray(DB::DataTypePtr & type, DB::ColumnPtr & column)
     {
         auto pool = arrow::default_memory_pool();
         auto name = type->getName();
@@ -150,8 +161,9 @@ private:
 
         if (name == "String")
         {
-            const auto & data = typeid_cast<DB::ColumnString &>(*column);
             arrow::StringBuilder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnString &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 auto ref = data.getDataAt(i);
@@ -159,7 +171,7 @@ private:
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::StringBuilder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::StringBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -167,8 +179,9 @@ private:
         }
         else if (std::string(type->getFamilyName()) == "FixedString")
         {
-            const auto & data = typeid_cast<DB::ColumnFixedString &>(*column);
             arrow::StringBuilder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnFixedString &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 auto ref = data.getDataAt(i);
@@ -176,7 +189,7 @@ private:
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::StringBuilder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::StringBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -185,15 +198,16 @@ private:
 
         else if (name == "DateTime")
         {
-            const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
             arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), pool);
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 uint32_t val = data.getElement(i);
                 status = builder.Append(val);
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::Time64Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::Time64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -201,16 +215,17 @@ private:
         }
         else if (name == "Date")
         {
-            static uint32_t date_to_sec = 24 * 60 * 60;
-            const auto & data = typeid_cast<DB::ColumnUInt16 &>(*column);
             arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), pool);
+            static uint32_t date_to_sec = 24 * 60 * 60;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnUInt16 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 uint16_t val = data.getElement(i);
                 status = builder.Append(date_to_sec * val);
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::Time64Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::Time64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -218,14 +233,15 @@ private:
         }
         else if (name == "Int8")
         {
-            const auto & data = typeid_cast<DB::ColumnInt8 &>(*column);
             arrow::Int8Builder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnInt8 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::Int8Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::Int8Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -233,14 +249,15 @@ private:
         }
         else if (name == "Int16")
         {
-            const auto & data = typeid_cast<DB::ColumnInt16 &>(*column);
             arrow::Int16Builder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnInt16 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::Int16Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::Int16Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -248,14 +265,15 @@ private:
         }
         else if (name == "Int32")
         {
-            const auto & data = typeid_cast<DB::ColumnInt32 &>(*column);
             arrow::Int32Builder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnInt32 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::Int32Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::Int32Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -263,14 +281,15 @@ private:
         }
         else if (name == "Int64")
         {
-            const auto & data = typeid_cast<DB::ColumnInt64 &>(*column);
             arrow::Int64Builder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnInt64 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::Int64Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::Int64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -278,14 +297,15 @@ private:
         }
         else if (name == "UInt8")
         {
-            const auto & data = typeid_cast<DB::ColumnUInt8 &>(*column);
             arrow::UInt8Builder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnUInt8 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::UInt8Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::UInt8Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -293,14 +313,15 @@ private:
         }
         else if (name == "UInt16")
         {
-            const auto & data = typeid_cast<DB::ColumnUInt16 &>(*column);
             arrow::UInt16Builder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnUInt16 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::UInt16Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::UInt16Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -308,14 +329,15 @@ private:
         }
         else if (name == "UInt32")
         {
-            const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
             arrow::UInt32Builder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::UInt32Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::UInt32Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -323,14 +345,15 @@ private:
         }
         else if (name == "UInt64")
         {
-            const auto & data = typeid_cast<DB::ColumnUInt64 &>(*column);
             arrow::UInt64Builder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnUInt64 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::UInt64Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::UInt64Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -338,14 +361,15 @@ private:
         }
         else if (name == "Float32")
         {
-            const auto & data = typeid_cast<DB::ColumnFloat32 &>(*column);
             arrow::FloatBuilder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnFloat32 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::FloatBuilder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::FloatBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -353,14 +377,15 @@ private:
         }
         else if (name == "Float64")
         {
-            const auto & data = typeid_cast<DB::ColumnFloat64 &>(*column);
             arrow::DoubleBuilder builder;
+            auto rows = column->size();
+            const auto & data = typeid_cast<DB::ColumnFloat64 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
                 status = builder.Append(data.getElement(i));
                 if (!status.ok())
                 {
-                    setError("columnToArrowArray, arrow::DoubleBuilder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::DoubleBuilder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -368,13 +393,13 @@ private:
         }
         else
         {
-            setError(std::string("columnToArrowArray failed, unhandled type name: ") + name);
+            onError(std::string("columnToArrowArray failed, unhandled type name: ") + name);
             return NULL;
         }
 
         if (!status.ok() || array == NULL)
         {
-            setError("columnToArrowArray unhandled error, status: " + status.ToString());
+            onError("columnToArrowArray unhandled error, status: " + status.ToString());
             return NULL;
         }
         return array;
@@ -419,7 +444,7 @@ private:
     }
 
 private:
-    DB::BlockIO result;
+    std::shared_ptr<SafeBlockIO> input;
     SchemaPtr schema;
 
     mutable std::mutex mutex;
