@@ -1,6 +1,4 @@
 source ./conf/dirconf
-source _env.sh
-
 n=$1
 
 if [ -z "$n" ]; then
@@ -8,15 +6,15 @@ if [ -z "$n" ]; then
         exit 1
 fi
 
-cat $envDir > $runingDir
+cat $headerDir > $runingDir$n
 ./ch-client.sh "show tables" | while read tableName;
 do
-	echo "ch.mapCHClusterTable(table=\"$tableName\")" >> $runingDir
+	echo "ch.mapCHClusterTable(table=\"$tableName\")" >> $runingDir$n
 done
-echo "val startTime = new Date()">> $runingDir
+echo "val startTime = new Date()">> $runingDir$n
 
 sql=`cat sql-spark/q"$n".sql | tr '\n' ' '`
-echo "ch.sql(\"$sql\").show" >> $runingDir
-cat $endDir >> $runingDir
-./spark-shell.sh < $runingDir
-rm -rf $runingDir
+echo "ch.sql(\"$sql\").show" >> $runingDir$n
+cat $footerDir >> $runingDir$n
+./spark-shell.sh < $runingDir$n
+rm -rf $runingDir$n
