@@ -16,6 +16,6 @@ echo "val startTime = new Date()">> $runingDir
 
 sql=`cat sql-spark/q"$n".sql | tr '\n' ' '`
 echo "ch.sql(\"$sql\").show" >> $runingDir
-cat $envDir >> $runingDir
+cat $endDir >> $runingDir
 ./spark-shell.sh < $runingDir
 rm -rf $runingDir
