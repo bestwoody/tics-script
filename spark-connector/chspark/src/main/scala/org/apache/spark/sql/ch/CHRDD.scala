@@ -15,6 +15,7 @@
 
 package org.apache.spark.sql.ch
 
+import scala.util.Random
 import scala.collection.mutable.ListBuffer
 
 import org.apache.spark.{Partition, TaskContext}
@@ -36,8 +37,9 @@ class CHRDD(
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
 
     val table = split.asInstanceOf[CHPartition].table
+    val qid = split.asInstanceOf[CHPartition].qid
     val sql = CHSql.scan(table.absName, requiredColumns, filterString)
-    val resp = CHExecutorPool.get(sql, table.host, table.port, table.absName, 4)
+    val resp = CHExecutorPool.get(qid, sql, table.host, table.port, table.absName, 4)
 
     private def getBlock(): Iterator[Row] = {
       val block = resp.executor.next
@@ -79,11 +81,12 @@ class CHRDD(
 
   override protected def getPartitions: Array[Partition] = {
     // TODO: Read cluster info from CH masterH
+    val qid = Random.nextInt.toString
     val result = new ListBuffer[CHPartition]
     var index = 0
     tables.foreach(table => {
       for (i <- 0 until partitionCount) {
-        result.append(new CHPartition(index, table))
+        result.append(new CHPartition(index, table, qid))
         index += 1
       }
     })

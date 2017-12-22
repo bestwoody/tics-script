@@ -39,13 +39,13 @@ object CHExecutorPool {
 
   val instances: Map[String, Executor] = Map()
 
-  private def getKey(query: String, host: String, port: Int, table: String, threads: Int): String = {
-    query + host + port + table
+  private def getKey(qid: String, query: String, host: String, port: Int, table: String, threads: Int): String = {
+    qid + query + host + port + table
   }
 
-  def get(query: String, host: String, port: Int, table: String, threads: Int, encode: Boolean = true): Executor = {
+  def get(qid: String, query: String, host: String, port: Int, table: String, threads: Int, encode: Boolean = true): Executor = {
     this.synchronized {
-      val key = getKey(query, host, port, table, threads)
+      val key = getKey(qid, query, host, port, table, threads)
       if (instances.contains(key)) {
         instances(key).ref
       } else {
@@ -64,7 +64,7 @@ object CHExecutorPool {
       }
       handle.deref
       if (handle.count == 0) {
-        instances -= handle.key
+        // TODO: Schedule instance clear, but not now, should wait until all RDD's are done
       }
     }
   }

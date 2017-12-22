@@ -15,6 +15,8 @@
 
 package org.apache.spark.sql.ch
 
+import scala.util.Random
+
 
 object CHRaw {
   def main(args: Array[String]) {
@@ -39,6 +41,8 @@ object CHRaw {
       9006
     }
 
+    val qid = Random.nextInt.toString
+
     val workers = new Array[Thread](partitions);
 
     var totalRows: Long = 0
@@ -51,8 +55,8 @@ object CHRaw {
 
     for (i <- 0 until partitions) {
       workers(i) = new Thread {
+        val resp = CHExecutorPool.get(qid, query, host, port, "", conc, false)
         println("#" + i + " start")
-        val resp = CHExecutorPool.get(query, host, port, "", conc, false)
         var block = resp.executor.next
         while (block != null) {
           val columns = block.decoded.block.getFieldVectors
