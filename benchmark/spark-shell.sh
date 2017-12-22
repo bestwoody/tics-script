@@ -6,4 +6,4 @@ if [ "$?" != "0" ]; then
 	exit 1
 fi
 
-$repo_dir/spark-connector/spark/bin/spark-shell $@
+$repo_dir/spark-connector/spark/bin/spark-shell --master spark://127.0.0.1:7077 --executor-memory 12G  $@
