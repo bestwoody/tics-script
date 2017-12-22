@@ -29,19 +29,20 @@ class CHRDD(
   @transient private val sparkSession: SparkSession,
   val tables: Seq[CHTableRef],
   private val requiredColumns: Seq[String],
-  private val filterString: String) extends RDD[Row](sparkSession.sparkContext, Nil) {
+  private val filterString: String,
+  private val partitionCount: Int) extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   @throws[Exception]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
-    // TODO: Error handling (Exception)
 
-    val table = tables(split.asInstanceOf[CHPartition].index)
+    val table = split.asInstanceOf[CHPartition].table
     val sql = CHSql.scan(table.absName, requiredColumns, filterString)
-    val resp = new CHExecutorParall(sql, table.host, table.port, table.absName, 4)
+    val resp = CHExecutorPool.get(sql, table.host, table.port, table.absName, 4)
 
     private def getBlock(): Iterator[Row] = {
-      if (resp.hasNext) {
-        resp.next.encoded
+      val block = resp.executor.next
+      if (block != null) {
+        block.encoded
       } else {
         null
       }
@@ -50,35 +51,41 @@ class CHRDD(
     var blockIter: Iterator[Row] = getBlock
 
     override def hasNext: Boolean = {
-      (blockIter != null && blockIter.hasNext) || resp.hasNext
-    }
-
-    // TODO: Async convert
-    // TODO: Parallel convert
-    // TODO: This iterating is shit, fix it
-    override def next(): Row = {
-      val result = blockIter.next
-      if (!blockIter.hasNext) {
-        blockIter.asInstanceOf[CHRows].close
-        blockIter = getBlock
-        if (blockIter == null) {
-          resp.close
+      if (blockIter == null) {
+        false
+      } else {
+        if (!blockIter.hasNext) {
+          blockIter.asInstanceOf[CHRows].close
+          blockIter = getBlock
+          if (blockIter == null) {
+            CHExecutorPool.close(resp)
+            false
+          } else {
+            blockIter.hasNext
+          }
+        } else {
+          true
         }
       }
-      result
     }
+
+    override def next(): Row = blockIter.next
   }
 
+  // TODO: All paritions may not assign to a same Spark node, so we need a better session module, like:
+  // <Spark nodes>-<share handle of a query> --- <CH sessions, each session respond to a handle>
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    tables(split.asInstanceOf[CHPartition].index).host :: Nil
+    split.asInstanceOf[CHPartition].table.host :: Nil
 
   override protected def getPartitions: Array[Partition] = {
     // TODO: Read cluster info from CH masterH
     val result = new ListBuffer[CHPartition]
     var index = 0
     tables.foreach(table => {
-      result.append(new CHPartition(index))
-      index += 1
+      for (i <- 0 until partitionCount) {
+        result.append(new CHPartition(index, table))
+        index += 1
+      }
     })
     result.toArray
   }

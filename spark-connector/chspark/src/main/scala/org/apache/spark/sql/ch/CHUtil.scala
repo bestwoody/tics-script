@@ -54,30 +54,27 @@ object CHUtil {
     var names = new Array[String](0)
     var types = new Array[String](0)
 
-    var block: resp.Result = null
+    var block: resp.Result = resp.next
 
-    while (resp.hasNext) {
-      block = resp.next
-      if (block != null) {
-        val columns = block.decoded.block.getFieldVectors
-        if (columns.size < 2) {
-          block.close
-          resp.close
-          // TODO: Exception classify
-          throw new Exception("Send desc table to get schema failed")
-        }
-
-        val accNames = columns.get(0).getAccessor()
-        for (i <- 0 until accNames.getValueCount) {
-            names :+= accNames.getObject(i).toString
-        }
-        val accTypes = columns.get(1).getAccessor
-        for (i <- 0 until accTypes.getValueCount) {
-            types :+= accTypes.getObject(i).toString
-        }
-
+    while (block != null) {
+      val columns = block.decoded.block.getFieldVectors
+      if (columns.size < 2) {
         block.close
+        resp.close
+        throw new Exception("Send desc table to get schema failed")
       }
+
+      val accNames = columns.get(0).getAccessor()
+      for (i <- 0 until accNames.getValueCount) {
+          names :+= accNames.getObject(i).toString
+      }
+      val accTypes = columns.get(1).getAccessor
+      for (i <- 0 until accTypes.getValueCount) {
+          types :+= accTypes.getObject(i).toString
+      }
+
+      block.close
+      block = resp.next
     }
 
     resp.close
