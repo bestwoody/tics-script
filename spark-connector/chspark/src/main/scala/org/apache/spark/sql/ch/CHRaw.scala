@@ -55,19 +55,22 @@ object CHRaw {
 
     for (i <- 0 until partitions) {
       workers(i) = new Thread {
-        val resp = CHExecutorPool.get(qid, query, host, port, "", conc, false)
-        println("#" + i + " start")
-        var block = resp.executor.next
-        while (block != null) {
-          val columns = block.decoded.block.getFieldVectors
-          val rows: Long = if (columns.isEmpty) { 0 } else { columns.get(0).getAccessor().getValueCount }
-          addRows(rows)
-          block.close
-          block = resp.executor.next
+        override def run {
+          val resp = CHExecutorPool.get(qid, query, host, port, "", conc, false)
+          println("#" + i + " start")
+          var block = resp.executor.next
+          while (block != null) {
+            val columns = block.decoded.block.getFieldVectors
+            val rows: Long = if (columns.isEmpty) { 0 } else { columns.get(0).getAccessor().getValueCount }
+            addRows(rows)
+            block.close
+            block = resp.executor.next
+          }
+          CHExecutorPool.close(resp)
+          println("#" + i + " finish")
         }
-        CHExecutorPool.close(resp)
-        println("#" + i + " finish")
       }
+      workers(i).start
     }
 
     workers.foreach(_.join)
