@@ -15,8 +15,6 @@
 
 package org.apache.spark.sql.ch;
 
-import java.io.IOException;
-
 import scala.actors.threadpool.BlockingQueue
 import scala.actors.threadpool.LinkedBlockingQueue
 
@@ -68,21 +66,21 @@ class CHExecutorParall(
 
   def getSchema(): Schema = executor.getSchema
 
-  def hasNext(): Boolean = {
-    this.synchronized {
-      return totalBlocks < 0 || outputBlocks < totalBlocks
-    }
-  }
-
   // TODO: throws InterruptedException, CHExecutor.CHExecutorException
   def next(): Result = {
-      val decoded = decodeds.take
-      if (decoded.error != null) {
-          throw new CHExecutor.CHExecutorException(decoded.error)
+    this.synchronized {
+      if (totalBlocks < 0 || outputBlocks < totalBlocks) {
+        val decoded = decodeds.take
+        if (decoded.error != null) {
+            throw new CHExecutor.CHExecutorException(decoded.error)
+        } else {
+          outputBlocks += 1
+          decoded
+        }
       } else {
-        outputBlocks += 1
-        decoded
+        null
       }
+    }
   }
 
   // TODO: May need multi threads fetcher

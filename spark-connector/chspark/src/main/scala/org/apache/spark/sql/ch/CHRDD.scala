@@ -33,15 +33,15 @@ class CHRDD(
 
   @throws[Exception]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
-    // TODO: Error handling (Exception)
 
     val table = tables(split.asInstanceOf[CHPartition].index)
     val sql = CHSql.scan(table.absName, requiredColumns, filterString)
-    val resp = new CHExecutorParall(sql, table.host, table.port, table.absName, 4)
+    val resp = CHExecutorPool.get(sql, table.host, table.port, table.absName, 4)
 
     private def getBlock(): Iterator[Row] = {
-      if (resp.hasNext) {
-        resp.next.encoded
+      val block = resp.executor.next
+      if (block != null) {
+        block.encoded
       } else {
         null
       }
@@ -50,23 +50,25 @@ class CHRDD(
     var blockIter: Iterator[Row] = getBlock
 
     override def hasNext: Boolean = {
-      (blockIter != null && blockIter.hasNext) || resp.hasNext
-    }
-
-    // TODO: Async convert
-    // TODO: Parallel convert
-    // TODO: This iterating is shit, fix it
-    override def next(): Row = {
-      val result = blockIter.next
-      if (!blockIter.hasNext) {
-        blockIter.asInstanceOf[CHRows].close
-        blockIter = getBlock
-        if (blockIter == null) {
-          resp.close
+      if (blockIter == null) {
+        false
+      } else {
+        if (!blockIter.hasNext) {
+          blockIter.asInstanceOf[CHRows].close
+          blockIter = getBlock
+          if (blockIter == null) {
+            CHExecutorPool.close(resp)
+            false
+          } else {
+            blockIter.hasNext
+          }
+        } else {
+          true
         }
       }
-      result
     }
+
+    override def next(): Row = blockIter.next
   }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
