@@ -30,19 +30,19 @@ class CHExecutorParall(
   val host: String,
   val port: Int,
   val table: String,
-  val threads: Int) {
+  val threads: Int,
+  val encode: Boolean = true) {
 
   class Result(schema: Schema, table: String, val decoded: CHExecutor.Result) {
     val error = decoded.error
     val isEmpty = decoded.isEmpty
 
-    val encoded: Iterator[Row] = if (isEmpty || error != null) {
+    val encoded: Iterator[Row] = if (isEmpty || error != null || !encode) {
       null
     } else {
       ArrowConverter.toRows(schema, table, decoded)
     }
 
-    // TODO: Better way to close it
     def close(): Unit = if (encoded != null) {
       encoded.asInstanceOf[CHRows].close
     } else {

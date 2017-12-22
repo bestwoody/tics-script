@@ -43,13 +43,13 @@ object CHExecutorPool {
     query + host + port + table
   }
 
-  def get(query: String, host: String, port: Int, table: String, threads: Int): Executor = {
+  def get(query: String, host: String, port: Int, table: String, threads: Int, encode: Boolean = true): Executor = {
     this.synchronized {
       val key = getKey(query, host, port, table, threads)
       if (instances.contains(key)) {
         instances(key).ref
       } else {
-        val executor = new CHExecutorParall(query, host, port, table, threads)
+        val executor = new CHExecutorParall(query, host, port, table, threads, encode)
         val handle = new Executor(executor, key)
         instances += (key -> handle)
         handle
