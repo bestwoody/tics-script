@@ -29,12 +29,13 @@ class CHRDD(
   @transient private val sparkSession: SparkSession,
   val tables: Seq[CHTableRef],
   private val requiredColumns: Seq[String],
-  private val filterString: String) extends RDD[Row](sparkSession.sparkContext, Nil) {
+  private val filterString: String,
+  private val partitionCount: Int) extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   @throws[Exception]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
 
-    val table = tables(split.asInstanceOf[CHPartition].index)
+    val table = split.asInstanceOf[CHPartition].table
     val sql = CHSql.scan(table.absName, requiredColumns, filterString)
     val resp = CHExecutorPool.get(sql, table.host, table.port, table.absName, 4)
 
@@ -71,16 +72,20 @@ class CHRDD(
     override def next(): Row = blockIter.next
   }
 
+  // TODO: All paritions may not assign to a same Spark node, so we need a better session module, like:
+  // <Spark nodes>-<share handle of a query> --- <CH sessions, each session respond to a handle>
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    tables(split.asInstanceOf[CHPartition].index).host :: Nil
+    split.asInstanceOf[CHPartition].table.host :: Nil
 
   override protected def getPartitions: Array[Partition] = {
     // TODO: Read cluster info from CH masterH
     val result = new ListBuffer[CHPartition]
     var index = 0
     tables.foreach(table => {
-      result.append(new CHPartition(index))
-      index += 1
+      for (i <- 0 until partitionCount) {
+        result.append(new CHPartition(index, table))
+        index += 1
+      }
     })
     result.toArray
   }

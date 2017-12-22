@@ -17,6 +17,7 @@ package org.apache.spark.sql.ch;
 
 import scala.collection.mutable.Map
 
+// TODO: May have bug when a same query executing in the same time
 object CHExecutorPool {
   class Executor(val executor: CHExecutorParall, val key: String) {
     var count = 1;
@@ -62,6 +63,9 @@ object CHExecutorPool {
         throw new Exception("Key not found: " + handle.key)
       }
       handle.deref
+      if (handle.count == 0) {
+        instances -= handle.key
+      }
     }
   }
 }

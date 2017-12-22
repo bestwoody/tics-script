@@ -36,7 +36,7 @@ case class CHPlan(output: Seq[Attribute],
 
   override protected def doExecute(): RDD[InternalRow] = {
     val types = schema.fields.map(_.dataType)
-    val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString)
+    val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString, 8)
     val result = RDDConversions.rowToRowRdd(rdd, types)
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)

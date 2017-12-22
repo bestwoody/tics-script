@@ -1,9 +1,14 @@
+build="$1"
+
 set -eu
 
-./build-ch-sdk.sh
-echo
-./build-chspark.sh
-echo
+if [ "$build" == "build" ]; then
+	./build-ch-sdk.sh
+	echo
+	./build-chspark.sh
+	echo
+fi
+
 ./stop-all.sh
 echo
 ./start-all.sh
