@@ -45,6 +45,8 @@ ch-connector/running
 # tpch generated data
 benchmark/loading/tpch-*
 benchmark/loading/backup
+benchmark/ch-server/config/*-preprocessed.xml
+benchmark/sql-spark/*.running
 
 # spark-connector running data dir
 spark-connector/spark-warehouse

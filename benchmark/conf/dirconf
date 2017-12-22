@@ -1,3 +1,0 @@
-runingDir=./sql-spark/running.q
-headerDir=./sql-spark/header.scala
-footerDir=./sql-spark/footer.scala

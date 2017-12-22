@@ -1,20 +1,35 @@
-source ./conf/dirconf
-n=$1
+sql="$1"
+tmp="$2"
 
-if [ -z "$n" ]; then
-        echo "usage: <bin> n"
-        exit 1
+set -eu
+
+if [ -z "$sql" ]; then
+	echo "<bin> usage: <bin> query-sql [tmp-sql-file]" >&2
+	exit 1
 fi
 
-cat $headerDir > $runingDir$n
-./ch-client.sh "show tables" | while read tableName;
-do
-	echo "ch.mapCHClusterTable(table=\"$tableName\")" >> $runingDir$n
-done
-echo "val startTime = new Date()">> $runingDir$n
+if [ -z "$tmp" ]; then
+	mkdir -p "/tmp/spark-q/"
+	tmp="/tmp/spark-q/`date +%s`"
+fi
 
-sql=`cat sql-spark/q"$n".sql | tr '\n' ' '`
-echo "ch.sql(\"$sql\").show" >> $runingDir$n
-cat $footerDir >> $runingDir$n
-./spark-shell.sh < $runingDir$n
-rm -rf $runingDir$n
+echo 'import java.text.SimpleDateFormat' > "$tmp"
+echo 'import java.util.Date' >> "$tmp"
+echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
+
+./ch-q.sh "show tables" | while read table; do
+	echo "ch.mapCHClusterTable(table=\"$table\")" >> "$tmp"
+done
+
+echo 'val startTime = new Date()' >> "$tmp"
+
+echo "ch.sql(\"$sql\").show" >> "$tmp"
+
+echo 'val endTime: Date = new Date()' >> "$tmp"
+echo 'val elapsed = endTime.getTime - startTime.getTime' >> "$tmp"
+echo 'val dateFormat: SimpleDateFormat = new SimpleDateFormat("mm:ss")' >> "$tmp"
+echo 'val date = dateFormat.format(elapsed)' >> "$tmp"
+
+./spark-shell.sh < "$tmp"
+
+rm -f "$tmp"
