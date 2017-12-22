@@ -1,1 +1,1 @@
-./ch-client.sh "KILL QUERY WHERE 1"
+./ch-q.sh "KILL QUERY WHERE 1"

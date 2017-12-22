@@ -1,1 +1,1 @@
-./ch-client.sh "SELECT query FROM system.processes"
+./ch-q.sh "SELECT query FROM system.processes"
