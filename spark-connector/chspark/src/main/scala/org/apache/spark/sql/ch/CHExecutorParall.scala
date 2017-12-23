@@ -54,8 +54,8 @@ class CHExecutorParall(
   private var outputBlocks: Long = 0
   private var totalBlocks: Long = -1
 
-  private val decodings: BlockingQueue[CHExecutor.Package] = new LinkedBlockingQueue[CHExecutor.Package](32)
-  private val decodeds: BlockingQueue[Result] = new LinkedBlockingQueue[Result](32)
+  private val decodings: BlockingQueue[CHExecutor.Package] = new LinkedBlockingQueue[CHExecutor.Package](threads)
+  private val decodeds: BlockingQueue[Result] = new LinkedBlockingQueue[Result](threads)
   private val executor = new CHExecutor(query, host, port)
 
   startDecode()
