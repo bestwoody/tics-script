@@ -58,6 +58,12 @@ public:
     {
     }
 
+    ~TCPArrowHandler()
+    {
+        LOG_INFO(log, "~TCPArrowHandler");
+        state.io.onFinish();
+    }
+
     void run();
 
 private:

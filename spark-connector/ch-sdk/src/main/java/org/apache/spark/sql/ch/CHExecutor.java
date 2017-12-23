@@ -57,18 +57,21 @@ public class CHExecutor {
 
     public static class Result {
         Result(VectorSchemaRoot block, ArrowDecoder buffer, int id) {
+            this.end = false;
             this.error = null;
             this.block = block;
             this.buffer = buffer;
             this.id = id;
         }
         Result(Exception ex) {
+            this.end = false;
             this.error = ex;
             this.block = null;
             this.buffer = null;
             this.id = -1;
         }
         Result() {
+            this.end = true;
             this.error = null;
             this.block = null;
             this.buffer = null;
@@ -79,6 +82,9 @@ public class CHExecutor {
         }
         boolean isLast() {
             return error != null || block == null;
+        }
+        boolean isEnd() {
+            return end;
         }
         void close() {
             if (block != null) {
@@ -91,10 +97,12 @@ public class CHExecutor {
             }
         }
 
+        private final boolean end;
+        private ArrowDecoder buffer;
+
         public final Exception error;
         public VectorSchemaRoot block;
-        private ArrowDecoder buffer;
-        public int id;
+        public final int id;
     }
 
     public CHExecutor(String query, String host, int port) throws IOException, CHExecutorException {

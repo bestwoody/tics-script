@@ -69,6 +69,7 @@ public:
             onError("arrow::ipc::SerializeSchema " + status.ToString());
             return NULL;
         }
+        // std::cerr << "PROBE pool alloced: " << pool->bytes_allocated() << ", peak: " << pool->max_memory() << std::endl;
         return serialized;
     }
 
@@ -117,6 +118,7 @@ public:
             onError("arrow::ipc::SerializeRecordBatch " + status.ToString());
             return NULL;
         }
+        // std::cerr << "PROBE pool alloced: " << pool->bytes_allocated() << ", peak: " << pool->max_memory() << std::endl;
         return serialized;
     }
 
@@ -163,6 +165,7 @@ private:
         {
             arrow::StringBuilder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnString &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -181,6 +184,7 @@ private:
         {
             arrow::StringBuilder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnFixedString &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -200,6 +204,7 @@ private:
         {
             arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), pool);
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -218,6 +223,7 @@ private:
             arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), pool);
             static uint32_t date_to_sec = 24 * 60 * 60;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnUInt16 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -235,6 +241,7 @@ private:
         {
             arrow::Int8Builder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnInt8 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -251,6 +258,7 @@ private:
         {
             arrow::Int16Builder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnInt16 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -267,6 +275,7 @@ private:
         {
             arrow::Int32Builder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnInt32 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -283,6 +292,7 @@ private:
         {
             arrow::Int64Builder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnInt64 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -299,6 +309,7 @@ private:
         {
             arrow::UInt8Builder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnUInt8 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -315,6 +326,7 @@ private:
         {
             arrow::UInt16Builder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnUInt16 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -331,6 +343,7 @@ private:
         {
             arrow::UInt32Builder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -347,6 +360,7 @@ private:
         {
             arrow::UInt64Builder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnUInt64 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -363,6 +377,7 @@ private:
         {
             arrow::FloatBuilder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnFloat32 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {
@@ -379,6 +394,7 @@ private:
         {
             arrow::DoubleBuilder builder;
             auto rows = column->size();
+            builder.Reserve(rows);
             const auto & data = typeid_cast<DB::ColumnFloat64 &>(*column);
             for (size_t i = 0; i < rows; ++i)
             {

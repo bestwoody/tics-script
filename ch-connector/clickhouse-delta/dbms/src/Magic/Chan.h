@@ -60,7 +60,7 @@ public:
     {
         {
             unique_lock<mutex> lock{mtx};
-            if (capacity != 0 && capacity <= que.size() && (quota == 0 || passed < quota) && !closed)
+            while (capacity != 0 && capacity <= que.size() && (quota == 0 || passed < quota) && !closed)
                 cond_w.wait(lock);
             if (closed)
                 return;
