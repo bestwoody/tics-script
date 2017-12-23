@@ -171,10 +171,8 @@ public class CHExecutor {
         if (decoding.type == PackageTypeUtf8Error) {
             return new Result(new IOException(new String(decoding.data)));
         } else if (decoding.type == PackageTypeArrowData) {
-            // TODO: Share decoder
-            ArrowDecoder decoder = new ArrowDecoder();
-            VectorSchemaRoot decoded = decoder.decodeBlock(schema, decoding.data);
-            return new Result(decoded, decoder, decoding.id);
+            VectorSchemaRoot decoded = arrowDecoder.decodeBlock(schema, decoding.data);
+            return new Result(decoded, null, decoding.id);
         } else if (decoding.type == PackageTypeEnd) {
             return new Result();
         } else {
