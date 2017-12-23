@@ -10,6 +10,7 @@
     <http_port>8123</http_port>
     <tcp_port>9000</tcp_port>
     <tcp_arrow_port>9006</tcp_arrow_port>
+    <arrow_encoders>3</arrow_encoders>
     <interserver_http_port>9009</interserver_http_port>
     <listen_host>::1</listen_host>
     <listen_host>127.0.0.1</listen_host>

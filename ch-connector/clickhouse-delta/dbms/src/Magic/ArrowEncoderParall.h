@@ -12,8 +12,7 @@ class ArrowEncoderParall : public ArrowEncoder
 public:
     ArrowEncoderParall(const std::string & error) : ArrowEncoder(error) {}
 
-    // TODO: Detect concurrent count
-    ArrowEncoderParall(DB::BlockIO & result, size_t conc = 8) : ArrowEncoder(result), encodeds(0, conc * 4)
+    ArrowEncoderParall(DB::BlockIO & result, size_t conc) : ArrowEncoder(result), encodeds(0, conc * 1)
     {
         if (hasError())
             return;

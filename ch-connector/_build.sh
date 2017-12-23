@@ -1,13 +1,13 @@
 set -eu
 
-source _helper.sh
-setup_gcc_on_mac
-
 make_ch()
 {
 	local build_dir="$1"
 	local source_related_dir="$2"
 	local build_target="$3"
+
+	source _helper.sh
+	setup_gcc
 
 	mkdir -p "$build_dir"
 	local old=`pwd`

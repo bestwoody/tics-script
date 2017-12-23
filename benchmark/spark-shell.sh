@@ -6,4 +6,17 @@ if [ "$?" != "0" ]; then
 	exit 1
 fi
 
-$repo_dir/spark-connector/spark/bin/spark-shell --master spark://127.0.0.1:7077 --executor-memory 12G  $@
+ip=""
+if [ `uname` == "Darwin" ]; then
+	ip=`ifconfig | grep -i mask | grep broadcast | grep inet | awk '{print $2}'`
+else
+	ip=`ifconfig | grep -i mask | grep cast | grep inet | awk '{print $2}' | awk -F 'addr:' '{print $2}'`
+fi
+
+if [ -z "$ip" ]; then
+	ip="127.0.0.1"
+fi
+
+echo "local ip: $ip"
+
+$repo_dir/spark-connector/spark/bin/spark-shell --master spark://$ip:7077 --executor-memory 12G  $@
