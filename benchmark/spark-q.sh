@@ -1,7 +1,7 @@
 sql="$1"
-tmp="$2"
-partitions="$3"
-decoders="$4"
+partitions="$2"
+decoders="$3"
+tmp="$4"
 
 set -eu
 
@@ -13,7 +13,7 @@ if [ -z "$decoders" ]; then
 fi
 
 if [ -z "$sql" ]; then
-	echo "<bin> usage: <bin> query-sql [tmp-sql-file] [partitions] [decoders]" >&2
+	echo "<bin> usage: <bin> query-sql [partitions=8] [decoders=8] [tmp-sql-file]" >&2
 	exit 1
 fi
 

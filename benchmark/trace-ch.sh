@@ -5,7 +5,7 @@ if [ "`uname`" == "Darwin" ]; then
 	top_cmd="top -pid"
 fi
 
-pid=`ps -ef | grep clickhouse |grep -v grep | awk '{print $2}'`
+pid=`ps -ef | grep 'clickhouse server' |grep -v grep | awk '{print $2}'`
 
 if [ ! -z "$pid" ]; then
 	$top_cmd $pid

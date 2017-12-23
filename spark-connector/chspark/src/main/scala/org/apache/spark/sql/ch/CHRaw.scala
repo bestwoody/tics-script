@@ -61,6 +61,7 @@ object CHRaw {
           var block = resp.executor.next
           while (block != null) {
             val columns = block.decoded.block.getFieldVectors
+            Thread.sleep(50)
             val rows: Long = if (columns.isEmpty) { 0 } else { columns.get(0).getAccessor().getValueCount }
             addRows(rows)
             block.close

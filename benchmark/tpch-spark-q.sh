@@ -13,4 +13,4 @@ file="./sql-spark/q"$n".sql"
 sql=`cat $file | tr '\n' ' '`
 tmp="$file.running"
 
-./spark-q.sh "$sql" "$tmp" "$partitions" "$decoders"
+./spark-q.sh "$sql" "$partitions" "$decoders" "$tmp"
