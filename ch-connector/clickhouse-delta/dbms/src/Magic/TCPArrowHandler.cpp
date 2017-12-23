@@ -137,7 +137,13 @@ void TCPArrowHandler::runImpl()
 
 void TCPArrowHandler::processOrdinaryQuery()
 {
-    Magic::ArrowEncoderParall encoder(state.io);
+    size_t decoders = 8;
+    if (server.config().has("arrow_encoders"))
+        decoders = server.config().getInt("arrow_encoders");
+
+    LOG_INFO(log, "Start process ordinary query, arrow encoder threads: " << decoders);
+
+    Magic::ArrowEncoderParall encoder(state.io, decoders);
 
     if (encoder.hasError())
         throw Exception(encoder.getErrorString());
