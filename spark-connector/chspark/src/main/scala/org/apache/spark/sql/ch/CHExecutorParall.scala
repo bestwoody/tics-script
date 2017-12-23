@@ -53,6 +53,7 @@ class CHExecutorParall(
   private var inputBlocks: Long = 0
   private var outputBlocks: Long = 0
   private var totalBlocks: Long = -1
+  private var receivedEnd: Boolean = false
 
   private val decodings: BlockingQueue[CHExecutor.Package] = new LinkedBlockingQueue[CHExecutor.Package](threads)
   private val decodeds: BlockingQueue[Result] = new LinkedBlockingQueue[Result](threads)
@@ -80,6 +81,9 @@ class CHExecutorParall(
           decoded
         }
       } else {
+        if (!receivedEnd) {
+          throw new Exception("Abnormal end: not received end mark.")
+        }
         null
       }
     }
@@ -124,6 +128,11 @@ class CHExecutorParall(
             while (!isLast) {
               val decoded = executor.safeDecode(decodings.take)
               isLast = decoded.isLast
+              if (decoded.isEnd) {
+                this.synchronized {
+                  receivedEnd = true
+                }
+              }
               if (!decoded.isEmpty) {
                 decodeds.put(new Result(executor.getSchema, table, decoded))
               }
