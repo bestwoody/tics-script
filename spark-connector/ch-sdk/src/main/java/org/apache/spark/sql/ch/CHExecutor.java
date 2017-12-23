@@ -46,6 +46,9 @@ public class CHExecutor {
         boolean isLast() {
             return type == PackageTypeEnd || type == PackageTypeUtf8Error;
         }
+        long ty() {
+            return type;
+        }
 
         private long type;
         private byte[] data;
@@ -168,8 +171,10 @@ public class CHExecutor {
         if (decoding.type == PackageTypeUtf8Error) {
             return new Result(new IOException(new String(decoding.data)));
         } else if (decoding.type == PackageTypeArrowData) {
+            // TODO: Share decoder
             ArrowDecoder decoder = new ArrowDecoder();
-            return new Result(decoder.decodeBlock(schema, decoding.data), decoder, decoding.id);
+            VectorSchemaRoot decoded = decoder.decodeBlock(schema, decoding.data);
+            return new Result(decoded, decoder, decoding.id);
         } else if (decoding.type == PackageTypeEnd) {
             return new Result();
         } else {

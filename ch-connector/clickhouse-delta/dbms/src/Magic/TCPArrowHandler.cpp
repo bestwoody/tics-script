@@ -58,6 +58,8 @@ inline void writeInt64(Int64 x, WriteBuffer & ostr)
     }
 }
 
+
+// TODO: Catch error when connection lost
 void TCPArrowHandler::runImpl()
 {
     connection_context = server.context();
