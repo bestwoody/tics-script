@@ -68,8 +68,10 @@ class CHExecutorParall(
 
   // TODO: throws InterruptedException, CHExecutor.CHExecutorException
   def next(): Result = {
+    var hasNext: Boolean = false
     this.synchronized {
-      if (totalBlocks < 0 || outputBlocks < totalBlocks) {
+      hasNext = (totalBlocks < 0 || outputBlocks < totalBlocks)
+      if (hasNext) {
         val decoded = decodeds.take
         if (decoded.error != null) {
             throw new CHExecutor.CHExecutorException(decoded.error)
@@ -94,11 +96,11 @@ class CHExecutorParall(
               decodings.put(block)
               inputBlocks += 1
             } else {
-              for (i <- 0 until threads) {
-                decodings.put(block)
-              }
               this.synchronized {
                 totalBlocks = inputBlocks
+              }
+              for (i <- 0 until threads) {
+                decodings.put(block)
               }
             }
           }
@@ -117,10 +119,11 @@ class CHExecutorParall(
     for (i <- 0 until threads) {
       decoders(i) = new Thread {
         override def run {
-          var decoded: CHExecutor.Result = null
           try {
-            while (decoded == null || !decoded.isLast) {
-              decoded = executor.safeDecode(decodings.take)
+            var isLast = false
+            while (!isLast) {
+              val decoded = executor.safeDecode(decodings.take)
+              isLast = decoded.isLast
               if (!decoded.isEmpty) {
                 decodeds.put(new Result(executor.getSchema, table, decoded))
               }
