@@ -49,8 +49,8 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         TypesTestPlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => {
         plan match {
-          case PhysicalOperation(projectList, filterPredicates, LogicalRelation(_: CHRelation, _, _)) =>
-            createCHPlan(relation.tables, rel, projectList, filterPredicates) :: Nil
+          case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
+            createCHPlan(relation.tables, rel, projectList, filterPredicates, chr.partitions, chr.decoders) :: Nil
           case _ => Nil
         }
       }
@@ -61,7 +61,9 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     tables: Seq[CHTableRef],
     relation: LogicalRelation,
     projectList: Seq[NamedExpression],
-    filterPredicates: Seq[Expression]): SparkPlan = {
+    filterPredicates: Seq[Expression],
+    partitions: Int,
+    decoders: Int): SparkPlan = {
 
     val projectSet = AttributeSet(projectList.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
@@ -92,7 +94,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     // println("PROBE Residual:   " + residualFilters)
     // println("PROBE FiltersStr: " + filtersString)
 
-    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name).toSeq, filtersString)
+    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name).toSeq, filtersString, partitions, decoders)
     residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
   }
 }

@@ -1,7 +1,16 @@
 sql="$1"
 tmp="$2"
+partitions="$3"
+decoders="$4"
 
 set -eu
+
+if [ -z "$partitions" ]; then
+	partitions="8"
+fi
+if [ -z "$decoders" ]; then
+	decoders="8"
+fi
 
 if [ -z "$sql" ]; then
 	echo "<bin> usage: <bin> query-sql [tmp-sql-file]" >&2
@@ -18,7 +27,7 @@ echo 'import java.util.Date' >> "$tmp"
 echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./ch-q.sh "show tables" | while read table; do
-	echo "ch.mapCHClusterTable(table=\"$table\")" >> "$tmp"
+	echo "ch.mapCHClusterTable(table=\"$table\", partitions=$partitions, decoders=$decoders)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"
