@@ -13,7 +13,7 @@ public:
     ArrowEncoderParall(const std::string & error) : ArrowEncoder(error) {}
 
     // TODO: Detect concurrent count
-    ArrowEncoderParall(DB::BlockIO & result, size_t conc = 8) : ArrowEncoder(result), encodeds(0, conc * 4)
+    ArrowEncoderParall(DB::BlockIO & result, size_t conc = 16) : ArrowEncoder(result), encodeds(0, conc * 2)
     {
         if (hasError())
             return;

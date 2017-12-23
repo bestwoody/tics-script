@@ -11,7 +11,8 @@ if [ -z "$conc" ]; then
 	exit 1
 fi
 
-java -cp chspark/target/*:chspark/target/lib/* \
+java -XX:MaxDirectMemorySize=5g \
+	-cp chspark/target/*:chspark/target/lib/* \
 	org.apache.spark.sql.ch/CHRaw \
 	"$query" "$partitions" "$conc" "$host" "$port" \
 	2>&1 | grep -v 'SLF4J'

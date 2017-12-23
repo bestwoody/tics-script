@@ -35,4 +35,20 @@ setup_gcc_on_mac()
 	echo "  $DYLD_FALLBACK_LIBRARY_PATH"
 }
 export -f setup_gcc_on_mac
-setup_gcc_on_mac
+
+setup_gcc_on_linux()
+{
+	export CC="gcc"
+	export CXX="g++"
+}
+export -f setup_gcc_on_linux
+
+setup_gcc()
+{
+	if [ "`uname`" == "Darwin" ]; then
+		setup_gcc_on_mac
+	else
+		setup_gcc_on_linux
+	fi
+}
+export -f setup_gcc
