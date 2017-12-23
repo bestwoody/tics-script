@@ -13,7 +13,7 @@ if [ -z "$decoders" ]; then
 fi
 
 if [ -z "$sql" ]; then
-	echo "<bin> usage: <bin> query-sql [tmp-sql-file]" >&2
+	echo "<bin> usage: <bin> query-sql [tmp-sql-file] [partitions] [decoders]" >&2
 	exit 1
 fi
 
