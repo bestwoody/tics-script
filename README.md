@@ -18,5 +18,5 @@ Online:
 ----- Latch Service
 ----- Transaction(batch level) supporting
 ***-- Data update supporting
------ Fully test
+*---- Fully test
 ```

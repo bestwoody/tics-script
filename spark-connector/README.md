@@ -1,7 +1,7 @@
 # Spark-Connector
 
 ## Dir notes:
-* `chraw`
+* `chraw-jni`
     * Command line debug tool for executing query with libch.so
 * `spark`
     * The official repository
@@ -16,6 +16,6 @@
 ** Execute query and fetch data from CH service
 ** Predicate pushdown
 ** CH Cluster support
-*- Integration test
--- TPCH benchmark
+** Integration test
+*- TPCH benchmark
 ```

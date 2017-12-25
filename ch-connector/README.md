@@ -23,8 +23,8 @@
      - Bool
      - Decimal
      - Nested types
--- Benchmark
--- Optimization
+**  Benchmark
+*- Optimization
      - Faster data copy
      - Streaming + parallel + async
 ```
