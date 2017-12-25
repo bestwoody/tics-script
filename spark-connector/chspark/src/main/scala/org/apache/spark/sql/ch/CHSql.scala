@@ -17,6 +17,15 @@
 package org.apache.spark.sql.ch
 
 
+class CHSqlAggFunc(val function: String, val column: String) extends Serializable {
+  override def toString(): String = {
+    function + "(" + column + ")"
+  }
+}
+
+class CHSqlAgg(val groupByColumns: Seq[String], val functions: Seq[CHSqlAggFunc]) extends Serializable {
+}
+
 object CHSql {
   def desc(table: String): String = {
     "DESC " + table
@@ -35,14 +44,38 @@ object CHSql {
   }
 
   def scan(table: String, columns: Seq[String], filter: String): String = {
-    val filterStr = filter match {
+    "SELECT " + columnsStr(columns) + " FROM " + table + filterStr(filter)
+  }
+
+  def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg): String = {
+    if (aggregation == null) {
+      scan(table, columns, filter)
+    } else {
+      // TODO: Check Set(columns) == Set(agg columns)
+      "SELECT " + columnsStr(columns) + " FROM " + table + filterStr(filter) +
+        groupByColumnsStr(aggregation.groupByColumns)
+    }
+  }
+
+  private def filterStr(filter: String): String = {
+    filter match {
       case null => ""
       case _ => " WHERE " + filter
     }
-    val columnsStr = columns match {
+  }
+
+  private def columnsStr(columns: Seq[String]): String = {
+    columns match {
       case null => "*"
       case _ => columns.mkString(", ")
     }
-    "SELECT " + columnsStr + " FROM " + table + filterStr
+  }
+
+  private def groupByColumnsStr(columns: Seq[String]): String = {
+    if (columns == null || columns.isEmpty) {
+      ""
+    } else {
+      " GROUP BY " + columns.mkString(", ")
+    }
   }
 }
