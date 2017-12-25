@@ -92,10 +92,32 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
         )
       }
 
+    def newAggregate(aggFunc: AggregateFunction, originalAggExpr: AggregateExpression) =
+      AggregateExpression(
+        aggFunc,
+        originalAggExpr.mode,
+        originalAggExpr.isDistinct,
+        originalAggExpr.resultId
+      )
+
     val pushdownAggregates = aggregateExpressions.flatMap { aggExpr =>
       avgPushdownRewriteMap
         .getOrElse(aggExpr.resultId, List(aggExpr))
     }.distinct
+
+    val residualAggregateExpressions = aggregateExpressions.map { aggExpr =>
+      aggExpr.aggregateFunction match {
+        // here aggExpr is the original AggregationExpression
+        // and will be pushed down to TiKV
+        case Max(_)   => newAggregate(Max(toAlias(aggExpr).toAttribute), aggExpr)
+        case Min(_)   => newAggregate(Min(toAlias(aggExpr).toAttribute), aggExpr)
+        case Count(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
+        case Sum(_)   => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
+        case First(_, ignoreNullsExpr) =>
+          newAggregate(First(toAlias(aggExpr).toAttribute, ignoreNullsExpr), aggExpr)
+        case _ => aggExpr
+      }
+    }
 
     val aggregation = mutable.ListBuffer[CHSqlAggFunc]()
     val groupByColumn = mutable.ListBuffer[String]()
@@ -118,7 +140,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
     aggregate.AggUtils.planAggregateWithoutDistinct(
       groupingExpressions,
-      aggregateExpressions,
+      residualAggregateExpressions,
       resultExpressions,
       chPlan
     )
