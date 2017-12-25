@@ -131,7 +131,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
     val chSqlAgg = new CHSqlAgg(groupByColumn, aggregation)
     val requiredCols = resultExpressions.map(_.name)
-    val chPlan = CHPlan(output, sparkSession, relation.tables, requiredCols, filtersString, chSqlAgg, relation.partitions, relation.decoders)
+    val chPlan = CHPlan(resultExpressions.map(_.toAttribute), sparkSession, relation.tables, requiredCols, filtersString, chSqlAgg, relation.partitions, relation.decoders)
 
 //    aggregate.AggUtils.planAggregateWithoutDistinct(
 //      groupingExpressions,
