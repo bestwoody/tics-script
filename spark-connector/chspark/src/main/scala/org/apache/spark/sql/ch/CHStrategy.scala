@@ -113,7 +113,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       aggExpr.aggregateFunction match {
         case Max(_) => newAggregate(Max(toAlias(aggExpr).toAttribute), aggExpr)
         case Min(_) => newAggregate(Min(toAlias(aggExpr).toAttribute), aggExpr)
-        case Count(_) => newAggregate(Count(toAlias(aggExpr).toAttribute), aggExpr)
+        case Count(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
         case Sum(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
         case First(_, ignoreNullsExpr) =>
           newAggregate(First(toAlias(aggExpr).toAttribute, ignoreNullsExpr), aggExpr)
