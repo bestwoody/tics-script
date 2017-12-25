@@ -130,38 +130,11 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     val groupByColumn = mutable.ListBuffer[String]()
     extractAggregation(groupingExpressions, pushdownAggregates, relation, aggregation, groupByColumn)
 
-    val rewrittenResultExpression = resultExpressions.map(
-      expr =>
-        expr
-          .transformDown {
-            case aggExpr: AttributeReference if avgFinalRewriteMap.contains(aggExpr.exprId) =>
-              // Replace the original Average expression with Div of Alias
-              val sumCountPair = avgFinalRewriteMap(aggExpr.exprId)
-
-              // We missed the chance for auto-coerce already
-              // so manual cast needed
-              // Also, convert into resultAttribute since
-              // they are created by tiSpark without Spark conversion
-              // TODO: Is DoubleType a best target type for all?
-              Cast(
-                Divide(
-                  Cast(sumCountPair.head.resultAttribute, DoubleType),
-                  Cast(sumCountPair(1).resultAttribute, DoubleType)
-                ),
-                aggExpr.dataType
-              )
-            case other => other
-          }
-          .asInstanceOf[NamedExpression]
-    )
-
     val output = (pushdownAggregates.map(x => toAlias(x)) ++ groupingExpressions)
       .map(_.toAttribute)
     val projectSet = AttributeSet(projectList.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
     val requiredColumns = (projectSet ++ filterSet).toSeq.map(_.name)
-
-    val nameSet = requiredColumns.toSet
 
     val (pushdownFilters: Seq[Expression], residualFilters: Seq[Expression]) =
       filterPredicates.partition((expression: Expression) => CHUtil.isSupportedFilter(expression))
@@ -180,7 +153,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     aggregate.AggUtils.planAggregateWithoutDistinct(
       groupingExpressions,
       residualAggregateExpressions,
-      rewrittenResultExpression,
+      resultExpressions,
       chPlan
     )
   }
@@ -203,11 +176,14 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       case AggregateExpression(Count(args), _, _, _) =>
         aggregations += new CHSqlAggFunc("COUNT", args.map(_.sql).mkString(" , "))
 
-      //      case AggregateExpression(Min(arg), _, _, _) =>
-      //
-      //      case AggregateExpression(Max(arg), _, _, _) =>
-      //
-      //      case AggregateExpression(First(arg, _), _, _, _) =>
+      case AggregateExpression(Min(arg), _, _, _) =>
+        aggregations += new CHSqlAggFunc("MIN", arg.sql)
+
+      case AggregateExpression(Max(arg), _, _, _) =>
+        aggregations += new CHSqlAggFunc("MAX", arg.sql)
+
+      case AggregateExpression(First(arg, _), _, _, _) =>
+        aggregations += new CHSqlAggFunc("FIRST", arg.sql)
 
       case _ =>
     }
