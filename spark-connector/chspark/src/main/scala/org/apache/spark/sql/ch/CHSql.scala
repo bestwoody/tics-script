@@ -52,7 +52,7 @@ object CHSql {
       scan(table, columns, filter)
     } else {
       // TODO: Check Set(columns) == Set(agg columns)
-      "SELECT " + columnsStr(aggregation.functions.map(_.toString)) + " FROM " + table + filterStr(filter) +
+      "SELECT " + columnsStr(columns) + " FROM " + table + filterStr(filter) +
         groupByColumnsStr(aggregation.groupByColumns)
     }
   }
