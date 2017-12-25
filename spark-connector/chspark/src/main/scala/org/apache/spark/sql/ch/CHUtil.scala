@@ -134,7 +134,7 @@ object CHUtil {
     }).mkString(" AND ")
   }
 
-  private def getFilterString(filter: Expression): String = {
+  def getFilterString(filter: Expression): String = {
     filter match {
       case Literal(value, dataType) =>
         sparkValueToString(value, dataType)

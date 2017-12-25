@@ -16,20 +16,14 @@
 package org.apache.spark.sql.ch
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.{SparkSession, Strategy}
-import org.apache.spark.sql.execution.{FilterExec, SparkPlan, aggregate}
-import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.catalyst.expressions.aggregate._
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeSet, ExprId, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, Divide, ExprId, Expression, NamedExpression}
-import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.ch.mock.MockSimpleRelation
-import org.apache.spark.sql.ch.mock.MockSimplePlan
-import org.apache.spark.sql.ch.mock.MockArrowRelation
-import org.apache.spark.sql.ch.mock.MockArrowPlan
-import org.apache.spark.sql.ch.mock.TypesTestRelation
-import org.apache.spark.sql.ch.mock.TypesTestPlan
-import org.apache.spark.sql.types.DoubleType
+import org.apache.spark.sql.ch.mock._
+import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.{FilterExec, SparkPlan, aggregate}
+import org.apache.spark.sql.{SparkSession, Strategy}
 
 import scala.collection.mutable
 
@@ -156,27 +150,27 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
                         ): Unit = {
     aggregates.foreach {
       case AggregateExpression(Average(arg), _, _, _) =>
-        aggregations += new CHSqlAggFunc("AVG", arg.sql)
+        aggregations += new CHSqlAggFunc("AVG", CHUtil.getFilterString(arg))
 
       case AggregateExpression(Sum(arg), _, _, _) =>
-        aggregations += new CHSqlAggFunc("SUM", arg.sql)
+        aggregations += new CHSqlAggFunc("SUM", CHUtil.getFilterString(arg))
 
       case AggregateExpression(Count(args), _, _, _) =>
-        aggregations += new CHSqlAggFunc("COUNT", args.map(_.sql).mkString(" , "))
+        aggregations += new CHSqlAggFunc("COUNT", CHUtil.getFilterString(args.head))
 
       case AggregateExpression(Min(arg), _, _, _) =>
-        aggregations += new CHSqlAggFunc("MIN", arg.sql)
+        aggregations += new CHSqlAggFunc("MIN", CHUtil.getFilterString(arg))
 
       case AggregateExpression(Max(arg), _, _, _) =>
-        aggregations += new CHSqlAggFunc("MAX", arg.sql)
+        aggregations += new CHSqlAggFunc("MAX", CHUtil.getFilterString(arg))
 
       case AggregateExpression(First(arg, _), _, _, _) =>
-        aggregations += new CHSqlAggFunc("FIRST", arg.sql)
+        aggregations += new CHSqlAggFunc("FIRST", CHUtil.getFilterString(arg))
 
       case _ =>
     }
 
-    groupByList.foreach(groupByCols += _.sql)
+    groupByList.foreach(groupByCols += CHUtil.getFilterString(_))
   }
 
   private def createCHPlan(
