@@ -15,16 +15,13 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.arrow.vector.VectorSchemaRoot;
-
+import org.apache.arrow.vector.VectorSchemaRoot
 import org.apache.spark.sql.types.DataType
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.MetadataBuilder
-
 import org.apache.spark.sql.types.{StringType, TimestampType}
-import org.apache.spark.sql.types.{FloatType, DoubleType}
-import org.apache.spark.sql.types.{ByteType, ShortType, IntegerType, LongType}
-
+import org.apache.spark.sql.types.{DoubleType, FloatType}
+import org.apache.spark.sql.types.{ByteType, IntegerType, LongType, ShortType}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
@@ -42,6 +39,7 @@ import org.apache.spark.sql.catalyst.expressions.LessThanOrEqual
 import org.apache.spark.sql.catalyst.expressions.EqualTo
 import org.apache.spark.sql.catalyst.expressions.Not
 import org.apache.spark.sql.catalyst.expressions.Cast
+import org.apache.spark.sql.catalyst.expressions.aggregate._
 
 
 object CHUtil {
@@ -170,6 +168,16 @@ object CHUtil {
         getFilterString(lhs) + " = " + getFilterString(rhs)
       // case Not(EqualTo(lhs), rhs) =>
       //  getFilterString(lhs) + " != " + getFilterString(rhs)
+      case Sum(child) =>
+        "SUM(" + getFilterString(child) + ")"
+      case Average(child) =>
+        "AVG(" + getFilterString(child) + ")"
+      case Count(children) =>
+        "COUNT(" + children.map(getFilterString).mkString(",") + ")"
+      case Min(child) =>
+        "MIN(" + getFilterString(child) + ")"
+      case Max(child) =>
+        "MAX(" + getFilterString(child) + ")"
       case Not(child) =>
         "NOT " + getFilterString(child)
     }
