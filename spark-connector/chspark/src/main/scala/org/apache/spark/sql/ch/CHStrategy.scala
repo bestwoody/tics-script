@@ -91,14 +91,6 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
         originalAggExpr.resultId
       )
 
-    def newAggregateWithId(aggFunc: AggregateFunction, originalAggExpr: AggregateExpression) =
-      AggregateExpression(
-        aggFunc,
-        originalAggExpr.mode,
-        originalAggExpr.isDistinct,
-        NamedExpression.newExprId
-      )
-
     def toAlias(expr: AggregateExpression) =
       if (!expr.deterministic) {
         Alias(expr, expr.toString())()
@@ -113,7 +105,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       aggExpr.aggregateFunction match {
         case Max(_) => newAggregate(Max(toAlias(aggExpr).toAttribute), aggExpr)
         case Min(_) => newAggregate(Min(toAlias(aggExpr).toAttribute), aggExpr)
-        case Count(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
+        case Count(_) => newAggregate(Count(toAlias(aggExpr).toAttribute), aggExpr)
         case Sum(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
         case First(_, ignoreNullsExpr) =>
           newAggregate(First(toAlias(aggExpr).toAttribute, ignoreNullsExpr), aggExpr)
@@ -147,8 +139,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     }
 
     val chSqlAgg = new CHSqlAgg(groupByColumn, aggregation)
-    val rdd = CHPlan(output, sparkSession, relation.tables, output.map(_.name), filtersString, chSqlAgg, relation.partitions, relation.decoders)
-    val chPlan = residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
+    val chPlan = CHPlan(output, sparkSession, relation.tables, output.map(_.name), filtersString, chSqlAgg, relation.partitions, relation.decoders)
 
     aggregate.AggUtils.planAggregateWithoutDistinct(
       groupingExpressions,
