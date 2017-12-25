@@ -45,11 +45,10 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
         }
       }
       case CHAggregation(
-      groupingExpressions,
-      aggregateExpressions,
-      resultExpressions,
-      CHAggregationProjection(filters, rel, relation, projects)
-      ) if aggPushdown => {
+        groupingExpressions,
+        aggregateExpressions,
+        resultExpressions,
+        CHAggregationProjection(filters, rel, relation, projects)) if aggPushdown => {
         // Add group / aggregate to CHPlan
         groupAggregateProjection(
           groupingExpressions,
@@ -58,21 +57,20 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
           projects,
           filters,
           relation,
-          rel
-        )
+          rel)
       }
     }.toSeq.flatten
   }
 
   def groupAggregateProjection(
-                                groupingExpressions: Seq[NamedExpression],
-                                aggregateExpressions: Seq[AggregateExpression],
-                                resultExpressions: Seq[NamedExpression],
-                                projectList: Seq[NamedExpression],
-                                filterPredicates: Seq[Expression],
-                                relation: CHRelation,
-                                rel: LogicalRelation
-                              ): Seq[SparkPlan] = {
+    groupingExpressions: Seq[NamedExpression],
+    aggregateExpressions: Seq[AggregateExpression],
+    resultExpressions: Seq[NamedExpression],
+    projectList: Seq[NamedExpression],
+    filterPredicates: Seq[Expression],
+    relation: CHRelation,
+    rel: LogicalRelation): Seq[SparkPlan] = {
+
     val aliasMap = mutable.HashMap[(Boolean, Expression), Alias]()
     val avgPushdownRewriteMap = mutable.HashMap[ExprId, List[AggregateExpression]]()
 
@@ -81,9 +79,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
         Alias(expr, expr.toString())()
       } else {
         aliasMap.getOrElseUpdate(
-          (expr.deterministic, expr.canonicalized),
-          Alias(expr, expr.toString)()
-        )
+          (expr.deterministic, expr.canonicalized), Alias(expr, expr.toString)())
       }
 
     def newAggregate(aggFunc: AggregateFunction, originalAggExpr: AggregateExpression) =
@@ -91,12 +87,10 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
         aggFunc,
         originalAggExpr.mode,
         originalAggExpr.isDistinct,
-        originalAggExpr.resultId
-      )
+        originalAggExpr.resultId)
 
     val pushdownAggregates = aggregateExpressions.flatMap { aggExpr =>
-      avgPushdownRewriteMap
-        .getOrElse(aggExpr.resultId, List(aggExpr))
+      avgPushdownRewriteMap.getOrElse(aggExpr.resultId, List(aggExpr))
     }.distinct
 
     val residualAggregateExpressions = aggregateExpressions.map { aggExpr =>
@@ -117,8 +111,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     val groupByColumn = mutable.ListBuffer[String]()
     extractAggregation(groupingExpressions, pushdownAggregates, relation, aggregation, groupByColumn)
 
-    val output = (pushdownAggregates.map(x => toAlias(x)) ++ groupingExpressions)
-      .map(_.toAttribute)
+    val output = (pushdownAggregates.map(x => toAlias(x)) ++ groupingExpressions).map(_.toAttribute)
 
     val (pushdownFilters: Seq[Expression], _: Seq[Expression]) =
       filterPredicates.partition((expression: Expression) => CHUtil.isSupportedFilter(expression))
@@ -140,43 +133,37 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
         }
       case other => other.name
     }
-    val chPlan = CHPlan(resultExpressions.map(_.toAttribute), sparkSession, relation.tables, requiredCols, filtersString, chSqlAgg, relation.partitions, relation.decoders)
+    val chPlan = CHPlan(resultExpressions.map(_.toAttribute), sparkSession,
+      relation.tables, requiredCols, filtersString, chSqlAgg, relation.partitions, relation.decoders)
 
-    //    aggregate.AggUtils.planAggregateWithoutDistinct(
-    //      groupingExpressions,
-    //      residualAggregateExpressions,
-    //      resultExpressions,
+    //  aggregate.AggUtils.planAggregateWithoutDistinct(
+    //    groupingExpressions,
+    //    residualAggregateExpressions,
+    //    resultExpressions,
     chPlan :: Nil
-    //    )
+    //  )
   }
 
-
   def extractAggregation(
-                          groupByList: Seq[NamedExpression],
-                          aggregates: Seq[AggregateExpression],
-                          source: CHRelation,
-                          aggregations: mutable.ListBuffer[CHSqlAggFunc],
-                          groupByCols: mutable.ListBuffer[String]
-                        ): Unit = {
+    groupByList: Seq[NamedExpression],
+    aggregates: Seq[AggregateExpression],
+    source: CHRelation,
+    aggregations: mutable.ListBuffer[CHSqlAggFunc],
+    groupByCols: mutable.ListBuffer[String]): Unit = {
+
     aggregates.foreach {
       case AggregateExpression(Average(arg), _, _, _) =>
         aggregations += new CHSqlAggFunc("AVG", CHUtil.getFilterString(arg))
-
       case AggregateExpression(Sum(arg), _, _, _) =>
         aggregations += new CHSqlAggFunc("SUM", CHUtil.getFilterString(arg))
-
       case AggregateExpression(Count(args), _, _, _) =>
         aggregations += new CHSqlAggFunc("COUNT", CHUtil.getFilterString(args.head))
-
       case AggregateExpression(Min(arg), _, _, _) =>
         aggregations += new CHSqlAggFunc("MIN", CHUtil.getFilterString(arg))
-
       case AggregateExpression(Max(arg), _, _, _) =>
         aggregations += new CHSqlAggFunc("MAX", CHUtil.getFilterString(arg))
-
       case AggregateExpression(First(arg, _), _, _, _) =>
         aggregations += new CHSqlAggFunc("FIRST", CHUtil.getFilterString(arg))
-
       case _ =>
     }
 
@@ -184,13 +171,13 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
   }
 
   private def createCHPlan(
-                            tables: Seq[CHTableRef],
-                            relation: LogicalRelation,
-                            projectList: Seq[NamedExpression],
-                            filterPredicates: Seq[Expression],
-                            partitions: Int,
-                            decoders: Int,
-                            aggregation: CHSqlAgg = null): SparkPlan = {
+    tables: Seq[CHTableRef],
+    relation: LogicalRelation,
+    projectList: Seq[NamedExpression],
+    filterPredicates: Seq[Expression],
+    partitions: Int,
+    decoders: Int,
+    aggregation: CHSqlAgg = null): SparkPlan = {
 
     val projectSet = AttributeSet(projectList.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
@@ -214,18 +201,11 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       CHUtil.getFilterString(pushdownFilters)
     }
 
-    // println("PROBE Prjections: " + projectList)
-    // println("PROBE Predicates: " + filterPredicates)
-
-    // println("PROBE Pushdown:   " + pushdownFilters)
-    // println("PROBE Residual:   " + residualFilters)
-    // println("PROBE FiltersStr: " + filtersString)
-
-    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name), filtersString, aggregation, partitions, decoders)
+    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name), filtersString, aggregation,
+      partitions, decoders)
     residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
   }
 }
-
 
 object CHAggregation {
   type ReturnType = PhysicalAggregation.ReturnType
@@ -233,7 +213,6 @@ object CHAggregation {
   def unapply(a: Any): Option[ReturnType] = a match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions, resultExpressions, child) =>
       Some(groupingExpressions, aggregateExpressions, resultExpressions, child)
-
     case _ => Option.empty[ReturnType]
   }
 }
@@ -246,7 +225,7 @@ object CHAggregationProjection {
     // all projection expressions are column references
     case PhysicalOperation(projects, filters, rel@LogicalRelation(source: CHRelation, _, _))
       if projects.forall(_.isInstanceOf[Attribute]) =>
-      Some((filters, rel, source, projects))
+        Some((filters, rel, source, projects))
     case _ => Option.empty[ReturnType]
   }
 }
