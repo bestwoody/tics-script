@@ -17,6 +17,12 @@
 package org.apache.spark.sql.ch
 
 
+class CHSqlAggFunc(function: String, column: String) {
+}
+
+class CHSqlAgg(columns: Seq[String], functions: Seq[CHSqlAggFunc]) {
+}
+
 object CHSql {
   def desc(table: String): String = {
     "DESC " + table
@@ -44,5 +50,13 @@ object CHSql {
       case _ => columns.mkString(", ")
     }
     "SELECT " + columnsStr + " FROM " + table + filterStr
+  }
+
+  def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg): String = {
+    if (aggregation == null) {
+      scan(table, columns, filter)
+    } else {
+      throw new Exception("TODO: aggregation pushdown")
+    }
   }
 }

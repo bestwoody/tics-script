@@ -31,6 +31,7 @@ class CHRDD(
   val tables: Seq[CHTableRef],
   private val requiredColumns: Seq[String],
   private val filterString: String,
+  private val aggregation: CHSqlAgg,
   private val partitionCount: Int,
   private val decoderCount: Int) extends RDD[Row](sparkSession.sparkContext, Nil) {
 
@@ -39,7 +40,7 @@ class CHRDD(
 
     val table = split.asInstanceOf[CHPartition].table
     val qid = split.asInstanceOf[CHPartition].qid
-    val sql = CHSql.scan(table.absName, requiredColumns, filterString)
+    val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation)
     val resp = CHExecutorPool.get(qid, sql, table.host, table.port, table.absName, decoderCount)
 
     private def getBlock(): Iterator[Row] = {

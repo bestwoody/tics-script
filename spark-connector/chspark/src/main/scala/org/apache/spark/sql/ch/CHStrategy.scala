@@ -38,7 +38,7 @@ import org.apache.spark.sql.ch.mock.TypesTestRelation
 import org.apache.spark.sql.ch.mock.TypesTestPlan
 
 
-class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
+class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strategy with Logging {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     plan.collectFirst {
       case rel@LogicalRelation(relation: MockSimpleRelation, _: Option[Seq[Attribute]], _) =>
@@ -94,7 +94,8 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     // println("PROBE Residual:   " + residualFilters)
     // println("PROBE FiltersStr: " + filtersString)
 
-    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name).toSeq, filtersString, partitions, decoders)
+    var aggregation: CHSqlAgg = null
+    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name).toSeq, filtersString, aggregation, partitions, decoders)
     residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
   }
 }
