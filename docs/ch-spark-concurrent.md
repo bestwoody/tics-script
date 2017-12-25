@@ -1,6 +1,5 @@
-# The concurrent concept of query execution from Spark to CH
+# The concurrent concept of query execution
 
-## Bref of one query execution
 ```
 [G]: Global singleton
 [N]: Node singleton
