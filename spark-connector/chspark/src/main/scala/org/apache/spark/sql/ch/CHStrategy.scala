@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeSet, ExprId, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, ExprId, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.ch.mock._
@@ -103,10 +103,10 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       aggExpr.aggregateFunction match {
         // here aggExpr is the original AggregationExpression
         // and will be pushed down to TiKV
-        case Max(_)   => newAggregate(Max(toAlias(aggExpr).toAttribute), aggExpr)
-        case Min(_)   => newAggregate(Min(toAlias(aggExpr).toAttribute), aggExpr)
+        case Max(_) => newAggregate(Max(toAlias(aggExpr).toAttribute), aggExpr)
+        case Min(_) => newAggregate(Min(toAlias(aggExpr).toAttribute), aggExpr)
         case Count(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
-        case Sum(_)   => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
+        case Sum(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
         case First(_, ignoreNullsExpr) =>
           newAggregate(First(toAlias(aggExpr).toAttribute, ignoreNullsExpr), aggExpr)
         case _ => aggExpr
@@ -130,15 +130,24 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     }
 
     val chSqlAgg = new CHSqlAgg(groupByColumn, aggregation)
-    val requiredCols = resultExpressions.map(CHUtil.getFilterString(_))
+    val requiredCols = resultExpressions.map {
+      case a@Alias(child, _) =>
+        child match {
+          case AttributeReference(attributeName, _, _, _) =>
+            val idx = aggregateExpressions.map(e => e.aggregateFunction.toString()).indexOf(attributeName)
+            aggregation(idx).toString()
+          case _ => a.name
+        }
+      case other => other.name
+    }
     val chPlan = CHPlan(resultExpressions.map(_.toAttribute), sparkSession, relation.tables, requiredCols, filtersString, chSqlAgg, relation.partitions, relation.decoders)
 
-//    aggregate.AggUtils.planAggregateWithoutDistinct(
-//      groupingExpressions,
-//      residualAggregateExpressions,
-//      resultExpressions,
-      chPlan::Nil
-//    )
+    //    aggregate.AggUtils.planAggregateWithoutDistinct(
+    //      groupingExpressions,
+    //      residualAggregateExpressions,
+    //      resultExpressions,
+    chPlan :: Nil
+    //    )
   }
 
 
