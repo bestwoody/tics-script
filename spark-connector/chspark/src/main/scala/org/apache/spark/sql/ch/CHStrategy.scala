@@ -81,15 +81,6 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
                               ): Seq[SparkPlan] = {
     val aliasMap = mutable.HashMap[(Boolean, Expression), Alias]()
     val avgPushdownRewriteMap = mutable.HashMap[ExprId, List[AggregateExpression]]()
-    val avgFinalRewriteMap = mutable.HashMap[ExprId, List[AggregateExpression]]()
-
-    def newAggregate(aggFunc: AggregateFunction, originalAggExpr: AggregateExpression) =
-      AggregateExpression(
-        aggFunc,
-        originalAggExpr.mode,
-        originalAggExpr.isDistinct,
-        originalAggExpr.resultId
-      )
 
     def toAlias(expr: AggregateExpression) =
       if (!expr.deterministic) {
@@ -100,18 +91,6 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
           Alias(expr, expr.toString)()
         )
       }
-
-    val residualAggregateExpressions = aggregateExpressions.map { aggExpr =>
-      aggExpr.aggregateFunction match {
-        case Max(_) => newAggregate(Max(toAlias(aggExpr).toAttribute), aggExpr)
-        case Min(_) => newAggregate(Min(toAlias(aggExpr).toAttribute), aggExpr)
-        case Count(_) => newAggregate(Count(toAlias(aggExpr).toAttribute), aggExpr)
-        case Sum(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
-        case First(_, ignoreNullsExpr) =>
-          newAggregate(First(toAlias(aggExpr).toAttribute, ignoreNullsExpr), aggExpr)
-        case _ => aggExpr
-      }
-    }
 
     val pushdownAggregates = aggregateExpressions.flatMap { aggExpr =>
       avgPushdownRewriteMap
@@ -124,13 +103,9 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
     val output = (pushdownAggregates.map(x => toAlias(x)) ++ groupingExpressions)
       .map(_.toAttribute)
-    val projectSet = AttributeSet(projectList.flatMap(_.references))
-    val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
-    val requiredColumns = (projectSet ++ filterSet).toSeq.map(_.name)
 
-    val (pushdownFilters: Seq[Expression], residualFilters: Seq[Expression]) =
+    val (pushdownFilters: Seq[Expression], _: Seq[Expression]) =
       filterPredicates.partition((expression: Expression) => CHUtil.isSupportedFilter(expression))
-    val residualFilter: Option[Expression] = residualFilters.reduceLeftOption(And)
 
     val filtersString = if (pushdownFilters.isEmpty) {
       null
@@ -143,7 +118,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
     aggregate.AggUtils.planAggregateWithoutDistinct(
       groupingExpressions,
-      residualAggregateExpressions,
+      aggregateExpressions,
       resultExpressions,
       chPlan
     )
