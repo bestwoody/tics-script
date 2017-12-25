@@ -20,7 +20,7 @@ package org.apache.spark.sql.ch
 class CHSqlAggFunc(function: String, column: String) {
 }
 
-class CHSqlAgg(columns: Seq[String], functions: Seq[CHSqlAggFunc]) {
+class CHSqlAgg(groupByColumns: Seq[String], functions: Seq[CHSqlAggFunc]) {
 }
 
 object CHSql {
