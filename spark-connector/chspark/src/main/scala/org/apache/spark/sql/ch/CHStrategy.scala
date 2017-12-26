@@ -23,7 +23,7 @@ import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.ch.mock._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.{FilterExec, SparkPlan, aggregate}
+import org.apache.spark.sql.execution.{FilterExec, SparkPlan}
 import org.apache.spark.sql.{SparkSession, Strategy, execution}
 
 import scala.collection.mutable
@@ -128,27 +128,6 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
           project,
           pruneTopNFilterProject(rel, limit, projectList, filters, source, sortOrder)
         )
-//      case CHAggregation(
-//      groupingExpressions,
-//      aggregateExpressions,
-//      resultExpressions,
-//      CHAggregationProjection(filters, rel, relation, projects)) if aggPushdown =>
-//        // Add group / aggregate to CHPlan
-//        execution.TakeOrderedAndProjectExec(
-//          limit,
-//          sortOrder,
-//          project,
-//          groupAggregateProjection(
-//            groupingExpressions,
-//            aggregateExpressions,
-//            resultExpressions,
-//            projects,
-//            filters,
-//            relation,
-//            rel,
-//            extractCHTopN(sortOrder, limit)).head
-//        )
-
       case _ => execution.TakeOrderedAndProjectExec(limit, sortOrder, project, planLater(child))
     }
   }
