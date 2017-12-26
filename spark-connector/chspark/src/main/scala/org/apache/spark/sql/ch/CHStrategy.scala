@@ -126,9 +126,13 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     val requiredCols = resultExpressions.map {
       case a@Alias(child, _) =>
         child match {
-          case AttributeReference(attributeName, _, _, _) =>
+          case r@AttributeReference(attributeName, _, _, _) =>
             val idx = aggregateExpressions.map(e => e.aggregateFunction.toString()).indexOf(attributeName)
-            aggregation(idx).toString()
+            if (idx < 0) {
+              r.name
+            } else {
+              aggregation(idx).toString()
+            }
           case _ => a.name
         }
       case other => other.name
