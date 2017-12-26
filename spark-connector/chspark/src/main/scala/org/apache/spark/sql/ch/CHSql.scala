@@ -28,10 +28,17 @@ class CHSqlAggFunc(val function: String, val column: String) extends Serializabl
 object CHSqlAggFunc {
   def apply(function: String, exp: Expression*): CHSqlAggFunc =
     new CHSqlAggFunc(function, exp.map(CHUtil.expToCHString).mkString(","))
-
 }
 
-class CHSqlAgg(val groupByColumns: Seq[String], val functions: Seq[CHSqlAggFunc]) extends Serializable {
+class CHSqlAgg(val groupByColumns: Seq[String], val functions: Seq[CHSqlAggFunc]) extends Serializable
+
+class CHSqlTopN(val orderByColumns: Seq[CHSqlOrderByCol], val limit: String) extends Serializable
+
+class CHSqlOrderByCol(val orderByColName: String, val direction: String, val namedStructure: Boolean = false) extends Serializable
+
+object CHSqlOrderByCol {
+  def apply(orderByColName: String, direction: String, namedStructure: Boolean = false): CHSqlOrderByCol =
+    new CHSqlOrderByCol(orderByColName, direction, namedStructure)
 }
 
 object CHSql {
@@ -63,6 +70,25 @@ object CHSql {
       "SELECT " + columnsStr(columns) + " FROM " + table + filterStr(filter) +
         groupByColumnsStr(aggregation.groupByColumns)
     }
+  }
+
+  def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg, topN: CHSqlTopN): String = {
+    var sql = scan(table, columns, filter, aggregation)
+    val orderByColumns = topN.orderByColumns
+    val limit = topN.limit
+
+    if (orderByColumns != null && orderByColumns.nonEmpty) {
+      if (orderByColumns.head.namedStructure && orderByColumns.lengthCompare(1) == 0) {
+        sql += " ORDER BY (" + orderByColumns.head.orderByColName + ") " + orderByColumns.head.direction
+      } else {
+        sql += " ORDER BY " + orderByColumns.map(order => order.orderByColName + " " + order.direction).mkString(", ")
+      }
+    }
+
+    if (limit != null && limit.nonEmpty) {
+      sql += " LIMIT " + limit
+    }
+    sql
   }
 
   private def filterStr(filter: String): String = {
