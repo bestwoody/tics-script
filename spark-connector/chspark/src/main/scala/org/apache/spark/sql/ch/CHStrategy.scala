@@ -128,26 +128,26 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
           project,
           pruneTopNFilterProject(rel, limit, projectList, filters, source, sortOrder)
         )
-      case CHAggregation(
-      groupingExpressions,
-      aggregateExpressions,
-      resultExpressions,
-      CHAggregationProjection(filters, rel, relation, projects)) if aggPushdown =>
-        // Add group / aggregate to CHPlan
-        execution.TakeOrderedAndProjectExec(
-          limit,
-          sortOrder,
-          project,
-          groupAggregateProjection(
-            groupingExpressions,
-            aggregateExpressions,
-            resultExpressions,
-            projects,
-            filters,
-            relation,
-            rel,
-            extractCHTopN(sortOrder, limit)).head
-        )
+//      case CHAggregation(
+//      groupingExpressions,
+//      aggregateExpressions,
+//      resultExpressions,
+//      CHAggregationProjection(filters, rel, relation, projects)) if aggPushdown =>
+//        // Add group / aggregate to CHPlan
+//        execution.TakeOrderedAndProjectExec(
+//          limit,
+//          sortOrder,
+//          project,
+//          groupAggregateProjection(
+//            groupingExpressions,
+//            aggregateExpressions,
+//            resultExpressions,
+//            projects,
+//            filters,
+//            relation,
+//            rel,
+//            extractCHTopN(sortOrder, limit)).head
+//        )
 
       case _ => execution.TakeOrderedAndProjectExec(limit, sortOrder, project, planLater(child))
     }
