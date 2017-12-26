@@ -119,7 +119,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     val filtersString = if (pushdownFilters.isEmpty) {
       null
     } else {
-      CHUtil.getFilterString(pushdownFilters)
+      CHUtil.expToCHString(pushdownFilters)
     }
 
     val chSqlAgg = new CHSqlAgg(groupByColumn, aggregation)
@@ -157,21 +157,23 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
     aggregates.foreach {
       case AggregateExpression(Average(arg), _, _, _) =>
-        aggregations += new CHSqlAggFunc("AVG", CHUtil.getFilterString(arg))
+        aggregations += CHSqlAggFunc("AVG", arg)
       case AggregateExpression(Sum(arg), _, _, _) =>
-        aggregations += new CHSqlAggFunc("SUM", CHUtil.getFilterString(arg))
+        aggregations += CHSqlAggFunc("SUM", arg)
       case AggregateExpression(Count(args), _, _, _) =>
-        aggregations += new CHSqlAggFunc("COUNT", CHUtil.getFilterString(args.head))
+        aggregations += CHSqlAggFunc("COUNT", args: _*)
       case AggregateExpression(Min(arg), _, _, _) =>
-        aggregations += new CHSqlAggFunc("MIN", CHUtil.getFilterString(arg))
+        aggregations += CHSqlAggFunc("MIN", arg)
       case AggregateExpression(Max(arg), _, _, _) =>
-        aggregations += new CHSqlAggFunc("MAX", CHUtil.getFilterString(arg))
+        aggregations += CHSqlAggFunc("MAX", arg)
       case AggregateExpression(First(arg, _), _, _, _) =>
-        aggregations += new CHSqlAggFunc("FIRST", CHUtil.getFilterString(arg))
+        aggregations += CHSqlAggFunc("FIRST", arg)
+      case AggregateExpression(Last(arg, _), _, _, _) =>
+        aggregations += CHSqlAggFunc("LAST", arg)
       case _ =>
     }
 
-    groupByList.foreach(groupByCols += CHUtil.getFilterString(_))
+    groupByList.foreach(groupByCols += CHUtil.expToCHString(_))
   }
 
   private def createCHPlan(
@@ -202,7 +204,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     val filtersString = if (pushdownFilters.isEmpty) {
       null
     } else {
-      CHUtil.getFilterString(pushdownFilters)
+      CHUtil.expToCHString(pushdownFilters)
     }
 
     val rdd = CHPlan(output, sparkSession, tables, output.map(_.name), filtersString, aggregation,

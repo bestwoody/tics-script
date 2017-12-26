@@ -126,60 +126,60 @@ object CHUtil {
     }
   }
 
-  def getFilterString(filters: Seq[Expression]): String = {
+  def expToCHString(filters: Seq[Expression]): String = {
     filters.map(filter => {
-      "(" + getFilterString(filter) + ")"
+      "(" + expToCHString(filter) + ")"
     }).mkString(" AND ")
   }
 
-  def getFilterString(filter: Expression): String = {
+  def expToCHString(filter: Expression): String = {
     filter match {
       case Literal(value, dataType) =>
         sparkValueToString(value, dataType)
       case attr: AttributeReference =>
         attr.name
       case Cast(child, dataType) =>
-        getCastString(getFilterString(child), dataType)
+        getCastString(expToCHString(child), dataType)
       case IsNotNull(child) =>
-        getFilterString(child) + " IS NOT NULL"
+        expToCHString(child) + " IS NOT NULL"
       case Add(lhs, rhs) =>
-        getFilterString(lhs) + " + " + getFilterString(rhs)
+        expToCHString(lhs) + " + " + expToCHString(rhs)
       case Subtract(lhs, rhs) =>
-        getFilterString(lhs) + " - " + getFilterString(rhs)
+        expToCHString(lhs) + " - " + expToCHString(rhs)
       case Multiply(lhs, rhs) =>
-        getFilterString(lhs) + " * " + getFilterString(rhs)
+        expToCHString(lhs) + " * " + expToCHString(rhs)
       case Divide(lhs, rhs) =>
-        getFilterString(lhs) + " / " + getFilterString(rhs)
+        expToCHString(lhs) + " / " + expToCHString(rhs)
       // TODO: Check Remainder's handling is OK
       case Remainder(lhs, rhs) =>
-        getFilterString(lhs) + " % " + getFilterString(rhs)
+        expToCHString(lhs) + " % " + expToCHString(rhs)
       // TODO: Check Alias's handling is OK
       case Alias(child, name) =>
-        getFilterString(child) + " AS " + name
+        expToCHString(child) + " AS " + name
       case GreaterThan(lhs, rhs) =>
-        getFilterString(lhs) + " > " + getFilterString(rhs)
+        expToCHString(lhs) + " > " + expToCHString(rhs)
       case GreaterThanOrEqual(lhs, rhs) =>
-        getFilterString(lhs) + " >= " + getFilterString(rhs)
+        expToCHString(lhs) + " >= " + expToCHString(rhs)
       case LessThan(lhs, rhs) =>
-        getFilterString(lhs) + " < " + getFilterString(rhs)
+        expToCHString(lhs) + " < " + expToCHString(rhs)
       case LessThanOrEqual(lhs, rhs) =>
-        getFilterString(lhs) + " <= " + getFilterString(rhs)
+        expToCHString(lhs) + " <= " + expToCHString(rhs)
       case EqualTo(lhs, rhs) =>
-        getFilterString(lhs) + " = " + getFilterString(rhs)
+        expToCHString(lhs) + " = " + expToCHString(rhs)
       // case Not(EqualTo(lhs), rhs) =>
       //  getFilterString(lhs) + " != " + getFilterString(rhs)
       case Sum(child) =>
-        "SUM(" + getFilterString(child) + ")"
+        "SUM(" + expToCHString(child) + ")"
       case Average(child) =>
-        "AVG(" + getFilterString(child) + ")"
+        "AVG(" + expToCHString(child) + ")"
       case Count(children) =>
-        "COUNT(" + children.map(getFilterString).mkString(",") + ")"
+        "COUNT(" + children.map(expToCHString).mkString(",") + ")"
       case Min(child) =>
-        "MIN(" + getFilterString(child) + ")"
+        "MIN(" + expToCHString(child) + ")"
       case Max(child) =>
-        "MAX(" + getFilterString(child) + ")"
+        "MAX(" + expToCHString(child) + ")"
       case Not(child) =>
-        "NOT " + getFilterString(child)
+        "NOT " + expToCHString(child)
     }
   }
 

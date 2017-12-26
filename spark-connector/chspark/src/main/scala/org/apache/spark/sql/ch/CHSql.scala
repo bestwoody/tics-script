@@ -16,11 +16,19 @@
 
 package org.apache.spark.sql.ch
 
+import org.apache.spark.sql.catalyst.expressions.Expression
+
 
 class CHSqlAggFunc(val function: String, val column: String) extends Serializable {
-  override def toString(): String = {
+  override def toString: String = {
     function + "(" + column + ")"
   }
+}
+
+object CHSqlAggFunc {
+  def apply(function: String, exp: Expression*): CHSqlAggFunc =
+    new CHSqlAggFunc(function, exp.map(CHUtil.expToCHString).mkString(","))
+
 }
 
 class CHSqlAgg(val groupByColumns: Seq[String], val functions: Seq[CHSqlAggFunc]) extends Serializable {
