@@ -218,12 +218,12 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       relation.tables, requiredCols, filtersString, chSqlAgg, extractCHTopN(sortOrder, limit),
       relation.partitions, relation.decoders)
 
-    aggregate.AggUtils.planAggregateWithoutDistinct(
-      groupingExpressions,
-      residualAggregateExpressions,
-      resultExpressions,
-      chPlan
-    )
+//    aggregate.AggUtils.planAggregateWithoutDistinct(
+//      groupingExpressions,
+//      residualAggregateExpressions,
+//      resultExpressions,
+      chPlan::Nil
+//    )
   }
 
   def extractAggregation(
