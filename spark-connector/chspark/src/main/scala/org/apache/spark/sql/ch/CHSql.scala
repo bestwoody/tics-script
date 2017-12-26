@@ -82,20 +82,23 @@ object CHSql {
 
   def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg, topN: CHSqlTopN): String = {
     var sql = scan(table, columns, filter, aggregation)
-    val orderByColumns = topN.orderByColumns
-    val limit = topN.limit
+    if (topN != null) {
+      val orderByColumns = topN.orderByColumns
+      val limit = topN.limit
 
-    if (orderByColumns != null && orderByColumns.nonEmpty) {
-      if (orderByColumns.head.namedStructure && orderByColumns.lengthCompare(1) == 0) {
-        sql += " ORDER BY (" + orderByColumns.head.orderByColName + ") " + orderByColumns.head.direction
-      } else {
-        sql += " ORDER BY " + orderByColumns.map(order => order.orderByColName + " " + order.direction).mkString(", ")
+      if (orderByColumns != null && orderByColumns.nonEmpty) {
+        if (orderByColumns.head.namedStructure && orderByColumns.lengthCompare(1) == 0) {
+          sql += " ORDER BY (" + orderByColumns.head.orderByColName + ") " + orderByColumns.head.direction
+        } else {
+          sql += " ORDER BY " + orderByColumns.map(order => order.orderByColName + " " + order.direction).mkString(", ")
+        }
+      }
+
+      if (limit != null && limit.nonEmpty) {
+        sql += " LIMIT " + limit
       }
     }
 
-    if (limit != null && limit.nonEmpty) {
-      sql += " LIMIT " + limit
-    }
     sql
   }
 
