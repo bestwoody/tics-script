@@ -89,10 +89,11 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     sortOrder.foreach(order =>
       order.child match {
         case AttributeReference(name, _, _, _) =>
-          topN += CHSqlOrderByCol(order.direction.sql, name)
+          topN += CHSqlOrderByCol(name, order.direction.sql)
         case namedStructure@CreateNamedStruct(_) =>
-          topN += CHSqlOrderByCol(order.direction.sql,
+          topN += CHSqlOrderByCol(
             namedStructure.nameExprs.map(CHUtil.expToCHString).mkString(","),
+            order.direction.sql,
             namedStructure = true)
       }
     )
