@@ -32,9 +32,17 @@ object CHSqlAggFunc {
 
 class CHSqlAgg(val groupByColumns: Seq[String], val functions: Seq[CHSqlAggFunc]) extends Serializable
 
-class CHSqlTopN(val orderByColumns: Seq[CHSqlOrderByCol], val limit: String) extends Serializable
+class CHSqlTopN(val orderByColumns: Seq[CHSqlOrderByCol], val limit: String) extends Serializable {
+  override def toString: String = {
+    orderByColumns.mkString(";") + s"; LIMIT=$limit"
+  }
+}
 
-class CHSqlOrderByCol(val orderByColName: String, val direction: String, val namedStructure: Boolean = false) extends Serializable
+class CHSqlOrderByCol(val orderByColName: String, val direction: String, val namedStructure: Boolean = false) extends Serializable {
+  override def toString: String = {
+    s"orderByCol=$orderByColName,direction=$direction"
+  }
+}
 
 object CHSqlOrderByCol {
   def apply(orderByColName: String, direction: String, namedStructure: Boolean = false): CHSqlOrderByCol =

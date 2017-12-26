@@ -128,6 +128,27 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
           project,
           pruneTopNFilterProject(rel, limit, projectList, filters, source, sortOrder)
         )
+      case CHAggregation(
+      groupingExpressions,
+      aggregateExpressions,
+      resultExpressions,
+      CHAggregationProjection(filters, rel, relation, projects)) if aggPushdown =>
+        // Add group / aggregate to CHPlan
+        execution.TakeOrderedAndProjectExec(
+          limit,
+          sortOrder,
+          project,
+          groupAggregateProjection(
+            groupingExpressions,
+            aggregateExpressions,
+            resultExpressions,
+            projects,
+            filters,
+            relation,
+            rel,
+            extractCHTopN(sortOrder, limit)).head
+        )
+
       case _ => execution.TakeOrderedAndProjectExec(limit, sortOrder, project, planLater(child))
     }
   }
@@ -141,8 +162,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
                                 filterPredicates: Seq[Expression],
                                 relation: CHRelation,
                                 rel: LogicalRelation,
-                                limit: Int = 20,
-                                sortOrder: Seq[SortOrder] = Nil): Seq[SparkPlan] = {
+                                cHSqlTopN: CHSqlTopN = null): Seq[SparkPlan] = {
 
     val aliasMap = mutable.HashMap[(Boolean, Expression), Alias]()
     val avgPushdownRewriteMap = mutable.HashMap[ExprId, List[AggregateExpression]]()
@@ -215,15 +235,15 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     }
 
     val chPlan = CHPlan(resultExpressions.map(_.toAttribute), sparkSession,
-      relation.tables, requiredCols, filtersString, chSqlAgg, extractCHTopN(sortOrder, limit),
+      relation.tables, requiredCols, filtersString, chSqlAgg, cHSqlTopN,
       relation.partitions, relation.decoders)
 
-//    aggregate.AggUtils.planAggregateWithoutDistinct(
-//      groupingExpressions,
-//      residualAggregateExpressions,
-//      resultExpressions,
-      chPlan::Nil
-//    )
+    //    aggregate.AggUtils.planAggregateWithoutDistinct(
+    //      groupingExpressions,
+    //      residualAggregateExpressions,
+    //      resultExpressions,
+    chPlan :: Nil
+    //    )
   }
 
   def extractAggregation(
