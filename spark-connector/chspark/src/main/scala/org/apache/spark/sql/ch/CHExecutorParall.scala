@@ -26,6 +26,7 @@ import org.apache.spark.sql.Row
 
 // TODO: May need rpc retry.
 class CHExecutorParall(
+  val qid: String,
   val query: String,
   val host: String,
   val port: Int,
@@ -57,7 +58,7 @@ class CHExecutorParall(
 
   private val decodings: BlockingQueue[CHExecutor.Package] = new LinkedBlockingQueue[CHExecutor.Package](threads)
   private val decodeds: BlockingQueue[Result] = new LinkedBlockingQueue[Result](threads)
-  private val executor = new CHExecutor(query, host, port)
+  private val executor = new CHExecutor(qid, query, host, port)
 
   startDecode()
   startFetch()

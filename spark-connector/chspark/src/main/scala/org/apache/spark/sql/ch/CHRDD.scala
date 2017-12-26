@@ -15,7 +15,6 @@
 
 package org.apache.spark.sql.ch
 
-import scala.util.Random
 import scala.collection.mutable.ListBuffer
 
 import org.apache.spark.{Partition, TaskContext}
@@ -83,7 +82,7 @@ class CHRDD(
 
   override protected def getPartitions: Array[Partition] = {
     // TODO: Read cluster info from CH masterH
-    val qid = Random.nextInt.toString
+    val qid = CHUtil.genQueryId
     val result = new ListBuffer[CHPartition]
     var index = 0
     tables.foreach(table => {

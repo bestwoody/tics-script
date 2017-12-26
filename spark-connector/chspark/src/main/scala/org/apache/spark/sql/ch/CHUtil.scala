@@ -15,13 +15,17 @@
 
 package org.apache.spark.sql.ch
 
+import scala.util.Random
+
 import org.apache.arrow.vector.VectorSchemaRoot
+
 import org.apache.spark.sql.types.DataType
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.MetadataBuilder
 import org.apache.spark.sql.types.{StringType, TimestampType}
 import org.apache.spark.sql.types.{DoubleType, FloatType}
 import org.apache.spark.sql.types.{ByteType, IntegerType, LongType, ShortType}
+
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
@@ -39,14 +43,19 @@ import org.apache.spark.sql.catalyst.expressions.LessThanOrEqual
 import org.apache.spark.sql.catalyst.expressions.EqualTo
 import org.apache.spark.sql.catalyst.expressions.Not
 import org.apache.spark.sql.catalyst.expressions.Cast
-import org.apache.spark.sql.catalyst.expressions.aggregate._
+
+import org.apache.spark.sql.catalyst.expressions.aggregate.Min
+import org.apache.spark.sql.catalyst.expressions.aggregate.Max
+import org.apache.spark.sql.catalyst.expressions.aggregate.Sum
+import org.apache.spark.sql.catalyst.expressions.aggregate.Average
+import org.apache.spark.sql.catalyst.expressions.aggregate.Count
 
 
 object CHUtil {
   def getFields(table: CHTableRef): Array[StructField] = {
     val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
 
-    val resp = new CHExecutorParall(CHSql.desc(table.absName), table.host, table.port, table.absName, 1)
+    val resp = new CHExecutorParall("", CHSql.desc(table.absName), table.host, table.port, table.absName, 1)
     var fields = new Array[StructField](0)
 
     var names = new Array[String](0)
@@ -181,6 +190,11 @@ object CHUtil {
       case Not(child) =>
         "NOT " + getFilterString(child)
     }
+  }
+
+  def genQueryId(): String = {
+    // TODO: Better random string
+    Random.nextInt.toString + "-" + Random.nextInt.toString
   }
 
   private def getCastString(value: String, dataType: DataType) = {

@@ -3,7 +3,8 @@
 #include <Poco/Net/TCPServerConnectionFactory.h>
 #include <common/logger_useful.h>
 #include "Server/IServer.h"
-#include "TCPArrowHandler.h"
+
+#include "TCPArrowSessions.h"
 
 namespace Poco { class Logger; }
 
@@ -24,8 +25,8 @@ public:
 
     Poco::Net::TCPServerConnection * createConnection(const Poco::Net::StreamSocket & socket) override
     {
-        LOG_TRACE(log, "TCP Arrow Request. " << "Address: " << socket.peerAddress().toString());
-        return new TCPArrowHandler(server, socket);
+        LOG_TRACE(log, "TCP arrow request. Address: " << socket.peerAddress().toString());
+        return TCPArrowSessions::create(server, socket);
     }
 };
 

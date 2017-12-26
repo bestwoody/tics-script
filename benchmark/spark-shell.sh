@@ -17,6 +17,7 @@ if [ -z "$ip" ]; then
 	ip="127.0.0.1"
 fi
 
+ip="Marvin"
 echo "local ip: $ip"
 
 $repo_dir/spark-connector/spark/bin/spark-shell --master spark://$ip:7077 --executor-memory 12G  $@

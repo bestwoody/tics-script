@@ -105,8 +105,9 @@ public class CHExecutor {
         public final int id;
     }
 
-    public CHExecutor(String query, String host, int port) throws IOException, CHExecutorException {
+    public CHExecutor(String qid, String query, String host, int port) throws IOException, CHExecutorException {
         this.arrowDecoder = new ArrowDecoder();
+        this.qid = qid;
         this.query = query;
         this.socket = new Socket(host, port);
         this.writer = new DataOutputStream(socket.getOutputStream());
@@ -114,7 +115,7 @@ public class CHExecutor {
         this.finished = false;
         this.idgen = 0;
 
-        sendQuery(query);
+        sendQuery();
         fetchSchema();
     }
 
@@ -188,13 +189,22 @@ public class CHExecutor {
         }
     }
 
-    private void sendQuery(String query) throws IOException {
-        long val = PackageTypeUtf8Query;
+    private void sendQuery() throws IOException {
+        long val = PackageTypeHeader;
         writer.writeLong(val);
-        val = query.length();
+        val = PROTOCOL_VERSION;
         writer.writeLong(val);
-        writer.writeBytes(query);
+        sendString(qid);
+        val = PackageTypeUtf8Query;
+        writer.writeLong(val);
+        sendString(query);
         writer.flush();
+    }
+
+    private void sendString(String str) throws IOException {
+        long val = str.length();
+        writer.writeLong(val);
+        writer.writeBytes(str);
     }
 
     private void fetchSchema() throws IOException, CHExecutorException {
@@ -216,6 +226,7 @@ public class CHExecutor {
         schema = arrowDecoder.decodeSchema(data);
     }
 
+    public final String qid;
     public final String query;
     private Socket socket;
     private DataOutputStream writer;
@@ -225,9 +236,13 @@ public class CHExecutor {
     private int idgen;
 
     private ArrowDecoder arrowDecoder;
-    private static final long PackageTypeEnd = 0;
-    private static final long PackageTypeUtf8Error = 1;
-    private static final long PackageTypeUtf8Query = 2;
-    private static final long PackageTypeArrowSchema = 3;
-    private static final long PackageTypeArrowData = 4;
+
+    private static final long PackageTypeHeader = 0;
+    private static final long PackageTypeEnd = 1;
+    private static final long PackageTypeUtf8Error = 8;
+    private static final long PackageTypeUtf8Query = 9;
+    private static final long PackageTypeArrowSchema = 10;
+    private static final long PackageTypeArrowData = 11;
+
+    private static final long PROTOCOL_VERSION = 111;
 }

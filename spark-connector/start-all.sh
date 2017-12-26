@@ -13,6 +13,7 @@ if [ -z "$ip" ]; then
 	ip="127.0.0.1"
 fi
 
+ip="Marvin"
 echo "local ip: $ip"
 
 ip_check="`echo $ip | wc -l | awk '{print $1}'`"

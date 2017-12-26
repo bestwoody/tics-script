@@ -49,7 +49,7 @@ object CHExecutorPool {
       if (instances.contains(key)) {
         instances(key).ref
       } else {
-        val executor = new CHExecutorParall(query, host, port, table, threads, encode)
+        val executor = new CHExecutorParall(qid, query, host, port, table, threads, encode)
         val handle = new Executor(executor, key)
         instances += (key -> handle)
         handle
