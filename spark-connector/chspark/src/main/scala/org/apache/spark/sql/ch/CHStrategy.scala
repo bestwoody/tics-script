@@ -41,24 +41,24 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
         plan match {
           case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
             createCHPlan(relation.tables, rel, projectList, filterPredicates, chr.partitions, chr.decoders) :: Nil
-          case _ => Nil
-        }
-      }
-      case CHAggregation(
-        groupingExpressions,
-        aggregateExpressions,
-        resultExpressions,
-        CHAggregationProjection(filters, rel, relation, projects)) if aggPushdown => {
-        // Add group / aggregate to CHPlan
-        groupAggregateProjection(
+          case CHAggregation(
           groupingExpressions,
           aggregateExpressions,
           resultExpressions,
-          projects,
-          filters,
-          relation,
-          rel)
+          CHAggregationProjection(filters, _, _, projects)) if aggPushdown =>
+            // Add group / aggregate to CHPlan
+            groupAggregateProjection(
+              groupingExpressions,
+              aggregateExpressions,
+              resultExpressions,
+              projects,
+              filters,
+              relation,
+              rel)
+          case _ => Nil
+        }
       }
+
     }.toSeq.flatten
   }
 
