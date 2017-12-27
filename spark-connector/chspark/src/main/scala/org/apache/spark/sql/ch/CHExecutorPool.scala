@@ -47,7 +47,6 @@ object CHExecutorPool {
     this.synchronized {
       val key = getKey(qid, query, host, port, table, threads)
       if (instances.contains(key)) {
-        println("New Exec: " + key)
         instances(key).ref
       } else {
         val executor = new CHExecutorParall(qid, query, host, port, table, threads, encode)

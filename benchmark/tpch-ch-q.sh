@@ -10,4 +10,4 @@ fi
 source _env.sh
 
 sql=`cat sql-ch/q"$n".sql | tr '\n' ' '`
-$chbin client --query="$sql"
+$chbin client --host 127.0.0.1 --query="$sql"

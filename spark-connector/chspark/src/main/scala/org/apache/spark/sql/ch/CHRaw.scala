@@ -41,7 +41,7 @@ object CHRaw {
       9006
     }
 
-    val qid = Random.nextInt.toString
+    val qid = CHUtil.genQueryId
 
     val workers = new Array[Thread](partitions);
 
