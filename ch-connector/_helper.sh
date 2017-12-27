@@ -10,6 +10,9 @@ setup_gcc_on_mac()
 		echo "g++-7 not found, install it first, exiting" >&2
 		exit
 	fi
+
+	export CPLUS_INCLUDE_PATH=`$CXX -x c++ -v -E /dev/null 2>&1 | grep '<...> search starts here' -A 99 | grep 'End of search list' -B 99 | grep -v ' search ' | awk '{print $1}' | tr '\n' ':'`
+	export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/local/include"
 }
 export -f setup_gcc_on_mac
 
