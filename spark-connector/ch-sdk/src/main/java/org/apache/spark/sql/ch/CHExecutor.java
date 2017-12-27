@@ -115,6 +115,7 @@ public class CHExecutor {
         this.finished = false;
         this.idgen = 0;
 
+        sendHeader();
         sendQuery();
         fetchSchema();
     }
@@ -189,21 +190,38 @@ public class CHExecutor {
         }
     }
 
+    private void sendHeader() throws IOException {
+        writer.writeLong((long)PackageTypeHeader);
+        writer.writeLong((long)PROTOCOL_VERSION_MAJOR);
+        writer.writeLong((long)PROTOCOL_VERSION_MINOR);
+
+        // TODO: Pass values from args
+
+        // Client name
+        sendString("chspark");
+        // Default database
+        sendString("");
+
+        // User/password
+        sendString("default");
+        sendString("");
+
+        // Encoder name/version/concurrent
+        sendString("arrow");
+        writer.writeLong((long)PROTOCOL_ENCODER_VERTION);
+        writer.writeLong((long)0);
+        writer.flush();
+    }
+
     private void sendQuery() throws IOException {
-        long val = PackageTypeHeader;
-        writer.writeLong(val);
-        val = PROTOCOL_VERSION;
-        writer.writeLong(val);
+        writer.writeLong((long)PackageTypeUtf8Query);
         sendString(qid);
-        val = PackageTypeUtf8Query;
-        writer.writeLong(val);
         sendString(query);
         writer.flush();
     }
 
     private void sendString(String str) throws IOException {
-        long val = str.length();
-        writer.writeLong(val);
+        writer.writeLong((long)str.length());
         writer.writeBytes(str);
     }
 
@@ -244,5 +262,7 @@ public class CHExecutor {
     private static final long PackageTypeArrowSchema = 10;
     private static final long PackageTypeArrowData = 11;
 
-    private static final long PROTOCOL_VERSION = 111;
+    private static final long PROTOCOL_VERSION_MAJOR = 1;
+    private static final long PROTOCOL_VERSION_MINOR = 1;
+    private static final long PROTOCOL_ENCODER_VERTION = 1;
 }

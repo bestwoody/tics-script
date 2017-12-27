@@ -2,42 +2,28 @@
 
 #include <IO/ReadBufferFromPocoSocket.h>
 #include <IO/WriteBufferFromPocoSocket.h>
-#include <IO/ReadHelpers.h>
 
-namespace DB
+namespace Magic
 {
 
-inline Int64 readInt64(ReadBuffer & istr)
+namespace Protocol
 {
-    Int64 x = 0;
-    for (size_t i = 0; i < 8; ++i)
+    enum
     {
-        if (istr.eof())
-            throwReadAfterEOF();
-
-        UInt8 byte = *istr.position();
-        ++istr.position();
-        x |= (byte) << (8 * (7 - i));
-    }
-    return x;
+        Header = 0,
+        End = 1,
+        Utf8Error = 8,
+        Utf8Query = 9,
+        ArrowSchema = 10,
+        ArrowData = 11,
+    };
 }
 
-inline void readString(std::string & x, ReadBuffer & istr)
-{
-    Int64 size = readInt64(istr);
-    x.resize(size);
-    istr.readStrict(&x[0], size);
-}
+Int64 readInt64(DB::ReadBuffer & istr);
+
+void readString(std::string & x, DB::ReadBuffer & istr);
 
 // TODO: Use big-endian now, may be use little-endian is better
-inline void writeInt64(Int64 x, WriteBuffer & ostr)
-{
-    UInt8 byte = 0;
-    for (size_t i = 0; i < 8; ++i)
-    {
-        byte = (x >> (8 * (7 - i))) & 0xFF;
-        ostr.write((const char*)&byte, 1);
-    }
-}
+void writeInt64(Int64 x, DB::WriteBuffer & ostr);
 
 }

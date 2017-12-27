@@ -40,13 +40,14 @@ object CHExecutorPool {
   val instances: Map[String, Executor] = Map()
 
   private def getKey(qid: String, query: String, host: String, port: Int, table: String, threads: Int): String = {
-    qid + query + host + port + table
+    qid + ":" + query + ":" + host + ":" + port + ":" + table
   }
 
   def get(qid: String, query: String, host: String, port: Int, table: String, threads: Int, encode: Boolean = true): Executor = {
     this.synchronized {
       val key = getKey(qid, query, host, port, table, threads)
       if (instances.contains(key)) {
+        println("New Exec: " + key)
         instances(key).ref
       } else {
         val executor = new CHExecutorParall(qid, query, host, port, table, threads, encode)

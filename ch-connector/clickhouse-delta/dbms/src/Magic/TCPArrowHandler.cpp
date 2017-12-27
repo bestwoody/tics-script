@@ -7,10 +7,6 @@
 #include <Common/ClickHouseRevision.h>
 #include <Common/Stopwatch.h>
 
-#include <IO/ReadBufferFromPocoSocket.h>
-#include <IO/WriteBufferFromPocoSocket.h>
-#include <IO/copyData.h>
-
 #include <DataStreams/NativeBlockOutputStream.h>
 #include <Interpreters/executeQuery.h>
 
@@ -24,8 +20,12 @@ namespace DB
 namespace ErrorCodes
 {
     extern const int POCO_EXCEPTION;
+    extern const int UNKNOWN_DATABASE;
 }
 
+static Int64 PROTOCOL_VERSION_MAJOR = 1;
+static Int64 PROTOCOL_VERSION_MINOR = 1;
+static Int64 PROTOCOL_ENCODER_VERSION = 1;
 
 // TODO: Catch error when connection lost
 void TCPArrowHandler::runImpl()
@@ -39,22 +39,20 @@ void TCPArrowHandler::runImpl()
     socket().setSendTimeout(global_settings.send_timeout);
     socket().setNoDelay(true);
 
-    while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(global_settings.poll_interval * 1000000) && !server.isCancelled());
-
-    if (server.isCancelled())
+    if (!default_database.empty())
     {
-        LOG_WARNING(log, "Server have been cancelled.");
-        return;
+        if (!connection_context.isDatabaseExist(default_database))
+        {
+            Exception e("Database " + default_database + " doesn't exist", ErrorCodes::UNKNOWN_DATABASE);
+            LOG_ERROR(log, "Code: " << e.code() << ", e.displayText() = " << e.displayText()
+                << ", Stack trace:\n\n" << e.getStackTrace().toString());
+            throw e;
+        }
+
+        connection_context.setCurrentDatabase(default_database);
     }
 
-    if (in->eof())
-    {
-        LOG_WARNING(log, "Client has not sent any data.");
-        return;
-    }
-
-    connection_context.setUser("default", "", socket().peerAddress(), "");
-    connection_context.setCurrentDatabase("default");
+    connection_context.setUser(user, password, socket().peerAddress(), "");
 
     bool failed = false;
     while (!failed)
@@ -102,13 +100,17 @@ void TCPArrowHandler::runImpl()
 
 void TCPArrowHandler::processOrdinaryQuery()
 {
-    size_t decoders = 8;
+    size_t this_encoder_count = 8;
     if (server.config().has("arrow_encoders"))
-        decoders = server.config().getInt("arrow_encoders");
+        this_encoder_count = server.config().getInt("arrow_encoders");
+    if (encoder_count > 0)
+        this_encoder_count = encoder_count;
+    if (this_encoder_count <= 0)
+        throw Exception("Encoder number invalid.");
 
-    LOG_INFO(log, "Start process ordinary query, arrow encoder threads: " << decoders);
+    LOG_INFO(log, "Start process ordinary query, arrow encoder threads: " << this_encoder_count);
 
-    Magic::ArrowEncoderParall encoder(state.io, decoders);
+    Magic::ArrowEncoderParall encoder(state.io, this_encoder_count);
 
     if (encoder.hasError())
         throw Exception(encoder.getErrorString());
@@ -118,8 +120,8 @@ void TCPArrowHandler::processOrdinaryQuery()
         throw Exception(encoder.getErrorString());
 
     // Protocol: Send encoded schema
-    writeInt64(::Magic::Protocol::ArrowSchema, *out);
-    writeInt64(schema->size(), *out);
+    Magic::writeInt64(Magic::Protocol::ArrowSchema, *out);
+    Magic::writeInt64(schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
     out->next();
 
@@ -133,32 +135,80 @@ void TCPArrowHandler::processOrdinaryQuery()
 
         // Protocol: Send encoded bock
         // TODO: May block forever, if client dead
-        writeInt64(::Magic::Protocol::ArrowData, *out);
-        writeInt64(block->size(), *out);
+        Magic::writeInt64(Magic::Protocol::ArrowData, *out);
+        Magic::writeInt64(block->size(), *out);
         out->write((const char*)block->data(), block->size());
         out->next();
     }
 
     // Protocol: Send ending mark
-    writeInt64(::Magic::Protocol::End, *out);
-    writeInt64(0, *out);
+    Magic::writeInt64(Magic::Protocol::End, *out);
+    Magic::writeInt64(0, *out);
     out->next();
+}
+
+
+void TCPArrowHandler::recvHeader()
+{
+    // TODO: better throw exceptions
+
+    Int64 flag = Magic::readInt64(*in);
+    if (flag != Magic::Protocol::Header)
+        throw Exception("TCP arrow request: first package should be header.");
+
+    protocol_version_major = Magic::readInt64(*in);
+    protocol_version_minor = Magic::readInt64(*in);
+    if (protocol_version_major != PROTOCOL_VERSION_MAJOR || protocol_version_minor != PROTOCOL_VERSION_MINOR)
+    {
+        std::stringstream ss;
+        ss << "TCP arrow request: protocol version not match: " <<
+            protocol_version_major << "." << protocol_version_minor << " vs " <<
+            PROTOCOL_VERSION_MAJOR << "." << PROTOCOL_VERSION_MINOR;
+        throw Exception(ss.str());
+    }
+
+    Magic::readString(client_name, *in);
+    LOG_INFO(log, "TCPArrowHandler client name: " << client_name);
+
+    Magic::readString(default_database, *in);
+    LOG_INFO(log, "TCPArrowHandler default database: " << default_database);
+
+    user = "default";
+    Magic::readString(user, *in);
+    Magic::readString(password, *in);
+    LOG_INFO(log, "TCPArrowHandler user: " << user);
+
+    Magic::readString(encoder_name, *in);
+    LOG_INFO(log, "TCPArrowHandler encoder: " << encoder_name);
+    if (encoder_name != "arrow")
+        throw Exception("TCPArrowHandler only support arrow encoding, required: `" + encoder_name + "`");
+
+    encoder_version = Magic::readInt64(*in);
+    if (encoder_version != PROTOCOL_ENCODER_VERSION)
+    {
+        std::stringstream ss;
+        ss << "TCPArrowHandler encoder version not match: " << encoder_version << " vs " << PROTOCOL_ENCODER_VERSION;
+        throw Exception(ss.str());
+    }
+    encoder_count = Magic::readInt64(*in);
 }
 
 
 void TCPArrowHandler::recvQuery()
 {
-    Int64 flag = readInt64(*in);
-    if (flag != ::Magic::Protocol::Utf8Query)
+    Int64 flag = Magic::readInt64(*in);
+    if (flag != Magic::Protocol::Utf8Query)
         throw Exception("TCPArrowHandler only receive query string.");
-    readString(state.query, *in);
+    Magic::readString(state.query_id, *in);
+    query_context.setCurrentQueryId(state.query_id);
+    Magic::readString(state.query, *in);
 }
 
 
 void TCPArrowHandler::sendError(const std::string & msg)
 {
-    writeInt64(::Magic::Protocol::Utf8Error, *out);
-    writeInt64(msg.size(), *out);
+    Magic::writeInt64(Magic::Protocol::Utf8Error, *out);
+    Magic::writeInt64(msg.size(), *out);
     out->write((const char*)msg.c_str(), msg.size());
     out->next();
 }

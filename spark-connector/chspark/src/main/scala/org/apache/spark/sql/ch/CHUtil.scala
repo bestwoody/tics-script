@@ -194,7 +194,7 @@ object CHUtil {
 
   def genQueryId(): String = {
     // TODO: Better random string
-    Random.nextInt.toString + "-" + Random.nextInt.toString
+    "chspark-" + Random.nextInt.toString + "-" + Random.nextInt.toString
   }
 
   private def getCastString(value: String, dataType: DataType) = {
