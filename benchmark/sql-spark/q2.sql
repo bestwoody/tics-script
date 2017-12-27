@@ -8,16 +8,16 @@ SELECT
 	S_PHONE,
 	S_COMMENT
 FROM
-	part2,
-	supplier2,
-	partsupp2,
-	nation2,
-	region2
+	part,
+	supplier,
+	partsupp,
+	nation,
+	region
 WHERE
 	P_PARTKEY = PS_PARTKEY
 	AND S_SUPPKEY = PS_SUPPKEY
 	AND P_SIZE = 15
-	AND P_TYPE LIKE 'STANDARD POLISHED TIN'
+	AND P_TYPE LIKE '%BRASS'
 	AND S_NATIONKEY = N_NATIONKEY
 	AND N_REGIONKEY = R_REGIONKEY
 	AND R_NAME = 'EUROPE'
@@ -25,10 +25,10 @@ WHERE
 		SELECT
 			MIN(PS_SUPPLYCOST)
 		FROM
-			partsupp2,
-			supplier2,
-			nation2,
-			region2
+			partsupp,
+			supplier,
+			nation,
+			region
 		WHERE
 			P_PARTKEY = PS_PARTKEY
 			AND S_SUPPKEY = PS_SUPPKEY
