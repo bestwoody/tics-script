@@ -8,6 +8,7 @@
 #include <IO/WriteBufferFromPocoSocket.h>
 
 #include "Server/IServer.h"
+#include "ArrowEncoderParall.h"
 
 namespace CurrentMetrics
 {
@@ -26,61 +27,44 @@ struct ArrowQueryState
     String query_id;
     String query;
     BlockIO io;
-
-    void reset()
-    {
-        *this = ArrowQueryState();
-    }
 };
 
 
+// TODO: Bad running sequence, refact.
 class TCPArrowHandler : public Poco::Net::TCPServerConnection
 {
 public:
+    using EncoderPtr = std::shared_ptr<Magic::ArrowEncoderParall>;
+
     TCPArrowHandler(IServer & server_, const Poco::Net::StreamSocket & socket_) :
         Poco::Net::TCPServerConnection(socket_), server(server_), log(&Poco::Logger::get("TCPArrowHandler")),
-        connection_context(server.context()), query_context(server.context())
+        connection_context(server.context()), query_context(server.context()), failed(false)
     {
-        try
-        {
-            Settings global_settings = connection_context.getSettings();
-            socket().setReceiveTimeout(global_settings.receive_timeout);
-
-            in = std::make_shared<ReadBufferFromPocoSocket>(socket());
-            out = std::make_shared<WriteBufferFromPocoSocket>(socket());
-
-            while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(global_settings.poll_interval * 1000000) && !server.isCancelled());
-
-            if (server.isCancelled())
-            {
-                LOG_WARNING(log, "Server have been cancelled.");
-                return;
-            }
-
-            if (in->eof())
-            {
-                LOG_WARNING(log, "Client has not sent any data.");
-                return;
-            }
-
-            recvHeader();
-        }
-        catch (Exception e)
-        {
-            auto msg = DB::getCurrentExceptionMessage(true, true);
-            LOG_ERROR(log, msg);
-            // Protocol: Send error string
-            sendError(msg);
-        }
+        init();
     }
 
-    ~TCPArrowHandler()
-    {
-        LOG_INFO(log, "~TCPArrowHandler");
-        state.io.onFinish();
-    }
+    ~TCPArrowHandler();
+
+    void startExecuting();
 
     void run();
+
+    String getQueryId()
+    {
+        return state.query_id;
+    }
+
+    EncoderPtr getExecution()
+    {
+        if (!encoder)
+            throw Exception("Share empty arrow encoder");
+        return encoder;
+    }
+
+    void setExecution(EncoderPtr & encoder_)
+    {
+        encoder = encoder_;
+    }
 
 private:
     IServer & server;
@@ -107,10 +91,13 @@ private:
     Int64 encoder_count;
 
     ArrowQueryState state;
+    EncoderPtr encoder;
+    bool failed;
 
     CurrentMetrics::Increment metric_increment{CurrentMetrics::TCPConnection};
 
 private:
+    void init();
     void runImpl();
 
     void processOrdinaryQuery();

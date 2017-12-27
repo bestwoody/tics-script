@@ -41,7 +41,7 @@ object CHRaw {
       9006
     }
 
-    val qid = CHUtil.genQueryId
+    val qid = "chraw-" + Random.nextInt
 
     val workers = new Array[Thread](partitions);
 
@@ -56,17 +56,19 @@ object CHRaw {
     for (i <- 0 until partitions) {
       workers(i) = new Thread {
         override def run {
-          val resp = CHExecutorPool.get(qid, query, host, port, "", conc, false)
+          val resp = new CHExecutorParall(qid, query, host, port, "", conc, false)
+          //val resp = CHExecutorPool.get(qid, query, host, port, "", conc, false)
           println("#" + i + " start")
-          var block = resp.executor.next
+          var block = resp.next
           while (block != null) {
             val columns = block.decoded.block.getFieldVectors
             val rows: Long = if (columns.isEmpty) { 0 } else { columns.get(0).getAccessor().getValueCount }
             addRows(rows)
             block.close
-            block = resp.executor.next
+            block = resp.next
           }
-          CHExecutorPool.close(resp)
+          resp.close
+          //CHExecutorPool.close(resp)
           println("#" + i + " finish")
         }
       }
