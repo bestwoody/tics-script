@@ -15,6 +15,7 @@ add_library(clickhouse-server
     StatusFile.cpp
     TCPHandler.cpp
     ../Magic/TCPArrowHandler.cpp
+    ../Magic/TCPProtocolCodec.cpp
     )
 
 target_link_libraries(clickhouse-server daemon clickhouse_storages_system clickhouse_functions clickhouse_aggregate_functions clickhouse_table_functions arrow)

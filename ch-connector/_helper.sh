@@ -1,38 +1,27 @@
 setup_gcc_on_mac()
 {
-	export DYLD_FALLBACK_LIBRARY_PATH="/usr/local/lib:/usr/lib"
-
-	export CC=`which gcc-6`
+	export CC=`which gcc-7`
 	if [ -z "$CC" ]; then
-		echo "gcc-6 not found, install it first, exiting" >&2
-		exit
+		export CC=`which gcc-6`
+		if [ -z "$CC" ]; then
+			echo "gcc-7/6 not found, install it first, exiting" >&2
+			exit
+		fi
 	fi
-	export CXX=`which g++-6`
+	export CXX=`which g++-7`
 	if [ -z "$CXX" ]; then
-		echo "g++-6 not found, install it first, exiting" >&2
-		exit
+		export CXX=`which g++-6`
+		if [ -z "$CXX" ]; then
+			echo "g++-7 not found, install it first, exiting" >&2
+			exit
+		fi
 	fi
 
-	local gcc_path=`realpath $CXX`
-	gcc_path=`dirname $gcc_path`
-	gcc_path=`dirname $gcc_path`
-	gcc_path=`find "$gcc_path" -name stdlib.h | head -n 1`
-	gcc_path=`dirname "$gcc_path"`
-	if [ -z "$gcc_path" ]; then
-		echo "gcc include path not found, exiting" >&2
-		exit 1
-	fi
-	export CPLUS_INCLUDE_PATH="$gcc_path":/usr/local/include:/usr/include:$CPLUS_INCLUDE_PATH
-	export C_INCLUDE_PATH="$CPLUS_INCLUDE_PATH"
-
-	echo "CC:"
-	echo "  $CC"
-	echo "CXX:"
-	echo "  $CXX"
-	echo "C_INCLUDE_PATH and CPLUS_INCLUDE_PATH:"
-	echo "  $CPLUS_INCLUDE_PATH"
-	echo "DYLD_FALLBACK_LIBRARY_PATH:"
-	echo "  $DYLD_FALLBACK_LIBRARY_PATH"
+	export CPLUS_INCLUDE_PATH=`$CXX -x c++ -v -E /dev/null 2>&1 | \
+		grep '<...> search starts here' -A 99 | \
+		grep 'End of search list' -B 99 | \
+		grep -v ' search ' | awk '{print $1}' | tr '\n' ':'`
+	export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH/usr/local/include"
 }
 export -f setup_gcc_on_mac
 
@@ -50,5 +39,6 @@ setup_gcc()
 	else
 		setup_gcc_on_linux
 	fi
+	export LIBRARY_PATH="/usr/lib:/usr/local/lib:/usr/lib64:/usr/local/lib64"
 }
 export -f setup_gcc

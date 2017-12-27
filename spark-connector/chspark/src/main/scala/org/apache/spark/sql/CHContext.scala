@@ -26,7 +26,7 @@ import org.apache.spark.sql.ch.mock.MockArrowRelation
 import org.apache.spark.sql.ch.mock.MockSimpleRelation
 
 
-class CHContext (val sparkSession: SparkSession, val aggPushdown: Boolean = false) extends Serializable with Logging {
+class CHContext (val sparkSession: SparkSession, val aggPushdown: Boolean = true) extends Serializable with Logging {
   val sqlContext: SQLContext = sparkSession.sqlContext
 
   sparkSession.experimental.extraStrategies ++= Seq(new CHStrategy(sparkSession, aggPushdown))

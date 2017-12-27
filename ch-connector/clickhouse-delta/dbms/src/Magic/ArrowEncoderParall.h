@@ -7,14 +7,14 @@ namespace Magic
 {
 
 // TODO: Reorder blocks, some times may faster
-class ArrowEncoderParall : public ArrowEncoder
+class ArrowEncoderParall
 {
 public:
-    ArrowEncoderParall(const std::string & error) : ArrowEncoder(error) {}
+    ArrowEncoderParall(const std::string & error) : encoder(error) {}
 
-    ArrowEncoderParall(DB::BlockIO & result, size_t conc) : ArrowEncoder(result), encodeds(0, conc * 1)
+    ArrowEncoderParall(DB::BlockIO & result, size_t conc) : encoder(result), encodeds(-1, conc * 1)
     {
-        if (hasError())
+        if (encoder.hasError())
             return;
 
         encoders.resize(conc);
@@ -24,14 +24,15 @@ public:
             {
                 while (true)
                 {
-                    auto block = ArrowEncoder::getEncodedBlock();
+                    auto origin = encoder.getOriginBlock();
+                    auto block = encoder.serializedBlock(encoder.encodeBlock(origin));
                     if (block)
                     {
                         encodeds.push(block);
                     }
                     else
                     {
-                        encodeds.setQuota(ArrowEncoder::blocks());
+                        encodeds.setQuota(encoder.blocks());
                         break;
                     }
                 }
@@ -39,9 +40,29 @@ public:
         }
     }
 
-    BufferPtr getPreparedEncodedBlock()
+    bool residue()
     {
-        BufferPtr block;
+        return encodeds.size();
+    }
+
+    inline bool hasError()
+    {
+        return encoder.hasError();
+    }
+
+    std::string getErrorString()
+    {
+        return encoder.getErrorString();
+    }
+
+    ArrowEncoder::BufferPtr getEncodedSchema()
+    {
+        return encoder.getEncodedSchema();
+    }
+
+    ArrowEncoder::BufferPtr getEncodedBlock()
+    {
+        ArrowEncoder::BufferPtr block;
         encodeds.pop(block);
         return block;
     }
@@ -49,14 +70,16 @@ public:
     ~ArrowEncoderParall()
     {
         // Don't check encodeds.size(), in case query is cancalled.
+        // std::cerr << "ArrowEncoderParall: threads finishing" << std::endl;
         for (auto it = encoders.begin(); it != encoders.end(); ++it)
             it->join();
+        // std::cerr << "ArrowEncoderParall: threads finished" << std::endl;
     }
 
 private:
-    BufferPtr getEncodedBlock();
+    ArrowEncoder encoder;
 
-    Chan<BufferPtr> encodeds;
+    Chan<ArrowEncoder::BufferPtr> encodeds;
     std::vector<std::thread> encoders;
 };
 

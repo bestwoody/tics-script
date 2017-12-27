@@ -20,18 +20,22 @@ class Chan
     condition_variable cond_r;
     condition_variable cond_w;
 
-    size_t quota;
+    long quota;
     const size_t capacity;
     size_t passed;
     bool closed;
 
 public:
-    inline Chan(size_t quota_ = 0, size_t capacity_ = 0) : quota(quota_), capacity(capacity_), passed(0), closed(false) {}
+    inline Chan(long quota_ = -1, size_t capacity_ = 0) : quota(quota_), capacity(capacity_), passed(0), closed(false) {}
 
-    inline void setQuota(size_t quota_)
+    inline void setQuota(long quota_)
     {
-        unique_lock<mutex> lock{mtx};
-        quota = quota_;
+        {
+            unique_lock<mutex> lock{mtx};
+            quota = quota_;
+        }
+        cond_w.notify_all();
+        cond_r.notify_all();
     }
 
     inline bool empty() const
@@ -60,7 +64,7 @@ public:
     {
         {
             unique_lock<mutex> lock{mtx};
-            while (capacity != 0 && capacity <= que.size() && (quota == 0 || passed < quota) && !closed)
+            while (capacity != 0 && capacity <= que.size() && (quota < 0 || passed < quota) && !closed)
                 cond_w.wait(lock);
             if (closed)
                 return;
@@ -72,10 +76,10 @@ public:
     inline bool pop(T &v)
     {
         unique_lock<mutex> lock{mtx};
-        if ((quota != 0 && passed == quota) || closed)
+        if ((quota >= 0 && passed == quota) || closed)
             return false;
 
-        while (que.empty() && (quota == 0 || passed < quota) && !closed)
+        while (que.empty() && (quota < 0 || passed < quota) && !closed)
             cond_r.wait(lock);
 
         if (que.empty() || closed)
@@ -87,7 +91,7 @@ public:
 
         cond_w.notify_all();
 
-        if (quota != 0 && passed == quota)
+        if (quota >= 0 && passed == quota)
             cond_r.notify_all();
         return true;
     }

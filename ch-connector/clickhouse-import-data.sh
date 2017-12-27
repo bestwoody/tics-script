@@ -42,7 +42,7 @@ fi
 
 schema="running/data/$name.schema"
 if [ -f "$schema" ]; then
-	DYLD_LIBRARY_PATH="" "$bin" client --query="`cat $schema`"
+	DYLD_LIBRARY_PATH="" "$bin" client --host 127.0.0.1 --query="`cat $schema`"
 fi
 
-$gen | "$bin" client --query="INSERT INTO $name FORMAT CSV"
+$gen | "$bin" client --host 127.0.0.1 --query="INSERT INTO $name FORMAT CSV"

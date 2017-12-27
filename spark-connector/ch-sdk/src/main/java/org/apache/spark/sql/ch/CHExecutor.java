@@ -105,16 +105,19 @@ public class CHExecutor {
         public final int id;
     }
 
-    public CHExecutor(String query, String host, int port) throws IOException, CHExecutorException {
+    public CHExecutor(String qid, String query, String host, int port) throws IOException, CHExecutorException {
         this.arrowDecoder = new ArrowDecoder();
+        this.qid = qid;
         this.query = query;
+        this.decoders = 0;
         this.socket = new Socket(host, port);
         this.writer = new DataOutputStream(socket.getOutputStream());
         this.reader = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
         this.finished = false;
         this.idgen = 0;
 
-        sendQuery(query);
+        sendHeader();
+        sendQuery();
         fetchSchema();
     }
 
@@ -188,13 +191,39 @@ public class CHExecutor {
         }
     }
 
-    private void sendQuery(String query) throws IOException {
-        long val = PackageTypeUtf8Query;
-        writer.writeLong(val);
-        val = query.length();
-        writer.writeLong(val);
-        writer.writeBytes(query);
+    private void sendHeader() throws IOException {
+        writer.writeLong(PackageTypeHeader);
+        writer.writeLong(PROTOCOL_VERSION_MAJOR);
+        writer.writeLong(PROTOCOL_VERSION_MINOR);
+
+        // TODO: Pass values from args
+
+        // Client name
+        sendString("ch-jvm-sdk");
+        // Default database
+        sendString("");
+
+        // User/password
+        sendString("default");
+        sendString("");
+
+        // Encoder name/version/concurrent
+        sendString("arrow");
+        writer.writeLong(PROTOCOL_ENCODER_VERTION);
+        writer.writeLong(decoders);
         writer.flush();
+    }
+
+    private void sendQuery() throws IOException {
+        writer.writeLong((long)PackageTypeUtf8Query);
+        sendString(qid);
+        sendString(query);
+        writer.flush();
+    }
+
+    private void sendString(String str) throws IOException {
+        writer.writeLong((long)str.length());
+        writer.writeBytes(str);
     }
 
     private void fetchSchema() throws IOException, CHExecutorException {
@@ -216,7 +245,9 @@ public class CHExecutor {
         schema = arrowDecoder.decodeSchema(data);
     }
 
+    public final String qid;
     public final String query;
+    public final int decoders;
     private Socket socket;
     private DataOutputStream writer;
     private DataInputStream reader;
@@ -225,9 +256,15 @@ public class CHExecutor {
     private int idgen;
 
     private ArrowDecoder arrowDecoder;
-    private static final long PackageTypeEnd = 0;
-    private static final long PackageTypeUtf8Error = 1;
-    private static final long PackageTypeUtf8Query = 2;
-    private static final long PackageTypeArrowSchema = 3;
-    private static final long PackageTypeArrowData = 4;
+
+    private static final long PackageTypeHeader = 0;
+    private static final long PackageTypeEnd = 1;
+    private static final long PackageTypeUtf8Error = 8;
+    private static final long PackageTypeUtf8Query = 9;
+    private static final long PackageTypeArrowSchema = 10;
+    private static final long PackageTypeArrowData = 11;
+
+    private static final long PROTOCOL_VERSION_MAJOR = 1;
+    private static final long PROTOCOL_VERSION_MINOR = 1;
+    private static final long PROTOCOL_ENCODER_VERTION = 1;
 }
