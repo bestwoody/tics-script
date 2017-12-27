@@ -24,7 +24,7 @@ fi
 
 echo 'import java.text.SimpleDateFormat' > "$tmp"
 echo 'import java.util.Date' >> "$tmp"
-echo 'val ch = new org.apache.spark.sql.CHContext(spark, false)' >> "$tmp"
+echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./ch-q.sh "show tables" | while read table; do
 	echo "ch.mapCHClusterTable(table=\"$table\", partitions=$partitions, decoders=$decoders)" >> "$tmp"
