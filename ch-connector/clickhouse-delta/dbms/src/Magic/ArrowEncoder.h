@@ -1,7 +1,7 @@
 #pragma once
 
-#include <condition_variable>
 #include <mutex>
+#include <condition_variable>
 
 #include <Common/typeid_cast.h>
 
@@ -31,53 +31,27 @@ public:
 
     ArrowEncoder(DB::BlockIO & input_)
     {
-        try
-        {
-            input = std::make_shared<SafeBlockIO>(input_);
-            auto sample = input->sample();
-            std::vector<std::shared_ptr<arrow::Field>> fields;
-            for (size_t i = 0; i < sample.columns(); ++i)
-            {
-                auto & column = sample.getByPosition(i);
-                auto type = dataTypeToArrowType(column.type);
-                auto field = arrow::field(column.name, type, column.type->isNullable());
-                fields.push_back(field);
-            }
-            schema = std::make_shared<arrow::Schema>(fields);
-        }
-        catch (const DB::Exception & e)
-        {
-            onError(e.displayText());
-        }
-    }
-
-    SchemaPtr getSchema()
-    {
-        return schema;
+        input = std::make_shared<SafeBlockIO>(input_);
+        schema = getSchema();
+        encodedSchema = encodeSchema(schema);
     }
 
     BufferPtr getEncodedSchema()
     {
-        if (!schema)
-            return NULL;
-
-        std::shared_ptr<arrow::Buffer> serialized;
-        auto pool = arrow::default_memory_pool();
-        auto status = arrow::ipc::SerializeSchema(*schema, pool, &serialized);
-        if (!status.ok())
-        {
-            onError("arrow::ipc::SerializeSchema " + status.ToString());
-            return NULL;
-        }
-        // std::cerr << "PROBE pool alloced: " << pool->bytes_allocated() << ", peak: " << pool->max_memory() << std::endl;
-        return serialized;
+        std::unique_lock<std::mutex> lock{mutex};
+        return encodedSchema;
     }
 
-    BlockPtr getBlock()
+    inline DB::Block getOriginBlock()
+    {
+        std::unique_lock<std::mutex> lock{mutex};
+        return input->read();
+    }
+
+    BlockPtr encodeBlock(DB::Block block)
     {
         try
         {
-            DB::Block block = input->read();
             if (!block)
                 return NULL;
 
@@ -105,9 +79,8 @@ public:
         return NULL;
     }
 
-    BufferPtr getEncodedBlock()
+    BufferPtr serializedBlock(BlockPtr block)
     {
-        auto block = getBlock();
         if (!block)
             return NULL;
         std::shared_ptr<arrow::Buffer> serialized;
@@ -122,7 +95,7 @@ public:
         return serialized;
     }
 
-    bool hasError()
+    inline bool hasError()
     {
         std::unique_lock<std::mutex> lock{mutex};
         return !error.empty();
@@ -136,6 +109,7 @@ public:
 
     size_t blocks()
     {
+        std::unique_lock<std::mutex> lock{mutex};
         return input->blocks();
     }
 
@@ -147,6 +121,45 @@ protected:
         input->cancal(true);
     }
 
+private:
+    SchemaPtr getSchema()
+    {
+        try
+        {
+            auto sample = input->sample();
+            std::vector<std::shared_ptr<arrow::Field>> fields;
+            for (size_t i = 0; i < sample.columns(); ++i)
+            {
+                auto & column = sample.getByPosition(i);
+                auto type = dataTypeToArrowType(column.type);
+                auto field = arrow::field(column.name, type, column.type->isNullable());
+                fields.push_back(field);
+            }
+            return std::make_shared<arrow::Schema>(fields);
+        }
+        catch (const DB::Exception & e)
+        {
+            onError(e.displayText());
+        }
+        return NULL;
+    }
+
+    BufferPtr encodeSchema(SchemaPtr schema)
+    {
+        if (!schema)
+            return NULL;
+
+        std::shared_ptr<arrow::Buffer> serialized;
+        auto pool = arrow::default_memory_pool();
+        auto status = arrow::ipc::SerializeSchema(*schema, pool, &serialized);
+        if (!status.ok())
+        {
+            onError("arrow::ipc::SerializeSchema " + status.ToString());
+            return NULL;
+        }
+        // std::cerr << "PROBE pool alloced: " << pool->bytes_allocated() << ", peak: " << pool->max_memory() << std::endl;
+        return serialized;
+    }
 
 private:
     // TODO: faster copy
@@ -462,9 +475,11 @@ private:
 private:
     std::shared_ptr<SafeBlockIO> input;
     SchemaPtr schema;
+    BufferPtr encodedSchema;
 
-    mutable std::mutex mutex;
     std::string error;
+
+    std::mutex mutex;
 };
 
 }

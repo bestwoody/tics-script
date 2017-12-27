@@ -54,6 +54,16 @@ void TCPArrowHandler::runImpl()
 
     connection_context.setUser(user, password, socket().peerAddress(), "");
 
+    // Client info
+    // TODO: More info
+    {
+        ClientInfo & client_info = query_context.getClientInfo();
+        client_info.client_name = client_name;
+        client_info.client_version_major = protocol_version_major;
+        client_info.client_version_minor = protocol_version_minor;
+        client_info.interface = ClientInfo::Interface::TCP;
+    }
+
     bool failed = false;
     while (!failed)
     {
@@ -71,7 +81,6 @@ void TCPArrowHandler::runImpl()
         {
             query_context = connection_context;
 
-            // Protocol: Receive query string
             recvQuery();
 
             state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
@@ -88,7 +97,6 @@ void TCPArrowHandler::runImpl()
             state.io.onException();
             failed = true;
 
-            // Protocol: Send error string
             sendError(msg);
         }
 
@@ -119,7 +127,6 @@ void TCPArrowHandler::processOrdinaryQuery()
     if (encoder.hasError())
         throw Exception(encoder.getErrorString());
 
-    // Protocol: Send encoded schema
     Magic::writeInt64(Magic::Protocol::ArrowSchema, *out);
     Magic::writeInt64(schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
@@ -127,13 +134,12 @@ void TCPArrowHandler::processOrdinaryQuery()
 
     while (true)
     {
-        auto block = encoder.getPreparedEncodedBlock();
+        auto block = encoder.getEncodedBlock();
         if (encoder.hasError())
             throw Exception(encoder.getErrorString());
         if (!block)
             break;
 
-        // Protocol: Send encoded bock
         // TODO: May block forever, if client dead
         Magic::writeInt64(Magic::Protocol::ArrowData, *out);
         Magic::writeInt64(block->size(), *out);
@@ -141,10 +147,14 @@ void TCPArrowHandler::processOrdinaryQuery()
         out->next();
     }
 
-    // Protocol: Send ending mark
     Magic::writeInt64(Magic::Protocol::End, *out);
     Magic::writeInt64(0, *out);
     out->next();
+
+    auto residue = encoder.residue();
+    LOG_INFO(log, "End process ordinary query, residue: " << residue);
+    if (residue != 0)
+        throw Exception("End process ordinary query, residue != 0");
 }
 
 

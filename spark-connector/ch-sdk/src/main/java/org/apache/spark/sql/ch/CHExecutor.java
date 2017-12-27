@@ -109,6 +109,7 @@ public class CHExecutor {
         this.arrowDecoder = new ArrowDecoder();
         this.qid = qid;
         this.query = query;
+        this.decoders = 0;
         this.socket = new Socket(host, port);
         this.writer = new DataOutputStream(socket.getOutputStream());
         this.reader = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
@@ -191,14 +192,14 @@ public class CHExecutor {
     }
 
     private void sendHeader() throws IOException {
-        writer.writeLong((long)PackageTypeHeader);
-        writer.writeLong((long)PROTOCOL_VERSION_MAJOR);
-        writer.writeLong((long)PROTOCOL_VERSION_MINOR);
+        writer.writeLong(PackageTypeHeader);
+        writer.writeLong(PROTOCOL_VERSION_MAJOR);
+        writer.writeLong(PROTOCOL_VERSION_MINOR);
 
         // TODO: Pass values from args
 
         // Client name
-        sendString("chspark");
+        sendString("ch-jvm-sdk");
         // Default database
         sendString("");
 
@@ -208,8 +209,8 @@ public class CHExecutor {
 
         // Encoder name/version/concurrent
         sendString("arrow");
-        writer.writeLong((long)PROTOCOL_ENCODER_VERTION);
-        writer.writeLong((long)0);
+        writer.writeLong(PROTOCOL_ENCODER_VERTION);
+        writer.writeLong(decoders);
         writer.flush();
     }
 
@@ -246,6 +247,7 @@ public class CHExecutor {
 
     public final String qid;
     public final String query;
+    public final int decoders;
     private Socket socket;
     private DataOutputStream writer;
     private DataInputStream reader;
