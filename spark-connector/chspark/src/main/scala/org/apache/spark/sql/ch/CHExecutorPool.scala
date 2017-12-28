@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch;
 
 import scala.collection.mutable.Map
 
-// TODO: May have bug when a same query executing in the same time
+
 object CHExecutorPool {
   class Executor(val executor: CHExecutorParall, val key: String) {
     var count = 1;
@@ -39,17 +39,19 @@ object CHExecutorPool {
 
   val instances: Map[String, Executor] = Map()
 
-  private def getKey(qid: String, query: String, host: String, port: Int, table: String, threads: Int): String = {
+  private def getKey(qid: String, query: String, host: String, port: Int, table: String): String = {
     qid + ":" + query + ":" + host + ":" + port + ":" + table
   }
 
-  def get(qid: String, query: String, host: String, port: Int, table: String, threads: Int, encode: Boolean = true): Executor = {
+  def get(qid: String, query: String, host: String, port: Int, table: String, threads: Int,
+    encoders: Int = 0, clientCount: Int = 1, clientIndex: Int = 0, encode: Boolean = true): Executor = {
+
     this.synchronized {
-      val key = getKey(qid, query, host, port, table, threads)
+      val key = getKey(qid, query, host, port, table)
       if (instances.contains(key)) {
         instances(key).ref
       } else {
-        val executor = new CHExecutorParall(qid, query, host, port, table, threads, encode)
+        val executor = new CHExecutorParall(qid, query, host, port, table, threads, encoders, clientCount, clientIndex, encode)
         val handle = new Executor(executor, key)
         instances += (key -> handle)
         handle

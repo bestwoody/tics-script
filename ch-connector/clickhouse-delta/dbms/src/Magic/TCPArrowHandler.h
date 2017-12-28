@@ -54,6 +54,16 @@ public:
         return state.query_id;
     }
 
+    Int64 getClientCount()
+    {
+        return client_count;
+    }
+
+    Int64 getClientIndex()
+    {
+        return client_index;
+    }
+
     EncoderPtr getExecution()
     {
         if (!encoder)
@@ -89,6 +99,9 @@ private:
     String encoder_name;
     Int64 encoder_version;
     Int64 encoder_count;
+
+    Int64 client_count;
+    Int64 client_index;
 
     ArrowQueryState state;
     EncoderPtr encoder;

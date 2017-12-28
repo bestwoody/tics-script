@@ -46,9 +46,6 @@ public class CHExecutor {
         boolean isLast() {
             return type == PackageTypeEnd || type == PackageTypeUtf8Error;
         }
-        long ty() {
-            return type;
-        }
 
         private long type;
         private byte[] data;
@@ -105,11 +102,16 @@ public class CHExecutor {
         public final int id;
     }
 
-    public CHExecutor(String qid, String query, String host, int port) throws IOException, CHExecutorException {
+    public CHExecutor(String qid, String query, String host, int port, int encoders, int clientCount, int clientIndex)
+        throws IOException, CHExecutorException {
+
         this.arrowDecoder = new ArrowDecoder();
         this.qid = qid;
         this.query = query;
-        this.decoders = 0;
+        this.encoders = encoders;
+        this.clientCount = clientCount;
+        this.clientIndex = clientIndex;
+
         this.socket = new Socket(host, port);
         this.writer = new DataOutputStream(socket.getOutputStream());
         this.reader = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
@@ -210,8 +212,11 @@ public class CHExecutor {
         // Encoder name/version/concurrent
         sendString("arrow");
         writer.writeLong(PROTOCOL_ENCODER_VERTION);
-        writer.writeLong(decoders);
+        writer.writeLong(encoders);
         writer.flush();
+
+        writer.writeLong(clientCount);
+        writer.writeLong(clientIndex);
     }
 
     private void sendQuery() throws IOException {
@@ -247,11 +252,15 @@ public class CHExecutor {
 
     public final String qid;
     public final String query;
-    public final int decoders;
+    public final int encoders;
+    public final int clientCount;
+    public final int clientIndex;
+
     private Socket socket;
     private DataOutputStream writer;
     private DataInputStream reader;
     private Schema schema;
+
     private boolean finished;
     private int idgen;
 

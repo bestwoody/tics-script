@@ -32,7 +32,11 @@ class CHExecutorParall(
   val port: Int,
   val table: String,
   val threads: Int,
-  val encode: Boolean = true) {
+  val encoders: Int = 0,
+  val clientCount: Int = 1,
+  val clientIndex: Int = 0,
+  val encode: Boolean = true,
+  val logPrefix: String = "") {
 
   class Result(schema: Schema, table: String, val decoded: CHExecutor.Result) {
     val error = decoded.error
@@ -54,11 +58,10 @@ class CHExecutorParall(
   private var inputBlocks: Long = 0
   private var outputBlocks: Long = 0
   private var totalBlocks: Long = -1
-  private var receivedEnd: Boolean = false
 
   private val decodings: BlockingQueue[CHExecutor.Package] = new LinkedBlockingQueue[CHExecutor.Package](threads)
   private val decodeds: BlockingQueue[Result] = new LinkedBlockingQueue[Result](threads)
-  private val executor = new CHExecutor(qid, query, host, port)
+  private val executor = new CHExecutor(qid, query, host, port, encoders, clientCount, clientIndex)
 
   startDecode()
   startFetch()
@@ -70,21 +73,31 @@ class CHExecutorParall(
 
   // TODO: throws InterruptedException, CHExecutor.CHExecutorException
   def next(): Result = {
-    var hasNext: Boolean = false
+    var got: Boolean = false
+    var block: Result = null
+    while (!got) {
+      block = getNext
+      if (block == null || !block.isEmpty) {
+        got = true
+      }
+    }
+    block
+  }
+
+  private def getNext(): Result = {
     this.synchronized {
-      hasNext = (totalBlocks < 0 || outputBlocks < totalBlocks)
+      val hasNext = (totalBlocks < 0 || outputBlocks < totalBlocks)
       if (hasNext) {
         val decoded = decodeds.take
         if (decoded.error != null) {
             throw new CHExecutor.CHExecutorException(decoded.error)
+        } else if (decoded.isEmpty) {
+          decoded
         } else {
           outputBlocks += 1
           decoded
         }
       } else {
-        if (!receivedEnd) {
-          throw new Exception("Abnormal end: not received end mark.")
-        }
         null
       }
     }
@@ -98,12 +111,15 @@ class CHExecutorParall(
           while (executor.hasNext) {
             val block = executor.safeNext
             if (!block.isLast) {
+              this.synchronized {
+                inputBlocks += 1
+              }
               decodings.put(block)
-              inputBlocks += 1
             } else {
               this.synchronized {
                 totalBlocks = inputBlocks
               }
+              // End marks for decoders
               for (i <- 0 until threads) {
                 decodings.put(block)
               }
@@ -129,14 +145,9 @@ class CHExecutorParall(
             while (!isLast) {
               val decoded = executor.safeDecode(decodings.take)
               isLast = decoded.isLast
-              if (decoded.isEnd) {
-                this.synchronized {
-                  receivedEnd = true
-                }
-              }
-              if (!decoded.isEmpty) {
-                decodeds.put(new Result(executor.getSchema, table, decoded))
-              }
+              // Pass over the empty block to `getNext`, to offer the chance to check if stream is finished
+              // Note that the empty block doesn't count
+              decodeds.put(new Result(executor.getSchema, table, decoded))
             }
           } catch {
             case _: InterruptedException => {}

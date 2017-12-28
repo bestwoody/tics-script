@@ -243,6 +243,9 @@ void TCPArrowHandler::recvHeader()
         throw Exception(ss.str());
     }
     encoder_count = Magic::readInt64(*in);
+
+    client_count = Magic::readInt64(*in);
+    client_index = Magic::readInt64(*in);
 }
 
 

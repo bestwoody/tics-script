@@ -101,7 +101,7 @@ public class CHRaw {
     }
 
     private void exec(String query) throws Exception {
-        CHExecutor result = new CHExecutor("chraw-testing", query, host, port);
+        CHExecutor result = new CHExecutor("chraw-testing", query, host, port, 0, 1, 0);
         dump(result, decode);
         result.close();
     }
