@@ -10,11 +10,11 @@
 |       |              |              |       |  |              |  |              |
 |       +--------------+--------------+       |  |              |  |              |
 |       |                                     |  |              |  |              |
-|       | RDDs in the same process            |  |              |  |              |
+|       | RDDs in the same node               |  |              |  |              |
 |       |     share a same connection         |  |              |  |              |
 |       |                                     |  |              |  |              |
 | +-----+-------+                             |  |              |  |              |
-| |   CH SDK    |                             |  |              |  |              |
+| | CH JVM SDK  |                             |  |              |  |              |
 | +-----+-------+                             |  |              |  |              |
 |       |                                     |  |              |  |              |
 |       |                        Spark Worker |  | Spark Worker |  | Spark Worker |
