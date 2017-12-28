@@ -70,10 +70,8 @@ public:
     ~ArrowEncoderParall()
     {
         // Don't check encodeds.size(), in case query is cancalled.
-        // std::cerr << "ArrowEncoderParall: threads finishing" << std::endl;
         for (auto it = encoders.begin(); it != encoders.end(); ++it)
             it->join();
-        // std::cerr << "ArrowEncoderParall: threads finished" << std::endl;
     }
 
 private:

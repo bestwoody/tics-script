@@ -61,7 +61,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
             createTopNPlan(limit, order, child, projectList) :: Nil
 
           case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
-            createCHPlan(relation.tables, rel, projectList, filterPredicates, null, chr.partitions, chr.decoders) :: Nil
+            createCHPlan(relation.tables, rel, projectList, filterPredicates, null, chr.partitions, chr.decoders, chr.encoders) :: Nil
 
           case CHAggregation(
           groupingExpressions,
@@ -102,23 +102,23 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
   }
 
   def pruneTopNFilterProject(
-                              relation: LogicalRelation,
-                              limit: Int,
-                              projectList: Seq[NamedExpression],
-                              filterPredicates: Seq[Expression],
-                              source: CHRelation,
-                              sortOrder: Seq[SortOrder]
-                            ): SparkPlan = {
+    relation: LogicalRelation,
+    limit: Int,
+    projectList: Seq[NamedExpression],
+    filterPredicates: Seq[Expression],
+    source: CHRelation,
+    sortOrder: Seq[SortOrder]): SparkPlan = {
 
-    createCHPlan(source.tables, relation, projectList, filterPredicates, extractCHTopN(sortOrder, limit), source.partitions, source.decoders)
+    createCHPlan(source.tables, relation, projectList, filterPredicates, extractCHTopN(sortOrder, limit),
+      source.partitions, source.decoders, source.encoders)
   }
 
   def createTopNPlan(
-                      limit: Int,
-                      sortOrder: Seq[SortOrder],
-                      child: LogicalPlan,
-                      project: Seq[NamedExpression]
-                    ): SparkPlan = {
+    limit: Int,
+    sortOrder: Seq[SortOrder],
+    child: LogicalPlan,
+    project: Seq[NamedExpression]): SparkPlan = {
+
     child match {
       case PhysicalOperation(projectList, filters, rel@LogicalRelation(source: CHRelation, _, _))
         if filters.forall(CHUtil.isSupportedFilter) =>
@@ -134,14 +134,14 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
 
   def groupAggregateProjection(
-                                groupingExpressions: Seq[NamedExpression],
-                                aggregateExpressions: Seq[AggregateExpression],
-                                resultExpressions: Seq[NamedExpression],
-                                projectList: Seq[NamedExpression],
-                                filterPredicates: Seq[Expression],
-                                relation: CHRelation,
-                                rel: LogicalRelation,
-                                cHSqlTopN: CHSqlTopN = null): Seq[SparkPlan] = {
+    groupingExpressions: Seq[NamedExpression],
+    aggregateExpressions: Seq[AggregateExpression],
+    resultExpressions: Seq[NamedExpression],
+    projectList: Seq[NamedExpression],
+    filterPredicates: Seq[Expression],
+    relation: CHRelation,
+    rel: LogicalRelation,
+    cHSqlTopN: CHSqlTopN = null): Seq[SparkPlan] = {
 
     val aliasMap = mutable.HashMap[(Boolean, Expression), Alias]()
     val avgPushdownRewriteMap = mutable.HashMap[ExprId, List[AggregateExpression]]()
@@ -215,22 +215,22 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
     val chPlan = CHPlan(resultExpressions.map(_.toAttribute), sparkSession,
       relation.tables, requiredCols, filtersString, chSqlAgg, cHSqlTopN,
-      relation.partitions, relation.decoders)
+      relation.partitions, relation.decoders, relation.encoders)
 
-    //    aggregate.AggUtils.planAggregateWithoutDistinct(
-    //      groupingExpressions,
-    //      residualAggregateExpressions,
-    //      resultExpressions,
+    //  aggregate.AggUtils.planAggregateWithoutDistinct(
+    //    groupingExpressions,
+    //    residualAggregateExpressions,
+    //    resultExpressions,
     chPlan :: Nil
-    //    )
+    //  )
   }
 
   def extractAggregation(
-                          groupByList: Seq[NamedExpression],
-                          aggregates: Seq[AggregateExpression],
-                          source: CHRelation,
-                          aggregations: mutable.ListBuffer[CHSqlAggFunc],
-                          groupByCols: mutable.ListBuffer[String]): Unit = {
+    groupByList: Seq[NamedExpression],
+    aggregates: Seq[AggregateExpression],
+    source: CHRelation,
+    aggregations: mutable.ListBuffer[CHSqlAggFunc],
+    groupByCols: mutable.ListBuffer[String]): Unit = {
 
     aggregates.foreach {
       case AggregateExpression(Average(arg), _, _, _) =>
@@ -254,13 +254,14 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
   }
 
   private def createCHPlan(
-                            tables: Seq[CHTableRef],
-                            relation: LogicalRelation,
-                            projectList: Seq[NamedExpression],
-                            filterPredicates: Seq[Expression],
-                            chSqlTopN: CHSqlTopN,
-                            partitions: Int,
-                            decoders: Int): SparkPlan = {
+    tables: Seq[CHTableRef],
+    relation: LogicalRelation,
+    projectList: Seq[NamedExpression],
+    filterPredicates: Seq[Expression],
+    chSqlTopN: CHSqlTopN,
+    partitions: Int,
+    decoders: Int,
+    encoders: Int): SparkPlan = {
 
     val projectSet = AttributeSet(projectList.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
@@ -285,7 +286,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     }
 
     val rdd = CHPlan(output, sparkSession, tables, output.map(_.name), filtersString, null, chSqlTopN,
-      partitions, decoders)
+      partitions, decoders, encoders)
     residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
   }
 }

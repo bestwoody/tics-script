@@ -47,11 +47,12 @@ class CHContext (val sparkSession: SparkSession, val aggPushdown: Boolean = true
     database: String = null,
     table: String,
     partitions: Int = 8,
-    decoders: Int = 8): Unit = {
+    decoders: Int = 8,
+    encoders: Int = 0): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
     val tableRef = new CHTableRef(host, port, database, table)
-    val rel = new CHRelation(Seq(tableRef), partitions, decoders)(sqlContext, conf)
+    val rel = new CHRelation(Seq(tableRef), partitions, decoders, encoders)(sqlContext, conf)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRef.mappedName)
   }
 
@@ -61,12 +62,13 @@ class CHContext (val sparkSession: SparkSession, val aggPushdown: Boolean = true
     database: String = null,
     table: String,
     partitions: Int = 8,
-    decoders: Int = 8): Unit = {
+    decoders: Int = 8,
+    encoders: Int = 0): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
     val tableRefList: Seq[CHTableRef] =
       hosts.split(",").map(host => new CHTableRef(host, port, database, table))
-    val rel = new CHRelation(tableRefList, partitions, decoders)(sqlContext, conf)
+    val rel = new CHRelation(tableRefList, partitions, decoders, encoders)(sqlContext, conf)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList(0).mappedName)
   }
 

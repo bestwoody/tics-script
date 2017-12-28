@@ -12,7 +12,7 @@
 
 #include "TCPProtocolCodec.h"
 #include "TCPArrowHandler.h"
-#include "ArrowEncoderParall.h"
+#include "TCPArrowSessions.h"
 
 namespace DB
 {
@@ -27,68 +27,123 @@ static Int64 PROTOCOL_VERSION_MAJOR = 1;
 static Int64 PROTOCOL_VERSION_MINOR = 1;
 static Int64 PROTOCOL_ENCODER_VERSION = 1;
 
-// TODO: Catch error when connection lost
-void TCPArrowHandler::runImpl()
+void TCPArrowHandler::init()
 {
-    connection_context = server.context();
-    connection_context.setSessionContext(connection_context);
-
-    Settings global_settings = connection_context.getSettings();
-
-    socket().setReceiveTimeout(global_settings.receive_timeout);
-    socket().setSendTimeout(global_settings.send_timeout);
-    socket().setNoDelay(true);
-
-    if (!default_database.empty())
+    try
     {
-        if (!connection_context.isDatabaseExist(default_database))
+        connection_context.setSessionContext(connection_context);
+        query_context = connection_context;
+
+        Settings global_settings = connection_context.getSettings();
+        socket().setReceiveTimeout(global_settings.receive_timeout);
+        socket().setSendTimeout(global_settings.send_timeout);
+        socket().setNoDelay(true);
+
+        in = std::make_shared<ReadBufferFromPocoSocket>(socket());
+        out = std::make_shared<WriteBufferFromPocoSocket>(socket());
+
+        while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(global_settings.poll_interval * 1000000) && !server.isCancelled());
+
+        if (server.isCancelled())
         {
-            Exception e("Database " + default_database + " doesn't exist", ErrorCodes::UNKNOWN_DATABASE);
-            LOG_ERROR(log, "Code: " << e.code() << ", e.displayText() = " << e.displayText()
-                << ", Stack trace:\n\n" << e.getStackTrace().toString());
-            throw e;
+            LOG_WARNING(log, "Server have been cancelled.");
+            return;
+        }
+        if (in->eof())
+        {
+            LOG_WARNING(log, "Client has not sent any data.");
+            return;
         }
 
-        connection_context.setCurrentDatabase(default_database);
-    }
+        recvHeader();
 
-    connection_context.setUser(user, password, socket().peerAddress(), "");
+        if (!default_database.empty())
+        {
+            if (!connection_context.isDatabaseExist(default_database))
+            {
+                Exception e("Database " + default_database + " doesn't exist", ErrorCodes::UNKNOWN_DATABASE);
+                LOG_ERROR(log, "Code: " << e.code() << ", e.displayText() = " << e.displayText()
+                    << ", Stack trace:\n\n" << e.getStackTrace().toString());
+                throw e;
+            }
 
-    // Client info
-    // TODO: More info
-    {
-        ClientInfo & client_info = query_context.getClientInfo();
-        client_info.client_name = client_name;
-        client_info.client_version_major = protocol_version_major;
-        client_info.client_version_minor = protocol_version_minor;
-        client_info.interface = ClientInfo::Interface::TCP;
-    }
+            connection_context.setCurrentDatabase(default_database);
+        }
 
-    bool failed = false;
-    while (!failed)
-    {
+        connection_context.setUser(user, password, socket().peerAddress(), "");
+
+        // Client info
+        // TODO: More info
+        {
+            ClientInfo & client_info = query_context.getClientInfo();
+            client_info.client_name = client_name;
+            client_info.client_version_major = protocol_version_major;
+            client_info.client_version_minor = protocol_version_minor;
+            client_info.interface = ClientInfo::Interface::TCP;
+        }
+
         /// We are waiting for a packet from the client. Thus, every `POLL_INTERVAL` seconds check whether we need to shut down.
         while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(global_settings.poll_interval * 1000000) && !server.isCancelled());
 
-        /// If we need to shut down, or client disconnects.
-        if (server.isCancelled() || in->eof())
-            break;
+        if (server.isCancelled())
+        {
+            LOG_WARNING(log, "Server have been cancelled.");
+            return;
+        }
+        if (in->eof())
+        {
+            LOG_WARNING(log, "Client has not sent any data.");
+            return;
+        }
 
+        recvQuery();
+    }
+    catch (Exception e)
+    {
+        failed = true;
+        auto msg = DB::getCurrentExceptionMessage(true, true);
+        LOG_ERROR(log, msg);
+        sendError(msg);
+    }
+}
+
+
+void TCPArrowHandler::startExecuting()
+{
+    if (encoder)
+        return;
+
+    state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
+    if (state.io.out)
+        throw Exception("TCPArrowHandler do not support insert query.");
+
+    size_t this_encoder_count = 8;
+    if (server.config().has("arrow_encoders"))
+        this_encoder_count = server.config().getInt("arrow_encoders");
+    if (encoder_count > 0)
+        this_encoder_count = encoder_count;
+    if (this_encoder_count <= 0)
+        throw Exception("Encoder number invalid.");
+
+    LOG_INFO(log, "Create arrow encoder, concurrent threads: " << this_encoder_count);
+
+    encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
+    if (encoder->hasError())
+        throw Exception(encoder->getErrorString());
+}
+
+
+// TODO: Catch error when connection lost
+void TCPArrowHandler::runImpl()
+{
+    // One query only, no looping
+    if (!failed)
+    {
         Stopwatch watch;
-        state.reset();
 
         try
         {
-            query_context = connection_context;
-
-            recvQuery();
-
-            state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
-
-            if (state.io.out)
-                throw Exception("TCPArrowHandler do not support insert query.");
-
-            processOrdinaryQuery();
+           processOrdinaryQuery();
         }
         catch (Exception e)
         {
@@ -108,35 +163,22 @@ void TCPArrowHandler::runImpl()
 
 void TCPArrowHandler::processOrdinaryQuery()
 {
-    size_t this_encoder_count = 8;
-    if (server.config().has("arrow_encoders"))
-        this_encoder_count = server.config().getInt("arrow_encoders");
-    if (encoder_count > 0)
-        this_encoder_count = encoder_count;
-    if (this_encoder_count <= 0)
-        throw Exception("Encoder number invalid.");
+    LOG_INFO(log, "Start process query.");
 
-    LOG_INFO(log, "Start process ordinary query, arrow encoder threads: " << this_encoder_count);
-
-    Magic::ArrowEncoderParall encoder(state.io, this_encoder_count);
-
-    if (encoder.hasError())
-        throw Exception(encoder.getErrorString());
-
-    auto schema = encoder.getEncodedSchema();
-    if (encoder.hasError())
-        throw Exception(encoder.getErrorString());
+    auto schema = encoder->getEncodedSchema();
+    if (encoder->hasError())
+        throw Exception(encoder->getErrorString());
 
     Magic::writeInt64(Magic::Protocol::ArrowSchema, *out);
     Magic::writeInt64(schema->size(), *out);
     out->write((const char*)schema->data(), schema->size());
     out->next();
 
-    while (true)
+    while (!server.isCancelled())
     {
-        auto block = encoder.getEncodedBlock();
-        if (encoder.hasError())
-            throw Exception(encoder.getErrorString());
+        auto block = encoder->getEncodedBlock();
+        if (encoder->hasError())
+            throw Exception(encoder->getErrorString());
         if (!block)
             break;
 
@@ -151,7 +193,7 @@ void TCPArrowHandler::processOrdinaryQuery()
     Magic::writeInt64(0, *out);
     out->next();
 
-    auto residue = encoder.residue();
+    auto residue = encoder->residue();
     LOG_INFO(log, "End process ordinary query, residue: " << residue);
     if (residue != 0)
         throw Exception("End process ordinary query, residue != 0");
@@ -201,6 +243,9 @@ void TCPArrowHandler::recvHeader()
         throw Exception(ss.str());
     }
     encoder_count = Magic::readInt64(*in);
+
+    client_count = Magic::readInt64(*in);
+    client_index = Magic::readInt64(*in);
 }
 
 
@@ -209,7 +254,12 @@ void TCPArrowHandler::recvQuery()
     Int64 flag = Magic::readInt64(*in);
     if (flag != Magic::Protocol::Utf8Query)
         throw Exception("TCPArrowHandler only receive query string.");
+
     Magic::readString(state.query_id, *in);
+    if (state.query_id.empty())
+        throw Exception("Receive empty query_id.");
+    LOG_INFO(log, "Receive query_id: " + state.query_id);
+
     query_context.setCurrentQueryId(state.query_id);
     Magic::readString(state.query, *in);
 }
@@ -244,6 +294,14 @@ void TCPArrowHandler::run()
             throw;
         }
     }
+}
+
+
+TCPArrowHandler::~TCPArrowHandler()
+{
+    state.io.onFinish();
+    TCPArrowSessions::instance().clear(this);
+    LOG_INFO(log, "~TCPArrowHandler");
 }
 
 }

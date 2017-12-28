@@ -2,7 +2,7 @@
 <yandex>
     <logger>
         <level>trace</level>
-        <!--log>/data/ch-server/server.log</log-->
+        <log>/data/ch-server/server.log</log>
         <errorlog>/data/ch-server/server-err.log</errorlog>
         <size>1000M</size>
         <count>10</count>

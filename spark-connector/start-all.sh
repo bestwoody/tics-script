@@ -37,3 +37,5 @@ fi
 
 echo
 echo "OK"
+
+./check-running.sh

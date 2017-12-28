@@ -29,19 +29,20 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 
 
 case class CHPlan(output: Seq[Attribute],
-                  @transient private val sparkSession: SparkSession,
-                  @transient private val tables: Seq[CHTableRef],
-                  @transient private val requiredColumns: Seq[String],
-                  @transient private val filterString: String,
-                  @transient private val aggregation: CHSqlAgg,
-                  @transient private val topN: CHSqlTopN,
-                  @transient private val partitions: Int,
-                  @transient private val decoders: Int) extends SparkPlan {
+  @transient private val sparkSession: SparkSession,
+  @transient private val tables: Seq[CHTableRef],
+  @transient private val requiredColumns: Seq[String],
+  @transient private val filterString: String,
+  @transient private val aggregation: CHSqlAgg,
+  @transient private val topN: CHSqlTopN,
+  @transient private val partitions: Int,
+  @transient private val decoders: Int,
+  @transient private val encoders: Int) extends SparkPlan {
 
   override protected def doExecute(): RDD[InternalRow] = {
     val types = schema.fields.map(_.dataType)
     // TODO: Read decoderCount/patitionCount from config
-    val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString, aggregation, topN, partitions, decoders)
+    val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString, aggregation, topN, partitions, decoders, encoders)
     val result = RDDConversions.rowToRowRdd(rdd, types)
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)
