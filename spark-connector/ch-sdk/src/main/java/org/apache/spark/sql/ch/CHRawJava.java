@@ -28,7 +28,7 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 
-public class CHRaw {
+public class CHRawJava {
     private static void dump(Field field, int order) {
         System.out.println("    #" + order + " name:\"" + field.getName() + "\" type:" +
                 field.getType().getTypeID() + " nullable:" + field.isNullable());
@@ -166,7 +166,7 @@ public class CHRaw {
         return 0;
     }
 
-    public CHRaw() {
+    public CHRawJava() {
     }
 
     private String host = "127.0.0.1";
@@ -174,7 +174,7 @@ public class CHRaw {
     private boolean decode = true;
 
     public static void main(String[] args) throws Exception {
-        CHRaw ch = new CHRaw();
+        CHRawJava ch = new CHRawJava();
         int code = ch.loop(args);
         if (code != 0) {
             System.exit(code);
