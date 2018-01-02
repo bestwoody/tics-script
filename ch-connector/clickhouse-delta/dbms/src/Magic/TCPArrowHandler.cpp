@@ -149,8 +149,7 @@ void TCPArrowHandler::runImpl()
         {
             auto msg = DB::getCurrentExceptionMessage(true, true);
             LOG_ERROR(log, msg);
-            // TODO:
-            state.io.onException();
+            encoder->cancal(true);
             failed = true;
 
             sendError(msg);
@@ -300,8 +299,6 @@ void TCPArrowHandler::run()
 
 TCPArrowHandler::~TCPArrowHandler()
 {
-    // TODO:
-    state.io.onFinish();
     TCPArrowSessions::instance().clear(this);
     LOG_INFO(log, "~TCPArrowHandler");
 }

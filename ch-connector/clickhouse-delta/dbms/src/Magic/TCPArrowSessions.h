@@ -107,22 +107,22 @@ public:
             time_t now = time(0);
             for (auto it = sessions.begin(); it != sessions.end(); ++it)
             {
-                auto seconds = difftime(it->second.create_time, now);
+                auto seconds = difftime(now, it->second.create_time);
                 if (seconds >= session_expired_seconds)
                 {
                     LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
-                        query_id << ", created seconds" << seconds);
+                        query_id << ", created: " << seconds << "s.");
                     if (it->second.client_count != it->second.finished_clients)
                     {
                         LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
                             it->second.active_clients.size() << ". Force clean now.");
                         it->second.active_clients.clear();
                         // TODO: force disconnect
-                        // TODO: not fully tested, may have bugs when force finish
                         it->second.execution->cancal(false);
                         it->second.execution = NULL;
                     }
-                    sessions.erase(it);
+                    // TODO: crash bug
+                    // sessions.erase(it);
                 }
             }
         }
