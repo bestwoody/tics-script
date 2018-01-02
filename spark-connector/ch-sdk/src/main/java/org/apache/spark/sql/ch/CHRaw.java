@@ -87,7 +87,7 @@ public class CHRaw {
                     }
                 }
 
-                // TODO: no need
+                // TODO: may be no need
                 column.clear();
                 column.close();
                 j += 1;

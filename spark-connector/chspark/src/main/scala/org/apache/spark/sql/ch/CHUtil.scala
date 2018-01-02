@@ -193,7 +193,6 @@ object CHUtil {
   }
 
   def genQueryId(): String = {
-    // TODO: Better random string
     "chspark-" + Random.nextInt.toString + "-" + Random.nextInt.toString
   }
 

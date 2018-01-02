@@ -80,13 +80,10 @@ class CHRDD(
     override def next(): Row = blockIter.next
   }
 
-  // TODO: All paritions may not assign to a same Spark node, so we need a better session module, like:
-  // <Spark nodes>-<share handle of a query> --- <CH sessions, each session respond to a handle>
   override protected def getPreferredLocations(split: Partition): Seq[String] =
     split.asInstanceOf[CHPartition].table.host :: Nil
 
   override protected def getPartitions: Array[Partition] = {
-    // TODO: Read cluster info from CH masterH
     val qid = CHUtil.genQueryId
     val result = new ListBuffer[CHPartition]
     var index = 0
