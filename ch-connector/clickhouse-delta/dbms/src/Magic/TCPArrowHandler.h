@@ -22,6 +22,14 @@ namespace DB
 {
 
 
+struct ArrowQueryState
+{
+    String query_id;
+    String query;
+    BlockIO io;
+};
+
+
 // TODO: Bad running sequence, refact.
 class TCPArrowHandler : public Poco::Net::TCPServerConnection
 {
@@ -43,7 +51,7 @@ public:
 
     String getQueryId()
     {
-        return query_id;
+        return state.query_id;
     }
 
     Int64 getClientCount()
@@ -95,8 +103,7 @@ private:
     Int64 client_count;
     Int64 client_index;
 
-    String query_id;
-    String query;
+    ArrowQueryState state;
     EncoderPtr encoder;
     bool failed;
 

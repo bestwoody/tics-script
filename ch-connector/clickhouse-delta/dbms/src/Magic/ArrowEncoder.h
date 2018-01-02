@@ -113,11 +113,6 @@ public:
         return input->blocks();
     }
 
-    void cancal(bool exception = false)
-    {
-        input->cancal(exception);
-    }
-
 protected:
     void onError(const std::string msg)
     {

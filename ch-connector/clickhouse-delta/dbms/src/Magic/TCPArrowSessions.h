@@ -4,9 +4,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <ctime>
 #include <common/logger_useful.h>
-
 #include "TCPArrowHandler.h"
 
 namespace DB
@@ -86,45 +84,13 @@ public:
             sessions.size() << ", connections: " << (session.client_count - session.finished_clients) <<
             ", client #" << client_index << "/" << session.client_count);
 
-        // Can't remove session immidiatly, may cause double running.
-        // Leave a tombstone for further clean up
+        // Can't clear up immidiatly, may cause double run.
+        // TODO: Tombstone + expired clean
         if (session.finished_clients == session.client_count)
         {
             session.active_clients.clear();
             session.execution = NULL;
             LOG_TRACE(log, "Clear session query_id: " << query_id << ", sessions: " << sessions.size());
-        }
-
-        // TODO: move to config file
-        // static size_t max_sessions_count = 1024;
-        // static size_t session_expired_seconds = 60 * 60 * 24;
-        static size_t max_sessions_count = 8;
-        static size_t session_expired_seconds = 60;
-
-        // The further operation: clean up tombstones
-        if (sessions.size() >= max_sessions_count)
-        {
-            time_t now = time(0);
-            for (auto it = sessions.begin(); it != sessions.end(); ++it)
-            {
-                auto seconds = difftime(it->second.create_time, now);
-                if (seconds >= session_expired_seconds)
-                {
-                    LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
-                        query_id << ", created seconds" << seconds);
-                    if (it->second.client_count != it->second.finished_clients)
-                    {
-                        LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
-                            it->second.active_clients.size() << ". Force clean now.");
-                        it->second.active_clients.clear();
-                        // TODO: force disconnect
-                        // TODO: not fully tested, may have bugs when force finish
-                        it->second.execution->cancal(false);
-                        it->second.execution = NULL;
-                    }
-                    sessions.erase(it);
-                }
-            }
         }
     }
 
@@ -135,10 +101,9 @@ private:
         TCPArrowHandler::EncoderPtr execution;
         Int64 finished_clients;
         std::unordered_map<Int64, bool> active_clients;
-        time_t create_time;
 
         Session(Int64 client_count_, TCPArrowHandler::EncoderPtr execution_) :
-            client_count(client_count_), execution(execution_), finished_clients(0), create_time(time(0)) {}
+            client_count(client_count_), execution(execution_), finished_clients(0) {}
     };
 
     using Sessions = std::unordered_map<String, Session>;
