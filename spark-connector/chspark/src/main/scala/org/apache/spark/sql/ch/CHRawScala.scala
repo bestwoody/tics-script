@@ -43,7 +43,8 @@ object CHRawScala {
       9006
     }
 
-    val qid = "chraw-" + Random.nextInt
+    val rid = Random.nextInt
+    val qid = "chraw-" + (if (rid < 0) -rid else rid)
 
     val workers = new Array[Thread](partitions);
 
