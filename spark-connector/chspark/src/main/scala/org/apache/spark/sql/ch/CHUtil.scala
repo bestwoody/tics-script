@@ -201,6 +201,7 @@ object CHUtil {
     }
   }
 
+  // TODO: Not safe, may conflict
   def genQueryId(): String = {
     "chspark-" + randomUInt + "-" + randomUInt
   }

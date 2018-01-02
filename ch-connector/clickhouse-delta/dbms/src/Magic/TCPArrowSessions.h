@@ -96,10 +96,11 @@ public:
         }
 
         // TODO: move to config file
-        // static size_t max_sessions_count = 1024;
-        // static size_t session_expired_seconds = 60 * 60 * 24;
-        static size_t max_sessions_count = 8;
-        static size_t session_expired_seconds = 60;
+        static size_t max_sessions_count = 1024;
+        static size_t session_expired_seconds = 60 * 60 * 24;
+        // For debug
+        // static size_t max_sessions_count = 0;
+        // static size_t session_expired_seconds = 3;
 
         // The further operation: clean up tombstones
         if (sessions.size() >= max_sessions_count)
@@ -107,22 +108,22 @@ public:
             time_t now = time(0);
             for (auto it = sessions.begin(); it != sessions.end(); ++it)
             {
+                auto & session = it->second;
                 auto seconds = difftime(now, it->second.create_time);
                 if (seconds >= session_expired_seconds)
                 {
                     LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
-                        query_id << ", created: " << seconds << "s.");
-                    if (it->second.client_count != it->second.finished_clients)
+                        it->first << ", created: " << seconds << "s.");
+                    if (session.client_count != session.finished_clients)
                     {
                         LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
-                            it->second.active_clients.size() << ". Force clean now.");
-                        it->second.active_clients.clear();
+                            session.active_clients.size() << ". Force clean now.");
+                        session.active_clients.clear();
                         // TODO: force disconnect
-                        it->second.execution->cancal(false);
-                        it->second.execution = NULL;
+                        session.execution->cancal(false);
+                        session.execution = NULL;
                     }
-                    // TODO: crash bug
-                    // sessions.erase(it);
+                    sessions.erase(it);
                 }
             }
         }
