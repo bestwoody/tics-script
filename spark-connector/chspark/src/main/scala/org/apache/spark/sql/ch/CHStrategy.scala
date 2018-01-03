@@ -22,8 +22,8 @@ import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOper
 import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.ch.mock._
-import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.{FilterExec, SparkPlan}
+import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
+import org.apache.spark.sql.execution.{CHScanExec, FilterExec, SparkPlan}
 import org.apache.spark.sql.{SparkSession, Strategy, execution}
 
 import scala.collection.mutable
@@ -285,9 +285,12 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       CHUtil.expToCHString(pushdownFilters)
     }
 
-    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name), filtersString, null, chSqlTopN,
+    val chScanRDD = new CHScanRDD(sparkSession, output, tables, requiredColumns, filtersString, null, chSqlTopN, partitions, decoders, encoders)
+    val chScanExec = CHScanExec(output, chScanRDD, sparkSession, tables, output.map(_.name), filtersString, null, chSqlTopN,
       partitions, decoders, encoders)
-    residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
+//    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name), filtersString, null, chSqlTopN,
+//      partitions, decoders, encoders)
+    residualFilter.map(FilterExec(_, chScanExec)).getOrElse(chScanExec)
   }
 }
 
