@@ -1,6 +1,6 @@
 #TPCH-100G-Q1-Q22
 ## TPCH compare test
-  | Test Type                        | Case    |  Time  1   | Time 2  | 
+ | Test Type                      | Case    |  Time  1   | Time 2  | 
     | --------                       | -----:  | :----:     | :----:  | 
     | CH-Spark                       | Q1      |   01:44m   | 01:50m  |
     | CH-Spark push down             | Q1      |   00:09m   | 00:10m  |
@@ -18,5 +18,3 @@
     | Spark Persist Disk             | Q3      |   01:10m   | 01:10m  |
     | CH-Spark                       | Q4      |   05:56m   | 06:05m  |
     | Spark Parquet                  | Q4      |   05:32m   | 05:32m  |
-    
-
