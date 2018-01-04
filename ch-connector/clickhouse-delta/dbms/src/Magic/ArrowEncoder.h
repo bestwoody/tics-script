@@ -27,10 +27,15 @@ public:
     using BlockPtr = std::shared_ptr<arrow::RecordBatch>;
     using BufferPtr = std::shared_ptr<arrow::Buffer>;
 
-    ArrowEncoder(const std::string & error_) : error(error_) {}
+    ArrowEncoder(const std::string & error_)
+    {
+        std::unique_lock<std::mutex> lock{mutex};
+        error = error_;
+    }
 
     ArrowEncoder(DB::BlockIO & input_)
     {
+        std::unique_lock<std::mutex> lock{mutex};
         input = std::make_shared<SafeBlockIO>(input_);
         schema = getSchema();
         encodedSchema = encodeSchema(schema);
@@ -113,12 +118,21 @@ public:
         return input->blocks();
     }
 
+    void cancal(bool exception = false)
+    {
+        std::unique_lock<std::mutex> lock{mutex};
+        if (input)
+            input->cancal(exception);
+        input = NULL;
+    }
+
 protected:
     void onError(const std::string msg)
     {
         std::unique_lock<std::mutex> lock{mutex};
         error = msg;
         input->cancal(true);
+        input = NULL;
     }
 
 private:

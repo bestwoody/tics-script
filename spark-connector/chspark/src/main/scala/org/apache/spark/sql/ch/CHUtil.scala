@@ -192,9 +192,18 @@ object CHUtil {
     }
   }
 
+  def randomUInt(): Int = {
+    val x = Random.nextInt
+    if (x < 0) {
+      -x
+    } else {
+      x
+    }
+  }
+
+  // TODO: Not safe, may conflict
   def genQueryId(): String = {
-    // TODO: Better random string
-    "chspark-" + Random.nextInt.toString + "-" + Random.nextInt.toString
+    "chspark-" + randomUInt + "-" + randomUInt
   }
 
   private def getCastString(value: String, dataType: DataType) = {

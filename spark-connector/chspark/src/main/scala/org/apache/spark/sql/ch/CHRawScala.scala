@@ -18,11 +18,13 @@ package org.apache.spark.sql.ch
 import scala.util.Random
 
 
-object CHRaw {
+object CHRawScala {
   def main(args: Array[String]) {
     if (args.size < 3) {
       println("usage: <bin> query-sql partitions conc [host] [port]")
       return;
+    } else {
+      println("Starting")
     }
 
     val query: String = args(0)
@@ -41,7 +43,8 @@ object CHRaw {
       9006
     }
 
-    val qid = "chraw-" + Random.nextInt
+    val rid = Random.nextInt
+    val qid = "chraw-" + (if (rid < 0) -rid else rid)
 
     val workers = new Array[Thread](partitions);
 

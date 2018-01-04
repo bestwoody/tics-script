@@ -67,6 +67,11 @@ public:
         return block;
     }
 
+    void cancal(bool exception = false)
+    {
+        encoder.cancal(exception);
+    }
+
     ~ArrowEncoderParall()
     {
         // Don't check encodeds.size(), in case query is cancalled.

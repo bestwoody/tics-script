@@ -12,6 +12,6 @@ fi
 
 java -XX:MaxDirectMemorySize=5g \
 	-cp ch-sdk/target/*:ch-sdk/target/lib/* \
-	org.apache.spark.sql.ch/CHRaw \
+	org.apache.spark.sql.ch/CHRawJava \
 	"$host" "$cmd" "$query" "$times" \
 	2>&1 | grep -v 'SLF4J'

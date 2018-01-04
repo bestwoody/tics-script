@@ -18,19 +18,13 @@
 ```
 ** Codec
 ** IPC (JNI, TCP Server)
-** Types supported: Essential
--- Types supported: Full
-     - Bool
-     - Decimal
-     - Nested types
-**  Benchmark
-*- Optimization
-     - Faster data copy
-     - Streaming + parallel + async
-```
-JNI only (suspended by now)
-```
+** Benchmark
+** Streaming + parallel + async
+** Types supporting: Essential
+-- Types supporting: Full. Not supported yet: Bool, Decimal, Nested types
 -- Optimization
-     - Memory usage control
-     - Disable background threads
+```
+JNI only (Deprecated)
+```
+-- Disable background threads
 ```
