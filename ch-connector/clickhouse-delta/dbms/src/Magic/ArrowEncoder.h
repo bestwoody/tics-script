@@ -193,10 +193,10 @@ private:
             arrow::StringBuilder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnString &>(*column);
+            const auto data = typeid_cast<const DB::ColumnString *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                auto ref = data.getDataAt(i);
+                auto ref = data->getDataAt(i);
                 auto val = ref.toString();
                 status = builder.Append(val);
                 if (!status.ok())
@@ -212,10 +212,10 @@ private:
             arrow::StringBuilder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnFixedString &>(*column);
+            const auto data = typeid_cast<const DB::ColumnFixedString *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                auto ref = data.getDataAt(i);
+                auto ref = data->getDataAt(i);
                 auto val = ref.toString();
                 status = builder.Append(val);
                 if (!status.ok())
@@ -232,10 +232,10 @@ private:
             arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), pool);
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnUInt32 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                uint32_t val = data.getElement(i);
+                uint32_t val = data->getElement(i);
                 status = builder.Append(val);
                 if (!status.ok())
                 {
@@ -251,10 +251,10 @@ private:
             static uint32_t date_to_sec = 24 * 60 * 60;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnUInt16 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnUInt16 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                uint16_t val = data.getElement(i);
+                uint16_t val = data->getElement(i);
                 status = builder.Append(date_to_sec * val);
                 if (!status.ok())
                 {
@@ -269,10 +269,10 @@ private:
             arrow::Int8Builder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnInt8 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnInt8 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::Int8Builder.Append " + status.ToString());
@@ -286,10 +286,10 @@ private:
             arrow::Int16Builder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnInt16 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnInt16 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::Int16Builder.Append " + status.ToString());
@@ -303,10 +303,10 @@ private:
             arrow::Int32Builder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnInt32 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnInt32 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::Int32Builder.Append " + status.ToString());
@@ -320,10 +320,10 @@ private:
             arrow::Int64Builder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnInt64 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnInt64 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::Int64Builder.Append " + status.ToString());
@@ -337,10 +337,10 @@ private:
             arrow::UInt8Builder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnUInt8 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnUInt8 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::UInt8Builder.Append " + status.ToString());
@@ -354,10 +354,10 @@ private:
             arrow::UInt16Builder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnUInt16 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnUInt16 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::UInt16Builder.Append " + status.ToString());
@@ -371,10 +371,10 @@ private:
             arrow::UInt32Builder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnUInt32 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnUInt32 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::UInt32Builder.Append " + status.ToString());
@@ -388,10 +388,10 @@ private:
             arrow::UInt64Builder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnUInt64 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnUInt64 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::UInt64Builder.Append " + status.ToString());
@@ -405,10 +405,10 @@ private:
             arrow::FloatBuilder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnFloat32 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnFloat32 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::FloatBuilder.Append " + status.ToString());
@@ -422,10 +422,10 @@ private:
             arrow::DoubleBuilder builder;
             auto rows = column->size();
             builder.Reserve(rows);
-            const auto & data = typeid_cast<DB::ColumnFloat64 &>(*column);
+            const auto data = typeid_cast<const DB::ColumnFloat64 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
-                status = builder.Append(data.getElement(i));
+                status = builder.Append(data->getElement(i));
                 if (!status.ok())
                 {
                     onError("columnToArrowArray, arrow::DoubleBuilder.Append " + status.ToString());
