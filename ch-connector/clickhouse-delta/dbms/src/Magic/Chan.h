@@ -64,7 +64,7 @@ public:
     {
         {
             unique_lock<mutex> lock{mtx};
-            while (capacity != 0 && capacity <= que.size() && (quota < 0 || passed < quota) && !closed)
+            while (capacity != 0 && capacity <= que.size() && (quota < 0 || passed < size_t(quota)) && !closed)
                 cond_w.wait(lock);
             if (closed)
                 return;
@@ -76,10 +76,10 @@ public:
     inline bool pop(T &v)
     {
         unique_lock<mutex> lock{mtx};
-        if ((quota >= 0 && passed == quota) || closed)
+        if ((quota >= 0 && passed == size_t(quota)) || closed)
             return false;
 
-        while (que.empty() && (quota < 0 || passed < quota) && !closed)
+        while (que.empty() && (quota < 0 || passed < size_t(quota)) && !closed)
             cond_r.wait(lock);
 
         if (que.empty() || closed)
@@ -91,7 +91,7 @@ public:
 
         cond_w.notify_all();
 
-        if (quota >= 0 && passed == quota)
+        if (quota >= 0 && passed == size_t(quota))
             cond_r.notify_all();
         return true;
     }
