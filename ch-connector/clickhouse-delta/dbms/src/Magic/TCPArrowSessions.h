@@ -98,15 +98,13 @@ public:
         // TODO: move to config file
         static size_t max_sessions_count = 1024;
         static size_t session_expired_seconds = 60 * 60 * 24;
-        // For debug
-        // static size_t max_sessions_count = 0;
-        // static size_t session_expired_seconds = 3;
 
         // The further operation: clean up tombstones
         if (sessions.size() >= max_sessions_count)
         {
             time_t now = time(0);
-            for (auto it = sessions.begin(); it != sessions.end(); ++it)
+            auto it = sessions.begin();
+            while (it != sessions.end())
             {
                 auto & session = it->second;
                 auto seconds = difftime(now, it->second.create_time);
@@ -123,7 +121,9 @@ public:
                         session.execution->cancal(false);
                         session.execution = NULL;
                     }
-                    sessions.erase(it);
+                    it = sessions.erase(it);
+                } else {
+                    ++it;
                 }
             }
         }
