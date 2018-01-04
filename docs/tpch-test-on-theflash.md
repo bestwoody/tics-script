@@ -1,4 +1,4 @@
-#TPCH-100G-Q1-Q22
+# TPCH-100G-Q1-Q22
 ## TPCH compare test
 | Test Type                      | Case    |  Time  1   | Time 2  | 
 | --------                       | -----:  |   ----:    | :----:  | 
