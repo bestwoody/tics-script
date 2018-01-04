@@ -18,3 +18,21 @@
 | Spark Persist Disk             | Q3      |   01:10m   | 01:10m  |
 | CH-Spark                       | Q4      |   05:56m   | 06:05m  |
 | Spark Parquet                  | Q4      |   05:32m   | 05:32m  |
+| Spark Persist Memory           | Q4      |   05:52m   | 05:38m  |
+| Spark Persist Disk             | Q4      |   05:32m   | 05:28m  |
+| CH-Spark                       | Q5      |   03:14m   | 02:57m  |
+| Spark Parquet                  | Q5      |   03:45m   | 03:50m  |
+| Spark Persist Memory           | Q5      |   02:53m   | 02:48m  |
+| Spark Persist Disk             | Q5      |   02:46m   | 02:55m  |
+| CH-Spark                       | Q6      |   00:04m   | 00:04m  |
+| Spark Parquet                  | Q6      |   00:03m   | 00:04m  |
+| Spark Persist Memory           | Q6      |   00:02m   | 00:02m  |
+| Spark Persist Disk             | Q6      |   00:02m   | 00:02m  |
+| CH-Spark                       | Q7      |   02:49m   | 02:59m  |
+| Spark Parquet                  | Q7      |   04:54m   | 05:16m  |
+| Spark Persist Memory           | Q7      |   02:51m   | 03:09m  |
+| Spark Persist Disk             | Q7      |   03:06m   | 02:45m  |
+| CH-Spark                       | Q8      |   02:18m   | 02:21m  |
+| Spark Parquet                  | Q8      |   02:37m   | 02:41m  |
+| Spark Persist Memory           | Q8      |   02:22m   | 02:18m  |
+| Spark Persist Disk             | Q8      |   02:19m   | 02:21m  |
