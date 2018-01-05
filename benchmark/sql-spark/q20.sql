@@ -2,33 +2,33 @@ SELECT
 	S_NAME,
 	S_ADDRESS
 FROM
-	supplier2,
-	nation2
+	supplier,
+	nation
 WHERE
 	S_SUPPKEY IN (
 	SELECT
 		PS_SUPPKEY
 	FROM
-		partsupp2
+		partsupp
 	WHERE
 	PS_PARTKEY IN (
 		SELECT
 			P_PARTKEY
 		FROM
-			part2
+			part
 		WHERE
-			P_NAME LIKE 'FOREST%'
+			P_NAME LIKE 'forest%'
 	)
 	AND PS_AVAILQTY > (
 		SELECT
 			0.5 * SUM(L_QUANTITY)
 		FROM
-			lineitem2
+			lineitem
 		WHERE
 			L_PARTKEY = PS_PARTKEY
 		AND L_SUPPKEY = PS_SUPPKEY
-		AND L_SHIPDATE >= '1990-01-01'
-		AND L_SHIPDATE < '1996-01-01'
+		AND L_SHIPDATE >= '1994-01-01'
+		AND L_SHIPDATE < '1995-01-01'
 		)
 	)
 	AND S_NATIONKEY = N_NATIONKEY

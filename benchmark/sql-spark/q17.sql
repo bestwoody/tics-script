@@ -1,8 +1,8 @@
 SELECT
 	SUM(L_EXTENDEDPRICE) / 7.0 AS AVG_YEARLY
 FROM
-	lineitem2,
-	part2
+	lineitem,
+	part
 WHERE
 	P_PARTKEY = L_PARTKEY
 	AND P_BRAND = 'Brand#23'
@@ -11,7 +11,7 @@ WHERE
 		SELECT
 			0.2 * AVG(L_QUANTITY)
 		FROM
-			lineitem2
+			lineitem
 		WHERE
 			L_PARTKEY = P_PARTKEY
 	)

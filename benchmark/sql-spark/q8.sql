@@ -8,14 +8,14 @@ FROM
 		L_EXTENDEDPRICE * (1 - L_DISCOUNT) AS VOLUME,
  		N2.N_NAME AS NATION
 	FROM
- 		part2,
-		supplier2,
-		lineitem2,
-		orders2,
-		customer2,
-		nation2 n1,
-		nation2 n2,
-		region2
+ 		part,
+		supplier,
+		lineitem,
+		orders,
+		customer,
+		nation n1,
+		nation n2,
+		region
 	WHERE
 		P_PARTKEY = L_PARTKEY
 		AND S_SUPPKEY = L_SUPPKEY
@@ -25,7 +25,7 @@ FROM
 		AND N1.N_REGIONKEY = R_REGIONKEY
 		AND R_NAME = 'ASIA'
 		AND S_NATIONKEY = N2.N_NATIONKEY
-		AND O_ORDERDATE BETWEEN '1990-01-01' AND '1996-12-31'
+		AND O_ORDERDATE BETWEEN '1995-01-01' AND '1996-12-31'
 		AND P_TYPE = 'SMALL PLATED COPPER'
 	) AS ALL_NATIONS
 GROUP BY
