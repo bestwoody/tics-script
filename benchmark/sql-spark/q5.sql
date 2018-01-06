@@ -2,12 +2,12 @@ SELECT
 	N_NAME,
 	SUM(L_EXTENDEDPRICE * (1 - L_DISCOUNT)) AS REVENUE
 FROM
-	customer2,
-	orders2,
-	lineitem2,
-	supplier2,
-	nation2,
-	region2
+	customer,
+	orders,
+	lineitem,
+	supplier,
+	nation,
+	region
 WHERE
 	C_CUSTKEY = O_CUSTKEY
 	AND L_ORDERKEY = O_ORDERKEY
