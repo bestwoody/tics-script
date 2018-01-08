@@ -1,6 +1,6 @@
 # TPCH-Test
 ## TPCH compare test 
-time unit minute
+* time unit minute
 
 | Test Type                      | Case    |  Time  1  | Time 2 | 
 | --------                       | -----:  |   ----:   | :----: | 
@@ -78,3 +78,22 @@ time unit minute
 | Spark Parquet                  | Q22     |   01:14   | 01:11  |
 | Spark Persist Memory           | Q22     |   04:33   | 04:06  |
 | Spark Persist Disk             | Q22     |   04:21   | 04:07  |
+
+# Testing environment
+## Hardware Config
+* Intel Xeon E312xx 16 cores 2.4Ghz.
+* 16G Memory 1600MHz .
+* SSD 2.0GB+/s.
+
+## Software Configuration
+* CentOS Linux release 7.2.1511
+* Spark version 2.1.1
+* ClickHouse server version 1.1.54310
+
+## Spark Config
+* SPARK EXECUTOR MEMORY=12G
+* SPARK WORKER MEMORY=12G
+* SPARK WORKER CORES=16
+
+# Data scale
+## TPCH-100 100G data scala
