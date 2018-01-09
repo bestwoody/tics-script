@@ -26,4 +26,8 @@ class CHTableRef(val host: String, val port: Int, val database: String, val tabl
       database + "." + table
     }
   }
+
+  override def toString: String = {
+    s"db=$database,table=$table"
+  }
 }
