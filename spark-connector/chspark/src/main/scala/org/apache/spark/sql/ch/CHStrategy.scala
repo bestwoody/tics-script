@@ -275,7 +275,8 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       CHUtil.expToCHString(pushdownFilters)
     }
 
-    val chScanRDD = new CHScanRDD(sparkSession, output, tables, requiredColumns, filtersString, null, chSqlTopN, partitions, decoders, encoders)
+    val chScanRDD = new CHScanRDD(sparkSession, output, tables, output.map(_.name), filtersString, null, chSqlTopN,
+      partitions, decoders, encoders)
     val chScanExec = CHScanExec(output, chScanRDD, sparkSession, tables, output.map(_.name), filtersString, null, chSqlTopN,
       partitions, decoders, encoders)
 //    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name), filtersString, null, chSqlTopN,
