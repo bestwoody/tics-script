@@ -16,16 +16,11 @@
 package org.apache.spark.sql.ch
 
 import org.apache.spark.rdd.RDD
-
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.SparkSession
-
-import org.apache.spark.sql.execution.RDDConversions
-import org.apache.spark.sql.execution.SparkPlan
-
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
+import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeProjection}
+import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.execution.{LeafExecNode, RDDConversions}
 
 
 case class CHPlan(output: Seq[Attribute],
@@ -37,18 +32,33 @@ case class CHPlan(output: Seq[Attribute],
   @transient private val topN: CHSqlTopN,
   @transient private val partitions: Int,
   @transient private val decoders: Int,
-  @transient private val encoders: Int) extends SparkPlan {
+  @transient private val encoders: Int) extends LeafExecNode {
+
+  override lazy val metrics = Map(
+    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows")
+  )
+
+  override val nodeName: String = "CHScanRDDExec"
 
   override protected def doExecute(): RDD[InternalRow] = {
+    val numOutputRows = longMetric("numOutputRows")
     val types = schema.fields.map(_.dataType)
     val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString, aggregation, topN, partitions, decoders, encoders)
     val result = RDDConversions.rowToRowRdd(rdd, types)
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)
       proj.initialize(partition)
-      iter.map { r => proj(r) }
+      iter.map {
+        numOutputRows += 1
+        r => proj(r)
+      }
     }
   }
 
-  override def children: Seq[SparkPlan] = Nil
+  override def verboseString: String = {
+    s"$nodeName(tables=${tables.mkString(",")}, requiredCols=${requiredColumns.mkString(",")}, filter=$filterString, " +
+      s"agg=$aggregation, topN=$topN, partitions=$partitions, decoders=$decoders, encoders=$encoders)"
+  }
+
+  override def simpleString: String = verboseString
 }

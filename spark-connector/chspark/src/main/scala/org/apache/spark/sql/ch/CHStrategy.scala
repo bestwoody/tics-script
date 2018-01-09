@@ -196,25 +196,14 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     }
 
     val chSqlAgg = new CHSqlAgg(groupByColumn, aggregation)
-    val requiredCols = resultExpressions.map {
-      case a@Alias(child, _) =>
-        child match {
-          // We need to map spark Alias AttributeReference to CH-readable SQL
-          case r@AttributeReference(attributeName, _, _, _) =>
-            // CH-readable SQL may contained in `aggregation`
-            val idx = aggregateExpressions.map(e => e.aggregateFunction.toString()).indexOf(attributeName)
-            if (idx < 0) {
-              r.name
-            } else {
-              // Get CH-readable SQL from `aggregation`
-              aggregation(idx).toString()
-            }
-          case _ => a.name
-        }
-      case other => other.name
-    }
+    // As for required Columns, first we extract all aggregation functions and put them in the front most,
+    // then we append group by columns.
+    val requiredCols = chSqlAgg
+      .functions
+      .map{ _.toString } ++
+      chSqlAgg.groupByColumns
 
-    val chPlan = CHPlan(resultExpressions.map(_.toAttribute), sparkSession,
+    val chPlan = CHPlan(output, sparkSession,
       relation.tables, requiredCols, filtersString, chSqlAgg, cHSqlTopN,
       relation.partitions, relation.decoders, relation.encoders)
 
