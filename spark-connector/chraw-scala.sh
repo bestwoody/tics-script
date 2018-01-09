@@ -13,6 +13,6 @@ fi
 
 java -XX:MaxDirectMemorySize=5g \
 	-cp chspark/target/*:chspark/target/lib/* \
-	org.apache.spark.sql.ch/CHRaw \
+	org.apache.spark.sql.ch/CHRawScala \
 	"$query" "$partitions" "$conc" "$host" "$port" \
 	2>&1 | grep -v 'SLF4J'

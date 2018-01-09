@@ -9,7 +9,17 @@
         * If use TCP, Latch Service can be integrade to CH process.
 
 ## Progress
-JNI
+TCP
+```
+** Codec
+** TCP
+** Error Handling
+** Parrallel transport
+-- Cancal query
+** Benchmark, TPS + Throughput
+-- Query progress report
+```
+JNI (Deprecated)
 ```
 ** Codec
 ** JNI
@@ -17,14 +27,4 @@ JNI
 ** Cancal query
 -- Query progress report
 ** Benchmark, TPS + Throughput
-```
-TCP
-```
-** Codec
-** TCP
-** Error Handling
-*- Parrallel transport
--- Cancal query
-** Benchmark, TPS + Throughput
--- Query progress report
 ```

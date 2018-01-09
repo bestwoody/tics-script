@@ -30,11 +30,15 @@ object CHSqlAggFunc {
     new CHSqlAggFunc(function, exp.map(CHUtil.expToCHString).mkString(","))
 }
 
-class CHSqlAgg(val groupByColumns: Seq[String], val functions: Seq[CHSqlAggFunc]) extends Serializable
+class CHSqlAgg(val groupByColumns: Seq[String], val functions: Seq[CHSqlAggFunc]) extends Serializable {
+  override def toString: String = {
+    s"aggFunc=${functions.mkString(",")},groupByCols=${groupByColumns.mkString(",")}"
+  }
+}
 
 class CHSqlTopN(val orderByColumns: Seq[CHSqlOrderByCol], val limit: String) extends Serializable {
   override def toString: String = {
-    orderByColumns.mkString(";") + s"; LIMIT=$limit"
+    orderByColumns.mkString(";") + s";limit=$limit"
   }
 }
 

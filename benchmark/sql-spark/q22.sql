@@ -8,7 +8,7 @@ FROM
 		SUBSTRING(C_PHONE, 1 , 2) AS CNTRYCODE,
 		C_ACCTBAL
 	FROM
-		customer2
+		customer
 	WHERE
 		SUBSTRING(C_PHONE , 1 , 2) IN
 		('20', '40', '22', '30', '39', '42', '21')
@@ -16,7 +16,7 @@ FROM
 			SELECT
 				AVG(C_ACCTBAL)
 			FROM
-				customer2
+				customer
 			WHERE
 				C_ACCTBAL > 0.00
 			AND SUBSTRING(C_PHONE , 1 , 2) IN
@@ -26,7 +26,7 @@ FROM
 		SELECT
 			*
 		FROM
-			orders2
+			orders
 		WHERE
 			O_CUSTKEY = C_CUSTKEY
 		)

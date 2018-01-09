@@ -8,6 +8,7 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.ch._
 import org.apache.spark.sql.execution.vectorized.{ColumnVectorUtils, ColumnarBatch}
+import org.apache.spark.sql.types.StructType
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
@@ -27,6 +28,7 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
     private val table = part.table
     private val qid = part.qid
     private val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
+    private lazy val schema = StructType.fromAttributes(output)
 
     private val resp = CHExecutorPool.get(qid, sql, table.host, table.port, table.absName,
       decoderCount, encoderCount, tables.size, part.clientIndex)
@@ -40,7 +42,7 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
       }
     }
 
-    private def nextBatch(): ColumnarBatch = ColumnVectorUtils.toBatch(null, MemoryMode.ON_HEAP, blockIterator)
+    private def nextBatch(): ColumnarBatch = ColumnVectorUtils.toBatch(schema, MemoryMode.ON_HEAP, blockIterator)
 
     private[this] var blockIterator: Iterator[Row] = nextBlock()
 

@@ -16,14 +16,17 @@
 package org.apache.spark.sql.ch
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.catalyst.expressions.NamedExpression.newExprId
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, CreateNamedStruct, ExprId, Expression, IntegerLiteral, NamedExpression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, CreateNamedStruct, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.ch.mock._
+import org.apache.spark.sql.execution.aggregate.AggUtils
 import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
 import org.apache.spark.sql.execution.{CHScanExec, FilterExec, SparkPlan}
+import org.apache.spark.sql.types.DoubleType
 import org.apache.spark.sql.{SparkSession, Strategy, execution}
 
 import scala.collection.mutable
@@ -142,48 +145,46 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     relation: CHRelation,
     rel: LogicalRelation,
     cHSqlTopN: CHSqlTopN = null): Seq[SparkPlan] = {
+    val deterministicAggAliases = aggregateExpressions.collect {
+      case e if e.deterministic => e.canonicalized -> Alias(e, e.toString())()
+    }.toMap
 
-    val aliasMap = mutable.HashMap[(Boolean, Expression), Alias]()
-    val avgPushdownRewriteMap = mutable.HashMap[ExprId, List[AggregateExpression]]()
-
-    def toAlias(expr: AggregateExpression) =
-      if (!expr.deterministic) {
-        Alias(expr, expr.toString())()
-      } else {
-        aliasMap.getOrElseUpdate(
-          (expr.deterministic, expr.canonicalized), Alias(expr, expr.toString)())
-      }
-
-    def newAggregate(aggFunc: AggregateFunction, originalAggExpr: AggregateExpression) =
-      AggregateExpression(
-        aggFunc,
-        originalAggExpr.mode,
-        originalAggExpr.isDistinct,
-        originalAggExpr.resultId)
-
-    val pushdownAggregates = aggregateExpressions.flatMap { aggExpr =>
-      avgPushdownRewriteMap.getOrElse(aggExpr.resultId, List(aggExpr))
-    }.distinct
+    def aliasPushedPartialResult(e: AggregateExpression): Alias = {
+      deterministicAggAliases.getOrElse(e.canonicalized, Alias(e, e.toString())())
+    }
 
     val residualAggregateExpressions = aggregateExpressions.map { aggExpr =>
+      // As `aggExpr` is being pushing down to Clickhouse, we need to replace the original Catalyst
+      // aggregate expressions with new ones that merges the partial aggregation results returned by
+      // Clickhouse.
+      //
+      // NOTE: Unlike simple aggregate functions (e.g., `Max`, `Min`, etc.), `Count` must be
+      // replaced with a `Sum` to sum up the partial counts returned by Clickhouse.
+      //
+      // NOTE: All `Average`s should have already been rewritten into `Sum`s and `Count`s by the
+      // `CHAggregation` pattern extractor.
+
+      // An attribute referring to the partial aggregation results returned by Clickhouse.
+      val partialResultRef = aliasPushedPartialResult(aggExpr).toAttribute
+
       aggExpr.aggregateFunction match {
-        // here aggExpr is the original AggregationExpression
-        // and will be pushed down to TiKV
-        case Max(_) => newAggregate(Max(toAlias(aggExpr).toAttribute), aggExpr)
-        case Min(_) => newAggregate(Min(toAlias(aggExpr).toAttribute), aggExpr)
-        case Count(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
-        case Sum(_) => newAggregate(Sum(toAlias(aggExpr).toAttribute), aggExpr)
-        case First(_, ignoreNullsExpr) =>
-          newAggregate(First(toAlias(aggExpr).toAttribute, ignoreNullsExpr), aggExpr)
-        case _ => aggExpr
+        case e: Max     => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
+        case e: Min     => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
+        case e: Sum     => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
+        case e: First   => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
+        case _: Count   => aggExpr.copy(aggregateFunction = Sum(partialResultRef))
+        case _: Average => throw new IllegalStateException("All AVGs should have been rewritten.")
+        case _          => aggExpr
       }
     }
 
     val aggregation = mutable.ListBuffer[CHSqlAggFunc]()
     val groupByColumn = mutable.ListBuffer[String]()
-    extractAggregation(groupingExpressions, pushdownAggregates, relation, aggregation, groupByColumn)
+    extractAggregation(groupingExpressions, aggregateExpressions.distinct, relation, aggregation, groupByColumn)
 
-    val output = (pushdownAggregates.map(x => toAlias(x)) ++ groupingExpressions).map(_.toAttribute)
+    val output = (aggregateExpressions.map(aliasPushedPartialResult) ++ groupingExpressions).map {
+      _.toAttribute
+    }
 
     val (pushdownFilters: Seq[Expression], _: Seq[Expression]) =
       filterPredicates.partition((expression: Expression) => CHUtil.isSupportedFilter(expression))
@@ -195,34 +196,23 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     }
 
     val chSqlAgg = new CHSqlAgg(groupByColumn, aggregation)
-    val requiredCols = resultExpressions.map {
-      case a@Alias(child, _) =>
-        child match {
-          // We need to map spark Alias AttributeReference to CH-readable SQL
-          case r@AttributeReference(attributeName, _, _, _) =>
-            // CH-readable SQL may contained in `aggregation`
-            val idx = aggregateExpressions.map(e => e.aggregateFunction.toString()).indexOf(attributeName)
-            if (idx < 0) {
-              r.name
-            } else {
-              // Get CH-readable SQL from `aggregation`
-              aggregation(idx).toString()
-            }
-          case _ => a.name
-        }
-      case other => other.name
-    }
+    // As for required Columns, first we extract all aggregation functions and put them in the front most,
+    // then we append group by columns.
+    val requiredCols = chSqlAgg
+      .functions
+      .map{ _.toString } ++
+      chSqlAgg.groupByColumns
 
-    val chPlan = CHPlan(resultExpressions.map(_.toAttribute), sparkSession,
+    val chPlan = CHPlan(output, sparkSession,
       relation.tables, requiredCols, filtersString, chSqlAgg, cHSqlTopN,
       relation.partitions, relation.decoders, relation.encoders)
 
-    //  aggregate.AggUtils.planAggregateWithoutDistinct(
-    //    groupingExpressions,
-    //    residualAggregateExpressions,
-    //    resultExpressions,
-    chPlan :: Nil
-    //  )
+    AggUtils.planAggregateWithoutDistinct(
+      groupingExpressions,
+      residualAggregateExpressions,
+      resultExpressions,
+      chPlan
+    )
   }
 
   def extractAggregation(
@@ -297,9 +287,44 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 object CHAggregation {
   type ReturnType = PhysicalAggregation.ReturnType
 
-  def unapply(a: Any): Option[ReturnType] = a match {
+  def unapply(plan: LogicalPlan): Option[ReturnType] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions, resultExpressions, child) =>
-      Some(groupingExpressions, aggregateExpressions, resultExpressions, child)
+      // Rewrites all `Average`s into the form of `Divide(Sum / Count)` so that we can push the
+      // converted `Sum`s and `Count`s down to Clickhouse.
+      val (averages, averagesEliminated) = aggregateExpressions.partition {
+        case AggregateExpression(_: Average, _, _, _) => true
+        case _                                        => false
+      }
+
+      // An auxiliary map that maps result attribute IDs of all detected `Average`s to corresponding
+      // converted `Sum`s and `Count`s.
+      val rewriteMap = averages.map {
+        case a @ AggregateExpression(Average(ref), _, _, _) =>
+          a.resultAttribute -> Seq(
+            a.copy(aggregateFunction = Sum(ref), resultId = newExprId),
+            a.copy(aggregateFunction = Count(ref), resultId = newExprId)
+          )
+      }.toMap
+
+      val rewrite: PartialFunction[Expression, Expression] = rewriteMap.map {
+        case (ref, Seq(sum, count)) =>
+          val castedSum = Cast(sum.resultAttribute, DoubleType)
+          val castedCount = Cast(count.resultAttribute, DoubleType)
+          val division = Cast(Divide(castedSum, castedCount), ref.dataType)
+          (ref: Expression) -> Alias(division, ref.name)(exprId = ref.exprId)
+      }
+
+      val rewrittenResultExpressions = resultExpressions
+        .map { _ transform rewrite }
+        .map { case e: NamedExpression => e }
+
+      val rewrittenAggregateExpressions = {
+        val extraSumsAndCounts = rewriteMap.values.reduceOption { _ ++ _ } getOrElse Nil
+        (averagesEliminated ++ extraSumsAndCounts).distinct
+      }
+
+      Some(groupingExpressions, rewrittenAggregateExpressions, rewrittenResultExpressions, child)
+
     case _ => Option.empty[ReturnType]
   }
 }

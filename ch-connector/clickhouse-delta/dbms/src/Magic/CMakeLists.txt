@@ -2,12 +2,7 @@
 #add_library(ch SHARED ${magic-patch})
 add_library(ch SHARED JNI.cpp Bench.cpp)
 
-target_link_libraries(ch
-    clickhouse-client
-    clickhouse-local
-    clickhouse-extract-from-config
-    clickhouse-compressor-lib
-    arrow)
+target_link_libraries (ch clickhouse_common_io daemon clickhouse_storages_system clickhouse_functions clickhouse_aggregate_functions clickhouse_table_functions arrow)
 
 target_include_directories(ch PRIVATE ${ClickHouse_SOURCE_DIR}/../../protocol/c-jni)
 
@@ -18,8 +13,4 @@ endif()
 
 add_executable(ch-raw CHRaw.cpp)
 
-target_link_libraries(ch-raw
-    clickhouse-client
-    clickhouse-local
-    clickhouse-extract-from-config
-    clickhouse-compressor-lib)
+target_link_libraries (ch-raw clickhouse_common_io daemon clickhouse_storages_system clickhouse_functions clickhouse_aggregate_functions clickhouse_table_functions arrow)

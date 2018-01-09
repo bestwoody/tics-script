@@ -11,12 +11,12 @@ FROM
 		YEAR(L_SHIPDATE) AS L_YEAR,
 		L_EXTENDEDPRICE * (1 - L_DISCOUNT) AS VOLUME
 	FROM
-		supplier2,
-		lineitem2,
-		orders2,
-		customer2,
-		nation2 n1,
-		nation2 n2
+		supplier,
+		lineitem,
+		orders,
+		customer,
+		nation n1,
+		nation n2
 	WHERE
 		S_SUPPKEY = L_SUPPKEY
 		AND O_ORDERKEY = L_ORDERKEY
@@ -24,10 +24,10 @@ FROM
 		AND S_NATIONKEY = N1.N_NATIONKEY
 		AND C_NATIONKEY = N2.N_NATIONKEY
 		AND (
-			(N1.N_NAME = 'EGYPT' AND N2.N_NAME = 'EGYPT')
-			OR (N1.N_NAME = 'INDIA' AND N2.N_NAME = 'EGYPT')
+			(N1.N_NAME = 'JAPAN' AND N2.N_NAME = 'INDIA')
+			OR (N1.N_NAME = 'INDIA' AND N2.N_NAME = 'JAPAN')
 			)
-		AND L_SHIPDATE BETWEEN '1990-01-01' AND '1998-12-31'
+		AND L_SHIPDATE BETWEEN '1995-01-01' AND '1996-12-31'
 	) AS SHIPPING
 GROUP BY
 	SUPP_NATION,
