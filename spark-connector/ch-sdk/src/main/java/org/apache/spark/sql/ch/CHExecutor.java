@@ -198,8 +198,6 @@ public class CHExecutor {
         writer.writeLong(PROTOCOL_VERSION_MAJOR);
         writer.writeLong(PROTOCOL_VERSION_MINOR);
 
-        // TODO: Pass values from args
-
         // Client name
         sendString("ch-jvm-sdk");
         // Default database

@@ -7,16 +7,23 @@ An OLAP project of TiDB
 * [More docs](./docs)
 
 ## Progress
+Online:
+```
+[Features]
+----- Binlog Writer
+***-- Data update supporting
+----- Writing transaction(batch level) support
+[Tests]
+****- Features test
+*---- Stability test
+**--- Types system test
+[Optimization]
+----- Latch Service
+(TBD)
 ```
 POC:
+```
 ***** Magic Protocol
 ***** CH-Magic Connector
 ***** Spark-Magic Connector
-
-Online:
------ Binlog Writer
------ Latch Service
------ Transaction(batch level) supporting
-***-- Data update supporting
-*---- Fully test
 ```

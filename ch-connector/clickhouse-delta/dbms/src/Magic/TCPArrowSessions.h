@@ -4,7 +4,9 @@
 #include <mutex>
 #include <condition_variable>
 
+#include <ctime>
 #include <common/logger_useful.h>
+
 #include "TCPArrowHandler.h"
 
 namespace DB
@@ -84,13 +86,46 @@ public:
             sessions.size() << ", connections: " << (session.client_count - session.finished_clients) <<
             ", client #" << client_index << "/" << session.client_count);
 
-        // Can't clear up immidiatly, may cause double run.
-        // TODO: Tombstone + expired clean
+        // Can't remove session immidiatly, may cause double running.
+        // Leave a tombstone for further clean up
         if (session.finished_clients == session.client_count)
         {
             session.active_clients.clear();
             session.execution = NULL;
             LOG_TRACE(log, "Clear session query_id: " << query_id << ", sessions: " << sessions.size());
+        }
+
+        // TODO: move to config file
+        static size_t max_sessions_count = 1024;
+        static size_t session_expired_seconds = 60 * 60 * 24;
+
+        // The further operation: clean up tombstones
+        if (sessions.size() >= max_sessions_count)
+        {
+            time_t now = time(0);
+            auto it = sessions.begin();
+            while (it != sessions.end())
+            {
+                auto & session = it->second;
+                auto seconds = difftime(now, it->second.create_time);
+                if (seconds >= session_expired_seconds)
+                {
+                    LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
+                        it->first << ", created: " << seconds << "s.");
+                    if (session.client_count != session.finished_clients)
+                    {
+                        LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
+                            session.active_clients.size() << ". Force clean now.");
+                        session.active_clients.clear();
+                        // TODO: force disconnect
+                        session.execution->cancal(false);
+                        session.execution = NULL;
+                    }
+                    it = sessions.erase(it);
+                } else {
+                    ++it;
+                }
+            }
         }
     }
 
@@ -101,9 +136,10 @@ private:
         TCPArrowHandler::EncoderPtr execution;
         Int64 finished_clients;
         std::unordered_map<Int64, bool> active_clients;
+        time_t create_time;
 
         Session(Int64 client_count_, TCPArrowHandler::EncoderPtr execution_) :
-            client_count(client_count_), execution(execution_), finished_clients(0) {}
+            client_count(client_count_), execution(execution_), finished_clients(0), create_time(time(0)) {}
     };
 
     using Sessions = std::unordered_map<String, Session>;

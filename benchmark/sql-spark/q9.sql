@@ -9,12 +9,12 @@ FROM
 		YEAR(O_ORDERDATE) AS O_YEAR,
 		L_EXTENDEDPRICE * (1 - L_DISCOUNT) - PS_SUPPLYCOST * L_QUANTITY AS AMOUNT
 	FROM
-		part2,
-		supplier2,
-		lineitem2,
-		partsupp2,
-		orders2,
-		nation2
+		part,
+		supplier,
+		lineitem,
+		partsupp,
+		orders,
+		nation
 	WHERE
 		S_SUPPKEY = L_SUPPKEY
 		AND PS_SUPPKEY = L_SUPPKEY
@@ -22,7 +22,7 @@ FROM
 		AND P_PARTKEY = L_PARTKEY
 		AND O_ORDERKEY = L_ORDERKEY
 		AND S_NATIONKEY = N_NATIONKEY
-		AND P_NAME LIKE '%yellow%'
+		AND P_NAME LIKE '%dim%'
 	) AS PROFIT
 GROUP BY
 	NATION,

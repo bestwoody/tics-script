@@ -41,7 +41,6 @@ case class CHPlan(output: Seq[Attribute],
 
   override protected def doExecute(): RDD[InternalRow] = {
     val types = schema.fields.map(_.dataType)
-    // TODO: Read decoderCount/patitionCount from config
     val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString, aggregation, topN, partitions, decoders, encoders)
     val result = RDDConversions.rowToRowRdd(rdd, types)
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
