@@ -56,8 +56,8 @@ case class CHPlan(output: Seq[Attribute],
   }
 
   override def verboseString: String = {
-    s"$nodeName(tables=${tables.mkString(",")}, requiredCols=${requiredColumns.mkString(",")}, filter=$filterString, " +
-      s"agg=$aggregation, topN=$topN, partitions=$partitions, decoders=$decoders, encoders=$encoders)"
+    s"$nodeName(tables={${tables.mkString(",")}}, requiredCols=${requiredColumns.mkString(",")}, filter=$filterString, " +
+      s"agg={$aggregation}, topN=$topN, partitions=$partitions, decoders=$decoders, encoders=$encoders)"
   }
 
   override def simpleString: String = verboseString
