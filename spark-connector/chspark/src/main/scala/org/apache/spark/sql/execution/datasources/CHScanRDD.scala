@@ -1,17 +1,18 @@
 package org.apache.spark.sql.execution.datasources
 
 import org.apache.spark.memory.MemoryMode
-import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.ch._
-import org.apache.spark.sql.execution.vectorized.{ColumnVectorUtils, ColumnarBatch}
+import org.apache.spark.sql.execution.BatchScanHelper
+import org.apache.spark.sql.execution.vectorized.ColumnarBatch
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.{Partition, TaskContext}
 
-import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
 
 class CHScanRDD(@transient private val sparkSession: SparkSession,
                 val output: Seq[Attribute],
@@ -42,7 +43,7 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
       }
     }
 
-    private def nextBatch(): ColumnarBatch = ColumnVectorUtils.toBatch(schema, MemoryMode.ON_HEAP, blockIterator)
+    private def nextBatch(): ColumnarBatch = BatchScanHelper.toBatch(schema, MemoryMode.ON_HEAP, blockIterator)
 
     private[this] var blockIterator: Iterator[Row] = nextBlock()
 
