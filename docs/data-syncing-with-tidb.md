@@ -49,3 +49,41 @@
        | Cluster |
        +---------+
 ```
+
+## Data consistency
+* Use `at least once` message model
+    * With network transportion, hard to keep `exactly once`.
+    * Use by modules:
+        * Binlog-Drainer
+        * Kafka-Cluster
+        * CHSql-Writer
+    * Tables must have primekey for this model
+        * To keep idempotent, so that duplicate data will be overrided and ignored
+* Use `deterministic routing by primekey` to partition data to multi nodes
+    * In Kafka-Cluster
+        * Binlog will be out-of-order when go through cluster.
+        * So the Binlogs of the same primekey should be sent to the same one kafka broker.
+        * In global view, Binlogs are out-of-order.
+        * All Binlogs of one (any) primekey, keep the right order.
+    * In CH-Cluster
+        * We need the same primekey data in a same node
+        * So that aggregation pushdown can be done. IE: distinct
+        * Implement in CHSql-Writer
+
+## Data syncing speed
+All performance info are based on rough benchmark, need more precise test.
+* Binlog-Drainer is a singleton module, may cause performance problem (or not, TBD).
+    * 50-500 MB/s
+    * 1000000 Rows/s
+* In new TiDB cluster
+    * 1 TiDB Node: `< 10MB/s`, `< 50000 Rows/s`
+    * One drainer can serve 20+ TiDB, should be good.
+* Deploy syncing in a TiDB cluster with (lots of old) data
+    * For now, we suggest user backup and re-import all data, to generate all binlog. (to be comfirmed)
+    * TiDB import too slow, may have troubles in large dataset.
+    * New solution:
+        * Mark the current largest committed TS in TiDB.
+        * Dump snapshot(CurrentTS) to binlog
+            * Use TiDB, or TiSpark, etc.
+        * Deploy syncing modules, filter data before CurrentTS.
+        * Complex, but fast, and can be operated online.
