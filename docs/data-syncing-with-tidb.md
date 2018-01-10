@@ -81,7 +81,7 @@ All performance info are based on rough benchmark, need more precise test.
 * Deploy syncing in a TiDB cluster with (lots of old) data
     * Current solution:
         * Generate drainer-save-point
-        * Use mydump to dump the whole data
+        * Use MyDump to dump the whole data
         * Deploy syncing modules, generate binlog
         * Import dump-result to TheFlash
         * Sync binlog to TheFlash
