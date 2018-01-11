@@ -45,7 +45,7 @@ class CHRDD(
     val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
 
     val resp = CHExecutorPool.get(qid, sql, table.host, table.port, table.absName,
-      decoderCount, encoderCount, tables.size, part.clientIndex)
+      decoderCount, encoderCount, partitionCount, part.clientIndex)
 
     private def getBlock(): Iterator[Row] = {
       val block = resp.executor.next

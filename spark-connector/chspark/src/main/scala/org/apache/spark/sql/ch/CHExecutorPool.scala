@@ -39,15 +39,17 @@ object CHExecutorPool {
 
   val instances: Map[String, Executor] = Map()
 
-  private def getKey(qid: String, query: String, host: String, port: Int, table: String): String = {
-    qid + ":" + query + ":" + host + ":" + port + ":" + table
+  private def getKey(qid: String, query: String, host: String, port: Int, table: String,
+    clientCount: Int = 1, clientIndex: Int = 0): String = {
+    qid + ":" + query + ":" + host + ":" + port + ":" + table + ":" + clientIndex + ":" + clientCount
   }
 
+  // TODO: Share executor if in a same process
   def get(qid: String, query: String, host: String, port: Int, table: String, threads: Int,
     encoders: Int = 0, clientCount: Int = 1, clientIndex: Int = 0, encode: Boolean = true): Executor = {
 
     this.synchronized {
-      val key = getKey(qid, query, host, port, table)
+      val key = getKey(qid, query, host, port, table, clientCount, clientIndex)
       if (instances.contains(key)) {
         instances(key).ref
       } else {
