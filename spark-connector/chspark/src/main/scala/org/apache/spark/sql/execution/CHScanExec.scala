@@ -35,11 +35,7 @@ case class CHScanExec(output: Seq[Attribute],
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
-    val numOutputRows = longMetric("numOutputRows")
-    chScanRDD.map((row: InternalRow) => {
-      numOutputRows += 1
-      row
-    })
+    WholeStageCodegenExec(this).execute()
   }
 
   // Support codegen so that we can avoid the UnsafeRow conversion in all cases. Codegen

@@ -48,6 +48,8 @@ class CHExecutorParall(
       ArrowConverter.toRows(schema, table, decoded)
     }
 
+    def result(): CHExecutor.Result = decoded
+
     def close(): Unit = if (encoded != null) {
       encoded.asInstanceOf[CHRows].close
     } else {

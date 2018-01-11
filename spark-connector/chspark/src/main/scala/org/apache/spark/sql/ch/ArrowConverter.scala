@@ -15,20 +15,13 @@
 
 package org.apache.spark.sql.ch
 
-import java.lang.Character
 import java.sql.Timestamp
 
+import org.apache.arrow.vector.types.pojo.{ArrowType, Schema}
+import org.apache.arrow.vector.util.Text
 import org.apache.spark.sql.Row
-
-import org.apache.arrow.vector.FieldVector
-import org.apache.arrow.vector.VectorSchemaRoot
-import org.apache.arrow.vector.util.Text;
-import org.apache.arrow.vector.types.pojo.Schema
-import org.apache.arrow.vector.types.pojo.ArrowType
-import org.apache.arrow.vector.types.pojo.ArrowType.ArrowTypeID
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 
-import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
 
 
@@ -51,7 +44,7 @@ class CHRows(private val schema: Schema, private val table: String, private val 
 
   override def next(): Row = {
     val fields = new Array[Any](columns.size)
-    for (i <- 0 until fields.length) {
+    for (i <- fields.indices) {
       fields(i) = ArrowConverter.fromArrow(fieldTypes(i), columns.get(i).getAccessor.getObject(curr))
     }
     curr += 1
