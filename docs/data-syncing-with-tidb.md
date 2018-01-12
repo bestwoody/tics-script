@@ -62,9 +62,9 @@
 * Use `deterministic routing by primekey` to partition data to multi nodes
     * In Kafka-Cluster
         * Binlog will be out-of-order when go through cluster.
-        * So the Binlogs of the same primekey should be sent to the same one kafka broker.
-        * In global view, Binlogs are out-of-order.
-        * All Binlogs of one (any) primekey, keep the right order.
+        * So the binlog of the same primekey should be sent to the same one kafka broker.
+        * In global view, binlog are out-of-order.
+        * All binlog of one (any) primekey, keep the right order.
     * In CH-Cluster
         * We need the same primekey data in a same node
         * So that aggregation pushdown can be done. IE: distinct
@@ -79,11 +79,16 @@ All performance info are based on rough benchmark, need more precise test.
     * 1 TiDB Node: `< 10MB/s`, `< 50000 Rows/s`
     * One drainer can serve 20+ TiDB, should be good.
 * Deploy syncing in a TiDB cluster with (lots of old) data
-    * For now, we suggest user backup and re-import all data, to generate all binlog. (to be comfirmed)
-    * TiDB import too slow, may have troubles in large dataset.
+    * Current solution:
+        * Generate drainer-save-point
+        * Use MyDump to dump the whole data
+        * Deploy syncing modules, generate binlog
+        * Import dump-result to TheFlash
+        * Sync binlog to TheFlash
     * New solution:
-        * Mark the current largest committed TS in TiDB.
-        * Dump snapshot(CurrentTS) to binlog
-            * Use TiDB, or TiSpark, etc.
-        * Deploy syncing modules, filter data before CurrentTS.
-        * Complex, but fast, and can be operated online.
+        * Mark the current largest committed ts in TiDB.
+        * Dump snapshot(current-ts) to binlog
+            * Use TiDB, or TiSpark, mydump, etc.
+        * Deploy syncing modules, filter binlog before current-ts, sync to TheFlash
+        * Faster, and avoid (dump-result) sql parsing
+    * Both can be operated online.
