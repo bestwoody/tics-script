@@ -95,5 +95,5 @@
 * SPARK WORKER MEMORY=12G
 * SPARK WORKER CORES=16
 
-# Data scale
-## TPCH-100 100G data scala
+## Data scale
+* TPCH-100 100G data scala
