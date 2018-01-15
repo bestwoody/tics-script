@@ -24,14 +24,63 @@ case class CHScanExec(output: Seq[Attribute],
                      ) extends LeafExecNode with CodegenSupport {
 
   override lazy val metrics = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
+    "numOutputBlocks" -> SQLMetrics.createMetric(sparkContext, "number of output blocks"),
     "scanTime" -> SQLMetrics.createTimingMetric(sparkContext, "scan time")
   )
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = chScanRDD :: Nil
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    doProduceVectorized(ctx)
+    val numOutputBlocks = metricTerm(ctx, "numOutputBlocks")
+    // PhysicalRDD always just has one input
+    val input = ctx.freshName("input")
+    ctx.addMutableState("scala.collection.Iterator", input, s"$input = inputs[0];")
+
+    val resultClz = "org.apache.spark.sql.ch.CHExecutor.Result"
+    val result = ctx.freshName("result")
+
+    val fieldVecClz = "org.apache.arrow.vector.FieldVector"
+    val columnsClz = s"java.util.List<$fieldVecClz>"
+    val columns = ctx.freshName("columns")
+    ctx.addMutableState(columnsClz, columns, s"$columns = null;")
+
+    val arrowTypeClz = "org.apache.arrow.vector.types.pojo.ArrowType"
+    val fieldTypesClz = s"java.util.List<$arrowTypeClz>"
+    val fieldTypes = ctx.freshName("fieldTypes")
+    ctx.addMutableState(fieldTypesClz, fieldTypes, s"$fieldTypes = new java.util.ArrayList<>();")
+
+    val uint8Reverser = ctx.freshName("uint8Reverser")
+    ctx.addMutableState("int", uint8Reverser, s"$uint8Reverser = 0x100;")
+    val uint16Reverser = ctx.freshName("uint16Reverser")
+    ctx.addMutableState("int", uint16Reverser, s"$uint16Reverser = 0x10000;")
+    val uint32Reverser = ctx.freshName("uint32Reverser")
+    ctx.addMutableState("long", uint32Reverser, s"$uint32Reverser = 0x100000000L;")
+
+    s"""
+       |boolean hasInitMeta = false;
+       |while($input.hasNext()) {
+       |  $resultClz $result = ($resultClz) $input.next();
+       |  $numOutputBlocks.add(1);
+       |
+       |  if (!hasInitMeta) {
+       |    $columns = $result.block.getFieldVectors();
+       |    for ($fieldVecClz col : $columns) {
+       |      $fieldTypes.add(col);
+       |    }
+       |    hasInitMeta = true;
+       |  }
+       |
+       |  int rows = 0;
+       |  int curr = 0;
+       |  if (!$columns.isEmpty()) {
+       |    rows = $columns.get(0).getAccessor().getValueCount()
+       |  }
+       |  while(curr < rows) {
+       |
+       |  }
+       |  if (shouldStop()) return;
+       |}
+     """.stripMargin
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
