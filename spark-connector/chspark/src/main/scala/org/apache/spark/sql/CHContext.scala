@@ -50,7 +50,7 @@ class CHContext (val sparkSession: SparkSession, val aggPushdown: Boolean = true
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRef.mappedName)
   }
 
-  // TODO: Read cluster info from CH masterH
+  // TODO: Read cluster info from CH master
   def mapCHClusterTable(
     hosts: String = "127.0.0.1",
     port: Int = 9006,
