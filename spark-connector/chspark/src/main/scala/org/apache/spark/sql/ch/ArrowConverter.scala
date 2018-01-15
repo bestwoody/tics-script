@@ -36,27 +36,20 @@ class CHRows(private val schema: Schema, private val table: String, private val 
   extends Iterator[Row] {
 
   val columns = block.block.getFieldVectors
-  val columnNumber = columns.size
   val fieldTypes = columns.asScala.map(x => x.getField.getType)
 
-  val rows: Int = if (columns.isEmpty) 0 else columns.get(0).getAccessor().getValueCount
-  var cache = new Array[Row](rows)
-
-  for (r <- 0 until rows) {
-    val fields = new Array[Any](columnNumber)
-    for (i <- 0 until fields.length) {
-      fields(i) = ArrowConverter.fromArrow(fieldTypes(i), columns.get(i).getAccessor.getObject(r))
-    }
-    cache(r) = new GenericRow(fields)
-  }
-
   var curr = 0
+  val rows: Long = if (columns.isEmpty) 0 else columns.get(0).getAccessor().getValueCount
+
   override def hasNext: Boolean = { curr < rows }
 
   override def next(): Row = {
-    val result = cache(curr)
+    val fields = new Array[Any](columns.size)
+    for (i <- 0 until fields.length) {
+      fields(i) = ArrowConverter.fromArrow(fieldTypes(i), columns.get(i).getAccessor.getObject(curr))
+    }
     curr += 1
-    result
+    new GenericRow(fields)
   }
 
   def close(): Unit = {
