@@ -194,11 +194,7 @@ object CHUtil {
 
   def randomUInt(): Int = {
     val x = Random.nextInt
-    if (x < 0) {
-      -x
-    } else {
-      x
-    }
+    if (x < 0) (-x) else (x)
   }
 
   // TODO: Not safe, may conflict
