@@ -36,12 +36,6 @@ class CHSqlAgg(val groupByColumns: Seq[String], val functions: Seq[CHSqlAggFunc]
   }
 }
 
-class CHSqlTopN(val orderByColumns: Seq[CHSqlOrderByCol], val limit: String) extends Serializable {
-  override def toString: String = {
-    orderByColumns.mkString(";") + s";limit=$limit"
-  }
-}
-
 class CHSqlOrderByCol(val orderByColName: String, val direction: String, val namedStructure: Boolean = false) extends Serializable {
   override def toString: String = {
     s"orderByCol=$orderByColName,direction=$direction"
@@ -51,6 +45,12 @@ class CHSqlOrderByCol(val orderByColName: String, val direction: String, val nam
 object CHSqlOrderByCol {
   def apply(orderByColName: String, direction: String, namedStructure: Boolean = false): CHSqlOrderByCol =
     new CHSqlOrderByCol(orderByColName, direction, namedStructure)
+}
+
+class CHSqlTopN(val orderByColumns: Seq[CHSqlOrderByCol], val limit: String) extends Serializable {
+  override def toString: String = {
+    orderByColumns.mkString(";") + s";limit=$limit"
+  }
 }
 
 object CHSql {
@@ -121,10 +121,6 @@ object CHSql {
   }
 
   private def groupByColumnsStr(columns: Seq[String]): String = {
-    if (columns == null || columns.isEmpty) {
-      ""
-    } else {
-      " GROUP BY " + columns.mkString(", ")
-    }
+    if (columns == null || columns.isEmpty) "" else " GROUP BY " + columns.mkString(", ")
   }
 }

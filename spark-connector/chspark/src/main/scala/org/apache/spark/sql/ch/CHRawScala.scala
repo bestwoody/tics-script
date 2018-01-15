@@ -31,17 +31,8 @@ object CHRawScala {
     val partitions: Int = args(1).toInt
     val conc: Int = args(2).toInt
 
-    val host: String = if (args.size >= 4) {
-      args(3)
-    } else {
-      "127.0.0.1"
-    }
-
-    val port: Int = if (args.size >= 5) {
-      args(4).toInt
-    } else {
-      9006
-    }
+    val host: String = if (args.size >= 4) args(3) else "127.0.0.1"
+    val port: Int = if (args.size >= 5) args(4).toInt else 9006
 
     val rid = Random.nextInt
     val qid = "chraw-" + (if (rid < 0) -rid else rid)
@@ -59,24 +50,20 @@ object CHRawScala {
     for (i <- 0 until partitions) {
       workers(i) = new Thread {
         override def run {
-          //val resp = new CHExecutorParall(qid, query, host, port, "", conc, 0, partitions, i, false, "#" + i)
-          val resp = CHExecutorPool.get(qid, query, host, port, "", conc, 0, partitions, i, false)
+          val resp = new CHExecutorParall(qid, query, host, port, "", conc, 0, partitions, i, false)
           println("#" + i + " start")
           var n: Int = 0
-          //var block = resp.next
-          var block = resp.executor.next
+          var block = resp.next
           while (block != null) {
             println("#" + i + "@" + n + " block")
             val columns = block.decoded.block.getFieldVectors
-            val rows: Long = if (columns.isEmpty) { 0 } else { columns.get(0).getAccessor().getValueCount }
+            val rows: Long = if (columns.isEmpty) 0 else { columns.get(0).getAccessor().getValueCount }
             addRows(rows)
             block.close
-            //block = resp.next
-            block = resp.executor.next
+            block = resp.next
             n += 1
           }
-          //resp.close
-          CHExecutorPool.close(resp)
+          resp.close
           println("#" + i + " finish")
         }
       }

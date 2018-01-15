@@ -52,9 +52,9 @@ case class CHPlan(output: Seq[Attribute],
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)
       proj.initialize(partition)
-      iter.map {
+      iter.map { r =>
         numOutputRows += 1
-        r => proj(r)
+        proj(r)
       }
     }
   }

@@ -46,8 +46,8 @@ class CHRDD(
     val qid = part.qid
     val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
 
-    val resp = CHExecutorPool.get(qid, sql, table.host, table.port, table.absName,
-      decoderCount, encoderCount, tables.size, part.clientIndex)
+    val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
+      decoderCount, encoderCount, partitionCount, part.clientIndex)
 
     val queue: BlockingQueue[Iterator[Row]] = new LinkedBlockingQueue[Iterator[Row]](3)
 
@@ -57,12 +57,8 @@ class CHRDD(
     }
 
     private def getBlock(): Iterator[Row] = {
-      val block = resp.executor.next
-      if (block != null) {
-        block.encoded
-      } else {
-        EOF
-      }
+      val block = resp.next
+      if (block != null) block.encoded else EOF
     }
 
     private val asyncCodec = new Thread {
@@ -91,7 +87,7 @@ class CHRDD(
           blockIter.asInstanceOf[CHRows].close
           blockIter = queue.take
           if (blockIter == EOF) {
-            CHExecutorPool.close(resp)
+            resp.close
             false
           } else {
             blockIter.hasNext
