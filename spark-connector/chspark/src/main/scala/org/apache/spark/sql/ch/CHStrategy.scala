@@ -15,62 +15,59 @@
 
 package org.apache.spark.sql.ch
 
+import scala.collection.mutable
+
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.expressions.NamedExpression.newExprId
-import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, CreateNamedStruct, Divide, ExprId, Expression, IntegerLiteral, NamedExpression, SortOrder}
+
+import org.apache.spark.sql.{SparkSession, Strategy}
+import org.apache.spark.sql.types.DoubleType
+
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Cast, Divide}
+import org.apache.spark.sql.catalyst.expressions.{ExprId, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{CreateNamedStruct, IntegerLiteral, SortOrder}
+
+import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
+import org.apache.spark.sql.catalyst.expressions.aggregate.{Average, Count, First, Last, Min, Max, Sum}
+
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.logical
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.ch.mock._
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ReturnAnswer}
+import org.apache.spark.sql.catalyst.plans.logical.{Sort, Project, Limit}
+
+import org.apache.spark.sql.execution.{FilterExec, ProjectExec, SparkPlan}
+import org.apache.spark.sql.execution.{CollectLimitExec, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.execution.aggregate.AggUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.{FilterExec, ProjectExec, SparkPlan}
-import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.sql.{SparkSession, Strategy, execution}
 
-import scala.collection.mutable
+import org.apache.spark.sql.ch.mock.{TypesTestRelation, TypesTestPlan}
 
 
 class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strategy with Logging {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     plan.collectFirst {
-      case rel@LogicalRelation(_: MockSimpleRelation, _: Option[Seq[Attribute]], _) =>
-        MockSimplePlan(rel.output, sparkSession) :: Nil
-      case rel@LogicalRelation(_: MockArrowRelation, _: Option[Seq[Attribute]], _) =>
-        MockArrowPlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(_: TypesTestRelation, _: Option[Seq[Attribute]], _) =>
         TypesTestPlan(rel.output, sparkSession) :: Nil
       case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => {
         plan match {
-          case logical.ReturnAnswer(rootPlan) =>
+          case ReturnAnswer(rootPlan) =>
             rootPlan match {
-              case logical.Limit(IntegerLiteral(limit), logical.Sort(order, true, child)) =>
+              case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
                 createTopNPlan(limit, order, child, child.output) :: Nil
-              case logical.Limit(
-              IntegerLiteral(limit),
-              logical.Project(projectList, logical.Sort(order, true, child))
-              ) =>
+              case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
                 createTopNPlan(limit, order, child, projectList) :: Nil
-              case logical.Limit(IntegerLiteral(limit), child) =>
-                execution.CollectLimitExec(limit, createTopNPlan(limit, Nil, child, child.output)) :: Nil
+              case Limit(IntegerLiteral(limit), child) =>
+                CollectLimitExec(limit, createTopNPlan(limit, Nil, child, child.output)) :: Nil
               case other => planLater(other) :: Nil
             }
-          case logical.Limit(IntegerLiteral(limit), logical.Sort(order, true, child)) =>
+          case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
             createTopNPlan(limit, order, child, child.output) :: Nil
-          case logical.Limit(
-          IntegerLiteral(limit),
-          logical.Project(projectList, logical.Sort(order, true, child))) =>
+          case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
             createTopNPlan(limit, order, child, projectList) :: Nil
-
           case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
-            createCHPlan(relation.tables, rel, projectList, filterPredicates, null, chr.partitions, chr.decoders, chr.encoders) :: Nil
-
-          case CHAggregation(
-          groupingExpressions,
-          aggregateExpressions,
-          resultExpressions,
-          CHAggregationProjection(filters, _, _, projects)) if aggPushdown =>
+            createCHPlan(relation.tables, rel, projectList, filterPredicates, null,
+              chr.partitions, chr.decoders, chr.encoders) :: Nil
+          case CHAggregation(groupingExpressions, aggregateExpressions,resultExpressions,
+            CHAggregationProjection(filters, _, _, projects)) if aggPushdown =>
             // Add group / aggregate to CHPlan
             groupAggregateProjection(
               groupingExpressions,
@@ -83,7 +80,6 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
           case _ => Nil
         }
       }
-
     }.toSeq.flatten
   }
 
@@ -100,7 +96,6 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
             namedStructure = true)
       }
     )
-
     new CHSqlTopN(topN, limit.toString)
   }
 
@@ -125,16 +120,15 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     child match {
       case PhysicalOperation(projectList, filters, rel@LogicalRelation(source: CHRelation, _, _))
         if filters.forall(CHUtil.isSupportedFilter) =>
-        execution.TakeOrderedAndProjectExec(
+        TakeOrderedAndProjectExec(
           limit,
           sortOrder,
           project,
           pruneTopNFilterProject(rel, limit, projectList, filters, source, sortOrder)
         )
-      case _ => execution.TakeOrderedAndProjectExec(limit, sortOrder, project, planLater(child))
+      case _ => TakeOrderedAndProjectExec(limit, sortOrder, project, planLater(child))
     }
   }
-
 
   def groupAggregateProjection(
     groupingExpressions: Seq[NamedExpression],
@@ -198,10 +192,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     val chSqlAgg = new CHSqlAgg(groupByColumn, aggregation)
     // As for required Columns, first we extract all aggregation functions and put them in the front most,
     // then we append group by columns.
-    val requiredCols = chSqlAgg
-      .functions
-      .map{ _.toString } ++
-      chSqlAgg.groupByColumns
+    val requiredCols = chSqlAgg.functions.map{ _.toString } ++ chSqlAgg.groupByColumns
 
     val chPlan = CHPlan(output, sparkSession,
       relation.tables, requiredCols, filtersString, chSqlAgg, cHSqlTopN,
@@ -295,7 +286,7 @@ object CHAggregation {
       // converted `Sum`s and `Count`s down to Clickhouse.
       val (averages, averagesEliminated) = aggregateExpressions.partition {
         case AggregateExpression(_: Average, _, _, _) => true
-        case _                                        => false
+        case _ => false
       }
 
       // An auxiliary map that maps result attribute IDs of all detected `Average`s to corresponding
@@ -303,8 +294,8 @@ object CHAggregation {
       val rewriteMap = averages.map {
         case a @ AggregateExpression(Average(ref), _, _, _) =>
           a.resultAttribute -> Seq(
-            a.copy(aggregateFunction = Sum(ref), resultId = newExprId),
-            a.copy(aggregateFunction = Count(ref), resultId = newExprId)
+            a.copy(aggregateFunction = Sum(ref), resultId = NamedExpression.newExprId),
+            a.copy(aggregateFunction = Count(ref), resultId = NamedExpression.newExprId)
           )
       }.toMap
 

@@ -22,8 +22,7 @@ import org.apache.spark.sql.ch.CHStrategy
 import org.apache.spark.sql.ch.CHRelation
 import org.apache.spark.sql.ch.CHSql
 import org.apache.spark.sql.ch.CHTableRef
-import org.apache.spark.sql.ch.mock.MockArrowRelation
-import org.apache.spark.sql.ch.mock.MockSimpleRelation
+import org.apache.spark.sql.ch.mock.TypesTestRelation
 
 
 class CHContext (val sparkSession: SparkSession, val aggPushdown: Boolean = true) extends Serializable with Logging {
@@ -31,13 +30,8 @@ class CHContext (val sparkSession: SparkSession, val aggPushdown: Boolean = true
 
   sparkSession.experimental.extraStrategies ++= Seq(new CHStrategy(sparkSession, aggPushdown))
 
-  def mockSimpleTable(name: String = "test"): Unit = {
-    val rel = new MockSimpleRelation(name)(sqlContext)
-    sqlContext.baseRelationToDataFrame(rel).createTempView(name)
-  }
-
-  def mockArrowTable(name: String = "arrow"): Unit = {
-    val rel = new MockArrowRelation(name)(sqlContext)
+  def mapTypesTestTable(name: String = "types-test"): Unit = {
+    val rel = new TypesTestRelation(name)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
