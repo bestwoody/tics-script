@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.ch.mock._
 import org.apache.spark.sql.execution.aggregate.AggUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.{FilterExec, SparkPlan}
+import org.apache.spark.sql.execution.{FilterExec, ProjectExec, SparkPlan}
 import org.apache.spark.sql.types.DoubleType
 import org.apache.spark.sql.{SparkSession, Strategy, execution}
 
@@ -277,7 +277,12 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
     val rdd = CHPlan(output, sparkSession, tables, output.map(_.name), filtersString, null, chSqlTopN,
       partitions, decoders, encoders)
-    residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
+    if (AttributeSet(projectList.map(_.toAttribute)) == projectSet &&
+      filterSet.subsetOf(projectSet)) {
+      residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd)
+    } else {
+      ProjectExec(projectList, residualFilter.map(FilterExec(_, rdd)).getOrElse(rdd))
+    }
   }
 }
 
