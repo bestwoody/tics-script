@@ -15,6 +15,8 @@
 
 package org.apache.spark.sql.ch
 
+import scala.actors.threadpool.BlockingQueue
+import scala.actors.threadpool.LinkedBlockingQueue
 import scala.collection.mutable.ListBuffer
 
 import org.apache.spark.{Partition, TaskContext}
@@ -47,25 +49,48 @@ class CHRDD(
     val resp = CHExecutorPool.get(qid, sql, table.host, table.port, table.absName,
       decoderCount, encoderCount, tables.size, part.clientIndex)
 
+    val queue: BlockingQueue[Iterator[Row]] = new LinkedBlockingQueue[Iterator[Row]](3)
+
+    private val EOF = new Iterator[Row] {
+      override def hasNext: Boolean = false
+      override def next(): Row = null
+    }
+
     private def getBlock(): Iterator[Row] = {
       val block = resp.executor.next
       if (block != null) {
         block.encoded
       } else {
-        null
+        EOF
       }
     }
 
-    var blockIter: Iterator[Row] = getBlock
+    private val asyncCodec = new Thread {
+      override def run {
+        var it: Iterator[Row] = null
+        try {
+          while (it != EOF) {
+            it = getBlock
+            queue.put(it)
+          }
+        } catch {
+          case _: InterruptedException => {}
+          case e: Any => throw e
+        }
+      }
+    }
+    asyncCodec.start
+
+    var blockIter: Iterator[Row] = queue.take
 
     override def hasNext: Boolean = {
-      if (blockIter == null) {
+      if (blockIter == EOF) {
         false
       } else {
         if (!blockIter.hasNext) {
           blockIter.asInstanceOf[CHRows].close
-          blockIter = getBlock
-          if (blockIter == null) {
+          blockIter = queue.take
+          if (blockIter == EOF) {
             CHExecutorPool.close(resp)
             false
           } else {

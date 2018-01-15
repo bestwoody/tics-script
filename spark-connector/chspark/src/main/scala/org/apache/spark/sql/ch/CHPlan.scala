@@ -43,8 +43,12 @@ case class CHPlan(output: Seq[Attribute],
   override protected def doExecute(): RDD[InternalRow] = {
     val numOutputRows = longMetric("numOutputRows")
     val types = schema.fields.map(_.dataType)
-    val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString, aggregation, topN, partitions, decoders, encoders)
+    val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString,
+      aggregation, topN, partitions, decoders, encoders)
+
     val result = RDDConversions.rowToRowRdd(rdd, types)
+
+    // TODO: Can use async?
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)
       proj.initialize(partition)
