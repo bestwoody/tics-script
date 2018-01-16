@@ -35,8 +35,7 @@ class CHExecutorParall(
   val encoders: Int = 0,
   val clientCount: Int = 1,
   val clientIndex: Int = 0,
-  val encode: Boolean = true,
-  val logPrefix: String = "") {
+  val encode: Boolean = true) {
 
   class Result(schema: Schema, table: String, val decoded: CHExecutor.Result) {
     val error = decoded.error

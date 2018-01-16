@@ -4,7 +4,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.ch._
+import org.apache.spark.sql.ch.{CHExecutorParall, _}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Partition, TaskContext}
 
@@ -27,11 +27,11 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
     private val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
     private lazy val schema = StructType.fromAttributes(output)
 
-    private val resp = CHExecutorPool.get(qid, sql, table.host, table.port, table.absName,
+    private val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
       decoderCount, encoderCount, tables.size, part.clientIndex)
 
     private def nextResult(): CHExecutor.Result = {
-      val block = resp.executor.next()
+      val block = resp.next()
       if (block != null) {
         block.result()
       } else {
@@ -48,7 +48,7 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
         curResult.asInstanceOf[CHRows].close()
         curResult = nextResult()
         if (curResult == null) {
-          CHExecutorPool.close(resp)
+          resp.close()
           false
         } else {
           curResult.isEmpty

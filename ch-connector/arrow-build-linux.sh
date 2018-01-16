@@ -8,4 +8,6 @@ cd "$build_path"
 
 cmake ..
 make
-make install
+
+echo "sudo make install"
+sudo make install
