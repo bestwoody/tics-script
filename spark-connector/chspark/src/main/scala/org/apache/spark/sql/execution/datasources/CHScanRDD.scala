@@ -69,8 +69,7 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
     split.asInstanceOf[CHPartition].table.host :: Nil
 
   override protected def getPartitions: Array[Partition] = {
-    // TODO: Read cluster info from CH masterH
-    val qid = CHUtil.genQueryId
+    val qid = CHUtil.genQueryId()
     val result = new ListBuffer[CHPartition]
     var index = 0
     tables.foreach(table => {
