@@ -125,7 +125,7 @@ void TCPArrowHandler::startExecuting()
     if (this_encoder_count <= 0)
         throw Exception("Encoder number invalid.");
 
-    LOG_INFO(log, "Create arrow encoder, concurrent threads: " << this_encoder_count);
+    LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count);
 
     encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
     if (encoder->hasError())
@@ -139,6 +139,7 @@ void TCPArrowHandler::runImpl()
     // One query only, no looping
     if (!failed)
     {
+        // LOG_INFO(log, "Start process query.");
         Stopwatch watch;
 
         try
@@ -156,6 +157,7 @@ void TCPArrowHandler::runImpl()
         }
 
         watch.stop();
+
         LOG_INFO(log, std::fixed << std::setprecision(3) << "Processed in " << watch.elapsedSeconds() << " sec.");
     }
 }
@@ -163,8 +165,6 @@ void TCPArrowHandler::runImpl()
 
 void TCPArrowHandler::processOrdinaryQuery()
 {
-    LOG_INFO(log, "Start process query.");
-
     auto schema = encoder->getEncodedSchema();
     if (encoder->hasError())
         throw Exception(encoder->getErrorString());
@@ -194,9 +194,12 @@ void TCPArrowHandler::processOrdinaryQuery()
     out->next();
 
     auto residue = encoder->residue();
-    LOG_INFO(log, "End process ordinary query, residue: " << residue);
     if (residue != 0)
-        throw Exception("End process ordinary query, residue != 0");
+    {
+        std::string msg = "End process ordinary query, residue != 0";
+        LOG_ERROR(log, msg << residue);
+        throw Exception(msg);
+    }
 }
 
 
@@ -220,18 +223,14 @@ void TCPArrowHandler::recvHeader()
     }
 
     Magic::readString(client_name, *in);
-    LOG_INFO(log, "TCPArrowHandler client name: " << client_name);
 
     Magic::readString(default_database, *in);
-    LOG_INFO(log, "TCPArrowHandler default database: " << default_database);
 
     user = "default";
     Magic::readString(user, *in);
     Magic::readString(password, *in);
-    LOG_INFO(log, "TCPArrowHandler user: " << user);
 
     Magic::readString(encoder_name, *in);
-    LOG_INFO(log, "TCPArrowHandler encoder: " << encoder_name);
     if (encoder_name != "arrow")
         throw Exception("TCPArrowHandler only support arrow encoding, required: `" + encoder_name + "`");
 
@@ -246,6 +245,9 @@ void TCPArrowHandler::recvHeader()
 
     client_count = Magic::readInt64(*in);
     client_index = Magic::readInt64(*in);
+
+    LOG_INFO(log, "TCPArrowHandler default database: " << default_database << ", client name: "
+        << client_name << ", user: " << user << ", encoder: " << encoder_name);
 }
 
 
@@ -279,7 +281,7 @@ void TCPArrowHandler::run()
     try
     {
         runImpl();
-        LOG_INFO(log, "Done processing connection.");
+        // LOG_INFO(log, "Done processing connection.");
     }
     catch (Poco::Exception & e)
     {
@@ -300,7 +302,7 @@ void TCPArrowHandler::run()
 TCPArrowHandler::~TCPArrowHandler()
 {
     TCPArrowSessions::instance().clear(this);
-    LOG_INFO(log, "~TCPArrowHandler");
+    // LOG_INFO(log, "~TCPArrowHandler");
 }
 
 }
