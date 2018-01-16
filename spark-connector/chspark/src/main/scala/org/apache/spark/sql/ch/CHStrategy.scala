@@ -15,23 +15,19 @@
 
 package org.apache.spark.sql.ch
 
-import scala.collection.mutable
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.{SparkSession, Strategy}
-import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet}
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Cast, Divide}
-import org.apache.spark.sql.catalyst.expressions.{ExprId, Expression, NamedExpression}
-import org.apache.spark.sql.catalyst.expressions.{CreateNamedStruct, IntegerLiteral, SortOrder}
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
-import org.apache.spark.sql.catalyst.expressions.aggregate._
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, _}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, CreateNamedStruct, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ReturnAnswer}
-import org.apache.spark.sql.catalyst.plans.logical.{Limit, Project, Sort}
-import org.apache.spark.sql.execution._
+import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
+import org.apache.spark.sql.execution.{CHScanExec, CollectLimitExec, SparkPlan, TakeOrderedAndProjectExec, FilterExec, ProjectExec}
 import org.apache.spark.sql.execution.aggregate.AggUtils
 import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
-import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
+import org.apache.spark.sql.types.DoubleType
+import org.apache.spark.sql.{SparkSession, Strategy}
+
+import scala.collection.mutable
 
 
 class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strategy with Logging {
