@@ -44,16 +44,20 @@ class CHExecutorParall(
     val batch: ArrowColumnBatch = if (isEmpty || error != null || !encode) {
       null
     } else {
-      val columns = decoded.block.getFieldVectors.asScala.map { vector =>
+      val columns = root.getFieldVectors.asScala.map { vector =>
         new ArrowColumnVector(vector).asInstanceOf[ColumnVector]
       }.toArray
+
+      assert(root.getFieldVectors.asScala.map(_.getAccessor.getValueCount).distinct.lengthCompare(1) == 0,
+        "Each column should have same row count!")
+      val rowCount = root.getFieldVectors.asScala.head.getAccessor.getValueCount
 
       val arrBatch = new ArrowColumnBatch(
         ArrowUtils.fromArrowSchema(root.getSchema),
         columns,
-        root.getRowCount
+        rowCount
       )
-      arrBatch.setNumRows(root.getRowCount)
+      arrBatch.setNumRows(rowCount)
       arrBatch
     }
 

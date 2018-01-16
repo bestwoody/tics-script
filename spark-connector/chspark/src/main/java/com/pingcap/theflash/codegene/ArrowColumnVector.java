@@ -212,18 +212,32 @@ public final class ArrowColumnVector extends ColumnVector {
       accessor = new LongAccessor((BigIntVector) vector);
     } else if (vector instanceof Float4Vector) {
       accessor = new FloatAccessor((Float4Vector) vector);
+    } else if (vector instanceof NullableFloat4Vector) {
+      accessor = new NullableFloatAccessor((NullableFloat4Vector) vector);
     } else if (vector instanceof Float8Vector) {
       accessor = new DoubleAccessor((Float8Vector) vector);
+    } else if (vector instanceof NullableFloat8Vector) {
+      accessor = new NullableDoubleAccessor((NullableFloat8Vector) vector);
     } else if (vector instanceof DecimalVector) {
       accessor = new DecimalAccessor((DecimalVector) vector);
+    } else if (vector instanceof NullableDecimalVector) {
+      accessor = new NullableDecimalAccessor((NullableDecimalVector) vector);
     } else if (vector instanceof VarCharVector) {
       accessor = new StringAccessor((VarCharVector) vector);
+    } else if (vector instanceof NullableVarCharVector) {
+      accessor = new NullableStringAccessor((NullableVarCharVector) vector);
     } else if (vector instanceof VarBinaryVector) {
       accessor = new BinaryAccessor((VarBinaryVector) vector);
+    } else if (vector instanceof NullableTimeNanoVector) {
+      accessor = new NullableTimeNanoAccessor((NullableTimeNanoVector) vector);
     } else if (vector instanceof DateDayVector) {
       accessor = new DateAccessor((DateDayVector) vector);
     } else if (vector instanceof TimeStampMicroTZVector) {
       accessor = new TimestampAccessor((TimeStampMicroTZVector) vector);
+    } else if (vector instanceof NullableDateDayVector) {
+      accessor = new NullableDateAccessor((NullableDateDayVector) vector);
+    } else if (vector instanceof NullableTimeStampMicroTZVector) {
+      accessor = new NullableTimestampAccessor((NullableTimeStampMicroTZVector) vector);
     } else if (vector instanceof ListVector) {
       ListVector listVector = (ListVector) vector;
       accessor = new ArrayAccessor(listVector);
@@ -424,11 +438,41 @@ public final class ArrowColumnVector extends ColumnVector {
     }
   }
 
+  private static class NullableFloatAccessor extends ArrowVectorAccessor {
+
+    private final NullableFloat4Vector accessor;
+
+    NullableFloatAccessor(NullableFloat4Vector vector) {
+      super(vector);
+      this.accessor = vector;
+    }
+
+    @Override
+    final float getFloat(int rowId) {
+      return accessor.getAccessor().get(rowId);
+    }
+  }
+
   private static class DoubleAccessor extends ArrowVectorAccessor {
 
     private final Float8Vector accessor;
 
     DoubleAccessor(Float8Vector vector) {
+      super(vector);
+      this.accessor = vector;
+    }
+
+    @Override
+    final double getDouble(int rowId) {
+      return accessor.getAccessor().get(rowId);
+    }
+  }
+
+  private static class NullableDoubleAccessor extends ArrowVectorAccessor {
+
+    private final NullableFloat8Vector accessor;
+
+    NullableDoubleAccessor(NullableFloat8Vector vector) {
       super(vector);
       this.accessor = vector;
     }
@@ -455,6 +499,22 @@ public final class ArrowColumnVector extends ColumnVector {
     }
   }
 
+  private static class NullableDecimalAccessor extends ArrowVectorAccessor {
+
+    private final NullableDecimalVector accessor;
+
+    NullableDecimalAccessor(NullableDecimalVector vector) {
+      super(vector);
+      this.accessor = vector;
+    }
+
+    @Override
+    final Decimal getDecimal(int rowId, int precision, int scale) {
+      if (isNullAt(rowId)) return null;
+      return Decimal.apply(accessor.getAccessor().getObject(rowId), precision, scale);
+    }
+  }
+
   private static class StringAccessor extends ArrowVectorAccessor {
 
     private final VarCharVector accessor;
@@ -463,6 +523,28 @@ public final class ArrowColumnVector extends ColumnVector {
     StringAccessor(VarCharVector vector) {
       super(vector);
       this.accessor = vector;
+    }
+
+    @Override
+    final UTF8String getUTF8String(int rowId) {
+      accessor.getAccessor().get(rowId, stringResult);
+      if (stringResult.isSet == 0) {
+        return null;
+      } else {
+        return UTF8String.fromAddress(null,
+            stringResult.buffer.memoryAddress() + stringResult.start,
+            stringResult.end - stringResult.start);
+      }
+    }
+  }
+
+  private static class NullableStringAccessor extends ArrowVectorAccessor {
+    private final NullableVarCharVector accessor;
+    private final NullableVarCharHolder stringResult = new NullableVarCharHolder();
+
+    private NullableStringAccessor(NullableVarCharVector accessor) {
+      super(accessor);
+      this.accessor = accessor;
     }
 
     @Override
@@ -508,6 +590,21 @@ public final class ArrowColumnVector extends ColumnVector {
     }
   }
 
+  private static class NullableDateAccessor extends ArrowVectorAccessor {
+
+    private final NullableDateDayVector accessor;
+
+    NullableDateAccessor(NullableDateDayVector vector) {
+      super(vector);
+      this.accessor = vector;
+    }
+
+    @Override
+    final int getInt(int rowId) {
+      return accessor.getAccessor().get(rowId);
+    }
+  }
+
   private static class TimestampAccessor extends ArrowVectorAccessor {
 
     private final TimeStampMicroTZVector accessor;
@@ -520,6 +617,35 @@ public final class ArrowColumnVector extends ColumnVector {
     @Override
     final long getLong(int rowId) {
       return accessor.getAccessor().get(rowId);
+    }
+  }
+
+  private static class NullableTimestampAccessor extends ArrowVectorAccessor {
+
+    private final NullableTimeStampMicroTZVector accessor;
+
+    NullableTimestampAccessor(NullableTimeStampMicroTZVector vector) {
+      super(vector);
+      this.accessor = vector;
+    }
+
+    @Override
+    final long getLong(int rowId) {
+      return accessor.getAccessor().get(rowId);
+    }
+  }
+
+  private static class NullableTimeNanoAccessor extends ArrowVectorAccessor {
+    private final NullableTimeNanoVector accessor;
+
+    private NullableTimeNanoAccessor(NullableTimeNanoVector accessor) {
+      super(accessor);
+      this.accessor = accessor;
+    }
+
+    @Override
+    long getLong(int rowId) {
+      return accessor.getAccessor().get(rowId) * 1000;
     }
   }
 

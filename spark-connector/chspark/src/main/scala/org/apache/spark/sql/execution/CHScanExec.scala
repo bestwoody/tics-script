@@ -23,11 +23,6 @@ case class CHScanExec(output: Seq[Attribute],
                       @transient private val encoders: Int
                      ) extends LeafExecNode with ColumnarBatchScan {
 
-  override lazy val metrics = Map(
-    "numOutputBlocks" -> SQLMetrics.createMetric(sparkContext, "number of output blocks"),
-    "scanTime" -> SQLMetrics.createTimingMetric(sparkContext, "scan time")
-  )
-
   override def inputRDDs(): Seq[RDD[InternalRow]] = chScanRDD :: Nil
 
   override protected def doProduce(ctx: CodegenContext): String = {
