@@ -19,7 +19,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, _}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, CreateNamedStruct, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ReturnAnswer, Limit, Sort, Project}
 import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
 import org.apache.spark.sql.execution.{CHScanExec, CollectLimitExec, SparkPlan, TakeOrderedAndProjectExec, FilterExec, ProjectExec}
 import org.apache.spark.sql.execution.aggregate.AggUtils
