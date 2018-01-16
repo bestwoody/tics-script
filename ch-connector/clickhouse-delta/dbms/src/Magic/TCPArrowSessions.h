@@ -32,24 +32,27 @@ public:
         auto query_id = connection->getQueryId();
         auto client_index = connection->getClientIndex();
         auto client_count = connection->getClientCount();
-        LOG_TRACE(log, "TCP arrow connection established, query_id: " << query_id);
+
+        std::stringstream info_ss;
+        info_ss << "query_id: " << query_id << ", client #" << client_index << "/" << client_count;
+        std::string query_info = info_ss.str();
+
+        LOG_TRACE(log, "TCP arrow connection established, " << query_info);
 
         std::unique_lock<std::mutex> lock{mutex};
 
         Sessions::iterator session = sessions.find(query_id);
         if (session != sessions.end())
         {
-            LOG_TRACE(log, "Connection join to query_id: " << query_id <<
-                ", client #" << client_index << "/" << client_count);
+            LOG_TRACE(log, "Connection join to " << query_info);
             if (!session->second.execution)
-                throw Exception("Join to expired session, query_id: " + query_id);
+                throw Exception("Join to expired session, " + query_info);
             connection->setExecution(session->second.execution);
         }
         else
         {
             auto client_count = connection->getClientCount();
-            LOG_TRACE(log, "First connection in query_id: " << query_id <<
-                ", client #" << client_index << "/" << client_count);
+            LOG_TRACE(log, "First connection, " << query_info);
 
             connection->startExecuting();
 
