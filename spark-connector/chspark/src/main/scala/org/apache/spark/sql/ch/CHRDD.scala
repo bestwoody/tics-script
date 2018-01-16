@@ -49,7 +49,7 @@ class CHRDD(
 
     private def getBlock(): Iterator[Row] = {
       val block = resp.next
-      if (block != null) block.encoded else null
+      if (block != null) null else null
     }
 
     var blockIter: Iterator[Row] = getBlock

@@ -74,11 +74,11 @@ object ArrowUtils {
   def fromArrowField(field: Field): DataType = {
     field.getType match {
       case ArrowType.List.INSTANCE =>
-        val elementField = field.getChildren().get(0)
+        val elementField = field.getChildren.get(0)
         val elementType = fromArrowField(elementField)
         ArrayType(elementType, containsNull = elementField.isNullable)
       case ArrowType.Struct.INSTANCE =>
-        val fields = field.getChildren().asScala.map { child =>
+        val fields = field.getChildren.asScala.map { child =>
           val dt = fromArrowField(child)
           StructField(child.getName, dt, child.isNullable)
         }

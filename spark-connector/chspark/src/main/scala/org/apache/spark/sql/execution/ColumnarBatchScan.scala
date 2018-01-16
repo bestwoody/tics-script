@@ -1,5 +1,7 @@
 package org.apache.spark.sql.execution
 
+import com.pingcap.theflash.codegene
+import com.pingcap.theflash.codegene.ArrowColumnBatch
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.execution.metric.SQLMetrics
@@ -8,7 +10,7 @@ import org.apache.spark.sql.types.DataType
 
 /**
   * Helper trait for abstracting scan functionality using
-  * [[org.apache.spark.sql.execution.vectorized.ColumnarBatch]]es.
+  * [[ArrowColumnBatch]]es.
   */
 private[sql] trait ColumnarBatchScan extends CodegenSupport {
   def vectorTypes: Option[Seq[String]] = None
@@ -18,8 +20,10 @@ private[sql] trait ColumnarBatchScan extends CodegenSupport {
     "scanTime" -> SQLMetrics.createTimingMetric(sparkContext, "scan time"))
 
   /**
-    * Generate [[ColumnVector]] expressions for our parent to consume as rows.
-    * This is called once per [[ColumnarBatch]].
+    * Generate [[codegene.ColumnVector]] expressions for
+    * our parent to consume as rows.
+    * 
+    * This is called once per [[ArrowColumnBatch]].
     */
   private def genCodeColumnVector(
                                    ctx: CodegenContext,
@@ -58,14 +62,14 @@ private[sql] trait ColumnarBatchScan extends CodegenSupport {
     val scanTimeTotalNs = ctx.freshName("scanTime")
     ctx.addMutableState("long", scanTimeTotalNs, s"$scanTimeTotalNs = 0;")
 
-    val columnarBatchClz = classOf[ColumnarBatch].getName
+    val arrowBatchClz = classOf[ArrowColumnBatch].getName
     val batch = ctx.freshName("batch")
-    ctx.addMutableState(columnarBatchClz, batch, s"$batch = null;")
+    ctx.addMutableState(arrowBatchClz, batch, s"$batch = null;")
 
     val idx = ctx.freshName("batchIdx")
     ctx.addMutableState("int", idx, s"$idx = 0;")
 
-    val columnVectorClz = classOf[ColumnVector].getName
+    val columnVectorClz = classOf[codegene.ColumnVector].getName
 
     val colVars = output.indices.map(i => ctx.freshName("colInstance" + i))
     val columnAssigns = colVars.zipWithIndex.map { case (name, i) =>
@@ -79,7 +83,7 @@ private[sql] trait ColumnarBatchScan extends CodegenSupport {
          |private void $nextBatch() throws java.io.IOException {
          |  long getBatchStart = System.nanoTime();
          |  if ($input.hasNext()) {
-         |    $batch = ($columnarBatchClz)$input.next();
+         |    $batch = ($arrowBatchClz)$input.next();
          |    $numOutputRows.add($batch.numRows());
          |    $idx = 0;
          |    ${columnAssigns.mkString("", "\n", "\n")}

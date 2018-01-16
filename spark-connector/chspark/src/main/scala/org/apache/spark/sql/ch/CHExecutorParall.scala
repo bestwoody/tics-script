@@ -15,13 +15,12 @@
 
 package org.apache.spark.sql.ch;
 
-import scala.actors.threadpool.BlockingQueue
-import scala.actors.threadpool.LinkedBlockingQueue
+import com.pingcap.theflash.codegene.{ArrowColumnBatch, ArrowColumnVector, ColumnVector}
+import org.apache.arrow.vector.types.pojo.Schema
+import org.apache.spark.sql.execution.arrow.ArrowUtils
 
-import org.apache.arrow.vector.types.pojo.Schema;
-import org.apache.arrow.vector.VectorSchemaRoot;
-
-import org.apache.spark.sql.Row
+import scala.actors.threadpool.{BlockingQueue, LinkedBlockingQueue}
+import scala.collection.JavaConverters._
 
 
 // TODO: May need rpc retry.
@@ -40,23 +39,28 @@ class CHExecutorParall(
   class Result(schema: Schema, table: String, val decoded: CHExecutor.Result) {
     val error = decoded.error
     val isEmpty = decoded.isEmpty
+    val root = decoded.block
 
-    val encoded: Iterator[Row] = if (isEmpty || error != null || !encode) {
+    val batch: ArrowColumnBatch = if (isEmpty || error != null || !encode) {
       null
     } else {
-      ArrowConverter.toRows(schema, table, decoded)
+      val columns = decoded.block.getFieldVectors.asScala.map { vector =>
+        new ArrowColumnVector(vector).asInstanceOf[ColumnVector]
+      }.toArray
+
+      val arrBatch = new ArrowColumnBatch(
+        ArrowUtils.fromArrowSchema(root.getSchema),
+        columns,
+        root.getRowCount
+      )
+      arrBatch.setNumRows(root.getRowCount)
+      arrBatch
     }
 
-    def result(): CHExecutor.Result = if (isEmpty || error != null || !encode) {
-      null
+    def close(): Unit = if (batch != null) {
+      batch.close()
     } else {
-      decoded
-    }
-
-    def close(): Unit = if (encoded != null) {
-      encoded.asInstanceOf[CHRows].close
-    } else {
-      decoded.close
+      decoded.close()
     }
   }
 

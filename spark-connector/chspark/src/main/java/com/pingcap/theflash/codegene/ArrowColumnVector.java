@@ -4,6 +4,7 @@ import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.MapVector;
 import org.apache.arrow.vector.holders.NullableVarCharHolder;
+
 import org.apache.spark.sql.execution.arrow.ArrowUtils;
 import org.apache.spark.sql.types.Decimal;
 import org.apache.spark.unsafe.types.UTF8String;
@@ -33,8 +34,8 @@ public final class ArrowColumnVector extends ColumnVector {
   @Override
   public void close() {
     if (childColumns != null) {
-      for (int i = 0; i < childColumns.length; i++) {
-        childColumns[i].close();
+      for (ArrowColumnVector childColumn : childColumns) {
+        childColumn.close();
       }
     }
     accessor.close();
@@ -197,7 +198,9 @@ public final class ArrowColumnVector extends ColumnVector {
   public ArrowColumnVector(ValueVector vector) {
     super(ArrowUtils.fromArrowField(vector.getField()));
 
-    if (vector instanceof BitVector) {
+    if (vector instanceof NullableBitVector) {
+      accessor = new NullableBooleanAccessor((NullableBitVector) vector);
+    } else if (vector instanceof BitVector) {
       accessor = new BooleanAccessor((BitVector) vector);
     } else if (vector instanceof TinyIntVector) {
       accessor = new ByteAccessor((TinyIntVector) vector);
@@ -243,22 +246,24 @@ public final class ArrowColumnVector extends ColumnVector {
   private abstract static class ArrowVectorAccessor {
 
     private final ValueVector vector;
+    private final ValueVector.Accessor accessor;
 
     ArrowVectorAccessor(ValueVector vector) {
       this.vector = vector;
+      this.accessor = vector.getAccessor();
     }
 
     // TODO: should be final after removing ArrayAccessor workaround
     boolean isNullAt(int rowId) {
-      return vector.isNull(rowId);
+      return accessor.isNull(rowId);
     }
 
     final int getValueCount() {
-      return vector.getValueCount();
+      return accessor.getValueCount();
     }
 
     final int getNullCount() {
-      return vector.getNullCount();
+      return accessor.getNullCount();
     }
 
     final void close() {
@@ -325,7 +330,22 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final boolean getBoolean(int rowId) {
-      return accessor.get(rowId) == 1;
+      return accessor.getAccessor().get(rowId) == 1;
+    }
+  }
+
+  private static class NullableBooleanAccessor extends ArrowVectorAccessor {
+
+    private final NullableBitVector accessor;
+
+    NullableBooleanAccessor(NullableBitVector vector) {
+      super(vector);
+      this.accessor = vector;
+    }
+
+    @Override
+    boolean getBoolean(int rowId) {
+      return accessor.getAccessor().get(rowId) == 1;
     }
   }
 
@@ -340,7 +360,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final byte getByte(int rowId) {
-      return accessor.get(rowId);
+      return accessor.getAccessor().get(rowId);
     }
   }
 
@@ -355,7 +375,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final short getShort(int rowId) {
-      return accessor.get(rowId);
+      return accessor.getAccessor().get(rowId);
     }
   }
 
@@ -370,7 +390,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final int getInt(int rowId) {
-      return accessor.get(rowId);
+      return accessor.getAccessor().get(rowId);
     }
   }
 
@@ -385,7 +405,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final long getLong(int rowId) {
-      return accessor.get(rowId);
+      return accessor.getAccessor().get(rowId);
     }
   }
 
@@ -400,7 +420,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final float getFloat(int rowId) {
-      return accessor.get(rowId);
+      return accessor.getAccessor().get(rowId);
     }
   }
 
@@ -415,7 +435,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final double getDouble(int rowId) {
-      return accessor.get(rowId);
+      return accessor.getAccessor().get(rowId);
     }
   }
 
@@ -431,7 +451,7 @@ public final class ArrowColumnVector extends ColumnVector {
     @Override
     final Decimal getDecimal(int rowId, int precision, int scale) {
       if (isNullAt(rowId)) return null;
-      return Decimal.apply(accessor.getObject(rowId), precision, scale);
+      return Decimal.apply(accessor.getAccessor().getObject(rowId), precision, scale);
     }
   }
 
@@ -447,7 +467,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final UTF8String getUTF8String(int rowId) {
-      accessor.get(rowId, stringResult);
+      accessor.getAccessor().get(rowId, stringResult);
       if (stringResult.isSet == 0) {
         return null;
       } else {
@@ -469,7 +489,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final byte[] getBinary(int rowId) {
-      return accessor.getObject(rowId);
+      return accessor.getAccessor().getObject(rowId);
     }
   }
 
@@ -484,7 +504,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final int getInt(int rowId) {
-      return accessor.get(rowId);
+      return accessor.getAccessor().get(rowId);
     }
   }
 
@@ -499,7 +519,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final long getLong(int rowId) {
-      return accessor.get(rowId);
+      return accessor.getAccessor().get(rowId);
     }
   }
 
@@ -515,7 +535,7 @@ public final class ArrowColumnVector extends ColumnVector {
     @Override
     final boolean isNullAt(int rowId) {
       // TODO: Workaround if vector has all non-null values, see ARROW-1948
-      if (accessor.getValueCount() > 0 && accessor.getValidityBuffer().capacity() == 0) {
+      if (accessor.getAccessor().getValueCount() > 0 && accessor.getValidityBuffer().capacity() == 0) {
         return false;
       } else {
         return super.isNullAt(rowId);
@@ -524,12 +544,12 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final int getArrayLength(int rowId) {
-      return accessor.getInnerValueCountAt(rowId);
+      return accessor.getAccessor().getInnerValueCountAt(rowId);
     }
 
     @Override
     final int getArrayOffset(int rowId) {
-      return accessor.getOffsetBuffer().getInt(rowId * accessor.OFFSET_WIDTH);
+      return accessor.getOffsetBuffer().getInt(rowId * 4);
     }
   }
 

@@ -1,17 +1,17 @@
 package org.apache.spark.sql.execution.datasources
 
+import com.pingcap.theflash.codegene.ArrowColumnBatch
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch.{CHExecutorParall, _}
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Partition, TaskContext}
 
 import scala.collection.mutable.ListBuffer
 
 class CHScanRDD(@transient private val sparkSession: SparkSession,
-                val output: Seq[Attribute],
+                @transient val output: Seq[Attribute],
                 val tables: Seq[CHTableRef],
                 private val requiredColumns: Seq[String],
                 private val filterString: String,
@@ -20,43 +20,47 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
                 private val partitionCount: Int,
                 private val decoderCount: Int,
                 private val encoderCount: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
-  override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = new Iterator[CHExecutor.Result] {
+  override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = new Iterator[ArrowColumnBatch] {
     private val part = split.asInstanceOf[CHPartition]
     private val table = part.table
     private val qid = part.qid
     private val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
-    private lazy val schema = StructType.fromAttributes(output)
 
     private val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
       decoderCount, encoderCount, tables.size, part.clientIndex)
 
-    private def nextResult(): CHExecutor.Result = {
+    private def nextResult(): ArrowColumnBatch = {
       val block = resp.next()
       if (block != null) {
-        block.result()
+        block.batch
       } else {
         null
       }
     }
 
-    private[this] var curResult: CHExecutor.Result = nextResult()
+    private[this] var curResult: ArrowColumnBatch = _
 
     override def hasNext: Boolean = {
       if (curResult == null) {
-        false
+        tryProceed
       } else {
-        curResult.asInstanceOf[CHRows].close()
-        curResult = nextResult()
-        if (curResult == null) {
-          resp.close()
-          false
-        } else {
-          curResult.isEmpty
-        }
+        // close last and proceed next
+        curResult.close()
+        tryProceed
       }
     }
 
-    override def next(): CHExecutor.Result = curResult
+    private def tryProceed = {
+      curResult = nextResult()
+      if (curResult == null) {
+        resp.close()
+        false
+      } else {
+        true
+      }
+    }
+
+    override def next(): ArrowColumnBatch = curResult
   }.asInstanceOf[Iterator[InternalRow]]
 
   // TODO: All paritions may not assign to a same Spark node, so we need a better session module, like:
