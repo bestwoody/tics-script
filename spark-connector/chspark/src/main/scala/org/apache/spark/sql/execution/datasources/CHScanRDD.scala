@@ -10,17 +10,21 @@ import org.apache.spark.{Partition, TaskContext}
 
 import scala.collection.mutable.ListBuffer
 
-class CHScanRDD(@transient private val sparkSession: SparkSession,
-                @transient val output: Seq[Attribute],
-                val tables: Seq[CHTableRef],
-                private val requiredColumns: Seq[String],
-                private val filterString: String,
-                private val aggregation: CHSqlAgg,
-                private val topN: CHSqlTopN,
-                private val partitionCount: Int,
-                private val decoderCount: Int,
-                private val encoderCount: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
-  override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = new Iterator[ArrowColumnBatch] {
+class CHScanRDD(
+  @transient private val sparkSession: SparkSession,
+  @transient val output: Seq[Attribute],
+  val tables: Seq[CHTableRef],
+  private val requiredColumns: Seq[String],
+  private val filterString: String,
+  private val aggregation: CHSqlAgg,
+  private val topN: CHSqlTopN,
+  private val partitionCount: Int,
+  private val decoderCount: Int,
+  private val encoderCount: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
+
+  override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] =
+    new Iterator[ArrowColumnBatch] {
+
     private val part = split.asInstanceOf[CHPartition]
     private val table = part.table
     private val qid = part.qid
@@ -63,8 +67,6 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
     override def next(): ArrowColumnBatch = curResult
   }.asInstanceOf[Iterator[InternalRow]]
 
-  // TODO: All paritions may not assign to a same Spark node, so we need a better session module, like:
-  // <Spark nodes>-<share handle of a query> --- <CH sessions, each session respond to a handle>
   override protected def getPreferredLocations(split: Partition): Seq[String] =
     split.asInstanceOf[CHPartition].table.host :: Nil
 

@@ -13,6 +13,7 @@
 #include "arrow/array.h"
 #include "arrow/builder.h"
 #include "arrow/ipc/writer.h"
+#include "arrow/record_batch.h"
 
 #include "SafeBlockIO.h"
 
@@ -74,7 +75,7 @@ public:
                 arrays.push_back(array);
             }
 
-            return std::make_shared<arrow::RecordBatch>(schema, rows, arrays);
+            return arrow::RecordBatch::Make(schema, rows, arrays);
         }
         catch (const DB::Exception & e)
         {

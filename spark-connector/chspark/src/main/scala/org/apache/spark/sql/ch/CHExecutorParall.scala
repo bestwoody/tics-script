@@ -39,25 +39,21 @@ class CHExecutorParall(
   class Result(schema: Schema, table: String, val decoded: CHExecutor.Result) {
     val error = decoded.error
     val isEmpty = decoded.isEmpty
-    val root = decoded.block
+    val block = decoded.block
 
     val batch: ArrowColumnBatch = if (isEmpty || error != null || !encode) {
       null
     } else {
-      val columns = root.getFieldVectors.asScala.map { vector =>
+      val columns = block.getFieldVectors.asScala.map { vector =>
         new ArrowColumnVector(vector).asInstanceOf[ColumnVector]
       }.toArray
 
-      assert(root.getFieldVectors.asScala.map(_.getAccessor.getValueCount).distinct.lengthCompare(1) == 0,
+      assert(block.getFieldVectors.asScala.map(_.getValueCount).distinct.lengthCompare(1) == 0,
         "Each column should have same row count!")
-      val rowCount = root.getFieldVectors.asScala.head.getAccessor.getValueCount
+      val rowCount = block.getFieldVectors.asScala.head.getValueCount
 
       val arrBatch = new ArrowColumnBatch(
-        ArrowUtils.fromArrowSchema(root.getSchema),
-        columns,
-        rowCount
-      )
-//      println(s"New batch rowCount=$rowCount, Schema=${root.getSchema.toString}")
+        ArrowUtils.fromArrowSchema(block.getSchema), columns, rowCount)
       arrBatch.setNumRows(rowCount)
       arrBatch
     }
