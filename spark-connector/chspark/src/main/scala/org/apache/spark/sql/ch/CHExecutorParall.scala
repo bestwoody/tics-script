@@ -57,6 +57,7 @@ class CHExecutorParall(
         columns,
         rowCount
       )
+//      println(s"New batch rowCount=$rowCount, Schema=${root.getSchema.toString}")
       arrBatch.setNumRows(rowCount)
       arrBatch
     }

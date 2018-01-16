@@ -107,12 +107,10 @@ private[sql] trait ColumnarBatchScan extends CodegenSupport {
          |}""".stripMargin)
 
     ctx.currentVars = null
-    val rowidx = ctx.freshName("rowIdx")
+    val rowIdx = ctx.freshName("rowIdx")
     val columnsBatchInput = (output zip colVars).map { case (attr, colVar) =>
-      genCodeColumnVector(ctx, colVar, rowidx, attr.dataType, attr.nullable)
+      genCodeColumnVector(ctx, colVar, rowIdx, attr.dataType, attr.nullable)
     }
-    val localIdx = ctx.freshName("localIdx")
-    val localEnd = ctx.freshName("localEnd")
     val numRows = ctx.freshName("numRows")
 
     s"""
@@ -121,13 +119,11 @@ private[sql] trait ColumnarBatchScan extends CodegenSupport {
        |}
        |while ($batch != null) {
        |  int $numRows = $batch.numRows();
-       |  int $localEnd = $numRows - $idx;
-       |  for (int $localIdx = 0; $localIdx < $localEnd; $localIdx++) {
-       |    int $rowidx = $idx + $localIdx;
+       |  while ($idx < $numRows) {
+       |    int $rowIdx = $idx++;
        |    ${consume(ctx, columnsBatchInput).trim}
        |    if (shouldStop()) return;
        |  }
-       |  $idx = $numRows;
        |  $batch = null;
        |  $nextBatch();
        |}
