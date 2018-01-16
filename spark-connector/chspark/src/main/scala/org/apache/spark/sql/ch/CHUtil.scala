@@ -15,7 +15,7 @@
 
 package org.apache.spark.sql.ch
 
-import scala.util.Random
+import java.util.UUID
 
 import org.apache.arrow.vector.VectorSchemaRoot
 
@@ -219,16 +219,10 @@ object CHUtil {
     }
   }
 
-  def randomUInt(): Int = {
-    val x = Random.nextInt
-    if (x < 0) (-x) else (x)
-  }
-
-  // TODO: Not safe, may conflict
   def genQueryId(prefix: String = null): String = {
     var px = "chspark"
     px = if (prefix == null || prefix.isEmpty) px else { px + "-" + prefix}
-    px + "-" + randomUInt + "-" + randomUInt
+    px + "-" + UUID.randomUUID.toString
   }
 
   private def getCastString(value: String, dataType: DataType) = {
