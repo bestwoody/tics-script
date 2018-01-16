@@ -26,8 +26,7 @@ import org.apache.arrow.vector.types.pojo.Schema
 class CHRelation(val tables: Seq[CHTableRef], val partitions: Int, val decoders: Int, val encoders: Int)
   (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
 
-  // TODO: Parallel check tables' schema are the same
   override lazy val schema: StructType = {
-    new StructType(CHUtil.getFields(tables(0)))
+    CHTableInfos.getInfo(tables).schema
   }
 }

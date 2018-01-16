@@ -17,13 +17,76 @@ package org.apache.spark.sql.ch
 
 import scala.collection.mutable.Map
 
+import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.StructType
+
+class TableInfo(var schema: StructType, var rowWidth: Int, var rowCount: Long) extends Serializable {
+}
 
 class CHTableInfo(val table: CHTableRef) extends Serializable {
+  private var info: TableInfo = new TableInfo(null, -1, -1)
+
+  def getSchema(): StructType = {
+    info.schema
+  }
+
+  def getRowWidth(): Long = {
+    info.rowWidth
+  }
+
+  def getRowCount(): Long = {
+    info.rowCount
+  }
+
+  def getInfo(): TableInfo = {
+    info
+  }
+
+  def fetchSchema(): Unit = {
+    info.schema = new StructType(CHUtil.getFields(table))
+    // TODO: Calculate row width
+  }
+
+  def fetchRows(): Unit = {
+    info.rowCount = CHUtil.getRowCount(table)
+  }
+
+  // TODO: Parallel fetch
+  def fetchInfo(): Unit = {
+    fetchSchema
+    fetchRows
+  }
+
+  // TODO: Async fetch
+  fetchInfo
 }
 
 object CHTableInfos {
-  val infos: Map[CHTableRef, CHTableInfo] = Map()
-      //info.contains(key)
-      //instances(key)
-      //instances += (key -> x)
+  val instances: Map[CHTableRef, CHTableInfo] = Map()
+
+  // TODO: Refresh in interval
+  def getInfo(table: CHTableRef): CHTableInfo = this.synchronized {
+    if (!instances.contains(table)) {
+      instances += (table -> new CHTableInfo(table))
+    }
+    instances(table)
+  }
+
+  // TODO: Parallel fetch
+  // TODO: Data tiling in different tables should be considered
+  def getInfo(clusterTable: Seq[CHTableRef]): TableInfo = {
+    var info: TableInfo = null
+    clusterTable.map(table => {
+      val curr = getInfo(table).getInfo
+      if (info == null) {
+        info = new TableInfo(curr.schema, curr.rowWidth, curr.rowCount)
+      } else {
+        if (info.schema != curr.schema) {
+          throw new Exception("Cluster table schema not the same: " + table)
+        }
+        info.rowCount += curr.rowCount
+      }
+    })
+    info
+  }
 }

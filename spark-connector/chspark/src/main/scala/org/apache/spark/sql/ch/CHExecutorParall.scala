@@ -15,13 +15,12 @@
 
 package org.apache.spark.sql.ch;
 
-import scala.actors.threadpool.BlockingQueue
-import scala.actors.threadpool.LinkedBlockingQueue
+import com.pingcap.theflash.codegene.{ArrowColumnBatch, ArrowColumnVector, ColumnVector}
+import org.apache.arrow.vector.types.pojo.Schema
+import org.apache.spark.sql.execution.arrow.ArrowUtils
 
-import org.apache.arrow.vector.types.pojo.Schema;
-import org.apache.arrow.vector.VectorSchemaRoot;
-
-import org.apache.spark.sql.Row
+import scala.actors.threadpool.{BlockingQueue, LinkedBlockingQueue}
+import scala.collection.JavaConverters._
 
 
 // TODO: May need rpc retry.
@@ -40,17 +39,33 @@ class CHExecutorParall(
   class Result(schema: Schema, table: String, val decoded: CHExecutor.Result) {
     val error = decoded.error
     val isEmpty = decoded.isEmpty
+    val root = decoded.block
 
-    val encoded: Iterator[Row] = if (isEmpty || error != null || !encode) {
+    val batch: ArrowColumnBatch = if (isEmpty || error != null || !encode) {
       null
     } else {
-      ArrowConverter.toRows(schema, table, decoded)
+      val columns = root.getFieldVectors.asScala.map { vector =>
+        new ArrowColumnVector(vector).asInstanceOf[ColumnVector]
+      }.toArray
+
+      assert(root.getFieldVectors.asScala.map(_.getAccessor.getValueCount).distinct.lengthCompare(1) == 0,
+        "Each column should have same row count!")
+      val rowCount = root.getFieldVectors.asScala.head.getAccessor.getValueCount
+
+      val arrBatch = new ArrowColumnBatch(
+        ArrowUtils.fromArrowSchema(root.getSchema),
+        columns,
+        rowCount
+      )
+//      println(s"New batch rowCount=$rowCount, Schema=${root.getSchema.toString}")
+      arrBatch.setNumRows(rowCount)
+      arrBatch
     }
 
-    def close(): Unit = if (encoded != null) {
-      encoded.asInstanceOf[CHRows].close
+    def close(): Unit = if (batch != null) {
+      batch.close()
     } else {
-      decoded.close
+      decoded.close()
     }
   }
 

@@ -54,6 +54,11 @@ public:
         return state.query_id;
     }
 
+    String getQuery()
+    {
+        return state.query;
+    }
+
     Int64 getClientCount()
     {
         return client_count;

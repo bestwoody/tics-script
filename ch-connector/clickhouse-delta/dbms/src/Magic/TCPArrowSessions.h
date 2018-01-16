@@ -32,24 +32,29 @@ public:
         auto query_id = connection->getQueryId();
         auto client_index = connection->getClientIndex();
         auto client_count = connection->getClientCount();
-        LOG_TRACE(log, "TCP arrow connection established, query_id: " << query_id);
+
+        std::stringstream info_ss;
+        info_ss << "query_id: " << query_id << ", client #" << client_index << "/" << client_count;
+        std::string query_info = info_ss.str();
+
+        LOG_TRACE(log, "TCP arrow connection established, " << query_info);
 
         std::unique_lock<std::mutex> lock{mutex};
 
         Sessions::iterator session = sessions.find(query_id);
         if (session != sessions.end())
         {
-            LOG_TRACE(log, "Connection join to query_id: " << query_id <<
-                ", client #" << client_index << "/" << client_count);
+            if (session->second.client_count >= session->second.active_clients.size())
+                throw Exception("Join to expired session fail, too much clients: " + query_info);
+            LOG_TRACE(log, "Connection join to " << query_info);
             if (!session->second.execution)
-                throw Exception("Join to expired session, query_id: " + query_id);
+                throw Exception("Join to expired session, " + query_info);
             connection->setExecution(session->second.execution);
         }
         else
         {
             auto client_count = connection->getClientCount();
-            LOG_TRACE(log, "First connection in query_id: " << query_id <<
-                ", client #" << client_index << "/" << client_count);
+            LOG_TRACE(log, "First connection, " << query_info << ", query: " << connection->getQuery());
 
             connection->startExecuting();
 
@@ -82,8 +87,9 @@ public:
         session.active_clients[client_index] = false;
         session.finished_clients += 1;
 
-        LOG_TRACE(log, "Connection done in query_id: " << query_id << ", sessions: " <<
-            sessions.size() << ", connections: " << (session.client_count - session.finished_clients) <<
+        LOG_TRACE(log, "Connection done in query_id: " << query_id <<
+            ", connections: " << session.client_count << "-" << session.finished_clients <<
+            "=" << (session.client_count - session.finished_clients) <<
             ", client #" << client_index << "/" << session.client_count);
 
         // Can't remove session immidiatly, may cause double running.

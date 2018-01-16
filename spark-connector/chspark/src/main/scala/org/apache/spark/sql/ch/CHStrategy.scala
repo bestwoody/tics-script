@@ -15,31 +15,19 @@
 
 package org.apache.spark.sql.ch
 
-import scala.collection.mutable
-
 import org.apache.spark.internal.Logging
-
-import org.apache.spark.sql.{SparkSession, Strategy}
-import org.apache.spark.sql.types.DoubleType
-
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet}
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Cast, Divide}
-import org.apache.spark.sql.catalyst.expressions.{ExprId, Expression, NamedExpression}
-import org.apache.spark.sql.catalyst.expressions.{CreateNamedStruct, IntegerLiteral, SortOrder}
-
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
-import org.apache.spark.sql.catalyst.expressions.aggregate.{Average, Count, First, Last, Min, Max, Sum}
-
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, _}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, CreateNamedStruct, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ReturnAnswer}
-import org.apache.spark.sql.catalyst.plans.logical.{Sort, Project, Limit}
-
-import org.apache.spark.sql.execution.{FilterExec, ProjectExec, SparkPlan}
-import org.apache.spark.sql.execution.{CollectLimitExec, TakeOrderedAndProjectExec}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ReturnAnswer, Limit, Sort, Project}
+import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
+import org.apache.spark.sql.execution.{CHScanExec, CollectLimitExec, SparkPlan, TakeOrderedAndProjectExec, FilterExec, ProjectExec}
 import org.apache.spark.sql.execution.aggregate.AggUtils
-import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
+import org.apache.spark.sql.types.DoubleType
+import org.apache.spark.sql.{SparkSession, Strategy}
 
-import org.apache.spark.sql.ch.mock.{TypesTestRelation, TypesTestPlan}
+import scala.collection.mutable
 
 
 class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strategy with Logging {
@@ -214,8 +202,11 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       }
     }
 
-    val chPlan = CHPlan(output, sparkSession,
+    val chScanRDD = new CHScanRDD(sparkSession, output,
       relation.tables, requiredCols, filtersString, chSqlAgg, cHSqlTopN,
+      relation.partitions, relation.decoders, relation.encoders)
+    val chPlan = CHScanExec(output, chScanRDD, sparkSession, relation.tables, requiredCols,
+      filtersString, chSqlAgg, cHSqlTopN,
       relation.partitions, relation.decoders, relation.encoders)
 
     if (!isSingleCHNode(relation)) {
@@ -286,7 +277,9 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
     val filtersString = if (pushdownFilters.isEmpty) null else CHUtil.expToCHString(pushdownFilters)
 
-    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name),
+    val chScanRDD = new CHScanRDD(sparkSession, output, tables, output.map(_.name), filtersString, null, chSqlTopN,
+      partitions, decoders, encoders)
+    val rdd = CHScanExec(output, chScanRDD, sparkSession, tables, output.map(_.name),
       filtersString, null, chSqlTopN, partitions, decoders, encoders)
 
     if (AttributeSet(projectList.map(_.toAttribute)) == projectSet &&

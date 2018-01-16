@@ -74,7 +74,7 @@ public class CHExecutor {
             this.buffer = null;
             this.id = -1;
         }
-        boolean isEmpty() {
+        public boolean isEmpty() {
             return error == null && block == null;
         }
         boolean isLast() {
