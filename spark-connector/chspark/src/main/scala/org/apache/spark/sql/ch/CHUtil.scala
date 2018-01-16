@@ -111,7 +111,7 @@ object CHUtil {
       throw new Exception("Send table row count request, wrong response")
     }
 
-    val acc = columns.get(0).getAccessor
+    val acc = columns.get(0)
     if (acc.getValueCount != 1) {
       throw new Exception("Send table row count request, get too much response")
     }

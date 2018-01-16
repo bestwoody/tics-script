@@ -37,15 +37,16 @@ private[sql] trait ColumnarBatchScan extends CodegenSupport {
   /**
     * Generate [[codegene.ColumnVector]] expressions for
     * our parent to consume as rows.
-    * 
+    *
     * This is called once per [[ArrowColumnBatch]].
     */
   private def genCodeColumnVector(
-                                   ctx: CodegenContext,
-                                   columnVar: String,
-                                   ordinal: String,
-                                   dataType: DataType,
-                                   nullable: Boolean): ExprCode = {
+    ctx: CodegenContext,
+    columnVar: String,
+    ordinal: String,
+    dataType: DataType,
+    nullable: Boolean): ExprCode = {
+
     val javaType = ctx.javaType(dataType)
     val value = ctx.getValue(columnVar, dataType, ordinal)
     val isNullVar = if (nullable) { ctx.freshName("isNull") } else { "false" }

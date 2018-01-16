@@ -125,11 +125,11 @@ void TCPArrowHandler::startExecuting()
     if (this_encoder_count <= 0)
         throw Exception("Encoder number invalid.");
 
-    LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count);
-
     encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
     if (encoder->hasError())
         throw Exception(encoder->getErrorString());
+    LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
+        ", execution ref: " << encoder.use_count());
 }
 
 

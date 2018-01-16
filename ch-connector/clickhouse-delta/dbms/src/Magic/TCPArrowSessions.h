@@ -44,8 +44,8 @@ public:
         Sessions::iterator session = sessions.find(query_id);
         if (session != sessions.end())
         {
-            if (session->second.client_count >= session->second.active_clients.size())
-                throw Exception("Join to expired session fail, too much clients: " + query_info);
+            if (size_t(session->second.client_count) <= session->second.active_clients.size())
+                throw Exception("Join to session fail, too much clients: " + query_info);
             LOG_TRACE(log, "Connection join to " << query_info);
             if (!session->second.execution)
                 throw Exception("Join to expired session, " + query_info);
@@ -90,7 +90,8 @@ public:
         LOG_TRACE(log, "Connection done in query_id: " << query_id <<
             ", connections: " << session.client_count << "-" << session.finished_clients <<
             "=" << (session.client_count - session.finished_clients) <<
-            ", client #" << client_index << "/" << session.client_count);
+            ", client #" << client_index << "/" << session.client_count <<
+            ", execution ref: " << session.execution.use_count());
 
         // Can't remove session immidiatly, may cause double running.
         // Leave a tombstone for further clean up
@@ -98,7 +99,8 @@ public:
         {
             session.active_clients.clear();
             session.execution = NULL;
-            LOG_TRACE(log, "Clear session query_id: " << query_id << ", sessions: " << sessions.size());
+            LOG_TRACE(log, "Clear session query_id: " << query_id << ", sessions: " << sessions.size() <<
+                ", execution ref: " << session.execution.use_count());
         }
 
         // TODO: move to config file
@@ -121,7 +123,8 @@ public:
                     if (session.client_count != session.finished_clients)
                     {
                         LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
-                            session.active_clients.size() << ". Force clean now.");
+                            session.active_clients.size() << ", execution ref: " << session.execution.use_count() <<
+                            ". Force clean now.");
                         session.active_clients.clear();
                         // TODO: force disconnect
                         session.execution->cancal(false);

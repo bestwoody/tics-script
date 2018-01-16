@@ -54,8 +54,7 @@ object ArrowUtils {
   }
 
   /** Maps field from Spark to Arrow. NOTE: timeZoneId required for TimestampType */
-  def toArrowField(
-                    name: String, dt: DataType, nullable: Boolean, timeZoneId: String): Field = {
+  def toArrowField(name: String, dt: DataType, nullable: Boolean, timeZoneId: String): Field = {
     dt match {
       case ArrayType(elementType, containsNull) =>
         val fieldType = new FieldType(nullable, ArrowType.List.INSTANCE, null)
@@ -102,5 +101,4 @@ object ArrowUtils {
       StructField(field.getName, dt, field.isNullable)
     })
   }
-
 }
