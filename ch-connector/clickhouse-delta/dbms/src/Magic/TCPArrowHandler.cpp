@@ -263,7 +263,7 @@ void TCPArrowHandler::recvQuery()
     query_context.setCurrentQueryId(state.query_id);
     Magic::readString(state.query, *in);
 
-    LOG_INFO(log, "Receive query_id: " << state.query_id << ", query: " << state.query);
+    // LOG_INFO(log, "Receive query_id: " << state.query_id << ", query: " << state.query);
 }
 
 

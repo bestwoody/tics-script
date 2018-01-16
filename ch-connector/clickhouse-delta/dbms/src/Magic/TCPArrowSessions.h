@@ -52,7 +52,7 @@ public:
         else
         {
             auto client_count = connection->getClientCount();
-            LOG_TRACE(log, "First connection, " << query_info);
+            LOG_TRACE(log, "First connection, " << query_info << ", query: " << connection->getQuery());
 
             connection->startExecuting();
 
@@ -85,8 +85,8 @@ public:
         session.active_clients[client_index] = false;
         session.finished_clients += 1;
 
-        LOG_TRACE(log, "Connection done in query_id: " << query_id << ", sessions: " <<
-            sessions.size() << ", connections: " << (session.client_count - session.finished_clients) <<
+        LOG_TRACE(log, "Connection done in query_id: " << query_id <<
+            ", connections: " << (session.client_count - session.finished_clients) <<
             ", client #" << client_index << "/" << session.client_count);
 
         // Can't remove session immidiatly, may cause double running.
