@@ -206,8 +206,11 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       }
     }
 
-    val chPlan = CHPlan(output, sparkSession,
+    val chScanRDD = new CHScanRDD(sparkSession, output,
       relation.tables, requiredCols, filtersString, chSqlAgg, cHSqlTopN,
+      relation.partitions, relation.decoders, relation.encoders)
+    val chPlan = CHScanExec(output, chScanRDD, sparkSession, relation.tables, requiredCols,
+      filtersString, chSqlAgg, cHSqlTopN,
       relation.partitions, relation.decoders, relation.encoders)
 
     if (!isSingleCHNode(relation)) {
@@ -278,8 +281,6 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
 
     val filtersString = if (pushdownFilters.isEmpty) null else CHUtil.expToCHString(pushdownFilters)
 
-//    val rdd = CHPlan(output, sparkSession, tables, output.map(_.name),
-//      filtersString, null, chSqlTopN, partitions, decoders, encoders)
     val chScanRDD = new CHScanRDD(sparkSession, output, tables, output.map(_.name), filtersString, null, chSqlTopN,
       partitions, decoders, encoders)
     val rdd = CHScanExec(output, chScanRDD, sparkSession, tables, output.map(_.name),

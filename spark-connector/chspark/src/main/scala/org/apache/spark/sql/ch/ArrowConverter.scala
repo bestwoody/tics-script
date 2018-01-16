@@ -24,7 +24,6 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow
 
 import scala.collection.JavaConverters._
 
-
 class CHRows(private val schema: Schema, private val table: String, private val block: CHExecutor.Result)
   extends Iterator[Row] {
 

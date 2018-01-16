@@ -3,8 +3,6 @@ package com.pingcap.theflash.codegene;
 import org.apache.spark.sql.types.StructType;
 
 public class ArrowColumnBatch {
-  public static final int DEFAULT_BATCH_SIZE = 4 * 1024;
-
   private final StructType schema;
   private final int capacity;
   private int numRows;

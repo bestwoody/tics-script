@@ -208,6 +208,10 @@ public final class ArrowColumnVector extends ColumnVector {
       accessor = new ShortAccessor((SmallIntVector) vector);
     } else if (vector instanceof IntVector) {
       accessor = new IntAccessor((IntVector) vector);
+    } else if (vector instanceof NullableUInt4Vector) {
+      accessor = new NullableUInt4Accessor((NullableUInt4Vector) vector);
+    } else if (vector instanceof NullableUInt8Vector) {
+      accessor = new NullableUInt8Accessor((NullableUInt8Vector) vector);
     } else if (vector instanceof BigIntVector) {
       accessor = new LongAccessor((BigIntVector) vector);
     } else if (vector instanceof Float4Vector) {
@@ -404,6 +408,42 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final int getInt(int rowId) {
+      return accessor.getAccessor().get(rowId);
+    }
+  }
+
+  private static class NullableUInt4Accessor extends ArrowVectorAccessor {
+
+    private final NullableUInt4Vector accessor;
+
+    NullableUInt4Accessor(NullableUInt4Vector vector) {
+      super(vector);
+      this.accessor = vector;
+    }
+
+    @Override
+    final int getInt(int rowId) {
+      return accessor.getAccessor().get(rowId);
+    }
+
+    // TODO support unsigned promotion
+    @Override
+    final long getLong(int rowId) {
+      return accessor.getAccessor().get(rowId);
+    }
+  }
+
+  private static class NullableUInt8Accessor extends ArrowVectorAccessor {
+
+    private final NullableUInt8Vector accessor;
+
+    NullableUInt8Accessor(NullableUInt8Vector vector) {
+      super(vector);
+      this.accessor = vector;
+    }
+
+    @Override
+    final long getLong(int rowId) {
       return accessor.getAccessor().get(rowId);
     }
   }
