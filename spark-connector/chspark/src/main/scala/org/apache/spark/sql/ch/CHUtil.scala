@@ -55,7 +55,7 @@ object CHUtil {
   def getFields(table: CHTableRef): Array[StructField] = {
     val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
 
-    val resp = new CHExecutorParall(CHUtil.genQueryId, CHSql.desc(table.absName), table.host, table.port, table.absName, 1)
+    val resp = new CHExecutorParall(CHUtil.genQueryId("desc"), CHSql.desc(table.absName), table.host, table.port, table.absName, 1)
     var fields = new Array[StructField](0)
 
     var names = new Array[String](0)
@@ -96,7 +96,7 @@ object CHUtil {
   }
 
   def getRowCount(table: CHTableRef): Long = {
-    val resp = new CHExecutorParall(CHUtil.genQueryId, CHSql.count(table.absName), table.host, table.port, table.absName, 1)
+    val resp = new CHExecutorParall(CHUtil.genQueryId("count"), CHSql.count(table.absName), table.host, table.port, table.absName, 1)
     var block: resp.Result = resp.next
 
     if (block == null) {
@@ -225,8 +225,10 @@ object CHUtil {
   }
 
   // TODO: Not safe, may conflict
-  def genQueryId(): String = {
-    "chspark-" + randomUInt + "-" + randomUInt
+  def genQueryId(prefix: String = null): String = {
+    var px = "chspark"
+    px = if (prefix == null || prefix.isEmpty) px else { px + "-" + prefix}
+    px + "-" + randomUInt + "-" + randomUInt
   }
 
   private def getCastString(value: String, dataType: DataType) = {
