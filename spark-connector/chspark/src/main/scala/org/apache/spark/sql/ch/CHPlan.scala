@@ -22,7 +22,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeProjection}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{LeafExecNode, RDDConversions}
 
-
+@Deprecated
 case class CHPlan(output: Seq[Attribute],
   @transient private val sparkSession: SparkSession,
   @transient private val tables: Seq[CHTableRef],

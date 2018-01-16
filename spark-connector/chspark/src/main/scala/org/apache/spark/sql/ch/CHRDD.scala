@@ -24,7 +24,7 @@ import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
-
+@Deprecated
 class CHRDD(
   @transient private val sparkSession: SparkSession,
   val tables: Seq[CHTableRef],
