@@ -95,6 +95,33 @@ object CHUtil {
     fields
   }
 
+  def getRowCount(table: CHTableRef): Long = {
+    val resp = new CHExecutorParall(CHUtil.genQueryId, CHSql.count(table.absName), table.host, table.port, table.absName, 1)
+    var block: resp.Result = resp.next
+
+    if (block == null) {
+      resp.close
+      throw new Exception("Send table row count request, no response block")
+    }
+
+    val columns = block.decoded.block.getFieldVectors
+    if (columns.size != 1) {
+      block.close
+      resp.close
+      throw new Exception("Send table row count request, wrong response")
+    }
+
+    val acc = columns.get(0).getAccessor
+    if (acc.getValueCount != 1) {
+      throw new Exception("Send table row count request, get too much response")
+    }
+
+    val rows: Long = acc.getObject(0).asInstanceOf[Long]
+    block.close
+    resp.close
+    rows
+  }
+
   // TODO: Pushdown more, like `In`
   def isSupportedFilter(exp: Expression): Boolean = {
     // println("PROBE isSupportedFilter:" + exp.getClass.getName + ", " + exp)

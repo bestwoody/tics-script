@@ -28,6 +28,6 @@ class CHRelation(val tables: Seq[CHTableRef], val partitions: Int, val decoders:
 
   // TODO: Parallel check tables' schema are the same
   override lazy val schema: StructType = {
-    new StructType(CHUtil.getFields(tables(0)))
+    CHTableInfos.getInfo(tables(0)).getSchema
   }
 }
