@@ -258,10 +258,10 @@ void TCPArrowHandler::recvQuery()
     Magic::readString(state.query_id, *in);
     if (state.query_id.empty())
         throw Exception("Receive empty query_id.");
-    LOG_INFO(log, "Receive query_id: " + state.query_id);
-
     query_context.setCurrentQueryId(state.query_id);
     Magic::readString(state.query, *in);
+
+    LOG_INFO(log, "Receive query_id: " << state.query_id << ", query: " << state.query);
 }
 
 
