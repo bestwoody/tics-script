@@ -15,18 +15,16 @@
 
 package org.apache.spark.sql.ch;
 
-import java.util.List;
-import java.util.Scanner;
-import java.sql.Timestamp;
-import java.io.File;
-import java.io.PrintStream;
-
 import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.ValueVector;
+import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
-import org.apache.arrow.vector.types.pojo.ArrowType;
+
+import java.io.File;
+import java.io.PrintStream;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Scanner;
 
 public class CHRawJava {
     private static void dump(Field field, int order) {
@@ -60,7 +58,7 @@ public class CHRawJava {
             if (!decode) {
                 index += 1;
                 if (!columns.isEmpty()) {
-                    rows += columns.get(0).getAccessor().getValueCount();
+                    rows += columns.get(0).getValueCount();
                 }
                 block.close();
                 continue;
@@ -74,10 +72,9 @@ public class CHRawJava {
                 Field field = column.getField();
                 ArrowType.ArrowTypeID type = field.getType().getTypeID();
                 dump(field, j);
-                ValueVector.Accessor acc = column.getAccessor();
 
-                for (int k = 0; k < acc.getValueCount(); ++k) {
-                    Object v = acc.getObject(k);
+                for (int k = 0; k < column.getValueCount(); ++k) {
+                    Object v = column.getObject(k);
                     if (v instanceof Character) {
                         System.out.println("    " + (int)(Character)v);
                     } else if (type == ArrowType.ArrowTypeID.Time) {

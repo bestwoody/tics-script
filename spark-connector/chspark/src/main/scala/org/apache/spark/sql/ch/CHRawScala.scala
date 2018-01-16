@@ -57,7 +57,7 @@ object CHRawScala {
           while (block != null) {
             println("#" + i + "@" + n + " block")
             val columns = block.decoded.block.getFieldVectors
-            val rows: Long = if (columns.isEmpty) 0 else { columns.get(0).getAccessor().getValueCount }
+            val rows: Long = if (columns.isEmpty) 0 else { columns.get(0).getValueCount }
             addRows(rows)
             block.close
             block = resp.next
