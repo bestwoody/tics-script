@@ -24,7 +24,7 @@ import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
-
+@Deprecated
 class CHRDD(
   @transient private val sparkSession: SparkSession,
   val tables: Seq[CHTableRef],
@@ -49,7 +49,7 @@ class CHRDD(
 
     private def getBlock(): Iterator[Row] = {
       val block = resp.next
-      if (block != null) block.encoded else null
+      if (block != null) null else null
     }
 
     var blockIter: Iterator[Row] = getBlock
