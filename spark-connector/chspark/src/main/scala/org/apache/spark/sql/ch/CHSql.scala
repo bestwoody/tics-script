@@ -58,6 +58,10 @@ object CHSql {
     "DESC " + table
   }
 
+  def count(table: String): String = {
+    "SELECT COUNT(*) FROM " + table
+  }
+
   def scan(table: String): String = {
     scan(table, null, null)
   }
