@@ -27,7 +27,7 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
     private val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
 
     private val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
-      decoderCount, encoderCount, tables.size, part.clientIndex)
+      decoderCount, encoderCount, partitionCount, part.clientIndex)
 
     private def nextResult(): ArrowColumnBatch = {
       val block = resp.next()
