@@ -1,0 +1,24 @@
++---------+------------------+-----------------+------------------+-------------+--------------------+---------------+--------------------+
+|C_CUSTKEY|            C_NAME|          REVENUE|         C_ACCTBAL|       N_NAME|           C_ADDRESS|        C_PHONE|           C_COMMENT|
++---------+------------------+-----------------+------------------+-------------+--------------------+---------------+--------------------+
+|  8512915|Customer#008512915|817.9020263671875|           1410.87|        KENYA|   NhpUoYd9t8WoGvtSz|24-520-846-1990|lar theodolites a...|
+|  6466141|Customer#006466141|819.8280395507812|            8693.7|   MOZAMBIQUE|     ,xZmmFeb,GzeQtr|26-467-102-2689|; theodolites hag...|
+| 14630047|Customer#014630047|820.4469244384766|           3202.15|       JORDAN|R6b13OhLbEiUgOdHW...|23-187-125-1007|ithely! carefully...|
+|  9558751|Customer#009558751|821.2230285644531|            142.28|         PERU|WvdnSfIUpLaul1yjj...|27-266-384-9191|. even requests d...|
+| 11902993|Customer#011902993|830.7090087890625|           5918.33|UNITED STATES|2dJtTMTvg5mjNAKLk...|34-199-654-1543|ckly ironic reque...|
+|  2096896|Customer#002096896|831.2220153808594|           9836.78|        INDIA|03LOx4Syet7PD mZ1...|18-852-944-9487|ould have to dete...|
+| 12406759|Customer#012406759|831.4943377685547|           4147.13|UNITED STATES|  tXCJRndNWd0EeZerqK|34-389-561-8610|ithely across the...|
+| 10420093|Customer#010420093|         838.3375|           8968.07|       JORDAN|ysgROObPoIBk3Lfb ...|23-896-336-3893|ckey players. fur...|
+|  6853996|Customer#006853996|838.7910461425781|-948.3299999999999|         PERU|nH375djPq0vTss2Cm...|27-112-534-6990|he accounts are b...|
+|  9520792|Customer#009520792|838.9980285644532|           5795.98|       RUSSIA|CB8uu,6iAW2ZARWqO...|32-459-758-7649|usly express idea...|
+|   147865|Customer#000147865|839.3251977539063|           3826.15|        JAPAN|     YR4Mu09VNE9Je2T|22-936-624-3382|ng somas. final i...|
+|  5661656|Customer#005661656| 842.177728881836|           7206.13|       FRANCE|1YHfvreaBk7Td7Mrk...|16-530-814-6788|sides the express...|
+|   502595|Customer#000502595|843.1649780273438|           7948.37|UNITED STATES|        6z b8R6TFmPR|34-845-338-6307|e sometimes acros...|
+| 10348054|Customer#010348054|844.3749499511719|           9789.05|     ETHIOPIA|nsGCoW7x1sadBxiws...|15-287-107-4646|accounts. slow se...|
+|  7463794|Customer#007463794|           845.25|2295.3300000000004|      ALGERIA| TzK6CLgOOr1zNq0Sl5g|10-433-200-7798|uctions use furio...|
+|  9398483|Customer#009398483|845.4780395507813|           8796.15|   MOZAMBIQUE|E1bf KUoocsTtOoFL...|26-949-910-8311|ietly instead of ...|
+| 11287087|Customer#011287087|847.6972314453126|           3540.73|      MOROCCO|          gmGQ1e4uaS|25-523-782-5707|press deposits ab...|
+| 14835935|Customer#014835935|849.7855932617188| 5674.650000000001|       BRAZIL|56sCfv X2ZA1fLSEa...|12-949-239-7330|y. carefully unus...|
+| 14180938|Customer#014180938|850.4190307617188|           9749.04|        KENYA|  6ikA1jynMJf8KrBHBq|24-630-460-5202|e around the care...|
+|  7808450|Customer#007808450|851.1918090820312|           3079.23|         PERU|BYThSZLP5WqsAzRus...|27-638-603-8071|ole slyly. slyly ...|
++---------+------------------+-----------------+------------------+-------------+--------------------+---------------+--------------------+
