@@ -406,7 +406,7 @@ public final class ArrowColumnVector extends ColumnVector {
   private static class UInt1Accessor extends ArrowVectorAccessor {
 
     private final UInt1Vector accessor;
-    private static int uint8Reverser = 0x100;
+    private static final int REVERSER = 0x100;
 
     UInt1Accessor(UInt1Vector vector) {
       super(vector);
@@ -415,15 +415,9 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final int getInt(int rowId) {
-      return accessor.get(rowId);
-    }
-
-    // TODO Test unsigned promotion
-    @Override
-    final long getLong(int rowId) {
-      long value = accessor.get(rowId);
+      int value = accessor.get(rowId);
       if (value < 0) {
-        return value + uint8Reverser;
+        return value + REVERSER;
       } else {
         return value;
       }
@@ -433,7 +427,6 @@ public final class ArrowColumnVector extends ColumnVector {
   private static class UInt2Accessor extends ArrowVectorAccessor {
 
     private final UInt2Vector accessor;
-    private static int uint16Reverser = 0x10000;
 
     UInt2Accessor(UInt2Vector vector) {
       super(vector);
@@ -443,17 +436,6 @@ public final class ArrowColumnVector extends ColumnVector {
     @Override
     final int getInt(int rowId) {
       return accessor.get(rowId);
-    }
-
-    // TODO Test unsigned promotion
-    @Override
-    final long getLong(int rowId) {
-      long value = accessor.get(rowId);
-      if (value < 0) {
-        return value + uint16Reverser;
-      } else {
-        return value;
-      }
     }
   }
 
@@ -467,12 +449,6 @@ public final class ArrowColumnVector extends ColumnVector {
       this.accessor = vector;
     }
 
-    @Override
-    final int getInt(int rowId) {
-      return accessor.get(rowId);
-    }
-
-    // TODO Test unsigned promotion
     @Override
     final long getLong(int rowId) {
       long value = accessor.get(rowId);

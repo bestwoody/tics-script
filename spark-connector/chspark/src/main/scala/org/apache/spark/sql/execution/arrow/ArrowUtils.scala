@@ -35,15 +35,18 @@ object ArrowUtils {
 
   def fromArrowType(dt: ArrowType): DataType = dt match {
     case ArrowType.Bool.INSTANCE => BooleanType
-    case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 => ByteType
+    case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 * 1=> ByteType
     case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 * 2 => ShortType
     case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 * 4 => IntegerType
     case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 * 8 => LongType
-    case int: ArrowType.Int if !int.getIsSigned => LongType
+    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 1=> IntegerType // promote
+    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 2 => IntegerType // promote
+    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 4 => LongType // promote
+    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 8 => LongType // may overflow, unchecked
     case float: ArrowType.FloatingPoint
-      if float.getPrecision() == FloatingPointPrecision.SINGLE => FloatType
+      if float.getPrecision == FloatingPointPrecision.SINGLE => FloatType
     case float: ArrowType.FloatingPoint
-      if float.getPrecision() == FloatingPointPrecision.DOUBLE => DoubleType
+      if float.getPrecision == FloatingPointPrecision.DOUBLE => DoubleType
     case ArrowType.Utf8.INSTANCE => StringType
     case ArrowType.Binary.INSTANCE => BinaryType
     case d: ArrowType.Decimal => DecimalType(d.getPrecision, d.getScale)
