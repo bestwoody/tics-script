@@ -27,7 +27,7 @@ import org.apache.spark.sql.types.DataType
   * Helper trait for abstracting scan functionality using
   * [[ArrowColumnBatch]]es.
   */
-private[sql] trait ColumnarBatchScan extends CodegenSupport {
+private[sql] trait ArrowBatchScan extends CodegenSupport {
   def vectorTypes: Option[Seq[String]] = None
 
   override lazy val metrics = Map(
@@ -35,7 +35,7 @@ private[sql] trait ColumnarBatchScan extends CodegenSupport {
     "scanTime" -> SQLMetrics.createTimingMetric(sparkContext, "scan time"))
 
   /**
-    * Generate [[codegene.ColumnVector]] expressions for
+    * Generate [[codegene.ArrowColumnVector]] expressions for
     * our parent to consume as rows.
     *
     * This is called once per [[ArrowColumnBatch]].
@@ -64,7 +64,7 @@ private[sql] trait ColumnarBatchScan extends CodegenSupport {
   }
 
   /**
-    * Produce code to process the input iterator as [[ColumnarBatch]]es.
+    * Produce code to process the input iterator as [[ArrowColumnBatch]]es.
     * This produces an [[UnsafeRow]] for each row in each batch.
     */
   override protected def doProduce(ctx: CodegenContext): String = {
@@ -85,7 +85,7 @@ private[sql] trait ColumnarBatchScan extends CodegenSupport {
     val idx = ctx.freshName("batchIdx")
     ctx.addMutableState("int", idx, s"$idx = 0;")
 
-    val columnVectorClz = classOf[codegene.ColumnVector].getName
+    val columnVectorClz = classOf[codegene.ArrowColumnVector].getName
 
     val colVars = output.indices.map(i => ctx.freshName("colInstance" + i))
     val columnAssigns = colVars.zipWithIndex.map { case (name, i) =>

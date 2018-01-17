@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 PingCAP, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.pingcap.theflash.codegene;
 
 import org.apache.arrow.vector.*;
@@ -5,9 +20,13 @@ import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.MapVector;
 import org.apache.arrow.vector.holders.NullableVarCharHolder;
 
+import org.apache.spark.sql.catalyst.util.DateTimeUtils;
 import org.apache.spark.sql.execution.arrow.ArrowUtils;
 import org.apache.spark.sql.types.Decimal;
 import org.apache.spark.unsafe.types.UTF8String;
+
+import java.sql.Timestamp;
+import java.util.TimeZone;
 
 public final class ArrowColumnVector extends ColumnVector {
 
@@ -232,10 +251,8 @@ public final class ArrowColumnVector extends ColumnVector {
       accessor = new DateAccessor((DateDayVector) vector);
     } else if (vector instanceof TimeStampMicroTZVector) {
       accessor = new TimestampAccessor((TimeStampMicroTZVector) vector);
-    } else if (vector instanceof DateDayVector) {
-      accessor = new DateAccessor((DateDayVector) vector);
-    } else if (vector instanceof TimeStampMicroTZVector) {
-      accessor = new TimestampAccessor((TimeStampMicroTZVector) vector);
+    } else if (vector instanceof TimeStampNanoTZVector) {
+      accessor = new TimestampNanoAccessor((TimeStampNanoTZVector) vector);
     } else if (vector instanceof ListVector) {
       ListVector listVector = (ListVector) vector;
       accessor = new ArrayAccessor(listVector);
@@ -251,8 +268,7 @@ public final class ArrowColumnVector extends ColumnVector {
         childColumns[i] = new ArrowColumnVector(mapVector.getVectorById(i));
       }
     } else {
-      System.out.println("Unsupported vector:" +vector.getClass().getName());
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException("Unsupported vector:" + vector.getClass().getName());
     }
   }
 
@@ -393,7 +409,7 @@ public final class ArrowColumnVector extends ColumnVector {
   private static class UInt1Accessor extends ArrowVectorAccessor {
 
     private final UInt1Vector accessor;
-    private static int uint8Reverser = 0x100;
+    private static final int REVERSER = 0x100;
 
     UInt1Accessor(UInt1Vector vector) {
       super(vector);
@@ -402,15 +418,9 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     final int getInt(int rowId) {
-      return accessor.get(rowId);
-    }
-
-    // TODO Test unsigned promotion
-    @Override
-    final long getLong(int rowId) {
-      long value = accessor.get(rowId);
+      int value = accessor.get(rowId);
       if (value < 0) {
-        return value + uint8Reverser;
+        return value + REVERSER;
       } else {
         return value;
       }
@@ -420,7 +430,6 @@ public final class ArrowColumnVector extends ColumnVector {
   private static class UInt2Accessor extends ArrowVectorAccessor {
 
     private final UInt2Vector accessor;
-    private static int uint16Reverser = 0x10000;
 
     UInt2Accessor(UInt2Vector vector) {
       super(vector);
@@ -430,17 +439,6 @@ public final class ArrowColumnVector extends ColumnVector {
     @Override
     final int getInt(int rowId) {
       return accessor.get(rowId);
-    }
-
-    // TODO Test unsigned promotion
-    @Override
-    final long getLong(int rowId) {
-      long value = accessor.get(rowId);
-      if (value < 0) {
-        return value + uint16Reverser;
-      } else {
-        return value;
-      }
     }
   }
 
@@ -454,12 +452,6 @@ public final class ArrowColumnVector extends ColumnVector {
       this.accessor = vector;
     }
 
-    @Override
-    final int getInt(int rowId) {
-      return accessor.get(rowId);
-    }
-
-    // TODO Test unsigned promotion
     @Override
     final long getLong(int rowId) {
       long value = accessor.get(rowId);
@@ -615,6 +607,21 @@ public final class ArrowColumnVector extends ColumnVector {
     }
   }
 
+  private static class TimestampNanoAccessor extends ArrowVectorAccessor {
+
+    private final TimeStampNanoTZVector accessor;
+
+    TimestampNanoAccessor(TimeStampNanoTZVector vector) {
+      super(vector);
+      this.accessor = vector;
+    }
+
+    @Override
+    final long getLong(int rowId) {
+      return accessor.get(rowId);
+    }
+  }
+
   private static class TimeNanoAccessor extends ArrowVectorAccessor {
     private final TimeNanoVector accessor;
 
@@ -625,7 +632,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     long getLong(int rowId) {
-      return accessor.get(rowId) * 1000;
+      return accessor.get(rowId) * 1000 * 1000;
     }
   }
 
