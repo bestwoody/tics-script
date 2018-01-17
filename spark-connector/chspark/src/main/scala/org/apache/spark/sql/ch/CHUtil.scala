@@ -101,25 +101,25 @@ object CHUtil {
 
     if (block == null) {
       resp.close
-      throw new Exception("Send table row count request, no response block")
-    }
+      0
+    } else {
+      val columns = block.decoded.block.getFieldVectors
+      if (columns.size != 1) {
+        block.close
+        resp.close
+        throw new Exception("Send table row count request, wrong response")
+      }
 
-    val columns = block.decoded.block.getFieldVectors
-    if (columns.size != 1) {
+      val acc = columns.get(0)
+      if (acc.getValueCount != 1) {
+        throw new Exception("Send table row count request, get too much response")
+      }
+
+      val rows: Long = acc.getObject(0).asInstanceOf[Long]
       block.close
       resp.close
-      throw new Exception("Send table row count request, wrong response")
+      rows
     }
-
-    val acc = columns.get(0)
-    if (acc.getValueCount != 1) {
-      throw new Exception("Send table row count request, get too much response")
-    }
-
-    val rows: Long = acc.getObject(0).asInstanceOf[Long]
-    block.close
-    resp.close
-    rows
   }
 
   // TODO: Pushdown more, like `In`
