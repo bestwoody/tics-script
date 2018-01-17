@@ -20,9 +20,13 @@ import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.MapVector;
 import org.apache.arrow.vector.holders.NullableVarCharHolder;
 
+import org.apache.spark.sql.catalyst.util.DateTimeUtils;
 import org.apache.spark.sql.execution.arrow.ArrowUtils;
 import org.apache.spark.sql.types.Decimal;
 import org.apache.spark.unsafe.types.UTF8String;
+
+import java.sql.Timestamp;
+import java.util.TimeZone;
 
 public final class ArrowColumnVector extends ColumnVector {
 
@@ -628,7 +632,7 @@ public final class ArrowColumnVector extends ColumnVector {
 
     @Override
     long getLong(int rowId) {
-      return accessor.get(rowId) * 1000;
+      return accessor.get(rowId) * 1000 * 1000;
     }
   }
 
