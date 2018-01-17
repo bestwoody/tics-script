@@ -22,7 +22,7 @@ case class CHScanExec(
   @transient private val partitions: Int,
   @transient private val decoders: Int,
   @transient private val encoders: Int)
-  extends LeafExecNode with ColumnarBatchScan {
+  extends LeafExecNode with ArrowBatchScan {
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = chScanRDD :: Nil
 

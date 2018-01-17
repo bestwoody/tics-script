@@ -45,7 +45,7 @@ class CHExecutorParall(
       null
     } else {
       val columns = block.getFieldVectors.asScala.map { vector =>
-        new ArrowColumnVector(vector).asInstanceOf[ColumnVector]
+        new ArrowColumnVector(vector)
       }.toArray
 
       assert(block.getFieldVectors.asScala.map(_.getValueCount).distinct.lengthCompare(1) == 0,
