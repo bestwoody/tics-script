@@ -264,8 +264,7 @@ public final class ArrowColumnVector extends ColumnVector {
         childColumns[i] = new ArrowColumnVector(mapVector.getVectorById(i));
       }
     } else {
-      System.out.println("Unsupported vector:" + vector.getClass().getName());
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException("Unsupported vector:" + vector.getClass().getName());
     }
   }
 

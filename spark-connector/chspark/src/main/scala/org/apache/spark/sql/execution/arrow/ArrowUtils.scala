@@ -8,9 +8,6 @@ import org.apache.arrow.vector.types.pojo.{ArrowType, Field, FieldType, Schema}
 import org.apache.spark.sql.types._
 
 object ArrowUtils {
-  val rootAllocator = new RootAllocator(Long.MaxValue)
-  // todo: support more types.
-
   /** Maps data type from Spark to Arrow. NOTE: timeZoneId required for TimestampTypes */
   def toArrowType(dt: DataType, timeZoneId: String): ArrowType = dt match {
     case BooleanType => ArrowType.Bool.INSTANCE
