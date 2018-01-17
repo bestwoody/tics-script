@@ -53,14 +53,14 @@ public class ArrowColumnBatch {
   /**
    * Returns the column at `ordinal`.
    */
-  public ColumnVector column(int ordinal) { return columns[ordinal]; }
+  public ArrowColumnVector column(int ordinal) { return columns[ordinal]; }
 
   /**
    * Called to close all the columns in this batch. It is not valid to access the data after
    * calling this. This must be called at the end to clean up memory allocations.
    */
   public void close() {
-    for (ColumnVector c: columns) {
+    for (ArrowColumnVector c: columns) {
       c.close();
     }
   }
