@@ -1,0 +1,24 @@
++--------+--------------------+------+------------+
+| p_brand|              p_type|p_size|supplier_cnt|
++--------+--------------------+------+------------+
+|Brand#14| SMALL BRUSHED BRASS|    45|         596|
+|Brand#34|ECONOMY BURNISHED...|    23|         592|
+|Brand#44|PROMO POLISHED NI...|    49|         592|
+|Brand#54|LARGE BURNISHED S...|    36|         584|
+|Brand#14|ECONOMY BRUSHED C...|    19|         580|
+|Brand#13|STANDARD BRUSHED ...|    45|         579|
+|Brand#21|  PROMO POLISHED TIN|    36|         579|
+|Brand#12|STANDARD BRUSHED TIN|     9|         576|
+|Brand#32|STANDARD ANODIZED...|    14|         576|
+|Brand#32|STANDARD BURNISHE...|    36|         576|
+|Brand#54|STANDARD BRUSHED TIN|    49|         576|
+|Brand#25|ECONOMY POLISHED ...|    36|         575|
+|Brand#54|  LARGE PLATED STEEL|     9|         574|
+|Brand#12|MEDIUM BURNISHED ...|    36|         572|
+|Brand#22|  PROMO POLISHED TIN|    23|         572|
+|Brand#25|LARGE ANODIZED NI...|     3|         572|
+|Brand#51|  SMALL PLATED STEEL|    36|         572|
+|Brand#25|STANDARD PLATED N...|    19|         571|
+|Brand#15|SMALL ANODIZED STEEL|    36|         570|
+|Brand#12|ECONOMY BURNISHED...|    14|         568|
++--------+--------------------+------+------------+
