@@ -76,6 +76,14 @@ public:
         return encoder;
     }
 
+    void onError(const std::string & msg)
+    {
+        if (encoder)
+            encoder->onError(msg);
+        else
+            encoder = std::make_shared<Magic::ArrowEncoderParall>(msg);
+    }
+
     void setExecution(EncoderPtr & encoder_)
     {
         encoder = encoder_;
