@@ -38,7 +38,7 @@ case class CHScanExec(
   private val enableCodeGen: Boolean = true)
   extends LeafExecNode with ArrowBatchScan {
 
-  private val types = schema.fields.map(_.dataType)
+  private lazy val types = schema.fields.map(_.dataType)
   // Used for non-CodeGen based data pipeline
   private lazy val result = RDDConversions.rowToRowRdd(rdd, types)
   private lazy val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString,
