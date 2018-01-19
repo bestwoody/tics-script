@@ -24,18 +24,18 @@ import org.apache.spark.sql.ch.{CHRDD, CHSqlAgg, CHSqlTopN, CHTableRef}
 import org.apache.spark.sql.execution.datasources.CHScanRDD
 
 case class CHScanExec(
-                       output: Seq[Attribute],
-                       chScanRDD: CHScanRDD,
-                       @transient private val sparkSession: SparkSession,
-                       @transient private val tables: Seq[CHTableRef],
-                       @transient private val requiredColumns: Seq[String],
-                       @transient private val filterString: String,
-                       @transient private val aggregation: CHSqlAgg,
-                       @transient private val topN: CHSqlTopN,
-                       @transient private val partitions: Int,
-                       @transient private val decoders: Int,
-                       @transient private val encoders: Int,
-                       private val enableCodeGen: Boolean = true)
+  output: Seq[Attribute],
+  chScanRDD: CHScanRDD,
+  @transient private val sparkSession: SparkSession,
+  @transient private val tables: Seq[CHTableRef],
+  @transient private val requiredColumns: Seq[String],
+  @transient private val filterString: String,
+  @transient private val aggregation: CHSqlAgg,
+  @transient private val topN: CHSqlTopN,
+  @transient private val partitions: Int,
+  @transient private val decoders: Int,
+  @transient private val encoders: Int,
+  private val enableCodeGen: Boolean = true)
   extends LeafExecNode with ArrowBatchScan {
 
   private val types = schema.fields.map(_.dataType)
