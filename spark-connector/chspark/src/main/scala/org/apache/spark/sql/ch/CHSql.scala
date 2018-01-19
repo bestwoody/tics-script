@@ -13,11 +13,9 @@
  * limitations under the License.
  */
 
-
 package org.apache.spark.sql.ch
 
 import org.apache.spark.sql.catalyst.expressions.Expression
-
 
 class CHSqlAggFunc(val function: String, val column: String) extends Serializable {
   override def toString: String = {

@@ -1,14 +1,17 @@
 package org.apache.spark.sql.execution.datasources
 
-import com.pingcap.theflash.codegene.ArrowColumnBatch
+import scala.collection.mutable.ListBuffer
+
+import org.apache.spark.{Partition, TaskContext}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.ch.{CHExecutorParall, _}
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.sql.ch.{CHSqlAgg, CHSqlTopN, CHSql}
+import org.apache.spark.sql.ch.{CHExecutorParall, CHTableRef, CHPartition, CHUtil}
 
-import scala.collection.mutable.ListBuffer
+import com.pingcap.theflash.codegene.ArrowColumnBatch
 
 class CHScanRDD(
   @transient private val sparkSession: SparkSession,
@@ -30,6 +33,7 @@ class CHScanRDD(
     private val qid = part.qid
     private val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
 
+    // TODO: Can't retry for now, because use the same qid to retry is illegal (expired query id).
     private val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
       decoderCount, encoderCount, partitionCount, part.clientIndex)
 

@@ -15,7 +15,6 @@
 
 package org.apache.spark.sql.ch
 
-
 class CHTableRef(val host: String, val port: Int, val database: String, val table: String) extends Serializable {
   val mappedName = table
 

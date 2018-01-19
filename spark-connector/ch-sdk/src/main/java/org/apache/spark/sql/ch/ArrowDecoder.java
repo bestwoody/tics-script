@@ -28,18 +28,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 
-
 public class ArrowDecoder {
-    // private final static long MB_IN_BYTES = 1024 * 1024;
-    // private final static long MAX_ALLOC = MB_IN_BYTES * 1024 * 4;
-    // private final static RootAllocator rootAllocator = new RootAllocator(MAX_ALLOC);
-    // private final static AtomicInteger allocId = new AtomicInteger(0);
-
     public ArrowDecoder() {
-        // alloc = rootAllocator.newChildAllocator(
-        //    "ChildAlloc" + allocId.incrementAndGet(),
-        //    0,
-        //    MB_IN_BYTES * 64);
         alloc = new RootAllocator(Integer.MAX_VALUE);
     }
 

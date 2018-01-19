@@ -21,8 +21,8 @@ import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
 
-import org.apache.arrow.vector.types.pojo.Schema;
-import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.types.pojo.Schema
+import org.apache.arrow.vector.VectorSchemaRoot
 
 @Deprecated
 class CHRDD(
@@ -44,6 +44,7 @@ class CHRDD(
     val qid = part.qid
     val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
 
+    // TODO: Can't retry for now, because use the same qid to retry is illegal (expired query id).
     val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
       decoderCount, encoderCount, partitionCount, part.clientIndex)
 

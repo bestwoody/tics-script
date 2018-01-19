@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
-
 public class CHExecutor {
     public static class CHExecutorException extends Exception {
         public CHExecutorException(String msg) {
@@ -45,6 +44,9 @@ public class CHExecutor {
         }
         boolean isLast() {
             return type == PackageTypeEnd || type == PackageTypeUtf8Error;
+        }
+        long size() {
+            return data.length;
         }
 
         private long type;

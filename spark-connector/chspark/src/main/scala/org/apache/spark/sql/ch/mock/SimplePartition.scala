@@ -17,7 +17,6 @@ package org.apache.spark.sql.ch.mock
 
 import org.apache.spark.Partition
 
-
 class SimplePartition(val idx: Int) extends Partition {
   override def index: Int = idx
 }
