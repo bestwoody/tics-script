@@ -12,7 +12,7 @@ using std::queue;
 using std::unique_lock;
 
 template <typename T>
-class Chan
+class QuotaChan
 {
     queue<T> que;
     mutable mutex mtx;
@@ -26,7 +26,9 @@ class Chan
     bool closed;
 
 public:
-    inline Chan(long quota_ = -1, size_t capacity_ = 0) : quota(quota_), capacity(capacity_), passed(0), closed(false) {}
+    inline QuotaChan(long quota_ = -1, size_t capacity_ = 0) : quota(quota_), capacity(capacity_), passed(0), closed(false)
+    {
+    }
 
     inline void setQuota(long quota_)
     {

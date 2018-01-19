@@ -13,7 +13,9 @@ class Sessions
 public:
     using Session = ArrowEncoder;
 
-    Sessions() : id_gen(10000) {}
+    Sessions() : id_gen(10000)
+    {
+    }
 
     std::string init(const char * config)
     {
@@ -70,7 +72,7 @@ public:
 
     std::string close()
     {
-        // TODO: check all sessions are closed
+        // TODO: Check all sessions are closed
         std::unique_lock<std::mutex> lock{mtx};
         if (!app)
             return "app instance is null";

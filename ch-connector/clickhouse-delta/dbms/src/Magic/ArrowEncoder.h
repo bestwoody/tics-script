@@ -17,7 +17,6 @@
 
 #include "SafeBlockIO.h"
 
-
 namespace Magic
 {
 
@@ -97,7 +96,6 @@ public:
             onError("arrow::ipc::SerializeRecordBatch " + status.ToString());
             return NULL;
         }
-        // std::cerr << "PROBE pool alloced: " << pool->bytes_allocated() << ", peak: " << pool->max_memory() << std::endl;
         return serialized;
     }
 
@@ -119,25 +117,21 @@ public:
         return input->blocks();
     }
 
-    void cancal()
+    void cancal(bool exception = false)
     {
         std::unique_lock<std::mutex> lock{mutex};
         if (input)
-        {
-            input->cancal(false);
-            input = NULL;
-        }
+            input->cancal(exception);
+        input = NULL;
     }
 
+protected:
     void onError(const std::string msg)
     {
         std::unique_lock<std::mutex> lock{mutex};
         error = msg;
-        if (input)
-        {
-            input->cancal(true);
-            input = NULL;
-        }
+        input->cancal(true);
+        input = NULL;
     }
 
 private:
@@ -176,16 +170,15 @@ private:
             onError("arrow::ipc::SerializeSchema " + status.ToString());
             return NULL;
         }
-        // std::cerr << "PROBE pool alloced: " << pool->bytes_allocated() << ", peak: " << pool->max_memory() << std::endl;
         return serialized;
     }
 
 private:
-    // TODO: faster copy
-    // TODO: handle all types
-    // TODO: use template + trait for faster and cleaner code
-    // TODO: check by id, not by name
-    // TODO: only fetch types once
+    // TODO: Handle all types
+    // TODO: Faster copy
+    // TODO: Only fetch types once
+    // TODO: Check by id, not by name, or:
+    // TODO: Use template + trait for faster and cleaner code
     std::shared_ptr<arrow::Array> columnToArrowArray(DB::DataTypePtr & type, DB::ColumnPtr & column)
     {
         auto pool = arrow::default_memory_pool();
@@ -453,8 +446,8 @@ private:
         return array;
     }
 
-    // TODO: handle all types
-    // TODO: check by id, not by name
+    // TODO: Handle all types
+    // TODO: Check by id, not by name
     static std::shared_ptr<arrow::DataType> dataTypeToArrowType(DB::DataTypePtr & type)
     {
         auto name = type->getName();

@@ -8,15 +8,17 @@
 #include <DataStreams/IBlockOutputStream.h>
 #include <DataStreams/copyData.h>
 
-
 namespace DB
 {
 
-// Not a effective impl, for test/dev only.
+// Not a effective implement, for test/dev only.
+// TODO: Support all types
 class BlockOutputStreamPrintRows : public IBlockOutputStream
 {
 public:
-    BlockOutputStreamPrintRows(std::ostream & writer_) : writer(writer_), block_index(0) {}
+    BlockOutputStreamPrintRows(std::ostream & writer_) : writer(writer_), block_index(0)
+    {
+    }
 
     void write(const Block & block) override
     {
@@ -27,8 +29,6 @@ public:
                 ColumnWithTypeAndName data = block.getByPosition(j);
                 auto name = data.type->getName();
 
-                // TODO: support all types
-                // TODO: check by id, not by name
                 if (name == "String")
                 {
                     const auto & column = typeid_cast<ColumnString &>(*data.column);
@@ -102,10 +102,12 @@ public:
 
 private:
     template <typename T>
-    std::ostream & print(size_t row, size_t col, const T v)
+    std::ostream & print(size_t row, size_t col, const T v, bool detail = false)
     {
-        //return writer << "(" << block_index << ", "<< row << ", " << col << ")" << v << "\t";
-        return writer << v << "\t";
+        if (detail)
+            return writer << "(" << block_index << ", "<< row << ", " << col << ")" << v << "\t";
+        else
+            return writer << v << "\t";
     }
 
 private:

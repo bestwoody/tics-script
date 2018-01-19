@@ -6,15 +6,18 @@
 #include "arrow/builder.h"
 #include "arrow/ipc/writer.h"
 
-JNIEXPORT jint JNICALL Java_pingcap_com_MagicProtoBench_benchSumInt(JNIEnv *env, jobject obj, jint a, jint b) {
+JNIEXPORT jint JNICALL Java_pingcap_com_MagicProtoBench_benchSumInt(JNIEnv *env, jobject obj, jint a, jint b)
+{
     return a + b;
 }
 
-JNIEXPORT jdouble JNICALL Java_pingcap_com_MagicProtoBench_benchSumDouble(JNIEnv *env, jobject obj, jdouble a, jdouble b) {
+JNIEXPORT jdouble JNICALL Java_pingcap_com_MagicProtoBench_benchSumDouble(JNIEnv *env, jobject obj, jdouble a, jdouble b)
+{
     return a + b;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProtoBench_benchAlloc(JNIEnv *env, jobject obj, jint size) {
+JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProtoBench_benchAlloc(JNIEnv *env, jobject obj, jint size)
+{
     void *buf = malloc(size);
     jbyteArray result = env->NewByteArray(size);
     env->SetByteArrayRegion(result, 0, size, (jbyte*)buf);
@@ -22,8 +25,9 @@ JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProtoBench_benchAlloc(JNIEnv 
     return result;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProtoBench_benchArrowArray(JNIEnv *env, jobject obj, jint size) {
-    // TODO: test: return java nil
+JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProtoBench_benchArrowArray(JNIEnv *env, jobject obj, jint size)
+{
+    // TODO: Test return java nil
     jbyteArray result = 0;
     ::arrow::Status status;
 
