@@ -15,8 +15,9 @@
 
 package org.apache.spark.sql.ch;
 
-import com.pingcap.theflash.codegene.{ArrowColumnBatch, ArrowColumnVector, ColumnVector}
+import com.pingcap.theflash.codegene.{ArrowColumnBatch, ArrowColumnVector}
 import org.apache.arrow.vector.types.pojo.Schema
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.execution.arrow.ArrowUtils
 
 import scala.actors.threadpool.{BlockingQueue, LinkedBlockingQueue}
@@ -40,6 +41,13 @@ class CHExecutorParall(
     val error = decoded.error
     val isEmpty = decoded.isEmpty
     val block = decoded.block
+
+    // encoded does not use code generation optimization
+    val encoded: Iterator[Row] = if (isEmpty || error != null || !encode) {
+      null
+    } else {
+      ArrowConverter.toRows(schema, table, decoded)
+    }
 
     val batch: ArrowColumnBatch = if (isEmpty || error != null || !encode) {
       null
