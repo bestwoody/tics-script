@@ -46,7 +46,11 @@ public class CHExecutor {
             return type == PackageTypeEnd || type == PackageTypeUtf8Error;
         }
         long size() {
-            return data.length;
+            if (data == null) {
+                return 0;
+            } else {
+                return data.length;
+            }
         }
 
         private long type;
