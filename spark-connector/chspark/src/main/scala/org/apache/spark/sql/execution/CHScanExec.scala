@@ -1,11 +1,10 @@
 package org.apache.spark.sql.execution
 
-import org.apache.hadoop.hive.metastore.api.InvalidOperationException
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, UnsafeProjection}
 import org.apache.spark.sql.ch.{CHRDD, CHSqlAgg, CHSqlTopN, CHTableRef}
 import org.apache.spark.sql.execution.datasources.CHScanRDD
 
@@ -24,14 +23,41 @@ case class CHScanExec(
                        private val enableCodeGen: Boolean = true)
   extends LeafExecNode with ArrowBatchScan {
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = chScanRDD :: Nil
+  private val types = schema.fields.map(_.dataType)
+  // Used for non-CodeGen based data pipeline
+  private lazy val result = RDDConversions.rowToRowRdd(rdd, types)
+  private lazy val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString,
+    aggregation, topN, partitions, decoders, encoders)
+
+  override def inputRDDs(): Seq[RDD[InternalRow]] = if (enableCodeGen) {
+    chScanRDD :: Nil
+  } else {
+    result :: Nil
+  }
 
   override protected def doProduce(ctx: CodegenContext): String = {
     if (enableCodeGen) {
       super.doProduce(ctx)
     } else {
-      // Should never reach here
-      throw new InvalidOperationException("Code Generation is not enabled in this plan!")
+      val numOutputRows = metricTerm(ctx, "numOutputRows")
+      // PhysicalRDD always just has one input
+      val input = ctx.freshName("input")
+      ctx.addMutableState("scala.collection.Iterator", input, s"$input = inputs[0];")
+      val exprRows = output.zipWithIndex.map{ case (a, i) =>
+        BoundReference(i, a.dataType, a.nullable)
+      }
+      val row = ctx.freshName("row")
+      ctx.INPUT_ROW = row
+      ctx.currentVars = null
+      val columnsRowInput = exprRows.map(_.genCode(ctx))
+      s"""
+         |while ($input.hasNext()) {
+         |  InternalRow $row = (InternalRow) $input.next();
+         |  $numOutputRows.add(1);
+         |  ${consume(ctx, columnsRowInput).trim}
+         |  if (shouldStop()) return;
+         |}
+     """.stripMargin
     }
   }
 
@@ -40,12 +66,6 @@ case class CHScanExec(
       WholeStageCodegenExec(this).execute()
     } else {
       val numOutputRows = longMetric("numOutputRows")
-      val types = schema.fields.map(_.dataType)
-      val rdd = new CHRDD(sparkSession, tables, requiredColumns, filterString,
-        aggregation, topN, partitions, decoders, encoders)
-
-      val result = RDDConversions.rowToRowRdd(rdd, types)
-
       result.mapPartitionsWithIndexInternal { (partition, iter) =>
         val proj = UnsafeProjection.create(schema)
         proj.initialize(partition)

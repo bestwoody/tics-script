@@ -15,7 +15,7 @@
 
 package org.apache.spark.sql.ch;
 
-import com.pingcap.theflash.codegene.{ArrowColumnBatch, ArrowColumnVector, ColumnVector}
+import com.pingcap.theflash.codegene.{ArrowColumnBatch, ArrowColumnVector}
 import org.apache.arrow.vector.types.pojo.Schema
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.execution.arrow.ArrowUtils

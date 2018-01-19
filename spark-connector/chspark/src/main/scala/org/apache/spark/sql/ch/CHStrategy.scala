@@ -15,7 +15,6 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, _}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, CreateNamedStruct, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
@@ -25,6 +24,7 @@ import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
 import org.apache.spark.sql.execution.{CHScanExec, CollectLimitExec, FilterExec, ProjectExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.execution.aggregate.AggUtils
 import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.DoubleType
 import org.apache.spark.sql.{SparkSession, Strategy}
 
@@ -33,7 +33,7 @@ import scala.collection.mutable
 
 class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strategy with Logging {
   // -------------------- Dynamic configurations   --------------------
-  val sqlConf: SparkConf = sparkSession.sparkContext.conf
+  val sqlConf: SQLConf = sparkSession.sqlContext.conf
 
   /**
     * Returns whether Code generation is enable
@@ -42,7 +42,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     *         false otherwise.
     */
   private def enableCodeGen: Boolean = {
-    sqlConf.getBoolean(CHConfigConst.ENABLE_CODE_GEN, defaultValue = true)
+    sqlConf.getConfString(CHConfigConst.ENABLE_CODE_GEN, "true").toBoolean
   }
 
   // -------------------- Physical plan generation --------------------
@@ -222,7 +222,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
       relation.partitions, relation.decoders, relation.encoders)
     val chPlan = CHScanExec(output, chScanRDD, sparkSession, relation.tables, requiredCols,
       filtersString, chSqlAgg, cHSqlTopN,
-      relation.partitions, relation.decoders, relation.encoders)
+      relation.partitions, relation.decoders, relation.encoders, enableCodeGen)
 
     if (!isSingleCHNode(relation)) {
       AggUtils.planAggregateWithoutDistinct(
@@ -295,7 +295,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     val chScanRDD = new CHScanRDD(sparkSession, output, tables, output.map(_.name), filtersString, null, chSqlTopN,
       partitions, decoders, encoders)
     val rdd = CHScanExec(output, chScanRDD, sparkSession, tables, output.map(_.name),
-      filtersString, null, chSqlTopN, partitions, decoders, encoders)
+      filtersString, null, chSqlTopN, partitions, decoders, encoders, enableCodeGen)
 
     if (AttributeSet(projectList.map(_.toAttribute)) == projectSet &&
       filterSet.subsetOf(projectSet)) {
