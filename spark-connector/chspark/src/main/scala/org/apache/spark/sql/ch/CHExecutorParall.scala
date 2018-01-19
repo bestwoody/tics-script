@@ -15,14 +15,14 @@
 
 package org.apache.spark.sql.ch;
 
+import scala.collection.JavaConverters._
+
 import com.pingcap.theflash.codegene.{ArrowColumnBatch, ArrowColumnVector}
 import org.apache.arrow.vector.types.pojo.Schema
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.execution.arrow.ArrowUtils
 
 import scala.actors.threadpool.{BlockingQueue, LinkedBlockingQueue}
-import scala.collection.JavaConverters._
-
 
 // TODO: May need rpc retry.
 class CHExecutorParall(
@@ -37,7 +37,7 @@ class CHExecutorParall(
   val clientIndex: Int = 0,
   val encode: Boolean = true) {
 
-  class Result(schema: Schema, table: String, val decoded: CHExecutor.Result) {
+  class Result(schema: Schema, table: String, val decoded: CHExecutor.Result, val dataSize: Long) {
     val error = decoded.error
     val isEmpty = decoded.isEmpty
     val block = decoded.block
@@ -84,12 +84,10 @@ class CHExecutorParall(
   startDecode()
   startFetch()
 
-  // TODO: throws
   def close(): Unit = executor.close
 
   def getSchema(): Schema = executor.getSchema
 
-  // TODO: throws InterruptedException, CHExecutor.CHExecutorException
   def next(): Result = {
     var got: Boolean = false
     var block: Result = null
@@ -161,11 +159,12 @@ class CHExecutorParall(
           try {
             var isLast = false
             while (!isLast) {
-              val decoded = executor.safeDecode(decodings.take)
+              val decoding = decodings.take
+              val decoded = executor.safeDecode(decoding)
               isLast = decoded.isLast
               // Pass over the empty block to `getNext`, to offer the chance to check if stream is finished
               // Note that the empty block doesn't count
-              decodeds.put(new Result(executor.getSchema, table, decoded))
+              decodeds.put(new Result(executor.getSchema, table, decoded, decoding.size))
             }
           } catch {
             case _: InterruptedException => {}
