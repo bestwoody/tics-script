@@ -15,13 +15,14 @@
 
 package org.apache.spark.sql.ch
 
+import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, _}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, CreateNamedStruct, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ReturnAnswer, Limit, Sort, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Limit, LogicalPlan, Project, ReturnAnswer, Sort}
 import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
-import org.apache.spark.sql.execution.{CHScanExec, CollectLimitExec, SparkPlan, TakeOrderedAndProjectExec, FilterExec, ProjectExec}
+import org.apache.spark.sql.execution.{CHScanExec, CollectLimitExec, FilterExec, ProjectExec, SparkPlan, TakeOrderedAndProjectExec}
 import org.apache.spark.sql.execution.aggregate.AggUtils
 import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
 import org.apache.spark.sql.types.DoubleType
@@ -31,6 +32,20 @@ import scala.collection.mutable
 
 
 class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strategy with Logging {
+  // -------------------- Dynamic configurations   --------------------
+  val sqlConf: SparkConf = sparkSession.sparkContext.conf
+
+  /**
+    * Returns whether Code generation is enable
+    *
+    * @return true will enable code generation in plan generation,
+    *         false otherwise.
+    */
+  private def enableCodeGen: Boolean = {
+    sqlConf.getBoolean(CHConfigConst.ENABLE_CODE_GEN, defaultValue = true)
+  }
+
+  // -------------------- Physical plan generation --------------------
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     plan.collectFirst {
       case rel@LogicalRelation(_: TypesTestRelation, _: Option[Seq[Attribute]], _) =>
