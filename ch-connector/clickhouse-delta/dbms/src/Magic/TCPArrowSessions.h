@@ -12,6 +12,7 @@
 namespace DB
 {
 
+// TODO: Error handling need to be refact
 class TCPArrowSessions
 {
 public:
@@ -25,8 +26,26 @@ public:
     {
     }
 
-    // RISK: may slow down TCP connection accepting, since we receive data in creating function
     Poco::Net::TCPServerConnection * create(IServer & server, const Poco::Net::StreamSocket & socket)
+    {
+        try
+        {
+            return doCreate(server, socket);
+        }
+        catch (Exception e)
+        {
+            auto msg = DB::getCurrentExceptionMessage(true, true);
+            LOG_ERROR(log, msg);
+        }
+        catch (...)
+        {
+            LOG_ERROR(log, "Unknow error when ceate socket session");
+        }
+        return NULL;
+    }
+
+    // RISK: may slow down TCP connection accepting, since we receive data in creating function
+    Poco::Net::TCPServerConnection * doCreate(IServer & server, const Poco::Net::StreamSocket & socket)
     {
         auto connection = new TCPArrowHandler(server, socket);
         auto query_id = connection->getQueryId();
@@ -45,10 +64,20 @@ public:
         if (session != sessions.end())
         {
             if (size_t(session->second.client_count) <= session->second.active_clients.size())
-                throw Exception("Join to session fail, too much clients: " + query_info);
+            {
+                std::string msg = "Join to session fail, too much clients: " + query_info;
+                LOG_ERROR(log, msg);
+                connection->onError(msg);
+                return connection;
+            }
             LOG_TRACE(log, "Connection join to " << query_info);
             if (!session->second.execution)
-                throw Exception("Join to expired session, " + query_info);
+            {
+                std::string msg = "Join to expired session, " + query_info;
+                LOG_ERROR(log, msg);
+                connection->onError(msg);
+                return connection;
+            }
             connection->setExecution(session->second.execution);
         }
         else
@@ -78,7 +107,7 @@ public:
         if (it == sessions.end())
         {
             auto msg = "Clear connection in query_id: " + query_id + " failed, session not found.";
-            LOG_TRACE(log, msg);
+            LOG_ERROR(log, msg);
             throw Exception(msg);
         }
 
@@ -122,12 +151,14 @@ public:
                         it->first << ", created: " << seconds << "s.");
                     if (session.client_count != session.finished_clients)
                     {
-                        LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
-                            session.active_clients.size() << ", execution ref: " << session.execution.use_count() <<
-                            ". Force clean now.");
+                        std::stringstream ss;
+                        ss << "Session expired, but not finished, active clients: " << session.active_clients.size() <<
+                            ", execution ref: " << session.execution.use_count() << ". Force clean now.";
+                        auto msg = ss.str();
+                        LOG_ERROR(log, msg);
                         session.active_clients.clear();
                         // TODO: force disconnect
-                        session.execution->cancal(false);
+                        session.execution->onError(msg);
                         session.execution = NULL;
                     }
                     it = sessions.erase(it);

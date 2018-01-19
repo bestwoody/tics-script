@@ -1,39 +1,38 @@
-sql="$1"
-partitions="$2"
-decoders="$3"
+from="$1"
+to="$2"
+partitions="$3"
+decoders="$4"
 
 set -eu
-
-source ./_env.sh
 
 if [ -z "$partitions" ]; then
 	partitions="8"
 fi
+
 if [ -z "$decoders" ]; then
 	decoders="8"
 fi
 
-if [ -z "$sql" ]; then
-	echo "<bin> usage: <bin> query-sql [partitions=8] [decoders=8]" >&2
+if [ -z "$to" ]; then
+	echo "<bin> usage: <bin> from-table-name to-parquet-file-path [reading-partition-count] [reading-decoder-count]" >&2
 	exit 1
 fi
 
 mkdir -p "/tmp/spark-q/"
 tmp="/tmp/spark-q/`date +%s`"
+repartition="16"
 
 echo 'import java.text.SimpleDateFormat' > "$tmp"
 echo 'import java.util.Date' >> "$tmp"
-
-echo 'spark.conf.set("spark.ch.plan.codegen", "'$codegen'")' >> "$tmp"
-echo 'val ch = new org.apache.spark.sql.CHContext(spark, '$pushdown')' >> "$tmp"
+echo 'import spark.implicits._'>> "$tmp"
+echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./ch-q.sh "show tables" | while read table; do
 	echo "ch.mapCHClusterTable(table=\"$table\", partitions=$partitions, decoders=$decoders)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"
-
-echo "ch.sql(\"$sql\").show" >> "$tmp"
+echo 'spark.sql("select * from '$from'").repartition('$repartition').write.parquet("'$to'")'>> "$tmp"
 
 echo 'val endTime: Date = new Date()' >> "$tmp"
 echo 'val elapsed = endTime.getTime - startTime.getTime' >> "$tmp"

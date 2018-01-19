@@ -67,9 +67,14 @@ public:
         return block;
     }
 
-    void cancal(bool exception = false)
+    void cancal()
     {
-        encoder.cancal(exception);
+        encoder.cancal();
+    }
+
+    void onError(const std::string msg)
+    {
+        encoder.onError(msg);
     }
 
     ~ArrowEncoderParall()

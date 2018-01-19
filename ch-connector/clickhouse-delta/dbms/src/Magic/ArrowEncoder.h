@@ -119,21 +119,25 @@ public:
         return input->blocks();
     }
 
-    void cancal(bool exception = false)
+    void cancal()
     {
         std::unique_lock<std::mutex> lock{mutex};
         if (input)
-            input->cancal(exception);
-        input = NULL;
+        {
+            input->cancal(false);
+            input = NULL;
+        }
     }
 
-protected:
     void onError(const std::string msg)
     {
         std::unique_lock<std::mutex> lock{mutex};
         error = msg;
-        input->cancal(true);
-        input = NULL;
+        if (input)
+        {
+            input->cancal(true);
+            input = NULL;
+        }
     }
 
 private:

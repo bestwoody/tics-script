@@ -113,23 +113,38 @@ void TCPArrowHandler::startExecuting()
     if (encoder)
         return;
 
-    state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
-    if (state.io.out)
-        throw Exception("TCPArrowHandler do not support insert query.");
+    try
+    {
+        state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
+        if (state.io.out)
+            throw Exception("TCPArrowHandler do not support insert query.");
 
-    size_t this_encoder_count = 8;
-    if (server.config().has("arrow_encoders"))
-        this_encoder_count = server.config().getInt("arrow_encoders");
-    if (encoder_count > 0)
-        this_encoder_count = encoder_count;
-    if (this_encoder_count <= 0)
-        throw Exception("Encoder number invalid.");
+        size_t this_encoder_count = 8;
+        if (server.config().has("arrow_encoders"))
+            this_encoder_count = server.config().getInt("arrow_encoders");
+        if (encoder_count > 0)
+            this_encoder_count = encoder_count;
+        if (this_encoder_count <= 0)
+            throw Exception("Encoder number invalid.");
 
-    encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
-    if (encoder->hasError())
-        throw Exception(encoder->getErrorString());
-    LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
-        ", execution ref: " << encoder.use_count());
+        encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
+        if (encoder->hasError())
+            throw Exception(encoder->getErrorString());
+        LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
+            ", execution ref: " << encoder.use_count());
+    }
+    catch (Exception e)
+    {
+        auto msg = DB::getCurrentExceptionMessage(true, true);
+        LOG_ERROR(log, msg);
+        encoder->onError(msg);
+        failed = true;
+        sendError(msg);
+    }
+    catch (...)
+    {
+        LOG_ERROR(log, "Unknown error");
+    }
 }
 
 
@@ -150,7 +165,7 @@ void TCPArrowHandler::runImpl()
         {
             auto msg = DB::getCurrentExceptionMessage(true, true);
             LOG_ERROR(log, msg);
-            encoder->cancal(true);
+            encoder->onError(msg);
             failed = true;
 
             sendError(msg);
@@ -302,7 +317,15 @@ void TCPArrowHandler::run()
 TCPArrowHandler::~TCPArrowHandler()
 {
     TCPArrowSessions::instance().clear(this);
-    // LOG_INFO(log, "~TCPArrowHandler");
+    try
+    {
+        encoder = NULL;
+    }
+    catch (Exception e)
+    {
+        auto msg = DB::getCurrentExceptionMessage(true, true);
+        LOG_ERROR(log, msg);
+    }
 }
 
 }
