@@ -42,7 +42,8 @@ void TCPArrowHandler::init()
         in = std::make_shared<ReadBufferFromPocoSocket>(socket());
         out = std::make_shared<WriteBufferFromPocoSocket>(socket());
 
-        while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(global_settings.poll_interval * 1000000) && !server.isCancelled());
+        auto interval = global_settings.poll_interval * 1000000;
+        while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(interval) && !server.isCancelled());
 
         if (server.isCancelled())
         {
@@ -72,8 +73,7 @@ void TCPArrowHandler::init()
 
         connection_context.setUser(user, password, socket().peerAddress(), "");
 
-        // Client info
-        // TODO: More info
+        // TODO: More client info
         {
             ClientInfo & client_info = query_context.getClientInfo();
             client_info.client_name = client_name;
@@ -82,8 +82,7 @@ void TCPArrowHandler::init()
             client_info.interface = ClientInfo::Interface::TCP;
         }
 
-        /// We are waiting for a packet from the client. Thus, every `POLL_INTERVAL` seconds check whether we need to shut down.
-        while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(global_settings.poll_interval * 1000000) && !server.isCancelled());
+        while (!static_cast<ReadBufferFromPocoSocket &>(*in).poll(interval) && !server.isCancelled());
 
         if (server.isCancelled())
         {
@@ -92,7 +91,7 @@ void TCPArrowHandler::init()
         }
         if (in->eof())
         {
-            LOG_WARNING(log, "Client has not sent any data.");
+            LOG_WARNING(log, "Client has not sent any query.");
             return;
         }
 
@@ -107,54 +106,35 @@ void TCPArrowHandler::init()
     }
 }
 
-
 void TCPArrowHandler::startExecuting()
 {
     if (encoder)
         return;
 
-    try
-    {
-        state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
-        if (state.io.out)
-            throw Exception("TCPArrowHandler do not support insert query.");
+    state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
+    if (state.io.out)
+        throw Exception("TCPArrowHandler do not support insert query.");
 
-        size_t this_encoder_count = 8;
-        if (server.config().has("arrow_encoders"))
-            this_encoder_count = server.config().getInt("arrow_encoders");
-        if (encoder_count > 0)
-            this_encoder_count = encoder_count;
-        if (this_encoder_count <= 0)
-            throw Exception("Encoder number invalid.");
+    size_t this_encoder_count = 8;
+    if (server.config().has("arrow_encoders"))
+        this_encoder_count = server.config().getInt("arrow_encoders");
+    if (encoder_count > 0)
+        this_encoder_count = encoder_count;
+    if (this_encoder_count <= 0)
+        throw Exception("Encoder number invalid.");
 
-        encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
-        if (encoder->hasError())
-            throw Exception(encoder->getErrorString());
-        LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
-            ", execution ref: " << encoder.use_count());
-    }
-    catch (Exception e)
-    {
-        auto msg = DB::getCurrentExceptionMessage(true, true);
-        LOG_ERROR(log, msg);
-        encoder->onError(msg);
-        failed = true;
-        sendError(msg);
-    }
-    catch (...)
-    {
-        LOG_ERROR(log, "Unknown error");
-    }
+    encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
+    if (encoder->hasError())
+        throw Exception(encoder->getErrorString());
+    LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
+        ", execution ref: " << encoder.use_count());
 }
-
 
 // TODO: Catch error when connection lost
 void TCPArrowHandler::runImpl()
 {
-    // One query only, no looping
     if (!failed)
     {
-        // LOG_INFO(log, "Start process query.");
         Stopwatch watch;
 
         try
@@ -165,7 +145,7 @@ void TCPArrowHandler::runImpl()
         {
             auto msg = DB::getCurrentExceptionMessage(true, true);
             LOG_ERROR(log, msg);
-            encoder->onError(msg);
+            encoder->cancal(true);
             failed = true;
 
             sendError(msg);
@@ -176,7 +156,6 @@ void TCPArrowHandler::runImpl()
         LOG_INFO(log, std::fixed << std::setprecision(3) << "Processed in " << watch.elapsedSeconds() << " sec.");
     }
 }
-
 
 void TCPArrowHandler::processOrdinaryQuery()
 {
@@ -217,10 +196,9 @@ void TCPArrowHandler::processOrdinaryQuery()
     }
 }
 
-
 void TCPArrowHandler::recvHeader()
 {
-    // TODO: better throw exceptions
+    // TODO: Better way to throw exceptions
 
     Int64 flag = Magic::readInt64(*in);
     if (flag != Magic::Protocol::Header)
@@ -265,7 +243,6 @@ void TCPArrowHandler::recvHeader()
         << client_name << ", user: " << user << ", encoder: " << encoder_name);
 }
 
-
 void TCPArrowHandler::recvQuery()
 {
     Int64 flag = Magic::readInt64(*in);
@@ -277,10 +254,7 @@ void TCPArrowHandler::recvQuery()
         throw Exception("Receive empty query_id.");
     query_context.setCurrentQueryId(state.query_id);
     Magic::readString(state.query, *in);
-
-    // LOG_INFO(log, "Receive query_id: " << state.query_id << ", query: " << state.query);
 }
-
 
 void TCPArrowHandler::sendError(const std::string & msg)
 {
@@ -290,17 +264,15 @@ void TCPArrowHandler::sendError(const std::string & msg)
     out->next();
 }
 
-
 void TCPArrowHandler::run()
 {
     try
     {
         runImpl();
-        // LOG_INFO(log, "Done processing connection.");
     }
     catch (Poco::Exception & e)
     {
-        /// Timeout - not an error.
+        // Timeout - not an error.
         if (!strcmp(e.what(), "Timeout"))
         {
             LOG_DEBUG(log, "Poco::Exception. Code: " << ErrorCodes::POCO_EXCEPTION << ", e.code() = " << e.code()
@@ -313,19 +285,9 @@ void TCPArrowHandler::run()
     }
 }
 
-
 TCPArrowHandler::~TCPArrowHandler()
 {
     TCPArrowSessions::instance().clear(this);
-    try
-    {
-        encoder = NULL;
-    }
-    catch (Exception e)
-    {
-        auto msg = DB::getCurrentExceptionMessage(true, true);
-        LOG_ERROR(log, msg);
-    }
 }
 
 }

@@ -15,12 +15,13 @@ namespace CurrentMetrics
     extern const Metric TCPConnection;
 }
 
-namespace Poco { class Logger; }
-
+namespace Poco
+{
+    class Logger;
+}
 
 namespace DB
 {
-
 
 struct ArrowQueryState
 {
@@ -29,8 +30,6 @@ struct ArrowQueryState
     BlockIO io;
 };
 
-
-// TODO: Bad running sequence, refact.
 class TCPArrowHandler : public Poco::Net::TCPServerConnection
 {
 public:
@@ -42,12 +41,6 @@ public:
     {
         init();
     }
-
-    ~TCPArrowHandler();
-
-    void startExecuting();
-
-    void run();
 
     String getQueryId()
     {
@@ -76,18 +69,28 @@ public:
         return encoder;
     }
 
-    void onError(const std::string & msg)
+    void setExecution(EncoderPtr & encoder)
     {
-        if (encoder)
-            encoder->onError(msg);
-        else
-            encoder = std::make_shared<Magic::ArrowEncoderParall>(msg);
+        this->encoder = encoder;
     }
 
-    void setExecution(EncoderPtr & encoder_)
-    {
-        encoder = encoder_;
-    }
+    void startExecuting();
+
+    void run();
+
+    ~TCPArrowHandler();
+
+private:
+    void init();
+    void runImpl();
+
+    void processOrdinaryQuery();
+    void recvHeader();
+    void recvQuery();
+    void sendError(const std::string & msg);
+
+    void initBlockInput();
+    void initBlockOutput();
 
 private:
     IServer & server;
@@ -121,18 +124,6 @@ private:
     bool failed;
 
     CurrentMetrics::Increment metric_increment{CurrentMetrics::TCPConnection};
-
-private:
-    void init();
-    void runImpl();
-
-    void processOrdinaryQuery();
-    void recvHeader();
-    void recvQuery();
-    void sendError(const std::string & msg);
-
-    void initBlockInput();
-    void initBlockOutput();
 };
 
 }

@@ -3,8 +3,8 @@
 #include <sstream>
 #include <mutex>
 #include <condition_variable>
-
 #include <ctime>
+
 #include <common/logger_useful.h>
 
 #include "TCPArrowHandler.h"
@@ -12,7 +12,6 @@
 namespace DB
 {
 
-// TODO: Error handling need to be refact
 class TCPArrowSessions
 {
 public:
@@ -27,25 +26,6 @@ public:
     }
 
     Poco::Net::TCPServerConnection * create(IServer & server, const Poco::Net::StreamSocket & socket)
-    {
-        try
-        {
-            return doCreate(server, socket);
-        }
-        catch (Exception e)
-        {
-            auto msg = DB::getCurrentExceptionMessage(true, true);
-            LOG_ERROR(log, msg);
-        }
-        catch (...)
-        {
-            LOG_ERROR(log, "Unknow error when ceate socket session");
-        }
-        return NULL;
-    }
-
-    // RISK: may slow down TCP connection accepting, since we receive data in creating function
-    Poco::Net::TCPServerConnection * doCreate(IServer & server, const Poco::Net::StreamSocket & socket)
     {
         auto connection = new TCPArrowHandler(server, socket);
         auto query_id = connection->getQueryId();
@@ -64,20 +44,10 @@ public:
         if (session != sessions.end())
         {
             if (size_t(session->second.client_count) <= session->second.active_clients.size())
-            {
-                std::string msg = "Join to session fail, too much clients: " + query_info;
-                LOG_ERROR(log, msg);
-                connection->onError(msg);
-                return connection;
-            }
+                throw Exception("Join to session fail, too much clients: " + query_info);
             LOG_TRACE(log, "Connection join to " << query_info);
             if (!session->second.execution)
-            {
-                std::string msg = "Join to expired session, " + query_info;
-                LOG_ERROR(log, msg);
-                connection->onError(msg);
-                return connection;
-            }
+                throw Exception("Join to expired session, " + query_info);
             connection->setExecution(session->second.execution);
         }
         else
@@ -107,7 +77,7 @@ public:
         if (it == sessions.end())
         {
             auto msg = "Clear connection in query_id: " + query_id + " failed, session not found.";
-            LOG_ERROR(log, msg);
+            LOG_TRACE(log, msg);
             throw Exception(msg);
         }
 
@@ -132,7 +102,7 @@ public:
                 ", execution ref: " << session.execution.use_count());
         }
 
-        // TODO: move to config file
+        // TODO: Move to config file
         static size_t max_sessions_count = 1024;
         static size_t session_expired_seconds = 60 * 60 * 24;
 
@@ -151,14 +121,12 @@ public:
                         it->first << ", created: " << seconds << "s.");
                     if (session.client_count != session.finished_clients)
                     {
-                        std::stringstream ss;
-                        ss << "Session expired, but not finished, active clients: " << session.active_clients.size() <<
-                            ", execution ref: " << session.execution.use_count() << ". Force clean now.";
-                        auto msg = ss.str();
-                        LOG_ERROR(log, msg);
+                        LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
+                            session.active_clients.size() << ", execution ref: " << session.execution.use_count() <<
+                            ". Force clean now.");
                         session.active_clients.clear();
-                        // TODO: force disconnect
-                        session.execution->onError(msg);
+                        // TODO: Force disconnect
+                        session.execution->cancal(false);
                         session.execution = NULL;
                     }
                     it = sessions.erase(it);
@@ -179,7 +147,9 @@ private:
         time_t create_time;
 
         Session(Int64 client_count_, TCPArrowHandler::EncoderPtr execution_) :
-            client_count(client_count_), execution(execution_), finished_clients(0), create_time(time(0)) {}
+            client_count(client_count_), execution(execution_), finished_clients(0), create_time(time(0))
+        {
+        }
     };
 
     using Sessions = std::unordered_map<String, Session>;

@@ -1,16 +1,17 @@
 #pragma once
 
-#include "Chan.h"
+#include "QuotaChan.h"
 #include "ArrowEncoder.h"
 
 namespace Magic
 {
 
-// TODO: Reorder blocks, some times may faster
 class ArrowEncoderParall
 {
 public:
-    ArrowEncoderParall(const std::string & error) : encoder(error) {}
+    ArrowEncoderParall(const std::string & error) : encoder(error)
+    {
+    }
 
     ArrowEncoderParall(DB::BlockIO & result, size_t conc) : encoder(result), encodeds(-1, conc * 1)
     {
@@ -67,19 +68,13 @@ public:
         return block;
     }
 
-    void cancal()
+    void cancal(bool exception = false)
     {
-        encoder.cancal();
-    }
-
-    void onError(const std::string msg)
-    {
-        encoder.onError(msg);
+        encoder.cancal(exception);
     }
 
     ~ArrowEncoderParall()
     {
-        // Don't check encodeds.size(), in case query is cancalled.
         for (auto it = encoders.begin(); it != encoders.end(); ++it)
             it->join();
     }
@@ -87,7 +82,7 @@ public:
 private:
     ArrowEncoder encoder;
 
-    Chan<ArrowEncoder::BufferPtr> encodeds;
+    QuotaChan<ArrowEncoder::BufferPtr> encodeds;
     std::vector<std::thread> encoders;
 };
 

@@ -2,9 +2,6 @@
 #include "Sessions.h"
 #include "Context.h"
 
-
-// TODO: memory leak check
-
 namespace JNIHelper
 {
     jbyteArray bufferToJByteArray(JNIEnv * env, uint8_t * data, size_t cb)
@@ -17,13 +14,11 @@ namespace JNIHelper
     }
 }
 
-
 JNIEXPORT jstring JNICALL Java_pingcap_com_MagicProto_version(JNIEnv * env, jobject obj)
 {
     static const char *version = "v0.1";
     return env->NewStringUTF(version);
 }
-
 
 JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_init(JNIEnv * env, jobject obj, jstring config)
 {
@@ -45,7 +40,6 @@ JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_init(JNIEnv * env, jobject
     return result;
 }
 
-
 JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_finish(JNIEnv * env, jobject obj)
 {
     jclass resultNull = NULL;
@@ -63,7 +57,6 @@ JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_finish(JNIEnv * env, jobje
         env->SetObjectField(result, errorId, env->NewStringUTF(error.c_str()));
     return result;
 }
-
 
 JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, jobject obj, jstring query)
 {
@@ -98,8 +91,6 @@ JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, jobjec
     return result;
 }
 
-
-// TODO: no impl
 JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_querys(JNIEnv * env, jobject obj)
 {
     jclass resultNull = NULL;
@@ -109,25 +100,10 @@ JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_querys(JNIEnv * env, jobje
     jfieldID errorId = env->GetFieldID(result, "error", "Ljava/lang/String;");
     if (!errorId)
         return resultNull;
-    //jfieldID tokensId = env->GetFieldID(result, "tokens", "TODO");
-    //if (!tokenId)
-    //    return resultNull;
-
-    //auto sessions = Magic::Sessions::global();
-    //auto session = sessions->getSession(token);
-    //if (!session)
-    //    return resultNull;
-
-    //std::vector<long> tokens;
-    //sessions.getTokens(tokens);
-    //jlongArray array = env->NewLongArray(tokens.size());
-    //env->SetLongArrayRegion(array, 0, tokens.size(), (jlong*)&tokens[0]);
-    //env->SetLongField(result, tokensId, array);
-    std::string error = "TODO: no impl";
+    std::string error = "TODO: Implement";
     env->SetObjectField(result, errorId, env->NewStringUTF(error.c_str()));
     return result;
 }
-
 
 JNIEXPORT void JNICALL Java_pingcap_com_MagicProto_close(JNIEnv * env, jobject obj, jlong token)
 {
@@ -136,7 +112,6 @@ JNIEXPORT void JNICALL Java_pingcap_com_MagicProto_close(JNIEnv * env, jobject o
     if (session)
         sessions->closeSession(token);
 }
-
 
 JNIEXPORT jstring JNICALL Java_pingcap_com_MagicProto_error(JNIEnv * env, jobject obj, jlong token)
 {
@@ -151,7 +126,6 @@ JNIEXPORT jstring JNICALL Java_pingcap_com_MagicProto_error(JNIEnv * env, jobjec
     return env->NewStringUTF(error.c_str());
 }
 
-
 JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_next(JNIEnv * env, jobject obj, jlong token)
 {
     auto sessions = Magic::Sessions::global();
@@ -164,7 +138,6 @@ JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_next(JNIEnv * env, jobj
         return result;
     return JNIHelper::bufferToJByteArray(env, (uint8_t*)buf->data(), buf->size());
 }
-
 
 JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_schema(JNIEnv * env, jobject obj, jlong token)
 {

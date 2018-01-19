@@ -14,9 +14,7 @@ add_library (clickhouse-server-lib
     Server.cpp
     StatusFile.cpp
     TCPHandler.cpp
-    ../Magic/TCPArrowHandler.cpp
-    ../Magic/TCPProtocolCodec.cpp
-    )
+    ../Magic/TCPArrowHandler.cpp)
 
 target_link_libraries (clickhouse-server-lib clickhouse_common_io daemon clickhouse_storages_system clickhouse_functions clickhouse_aggregate_functions clickhouse_table_functions arrow)
 target_include_directories (clickhouse-server-lib PUBLIC ${ClickHouse_SOURCE_DIR}/libs/libdaemon/include)
@@ -101,8 +99,7 @@ else ()
         clickhouse-extract-from-config-lib
         clickhouse-compressor-lib
         clickhouse-format-lib
-        dbms
-    )
+        dbms)
 
     add_custom_target (clickhouse-server ALL COMMAND ${CMAKE_COMMAND} -E create_symlink clickhouse clickhouse-server DEPENDS clickhouse)
     add_custom_target (clickhouse-client ALL COMMAND ${CMAKE_COMMAND} -E create_symlink clickhouse clickhouse-client DEPENDS clickhouse)

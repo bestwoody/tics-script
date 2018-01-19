@@ -20,8 +20,8 @@ cmake .. -DARROW_BUILD_TESTS=off -DARROW_WITH_SNAPPY=off -DARROW_WITH_ZLIB=off -
 # Remove '-stdlib=libc++' in arrow/cpp/g++_build/*
 cf="flatbuffers_ep-prefix/src/flatbuffers_ep/CMakeLists.txt"
 cp "../../../arrow-delta/cpp/g++_build/$cf" "$cf"
-#cf="cpp/g++_build/flatbuffers_ep-prefix/src/flatbuffers_ep-build/CMakeFiles/flatbuffers.dir/flags.make"
-#cp "arrow-delta/$cf" "arrow/$cf"
 
 make
-make install
+
+echo "sudo make install"
+sudo make install

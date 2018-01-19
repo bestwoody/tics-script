@@ -6,7 +6,6 @@
 
 #include "Context.h"
 
-
 namespace Magic
 {
 
@@ -17,7 +16,6 @@ void queryDumpImpl(const char * config, char * query)
     DB::BlockOutputStreamPrintRows out(std::cout);
     DB::copyData(*result.in, out);
 }
-
 
 int queryDump(const char * config, char * query)
 {
@@ -35,7 +33,7 @@ int queryDump(const char * config, char * query)
 
 }
 
-// TODO: handle args manually, not by BaseDaemon
+// TODO: Handle args manually, not by BaseDaemon
 int main(int argc, char ** argv)
 {
     if (argc != 3) {

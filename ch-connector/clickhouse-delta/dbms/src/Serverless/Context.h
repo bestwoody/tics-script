@@ -69,7 +69,12 @@ public:
         // Why Poco use non-const args?
         std::string pwd = "";
         std::string flag = "--config-file";
-        char * args[] = {(char *)pwd.c_str(), (char *)flag.c_str(), (char *)config.c_str()};
+        char * args[] =
+        {
+            (char *)pwd.c_str(),
+            (char *)flag.c_str(),
+            (char *)config.c_str()
+        };
         BaseDaemon::run(3, args);
     }
 
@@ -86,22 +91,21 @@ public:
 
         std::string config_path = config().getString("config-file", "config.xml");
 
-        /** Context contains all that query execution is dependent:
-          *  settings, available functions, data types, aggregate functions, databases...
-          */
         global_context = std::make_unique<Context>(Context::createGlobal());
         global_context->setGlobalContext(*global_context);
         global_context->setApplicationType(Context::ApplicationType::SERVER);
 
         bool has_zookeeper = false;
-        zkutil::ZooKeeperNodeCache main_config_zk_node_cache([&] { return global_context->getZooKeeper(); });
+        zkutil::ZooKeeperNodeCache main_config_zk_node_cache([&] {
+            return global_context->getZooKeeper();
+        });
 
         std::string path = getCanonicalPath(config().getString("path"));
         std::string default_database = config().getString("default_database", "default");
 
         global_context->setPath(path);
 
-        /// Create directories for 'path' and for default database, if not exist.
+        // Create directories for 'path' and for default database, if not exist.
         Poco::File(path + "data/" + default_database).createDirectories();
         Poco::File(path + "metadata/" + default_database).createDirectories();
 
@@ -110,18 +114,18 @@ public:
         static ServerErrorHandler error_handler;
         Poco::ErrorHandler::set(&error_handler);
 
-        /// Initialize DateLUT early, to not interfere with running time of first query.
+        // Initialize DateLUT early, to not interfere with running time of first query.
         LOG_DEBUG(log, "Initializing DateLUT.");
         DateLUT::instance();
         LOG_TRACE(log, "Initialized DateLUT with time zone `" << DateLUT::instance().getTimeZone() << "'.");
 
-        /// Directory with temporary data for processing of hard queries.
+        // Directory with temporary data for processing of hard queries.
         {
             std::string tmp_path = config().getString("tmp_path", path + "tmp/");
             global_context->setTemporaryPath(tmp_path);
             Poco::File(tmp_path).createDirectories();
 
-            /// Clearing old temporary files.
+            // Clearing old temporary files.
             Poco::DirectoryIterator dir_end;
             for (Poco::DirectoryIterator it(tmp_path); it != dir_end; ++it)
             {
@@ -133,14 +137,13 @@ public:
             }
         }
 
-        /** Directory with 'flags': files indicating temporary settings for the server set by system administrator.
-          * Flags may be cleared automatically after being applied by the server.
-          * Examples: do repair of local data; clone all replicated tables from replica.
-          */
+        // Directory with 'flags': files indicating temporary settings for the server set by system administrator.
+        //   Flags may be cleared automatically after being applied by the server.
+        //   Examples: do repair of local data; clone all replicated tables from replica.
         Poco::File(path + "flags/").createDirectories();
         global_context->setFlagsPath(path + "flags/");
 
-        /// Initialize main config reloader.
+        // Initialize main config reloader.
         std::string include_from_path = config().getString("include_from", "/etc/metrika.xml");
         auto main_config_reloader = std::make_unique<ConfigReloader>(config_path,
             include_from_path,
@@ -148,10 +151,10 @@ public:
             [&](ConfigurationPtr config) { global_context->setClustersConfig(config); },
             /* already_loaded = */ true);
 
-        /// Initialize users config reloader.
+        // Initialize users config reloader.
         std::string users_config_path = config().getString("users_config", config_path);
-        /// If path to users' config isn't absolute, try guess its root (current) dir.
-        /// At first, try to find it in dir of main config, after will use current dir.
+        // If path to users' config isn't absolute, try guess its root (current) dir.
+        // At first, try to find it in dir of main config, after will use current dir.
         if (users_config_path.empty() || users_config_path[0] != '/')
         {
             std::string config_dir = Poco::Path(config_path).parent().toString();
@@ -164,19 +167,19 @@ public:
             [&](ConfigurationPtr config) { global_context->setUsersConfig(config); },
             /* already_loaded = */ false);
 
-        /// Limit on total number of concurrently executed queries.
+        // Limit on total number of concurrently executed queries.
         global_context->getProcessList().setMaxSize(config().getInt("max_concurrent_queries", 0));
 
-        /// Setup protection to avoid accidental DROP for big tables (that are greater than 50 GB by default)
+        // Setup protection to avoid accidental DROP for big tables (that are greater than 50 GB by default)
         if (config().has("max_table_size_to_drop"))
             global_context->setMaxTableSizeToDrop(config().getUInt64("max_table_size_to_drop"));
 
-        /// Size of cache for uncompressed blocks. Zero means disabled.
+        // Size of cache for uncompressed blocks. Zero means disabled.
         size_t uncompressed_cache_size = config().getUInt64("uncompressed_cache_size", 0);
         if (uncompressed_cache_size)
             global_context->setUncompressedCache(uncompressed_cache_size);
 
-        /// Size of cache for marks (index of MergeTree family of tables). It is necessary.
+        // Size of cache for marks (index of MergeTree family of tables). It is necessary.
         size_t mark_cache_size = config().getUInt64("mark_cache_size");
         if (mark_cache_size)
             global_context->setMarkCache(mark_cache_size);
@@ -187,9 +190,9 @@ public:
 
         LOG_INFO(log, "Loading metadata.");
         loadMetadataSystem(*global_context);
-        /// After the system database is created, attach virtual system tables (in addition to query_log and part_log)
+        // After the system database is created, attach virtual system tables (in addition to query_log and part_log)
         attachSystemTablesServer(*global_context->getDatabase("system"), has_zookeeper);
-        /// Then, load remaining databases
+        // Then, load remaining databases
         loadMetadata(*global_context);
         LOG_DEBUG(log, "Loaded metadata.");
 

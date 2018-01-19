@@ -1,5 +1,7 @@
 # Connect CH to Spark
 
+## NOTE: Depressed
+
 ## Processes and data relation
 ```
 +-----------------------------------------------+

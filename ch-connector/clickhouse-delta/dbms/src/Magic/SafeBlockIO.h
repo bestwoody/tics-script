@@ -8,7 +8,10 @@ namespace Magic
 class SafeBlockIO
 {
 public:
-    enum { UnknownSize = size_t(-1) };
+    enum
+    {
+        UnknownSize = size_t(-1)
+    };
 
     SafeBlockIO(DB::BlockIO & input_) : input(input_), closed(false), block_count(0), batch_count(0)
     {

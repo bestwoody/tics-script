@@ -1,5 +1,7 @@
 # Build projects on Mac OS (with g++-6)
 
+## NOTE: All things below is handled by script: arrow-build-mac.sh
+
 ## Build CH
 * Building CH strickly require g++(not clang wrap in g++ alias)
 * Follow instructings on CH docs
