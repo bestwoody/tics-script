@@ -10,16 +10,18 @@ An OLAP project of TiDB
 Online:
 ```
 [Features]
------ Binlog Writer
+*---- Binlog Writer
 ***-- Data update supporting
 ----- Writing transaction(batch level) support
 [Tests]
-****- Features test
-*---- Stability test
+***** Features test
+***-- Stability test
 **--- Types system test
 [Optimization]
------ Latch Service
-(TBD)
+***** Aggregation pushdown
+***** Spark codegen
+*---- Small table broadcast
+----- External executor
 ```
 POC:
 ```
