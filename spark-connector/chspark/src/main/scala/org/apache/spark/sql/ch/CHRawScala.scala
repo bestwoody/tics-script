@@ -15,6 +15,9 @@
 
 package org.apache.spark.sql.ch
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import scala.util.Random
 
 object CHRawScala {
@@ -53,6 +56,7 @@ object CHRawScala {
     if (verb >= 0) {
       println("Starting")
     }
+    val startTime = new Date()
 
     for (i <- 0 until partitions) {
       workers(i) = new Thread {
@@ -84,8 +88,14 @@ object CHRawScala {
     }
 
     workers.foreach(_.join)
+
+    val endTime = new Date()
+    val elapsed = endTime.getTime - startTime.getTime
+    val dateFormat: SimpleDateFormat = new SimpleDateFormat("mm:ss")
+
     if (verb >= 0) {
-      println("All finish, total rows: " + totalRows + ", blocks: " + totalBlocks, ", bytes: " + totalBytes)
+      println("All finish, total rows: " + totalRows + ", blocks: " + totalBlocks + ", bytes: " + totalBytes)
+      println("Elapsed: " + dateFormat.format(elapsed) + ", bytes/s: " + (totalBytes * 1000 / elapsed))
     }
   }
 }
