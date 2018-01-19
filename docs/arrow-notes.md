@@ -38,5 +38,5 @@ VectorSchemaRoot               - load from ipc message: VectorLoader
         Metadata
       Field * N                - nested children
   FieldVector * N
-    ValueVector                - access: *Vector.getAccessor().get(i)
+    ValueVector                - access: *Vector.get(i)
 ```

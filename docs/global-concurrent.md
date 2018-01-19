@@ -1,5 +1,7 @@
 # The concurrent concept of query execution
 
+## NOTE: Partitions in the same node NOT share the same connection anymore
+
 ## A single query between the two clusters
 ```
 +---------------------------------------------+  +--------------+  +--------------+

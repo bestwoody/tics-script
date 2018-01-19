@@ -17,7 +17,7 @@
 * Float32
 * Float64
 
-## TPCH Need
+## TPCH Minimal Need
 * Int(32)
 * String
 * Double
@@ -65,11 +65,11 @@
 ## From CH types to Spark types, convertion:
 * `CH => Spark`:
     * `String => StringType`
-    * `FixedString(n) => StringType`
+    * `FixedString(n) => StringType`, promoted
     * `DateTime => TimestampType`, promoted
     * `Date => TimestampType`, promoted
         * Since we convert both `DateTime` and `Date` to `TimstampType`, this will happend:
-            * `CREATE TABLE T (D1 DateTime, D2 Date)`
+            * In CH: `CREATE TABLE T (D1 DateTime, D2 Date)`
             * `scala> spark.sql("DESC T")`: D1 Timestamp, D2 Timestamp
             * `scala> spark.sql("SELECT * FROM T WHERE D1 < '1980-01-01'")`: OK
             * `scala> spark.sql("SELECT * FROM T WHERE D1 < '1980-01-01 00:00:00'")`: OK
