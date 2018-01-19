@@ -17,5 +17,5 @@
 ** Predicate pushdown
 ** CH Cluster support
 ** Integration test
-*- TPCH benchmark
+** TPCH benchmark
 ```
