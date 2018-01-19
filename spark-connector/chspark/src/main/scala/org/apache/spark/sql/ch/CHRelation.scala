@@ -22,7 +22,6 @@ import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.{StructType, StructField}
 import org.apache.arrow.vector.types.pojo.Schema
 
-
 class CHRelation(val tables: Seq[CHTableRef], val partitions: Int, val decoders: Int, val encoders: Int)
   (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
 

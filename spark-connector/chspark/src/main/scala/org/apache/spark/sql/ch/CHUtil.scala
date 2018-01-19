@@ -50,7 +50,6 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.Sum
 import org.apache.spark.sql.catalyst.expressions.aggregate.Average
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count
 
-
 object CHUtil {
   def getFields(table: CHTableRef): Array[StructField] = {
     val metadata = new MetadataBuilder().putString("name", table.mappedName).build()

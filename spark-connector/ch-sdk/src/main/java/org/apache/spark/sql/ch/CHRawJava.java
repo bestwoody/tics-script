@@ -29,7 +29,7 @@ import java.util.Scanner;
 public class CHRawJava {
     private static void dump(Field field, int order) {
         System.out.println("    #" + order + " name:\"" + field.getName() + "\" type:" +
-                field.getType().getTypeID() + " nullable:" + field.isNullable());
+            field.getType().getTypeID() + " nullable:" + field.isNullable());
     }
 
     private static void dump(CHExecutor executor, boolean decode) throws Exception {
@@ -84,7 +84,6 @@ public class CHRawJava {
                     }
                 }
 
-                // TODO: may be no need
                 column.clear();
                 column.close();
                 j += 1;

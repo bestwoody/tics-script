@@ -5,10 +5,16 @@ import scala.collection.JavaConverters._
 import org.apache.arrow.memory.RootAllocator
 import org.apache.arrow.vector.types.{DateUnit, FloatingPointPrecision, TimeUnit}
 import org.apache.arrow.vector.types.pojo.{ArrowType, Field, FieldType, Schema}
-import org.apache.spark.sql.types._
+
+import org.apache.spark.sql.types.{DataType, StructType, StructField}
+
+import org.apache.spark.sql.types.{ByteType, ShortType, IntegerType, LongType}
+import org.apache.spark.sql.types.{FloatType, DoubleType, DecimalType}
+import org.apache.spark.sql.types.{DateType, TimestampType}
+import org.apache.spark.sql.types.{BooleanType, StringType, BinaryType, ArrayType}
 
 object ArrowUtils {
-  /** Maps data type from Spark to Arrow. NOTE: timeZoneId required for TimestampTypes */
+  // Maps data type from Spark to Arrow. NOTE: timeZoneId required for TimestampTypes
   def toArrowType(dt: DataType, timeZoneId: String): ArrowType = dt match {
     case BooleanType => ArrowType.Bool.INSTANCE
     case ByteType => new ArrowType.Int(8, true)
@@ -32,14 +38,18 @@ object ArrowUtils {
 
   def fromArrowType(dt: ArrowType): DataType = dt match {
     case ArrowType.Bool.INSTANCE => BooleanType
-    case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 * 1=> ByteType
+    case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 * 1 => ByteType
     case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 * 2 => ShortType
     case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 * 4 => IntegerType
     case int: ArrowType.Int if int.getIsSigned && int.getBitWidth == 8 * 8 => LongType
-    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 1=> IntegerType // promote
-    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 2 => IntegerType // promote
-    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 4 => LongType // promote
-    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 8 => LongType // may overflow, unchecked
+    // Promote
+    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 1 => IntegerType
+    // Promote
+    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 2 => IntegerType
+    // Promote
+    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 4 => LongType
+    // May overflow, unchecked
+    case int: ArrowType.Int if !int.getIsSigned && int.getBitWidth == 8 * 8 => LongType
     case float: ArrowType.FloatingPoint
       if float.getPrecision == FloatingPointPrecision.SINGLE => FloatType
     case float: ArrowType.FloatingPoint
@@ -53,7 +63,7 @@ object ArrowUtils {
     case _ => throw new UnsupportedOperationException(s"Unsupported data type: $dt")
   }
 
-  /** Maps field from Spark to Arrow. NOTE: timeZoneId required for TimestampType */
+  // Maps field from Spark to Arrow. NOTE: timeZoneId required for TimestampType
   def toArrowField(name: String, dt: DataType, nullable: Boolean, timeZoneId: String): Field = {
     dt match {
       case ArrayType(elementType, containsNull) =>
@@ -88,7 +98,7 @@ object ArrowUtils {
     }
   }
 
-  /** Maps schema from Spark to Arrow. NOTE: timeZoneId required for TimestampType in StructType */
+  // Maps schema from Spark to Arrow. NOTE: timeZoneId required for TimestampType in StructType
   def toArrowSchema(schema: StructType, timeZoneId: String): Schema = {
     new Schema(schema.map { field =>
       toArrowField(field.name, field.dataType, field.nullable, timeZoneId)

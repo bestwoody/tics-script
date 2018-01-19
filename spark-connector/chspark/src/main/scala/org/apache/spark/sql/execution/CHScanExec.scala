@@ -16,12 +16,15 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
+
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, UnsafeProjection}
-import org.apache.spark.sql.ch.{CHRDD, CHSqlAgg, CHSqlTopN, CHTableRef}
+
 import org.apache.spark.sql.execution.datasources.CHScanRDD
+
+import org.apache.spark.sql.ch.{CHRDD, CHSqlAgg, CHSqlTopN, CHTableRef}
 
 case class CHScanExec(
   output: Seq[Attribute],

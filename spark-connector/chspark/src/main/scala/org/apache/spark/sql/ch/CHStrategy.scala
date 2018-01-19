@@ -15,23 +15,30 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, _}
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, CreateNamedStruct, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
-import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.logical.{Limit, LogicalPlan, Project, ReturnAnswer, Sort}
-import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
-import org.apache.spark.sql.execution.{CHScanExec, CollectLimitExec, FilterExec, ProjectExec, SparkPlan, TakeOrderedAndProjectExec}
-import org.apache.spark.sql.execution.aggregate.AggUtils
-import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
-import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.sql.{SparkSession, Strategy}
-
 import scala.collection.mutable
 
+import org.apache.spark.internal.Logging
+import org.apache.spark.sql.{SparkSession, Strategy}
+import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.types.DoubleType
 
-class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strategy with Logging {
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Cast, Divide, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, CreateNamedStruct}
+import org.apache.spark.sql.catalyst.expressions.{Expression, IntegerLiteral, NamedExpression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{Min, Max, Count, Sum, Average, First, Last}
+
+import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
+import org.apache.spark.sql.catalyst.plans.logical.{Limit, LogicalPlan, Project, ReturnAnswer, Sort}
+
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.{CHScanExec, CollectLimitExec, FilterExec, ProjectExec, TakeOrderedAndProjectExec}
+import org.apache.spark.sql.execution.aggregate.AggUtils
+
+import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
+import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
+
+class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   // -------------------- Dynamic configurations   --------------------
   val sqlConf: SQLConf = sparkSession.sqlContext.conf
 
@@ -43,6 +50,10 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
     */
   private def enableCodeGen: Boolean = {
     sqlConf.getConfString(CHConfigConst.ENABLE_CODE_GEN, "true").toBoolean
+  }
+
+  private def enableAggPushdown: Boolean = {
+    sqlConf.getConfString(CHConfigConst.ENABLE_PUSHDOWN_AGG, "true").toBoolean
   }
 
   // -------------------- Physical plan generation --------------------
@@ -73,7 +84,7 @@ class CHStrategy(sparkSession: SparkSession, aggPushdown: Boolean) extends Strat
               chr.partitions, chr.decoders, chr.encoders) :: Nil
 
           case CHAggregation(groupingExpressions, aggregateExpressions, resultExpressions,
-            CHAggregationProjection(filters, _, _, projects)) if aggPushdown =>
+            CHAggregationProjection(filters, _, _, projects)) if enableAggPushdown =>
             var aggExp = aggregateExpressions
             var resultExp = resultExpressions
             if (!isSingleCHNode(relation)) {

@@ -64,7 +64,7 @@ class CHTableInfo(val table: CHTableRef) extends Serializable {
 object CHTableInfos {
   val instances: Map[CHTableRef, CHTableInfo] = Map()
 
-  // TODO: Refresh in interval
+  // TODO: Background refresh
   def getInfo(table: CHTableRef): CHTableInfo = this.synchronized {
     if (!instances.contains(table)) {
       instances += (table -> new CHTableInfo(table))

@@ -36,7 +36,6 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.MetadataBuilder
 import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType, StructType}
 
-
 class TypesTestRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
   override lazy val schema: StructType = {
     val fields = new Array[StructField](1)

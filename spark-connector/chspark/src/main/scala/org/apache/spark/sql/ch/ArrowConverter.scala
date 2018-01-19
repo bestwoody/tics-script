@@ -15,14 +15,15 @@
 
 package org.apache.spark.sql.ch
 
+import scala.collection.JavaConverters._
+
 import java.sql.Timestamp
 
 import org.apache.arrow.vector.types.pojo.{ArrowType, Schema}
 import org.apache.arrow.vector.util.Text
+
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRow
-
-import scala.collection.JavaConverters._
 
 @Deprecated
 class CHRows(private val schema: Schema, private val table: String, private val block: CHExecutor.Result)

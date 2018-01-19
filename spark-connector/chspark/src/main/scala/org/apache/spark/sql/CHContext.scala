@@ -24,11 +24,12 @@ import org.apache.spark.sql.ch.CHSql
 import org.apache.spark.sql.ch.CHTableRef
 import org.apache.spark.sql.ch.mock.TypesTestRelation
 
+class CHContext (val sparkSession: SparkSession)
+  extends Serializable with Logging {
 
-class CHContext (val sparkSession: SparkSession, val aggPushdown: Boolean = true) extends Serializable with Logging {
   val sqlContext: SQLContext = sparkSession.sqlContext
 
-  sparkSession.experimental.extraStrategies ++= Seq(new CHStrategy(sparkSession, aggPushdown))
+  sparkSession.experimental.extraStrategies ++= Seq(new CHStrategy(sparkSession))
 
   def mapTypesTestTable(name: String = "types-test"): Unit = {
     val rel = new TypesTestRelation(name)(sqlContext)
@@ -50,8 +51,22 @@ class CHContext (val sparkSession: SparkSession, val aggPushdown: Boolean = true
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRef.mappedName)
   }
 
-  // TODO: Read cluster info from CH master
   def mapCHClusterTable(
+    addresses: Seq[(String, Int)] = Seq(("127.0.0.1", 9006)),
+    database: String = null,
+    table: String,
+    partitions: Int = 8,
+    decoders: Int = 8,
+    encoders: Int = 0): Unit = {
+
+    val conf: SparkConf = sparkSession.sparkContext.conf
+    val tableRefList: Seq[CHTableRef] =
+      addresses.map(addr => new CHTableRef(addr._1, addr._2, database, table))
+    val rel = new CHRelation(tableRefList, partitions, decoders, encoders)(sqlContext, conf)
+    sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList(0).mappedName)
+  }
+
+  def mapCHClusterTableSimple(
     hosts: String = "127.0.0.1",
     port: Int = 9006,
     database: String = null,
