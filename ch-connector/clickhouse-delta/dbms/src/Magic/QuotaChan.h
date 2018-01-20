@@ -78,7 +78,7 @@ public:
     inline bool pop(T &v)
     {
         unique_lock<mutex> lock{mtx};
-        if ((quota >= 0 && passed == size_t(quota)) || closed)
+        if ((quota >= 0 && passed >= size_t(quota)) || closed)
             return false;
 
         while (que.empty() && (quota < 0 || passed < size_t(quota)) && !closed)
@@ -93,7 +93,7 @@ public:
 
         cond_w.notify_all();
 
-        if (quota >= 0 && passed == size_t(quota))
+        if (quota >= 0 && passed >= size_t(quota))
             cond_r.notify_all();
         return true;
     }
