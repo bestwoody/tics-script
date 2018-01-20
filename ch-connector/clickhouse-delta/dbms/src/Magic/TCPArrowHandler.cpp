@@ -125,8 +125,15 @@ void TCPArrowHandler::startExecuting()
             this_encoder_count = encoder_count;
         if (this_encoder_count <= 0)
             throw Exception("Encoder number invalid.");
+
+        encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
+        if (encoder->hasError())
+            throw Exception(encoder->getErrorString());
+
+        LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
+            ", execution ref: " << encoder.use_count());
     }
-    catch (const Exception & e)
+    catch (...)
     {
         failed = true;
         auto msg = DB::getCurrentExceptionMessage(true, true);
@@ -134,12 +141,6 @@ void TCPArrowHandler::startExecuting()
         encoder = std::make_shared<Magic::ArrowEncoderParall>(msg);
         return;
     }
-
-    encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
-    if (encoder->hasError())
-        throw Exception(encoder->getErrorString());
-    LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
-        ", execution ref: " << encoder.use_count());
 }
 
 // TODO: Catch error when connection lost
