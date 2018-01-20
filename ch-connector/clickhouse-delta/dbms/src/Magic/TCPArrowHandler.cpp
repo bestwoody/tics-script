@@ -27,7 +27,9 @@ static Int64 PROTOCOL_VERSION_MAJOR = 1;
 static Int64 PROTOCOL_VERSION_MINOR = 1;
 static Int64 PROTOCOL_ENCODER_VERSION = 1;
 
-void TCPArrowHandler::init()
+TCPArrowHandler::TCPArrowHandler(IServer & server_, const Poco::Net::StreamSocket & socket_) :
+    Poco::Net::TCPServerConnection(socket_), server(server_), log(&Poco::Logger::get("TCPArrowHandler")),
+    connection_context(server.context()), query_context(server.context()), failed(false)
 {
     try
     {
@@ -97,27 +99,31 @@ void TCPArrowHandler::init()
 
         recvQuery();
     }
-    catch (const Exception & e)
+    catch (...)
     {
-        failed = true;
-        auto msg = DB::getCurrentExceptionMessage(true, true);
-        LOG_ERROR(log, msg);
-        sendError(msg);
+        onException();
     }
+}
+
+TCPArrowHandler::~TCPArrowHandler()
+{
+    TCPArrowSessions::instance().clear(this);
 }
 
 void TCPArrowHandler::startExecuting()
 {
+    if (failed)
+        return;
     if (encoder)
         return;
-
-    size_t this_encoder_count = 4;
 
     try
     {
         state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
         if (state.io.out)
             throw Exception("TCPArrowHandler do not support insert query.");
+
+        size_t this_encoder_count = 4;
 
         if (server.config().has("arrow_encoders"))
             this_encoder_count = server.config().getInt("arrow_encoders");
@@ -135,38 +141,54 @@ void TCPArrowHandler::startExecuting()
     }
     catch (...)
     {
-        failed = true;
         auto msg = DB::getCurrentExceptionMessage(true, true);
-        LOG_ERROR(log, msg);
         encoder = std::make_shared<Magic::ArrowEncoderParall>(msg);
-        return;
+        onException(msg);
     }
 }
 
-// TODO: Catch error when connection lost
-void TCPArrowHandler::runImpl()
+void TCPArrowHandler::run()
 {
-    if (!failed)
+    if (failed)
+        return;
+
+    Stopwatch watch;
+
+    try
     {
-        Stopwatch watch;
+       processOrdinaryQuery();
+    }
+    catch (...)
+    {
+        onException();
+    }
 
-        try
-        {
-           processOrdinaryQuery();
-        }
-        catch (const Exception & e)
-        {
-            auto msg = DB::getCurrentExceptionMessage(true, true);
-            LOG_ERROR(log, msg);
-            encoder->cancal(true);
-            failed = true;
+    watch.stop();
 
-            sendError(msg);
-        }
+    LOG_INFO(log, std::fixed << std::setprecision(3) << "Processed in " << watch.elapsedSeconds() << " sec.");
+}
 
-        watch.stop();
+void TCPArrowHandler::onException(std::string msg)
+{
+    if (encoder)
+        encoder->cancal(true);
 
-        LOG_INFO(log, std::fixed << std::setprecision(3) << "Processed in " << watch.elapsedSeconds() << " sec.");
+    failed = true;
+
+    if (msg.empty())
+        msg = DB::getCurrentExceptionMessage(true, true);
+    LOG_ERROR(log, msg);
+
+    try
+    {
+        Magic::writeInt64(Magic::Protocol::Utf8Error, *out);
+        Magic::writeInt64(msg.size(), *out);
+        out->write((const char*)msg.c_str(), msg.size());
+        out->next();
+    }
+    catch (...)
+    {
+        // Ignore sending errors, connection may have been lost
     }
 }
 
@@ -189,7 +211,6 @@ void TCPArrowHandler::processOrdinaryQuery()
         if (!block)
             break;
 
-        // TODO: May block forever, if client dead
         Magic::writeInt64(Magic::Protocol::ArrowData, *out);
         Magic::writeInt64(block->size(), *out);
         out->write((const char*)block->data(), block->size());
@@ -211,8 +232,6 @@ void TCPArrowHandler::processOrdinaryQuery()
 
 void TCPArrowHandler::recvHeader()
 {
-    // TODO: Better way to throw exceptions
-
     Int64 flag = Magic::readInt64(*in);
     if (flag != Magic::Protocol::Header)
         throw Exception("TCP arrow request: first package should be header.");
@@ -221,11 +240,11 @@ void TCPArrowHandler::recvHeader()
     protocol_version_minor = Magic::readInt64(*in);
     if (protocol_version_major != PROTOCOL_VERSION_MAJOR || protocol_version_minor != PROTOCOL_VERSION_MINOR)
     {
-        std::stringstream ss;
-        ss << "TCP arrow request: protocol version not match: " <<
+        std::stringstream error_ss;
+        error_ss << "TCP arrow request: protocol version not match: " <<
             protocol_version_major << "." << protocol_version_minor << " vs " <<
             PROTOCOL_VERSION_MAJOR << "." << PROTOCOL_VERSION_MINOR;
-        throw Exception(ss.str());
+        throw Exception(error_ss.str());
     }
 
     Magic::readString(client_name, *in);
@@ -243,9 +262,9 @@ void TCPArrowHandler::recvHeader()
     encoder_version = Magic::readInt64(*in);
     if (encoder_version != PROTOCOL_ENCODER_VERSION)
     {
-        std::stringstream ss;
-        ss << "TCPArrowHandler encoder version not match: " << encoder_version << " vs " << PROTOCOL_ENCODER_VERSION;
-        throw Exception(ss.str());
+        std::stringstream error_ss;
+        error_ss << "TCPArrowHandler encoder version not match: " << encoder_version << " vs " << PROTOCOL_ENCODER_VERSION;
+        throw Exception(error_ss.str());
     }
     encoder_count = Magic::readInt64(*in);
 
@@ -267,40 +286,6 @@ void TCPArrowHandler::recvQuery()
         throw Exception("Receive empty query_id.");
     query_context.setCurrentQueryId(state.query_id);
     Magic::readString(state.query, *in);
-}
-
-void TCPArrowHandler::sendError(const std::string & msg)
-{
-    Magic::writeInt64(Magic::Protocol::Utf8Error, *out);
-    Magic::writeInt64(msg.size(), *out);
-    out->write((const char*)msg.c_str(), msg.size());
-    out->next();
-}
-
-void TCPArrowHandler::run()
-{
-    try
-    {
-        runImpl();
-    }
-    catch (const Poco::Exception & e)
-    {
-        // Timeout - not an error.
-        if (!strcmp(e.what(), "Timeout"))
-        {
-            LOG_DEBUG(log, "Poco::Exception. Code: " << ErrorCodes::POCO_EXCEPTION << ", e.code() = " << e.code()
-                << ", e.displayText() = " << e.displayText() << ", e.what() = " << e.what());
-        }
-        else
-        {
-            throw;
-        }
-    }
-}
-
-TCPArrowHandler::~TCPArrowHandler()
-{
-    TCPArrowSessions::instance().clear(this);
 }
 
 }
