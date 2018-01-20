@@ -23,13 +23,6 @@ namespace Poco
 namespace DB
 {
 
-struct ArrowQueryState
-{
-    String query_id;
-    String query;
-    BlockIO io;
-};
-
 class TCPArrowHandler : public Poco::Net::TCPServerConnection
 {
 public:
@@ -37,12 +30,12 @@ public:
 
     String getQueryId()
     {
-        return state.query_id;
+        return query_id;
     }
 
     String getQuery()
     {
-        return state.query;
+        return query;
     }
 
     Int64 getClientCount()
@@ -109,7 +102,10 @@ private:
     Int64 client_count;
     Int64 client_index;
 
-    ArrowQueryState state;
+    String query_id;
+    String query;
+    BlockIO io;
+
     EncoderPtr encoder;
     bool failed;
 

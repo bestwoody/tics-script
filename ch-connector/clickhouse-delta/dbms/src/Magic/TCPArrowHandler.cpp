@@ -119,11 +119,11 @@ void TCPArrowHandler::startExecuting()
 
     try
     {
-        state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
-        if (state.io.out)
+        io = executeQuery(query, query_context, false, QueryProcessingStage::Complete);
+        if (io.out)
             throw Exception("TCPArrowHandler do not support insert query.");
 
-        size_t this_encoder_count = 4;
+        size_t this_encoder_count = 8;
 
         if (server.config().has("arrow_encoders"))
             this_encoder_count = server.config().getInt("arrow_encoders");
@@ -132,7 +132,7 @@ void TCPArrowHandler::startExecuting()
         if (this_encoder_count <= 0)
             throw Exception("Encoder number invalid.");
 
-        encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
+        encoder = std::make_shared<Magic::ArrowEncoderParall>(io, this_encoder_count);
         if (encoder->hasError())
             throw Exception(encoder->getErrorString());
 
@@ -281,11 +281,11 @@ void TCPArrowHandler::recvQuery()
     if (flag != Magic::Protocol::Utf8Query)
         throw Exception("TCPArrowHandler only receive query string.");
 
-    Magic::readString(state.query_id, *in);
-    if (state.query_id.empty())
+    Magic::readString(query_id, *in);
+    if (query_id.empty())
         throw Exception("Receive empty query_id.");
-    query_context.setCurrentQueryId(state.query_id);
-    Magic::readString(state.query, *in);
+    query_context.setCurrentQueryId(query_id);
+    Magic::readString(query, *in);
 }
 
 }
