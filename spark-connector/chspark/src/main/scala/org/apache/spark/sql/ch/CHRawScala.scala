@@ -23,18 +23,19 @@ import scala.util.Random
 object CHRawScala {
   def main(args: Array[String]) {
     if (args.size < 3) {
-      println("usage: <bin> query-sql partitions conc [verb=0|1|2] [host] [port]")
+      println("usage: <bin> query-sql partitions decoders encoders [verb=0|1|2] [host] [port]")
       return;
     }
 
     val query: String = args(0)
     val partitions: Int = args(1).toInt
-    val conc: Int = args(2).toInt
+    val decoders: Int = args(2).toInt
+    val encoders: Int = args(3).toInt
 
-    val verb: Int = if (args.size >= 4) args(3).toInt else 2
+    val verb: Int = if (args.size >= 5) args(4).toInt else 2
 
-    val host: String = if (args.size >= 5) args(4) else "127.0.0.1"
-    val port: Int = if (args.size >= 6) args(5).toInt else 9006
+    val host: String = if (args.size >= 6) args(5) else "127.0.0.1"
+    val port: Int = if (args.size >= 7) args(6).toInt else 9006
 
     val rid = Random.nextInt
     val qid = "chraw-" + (if (rid < 0) -rid else rid)
@@ -54,14 +55,14 @@ object CHRawScala {
     }
 
     if (verb >= 0) {
-      println("Starting")
+      println("Starting, partitions: " + partitions + ", decoders: " + decoders + ", encoders: " + encoders)
     }
     val startTime = new Date()
 
     for (i <- 0 until partitions) {
       workers(i) = new Thread {
         override def run {
-          val resp = new CHExecutorParall(qid, query, host, port, "", conc, 0, partitions, i, false)
+          val resp = new CHExecutorParall(qid, query, host, port, "", decoders, encoders, partitions, i, false)
           if (verb >= 1) {
             println("#" + i + " start")
           }
