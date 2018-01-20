@@ -23,33 +23,19 @@ namespace Poco
 namespace DB
 {
 
-struct ArrowQueryState
-{
-    String query_id;
-    String query;
-    BlockIO io;
-};
-
 class TCPArrowHandler : public Poco::Net::TCPServerConnection
 {
 public:
     using EncoderPtr = std::shared_ptr<Magic::ArrowEncoderParall>;
 
-    TCPArrowHandler(IServer & server_, const Poco::Net::StreamSocket & socket_) :
-        Poco::Net::TCPServerConnection(socket_), server(server_), log(&Poco::Logger::get("TCPArrowHandler")),
-        connection_context(server.context()), query_context(server.context()), failed(false)
-    {
-        init();
-    }
-
     String getQueryId()
     {
-        return state.query_id;
+        return query_id;
     }
 
     String getQuery()
     {
-        return state.query;
+        return query;
     }
 
     Int64 getClientCount()
@@ -74,23 +60,20 @@ public:
         this->encoder = encoder;
     }
 
+    TCPArrowHandler(IServer & server_, const Poco::Net::StreamSocket & socket_);
+
+    ~TCPArrowHandler();
+
     void startExecuting();
 
     void run();
 
-    ~TCPArrowHandler();
-
 private:
-    void init();
-    void runImpl();
-
     void processOrdinaryQuery();
     void recvHeader();
     void recvQuery();
-    void sendError(const std::string & msg);
 
-    void initBlockInput();
-    void initBlockOutput();
+    void onException(std::string msg = "");
 
 private:
     IServer & server;
@@ -119,7 +102,10 @@ private:
     Int64 client_count;
     Int64 client_index;
 
-    ArrowQueryState state;
+    String query_id;
+    String query;
+    BlockIO io;
+
     EncoderPtr encoder;
     bool failed;
 
