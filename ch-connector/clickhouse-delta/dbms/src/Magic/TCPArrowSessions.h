@@ -94,7 +94,7 @@ public:
 
         // Can't remove session immidiatly, may cause double running.
         // Leave a tombstone for further clean up
-        if (session.finished_clients == session.client_count)
+        if (session.finished_clients >= session.client_count)
         {
             session.active_clients.clear();
             session.execution = NULL;
