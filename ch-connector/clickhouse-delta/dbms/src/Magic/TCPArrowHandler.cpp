@@ -97,7 +97,7 @@ void TCPArrowHandler::init()
 
         recvQuery();
     }
-    catch (Exception e)
+    catch (const Exception & e)
     {
         failed = true;
         auto msg = DB::getCurrentExceptionMessage(true, true);
@@ -111,17 +111,29 @@ void TCPArrowHandler::startExecuting()
     if (encoder)
         return;
 
-    state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
-    if (state.io.out)
-        throw Exception("TCPArrowHandler do not support insert query.");
+    size_t this_encoder_count = 4;
 
-    size_t this_encoder_count = 8;
-    if (server.config().has("arrow_encoders"))
-        this_encoder_count = server.config().getInt("arrow_encoders");
-    if (encoder_count > 0)
-        this_encoder_count = encoder_count;
-    if (this_encoder_count <= 0)
-        throw Exception("Encoder number invalid.");
+    try
+    {
+        state.io = executeQuery(state.query, query_context, false, QueryProcessingStage::Complete);
+        if (state.io.out)
+            throw Exception("TCPArrowHandler do not support insert query.");
+
+        if (server.config().has("arrow_encoders"))
+            this_encoder_count = server.config().getInt("arrow_encoders");
+        if (encoder_count > 0)
+            this_encoder_count = encoder_count;
+        if (this_encoder_count <= 0)
+            throw Exception("Encoder number invalid.");
+    }
+    catch (const Exception & e)
+    {
+        failed = true;
+        auto msg = DB::getCurrentExceptionMessage(true, true);
+        LOG_ERROR(log, msg);
+        encoder = std::make_shared<Magic::ArrowEncoderParall>(msg);
+        return;
+    }
 
     encoder = std::make_shared<Magic::ArrowEncoderParall>(state.io, this_encoder_count);
     if (encoder->hasError())
@@ -141,7 +153,7 @@ void TCPArrowHandler::runImpl()
         {
            processOrdinaryQuery();
         }
-        catch (Exception e)
+        catch (const Exception & e)
         {
             auto msg = DB::getCurrentExceptionMessage(true, true);
             LOG_ERROR(log, msg);
@@ -270,7 +282,7 @@ void TCPArrowHandler::run()
     {
         runImpl();
     }
-    catch (Poco::Exception & e)
+    catch (const Poco::Exception & e)
     {
         // Timeout - not an error.
         if (!strcmp(e.what(), "Timeout"))

@@ -15,20 +15,16 @@ public:
 
     SafeBlockIO(DB::BlockIO & input_) : input(input_), closed(false), block_count(0), batch_count(0)
     {
-        std::lock_guard<std::mutex> lock(mutex);
         input.in->readPrefix();
     }
 
     DB::Block sample()
     {
-        std::lock_guard<std::mutex> lock(mutex);
         return input.in_sample;
     }
 
     void read(std::vector<DB::Block> & dest, bool & closed, size_t batch_size = 4)
     {
-        std::lock_guard<std::mutex> lock(mutex);
-
         closed = this->closed;
         if (closed)
             return;
@@ -55,8 +51,6 @@ public:
 
     DB::Block read()
     {
-        std::lock_guard<std::mutex> lock(mutex);
-
         DB::Block block;
         if (closed)
             return block;
@@ -77,13 +71,11 @@ public:
 
     void cancal(bool exception = false)
     {
-        std::lock_guard<std::mutex> lock(mutex);
         close(exception);
     }
 
     size_t batches()
     {
-        std::lock_guard<std::mutex> lock(mutex);
         if (closed)
             return batch_count;
         else
@@ -92,7 +84,6 @@ public:
 
     size_t blocks()
     {
-        std::lock_guard<std::mutex> lock(mutex);
         if (closed)
             return block_count;
         else
@@ -112,14 +103,10 @@ private:
     }
 
 private:
-    std::mutex mutex;
-
     DB::BlockIO & input;
     bool closed;
     size_t block_count;
     size_t batch_count;
-
-    size_t interactive_delay_ms;
 };
 
 }

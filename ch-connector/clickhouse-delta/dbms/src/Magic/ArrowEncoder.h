@@ -36,9 +36,21 @@ public:
     ArrowEncoder(DB::BlockIO & input_)
     {
         std::unique_lock<std::mutex> lock{mutex};
-        input = std::make_shared<SafeBlockIO>(input_);
-        schema = getSchema();
-        encodedSchema = encodeSchema(schema);
+
+        try
+        {
+            input = std::make_shared<SafeBlockIO>(input_);
+            schema = getSchema();
+            encodedSchema = encodeSchema(schema);
+        }
+        catch (const DB::Exception & e)
+        {
+            onError(e.displayText());
+        }
+        catch (...)
+        {
+            onException();
+        }
     }
 
     BufferPtr getEncodedSchema()
@@ -50,7 +62,21 @@ public:
     inline DB::Block getOriginBlock()
     {
         std::unique_lock<std::mutex> lock{mutex};
-        return input->read();
+        if (!input)
+            return DB::Block();
+        try
+        {
+            return input->read();
+        }
+        catch (const DB::Exception & e)
+        {
+            onError(e.displayText());
+        }
+        catch (...)
+        {
+            onException();
+        }
+        return DB::Block();
     }
 
     BlockPtr encodeBlock(DB::Block block)
@@ -80,23 +106,37 @@ public:
         {
             onError(e.displayText());
         }
+        catch (...)
+        {
+            onException();
+        }
 
         return NULL;
     }
 
-    BufferPtr serializedBlock(BlockPtr block)
+    BufferPtr serializeBlock(BlockPtr block)
     {
         if (!block)
             return NULL;
-        std::shared_ptr<arrow::Buffer> serialized;
-        auto pool = arrow::default_memory_pool();
-        auto status = arrow::ipc::SerializeRecordBatch(*block, pool, &serialized);
-        if (!status.ok())
+
+        try
         {
-            onError("arrow::ipc::SerializeRecordBatch " + status.ToString());
-            return NULL;
+            std::shared_ptr<arrow::Buffer> serialized;
+            auto pool = arrow::default_memory_pool();
+            auto status = arrow::ipc::SerializeRecordBatch(*block, pool, &serialized);
+            if (!status.ok())
+            {
+                onError("arrow::ipc::SerializeRecordBatch " + status.ToString());
+                return NULL;
+            }
+            return serialized;
         }
-        return serialized;
+        catch (...)
+        {
+            onException();
+        }
+
+        return NULL;
     }
 
     inline bool hasError()
@@ -114,22 +154,36 @@ public:
     size_t blocks()
     {
         std::unique_lock<std::mutex> lock{mutex};
-        return input->blocks();
+        if (input)
+            return input->blocks();
+        else
+            return SafeBlockIO::UnknownSize;
     }
 
     void cancal(bool exception = false)
     {
         std::unique_lock<std::mutex> lock{mutex};
-        if (input)
-            input->cancal(exception);
+        if (!input)
+            return;
+        input->cancal(exception);
         input = NULL;
     }
 
 protected:
     void onError(const std::string msg)
     {
-        std::unique_lock<std::mutex> lock{mutex};
         error = msg;
+        if (!input)
+            return;
+        input->cancal(true);
+        input = NULL;
+    }
+
+    void onException()
+    {
+        error = DB::getCurrentExceptionMessage(true, true);
+        if (!input)
+            return;
         input->cancal(true);
         input = NULL;
     }
@@ -139,6 +193,8 @@ private:
     {
         try
         {
+            if (!input)
+                return NULL;
             auto sample = input->sample();
             std::vector<std::shared_ptr<arrow::Field>> fields;
             for (size_t i = 0; i < sample.columns(); ++i)
@@ -154,6 +210,10 @@ private:
         {
             onError(e.displayText());
         }
+        catch (...)
+        {
+            onException();
+        }
         return NULL;
     }
 
@@ -162,15 +222,23 @@ private:
         if (!schema)
             return NULL;
 
-        std::shared_ptr<arrow::Buffer> serialized;
-        auto pool = arrow::default_memory_pool();
-        auto status = arrow::ipc::SerializeSchema(*schema, pool, &serialized);
-        if (!status.ok())
+        try
         {
-            onError("arrow::ipc::SerializeSchema " + status.ToString());
-            return NULL;
+            std::shared_ptr<arrow::Buffer> serialized;
+            auto pool = arrow::default_memory_pool();
+            auto status = arrow::ipc::SerializeSchema(*schema, pool, &serialized);
+            if (!status.ok())
+            {
+                onError("arrow::ipc::SerializeSchema " + status.ToString());
+                return NULL;
+            }
+            return serialized;
         }
-        return serialized;
+        catch (...)
+        {
+            onException();
+        }
+        return NULL;
     }
 
 private:

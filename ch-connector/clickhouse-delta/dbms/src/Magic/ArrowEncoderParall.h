@@ -26,14 +26,16 @@ public:
                 while (true)
                 {
                     auto origin = encoder.getOriginBlock();
-                    auto block = encoder.serializedBlock(encoder.encodeBlock(origin));
+                    auto block = encoder.serializeBlock(encoder.encodeBlock(origin));
                     if (block)
                     {
                         encodeds.push(block);
                     }
                     else
                     {
-                        encodeds.setQuota(encoder.blocks());
+                        size_t blocks = encoder.blocks();
+                        blocks = (blocks != SafeBlockIO::UnknownSize) ? blocks : 0;
+                        encodeds.setQuota(blocks);
                         break;
                     }
                 }
