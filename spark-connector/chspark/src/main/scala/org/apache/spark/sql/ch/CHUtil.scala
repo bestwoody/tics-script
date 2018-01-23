@@ -219,9 +219,11 @@ object CHUtil {
   }
 
   def genQueryId(prefix: String = null): String = {
-    var px = "chspark"
-    px = if (prefix == null || prefix.isEmpty) px else { px + "-" + prefix}
-    px + "-" + UUID.randomUUID.toString
+    this.synchronized {
+      var px = "chspark"
+      px = if (prefix == null || prefix.isEmpty) px else { px + "-" + prefix}
+      px + "-" + UUID.randomUUID.toString
+    }
   }
 
   private def getCastString(value: String, dataType: DataType) = {

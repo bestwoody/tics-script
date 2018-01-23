@@ -10,6 +10,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch.{CHSqlAgg, CHSqlTopN, CHSql}
 import org.apache.spark.sql.ch.{CHExecutorParall, CHTableRef, CHPartition, CHUtil}
+import org.apache.spark.internal.Logging
 
 import com.pingcap.theflash.codegene.ArrowColumnBatch
 
@@ -36,6 +37,10 @@ class CHScanRDD(
     // TODO: Can't retry for now, because use the same qid to retry is illegal (expired query id).
     private val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
       decoderCount, encoderCount, partitionCount, part.clientIndex)
+
+    with Logging {
+      logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + sql)
+    }
 
     private def nextResult(): ArrowColumnBatch = {
       val block = resp.next()

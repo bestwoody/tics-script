@@ -20,6 +20,7 @@ import scala.collection.mutable.ListBuffer
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.internal.Logging
 
 import org.apache.arrow.vector.types.pojo.Schema
 import org.apache.arrow.vector.VectorSchemaRoot
@@ -47,6 +48,10 @@ class CHRDD(
     // TODO: Can't retry for now, because use the same qid to retry is illegal (expired query id).
     val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
       decoderCount, encoderCount, partitionCount, part.clientIndex)
+
+    with Logging {
+      logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + sql)
+    }
 
     private def getBlock(): Iterator[Row] = {
       val block = resp.next
