@@ -34,13 +34,13 @@ class CHScanRDD(
     private val qid = part.qid
     private val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
 
-    // TODO: Can't retry for now, because use the same qid to retry is illegal (expired query id).
-    private val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
-      decoderCount, encoderCount, partitionCount, part.clientIndex)
-
     with Logging {
       logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + sql)
     }
+
+    // TODO: Can't retry for now, because use the same qid to retry is illegal (expired query id).
+    private val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
+      decoderCount, encoderCount, partitionCount, part.clientIndex)
 
     private def nextResult(): ArrowColumnBatch = {
       val block = resp.next()
