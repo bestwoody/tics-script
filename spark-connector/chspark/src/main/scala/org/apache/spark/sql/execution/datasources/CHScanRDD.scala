@@ -29,12 +29,12 @@ class CHScanRDD(
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] =
     new Iterator[ArrowColumnBatch] {
 
-    logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + sql)
-
     private val part = split.asInstanceOf[CHPartition]
     private val table = part.table
     private val qid = part.qid
     private val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
+
+    logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + sql)
 
     // TODO: Can't retry for now, because use the same qid to retry is illegal (expired query id).
     private val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
