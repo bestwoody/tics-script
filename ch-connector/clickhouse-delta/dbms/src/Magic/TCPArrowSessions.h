@@ -103,8 +103,8 @@ public:
         }
 
         // TODO: Move to config file
-        static size_t max_sessions_count = 1024;
-        static size_t session_expired_seconds = 60 * 60 * 24;
+        static size_t max_sessions_count = 64;
+        static size_t session_expired_seconds = 60 * 24;
 
         // The further operation: clean up tombstones
         if (sessions.size() >= max_sessions_count)
