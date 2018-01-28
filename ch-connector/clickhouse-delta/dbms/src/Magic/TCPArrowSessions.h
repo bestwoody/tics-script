@@ -128,10 +128,10 @@ public:
         // Leave a tombstone for further clean up
         if (session.finished())
         {
-            session.active_clients.clear();
-            session.execution = NULL;
             LOG_TRACE(log, "Clear session query_id: " << query_id << ", sessions: " << sessions.size() <<
                 ", execution ref: " << session.execution.use_count());
+            session.active_clients.clear();
+            session.execution = NULL;
         }
 
         // The further operation: clean up tombstones
