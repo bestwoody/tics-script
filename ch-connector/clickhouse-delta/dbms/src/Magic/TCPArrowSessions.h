@@ -12,6 +12,11 @@
 namespace DB
 {
 
+// TODO: Move to config file
+static size_t max_sessions_count = 32;
+static size_t unfinished_session_expired_seconds = 60 * 60;
+static size_t finished_session_expired_seconds = 15;
+
 class TCPArrowSessions
 {
 public:
@@ -40,17 +45,48 @@ public:
 
         std::unique_lock<std::mutex> lock{mutex};
 
-        Sessions::iterator session = sessions.find(query_id);
-        if (session != sessions.end())
+        Sessions::iterator it = sessions.find(query_id);
+
+        if (it != sessions.end())
         {
-            if (size_t(session->second.client_count) <= session->second.active_clients.size())
+            Session & session = it->second;
+
+            if (size_t(session.client_count) <= session.active_clients.size())
                 throw Exception("Join to session fail, too much clients: " + query_info);
+
             LOG_TRACE(log, "Connection join to " << query_info);
-            if (!session->second.execution)
-                throw Exception("Join to expired session, " + query_info);
-            connection->setExecution(session->second.execution);
+
+            if (!session.execution)
+            {
+                time_t now = time(0);
+                auto seconds = difftime(now, session.create_time);
+                if (seconds >= finished_session_expired_seconds && session.finished())
+                {
+                    LOG_WARNING(log, "Relaunch query found, clean and re-execute: " << query_info);
+                    sessions.erase(it);
+                    it = sessions.end();
+                }
+                else
+                {
+                    throw Exception("Join to expired session, " + query_info);
+                }
+            }
+            else
+            {
+                auto activation = session.active_clients.find(client_index);
+                if (activation != session.active_clients.end())
+                {
+                    throw Exception("Double join to running session, " + query_info +
+                        ", previous is " + (activation->second ? "active" : "inactive"));
+                }
+                else
+                {
+                    connection->setExecution(session.execution);
+                }
+            }
         }
-        else
+
+        if (it == sessions.end())
         {
             auto client_count = connection->getClientCount();
             LOG_TRACE(log, "First connection, " << query_info << ", query: " << connection->getQuery());
@@ -58,10 +94,10 @@ public:
             connection->startExecuting();
 
             sessions.emplace(query_id, Session(client_count, connection->getExecution()));
-            session = sessions.find(query_id);
+            it = sessions.find(query_id);
         }
 
-        session->second.active_clients.emplace(client_index, true);
+        it->second.active_clients.emplace(client_index, true);
 
         return connection;
     }
@@ -75,11 +111,7 @@ public:
         Sessions::iterator it = sessions.find(query_id);
 
         if (it == sessions.end())
-        {
-            auto msg = "Clear connection in query_id: " + query_id + " failed, session not found.";
-            LOG_TRACE(log, msg);
-            throw Exception(msg);
-        }
+            throw Exception("Clear connection in query_id: " + query_id + " failed, session not found.");
 
         Session & session = it->second;
 
@@ -94,17 +126,13 @@ public:
 
         // Can't remove session immidiatly, may cause double running.
         // Leave a tombstone for further clean up
-        if (session.finished_clients >= session.client_count)
+        if (session.finished())
         {
-            session.active_clients.clear();
-            session.execution = NULL;
             LOG_TRACE(log, "Clear session query_id: " << query_id << ", sessions: " << sessions.size() <<
                 ", execution ref: " << session.execution.use_count());
+            session.active_clients.clear();
+            session.execution = NULL;
         }
-
-        // TODO: Move to config file
-        static size_t max_sessions_count = 64;
-        static size_t session_expired_seconds = 60 * 24;
 
         // The further operation: clean up tombstones
         if (sessions.size() >= max_sessions_count)
@@ -114,12 +142,10 @@ public:
             while (it != sessions.end())
             {
                 auto & session = it->second;
-                auto seconds = difftime(now, it->second.create_time);
-                if (seconds >= session_expired_seconds)
+                auto seconds = difftime(now, session.create_time);
+                if (!session.finished())
                 {
-                    LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
-                        it->first << ", created: " << seconds << "s.");
-                    if (session.client_count != session.finished_clients)
+                    if (seconds >= unfinished_session_expired_seconds)
                     {
                         LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
                             session.active_clients.size() << ", execution ref: " << session.execution.use_count() <<
@@ -128,11 +154,23 @@ public:
                         // TODO: Force disconnect
                         session.execution->cancal(false);
                         session.execution = NULL;
+                        it = sessions.erase(it);
+                        continue;
                     }
-                    it = sessions.erase(it);
-                } else {
-                    ++it;
                 }
+                else
+                {
+                    // Not clean it too fast, for relaunch query detecting.
+                    if (seconds >= unfinished_session_expired_seconds)
+                    {
+                        LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
+                            it->first << ", created: " << seconds << "s.");
+                        it = sessions.erase(it);
+                        continue;
+                    }
+                }
+
+                ++it;
             }
         }
     }
@@ -149,6 +187,11 @@ private:
         Session(Int64 client_count_, TCPArrowHandler::EncoderPtr execution_) :
             client_count(client_count_), execution(execution_), finished_clients(0), create_time(time(0))
         {
+        }
+
+        bool finished()
+        {
+            return finished_clients >= client_count;
         }
     };
 
