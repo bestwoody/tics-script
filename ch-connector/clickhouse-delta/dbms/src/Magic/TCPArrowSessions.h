@@ -147,7 +147,8 @@ public:
                 }
                 else
                 {
-                    if (seconds >= finished_session_expired_seconds)
+                    // Not clean it too fast, for relaunch query detecting.
+                    if (seconds >= unfinished_session_expired_seconds)
                     {
                         LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
                             it->first << ", created: " << seconds << "s.");
