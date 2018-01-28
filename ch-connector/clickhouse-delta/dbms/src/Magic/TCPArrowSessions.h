@@ -45,31 +45,48 @@ public:
 
         std::unique_lock<std::mutex> lock{mutex};
 
-        Sessions::iterator session = sessions.find(query_id);
-        if (session != sessions.end())
+        Sessions::iterator it = sessions.find(query_id);
+
+        if (it != sessions.end())
         {
-            if (size_t(session->second.client_count) <= session->second.active_clients.size())
+            Session & session = it->second;
+
+            if (size_t(session.client_count) <= session.active_clients.size())
                 throw Exception("Join to session fail, too much clients: " + query_info);
+
             LOG_TRACE(log, "Connection join to " << query_info);
-            if (!session->second.execution)
+
+            if (!session.execution)
             {
                 time_t now = time(0);
-                auto seconds = difftime(now, session->second.create_time);
-                if (seconds >= finished_session_expired_seconds && session->second.finished())
+                auto seconds = difftime(now, session.create_time);
+                if (seconds >= finished_session_expired_seconds && session.finished())
                 {
                     LOG_WARNING(log, "Relaunch query found, clean and re-execute: " << query_info);
-                    sessions.erase(session);
-                    session = sessions.end();
+                    sessions.erase(it);
+                    it = sessions.end();
                 }
                 else
                 {
                     throw Exception("Join to expired session, " + query_info);
                 }
             }
-            connection->setExecution(session->second.execution);
+            else
+            {
+                auto activation = session.active_clients.find(client_index);
+                if (activation != session.active_clients.end())
+                {
+                    throw Exception("Double join to running session, " + query_info +
+                        ", previous is " + (activation->second ? "active" : "inactive"));
+                }
+                else
+                {
+                    connection->setExecution(session.execution);
+                }
+            }
         }
 
-        if (session == sessions.end())
+        if (it == sessions.end())
         {
             auto client_count = connection->getClientCount();
             LOG_TRACE(log, "First connection, " << query_info << ", query: " << connection->getQuery());
@@ -77,10 +94,10 @@ public:
             connection->startExecuting();
 
             sessions.emplace(query_id, Session(client_count, connection->getExecution()));
-            session = sessions.find(query_id);
+            it = sessions.find(query_id);
         }
 
-        session->second.active_clients.emplace(client_index, true);
+        it->second.active_clients.emplace(client_index, true);
 
         return connection;
     }
@@ -129,7 +146,7 @@ public:
             while (it != sessions.end())
             {
                 auto & session = it->second;
-                auto seconds = difftime(now, it->second.create_time);
+                auto seconds = difftime(now, session.create_time);
                 if (!session.finished())
                 {
                     if (seconds >= unfinished_session_expired_seconds)
