@@ -12,6 +12,11 @@
 namespace DB
 {
 
+// TODO: Move to config file
+static size_t max_sessions_count = 32;
+static size_t unfinished_session_expired_seconds = 60 * 60;
+static size_t finished_session_expired_seconds = 15;
+
 class TCPArrowSessions
 {
 public:
@@ -47,10 +52,24 @@ public:
                 throw Exception("Join to session fail, too much clients: " + query_info);
             LOG_TRACE(log, "Connection join to " << query_info);
             if (!session->second.execution)
-                throw Exception("Join to expired session, " + query_info);
+            {
+                time_t now = time(0);
+                auto seconds = difftime(now, session->second.create_time);
+                if (seconds >= finished_session_expired_seconds && session->second.finished())
+                {
+                    LOG_WARNING(log, "Relaunch query found, clean and re-execute: " << query_info);
+                    sessions.erase(session);
+                    session = sessions.end();
+                }
+                else
+                {
+                    throw Exception("Join to expired session, " + query_info);
+                }
+            }
             connection->setExecution(session->second.execution);
         }
-        else
+
+        if (session == sessions.end())
         {
             auto client_count = connection->getClientCount();
             LOG_TRACE(log, "First connection, " << query_info << ", query: " << connection->getQuery());
@@ -94,17 +113,13 @@ public:
 
         // Can't remove session immidiatly, may cause double running.
         // Leave a tombstone for further clean up
-        if (session.finished_clients >= session.client_count)
+        if (session.finished())
         {
             session.active_clients.clear();
             session.execution = NULL;
             LOG_TRACE(log, "Clear session query_id: " << query_id << ", sessions: " << sessions.size() <<
                 ", execution ref: " << session.execution.use_count());
         }
-
-        // TODO: Move to config file
-        static size_t max_sessions_count = 64;
-        static size_t session_expired_seconds = 60 * 24;
 
         // The further operation: clean up tombstones
         if (sessions.size() >= max_sessions_count)
@@ -115,11 +130,9 @@ public:
             {
                 auto & session = it->second;
                 auto seconds = difftime(now, it->second.create_time);
-                if (seconds >= session_expired_seconds)
+                if (!session.finished())
                 {
-                    LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
-                        it->first << ", created: " << seconds << "s.");
-                    if (session.client_count != session.finished_clients)
+                    if (seconds >= unfinished_session_expired_seconds)
                     {
                         LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
                             session.active_clients.size() << ", execution ref: " << session.execution.use_count() <<
@@ -128,11 +141,22 @@ public:
                         // TODO: Force disconnect
                         session.execution->cancal(false);
                         session.execution = NULL;
+                        it = sessions.erase(it);
+                        continue;
                     }
-                    it = sessions.erase(it);
-                } else {
-                    ++it;
                 }
+                else
+                {
+                    if (seconds >= finished_session_expired_seconds)
+                    {
+                        LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
+                            it->first << ", created: " << seconds << "s.");
+                        it = sessions.erase(it);
+                        continue;
+                    }
+                }
+
+                ++it;
             }
         }
     }
@@ -149,6 +173,11 @@ private:
         Session(Int64 client_count_, TCPArrowHandler::EncoderPtr execution_) :
             client_count(client_count_), execution(execution_), finished_clients(0), create_time(time(0))
         {
+        }
+
+        bool finished()
+        {
+            return finished_clients >= client_count;
         }
     };
 
