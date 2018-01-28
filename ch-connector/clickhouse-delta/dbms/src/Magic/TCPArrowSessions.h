@@ -111,11 +111,7 @@ public:
         Sessions::iterator it = sessions.find(query_id);
 
         if (it == sessions.end())
-        {
-            auto msg = "Clear connection in query_id: " + query_id + " failed, session not found.";
-            LOG_TRACE(log, msg);
-            throw Exception(msg);
-        }
+            throw Exception("Clear connection in query_id: " + query_id + " failed, session not found.");
 
         Session & session = it->second;
 
