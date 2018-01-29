@@ -294,13 +294,13 @@ void TCPArrowHandler::recvHeader()
     client_index = Magic::readInt64(*in);
 
     LOG_TRACE(log,
-        "Header, proto major ver: " <<
+        "Received header, proto ver: " <<
         protocol_version_major <<
         ", minor ver: " <<
         protocol_version_minor <<
-        ", default database: " <<
+        ", default database: '" <<
         default_database <<
-        ", client name: " <<
+        "', client name: " <<
         client_name <<
         ", user: " <<
         user <<
@@ -337,10 +337,10 @@ std::string TCPArrowHandler::toStr()
         client_count <<
         ", execution: " <<
         ((bool)encoder ? "good" : "null") <<
-        " ref: " <<
+        ", ref: " <<
         encoder.use_count() <<
-        " failed: " <<
-        failed;
+        ", status: " <<
+        (failed ? "failed" : "good");
 
     return info_ss.str();
 }
