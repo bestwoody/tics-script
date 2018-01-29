@@ -25,7 +25,6 @@ public:
 
     Poco::Net::TCPServerConnection * createConnection(const Poco::Net::StreamSocket & socket) override
     {
-        LOG_TRACE(log, "TCP arrow request. Address: " << socket.peerAddress().toString());
         return TCPArrowSessions::instance().create(server, socket);
     }
 };

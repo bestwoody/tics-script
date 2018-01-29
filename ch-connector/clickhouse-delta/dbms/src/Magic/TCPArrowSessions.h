@@ -41,7 +41,8 @@ public:
         info_ss << "query_id: " << query_id << ", client #" << client_index << "/" << client_count;
         std::string query_info = info_ss.str();
 
-        LOG_TRACE(log, "TCP arrow connection established, " << query_info << ", " + connection->getQuery());
+        LOG_TRACE(log, "TCP arrow connection established, " << query_info << ", " <<
+            connection->getQuery() << ", address: " << socket.peerAddress().toString());
 
         std::unique_lock<std::mutex> lock{mutex};
 

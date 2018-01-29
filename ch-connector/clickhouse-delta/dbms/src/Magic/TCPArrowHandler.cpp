@@ -136,7 +136,7 @@ void TCPArrowHandler::startExecuting()
         if (encoder->hasError())
             throw Exception(encoder->getErrorString() + ", query_id: " + query_id);
 
-        LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
+        LOG_TRACE(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
             ", execution ref: " << encoder.use_count());
     }
     catch (...)
@@ -165,7 +165,14 @@ void TCPArrowHandler::run()
 
     watch.stop();
 
-    LOG_INFO(log, std::fixed << std::setprecision(3) << "Processed in " << watch.elapsedSeconds() << " sec.");
+    LOG_TRACE(log, std::fixed << std::setprecision(3) << "Processed in " << watch.elapsedSeconds() << " sec.");
+}
+
+TCPArrowHandler::EncoderPtr TCPArrowHandler::getExecution()
+{
+    if (!encoder)
+        throw Exception("Share empty arrow encoder, query_id: " + query_id);
+    return encoder;
 }
 
 void TCPArrowHandler::onException(std::string msg)
@@ -272,7 +279,7 @@ void TCPArrowHandler::recvHeader()
     client_count = Magic::readInt64(*in);
     client_index = Magic::readInt64(*in);
 
-    LOG_INFO(log, "TCPArrowHandler default database: " << default_database << ", client name: "
+    LOG_TRACE(log, "TCPArrowHandler default database: " << default_database << ", client name: "
         << client_name << ", user: " << user << ", encoder: " << encoder_name);
 }
 

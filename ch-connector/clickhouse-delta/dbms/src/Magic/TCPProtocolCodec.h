@@ -20,6 +20,7 @@ namespace Protocol
     };
 }
 
+// TODO: Use big-endian for now, may be use little-endian is better
 inline Int64 readInt64(DB::ReadBuffer & istr)
 {
     Int64 x = 0;
@@ -35,15 +36,6 @@ inline Int64 readInt64(DB::ReadBuffer & istr)
     return x;
 }
 
-inline void readString(std::string & x, DB::ReadBuffer & istr)
-{
-    Int64 size = readInt64(istr);
-    if (size == 0)
-        return;
-    x.resize(size);
-    istr.readStrict(&x[0], size);
-}
-
 // TODO: Use big-endian for now, may be use little-endian is better
 inline void writeInt64(Int64 x, DB::WriteBuffer & ostr)
 {
@@ -53,6 +45,15 @@ inline void writeInt64(Int64 x, DB::WriteBuffer & ostr)
         byte = (x >> (8 * (7 - i))) & 0xFF;
         ostr.write((const char*)&byte, 1);
     }
+}
+
+inline void readString(std::string & x, DB::ReadBuffer & istr)
+{
+    Int64 size = readInt64(istr);
+    if (size == 0)
+        return;
+    x.resize(size);
+    istr.readStrict(&x[0], size);
 }
 
 }

@@ -48,13 +48,6 @@ public:
         return client_index;
     }
 
-    EncoderPtr getExecution()
-    {
-        if (!encoder)
-            throw Exception("Share empty arrow encoder, query_id: " + query_id);
-        return encoder;
-    }
-
     void setExecution(EncoderPtr & encoder)
     {
         this->encoder = encoder;
@@ -67,6 +60,8 @@ public:
     void startExecuting();
 
     void run();
+
+    EncoderPtr getExecution();
 
 private:
     void processOrdinaryQuery();

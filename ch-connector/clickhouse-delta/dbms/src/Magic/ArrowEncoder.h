@@ -17,6 +17,17 @@
 
 #include "SafeBlockIO.h"
 
+
+namespace DB
+{
+
+namespace ErrorCodes
+{
+    extern const int MAGIC_UNHANDLED_TYPE_CONVERTION;
+}
+
+}
+
 namespace Magic
 {
 
@@ -548,7 +559,8 @@ private:
         else if (name == "Float64")
             return arrow::float64();
         else
-            throw DB::Exception(std::string("dataTypeToArrowType failed: ") + name);
+            throw DB::Exception("Unhandled DataType: " + name + ", TODO:  convert it to ArrowType.",
+                DB::ErrorCodes::MAGIC_UNHANDLED_TYPE_CONVERTION);
         return arrow::null();
     }
 
