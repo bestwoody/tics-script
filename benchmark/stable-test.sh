@@ -5,7 +5,7 @@ log="stable-test.log"
 for (( i = 0; i < 1000; i++ )); do
 	for (( j =1; j <= 21; j++ )); do
 
-		if [ $j -eq 15 ] || [ $j -eq 17 ] || [ $j -eq 18 ]; then
+		if [ $j -eq 15 ] || [ $j -eq 17 ] || [ $j -eq 18 ] || [ $j -eq 21 ]; then
 			continue
 		fi
 
