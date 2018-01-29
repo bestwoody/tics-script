@@ -70,7 +70,7 @@ public:
         return block;
     }
 
-    void cancal(bool exception = false)
+    void cancal(bool exception)
     {
         encoder.cancal(exception);
     }

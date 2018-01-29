@@ -40,12 +40,12 @@ class CHRDD(
   @throws[Exception]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
 
-    logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + sql)
-
     val part = split.asInstanceOf[CHPartition]
     val table = part.table
     val qid = part.qid
     val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
+
+    logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + sql)
 
     // TODO: Can't retry for now, because use the same qid to retry is illegal (expired query id).
     val resp = new CHExecutorParall(qid, sql, table.host, table.port, table.absName,
