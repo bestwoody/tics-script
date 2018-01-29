@@ -11,9 +11,9 @@ namespace Magic
 
 void queryDumpImpl(const char * config, char * query)
 {
-    DB::Application app(config);
+    Application app(config);
     auto result = DB::executeQuery(query, app.context(), false);
-    DB::BlockOutputStreamPrintRows out(std::cout);
+    BlockOutputStreamPrintRows out(std::cout);
     DB::copyData(*result.in, out);
 }
 

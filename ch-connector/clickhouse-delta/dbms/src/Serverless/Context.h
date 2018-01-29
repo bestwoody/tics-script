@@ -10,7 +10,6 @@
 
 #include <ext/scope_guard.h>
 
-#include <common/ApplicationServerExt.h>
 #include <common/ErrorHandlers.h>
 #include <common/getMemoryAmount.h>
 
@@ -30,7 +29,6 @@
 #include <Interpreters/ProcessList.h>
 #include <Interpreters/loadMetadata.h>
 
-#include <Storages/MergeTree/ReshardingWorker.h>
 #include <Storages/StorageReplicatedMergeTree.h>
 #include <Storages/System/attachSystemTables.h>
 
@@ -58,7 +56,7 @@
 
 #include "BlockOutputStreamPrintRows.h"
 
-namespace DB
+namespace Magic
 {
 
 class Application : public BaseDaemon
@@ -67,8 +65,8 @@ public:
     Application(std::string config) : BaseDaemon()
     {
         // Why Poco use non-const args?
-        std::string pwd = "";
-        std::string flag = "--config-file";
+        DB::String pwd = "";
+        DB::String flag = "--config-file";
         char * args[] =
         {
             (char *)pwd.c_str(),
@@ -78,22 +76,22 @@ public:
         BaseDaemon::run(3, args);
     }
 
-    int main(const std::vector<std::string> & args) override
+    int main(const std::vector<DB::String> &) override
     {
         Logger * log = &logger();
         LOG_DEBUG(log, "Creating application.");
 
-        registerFunctions();
-        registerAggregateFunctions();
-        registerTableFunctions();
+        DB::registerFunctions();
+        DB::registerAggregateFunctions();
+        DB::registerTableFunctions();
 
         /// CurrentMetrics::set(CurrentMetrics::Revision, ClickHouseRevision::get());
 
         std::string config_path = config().getString("config-file", "config.xml");
 
-        global_context = std::make_unique<Context>(Context::createGlobal());
+        global_context = std::make_unique<DB::Context>(DB::Context::createGlobal());
         global_context->setGlobalContext(*global_context);
-        global_context->setApplicationType(Context::ApplicationType::SERVER);
+        global_context->setApplicationType(DB::Context::ApplicationType::SERVER);
 
         bool has_zookeeper = false;
         zkutil::ZooKeeperNodeCache main_config_zk_node_cache([&] {
@@ -109,7 +107,7 @@ public:
         Poco::File(path + "data/" + default_database).createDirectories();
         Poco::File(path + "metadata/" + default_database).createDirectories();
 
-        StatusFile status{path + "status"};
+        DB::StatusFile status{path + "status"};
 
         static ServerErrorHandler error_handler;
         Poco::ErrorHandler::set(&error_handler);
@@ -145,7 +143,7 @@ public:
 
         // Initialize main config reloader.
         std::string include_from_path = config().getString("include_from", "/etc/metrika.xml");
-        auto main_config_reloader = std::make_unique<ConfigReloader>(config_path,
+        auto main_config_reloader = std::make_unique<DB::ConfigReloader>(config_path,
             include_from_path,
             std::move(main_config_zk_node_cache),
             [&](ConfigurationPtr config) { global_context->setClustersConfig(config); },
@@ -161,7 +159,7 @@ public:
             if (Poco::File(config_dir + users_config_path).exists())
                 users_config_path = config_dir + users_config_path;
         }
-        auto users_config_reloader = std::make_unique<ConfigReloader>(users_config_path,
+        auto users_config_reloader = std::make_unique<DB::ConfigReloader>(users_config_path,
             include_from_path,
             zkutil::ZooKeeperNodeCache([&] { return global_context->getZooKeeper(); }),
             [&](ConfigurationPtr config) { global_context->setUsersConfig(config); },
@@ -184,7 +182,7 @@ public:
         if (mark_cache_size)
             global_context->setMarkCache(mark_cache_size);
 
-        String default_profile_name = config().getString("default_profile", "default");
+        DB::String default_profile_name = config().getString("default_profile", "default");
         global_context->setDefaultProfileName(default_profile_name);
         global_context->setSetting("profile", default_profile_name);
 
@@ -214,7 +212,7 @@ public:
         global_context = 0;
     }
 
-    Context & context()
+    DB::Context & context()
     {
         return *global_context;
     }
@@ -225,14 +223,14 @@ private:
         std::string path = origin;
         Poco::trimInPlace(path);
         if (path.empty())
-            throw Exception("path configuration parameter is empty");
+            throw DB::Exception("path configuration parameter is empty");
         if (path.back() != '/')
             path += '/';
         return path;
     }
 
 private:
-    std::unique_ptr<Context> global_context;
+    std::unique_ptr<DB::Context> global_context;
 };
 
 }
