@@ -9,7 +9,7 @@
 
 #include "TCPArrowHandler.h"
 
-namespace DB
+namespace Magic
 {
 
 // TODO: Move to config file
@@ -30,7 +30,7 @@ public:
     {
     }
 
-    Poco::Net::TCPServerConnection * create(IServer & server, const Poco::Net::StreamSocket & socket)
+    Poco::Net::TCPServerConnection * create(DB::IServer & server, const Poco::Net::StreamSocket & socket)
     {
         auto connection = new TCPArrowHandler(server, socket);
         auto query_id = connection->getQueryId();
@@ -53,7 +53,7 @@ public:
             Session & session = it->second;
 
             if (size_t(session.client_count) <= session.active_clients.size())
-                throw Exception("Join to session fail, too much clients: " + query_info);
+                throw DB::Exception("Join to session fail, too much clients: " + query_info);
 
             LOG_TRACE(log, "Connection join to " << query_info);
 
@@ -69,7 +69,7 @@ public:
                 }
                 else
                 {
-                    throw Exception("Join to expired session, " + query_info);
+                    throw DB::Exception("Join to expired session, " + query_info);
                 }
             }
             else
@@ -77,7 +77,7 @@ public:
                 auto activation = session.active_clients.find(client_index);
                 if (activation != session.active_clients.end())
                 {
-                    throw Exception("Double join to running session, " + query_info +
+                    throw DB::Exception("Double join to running session, " + query_info +
                         ", previous is " + (activation->second ? "active" : "inactive"));
                 }
                 else
@@ -112,7 +112,7 @@ public:
         Sessions::iterator it = sessions.find(query_id);
 
         if (it == sessions.end())
-            throw Exception("Clear connection in query_id: " + query_id + " failed, session not found.");
+            throw DB::Exception("Clear connection in query_id: " + query_id + " failed, session not found.");
 
         Session & session = it->second;
 
@@ -179,9 +179,9 @@ public:
 private:
     struct Session
     {
-        Int64 client_count;
+        DB::Int64 client_count;
         TCPArrowHandler::EncoderPtr execution;
-        Int64 finished_clients;
+        DB::Int64 finished_clients;
         std::unordered_map<Int64, bool> active_clients;
         time_t create_time;
 
@@ -196,7 +196,7 @@ private:
         }
     };
 
-    using Sessions = std::unordered_map<String, Session>;
+    using Sessions = std::unordered_map<DB::String, Session>;
 
     Poco::Logger * log;
     Sessions sessions;

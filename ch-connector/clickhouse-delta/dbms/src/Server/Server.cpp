@@ -403,7 +403,7 @@ int Server::main(const std::vector<std::string> & /*args*/)
                     tcp_socket.setReceiveTimeout(settings.receive_timeout);
                     tcp_socket.setSendTimeout(settings.send_timeout);
                     servers.emplace_back(new Poco::Net::TCPServer(
-                        new TCPArrowHandlerFactory(*this),
+                        new Magic::TCPArrowHandlerFactory(*this),
                         server_pool,
                         tcp_socket,
                         new Poco::Net::TCPServerParams));

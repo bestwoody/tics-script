@@ -6,19 +6,22 @@
 
 #include "TCPArrowSessions.h"
 
-namespace Poco { class Logger; }
+namespace Poco
+{
+    class Logger;
+}
 
-namespace DB
+namespace Magic
 {
 
 class TCPArrowHandlerFactory : public Poco::Net::TCPServerConnectionFactory
 {
 private:
-    IServer & server;
+    DB::IServer & server;
     Poco::Logger * log;
 
 public:
-    explicit TCPArrowHandlerFactory(IServer & server_)
+    explicit TCPArrowHandlerFactory(DB::IServer & server_)
         : server(server_), log(&Logger::get("TCPArrowHandlerFactory"))
     {
     }
