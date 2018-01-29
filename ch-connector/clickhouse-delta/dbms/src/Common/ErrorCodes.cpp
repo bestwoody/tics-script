@@ -370,7 +370,10 @@ namespace ErrorCodes
     extern const int STD_EXCEPTION = 1001;
     extern const int UNKNOWN_EXCEPTION = 1002;
 
-    extern const int MAGIC_UNHANDLED_TYPE_CONVERTION = 2000;
+    extern const int MAGIC_UNHANDLED_TYPE_CONVERTION = 9000;
+    extern const int MAGIC_BAD_REQUEST = 9001;
+    extern const int MAGIC_ENCODER_ERROR = 9002;
+    extern const int MAGIC_SESSION_ERROR = 9003;
 }
 
 }

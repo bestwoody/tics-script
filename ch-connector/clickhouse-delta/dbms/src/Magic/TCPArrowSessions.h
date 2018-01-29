@@ -15,7 +15,7 @@ namespace Magic
 // TODO: Move to config file
 static size_t max_sessions_count = 32;
 static size_t unfinished_session_expired_seconds = 60 * 60;
-static size_t finished_session_expired_seconds = 15;
+static size_t finished_session_expired_seconds = 2;
 
 class TCPArrowSessions
 {

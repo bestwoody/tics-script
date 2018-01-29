@@ -21,6 +21,9 @@ namespace ErrorCodes
 {
     extern const int POCO_EXCEPTION;
     extern const int UNKNOWN_DATABASE;
+    extern const int MAGIC_BAD_REQUEST;
+    extern const int MAGIC_ENCODER_ERROR;
+    extern const int MAGIC_SESSION_ERROR;
 }
 
 }
@@ -124,7 +127,7 @@ void TCPArrowHandler::startExecuting()
     {
         io = executeQuery(query, query_context, false, DB::QueryProcessingStage::Complete);
         if (io.out)
-            throw DB::Exception("Not support insert query.");
+            throw DB::Exception("Not support insert query.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
         size_t this_encoder_count = 8;
 
@@ -133,11 +136,11 @@ void TCPArrowHandler::startExecuting()
         if (encoder_count > 0)
             this_encoder_count = encoder_count;
         if (this_encoder_count <= 0)
-            throw DB::Exception("Invalid encoder count.");
+            throw DB::Exception("Invalid encoder count.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
         encoder = std::make_shared<ArrowEncoderParall>(io, this_encoder_count);
         if (encoder->hasError())
-            throw DB::Exception(encoder->getErrorString());
+            throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::MAGIC_ENCODER_ERROR);
 
         ARROW_HANDLER_LOG_TRACE("Create " << this_encoder_count << " encoders.");
     }
@@ -174,7 +177,7 @@ void TCPArrowHandler::run()
 TCPArrowHandler::EncoderPtr TCPArrowHandler::getExecution()
 {
     if (!encoder)
-        throw DB::Exception("Sharing empty arrow encoder.");
+        throw DB::Exception("Sharing empty arrow encoder.", DB::ErrorCodes::MAGIC_SESSION_ERROR);
     return encoder;
 }
 
@@ -208,7 +211,7 @@ void TCPArrowHandler::processOrdinaryQuery()
 {
     auto schema = encoder->getEncodedSchema();
     if (encoder->hasError())
-        throw DB::Exception(encoder->getErrorString());
+        throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::MAGIC_ENCODER_ERROR);
 
     writeInt64(Protocol::ArrowSchema, *out);
     writeInt64(schema->size(), *out);
@@ -219,7 +222,7 @@ void TCPArrowHandler::processOrdinaryQuery()
     {
         auto block = encoder->getEncodedBlock();
         if (encoder->hasError())
-            throw DB::Exception(encoder->getErrorString());
+            throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::MAGIC_ENCODER_ERROR);
         if (!block)
             break;
 
@@ -238,7 +241,7 @@ void TCPArrowHandler::processOrdinaryQuery()
     {
         std::stringstream error_ss;
         error_ss << "End process query, residue != 0: " << residue;
-        throw DB::Exception(error_ss.str());
+        throw DB::Exception(error_ss.str(), DB::ErrorCodes::MAGIC_SESSION_ERROR);
     }
 }
 
@@ -246,7 +249,7 @@ void TCPArrowHandler::recvHeader()
 {
     Int64 flag = Magic::readInt64(*in);
     if (flag != Protocol::Header)
-        throw DB::Exception("First package should be header.");
+        throw DB::Exception("First package should be header.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
     protocol_version_major = Magic::readInt64(*in);
     protocol_version_minor = Magic::readInt64(*in);
@@ -262,7 +265,7 @@ void TCPArrowHandler::recvHeader()
             PROTOCOL_VERSION_MAJOR <<
             "." <<
             PROTOCOL_VERSION_MINOR;
-        throw DB::Exception(error_ss.str());
+        throw DB::Exception(error_ss.str(), DB::ErrorCodes::MAGIC_BAD_REQUEST);
     }
 
     Magic::readString(client_name, *in);
@@ -275,7 +278,7 @@ void TCPArrowHandler::recvHeader()
 
     Magic::readString(encoder_name, *in);
     if (encoder_name != "arrow")
-        throw DB::Exception("Only support arrow encoding.");
+        throw DB::Exception("Only support arrow encoding.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
     encoder_version = Magic::readInt64(*in);
     if (encoder_version != PROTOCOL_ENCODER_VERSION)
@@ -286,7 +289,7 @@ void TCPArrowHandler::recvHeader()
             encoder_version <<
             " vs " <<
             PROTOCOL_ENCODER_VERSION;
-        throw DB::Exception(error_ss.str());
+        throw DB::Exception(error_ss.str(), DB::ErrorCodes::MAGIC_BAD_REQUEST);
     }
     encoder_count = Magic::readInt64(*in);
 
@@ -316,11 +319,11 @@ void TCPArrowHandler::recvQuery()
 {
     DB::Int64 flag = Magic::readInt64(*in);
     if (flag != Protocol::Utf8Query)
-        throw DB::Exception("Only receive query string after header.");
+        throw DB::Exception("Only receive query string after header.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
     Magic::readString(query_id, *in);
     if (query_id.empty())
-        throw DB::Exception("Receive empty query_id.");
+        throw DB::Exception("Receive empty query_id.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
     query_context.setCurrentQueryId(query_id);
     Magic::readString(query, *in);
 }
