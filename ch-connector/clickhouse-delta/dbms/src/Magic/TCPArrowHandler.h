@@ -63,12 +63,14 @@ public:
 
     EncoderPtr getExecution();
 
+    void onException(std::string msg = "");
+
 private:
     void processOrdinaryQuery();
     void recvHeader();
     void recvQuery();
 
-    void onException(std::string msg = "");
+    std::string toStr();
 
 private:
     DB::IServer & server;
@@ -107,5 +109,20 @@ private:
 
     CurrentMetrics::Increment metric_increment{CurrentMetrics::TCPConnection};
 };
+
+#define ARROW_HANDLER_LOG_ERROR(message) \
+    do { \
+        LOG_ERROR(log, toStr() << ". " << message); \
+    } while(false)
+
+#define ARROW_HANDLER_LOG_WARNING(message) \
+    do { \
+        LOG_WARNING(log, toStr() << ". " << message); \
+    } while(false)
+
+#define ARROW_HANDLER_LOG_TRACE(message) \
+    do { \
+        LOG_TRACE(log, toStr() << ". " << message); \
+    } while(false)
 
 }
