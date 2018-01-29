@@ -95,9 +95,10 @@ private:
     {
         if (closed)
             return;
-        input.in->readSuffix();
         if (exception)
             input.onException();
+        else
+            input.in->readSuffix();
         input.onFinish();
         closed = true;
     }

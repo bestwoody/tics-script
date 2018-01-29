@@ -160,7 +160,7 @@ public:
             return SafeBlockIO::UnknownSize;
     }
 
-    void cancal(bool exception = false)
+    void cancal(bool exception)
     {
         std::unique_lock<std::mutex> lock{mutex};
         if (!input)
