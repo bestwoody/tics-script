@@ -32,17 +32,14 @@ public:
 
     Poco::Net::TCPServerConnection * create(DB::IServer & server, const Poco::Net::StreamSocket & socket)
     {
-        auto connection = new TCPArrowHandler(server, socket);
-        auto query_id = connection->getQueryId();
-        auto client_index = connection->getClientIndex();
-        auto client_count = connection->getClientCount();
+        auto conn = new TCPArrowHandler(server, socket);
+        auto query_id = conn->getQueryId();
+        auto client_index = conn->getClientIndex();
 
-        std::stringstream info_ss;
-        info_ss << "query_id: " << query_id << ", client #" << client_index << "/" << client_count;
-        std::string query_info = info_ss.str();
+        std::string conn_info = conn->toStr();
 
-        LOG_TRACE(log, "TCP arrow connection established, " << query_info << ", " <<
-            connection->getQuery() << ", address: " << socket.peerAddress().toString());
+        LOG_TRACE(log, conn_info << ", " << socket.peerAddress().toString() <<
+            " connected. " << conn->getQuery());
 
         std::unique_lock<std::mutex> lock{mutex};
 
@@ -53,9 +50,10 @@ public:
             Session & session = it->second;
 
             if (size_t(session.client_count) <= session.active_clients.size())
-                throw DB::Exception("Join to session fail, too much clients: " + query_info);
-
-            LOG_TRACE(log, "Connection join to " << query_info);
+            {
+                conn->onException("Join to session fail, too many clients.");
+                return conn;
+            }
 
             if (!session.execution)
             {
@@ -63,13 +61,14 @@ public:
                 auto seconds = difftime(now, session.create_time);
                 if (seconds >= finished_session_expired_seconds && session.finished())
                 {
-                    LOG_WARNING(log, "Relaunch query found, clean and re-execute: " << query_info);
+                    LOG_WARNING(log, conn_info << ". Relaunch query found, clean and re-execute.");
                     sessions.erase(it);
                     it = sessions.end();
                 }
                 else
                 {
-                    throw DB::Exception("Join to expired session, " + query_info);
+                    conn->onException("Join failed, too many clients.");
+                    return conn;
                 }
             }
             else
@@ -77,60 +76,62 @@ public:
                 auto activation = session.active_clients.find(client_index);
                 if (activation != session.active_clients.end())
                 {
-                    throw DB::Exception("Double join to running session, " + query_info +
-                        ", previous is " + (activation->second ? "active" : "inactive"));
+                    conn->onException(". Session: " + session.str() +
+                        ". Double join, prev: [" + (activation->second ? "+" : "-") + "]");
+                    return conn;
                 }
                 else
                 {
-                    connection->setExecution(session.execution);
+                    LOG_TRACE(log, conn_info << ". Session: " << session.str() << ". Connection joint.");
+                    conn->setExecution(session.execution);
                 }
             }
         }
 
         if (it == sessions.end())
         {
-            auto client_count = connection->getClientCount();
-            LOG_TRACE(log, "First connection, " << query_info << ", query: " << connection->getQuery());
+            auto client_count = conn->getClientCount();
+            LOG_TRACE(log, conn_info << ". First connection, sessions: " << sessions.size());
 
-            connection->startExecuting();
+            conn->startExecuting();
 
-            sessions.emplace(query_id, Session(client_count, connection->getExecution()));
+            sessions.emplace(query_id, Session(client_count, conn->getExecution()));
             it = sessions.find(query_id);
         }
 
         it->second.active_clients.emplace(client_index, true);
 
-        return connection;
+        return conn;
     }
 
-    void clear(TCPArrowHandler * connection)
+    void clear(TCPArrowHandler * conn)
     {
         std::unique_lock<std::mutex> lock{mutex};
 
-        auto query_id = connection->getQueryId();
-        auto client_index = connection->getClientIndex();
+        auto query_id = conn->getQueryId();
+        auto client_index = conn->getClientIndex();
+        std::string conn_info = conn->toStr();
+
         Sessions::iterator it = sessions.find(query_id);
 
         if (it == sessions.end())
-            throw DB::Exception("Clear connection in query_id: " + query_id + " failed, session not found.");
+        {
+            LOG_ERROR(log, conn_info << ". Clear connection failed, session not found.");
+            return;
+        }
 
         Session & session = it->second;
+        session.finish(client_index);
 
-        session.active_clients[client_index] = false;
-        session.finished_clients += 1;
+        conn_info += ". Session: " + session.str();
 
-        LOG_TRACE(log, "Connection done in query_id: " << query_id <<
-            ", connections: " << session.client_count << "-" << session.finished_clients <<
-            "=" << (session.client_count - session.finished_clients) <<
-            ", client #" << client_index << "/" << session.client_count <<
-            ", execution ref: " << session.execution.use_count());
+        LOG_TRACE(log, conn_info << ". Connection done.");
 
         // Can't remove session immidiatly, may cause double running.
         // Leave a tombstone for further clean up
         if (session.finished())
         {
-            LOG_TRACE(log, "Clear session query_id: " << query_id << ", sessions: " << sessions.size() <<
-                ", execution ref: " << session.execution.use_count());
+            LOG_TRACE(log, conn_info << ". Clear session. sessions: " << sessions.size());
             session.active_clients.clear();
             session.execution = NULL;
         }
@@ -148,9 +149,7 @@ public:
                 {
                     if (seconds >= unfinished_session_expired_seconds)
                     {
-                        LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
-                            session.active_clients.size() << ", execution ref: " << session.execution.use_count() <<
-                            ". Force clean now.");
+                        LOG_WARNING(log, conn_info << ". Session expired but not finished, force clean now.");
                         session.active_clients.clear();
                         // TODO: Force disconnect
                         session.execution->cancal(false);
@@ -164,8 +163,7 @@ public:
                     // Not clean it too fast, for relaunch query detecting.
                     if (seconds >= unfinished_session_expired_seconds)
                     {
-                        LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
-                            it->first << ", created: " << seconds << "s.");
+                        LOG_TRACE(log, conn_info << ". Session expired, cleaning tombstone.");
                         it = sessions.erase(it);
                         continue;
                     }
@@ -182,7 +180,10 @@ private:
         DB::Int64 client_count;
         TCPArrowHandler::EncoderPtr execution;
         DB::Int64 finished_clients;
+
+        // TODO: Use vector instead of map.
         std::unordered_map<Int64, bool> active_clients;
+
         time_t create_time;
 
         Session(Int64 client_count_, TCPArrowHandler::EncoderPtr execution_) :
@@ -190,9 +191,31 @@ private:
         {
         }
 
+        void finish(DB::Int64 client_index)
+        {
+            active_clients[client_index] = false;
+            finished_clients += 1;
+        }
+
         bool finished()
         {
             return finished_clients >= client_count;
+        }
+
+        std::string str()
+        {
+            std::stringstream ss;
+            ss << finished_clients << "/" << client_count << " [";
+
+            std::vector<DB::Int8> flags(client_count, 0);
+            for (auto it = active_clients.begin(); it != active_clients.end(); ++it)
+                flags[it->first] = (it->second ? 1 : -1);
+            for (auto it = flags.begin(); it != flags.end(); ++it)
+                ss << ((*it == 0) ? "-" : ((*it == 1) ? "*" : "+"));
+
+            time_t now = time(0);
+            ss << "] lived " << difftime(now, create_time) << " s";
+            return ss.str();
         }
     };
 

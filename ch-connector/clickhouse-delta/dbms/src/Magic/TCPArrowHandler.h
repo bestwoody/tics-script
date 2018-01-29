@@ -65,12 +65,12 @@ public:
 
     void onException(std::string msg = "");
 
+    std::string toStr();
+
 private:
     void processOrdinaryQuery();
     void recvHeader();
     void recvQuery();
-
-    std::string toStr();
 
 private:
     DB::IServer & server;

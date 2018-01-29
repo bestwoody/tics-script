@@ -154,22 +154,21 @@ void TCPArrowHandler::startExecuting()
 
 void TCPArrowHandler::run()
 {
-    if (failed)
-        return;
-
     Stopwatch watch;
 
-    try
+    if (!failed)
     {
-       processOrdinaryQuery();
-    }
-    catch (...)
-    {
-        onException();
+        try
+        {
+           processOrdinaryQuery();
+        }
+        catch (...)
+        {
+            onException();
+        }
     }
 
     watch.stop();
-
     ARROW_HANDLER_LOG_TRACE(std::fixed << std::setprecision(3) <<
         "Processed in " << watch.elapsedSeconds() << " sec.");
 }
@@ -218,7 +217,7 @@ void TCPArrowHandler::processOrdinaryQuery()
     out->write((const char*)schema->data(), schema->size());
     out->next();
 
-    while (!server.isCancelled())
+    while (!server.isCancelled() && !failed)
     {
         auto block = encoder->getEncodedBlock();
         if (encoder->hasError())
