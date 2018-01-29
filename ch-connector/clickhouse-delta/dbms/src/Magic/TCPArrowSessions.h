@@ -26,7 +26,7 @@ public:
         return global_instance;
     }
 
-    TCPArrowSessions() : log(&Logger::get("TCPArrowSessions"))
+    TCPArrowSessions() : log(&Logger::get("TCPArrowSession"))
     {
     }
 
@@ -82,8 +82,8 @@ public:
                 }
                 else
                 {
-                    LOG_TRACE(log, conn_info << ". Session: " << session.str() << ". Connection joint.");
                     conn->setExecution(session.execution);
+                    LOG_TRACE(log, conn_info << ". Session: " << session.str() << ". Connection joint.");
                 }
             }
         }
@@ -207,11 +207,11 @@ private:
             std::stringstream ss;
             ss << finished_clients << "/" << client_count << " [";
 
-            std::vector<DB::Int8> flags(client_count, 0);
+            std::vector<DB::UInt8> flags(client_count, 0);
             for (auto it = active_clients.begin(); it != active_clients.end(); ++it)
-                flags[it->first] = (it->second ? 1 : -1);
+                flags[it->first] = (it->second ? 1 : 2);
             for (auto it = flags.begin(); it != flags.end(); ++it)
-                ss << ((*it == 0) ? "-" : ((*it == 1) ? "*" : "+"));
+                ss << ((*it == 0) ? "-" : ((*it == 1) ? "+" : "*"));
 
             time_t now = time(0);
             ss << "] lived " << difftime(now, create_time) << " s";
