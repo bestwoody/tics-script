@@ -337,11 +337,11 @@ std::string TCPArrowHandler::toStr()
         client_index <<
         "/" <<
         client_count <<
-        ", execution: " <<
-        ((bool)encoder ? "good" : "null") <<
+        ", exe: " <<
+        ((bool)encoder ? "+" : "-") <<
         ", ref: " <<
         encoder.use_count() <<
-        ", status: " <<
+        ", " <<
         (failed ? "failed" : "good");
 
     return info_ss.str();

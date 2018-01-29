@@ -15,7 +15,7 @@ namespace Magic
 // TODO: Move to config file
 static size_t max_sessions_count = 32;
 static size_t unfinished_session_expired_seconds = 60 * 60;
-static size_t finished_session_expired_seconds = 2;
+static size_t finished_session_expired_seconds = 3;
 
 class TCPArrowSessions
 {
@@ -49,7 +49,7 @@ public:
         {
             Session & session = it->second;
 
-            if (size_t(session.client_count) <= session.active_clients.size())
+            if (size_t(session.client_count) <= session.connected_clients)
             {
                 conn->onException("Join to session fail, too many clients.");
                 return conn;
@@ -73,17 +73,17 @@ public:
             }
             else
             {
-                auto activation = session.active_clients.find(client_index);
-                if (activation != session.active_clients.end())
+                auto conn_status = session.clients[client_index];
+                if (conn_status != Session::ConnUnconnect)
                 {
                     conn->onException(". Session: " + session.str() +
-                        ". Double join, prev: [" + (activation->second ? "+" : "-") + "]");
+                        ". Double join, prev: [" + Session::connStatusStr(conn_status) + "]");
                     return conn;
                 }
                 else
                 {
                     conn->setExecution(session.execution);
-                    LOG_TRACE(log, conn_info << ". Session: " << session.str() << ". Connection joint.");
+                    LOG_TRACE(log, conn->toStr() << ". Session: " << session.str() << ". Connection joint.");
                 }
             }
         }
@@ -99,7 +99,7 @@ public:
             it = sessions.find(query_id);
         }
 
-        it->second.active_clients.emplace(client_index, true);
+        it->second.connected(client_index);
 
         return conn;
     }
@@ -121,7 +121,7 @@ public:
         }
 
         Session & session = it->second;
-        session.finish(client_index);
+        session.done(client_index);
 
         conn_info += ". Session: " + session.str();
 
@@ -132,7 +132,7 @@ public:
         if (session.finished())
         {
             LOG_TRACE(log, conn_info << ". Clear session. sessions: " << sessions.size());
-            session.active_clients.clear();
+            session.clients.clear();
             session.execution = NULL;
         }
 
@@ -150,7 +150,7 @@ public:
                     if (seconds >= unfinished_session_expired_seconds)
                     {
                         LOG_WARNING(log, conn_info << ". Session expired but not finished, force clean now.");
-                        session.active_clients.clear();
+                        session.clients.clear();
                         // TODO: Force disconnect
                         session.execution->cancal(false);
                         session.execution = NULL;
@@ -177,23 +177,41 @@ public:
 private:
     struct Session
     {
-        DB::Int64 client_count;
+        size_t client_count;
         TCPArrowHandler::EncoderPtr execution;
-        DB::Int64 finished_clients;
+        size_t finished_clients;
+        size_t connected_clients;
 
-        // TODO: Use vector instead of map.
-        std::unordered_map<Int64, bool> active_clients;
+        std::vector<DB::UInt8> clients;
 
         time_t create_time;
 
-        Session(Int64 client_count_, TCPArrowHandler::EncoderPtr execution_) :
-            client_count(client_count_), execution(execution_), finished_clients(0), create_time(time(0))
+        enum
+        {
+            ConnUnconnect = DB::UInt8(0),
+            ConnConnected = DB::UInt8(1),
+            ConnFinished = DB::UInt8(2),
+        };
+
+        Session(size_t client_count_, TCPArrowHandler::EncoderPtr execution_) :
+            client_count(client_count_),
+            execution(execution_),
+            finished_clients(0),
+            connected_clients(0),
+            clients(client_count_, ConnUnconnect),
+            create_time(time(0))
         {
         }
 
-        void finish(DB::Int64 client_index)
+        void connected(size_t client_index)
         {
-            active_clients[client_index] = false;
+            clients[client_index] = ConnConnected;
+            connected_clients += 1;
+        }
+
+        void done(size_t client_index)
+        {
+            clients[client_index] = ConnFinished;
             finished_clients += 1;
         }
 
@@ -207,15 +225,17 @@ private:
             std::stringstream ss;
             ss << finished_clients << "/" << client_count << " [";
 
-            std::vector<DB::UInt8> flags(client_count, 0);
-            for (auto it = active_clients.begin(); it != active_clients.end(); ++it)
-                flags[it->first] = (it->second ? 1 : 2);
-            for (auto it = flags.begin(); it != flags.end(); ++it)
-                ss << ((*it == 0) ? "-" : ((*it == 1) ? "+" : "*"));
+            for (auto it = clients.begin(); it != clients.end(); ++it)
+                ss << connStatusStr(*it);
 
             time_t now = time(0);
-            ss << "] lived " << difftime(now, create_time) << " s";
+            ss << "] lived " << difftime(now, create_time) << "s";
             return ss.str();
+        }
+
+        static std::string connStatusStr(DB::UInt8 status)
+        {
+            return ((status == ConnUnconnect) ? "-" : ((status == ConnConnected) ? "+" : "*"));
         }
     };
 
