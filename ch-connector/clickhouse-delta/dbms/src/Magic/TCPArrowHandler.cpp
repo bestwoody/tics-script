@@ -113,7 +113,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
 
 TCPArrowHandler::~TCPArrowHandler()
 {
-    TCPArrowSessions::instance().clear(this);
+    TCPArrowSessions::instance().clear(this, failed);
 }
 
 void TCPArrowHandler::startExecuting()

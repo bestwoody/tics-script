@@ -104,7 +104,7 @@ public:
         return conn;
     }
 
-    void clear(TCPArrowHandler * conn)
+    void clear(TCPArrowHandler * conn, bool failed)
     {
         std::unique_lock<std::mutex> lock{mutex};
 
@@ -121,7 +121,10 @@ public:
         }
 
         Session & session = it->second;
-        session.done(client_index);
+        if (failed)
+            session.failed(client_index);
+        else
+            session.done(client_index);
 
         conn_info += ". Session: " + session.str();
 
@@ -191,6 +194,7 @@ private:
             ConnUnconnect = DB::UInt8(0),
             ConnConnected = DB::UInt8(1),
             ConnFinished = DB::UInt8(2),
+            ConnFailed = DB::UInt8(3),
         };
 
         Session(size_t client_count_, TCPArrowHandler::EncoderPtr execution_) :
@@ -215,6 +219,11 @@ private:
             finished_clients += 1;
         }
 
+        void failed(size_t client_index)
+        {
+            clients[client_index] = ConnFailed;
+        }
+
         bool finished()
         {
             return finished_clients >= client_count;
@@ -235,7 +244,18 @@ private:
 
         static std::string connStatusStr(DB::UInt8 status)
         {
-            return ((status == ConnUnconnect) ? "-" : ((status == ConnConnected) ? "+" : "*"));
+            switch (status)
+            {
+                case ConnUnconnect:
+                    return "-";
+                case ConnConnected:
+                    return "+";
+                case ConnFailed:
+                    return "|";
+                case ConnFinished:
+                    return "*";
+            }
+            return "?";
         }
     };
 
