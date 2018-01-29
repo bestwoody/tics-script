@@ -64,8 +64,8 @@ TCPArrowHandler::TCPArrowHandler(IServer & server_, const Poco::Net::StreamSocke
         {
             if (!connection_context.isDatabaseExist(default_database))
             {
-                Exception e("Database " + default_database + " doesn't exist", ErrorCodes::UNKNOWN_DATABASE);
-                LOG_ERROR(log, "Code: " << e.code() << ", e.displayText() = " << e.displayText()
+                Exception e("Database " + default_database + " doesn't exist, query_id: " + query_id, ErrorCodes::UNKNOWN_DATABASE);
+                LOG_ERROR(log, "Code: " << e.code() << ", query_id: " << query_id << ", e.displayText() = " << e.displayText()
                     << ", Stack trace:\n\n" << e.getStackTrace().toString());
                 throw e;
             }
@@ -121,7 +121,7 @@ void TCPArrowHandler::startExecuting()
     {
         io = executeQuery(query, query_context, false, QueryProcessingStage::Complete);
         if (io.out)
-            throw Exception("TCPArrowHandler do not support insert query.");
+            throw Exception("TCPArrowHandler do not support insert query, query_id: " + query_id);
 
         size_t this_encoder_count = 8;
 
@@ -130,11 +130,11 @@ void TCPArrowHandler::startExecuting()
         if (encoder_count > 0)
             this_encoder_count = encoder_count;
         if (this_encoder_count <= 0)
-            throw Exception("Encoder number invalid.");
+            throw Exception("Encoder number invalid, query_id: " + query_id);
 
         encoder = std::make_shared<Magic::ArrowEncoderParall>(io, this_encoder_count);
         if (encoder->hasError())
-            throw Exception(encoder->getErrorString());
+            throw Exception(encoder->getErrorString() + ", query_id: " + query_id);
 
         LOG_INFO(log, "TCPArrowHandler create arrow encoder, concurrent threads: " << this_encoder_count <<
             ", execution ref: " << encoder.use_count());
@@ -196,7 +196,7 @@ void TCPArrowHandler::processOrdinaryQuery()
 {
     auto schema = encoder->getEncodedSchema();
     if (encoder->hasError())
-        throw Exception(encoder->getErrorString());
+        throw Exception(encoder->getErrorString() + ", query_id: " + query_id);
 
     Magic::writeInt64(Magic::Protocol::ArrowSchema, *out);
     Magic::writeInt64(schema->size(), *out);
@@ -207,7 +207,7 @@ void TCPArrowHandler::processOrdinaryQuery()
     {
         auto block = encoder->getEncodedBlock();
         if (encoder->hasError())
-            throw Exception(encoder->getErrorString());
+            throw Exception(encoder->getErrorString() + ", query_id: " + query_id);
         if (!block)
             break;
 
@@ -224,8 +224,8 @@ void TCPArrowHandler::processOrdinaryQuery()
     auto residue = encoder->residue();
     if (residue != 0)
     {
-        std::string msg = "End process ordinary query, residue != 0";
-        LOG_ERROR(log, msg << residue);
+        std::string msg = "End process ordinary query, query_id: " + query_id + ", residue != 0";
+        LOG_ERROR(log, msg << ", " << residue);
         throw Exception(msg);
     }
 }
@@ -234,7 +234,7 @@ void TCPArrowHandler::recvHeader()
 {
     Int64 flag = Magic::readInt64(*in);
     if (flag != Magic::Protocol::Header)
-        throw Exception("TCP arrow request: first package should be header.");
+        throw Exception("TCP arrow request: first package should be header, query_id: " + query_id);
 
     protocol_version_major = Magic::readInt64(*in);
     protocol_version_minor = Magic::readInt64(*in);
@@ -243,7 +243,7 @@ void TCPArrowHandler::recvHeader()
         std::stringstream error_ss;
         error_ss << "TCP arrow request: protocol version not match: " <<
             protocol_version_major << "." << protocol_version_minor << " vs " <<
-            PROTOCOL_VERSION_MAJOR << "." << PROTOCOL_VERSION_MINOR;
+            PROTOCOL_VERSION_MAJOR << "." << PROTOCOL_VERSION_MINOR << ", query_id: " << query_id;
         throw Exception(error_ss.str());
     }
 
@@ -257,13 +257,14 @@ void TCPArrowHandler::recvHeader()
 
     Magic::readString(encoder_name, *in);
     if (encoder_name != "arrow")
-        throw Exception("TCPArrowHandler only support arrow encoding, required: `" + encoder_name + "`");
+        throw Exception("TCPArrowHandler only support arrow encoding, required: `" + encoder_name + "`, query_id: " + query_id);
 
     encoder_version = Magic::readInt64(*in);
     if (encoder_version != PROTOCOL_ENCODER_VERSION)
     {
         std::stringstream error_ss;
-        error_ss << "TCPArrowHandler encoder version not match: " << encoder_version << " vs " << PROTOCOL_ENCODER_VERSION;
+        error_ss << "TCPArrowHandler encoder version not match: "
+            << encoder_version << " vs " << PROTOCOL_ENCODER_VERSION << ", query_id: " << query_id;
         throw Exception(error_ss.str());
     }
     encoder_count = Magic::readInt64(*in);
@@ -279,11 +280,11 @@ void TCPArrowHandler::recvQuery()
 {
     Int64 flag = Magic::readInt64(*in);
     if (flag != Magic::Protocol::Utf8Query)
-        throw Exception("TCPArrowHandler only receive query string.");
+        throw Exception("TCPArrowHandler only receive query string, query_id: " + query_id);
 
     Magic::readString(query_id, *in);
     if (query_id.empty())
-        throw Exception("Receive empty query_id.");
+        throw Exception("Receive empty query_id, query_id: " + query_id);
     query_context.setCurrentQueryId(query_id);
     Magic::readString(query, *in);
 }

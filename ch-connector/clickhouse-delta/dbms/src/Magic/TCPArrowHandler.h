@@ -51,7 +51,7 @@ public:
     EncoderPtr getExecution()
     {
         if (!encoder)
-            throw Exception("Share empty arrow encoder");
+            throw Exception("Share empty arrow encoder, query_id: " + query_id);
         return encoder;
     }
 
