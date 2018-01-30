@@ -82,10 +82,14 @@ class CHExecutorParall(
   private val decodeds: BlockingQueue[Result] = new LinkedBlockingQueue[Result](threads)
   private val executor = new CHExecutor(qid, query, host, port, encoders, clientCount, clientIndex)
 
-  startDecode()
-  startFetch()
+  private val decoders = startDecode()
+  private val fetcher = startFetch()
 
-  def close(): Unit = executor.close
+  def close(): Unit = {
+    executor.close
+    fetcher.join
+    decoders.foreach(_.join)
+  }
 
   def getSchema(): Schema = executor.getSchema
 
@@ -121,7 +125,7 @@ class CHExecutorParall(
   }
 
   // TODO: May need multi threads fetcher
-  private def startFetch(): Unit = {
+  private def startFetch(): Thread = {
     val fetcher = new Thread {
       override def run {
         try {
@@ -149,6 +153,7 @@ class CHExecutorParall(
       }
     }
     fetcher.start
+    fetcher
   }
 
   // TODO: Reorder blocks may faster, in some cases

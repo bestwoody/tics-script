@@ -1,6 +1,7 @@
 set -eu
 
 log="stable-test.log"
+rm -f "$log"
 
 for (( i = 0; i < 1000; i++ )); do
 	for (( j =1; j <= 21; j++ )); do
@@ -11,9 +12,9 @@ for (( i = 0; i < 1000; i++ )); do
 
 		# ./clear-page-cache.sh
 
-		echo "## runing q $j"  >>$log
-		echo ./tpch-spark-q.sh $j 16 16 16 >>$log 2>&1
-		./tpch-spark-q.sh $j 16 16 16 >>$log 2>&1
+		echo "## running q $j"  >>$log
+		echo ./tpch-spark-q.sh $j 16 1 16 >>$log 2>&1
+		./tpch-spark-q.sh $j 16 1 16 >>$log 2>&1
 
 	done
 done

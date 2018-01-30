@@ -1,20 +1,24 @@
 sql="$1"
 partitions="$2"
 decoders="$3"
+encoders="$4"
 
 set -eu
 
 source ./_env.sh
 
 if [ -z "$partitions" ]; then
-	partitions="8"
+	partitions="4"
 fi
 if [ -z "$decoders" ]; then
-	decoders="8"
+	decoders="2"
+fi
+if [ -z "$encoders" ]; then
+	encoders="4"
 fi
 
 if [ -z "$sql" ]; then
-	echo "<bin> usage: <bin> query-sql [partitions=8] [decoders=8]" >&2
+	echo "<bin> usage: <bin> query-sql [partitions=4] [decoders=2] [encoders=4]" >&2
 	exit 1
 fi
 
@@ -29,7 +33,7 @@ echo 'spark.conf.set("spark.ch.plan.pushdown.agg", "'$pushdown'")' >> "$tmp"
 echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./ch-q.sh "show tables" | while read table; do
-	echo "ch.mapCHClusterTable(table=\"$table\", partitions=$partitions, decoders=$decoders)" >> "$tmp"
+	echo "ch.mapCHClusterTable(table=\"$table\", partitions=$partitions, decoders=$decoders, encoders=$encoders)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"
