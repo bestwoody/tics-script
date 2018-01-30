@@ -130,14 +130,26 @@ public:
 
         conn_info += ". Session: " + session.str();
 
-        LOG_TRACE(log, conn_info << ". Connection done.");
-
-        // Can't remove session immidiatly, may cause double running.
-        // Leave a tombstone for further clean up
         if (session.finished())
         {
-            LOG_TRACE(log, conn_info << ". Clear session. sessions: " << sessions.size());
-            session.execution = NULL;
+            if (session.client_count == 1)
+            {
+                // Fast clean up for one client session
+                LOG_TRACE(log, conn_info << ". Connection done, session cleared. sessions: " << sessions.size());
+                sessions.erase(it);
+                return;
+            }
+            else
+            {
+                // Can't remove session immidiatly, may cause double running.
+                // Leave a tombstone for further clean up
+                LOG_TRACE(log, conn_info << ". Connection done, session=>tombstone. sessions: " << sessions.size());
+                session.execution = NULL;
+            }
+        }
+        else
+        {
+            LOG_TRACE(log, conn_info << ". Connection done.");
         }
 
         // The further operation: clean up tombstones
