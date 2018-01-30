@@ -83,7 +83,7 @@ public:
                 else
                 {
                     conn->setExecution(session.execution);
-                    LOG_TRACE(log, conn->toStr() << ". Session: " << session.str() << ". Connection joint.");
+                    LOG_TRACE(log, conn->toStr() << ". Session: " << session.str() << ". Connection joined.");
                 }
             }
         }
