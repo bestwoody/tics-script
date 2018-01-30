@@ -333,14 +333,14 @@ std::string TCPArrowHandler::toStr()
 
     info_ss <<
         query_id <<
-        ", #" <<
+        " #" <<
         client_index <<
         "/" <<
         client_count <<
-        ", exe" <<
+        " r" <<
         ((bool)encoder ? "+" : "-") <<
         encoder.use_count() <<
-        ", " <<
+        " " <<
         (failed ? "failed" : "good");
 
     return info_ss.str();

@@ -78,7 +78,7 @@ class CHScanRDD(
     split.asInstanceOf[CHPartition].table.host :: Nil
 
   override protected def getPartitions: Array[Partition] = {
-    val qid = CHUtil.genQueryId()
+    val qid = CHUtil.genQueryId("G")
     val result = new ListBuffer[CHPartition]
     var index = 0
     tables.foreach(table => {

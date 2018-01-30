@@ -61,7 +61,7 @@ public:
                 auto seconds = difftime(now, session.create_time);
                 if (seconds >= finished_session_expired_seconds && session.finished())
                 {
-                    LOG_WARNING(log, conn_info << ". Relaunch query found, clean and re-execute.");
+                    LOG_WARNING(log, conn_info << ". Relaunch query found.");
                     sessions.erase(it);
                     it = sessions.end();
                 }
@@ -76,7 +76,7 @@ public:
                 auto conn_status = session.clients[client_index];
                 if (conn_status != Session::ConnUnconnect)
                 {
-                    conn->onException(". Session: " + session.str() +
+                    conn->onException("Session: " + session.str() +
                         ". Double join, prev: [" + Session::connStatusStr(conn_status) + "]");
                     return conn;
                 }
