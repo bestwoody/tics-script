@@ -1,4 +1,4 @@
-add_library(ch SHARED JNI.cpp Bench.cpp)
+add_library (ch SHARED JNI.cpp Bench.cpp)
 
 target_link_libraries (
     ch
@@ -10,14 +10,17 @@ target_link_libraries (
     clickhouse_table_functions
     arrow)
 
-target_include_directories(ch PRIVATE ${ClickHouse_SOURCE_DIR}/../../protocol/c-jni)
+target_include_directories (ch PRIVATE ${ClickHouse_SOURCE_DIR}/../../protocol/c-jni)
 
 find_package(JNI)
 if (JNI_FOUND)
     target_include_directories(ch PRIVATE ${JNI_INCLUDE_DIRS})
 endif()
 
-add_executable(ch-raw CHRaw.cpp)
+add_executable(ch-raw
+    ../Server/StatusFile.cpp
+    ../Server/ConfigReloader.cpp
+    CHRaw.cpp)
 
 target_link_libraries (
     ch-raw

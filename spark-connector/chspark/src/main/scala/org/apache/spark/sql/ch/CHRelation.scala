@@ -15,6 +15,8 @@
 
 package org.apache.spark.sql.ch
 
+import scala.collection.mutable.Set
+
 import org.apache.arrow.vector.types.FloatingPointPrecision
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SQLContext
@@ -24,6 +26,9 @@ import org.apache.arrow.vector.types.pojo.Schema
 
 class CHRelation(val tables: Seq[CHTableRef], val partitions: Int, val decoders: Int, val encoders: Int)
   (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
+
+  if (tables.size != tables.toSet.size)
+    throw new Exception("Duplicated tables: " + tables.toString)
 
   override lazy val schema: StructType = {
     CHTableInfos.getInfo(tables).schema

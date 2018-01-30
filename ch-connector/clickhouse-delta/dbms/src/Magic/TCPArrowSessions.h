@@ -9,13 +9,13 @@
 
 #include "TCPArrowHandler.h"
 
-namespace DB
+namespace Magic
 {
 
 // TODO: Move to config file
 static size_t max_sessions_count = 32;
 static size_t unfinished_session_expired_seconds = 60 * 60;
-static size_t finished_session_expired_seconds = 15;
+static size_t finished_session_expired_seconds = 3;
 
 class TCPArrowSessions
 {
@@ -26,22 +26,20 @@ public:
         return global_instance;
     }
 
-    TCPArrowSessions() : log(&Logger::get("TCPArrowSessions"))
+    TCPArrowSessions() : log(&Logger::get("TCPArrowSession"))
     {
     }
 
-    Poco::Net::TCPServerConnection * create(IServer & server, const Poco::Net::StreamSocket & socket)
+    Poco::Net::TCPServerConnection * create(DB::IServer & server, const Poco::Net::StreamSocket & socket)
     {
-        auto connection = new TCPArrowHandler(server, socket);
-        auto query_id = connection->getQueryId();
-        auto client_index = connection->getClientIndex();
-        auto client_count = connection->getClientCount();
+        auto conn = new TCPArrowHandler(server, socket);
+        auto query_id = conn->getQueryId();
+        auto client_index = conn->getClientIndex();
 
-        std::stringstream info_ss;
-        info_ss << "query_id: " << query_id << ", client #" << client_index << "/" << client_count;
-        std::string query_info = info_ss.str();
+        std::string conn_info = conn->toStr();
 
-        LOG_TRACE(log, "TCP arrow connection established, " << query_info << ", " + connection->getQuery());
+        LOG_TRACE(log, conn_info << ", " << socket.peerAddress().toString() <<
+            " connected. " << conn->getQuery());
 
         std::unique_lock<std::mutex> lock{mutex};
 
@@ -51,10 +49,11 @@ public:
         {
             Session & session = it->second;
 
-            if (size_t(session.client_count) <= session.active_clients.size())
-                throw Exception("Join to session fail, too much clients: " + query_info);
-
-            LOG_TRACE(log, "Connection join to " << query_info);
+            if (size_t(session.client_count) <= session.connected_clients)
+            {
+                conn->onException("Join to session fail, too many clients.");
+                return conn;
+            }
 
             if (!session.execution)
             {
@@ -62,75 +61,81 @@ public:
                 auto seconds = difftime(now, session.create_time);
                 if (seconds >= finished_session_expired_seconds && session.finished())
                 {
-                    LOG_WARNING(log, "Relaunch query found, clean and re-execute: " << query_info);
+                    LOG_WARNING(log, conn_info << ". Relaunch query found.");
                     sessions.erase(it);
                     it = sessions.end();
                 }
                 else
                 {
-                    throw Exception("Join to expired session, " + query_info);
+                    conn->onException("Join failed, too many clients.");
+                    return conn;
                 }
             }
             else
             {
-                auto activation = session.active_clients.find(client_index);
-                if (activation != session.active_clients.end())
+                auto conn_status = session.clients[client_index];
+                if (conn_status != Session::ConnUnconnect)
                 {
-                    throw Exception("Double join to running session, " + query_info +
-                        ", previous is " + (activation->second ? "active" : "inactive"));
+                    conn->onException("Session: " + session.str() +
+                        ". Double join, prev: [" + Session::connStatusStr(conn_status) + "]");
+                    return conn;
                 }
                 else
                 {
-                    connection->setExecution(session.execution);
+                    conn->setExecution(session.execution);
+                    LOG_TRACE(log, conn->toStr() << ". Session: " << session.str() << ". Connection joined.");
                 }
             }
         }
 
         if (it == sessions.end())
         {
-            auto client_count = connection->getClientCount();
-            LOG_TRACE(log, "First connection, " << query_info << ", query: " << connection->getQuery());
+            auto client_count = conn->getClientCount();
+            LOG_TRACE(log, conn_info << ". First connection, sessions: " << sessions.size());
 
-            connection->startExecuting();
+            conn->startExecuting();
 
-            sessions.emplace(query_id, Session(client_count, connection->getExecution()));
+            sessions.emplace(query_id, Session(client_count, conn->getExecution()));
             it = sessions.find(query_id);
         }
 
-        it->second.active_clients.emplace(client_index, true);
+        it->second.connected(client_index);
 
-        return connection;
+        return conn;
     }
 
-    void clear(TCPArrowHandler * connection)
+    void clear(TCPArrowHandler * conn, bool failed)
     {
         std::unique_lock<std::mutex> lock{mutex};
 
-        auto query_id = connection->getQueryId();
-        auto client_index = connection->getClientIndex();
+        auto query_id = conn->getQueryId();
+        auto client_index = conn->getClientIndex();
+        std::string conn_info = conn->toStr();
+
         Sessions::iterator it = sessions.find(query_id);
 
         if (it == sessions.end())
-            throw Exception("Clear connection in query_id: " + query_id + " failed, session not found.");
+        {
+            LOG_ERROR(log, conn_info << ". Clear connection failed, session not found.");
+            return;
+        }
 
         Session & session = it->second;
+        if (failed)
+            session.failed(client_index);
+        else
+            session.done(client_index);
 
-        session.active_clients[client_index] = false;
-        session.finished_clients += 1;
+        conn_info += ". Session: " + session.str();
 
-        LOG_TRACE(log, "Connection done in query_id: " << query_id <<
-            ", connections: " << session.client_count << "-" << session.finished_clients <<
-            "=" << (session.client_count - session.finished_clients) <<
-            ", client #" << client_index << "/" << session.client_count <<
-            ", execution ref: " << session.execution.use_count());
+        LOG_TRACE(log, conn_info << ". Connection done.");
 
         // Can't remove session immidiatly, may cause double running.
         // Leave a tombstone for further clean up
         if (session.finished())
         {
-            LOG_TRACE(log, "Clear session query_id: " << query_id << ", sessions: " << sessions.size() <<
-                ", execution ref: " << session.execution.use_count());
-            session.active_clients.clear();
+            LOG_TRACE(log, conn_info << ". Clear session. sessions: " << sessions.size());
+            session.clients.clear();
             session.execution = NULL;
         }
 
@@ -147,10 +152,8 @@ public:
                 {
                     if (seconds >= unfinished_session_expired_seconds)
                     {
-                        LOG_TRACE(log, "Session expired, but not finished, active clients: " <<
-                            session.active_clients.size() << ", execution ref: " << session.execution.use_count() <<
-                            ". Force clean now.");
-                        session.active_clients.clear();
+                        LOG_WARNING(log, conn_info << ". Session expired but not finished, force clean now.");
+                        session.clients.clear();
                         // TODO: Force disconnect
                         session.execution->cancal(false);
                         session.execution = NULL;
@@ -163,8 +166,7 @@ public:
                     // Not clean it too fast, for relaunch query detecting.
                     if (seconds >= unfinished_session_expired_seconds)
                     {
-                        LOG_TRACE(log, "Session expired, cleaning tombstone. query_id: " <<
-                            it->first << ", created: " << seconds << "s.");
+                        LOG_TRACE(log, conn_info << ". Session expired, cleaning tombstone.");
                         it = sessions.erase(it);
                         continue;
                     }
@@ -178,24 +180,86 @@ public:
 private:
     struct Session
     {
-        Int64 client_count;
+        size_t client_count;
         TCPArrowHandler::EncoderPtr execution;
-        Int64 finished_clients;
-        std::unordered_map<Int64, bool> active_clients;
+        size_t finished_clients;
+        size_t connected_clients;
+
+        std::vector<DB::UInt8> clients;
+
         time_t create_time;
 
-        Session(Int64 client_count_, TCPArrowHandler::EncoderPtr execution_) :
-            client_count(client_count_), execution(execution_), finished_clients(0), create_time(time(0))
+        enum
         {
+            ConnUnconnect = DB::UInt8(0),
+            ConnConnected = DB::UInt8(1),
+            ConnFinished = DB::UInt8(2),
+            ConnFailed = DB::UInt8(3),
+        };
+
+        Session(size_t client_count_, TCPArrowHandler::EncoderPtr execution_) :
+            client_count(client_count_),
+            execution(execution_),
+            finished_clients(0),
+            connected_clients(0),
+            clients(client_count_, ConnUnconnect),
+            create_time(time(0))
+        {
+        }
+
+        void connected(size_t client_index)
+        {
+            clients[client_index] = ConnConnected;
+            connected_clients += 1;
+        }
+
+        void done(size_t client_index)
+        {
+            clients[client_index] = ConnFinished;
+            finished_clients += 1;
+        }
+
+        void failed(size_t client_index)
+        {
+            clients[client_index] = ConnFailed;
         }
 
         bool finished()
         {
             return finished_clients >= client_count;
         }
+
+        std::string str()
+        {
+            std::stringstream ss;
+            ss << finished_clients << "/" << client_count << " [";
+
+            for (auto it = clients.begin(); it != clients.end(); ++it)
+                ss << connStatusStr(*it);
+
+            time_t now = time(0);
+            ss << "] lived " << difftime(now, create_time) << "s";
+            return ss.str();
+        }
+
+        static std::string connStatusStr(DB::UInt8 status)
+        {
+            switch (status)
+            {
+                case ConnUnconnect:
+                    return "-";
+                case ConnConnected:
+                    return "+";
+                case ConnFailed:
+                    return "|";
+                case ConnFinished:
+                    return "*";
+            }
+            return "?";
+        }
     };
 
-    using Sessions = std::unordered_map<String, Session>;
+    using Sessions = std::unordered_map<DB::String, Session>;
 
     Poco::Logger * log;
     Sessions sessions;

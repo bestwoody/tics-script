@@ -20,39 +20,32 @@ namespace Poco
     class Logger;
 }
 
-namespace DB
+namespace Magic
 {
 
 class TCPArrowHandler : public Poco::Net::TCPServerConnection
 {
 public:
-    using EncoderPtr = std::shared_ptr<Magic::ArrowEncoderParall>;
+    using EncoderPtr = std::shared_ptr<ArrowEncoderParall>;
 
-    String getQueryId()
+    DB::String getQueryId()
     {
         return query_id;
     }
 
-    String getQuery()
+    DB::String getQuery()
     {
         return query;
     }
 
-    Int64 getClientCount()
+    DB::Int64 getClientCount()
     {
         return client_count;
     }
 
-    Int64 getClientIndex()
+    DB::Int64 getClientIndex()
     {
         return client_index;
-    }
-
-    EncoderPtr getExecution()
-    {
-        if (!encoder)
-            throw Exception("Share empty arrow encoder");
-        return encoder;
     }
 
     void setExecution(EncoderPtr & encoder)
@@ -60,7 +53,7 @@ public:
         this->encoder = encoder;
     }
 
-    TCPArrowHandler(IServer & server_, const Poco::Net::StreamSocket & socket_);
+    TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamSocket & socket_);
 
     ~TCPArrowHandler();
 
@@ -68,48 +61,68 @@ public:
 
     void run();
 
+    EncoderPtr getExecution();
+
+    void onException(std::string msg = "");
+
+    std::string toStr();
+
 private:
     void processOrdinaryQuery();
     void recvHeader();
     void recvQuery();
 
-    void onException(std::string msg = "");
-
 private:
-    IServer & server;
+    DB::IServer & server;
     Poco::Logger * log;
 
-    Context connection_context;
-    Context query_context;
+    DB::Context connection_context;
+    DB::Context query_context;
 
-    std::shared_ptr<ReadBuffer> in;
-    std::shared_ptr<WriteBuffer> out;
+    std::shared_ptr<DB::ReadBuffer> in;
+    std::shared_ptr<DB::WriteBuffer> out;
 
-    String default_database;
+    DB::String default_database;
 
-    Int64 protocol_version_major;
-    Int64 protocol_version_minor;
+    DB::Int64 protocol_version_major;
+    DB::Int64 protocol_version_minor;
 
-    String client_name;
-    String user;
-    // TODO: Not safe
-    String password;
+    DB::String client_name;
+    DB::String user;
 
-    String encoder_name;
-    Int64 encoder_version;
-    Int64 encoder_count;
+    // TODO: Not safe, but Server/TCPHandler.cpp do that too.
+    DB::String password;
 
-    Int64 client_count;
-    Int64 client_index;
+    DB::String encoder_name;
+    DB::Int64 encoder_version;
+    DB::Int64 encoder_count;
 
-    String query_id;
-    String query;
-    BlockIO io;
+    DB::Int64 client_count;
+    DB::Int64 client_index;
+
+    DB::String query_id;
+    DB::String query;
+    DB::BlockIO io;
 
     EncoderPtr encoder;
     bool failed;
 
     CurrentMetrics::Increment metric_increment{CurrentMetrics::TCPConnection};
 };
+
+#define ARROW_HANDLER_LOG_ERROR(message) \
+    do { \
+        LOG_ERROR(log, toStr() << ". " << message); \
+    } while(false)
+
+#define ARROW_HANDLER_LOG_WARNING(message) \
+    do { \
+        LOG_WARNING(log, toStr() << ". " << message); \
+    } while(false)
+
+#define ARROW_HANDLER_LOG_TRACE(message) \
+    do { \
+        LOG_TRACE(log, toStr() << ". " << message); \
+    } while(false)
 
 }
