@@ -49,12 +49,6 @@ public:
         {
             Session & session = it->second;
 
-            if (size_t(session.client_count) <= session.connected_clients)
-            {
-                conn->onException(session.str() + ". Join to session fail, too many clients.");
-                return conn;
-            }
-
             if (!session.execution)
             {
                 time_t now = time(0);
@@ -69,7 +63,7 @@ public:
                     }
                     else
                     {
-                        conn->onException(session.str() + ". Relaunch query found, aborting.");
+                        conn->onException(session.str() + ". Relaunch query found, abort.");
                         return conn;
                     }
                 }
@@ -103,7 +97,7 @@ public:
 
             conn->startExecuting();
 
-            sessions.emplace(query_id, Session(client_count, conn->getExecution()));
+            sessions.emplace(query_id, Session(query_id, client_count, conn->getExecution()));
             it = sessions.find(query_id);
         }
 
@@ -143,7 +137,6 @@ public:
         if (session.finished())
         {
             LOG_TRACE(log, conn_info << ". Clear session. sessions: " << sessions.size());
-            session.clients.clear();
             session.execution = NULL;
         }
 
@@ -160,11 +153,9 @@ public:
                 {
                     if (seconds >= unfinished_session_expired_seconds)
                     {
-                        LOG_WARNING(log, conn_info << ". Session expired but not finished, force clean now.");
-                        session.clients.clear();
+                        LOG_WARNING(log, session.str(true) << ". Session expired but not finished, force clean now.");
                         // TODO: Force disconnect
                         session.execution->cancal(false);
-                        session.execution = NULL;
                         it = sessions.erase(it);
                         continue;
                     }
@@ -174,7 +165,7 @@ public:
                     // Not clean it too fast, for relaunch query detecting.
                     if (seconds >= unfinished_session_expired_seconds)
                     {
-                        LOG_TRACE(log, conn_info << ". Session expired, cleaning tombstone.");
+                        LOG_TRACE(log, session.str(true) << ". Session expired, cleaning tombstone.");
                         it = sessions.erase(it);
                         continue;
                     }
@@ -188,6 +179,7 @@ public:
 private:
     struct Session
     {
+        std::string query_id;
         size_t client_count;
         TCPArrowHandler::EncoderPtr execution;
         size_t finished_clients;
@@ -205,7 +197,8 @@ private:
             ConnFailed = DB::UInt8(3),
         };
 
-        Session(size_t client_count_, TCPArrowHandler::EncoderPtr execution_) :
+        Session(const std::string & query_id_, size_t client_count_, TCPArrowHandler::EncoderPtr execution_) :
+            query_id(query_id_),
             client_count(client_count_),
             execution(execution_),
             finished_clients(0),
@@ -237,9 +230,13 @@ private:
             return finished_clients >= client_count;
         }
 
-        std::string str()
+        std::string str(bool with_conn_info = false)
         {
             std::stringstream ss;
+
+            if (with_conn_info)
+                ss << query_id << " r" << ((bool)execution ? "+" : "-") << execution.use_count() << ". ";
+
             ss << finished_clients << "/" << client_count << " [";
 
             for (auto it = clients.begin(); it != clients.end(); ++it)
