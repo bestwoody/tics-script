@@ -34,6 +34,7 @@ namespace Magic
 static Int64 PROTOCOL_VERSION_MAJOR = 1;
 static Int64 PROTOCOL_VERSION_MINOR = 1;
 static Int64 PROTOCOL_ENCODER_VERSION = 1;
+static Int64 MAX_CLIENT_COUNT = 1024;
 
 TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamSocket & socket_) :
     Poco::Net::TCPServerConnection(socket_),
@@ -41,7 +42,8 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     log(&Poco::Logger::get("TCPArrowHandler")),
     connection_context(server.context()),
     query_context(server.context()),
-    failed(false)
+    failed(false),
+    joined(false)
 {
     try
     {
@@ -113,7 +115,8 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
 
 TCPArrowHandler::~TCPArrowHandler()
 {
-    TCPArrowSessions::instance().clear(this, failed);
+    if (joined)
+        TCPArrowSessions::instance().clear(this, failed);
 }
 
 void TCPArrowHandler::startExecuting()
@@ -141,6 +144,8 @@ void TCPArrowHandler::startExecuting()
         encoder = std::make_shared<ArrowEncoderParall>(io, this_encoder_count);
         if (encoder->hasError())
             throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::MAGIC_ENCODER_ERROR);
+
+        joined = true;
 
         ARROW_HANDLER_LOG_TRACE("Create " << this_encoder_count << " encoders.");
     }
@@ -268,7 +273,6 @@ void TCPArrowHandler::recvHeader()
     }
 
     Magic::readString(client_name, *in);
-
     Magic::readString(default_database, *in);
 
     user = "default";
@@ -294,6 +298,8 @@ void TCPArrowHandler::recvHeader()
 
     client_count = Magic::readInt64(*in);
     client_index = Magic::readInt64(*in);
+    if (client_count <= client_index || client_count <= 0 || client_index < 0 || client_count >= MAX_CLIENT_COUNT)
+        throw DB::Exception("Invalid client index/count.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
     LOG_TRACE(log,
         "Received header, proto ver: " <<

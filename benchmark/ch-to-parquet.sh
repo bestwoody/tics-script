@@ -6,11 +6,11 @@ decoders="$4"
 set -eu
 
 if [ -z "$partitions" ]; then
-	partitions="8"
+	partitions="4"
 fi
 
 if [ -z "$decoders" ]; then
-	decoders="8"
+	decoders="2"
 fi
 
 if [ -z "$to" ]; then

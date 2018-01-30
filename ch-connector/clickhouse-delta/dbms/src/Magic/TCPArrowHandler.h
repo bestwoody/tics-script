@@ -51,6 +51,7 @@ public:
     void setExecution(EncoderPtr & encoder)
     {
         this->encoder = encoder;
+        joined = true;
     }
 
     TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamSocket & socket_);
@@ -106,6 +107,7 @@ private:
 
     EncoderPtr encoder;
     bool failed;
+    bool joined;
 
     CurrentMetrics::Increment metric_increment{CurrentMetrics::TCPConnection};
 };

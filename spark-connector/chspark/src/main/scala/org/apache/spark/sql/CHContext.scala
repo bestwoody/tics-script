@@ -41,8 +41,8 @@ class CHContext (val sparkSession: SparkSession)
     port: Int = 9006,
     database: String = null,
     table: String,
-    partitions: Int = 8,
-    decoders: Int = 8,
+    partitions: Int = 4,
+    decoders: Int = 2,
     encoders: Int = 0): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
@@ -55,8 +55,8 @@ class CHContext (val sparkSession: SparkSession)
     addresses: Seq[(String, Int)] = Seq(("127.0.0.1", 9006)),
     database: String = null,
     table: String,
-    partitions: Int = 8,
-    decoders: Int = 8,
+    partitions: Int = 4,
+    decoders: Int = 2,
     encoders: Int = 0): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
@@ -71,8 +71,8 @@ class CHContext (val sparkSession: SparkSession)
     port: Int = 9006,
     database: String = null,
     table: String,
-    partitions: Int = 8,
-    decoders: Int = 8,
+    partitions: Int = 4,
+    decoders: Int = 2,
     encoders: Int = 0): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
