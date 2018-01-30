@@ -51,7 +51,7 @@ public:
 
             if (size_t(session.client_count) <= session.connected_clients)
             {
-                conn->onException("Join to session fail, too many clients.");
+                conn->onException(session.str() + ". Join to session fail, too many clients.");
                 return conn;
             }
 
@@ -59,15 +59,23 @@ public:
             {
                 time_t now = time(0);
                 auto seconds = difftime(now, session.create_time);
-                if (seconds >= finished_session_expired_seconds && session.finished())
+                if (session.finished())
                 {
-                    LOG_WARNING(log, conn_info << ". Relaunch query found.");
-                    sessions.erase(it);
-                    it = sessions.end();
+                    if (seconds >= finished_session_expired_seconds)
+                    {
+                        LOG_WARNING(log, conn_info << ". Relaunch query found, re-run.");
+                        sessions.erase(it);
+                        it = sessions.end();
+                    }
+                    else
+                    {
+                        conn->onException(session.str() + ". Relaunch query found, aborting.");
+                        return conn;
+                    }
                 }
                 else
                 {
-                    conn->onException("Join failed, too many clients.");
+                    conn->onException(session.str() + ". Join failed, session unfinished but no execution.");
                     return conn;
                 }
             }
