@@ -57,13 +57,13 @@ public:
                 {
                     if (seconds >= finished_session_expired_seconds)
                     {
-                        LOG_WARNING(log, conn_info << ". Relaunch query found, re-run.");
+                        LOG_WARNING(log, conn_info << ". Old: " << session.str() << ". Relaunch query found, re-run.");
                         sessions.erase(it);
                         it = sessions.end();
                     }
                     else
                     {
-                        conn->onException(session.str() + ". Relaunch query found, abort.");
+                        conn->onException("Old: " + session.str() + ". Relaunch query found, abort.");
                         return conn;
                     }
                 }
