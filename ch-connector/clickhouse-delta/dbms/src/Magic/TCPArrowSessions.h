@@ -235,6 +235,7 @@ private:
         void failed(size_t client_index)
         {
             clients[client_index] = ConnFailed;
+            finished_clients += 1;
         }
 
         bool finished()
