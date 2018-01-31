@@ -19,4 +19,4 @@ fi
 
 echo "local ip: $ip"
 
-$repo_dir/spark-connector/spark/bin/spark-shell --master spark://$ip:7077 --executor-memory 12G  $@
+$repo_dir/spark-connector/spark/bin/spark-shell --master spark://$ip:7077 --executor-memory 12G $@ 2>&1 | grep -v '\[Stage' | grep -v "^$"
