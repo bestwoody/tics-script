@@ -1,7 +1,7 @@
 count=1000
 partitions=16
-encoders=1
-decoders=16
+decoders=1
+encoders=16
 
 set -eu
 
