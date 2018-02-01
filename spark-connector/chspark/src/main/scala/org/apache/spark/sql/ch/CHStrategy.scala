@@ -21,9 +21,10 @@ import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, Attribu
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.AggUtils
-import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.DoubleType
@@ -75,87 +76,85 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
       case rel@LogicalRelation(_: TypesTestRelation, _: Option[Seq[Attribute]], _) =>
         TypesTestPlan(rel.output, sparkSession) :: Nil
 
-      case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => {
-        plan match {
-          case ReturnAnswer(rootPlan) =>
-            rootPlan match {
-              case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
-                createTopNPlan(limit, order, child, child.output) :: Nil
-              case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
-                createTopNPlan(limit, order, child, projectList) :: Nil
-              case Limit(IntegerLiteral(limit), child) =>
-                CollectLimitExec(limit, createTopNPlan(limit, Nil, child, child.output)) :: Nil
-              case other => planLater(other) :: Nil
-            }
+      case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => plan match {
+        case ReturnAnswer(rootPlan) =>
+          rootPlan match {
+            case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
+              createTopNPlan(limit, order, child, child.output) :: Nil
+            case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
+              createTopNPlan(limit, order, child, projectList) :: Nil
+            case Limit(IntegerLiteral(limit), child) =>
+              CollectLimitExec(limit, createTopNPlan(limit, Nil, child, child.output)) :: Nil
+            case other => planLater(other) :: Nil
+          }
 
-          case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
-            createTopNPlan(limit, order, child, child.output) :: Nil
-          case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
-            createTopNPlan(limit, order, child, projectList) :: Nil
-          case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
-            createCHPlan(relation.tables, rel, projectList, filterPredicates, null,
-              chr.partitions, chr.decoders, chr.encoders) :: Nil
+        case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
+          createTopNPlan(limit, order, child, child.output) :: Nil
+        case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
+          createTopNPlan(limit, order, child, projectList) :: Nil
+        case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
+          createCHPlan(relation.tables, rel, projectList, filterPredicates, null,
+            chr.partitions, chr.decoders, chr.encoders) :: Nil
 
-          case CHAggregation(groupingExpressions, aggregateExpressions, resultExpressions,
-            CHAggregationProjection(filters, _, _, projects)) if enableAggPushdown =>
-            var aggExp = aggregateExpressions
-            var resultExp = resultExpressions
-            if (!isSingleCHNode(relation)) {
-              val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
-              aggExp = rewriteResult._1
-              resultExp = rewriteResult._2
-            }
-            // Add group / aggregate to CHPlan
-            groupAggregateProjection(
-              groupingExpressions, aggExp, resultExp, projects, filters, relation, rel)
+        case CHAggregation(groupingExpressions, aggregateExpressions, resultExpressions,
+          CHAggregationProjection(filters, _, _, projects)) if enableAggPushdown =>
+          var aggExp = aggregateExpressions
+          var resultExp = resultExpressions
+          if (!isSingleCHNode(relation)) {
+            val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
+            aggExp = rewriteResult._1
+            resultExp = rewriteResult._2
+          }
+          // Add group / aggregate to CHPlan
+          groupAggregateProjection(
+            groupingExpressions, aggExp, resultExp, projects, filters, relation, rel)
 
-          /**
-            * Select the proper BROADCAST physical plan for join based on joining keys and size of logical plan.
-            * Join plans other than broadcast is not implemented here.
-            *
-            * At first, uses the [[ExtractEquiJoinKeys]] pattern to find joins where at least some of the
-            * predicates can be evaluated by matching join keys. If found,  Join implementations are chosen
-            * with the following precedence:
-            *
-            * - Broadcast: if one side of the join has an estimated physical size that is smaller than the
-            *     user-configurable [[SQLConf.AUTO_BROADCASTJOIN_THRESHOLD]] threshold
-            *     or if that side has an explicit broadcast hint (e.g. the user applied the
-            *     [[org.apache.spark.sql.functions.broadcast()]] function to a DataFrame), then that side
-            *     of the join will be broadcasted and the other side will be streamed, with no shuffling
-            *     performed. If both sides of the join are eligible to be broadcasted then the
-            *
-            * If there is no joining keys, Join implementations are chosen with the following precedence:
-            * - BroadcastNestedLoopJoin: if one side of the join could be broadcasted
-            * - BroadcastNestedLoopJoin
-            */
-          // --- BroadcastHashJoin --------------------------------------------------------------------
+        /**
+          * Select the proper BROADCAST physical plan for join based on joining keys and size of logical plan.
+          * Join plans other than broadcast is not implemented here.
+          *
+          * At first, uses the [[ExtractEquiJoinKeys]] pattern to find joins where at least some of the
+          * predicates can be evaluated by matching join keys. If found,  Join implementations are chosen
+          * with the following precedence:
+          *
+          * - Broadcast: if one side of the join has an estimated physical size that is smaller than the
+          *     user-configurable [[SQLConf.AUTO_BROADCASTJOIN_THRESHOLD]] threshold
+          *     or if that side has an explicit broadcast hint (e.g. the user applied the
+          *     [[org.apache.spark.sql.functions.broadcast()]] function to a DataFrame), then that side
+          *     of the join will be broadcasted and the other side will be streamed, with no shuffling
+          *     performed. If both sides of the join are eligible to be broadcasted then the
+          *
+          * If there is no joining keys, Join implementations are chosen with the following precedence:
+          * - BroadcastNestedLoopJoin: if one side of the join could be broadcasted
+          * - BroadcastNestedLoopJoin
+          */
+        // --- BroadcastHashJoin --------------------------------------------------------------------
 
-          case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
-            if canBuildRight(joinType) && canBroadcast(right) =>
-            Seq(joins.BroadcastHashJoinExec(
-              leftKeys, rightKeys, joinType, BuildRight, condition, planLater(left), planLater(right)))
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+          if canBuildRight(joinType) && canBroadcast(right) =>
+          Seq(joins.BroadcastHashJoinExec(
+            leftKeys, rightKeys, joinType, BuildRight, condition, planLater(left), planLater(right)))
 
-          case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
-            if canBuildLeft(joinType) && canBroadcast(left) =>
-            Seq(joins.BroadcastHashJoinExec(
-              leftKeys, rightKeys, joinType, BuildLeft, condition, planLater(left), planLater(right)))
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+          if canBuildLeft(joinType) && canBroadcast(left) =>
+          Seq(joins.BroadcastHashJoinExec(
+            leftKeys, rightKeys, joinType, BuildLeft, condition, planLater(left), planLater(right)))
 
-          // --- Without joining keys ------------------------------------------------------------
+        // --- Without joining keys ------------------------------------------------------------
 
-          // Pick BroadcastNestedLoopJoin if one side could be broadcasted
-          case j @ logical.Join(left, right, joinType, condition)
-            if canBuildRight(joinType) && canBroadcast(right) =>
-            joins.BroadcastNestedLoopJoinExec(
-              planLater(left), planLater(right), BuildRight, joinType, condition) :: Nil
-          case j @ logical.Join(left, right, joinType, condition)
-            if canBuildLeft(joinType) && canBroadcast(left) =>
-            joins.BroadcastNestedLoopJoinExec(
-              planLater(left), planLater(right), BuildLeft, joinType, condition) :: Nil
+        // Pick BroadcastNestedLoopJoin if one side could be broadcasted
+        case j @ logical.Join(left, right, joinType, condition)
+          if canBuildRight(joinType) && canBroadcast(right) =>
+          joins.BroadcastNestedLoopJoinExec(
+            planLater(left), planLater(right), BuildRight, joinType, condition) :: Nil
+        case j @ logical.Join(left, right, joinType, condition)
+          if canBuildLeft(joinType) && canBroadcast(left) =>
+          joins.BroadcastNestedLoopJoinExec(
+            planLater(left), planLater(right), BuildLeft, joinType, condition) :: Nil
 
-          // --- Cases where this strategy does not apply ---------------------------------------------
+        // --- Cases where this strategy does not apply ---------------------------------------------
 
-          case _ => Nil
-        }
+        case _ => Nil
       }
     }.toSeq.flatten
   }
