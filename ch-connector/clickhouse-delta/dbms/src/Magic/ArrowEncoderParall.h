@@ -77,6 +77,7 @@ public:
 
     ~ArrowEncoderParall()
     {
+        encodeds.close();
         for (auto it = encoders.begin(); it != encoders.end(); ++it)
             it->join();
     }
