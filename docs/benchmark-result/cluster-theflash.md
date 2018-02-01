@@ -19,10 +19,10 @@
 | CH-Spark push down    | Q3   | 00:50   | 00:45  | 00:48  |
 | Spark Codegen         | Q3   | 00:43   | 00:31  | 00:46  |
 | Spark Persist Memory  | Q3   |         |        |        |
-| CH-Spark              | Q4   |         |        |        |
-| CH-Spark Optimization | Q4   | 08:14   | 09:00  | 06:12  |
-| CH-Spark push down    | Q4   |         |        |        |
-| Spark Codegen         | Q4   |         |        |        |
+| CH-Spark              | Q4   | 03:19   | 03:55  | 03:05  |
+| CH-Spark Optimization | Q4   | 08:08   | 04:05  | 03:27  |
+| CH-Spark push down    | Q4   | 05:30   | 05:32  | 04:58  |
+| Spark Codegen         | Q4   | 05:02   | 03:27  | 03:39  |
 | Spark Persist Memory  | Q4   |         |        |        |
 | CH-Spark              | Q5   | 02:04   | 01:51  | 01:50  |
 | CH-Spark Optimization | Q5   | 02:15   | 01:55  | 01:47  |
@@ -34,10 +34,10 @@
 | CH-Spark push down    | Q6   | 00:05   | 00:04  | 00:04  |
 | Spark Codegen         | Q6   | 00:04   | 00:04  | 00:04  |
 | Spark Persist Memory  | Q6   |         |        |        |
-| CH-Spark              | Q7   |         |        |        |
+| CH-Spark              | Q7   | 01:51   | 01:43  | 01:57  |
 | CH-Spark Optimization | Q7   | 02:20   | 02:14  | 02:13  |
-| CH-Spark push down    | Q7   |         |        |        |
-| Spark Codegen         | Q7   |         |        |        |
+| CH-Spark push down    | Q7   | 01:46   | 01:43  | 01:12  |
+| Spark Codegen         | Q7   | 01:56   | 01:58  | 01:55  |
 | Spark Persist Memory  | Q7   |         |        |        |
 | CH-Spark              | Q8   | 01:57   | 02:10  | 01:50  |
 | CH-Spark Optimization | Q8   | 02:49   | 02:01  | 02:06  |
@@ -79,15 +79,15 @@
 | CH-Spark push down    | Q16  | 01:39   | 01:05  | 01:22  |
 | Spark Codegen         | Q16  | 01:04   | 01:14  | 01:01  |
 | Spark Persist Memory  | Q16  |         |        |        |
-| CH-Spark              | Q17  |         |        |        |
-| CH-Spark Optimization | Q17  | 01:46   | 02:47  |        |
-| CH-Spark push down    | Q17  |         |        |        |
-| Spark Codegen         | Q17  |         |        |        |
+| CH-Spark              | Q17  | 01:13   | 01:16  | 01:19  |
+| CH-Spark Optimization | Q17  | 01:46   | 02:47  | 02:47  |
+| CH-Spark push down    | Q17  | 02:29   | 01:26  | 02:47  |
+| Spark Codegen         | Q17  | 01:28   | 01:17  | 01:23  |
 | Spark Persist Memory  | Q17  |         |        |        |
-| CH-Spark              | Q18  |         |        |        |
-| CH-Spark Optimization | Q18  | 03:24   | 03:10  | 03:18  |
-| CH-Spark push down    | Q18  |         |        |        |
-| Spark Codegen         | Q18  |         |        |        |
+| CH-Spark              | Q18  | 03:19   | 01:23  | 01:39  |
+| CH-Spark Optimization | Q18  | 03:24   | 03:10  | 02:36  |
+| CH-Spark push down    | Q18  | 04:48   | 02:14  | 02:20  |
+| Spark Codegen         | Q18  | 01:50   | 01:28  | 01:48  |
 | Spark Persist Memory  | Q18  |         |        |        |
 | CH-Spark              | Q19  | 00:25   | 00:27  | 00:29  |
 | CH-Spark Optimization | Q19  | 00:28   | 00:16  | 00:17  |
@@ -104,10 +104,10 @@
 | CH-Spark push down    | Q21  |         |        |        |
 | Spark Codegen         | Q21  |         |        |        |
 | Spark Persist Memory  | Q21  |         |        |        |
-| CH-Spark              | Q22  |         |        |        |
-| CH-Spark Optimization | Q22  |         |        |        |
-| CH-Spark push down    | Q22  |         |        |        |
-| Spark Codegen         | Q22  |         |        |        |
+| CH-Spark              | Q22  | 01:16   | 01:12  | 01:17  |
+| CH-Spark Optimization | Q22  | 01:13   | 01:10  | 01:06  |
+| CH-Spark push down    | Q22  | 01:46   | 01:43  | 01:12  |
+| Spark Codegen         | Q22  | 01:03   | 01:13  | 01:05  |
 | Spark Persist Memory  | Q22  |         |        |        |
 
 # Testing environment
