@@ -40,10 +40,7 @@ echo 'val startTime = new Date()' >> "$tmp"
 
 echo "ch.sql(\"$sql\").show(false)" >> "$tmp"
 
-echo 'val endTime: Date = new Date()' >> "$tmp"
-echo 'val elapsed = endTime.getTime - startTime.getTime' >> "$tmp"
-echo 'val dateFormat: SimpleDateFormat = new SimpleDateFormat("mm:ss")' >> "$tmp"
-echo 'val date = dateFormat.format(elapsed)' >> "$tmp"
+echo 'val elapsed = (new Date().getTime - startTime.getTime) / 100 / 10.0' >> "$tmp"
 
 ./spark-shell.sh < "$tmp"
 
