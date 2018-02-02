@@ -58,3 +58,4 @@ spark-connector/spark-warehouse
 *.swp
 
 .DS_Store
+lib/

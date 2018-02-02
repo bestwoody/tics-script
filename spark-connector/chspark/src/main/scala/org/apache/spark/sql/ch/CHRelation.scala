@@ -15,14 +15,10 @@
 
 package org.apache.spark.sql.ch
 
-import scala.collection.mutable.Set
-
-import org.apache.arrow.vector.types.FloatingPointPrecision
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types.{StructType, StructField}
-import org.apache.arrow.vector.types.pojo.Schema
+import org.apache.spark.sql.types.StructType
 
 class CHRelation(val tables: Seq[CHTableRef], val partitions: Int, val decoders: Int, val encoders: Int)
   (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
@@ -32,5 +28,12 @@ class CHRelation(val tables: Seq[CHTableRef], val partitions: Int, val decoders:
 
   override lazy val schema: StructType = {
     CHTableInfos.getInfo(tables).schema
+  }
+
+  override def sizeInBytes: Long = {
+    val tableInfo = CHTableInfos.getInfo(tables)
+    // TODO consider rowWidth
+    val size = tableInfo.rowCount // * tableInfo.rowWidth
+    size
   }
 }
