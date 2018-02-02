@@ -33,7 +33,7 @@ class CHRelation(val tables: Seq[CHTableRef], val partitions: Int, val decoders:
   override def sizeInBytes: Long = {
     val tableInfo = CHTableInfos.getInfo(tables)
     // TODO consider rowWidth
-    val size = tableInfo.rowCount // * tableInfo.rowWidth
+    val size = tableInfo.rowCount * 64 // Assuming each row is 64 bytes in width
     size
   }
 }
