@@ -15,22 +15,28 @@
 
 package org.apache.spark.sql.ch
 
+import scala.collection.mutable
+
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, _}
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, CreateNamedStruct, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
-import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
-import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.aggregate.AggUtils
-import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
-import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
+import org.apache.spark.sql.{SparkSession, Strategy}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.sql.{SparkSession, Strategy}
 
-import scala.collection.mutable
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Cast, Divide, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, CreateNamedStruct}
+import org.apache.spark.sql.catalyst.expressions.{Expression, IntegerLiteral, NamedExpression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{Min, Max, Count, Sum, Average, First, Last}
+
+import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
+import org.apache.spark.sql.catalyst.plans.logical.{Limit, LogicalPlan, Project, ReturnAnswer, Sort}
+
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.{CHScanExec, CollectLimitExec, FilterExec, ProjectExec, TakeOrderedAndProjectExec}
+import org.apache.spark.sql.execution.aggregate.AggUtils
+
+import org.apache.spark.sql.execution.datasources.{CHScanRDD, LogicalRelation}
+import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
 
 class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   // -------------------- Dynamic configurations   --------------------
@@ -50,111 +56,48 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     sqlConf.getConfString(CHConfigConst.ENABLE_PUSHDOWN_AGG, "true").toBoolean
   }
 
-  /**
-    * Matches a plan whose output should be small enough to be used in broadcast join.
-    */
-  private def canBroadcast(plan: LogicalPlan): Boolean = {
-    plan.statistics.isBroadcastable ||
-      (plan.statistics.sizeInBytes >= 0 &&
-        plan.statistics.sizeInBytes <= sqlConf.autoBroadcastJoinThreshold)
-  }
-
-  private def canBuildRight(joinType: JoinType): Boolean = joinType match {
-    case _: InnerLike | LeftOuter | LeftSemi | LeftAnti => true
-    case j: ExistenceJoin => true
-    case _ => false
-  }
-
-  private def canBuildLeft(joinType: JoinType): Boolean = joinType match {
-    case _: InnerLike | RightOuter => true
-    case _ => false
-  }
-
   // -------------------- Physical plan generation --------------------
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     plan.collectFirst {
       case rel@LogicalRelation(_: TypesTestRelation, _: Option[Seq[Attribute]], _) =>
         TypesTestPlan(rel.output, sparkSession) :: Nil
 
-      case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => plan match {
-        case ReturnAnswer(rootPlan) =>
-          rootPlan match {
-            case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
-              createTopNPlan(limit, order, child, child.output) :: Nil
-            case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
-              createTopNPlan(limit, order, child, projectList) :: Nil
-            case Limit(IntegerLiteral(limit), child) =>
-              CollectLimitExec(limit, createTopNPlan(limit, Nil, child, child.output)) :: Nil
-            case other => planLater(other) :: Nil
-          }
+      case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) => {
+        plan match {
+          case ReturnAnswer(rootPlan) =>
+            rootPlan match {
+              case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
+                createTopNPlan(limit, order, child, child.output) :: Nil
+              case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
+                createTopNPlan(limit, order, child, projectList) :: Nil
+              case Limit(IntegerLiteral(limit), child) =>
+                CollectLimitExec(limit, createTopNPlan(limit, Nil, child, child.output)) :: Nil
+              case other => planLater(other) :: Nil
+            }
 
-        case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
-          createTopNPlan(limit, order, child, child.output) :: Nil
-        case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
-          createTopNPlan(limit, order, child, projectList) :: Nil
-        case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
-          createCHPlan(relation.tables, rel, projectList, filterPredicates, null,
-            chr.partitions, chr.decoders, chr.encoders) :: Nil
+          case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
+            createTopNPlan(limit, order, child, child.output) :: Nil
+          case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
+            createTopNPlan(limit, order, child, projectList) :: Nil
+          case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
+            createCHPlan(relation.tables, rel, projectList, filterPredicates, null,
+              chr.partitions, chr.decoders, chr.encoders) :: Nil
 
-        case CHAggregation(groupingExpressions, aggregateExpressions, resultExpressions,
+          case CHAggregation(groupingExpressions, aggregateExpressions, resultExpressions,
           CHAggregationProjection(filters, _, _, projects)) if enableAggPushdown =>
-          var aggExp = aggregateExpressions
-          var resultExp = resultExpressions
-          if (!isSingleCHNode(relation)) {
-            val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
-            aggExp = rewriteResult._1
-            resultExp = rewriteResult._2
-          }
-          // Add group / aggregate to CHPlan
-          groupAggregateProjection(
-            groupingExpressions, aggExp, resultExp, projects, filters, relation, rel)
+            var aggExp = aggregateExpressions
+            var resultExp = resultExpressions
+            if (!isSingleCHNode(relation)) {
+              val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
+              aggExp = rewriteResult._1
+              resultExp = rewriteResult._2
+            }
+            // Add group / aggregate to CHPlan
+            groupAggregateProjection(
+              groupingExpressions, aggExp, resultExp, projects, filters, relation, rel)
 
-        /**
-          * Select the proper BROADCAST physical plan for join based on joining keys and size of logical plan.
-          * Join plans other than broadcast is not implemented here.
-          *
-          * At first, uses the [[ExtractEquiJoinKeys]] pattern to find joins where at least some of the
-          * predicates can be evaluated by matching join keys. If found,  Join implementations are chosen
-          * with the following precedence:
-          *
-          * - Broadcast: if one side of the join has an estimated physical size that is smaller than the
-          *     user-configurable [[SQLConf.AUTO_BROADCASTJOIN_THRESHOLD]] threshold
-          *     or if that side has an explicit broadcast hint (e.g. the user applied the
-          *     [[org.apache.spark.sql.functions.broadcast()]] function to a DataFrame), then that side
-          *     of the join will be broadcasted and the other side will be streamed, with no shuffling
-          *     performed. If both sides of the join are eligible to be broadcasted then the
-          *
-          * If there is no joining keys, Join implementations are chosen with the following precedence:
-          * - BroadcastNestedLoopJoin: if one side of the join could be broadcasted
-          * - BroadcastNestedLoopJoin
-          */
-        // --- BroadcastHashJoin --------------------------------------------------------------------
-
-        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
-          if canBuildRight(joinType) && canBroadcast(right) =>
-          Seq(joins.BroadcastHashJoinExec(
-            leftKeys, rightKeys, joinType, BuildRight, condition, planLater(left), planLater(right)))
-
-        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
-          if canBuildLeft(joinType) && canBroadcast(left) =>
-          Seq(joins.BroadcastHashJoinExec(
-            leftKeys, rightKeys, joinType, BuildLeft, condition, planLater(left), planLater(right)))
-
-        // --- Without joining keys ------------------------------------------------------------
-
-        // Pick BroadcastNestedLoopJoin if one side could be broadcasted
-        case j @ logical.Join(left, right, joinType, condition)
-          if canBuildRight(joinType) && canBroadcast(right) =>
-          joins.BroadcastNestedLoopJoinExec(
-            planLater(left), planLater(right), BuildRight, joinType, condition) :: Nil
-        case j @ logical.Join(left, right, joinType, condition)
-          if canBuildLeft(joinType) && canBroadcast(left) =>
-          joins.BroadcastNestedLoopJoinExec(
-            planLater(left), planLater(right), BuildLeft, joinType, condition) :: Nil
-
-        // --- Cases where this strategy does not apply ---------------------------------------------
-
-        case _ => Nil
+          case _ => Nil
+        }
       }
     }.toSeq.flatten
   }
@@ -180,22 +123,22 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   }
 
   def pruneTopNFilterProject(
-    relation: LogicalRelation,
-    limit: Int,
-    projectList: Seq[NamedExpression],
-    filterPredicates: Seq[Expression],
-    source: CHRelation,
-    sortOrder: Seq[SortOrder]): SparkPlan = {
+                              relation: LogicalRelation,
+                              limit: Int,
+                              projectList: Seq[NamedExpression],
+                              filterPredicates: Seq[Expression],
+                              source: CHRelation,
+                              sortOrder: Seq[SortOrder]): SparkPlan = {
 
     createCHPlan(source.tables, relation, projectList, filterPredicates, extractCHTopN(sortOrder, limit),
       source.partitions, source.decoders, source.encoders)
   }
 
   def createTopNPlan(
-    limit: Int,
-    sortOrder: Seq[SortOrder],
-    child: LogicalPlan,
-    project: Seq[NamedExpression]): SparkPlan = {
+                      limit: Int,
+                      sortOrder: Seq[SortOrder],
+                      child: LogicalPlan,
+                      project: Seq[NamedExpression]): SparkPlan = {
 
     child match {
       case PhysicalOperation(projectList, filters, rel@LogicalRelation(source: CHRelation, _, _))
@@ -209,14 +152,14 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   }
 
   def groupAggregateProjection(
-    groupingExpressions: Seq[NamedExpression],
-    aggregateExpressions: Seq[AggregateExpression],
-    resultExpressions: Seq[NamedExpression],
-    projectList: Seq[NamedExpression],
-    filterPredicates: Seq[Expression],
-    relation: CHRelation,
-    rel: LogicalRelation,
-    cHSqlTopN: CHSqlTopN = null): Seq[SparkPlan] = {
+                                groupingExpressions: Seq[NamedExpression],
+                                aggregateExpressions: Seq[AggregateExpression],
+                                resultExpressions: Seq[NamedExpression],
+                                projectList: Seq[NamedExpression],
+                                filterPredicates: Seq[Expression],
+                                relation: CHRelation,
+                                rel: LogicalRelation,
+                                cHSqlTopN: CHSqlTopN = null): Seq[SparkPlan] = {
     val deterministicAggAliases = aggregateExpressions.collect {
       case e if e.deterministic => e.canonicalized -> Alias(e, e.toString())()
     }.toMap
@@ -245,7 +188,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         case e: Sum   => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
         case e: First => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
         case e: Count => if (!isSingleCHNode(relation)) aggExpr.copy(aggregateFunction = Sum(partialResultRef))
-                         else aggExpr.copy(aggregateFunction = e.copy(children = partialResultRef::Nil))
+        else aggExpr.copy(aggregateFunction = e.copy(children = partialResultRef::Nil))
         case _ => aggExpr
       }
     }
@@ -305,11 +248,11 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   }
 
   def extractAggregation(
-    groupByList: Seq[NamedExpression],
-    aggregates: Seq[AggregateExpression],
-    source: CHRelation,
-    aggregations: mutable.ListBuffer[CHSqlAggFunc],
-    groupByCols: mutable.ListBuffer[String]): Unit = {
+                          groupByList: Seq[NamedExpression],
+                          aggregates: Seq[AggregateExpression],
+                          source: CHRelation,
+                          aggregations: mutable.ListBuffer[CHSqlAggFunc],
+                          groupByCols: mutable.ListBuffer[String]): Unit = {
 
     aggregates.foreach {
       case AggregateExpression(Average(arg), _, _, _) =>
@@ -333,14 +276,14 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   }
 
   private def createCHPlan(
-    tables: Seq[CHTableRef],
-    relation: LogicalRelation,
-    projectList: Seq[NamedExpression],
-    filterPredicates: Seq[Expression],
-    chSqlTopN: CHSqlTopN,
-    partitions: Int,
-    decoders: Int,
-    encoders: Int): SparkPlan = {
+                            tables: Seq[CHTableRef],
+                            relation: LogicalRelation,
+                            projectList: Seq[NamedExpression],
+                            filterPredicates: Seq[Expression],
+                            chSqlTopN: CHSqlTopN,
+                            partitions: Int,
+                            decoders: Int,
+                            encoders: Int): SparkPlan = {
 
     val projectSet = AttributeSet(projectList.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
@@ -378,8 +321,8 @@ object CHAggregation {
   type ReturnType = PhysicalAggregation.ReturnType
 
   def rewriteAggregation(
-    aggregateExpressions: Seq[AggregateExpression],
-    resultExpressions: Seq[NamedExpression]): (Seq[AggregateExpression],Seq[NamedExpression]) = {
+                          aggregateExpressions: Seq[AggregateExpression],
+                          resultExpressions: Seq[NamedExpression]): (Seq[AggregateExpression],Seq[NamedExpression]) = {
 
     // Rewrites all `Average`s into the form of `Divide(Sum / Count)` so that we can push the
     // converted `Sum`s and `Count`s down to Clickhouse.
