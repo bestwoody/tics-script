@@ -43,7 +43,7 @@
 | TheFlash                       | Q19     |  54.78 | SLOWER |
 | Spark Parquet                  | Q20     | 267.00 |        |
 | TheFlash                       | Q20     |        |        |
-| Spark Parquet                  | Q22     |  72.5  |        |
+| Spark Parquet                  | Q22     |  72.50 |        |
 | TheFlash                       | Q22     |        |        |
 
 
