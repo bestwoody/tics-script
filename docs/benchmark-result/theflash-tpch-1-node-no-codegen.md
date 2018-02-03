@@ -1,8 +1,8 @@
-# TPCH-Test
+# TheFlash TPCH on 1 node, no codegen,  no broadcast
 
-## TPCH compare test
+## Result
 
-* time unit minute
+* Time format: minute:second
 
 | Test Type                      | Case    | Time 1 | Time 2 |
 | --------                       | -----:  | ----:  | :----: |
@@ -81,21 +81,23 @@
 | Spark Persist Memory           | Q22     | 04:33  | 04:06  |
 | Spark Persist Disk             | Q22     | 04:21  | 04:07  |
 
-# Testing environment
-## Hardware Config
+
+## Testing environment
+
+### Hardware
 * Intel Xeon E312xx 16 cores 2.4Ghz.
 * 16G Memory 1600MHz .
 * SSD 2.0GB+/s.
 
-## Software Configuration
+### Software
 * CentOS Linux release 7.2.1511
 * Spark version 2.1.1
 * ClickHouse server version 1.1.54310
 
-## Spark Config
+### Spark
 * SPARK EXECUTOR MEMORY=12G
 * SPARK WORKER MEMORY=12G
 * SPARK WORKER CORES=16
 
-## Data scale
+### Dataset
 * TPCH-100 100G data scala
