@@ -18,4 +18,5 @@
 ** CH Cluster support
 ** Integration test
 ** TPCH benchmark
+-- Spark RDD retry handling
 ```
