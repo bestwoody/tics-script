@@ -15,12 +15,12 @@ Online:
 ----- Writing transaction(batch level) support
 [Tests]
 ***** Features test
-***-- Stability test
+****- Stability test
 **--- Types system test
 [Optimization]
 ***** Aggregation pushdown
 ***** Spark codegen
-*---- Small table broadcast
+****- Small table broadcast
 ----- External executor
 ```
 POC:
