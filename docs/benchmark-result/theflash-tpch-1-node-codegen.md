@@ -6,45 +6,30 @@
 * Run 20 times of each query
     * Discard a few unstable result (cause by network retry)
     * Calculate avg result
+* Comparation
+    * Parquet: Spark + Parquet
+    * CHSpark: Spark + CH, pushdown, codegen, broadcast
 
-| Test Type                      | Case    | Time   | Faster |
-| --------                       | -----:  | -----: | :----- |
-| Spark Parquet                  | Q1      | 122.00 |        |
-| TheFlash                       | Q1      |   9.61 | ====== |
-| Spark Parquet                  | Q2      |  53.50 |        |
-| TheFlash                       | Q2      |  44.66 | ==     |
-| Spark Parquet                  | Q3      | 177.00 |        |
-| TheFlash                       | Q3      |  74.09 | =====  |
-| Spark Parquet                  | Q4      | 332.00 |        |
-| TheFlash                       | Q4      | 358.45 | SLOWER |
-| Spark Parquet                  | Q5      | 227.50 |        |
-| TheFlash                       | Q5      | 124.07 | ===    |
-| Spark Parquet                  | Q6      |   3.50 |        |
-| TheFlash                       | Q6      |   4.58 |        |
-| Spark Parquet                  | Q7      | 305.00 |        |
-| TheFlash                       | Q7      |  92.62 | =====  |
-| Spark Parquet                  | Q8      | 159.00 |        |
-| TheFlash                       | Q8      | 129.35 | =      |
-| Spark Parquet                  | Q9      | 156.50 |        |
-| TheFlash                       | Q9      | 180.02 | SLOWER |
-| Spark Parquet                  | Q10     |  69.00 |        |
-| TheFlash                       | Q10     |  62.03 | =      |
-| Spark Parquet                  | Q11     |  32.50 |        |
-| TheFlash                       | Q11     |  19.64 | ====   |
-| Spark Parquet                  | Q12     |  45.00 |        |
-| TheFlash                       | Q12     |  39.87 | =      |
-| Spark Parquet                  | Q13     |  78.00 |        |
-| TheFlash                       | Q13     |  56.82 | ==     |
-| Spark Parquet                  | Q14     | 206.00 |        |
-| TheFlash                       | Q14     |  13.94 | ====== |
-| Spark Parquet                  | Q16     | 151.50 |        |
-| TheFlash                       | Q16     | 138.44 | =      |
-| Spark Parquet                  | Q19     |  36.50 |        |
-| TheFlash                       | Q19     |  54.78 | SLOWER |
-| Spark Parquet                  | Q20     | 267.00 |        |
-| TheFlash                       | Q20     |        |        |
-| Spark Parquet                  | Q22     |  72.50 |        |
-| TheFlash                       | Q22     |        |        |
+| Query    | Parquet | CHSpark | Faster |
+| -------- | ------: | ------: | :----- |
+| Q1       |  122.0  |    9.6  | ====== |
+| Q2       |   53.5  |   44.6  | ==     |
+| Q3       |  177.0  |   74.1  | =====  |
+| Q4       |  332.0  |  358.4  | SLOWER |
+| Q5       |  227.5  |  124.1  | ===    |
+| Q6       |    3.5  |    4.5  |        |
+| Q7       |  305.0  |   92.6  | =====  |
+| Q8       |  159.0  |  129.3  | =      |
+| Q9       |  156.5  |  180.0  | SLOWER |
+| Q10      |   69.0  |   62.0  | =      |
+| Q11      |   32.5  |   19.6  | ====   |
+| Q12      |   45.0  |   39.9  | =      |
+| Q13      |   78.0  |   56.8  | ==     |
+| Q14      |  206.0  |   13.9  | ====== |
+| Q16      |  151.5  |  138.4  | =      |
+| Q19      |   36.5  |   54.8  | SLOWER |
+| Q20      |  267.0  |         |        |
+| Q22      |   72.5  |         |        |
 
 
 ## Environment
