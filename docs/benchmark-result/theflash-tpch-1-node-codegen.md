@@ -31,6 +31,8 @@
 | Q20      |  267.0  |         |        |
 | Q22      |   72.5  |         |        |
 
+Note:
+Q4 was retested by Xiaoyu at the same time for both cases twice. CH version is faster for 10-15%.
 
 ## Environment
 
