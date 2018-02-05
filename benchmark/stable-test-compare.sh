@@ -24,7 +24,7 @@ fi
 
 for (( i = 0; i < $count; i++ )); do
 	./stable-test.sh 1 $partitions $decoders $encoders $log
-	./stable-test-parquet.sh
+	./stable-test-parquet.sh 1
 done
 
 for (( i = 0; i < $count; i++ )); do
