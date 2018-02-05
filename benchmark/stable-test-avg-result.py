@@ -31,7 +31,7 @@ def run():
     def getClassTitle(cls, n):
         t = getClassDisplayName(cls, n)
         if t == 'Parquet':
-            return t
+            return t + ": default config"
         return t + ": " + cls
 
     total = {}
