@@ -83,7 +83,7 @@ def run():
 
         title = None
 
-    print '## Result'
+    print '## Config and result'
     for i in range(0, len(classes)):
         print '*', getClassTitle(classes[i], i + 1)
     print
