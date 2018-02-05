@@ -27,11 +27,11 @@ for (( i = 0; i < $count; i++ )); do
 		if [ $j -eq 15 ]; then
 			continue
 		fi
-		if [ $j -eq 17 ] || [ $j -eq 18 ] || [ $j -eq 20 ] || [ $j -eq 21 ]; then
+		if [ $j -ne 17 ] && [ $j -ne 18 ] && [ $j -ne 20 ] && [ $j -ne 21 ]; then
 			continue
 		fi
 		echo "## Running tpch query #"$j", partitions=$partitions, decoders=$decoders, encoders=$encoders" >>$log
-		./tpch-spark-q.sh $j $partitions $encoders $decoders >>$log 2>&1
+		./tpch-spark-q.sh $j $partitions $encoders $decoders 2>&1 >>$log
 		echo >>$log
 		./stable-test-avg-result.sh $log > $log.md
 	done

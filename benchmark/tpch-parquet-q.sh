@@ -16,9 +16,9 @@ fi
 echo 'import java.util.Date' >> "$tmp"
 echo 'import spark.implicits._' >> "$tmp"
 
-cat /data/table/q"$n" | while read table; do
-       echo "val ${table}3 = spark.read.parquet(\"parquet/${table}3\")" >> "$tmp"
-	   echo "${table}3.createOrReplaceTempView(\"${table}\")" >> "$tmp"
+cat ./loading/meta/tpch-tables/q"$n" | while read table; do
+	echo "val ${table}3 = spark.read.parquet(\"parquet/${table}3\")" >> "$tmp"
+	echo "${table}3.createOrReplaceTempView(\"${table}\")" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"

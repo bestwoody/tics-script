@@ -11,4 +11,4 @@ if [ -z "$file" ]; then
 	fi
 fi
 
-cat "$file" | python stable-test-avg-result.py | sort -nk 1 | awk '{print "Q"$0}'
+cat "$file" | python stable-test-avg-result.py
