@@ -106,7 +106,7 @@ def run():
         keys.sort()
         for key in keys:
             q, cls, sum, count, array = result[key]
-            print 'Q' + '%02d,' % q, cls, '%03.1f' % (sum / count), array
+            print 'Q' + '%02d,' % q, cls, 'avg: %5.1f, detail:' % (sum / count), array
         print '```'
 
 run()
