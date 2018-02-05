@@ -11,37 +11,37 @@ def run():
         return float(line[len('elapsed: Double = '):])
 
     result = {}
-        title = None
+    title = None
 
-        while True:
-            line = sys.stdin.readline()
-                if not line:
-                    break
-                if len(line) == 0:
+    while True:
+        line = sys.stdin.readline()
+            if not line:
+                break
+            if len(line) == 0:
+                continue
+
+            line = line[:-1]
+            titleLine = isTitle(line)
+            scoreLine = isScore(line)
+
+            if not titleLine and not scoreLine:
+                continue
+
+            if titleLine:
+                title = line[len('## Running tpch query #'):]
                     continue
 
-                line = line[:-1]
-                titleLine = isTitle(line)
-                scoreLine = isScore(line)
+            score = getScore(line)
+            if result.has_key(title):
+                sum, count, array = result[title]
+                    array.append(score)
+                    result[title] = (sum + score, count + 1, array)
+            else:
+                result[title] = (score, 1, [score])
+            title = None	
 
-                if not titleLine and not scoreLine:
-                    continue
-
-                if titleLine:
-                    title = line[len('## Running tpch query #'):]
-                        continue
-
-                score = getScore(line)
-                if result.has_key(title):
-                    sum, count, array = result[title]
-                        array.append(score)
-                        result[title] = (sum + score, count + 1, array)
-                else:
-                    result[title] = (score, 1, [score])
-                title = None	
-
-        for k, v in result.iteritems():
-            sum, count, array = v
-                print k, sum / count, array
+    for k, v in result.iteritems():
+        sum, count, array = v
+            print k, sum / count, array
 
 run()
