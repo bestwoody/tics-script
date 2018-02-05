@@ -21,12 +21,18 @@ def run():
         return n, line
 
     def getClassDisplayName(cls, n):
-        if cls == 'parquet' or cls == 'Parquet':
+        if cls == 'parquet' or cls == 'Parquet' or cls == 'PARQUET':
             return 'Parquet'
         elif cls.lower().find('parquet') >= 0:
             return 'PQ-%04d' % n
         elif cls.find('encoders') >= 0 or cls.find('decoders') >= 0:
             return 'CH-%04d' % n
+
+    def getClassTitle(cls, n):
+        t = getClassDisplayName(cls, n)
+        if t == 'Parquet':
+            return t
+        return t + ": " + cls
 
     total = {}
     title = None
@@ -79,12 +85,11 @@ def run():
 
     print '## Result'
     for i in range(0, len(classes)):
-        cls = classes[i]
-        print '* %s: %s' % (getClassDisplayName(cls, i + 1), cls)
+        print '*', getClassTitle(classes[i], i + 1)
     print
     t = '| Query |'
     for i in range(0, len(classes)):
-        t += ' %s |' % getClassDisplayName(cls, i + 1)
+        t += ' %s |' % getClassDisplayName(classes[i], i + 1)
     print t
     t = '| ----- |'
     for _ in classes:
@@ -107,7 +112,7 @@ def run():
     print '## Raw result data'
     for i in range(0, len(classes)):
         cls = classes[i]
-        print '* %s:' % getClassDisplayName(cls, i + 1), cls
+        print '*', getClassTitle(classes[i], i + 1)
         print '```'
         result = total[cls]
         keys = result.keys()
