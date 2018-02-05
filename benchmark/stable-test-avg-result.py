@@ -70,6 +70,10 @@ def run():
         title = None
 
     print '## Result'
+    for i in range(0, len(classes)):
+        cls = classes[i]
+        print '* Cfg-%03d:' % (i + 1), cls
+    print
     t = '| Query |'
     for i in range(0, len(classes)):
         t += ' Cfg-%03d |' % (i + 1)
