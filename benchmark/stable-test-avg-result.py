@@ -72,7 +72,10 @@ def run():
     print '## Result'
     for i in range(0, len(classes)):
         cls = classes[i]
-        print '* Cfg-%03d:' % (i + 1), cls
+        if cls == 'parquet' or cls == 'Parquet':
+            print 'Parquet'
+        else:
+            print '* Cfg-%03d:' % (i + 1), cls
     print
     t = '| Query |'
     for i in range(0, len(classes)):
