@@ -31,7 +31,7 @@ for (( i = 0; i < $count; i++ )); do
 			continue
 		fi
 		echo "## Running tpch query #"$j", partitions=$partitions, decoders=$decoders, encoders=$encoders" >>$log
-		./tpch-spark-q.sh $j $partitions $encoders $decoders >>$log 2>&1
+		./tpch-spark-q.sh $j $partitions $decoders $encoders >>$log 2>&1
 		echo >>$log
 		./stable-test-avg-result.sh $log > $log.md
 	done
