@@ -29,19 +29,19 @@ def run():
 
         if titleLine:
             title = line[len('## Running tpch query #'):]
-                continue
+            continue
 
         score = getScore(line)
         if result.has_key(title):
             sum, count, array = result[title]
-                array.append(score)
-                result[title] = (sum + score, count + 1, array)
+            array.append(score)
+            result[title] = (sum + score, count + 1, array)
         else:
             result[title] = (score, 1, [score])
         title = None	
 
     for k, v in result.iteritems():
         sum, count, array = v
-            print k, sum / count, array
+        print k, sum / count, array
 
 run()
