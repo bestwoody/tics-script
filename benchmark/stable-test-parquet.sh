@@ -15,6 +15,9 @@ for (( i = 0; i < $count; i++ )); do
 		if [ $j -eq 15 ]; then
 			continue
 		fi
+		if [ $j -eq 21 ]; then
+			continue
+		fi
 		echo "## Running tpch query #"$j", parquet" >>$log
 		./tpch-parquet-q.sh $j >>$log 2>&1
 		echo >>$log
