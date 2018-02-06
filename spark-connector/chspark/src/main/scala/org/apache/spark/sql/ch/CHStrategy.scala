@@ -84,7 +84,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
               chr.partitions, chr.decoders, chr.encoders) :: Nil
 
           case CHAggregation(groupingExpressions, aggregateExpressions, resultExpressions,
-            CHAggregationProjection(filters, _, _, projects)) if enableAggPushdown =>
+            CHAggregationProjection(filters, _, _, projects)) if enableAggPushdown && filters.forall(CHUtil.isSupportedFilter) =>
             var aggExp = aggregateExpressions
             var resultExp = resultExpressions
             if (!isSingleCHNode(relation)) {
