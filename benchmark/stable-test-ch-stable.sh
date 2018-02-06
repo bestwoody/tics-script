@@ -1,5 +1,8 @@
 count="$1"
-log="$2"
+partitions="$2"
+decoders="$3"
+encoders="$4"
+log="$5"
 
 set -eu
 
@@ -12,9 +15,9 @@ for (( i = 0; i < $count; i++ )); do
 		if [ $j -eq 15 ]; then
 			continue
 		fi
-		if [ $j -eq 21 ]; then
+		if [ $j -eq 17 ] || [ $j -eq 18 ] || [ $j -eq 20 ] || [ $j -eq 21 ]; then
 			continue
 		fi
-		./tpch-parquet-r.sh "$j" "$log"
+		./tpch-spark-r.sh "$j" "$partitions" "$decoders" "$encoders" "$log"
 	done
 done

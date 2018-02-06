@@ -8,17 +8,17 @@ set -eu
 source ./_env.sh
 
 if [ -z "$partitions" ]; then
-	partitions="4"
+	partitions="$default_partitions"
 fi
 if [ -z "$decoders" ]; then
-	decoders="2"
+	decoders="$default_decoders"
 fi
 if [ -z "$encoders" ]; then
-	encoders="4"
+	encoders="$default_encoders"
 fi
 
 if [ -z "$sql" ]; then
-	echo "<bin> usage: <bin> query-sql [partitions=4] [decoders=2] [encoders=4]" >&2
+	echo "<bin> usage: <bin> query-sql [partitions] [decoders] [encoders]" >&2
 	exit 1
 fi
 
