@@ -1,12 +1,15 @@
+ip="$1"
+
 set -eu
 
 ./stop-all.sh
 
-ip=""
-if [ `uname` == "Darwin" ]; then
-	ip=`ifconfig | grep -i mask | grep broadcast | grep inet | awk '{print $2}'`
-else
-	ip=`ifconfig | grep -i mask | grep cast | grep inet | awk '{print $2}' | awk -F 'addr:' '{print $2}'`
+if [ -z "$ip" ]; then
+	if [ `uname` == "Darwin" ]; then
+		ip=`ifconfig | grep -i mask | grep broadcast | grep inet | awk '{print $2}'`
+	else
+		ip=`ifconfig | grep -i mask | grep cast | grep inet | awk '{print $2}' | awk -F 'addr:' '{print $2}'`
+	fi
 fi
 
 if [ -z "$ip" ]; then
@@ -21,7 +24,7 @@ if [ "$ip_check" != "1" ]; then
 	exit 1
 fi
 
-spark/sbin/start-master.sh
+spark/sbin/start-master.sh --host $ip
 master_check=`ps -ef | grep org.apache.spark.deploy.master.Master | grep -v grep | wc -l | awk '{print $1}'`
 if [ "$master_check" != "1" ]; then
 	echo "launch master failed: $master_check" >&2
