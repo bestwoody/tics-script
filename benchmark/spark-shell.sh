@@ -6,11 +6,14 @@ if [ "$?" != "0" ]; then
 	exit 1
 fi
 
-ip=""
-if [ `uname` == "Darwin" ]; then
-	ip=`ifconfig | grep -i mask | grep broadcast | grep inet | awk '{print $2}'`
-else
-	ip=`ifconfig | grep -i mask | grep cast | grep inet | awk '{print $2}' | awk -F 'addr:' '{print $2}'`
+ip="$spark_master"
+
+if [ -z "$ip" ]; then
+	if [ `uname` == "Darwin" ]; then
+		ip=`ifconfig | grep -i mask | grep broadcast | grep inet | awk '{print $2}'`
+	else
+		ip=`ifconfig | grep -i mask | grep cast | grep inet | awk '{print $2}' | awk -F 'addr:' '{print $2}'`
+	fi
 fi
 
 if [ -z "$ip" ]; then
