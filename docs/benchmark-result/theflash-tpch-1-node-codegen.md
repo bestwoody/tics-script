@@ -31,9 +31,6 @@
 | Q20      |  268.4  |         | Spark unstable  |        |
 | Q22      |   76.8  |   88.4  |                 | SLOWER |
 
-Note:
-Q4 was retested by Xiaoyu at the same time for both cases twice. CH version is faster for 10-15%.
-
 ## Raw result data
 * Parquet: default config
 ```
