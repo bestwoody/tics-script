@@ -31,7 +31,6 @@
 | Q20      |  268.4  |         | Spark unstable  |        |
 | Q22      |   76.8  |   88.4  |                 | SLOWER |
 
-
 ## Raw result data
 * Parquet: default config
 ```
