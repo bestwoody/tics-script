@@ -1,30 +1,18 @@
-n="$1"
-partitions="$2"
-decoders="$3"
-tmp="$4"
-
 set -eu
 
-if [ -z "$partitions" ]; then
-	partitions="8"
-fi
-if [ -z "$decoders" ]; then
-	decoders="8"
-fi
+partitions="8"
+decoders="8"
 
-if [ -z "$n" ]; then
-	echo "<bin> usage: <bin> query-sql [partitions=8] [decoders=8] [tmp-sql-file]" >&2
-	exit 1
-fi
-
-if [ -z "$tmp" ]; then
-	mkdir -p "/tmp/spark-q/"
-	tmp="/tmp/spark-q/`date +%s`"
-fi
+mkdir -p "/tmp/spark-q/"
+tmp="/tmp/spark-q/`date +%s`"
 
 echo 'import java.util.Date' >> "$tmp"
 echo 'import spark.implicits._' >> "$tmp"
-echo 'val ch = new org.apache.spark.sql.CHContext(spark,true)' >> "$tmp"
+
+echo 'spark.conf.set("spark.ch.plan.codegen", "true")' >> "$tmp"
+echo 'spark.conf.set("spark.ch.plan.pushdown.agg", "true")' >> "$tmp"
+
+echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./ch-q.sh "show tables" | while read table; do
 	echo "ch.mapCHClusterTable(table=\"$table\", partitions=$partitions, decoders=$decoders)" >> "$tmp"
