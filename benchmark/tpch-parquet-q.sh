@@ -28,6 +28,8 @@ echo "spark.sql(\"$sql\").show" >> "$tmp"
 
 echo 'val elapsed = (new Date().getTime - startTime.getTime) / 100 / 10.0' >> "$tmp"
 
+echo "## Running tpch query #"$n", parquet"
 ./spark-shell.sh < "$tmp"
+echo
 
 rm -f "$tmp"
