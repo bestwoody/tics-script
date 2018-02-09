@@ -1,7 +1,5 @@
 # The concurrent concept of query execution
 
-## NOTE: Partitions in the same node NOT share the same connection anymore
-
 ## A single query between the two clusters
 ```
 +---------------------------------------------+  +--------------+  +--------------+
@@ -88,3 +86,23 @@ GlobalView:
                     [*] EncodeThread
         [N] QueryExecutor
 ```
+
+## Current implement
+* Different from above, NOT share connections anymore
+    * Eearly implement: partitions in the same node share the same connection.
+    * It conflicted with yarn-module.
+    * Benchmark shows that it not gain much performance.
+    * Extra complicacy.
+* In running config, partition number should not be greater than cpu core number
+    * Too much partitions will be executed batch by batch, not all in the same time
+* The whole system still CPU bond, not IO bond
+    * Tunning concurrent args will improve the speed of TCP transfer interface
+    * But no effect to the whole query elapsed time.
+* It's fast
+    * Compare to deterministic partitioning (IE: parquet), this session-module:
+        * Eliminate the waiting between faster readers and slower readers.
+        * All readers will finished in the same second.
+        * Benchmark shows that it's faster (10-50%).
+* It's confliced with Spark RDD retry.
+    * Spark may only retry part of the partitions, it against the session module.
+    * Worth it, so we don't support RDD retry.
