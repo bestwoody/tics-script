@@ -48,6 +48,8 @@ benchmark/loading/tpch-*
 benchmark/loading/backup
 benchmark/ch-server/config/*-preprocessed.xml
 benchmark/sql-spark/*.running
+benchmark/parquet/*
+benchmark/tpch.log*
 
 # spark-connector running data dir
 spark-connector/spark-warehouse
