@@ -22,7 +22,7 @@
 ** Streaming + parallel + async
 ** Types supporting: Essential
 -- Types supporting: Full. Not supported yet: Bool, Decimal, Nested types
--- Optimization
+*- Optimization
 ```
 JNI only (Deprecated)
 ```

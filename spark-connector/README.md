@@ -18,5 +18,5 @@
 ** CH Cluster support
 ** Integration test
 ** TPCH benchmark
--- Spark RDD retry handling
+-- Spark RDD retry handling (Abandoned, conflicted with session-module reading)
 ```

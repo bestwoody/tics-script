@@ -10,22 +10,28 @@ An OLAP project of TiDB
 Online:
 ```
 [Features]
-*---- Binlog Writer
-***-- Data update supporting
+**--- Fully test (IMPORTANT: types system)
 ----- Writing transaction(batch level) support
-[Tests]
-***** Features test
-****- Stability test
-**--- Types system test
-[Optimization]
-***** Aggregation pushdown
-***** Spark codegen
-****- Small table broadcast
+*---- Binlog syncer
+*---- MyDump data importer
+***-- Data update supporting
+```
+Further Features:
+```
 ----- External executor
+----- Shares storage
 ```
-POC:
-```
-***** Magic Protocol
-***** CH-Magic Connector
-***** Spark-Magic Connector
-```
+
+## Done jobs
+* POC:
+    * Magic Protocol
+    * CH-Magic Connector
+    * Spark-Magic Connector
+* Optimizations:
+    * Aggregation pushdown
+    * Spark codegen
+    * Small table broadcast
+    * Session-module read
+* Tests
+    * Features test
+    * Stability test
