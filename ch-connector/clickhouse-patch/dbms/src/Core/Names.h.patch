@@ -1,0 +1,23 @@
+diff --git a/dbms/src/Core/Names.h b/dbms/src/Core/Names.h
+index 5c33841..09e10ca 100644
+--- a/dbms/src/Core/Names.h
++++ b/dbms/src/Core/Names.h
+@@ -13,4 +13,18 @@ using Names = std::vector<std::string>;
+ using NameSet = std::unordered_set<std::string>;
+ using NameToNameMap = std::unordered_map<std::string, std::string>;
+ 
++/* TODO: only support a small number of names now
++ */
++class OrderedNameSet : public Names
++{
++public:
++    bool has(const std::string & name) const
++    {
++        for (auto it : *this)
++            if (it == name)
++                return true;
++        return false;
++    }
++};
++
+ }

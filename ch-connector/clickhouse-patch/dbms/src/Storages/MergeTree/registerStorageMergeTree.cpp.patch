@@ -1,0 +1,64 @@
+diff --git a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
+index 0b3b2a1..a533aa4 100644
+--- a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
++++ b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
+@@ -1,6 +1,7 @@
+ #include <Storages/StorageFactory.h>
+ #include <Storages/StorageMergeTree.h>
+ #include <Storages/StorageReplicatedMergeTree.h>
++#include <Storages/HiddenColumns.h>
+ 
+ #include <Common/typeid_cast.h>
+ #include <Common/OptimizedRegularExpression.h>
+@@ -366,6 +367,8 @@ static StoragePtr create(const StorageFactory::Arguments & args)
+         merging_params.mode = MergeTreeData::MergingParams::Aggregating;
+     else if (name_part == "Replacing")
+         merging_params.mode = MergeTreeData::MergingParams::Replacing;
++    else if (name_part == "Mutable")
++        merging_params.mode = MergeTreeData::MergingParams::Mutable;
+     else if (name_part == "Graphite")
+         merging_params.mode = MergeTreeData::MergingParams::Graphite;
+     else if (!name_part.empty())
+@@ -418,6 +421,9 @@ static StoragePtr create(const StorageFactory::Arguments & args)
+     case MergeTreeData::MergingParams::Replacing:
+         add_optional_param("version");
+         break;
++    case MergeTreeData::MergingParams::Mutable:
++        add_mandatory_param("version");
++        break;
+     case MergeTreeData::MergingParams::Collapsing:
+         add_mandatory_param("sign column");
+         break;
+@@ -508,6 +514,16 @@ static StoragePtr create(const StorageFactory::Arguments & args)
+             engine_args.pop_back();
+         }
+     }
++    else if (merging_params.mode == MergeTreeData::MergingParams::Mutable)
++    {
++        // Add version column and del-mark column, set to engine params.
++        const Names & names = columns->getNames();
++        if (std::find(names.begin(), names.end(), HiddenColumns::mutable_version_column_name) == names.end())
++            columns->push_back(NameAndTypePair(HiddenColumns::mutable_version_column_name, std::make_shared<DataTypeUInt64>()));
++        if (std::find(names.begin(), names.end(), HiddenColumns::mutable_delmark_column_name) == names.end())
++            columns->push_back(NameAndTypePair(HiddenColumns::mutable_delmark_column_name, std::make_shared<DataTypeUInt8>()));
++        merging_params.version_column = HiddenColumns::mutable_version_column_name;
++    }
+     else if (merging_params.mode == MergeTreeData::MergingParams::Summing)
+     {
+         /// If the last element is not index_granularity or replica_name (a literal), then this is a list of summable columns.
+@@ -607,6 +623,7 @@ void registerStorageMergeTree(StorageFactory & factory)
+     factory.registerStorage("MergeTree", create);
+     factory.registerStorage("CollapsingMergeTree", create);
+     factory.registerStorage("ReplacingMergeTree", create);
++    factory.registerStorage("MutableMergeTree", create);
+     factory.registerStorage("AggregatingMergeTree", create);
+     factory.registerStorage("SummingMergeTree", create);
+     factory.registerStorage("GraphiteMergeTree", create);
+@@ -614,6 +631,7 @@ void registerStorageMergeTree(StorageFactory & factory)
+     factory.registerStorage("ReplicatedMergeTree", create);
+     factory.registerStorage("ReplicatedCollapsingMergeTree", create);
+     factory.registerStorage("ReplicatedReplacingMergeTree", create);
++    factory.registerStorage("ReplicatedMutableMergeTree", create);
+     factory.registerStorage("ReplicatedAggregatingMergeTree", create);
+     factory.registerStorage("ReplicatedSummingMergeTree", create);
+     factory.registerStorage("ReplicatedGraphiteMergeTree", create);

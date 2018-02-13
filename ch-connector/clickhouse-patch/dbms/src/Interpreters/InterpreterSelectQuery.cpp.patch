@@ -1,0 +1,19 @@
+diff --git a/dbms/src/Interpreters/InterpreterSelectQuery.cpp b/dbms/src/Interpreters/InterpreterSelectQuery.cpp
+index 5eb0bd7..4342206 100644
+--- a/dbms/src/Interpreters/InterpreterSelectQuery.cpp
++++ b/dbms/src/Interpreters/InterpreterSelectQuery.cpp
+@@ -178,7 +178,13 @@ void InterpreterSelectQuery::basicInit(const BlockInputStreamPtr & input)
+ 
+         table_lock = storage->lockStructure(false, __PRETTY_FUNCTION__);
+         if (table_column_names.empty())
+-            table_column_names = storage->getColumnsListNonMaterialized();
++        {
++            ASTSelectQuery * query_select = typeid_cast<ASTSelectQuery *>(&*query_ptr);
++            if (query_select && query_select->raw_for_mutable)
++                table_column_names = storage->getColumnsListNonMaterialized();
++            else
++                table_column_names = storage->getColumnsListNonMaterializedNoHidden();
++        }
+     }
+ 
+     if (table_column_names.empty())

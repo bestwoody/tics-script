@@ -1,0 +1,13 @@
+diff --git a/dbms/src/Parsers/ASTInsertQuery.h b/dbms/src/Parsers/ASTInsertQuery.h
+index bbd730a..32ef4f1 100644
+--- a/dbms/src/Parsers/ASTInsertQuery.h
++++ b/dbms/src/Parsers/ASTInsertQuery.h
+@@ -26,6 +26,8 @@ public:
+     const char * data = nullptr;
+     const char * end = nullptr;
+ 
++    bool is_import;
++
+     ASTInsertQuery() = default;
+     explicit ASTInsertQuery(const StringRange range_) : IAST(range_) {}
+ 
