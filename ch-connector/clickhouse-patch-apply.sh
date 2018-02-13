@@ -35,9 +35,10 @@ patch_apply()
 			# echo "patching '$origin_file' with '$patch_file'"
 			patch -p0 "$origin_file" < "$patch_file"
 		else
-			echo "cp '$patch_file' to '$origin_file'"
+			echo "cp '$origin_file'"
 			cp "$patch_file" "$origin_file"
 		fi
+		echo "OK"
 	done
 }
 
