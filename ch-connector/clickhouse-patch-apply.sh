@@ -32,7 +32,7 @@ patch_apply()
 			if [ ! -f "$origin_file" ]; then
 				echo "origin file $origin_file missed, aborted" >&2
 			fi
-			echo "patching '$origin_file' with '$patch_file'"
+			# echo "patching '$origin_file' with '$patch_file'"
 			patch -p0 "$origin_file" < "$patch_file"
 		else
 			echo "cp '$patch_file' to '$origin_file'"
