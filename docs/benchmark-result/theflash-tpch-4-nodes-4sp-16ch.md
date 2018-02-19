@@ -29,11 +29,14 @@
 | Q19   |    16.6 |    16.3 |
 | Q20   |    87.5 |    57.5 |
 | Q22   |   104.2 |    16.3 |
+
+
 ## Environment
 
 ### Hardware
 * 4 nodes.
 * Intel Xeon(R) CPU E5-2630 v3 @ 2.40GHz 8 cores * 2
+    * TODO: check cores
 * 128G Memory 1600MHz .
 * HDD 16O.0MB+/s.
 
@@ -57,6 +60,7 @@
 * Partitions=8
 * Decoders=1
 * Encoders=2
+    * TODO: 16 encoders will be faster
 * Pushdown=true
 * Codegen=true
 * Server nodes: 16

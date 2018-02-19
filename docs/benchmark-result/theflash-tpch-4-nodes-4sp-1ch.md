@@ -1,5 +1,7 @@
 # TPCH-Test cluster 4 nodes
-## TPCH compare test 
+
+## TPCH compare test
+
 * time unit minute
 
 | Test Type            | Case | Time  1 | Time 2 |
@@ -85,11 +87,14 @@
 | Spark Parquet        | Q22  | 01:32   | 01:14  |
 | Spark Persist Memory | Q22  | 03:46   | 03:48  |
 | Spark Persist Disk   | Q22  | 03:57   | 04:03  |
+
 # Testing environment
+
 ## Hardware Config
 * 4 nodes.
 * Intel Xeon(R) CPU E5-2630 v3 @ 2.40GHz 8 cores * 2
-* 128G Memory 1600MHz .
+    * TODO: check cores
+* 128G Memory 1600MHz.
 * HDD 16O.0MB+/s.
 
 ## Software Configuration
