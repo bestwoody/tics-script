@@ -1,7 +1,6 @@
 # TPCH-Test cluster
-## TPCH  test  : 4 Spark Workers vs 16 ClickHouse 
-* time unit minute
 
+## TPCH  test  : 4 Spark Workers vs 16 ClickHouse
 | Test Type             | Case | Time  1 | Time 2 | Time 3 |
 | --------------------- | :--- | :------ | :----- | :----- |
 | CH-Spark              | Q1   | 00:41   | 00:33  | 00:39  |
@@ -114,6 +113,7 @@
 ## Hardware Config
 * 4 nodes.
 * Intel Xeon(R) CPU E5-2630 v3 @ 2.40GHz 8 cores * 2
+    * TODO: check cores
 * 128G Memory 1600MHz .
 * HDD 16O.0MB+/s.
 
@@ -133,4 +133,3 @@
 
 # Data scale
 * TPCH-100 100G data scala
-

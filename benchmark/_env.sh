@@ -9,7 +9,7 @@ export chserver="127.0.0.1"
 export spark_master="127.0.0.1"
 
 export default_partitions="16"
-export default_decoders="4"
+export default_decoders="1"
 export default_encoders="16"
 
 export pushdown="true"
