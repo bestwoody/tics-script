@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..8f33eea 100644
+index 7e0c703..6a74403 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
 @@ -15,6 +15,15 @@
@@ -25,7 +25,7 @@ index 7e0c703..8f33eea 100644
 -    return reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
 +    auto res = reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
 +
-+    const ASTSelectQuery * select_query = typeid_cast<const ASTSelectQuery *>(&*query);
++    const ASTSelectQuery * select_query = typeid_cast<const ASTSelectQuery *>(&*query_info.query);
 +
 +    if (data.merging_params.mode == MergeTreeData::MergingParams::Mutable)
 +    {
@@ -48,10 +48,12 @@ index 7e0c703..8f33eea 100644
 +        throw Exception("Only MutableMergeTree support SELRAW.", ErrorCodes::BAD_ARGUMENTS);
 +    }
 +    return res;
-+}
-+
-+UInt64 StorageMergeTree::getVersionSeed(const Settings & settings) const
-+{
+ }
+ 
+-BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & /*query*/, const Settings & /*settings*/)
++UInt64 StorageMergeTree::getVersionSeed(const Settings & /* settings */) const
+ {
+-    return std::make_shared<MergeTreeBlockOutputStream>(*this);
 +    // NOTE:
 +    // We don't guarantee thread safe.
 +    // In that case, we assume data not related in diffent thread.
@@ -63,11 +65,10 @@ index 7e0c703..8f33eea 100644
 +    // It's faster if we use (increment.value << 32).
 +    // We use '* 1000000' for readable results, just for now
 +    return (increment.value + 1) * 1000000;
- }
- 
- BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & /*query*/, const Settings & /*settings*/)
- {
--    return std::make_shared<MergeTreeBlockOutputStream>(*this);
++}
++
++BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & query, const Settings & settings)
++{
 +    BlockOutputStreamPtr res = std::make_shared<MergeTreeBlockOutputStream>(*this);
 +
 +    const ASTInsertQuery * insert_query = typeid_cast<const ASTInsertQuery *>(&*query);
@@ -124,14 +125,3 @@ index 7e0c703..8f33eea 100644
  void StorageMergeTree::drop()
  {
      shutdown();
-@@ -583,4 +676,10 @@ void StorageMergeTree::freezePartition(const ASTPtr & partition, const String &
-     data.freezePartition(partition, with_name, context);
- }
- 
-+
-+const OrderedNameSet & StorageMergeTree::getHiddenColumnsImpl() const
-+{
-+    return HiddenColumns::instance().get(data.merging_params.mode);
-+}
-+
- }
