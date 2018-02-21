@@ -25,11 +25,10 @@ namespace ErrorCodes
 }
 
 
-bool ParserDeleteQuery::parseImpl(Pos & pos, Pos end, ASTPtr & node, Pos & max_parsed_pos, Expected & expected)
+bool ParserDeleteQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {
     Pos begin = pos;
 
-    ParserWhitespaceOrComments ws;
     ParserKeyword s_delete_from("DELETE FROM");
     ParserKeyword s_dot(".");
     ParserKeyword s_where("WHERE");
@@ -41,38 +40,24 @@ bool ParserDeleteQuery::parseImpl(Pos & pos, Pos end, ASTPtr & node, Pos & max_p
 
     ParserExpressionWithOptionalAlias exp_elem(false);
 
-    ws.ignore(pos, end);
-
-    if (!s_delete_from.ignore(pos, end, max_parsed_pos, expected))
+    if (!s_delete_from.ignore(pos, expected))
         return false;
 
-    ws.ignore(pos, end);
-
-    if (!name_p.parse(pos, end, table, max_parsed_pos, expected))
+    if (!name_p.parse(pos, table, expected))
         return false;
 
-    ws.ignore(pos, end);
-
-    if (s_dot.ignore(pos, end, max_parsed_pos, expected))
+    if (s_dot.ignore(pos, expected))
     {
         database = table;
-        if (!name_p.parse(pos, end, table, max_parsed_pos, expected))
+        if (!name_p.parse(pos, table, expected))
             return false;
-
-        ws.ignore(pos, end);
     }
 
-    ws.ignore(pos, end);
-
-    if (!s_where.ignore(pos, end, max_parsed_pos, expected))
+    if (!s_where.ignore(pos, expected))
         return false;
 
-    ws.ignore(pos, end);
-
-    if (!exp_elem.parse(pos, end, where, max_parsed_pos, expected))
+    if (!exp_elem.parse(pos, where, expected))
         return false;
-
-    ws.ignore(pos, end);
 
     std::shared_ptr<ASTDeleteQuery> query = std::make_shared<ASTDeleteQuery>(StringRange(begin, pos));
     node = query;
