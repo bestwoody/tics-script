@@ -362,7 +362,7 @@ size_t DedupSortedBlockInputStream::dedupRange(DedupCursors & cursors, DedupBoun
         // If bound is a leading bound, skip calculating hash. A lot faster if data is well-ordered.
         if (i != bound.position())
         {
-            size_t column_compared_rows = dedupColumn(cursors, cursor, bound, table);
+            size_t column_compared_rows = dedupColumn(cursor, bound, table);
             overlaped += (column_compared_rows  > 0) ? 1 : 0;
             compared += column_compared_rows;
         }
@@ -374,7 +374,7 @@ size_t DedupSortedBlockInputStream::dedupRange(DedupCursors & cursors, DedupBoun
     DedupCursor & cursor = *(cursors[bound.position()]);
     if (overlaped > 1 && cursor)
     {
-        compared += dedupColumn(cursors, cursor, bound, table);
+        compared += dedupColumn(cursor, bound, table);
         cursor.backward();
     }
 
@@ -491,7 +491,7 @@ void DedupSortedBlockInputStream::asynDedupRange(DedupJobsFifoPtr & input, size_
             continue;
         }
 
-        size_t compared = dedupColumn(job->cursors, *(job->cursors[position]), job->bound, *(job->table));
+        size_t compared = dedupColumn(*(job->cursors[position]), job->bound, *(job->table));
         TRACER("R #" << position << " " << job->str(position) << " Dedup " << compared);
 
         {
@@ -515,8 +515,7 @@ void DedupSortedBlockInputStream::asynDedupRange(DedupJobsFifoPtr & input, size_
 }
 
 
-size_t DedupSortedBlockInputStream::dedupColumn(
-    DedupCursors & cursors, DedupCursor & cursor, DedupBound & bound, DedupTable & table)
+size_t DedupSortedBlockInputStream::dedupColumn(DedupCursor & cursor, DedupBound & bound, DedupTable & table)
 {
     size_t compared = 0;
 

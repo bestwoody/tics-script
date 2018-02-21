@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..3843f44 100644
+index 7e0c703..8f33eea 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
 @@ -15,6 +15,15 @@
@@ -18,7 +18,7 @@ index 7e0c703..3843f44 100644
  #include <Poco/DirectoryIterator.h>
  #include <Poco/File.h>
  
-@@ -114,12 +123,92 @@ BlockInputStreams StorageMergeTree::read(
+@@ -114,12 +123,91 @@ BlockInputStreams StorageMergeTree::read(
      const size_t max_block_size,
      const unsigned num_streams)
  {
@@ -38,8 +38,7 @@ index 7e0c703..3843f44 100644
 +            filter_names.insert(HiddenColumns::mutable_version_column_name);
 +            filter_names.insert(HiddenColumns::mutable_delmark_column_name);
 +
-+            res = filterColumnsBlockInputStreams(res,
-+                data.getSortDescription(), data.merging_params.version_column, max_block_size, filter_names);
++            res = filterColumnsBlockInputStreams(res, filter_names);
 +        }
 +        else
 +            LOG_DEBUG(log, "Mutable table raw read.");
@@ -113,7 +112,7 @@ index 7e0c703..3843f44 100644
  }
  
  bool StorageMergeTree::checkTableCanBeDropped() const
-@@ -129,6 +218,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
+@@ -129,6 +217,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
      return true;
  }
  
@@ -125,7 +124,7 @@ index 7e0c703..3843f44 100644
  void StorageMergeTree::drop()
  {
      shutdown();
-@@ -583,4 +677,10 @@ void StorageMergeTree::freezePartition(const ASTPtr & partition, const String &
+@@ -583,4 +676,10 @@ void StorageMergeTree::freezePartition(const ASTPtr & partition, const String &
      data.freezePartition(partition, with_name, context);
  }
  

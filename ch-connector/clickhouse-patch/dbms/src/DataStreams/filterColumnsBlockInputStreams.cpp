@@ -16,11 +16,7 @@ Block FilterColumnsBlockInputStream::readImpl()
 }
 
 
-BlockInputStreams filterColumnsBlockInputStreams(BlockInputStreams inputs,
-    const SortDescription & description,
-    const String & version_column,
-    size_t max_block_size,
-    const NameSet & filter_names)
+BlockInputStreams filterColumnsBlockInputStreams(BlockInputStreams inputs, const NameSet & filter_names)
 {
     BlockInputStreams res(inputs.size());
     for (size_t i = 0; i < inputs.size(); ++i)

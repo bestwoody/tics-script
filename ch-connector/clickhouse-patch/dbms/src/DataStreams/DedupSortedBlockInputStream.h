@@ -1037,7 +1037,7 @@ private:
     void dedupRow(DedupCursor & cursor, DedupTable & table);
 
     // Tools use by all kind of deduping.
-    size_t dedupColumn(DedupCursors & cursors, DedupCursor & cursor, DedupBound & bound, DedupTable & table);
+    size_t dedupColumn(DedupCursor & cursor, DedupBound & bound, DedupTable & table);
 
     template <typename Queue>
     void pushBlockBounds(const BlockInfoPtr & block, Queue & queue);

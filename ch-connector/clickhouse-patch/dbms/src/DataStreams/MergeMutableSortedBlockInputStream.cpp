@@ -24,7 +24,7 @@ size_t setFilterByDeleteMarkColumn(const Block & block, IColumn::Filter & filter
         return 0;
 
     const ColumnWithTypeAndName & delmark_column =  block.getByName(HiddenColumns::mutable_delmark_column_name);
-    const ColumnUInt8 * column = typeid_cast<ColumnUInt8 *>(delmark_column.column.get());
+    const ColumnUInt8 * column = typeid_cast<const ColumnUInt8 *>(delmark_column.column.get());
     if (!column)
         throw("Del-mark column should be type ColumnUInt8.");
 
