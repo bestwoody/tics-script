@@ -30,7 +30,12 @@ patch_diff()
 	local patch="../$target-patch/${modified#*$target}"
 	local path=`dirname "$patch"`
 	mkdir -p "$path"
-	git diff "$modified" > "$patch.patch"
+
+	if [ -f "$patch" ]; then
+		cp -f "$modified" "$patch"
+	else
+		git diff "$modified" > "$patch.patch"
+	fi
 }
 
 untracked_extract() {
