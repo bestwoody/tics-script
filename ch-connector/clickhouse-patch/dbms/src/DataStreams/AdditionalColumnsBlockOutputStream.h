@@ -22,7 +22,6 @@ template <typename T>
 class AdditionalBlockGeneratorConst : public IAdditionalBlockGenerator
 {
 public:
-    using AdditionalColumnType = ColumnVector<T>;
     using AdditionalDataType = DataTypeNumber<T>;
 
     AdditionalBlockGeneratorConst(const String name_, const T & value_) : name(name_), value(value_)
@@ -31,11 +30,7 @@ public:
     ColumnWithTypeAndName genColumn(const Block & ref) const override
     {
         auto data_type = std::make_shared<AdditionalDataType>();
-        size_t size = ref.rows();
-        auto column = std::make_shared<AdditionalColumnType>();
-        Field data = UInt64(value);
-        for (size_t i = 0; i < size; i++)
-            column->insert(data);
+        auto column = data_type->createColumnConst(ref.rows(), UInt64(value));
         return ColumnWithTypeAndName(column, data_type, name);
     }
 
@@ -54,7 +49,6 @@ template <typename T>
 class AdditionalBlockGeneratorIncrease : public IAdditionalBlockGenerator
 {
 public:
-    using AdditionalColumnType = ColumnVector<T>;
     using AdditionalDataType = DataTypeNumber<T>;
 
     AdditionalBlockGeneratorIncrease(const String name_, const T & value_) : name(name_), value(value_)
@@ -64,13 +58,13 @@ public:
     {
         auto data_type = std::make_shared<AdditionalDataType>();
         size_t size = ref.rows();
-        auto column = std::make_shared<AdditionalColumnType>();
+        auto column = data_type->createColumn();
         for (size_t i = 0; i < size; i++)
         {
             Field data = value + i;
             column->insert(data);
         }
-        return ColumnWithTypeAndName(column, data_type, name);
+        return ColumnWithTypeAndName(std::move(column), data_type, name);
     }
 
     const std::string & getName() const override
