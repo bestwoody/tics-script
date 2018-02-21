@@ -34,8 +34,8 @@ namespace ErrorCodes
 }
 
 
-InterpreterDeleteQuery::InterpreterDeleteQuery(const ASTPtr & query_ptr_, const Context & context_)
-    : query_ptr(query_ptr_), context(context_)
+InterpreterDeleteQuery::InterpreterDeleteQuery(const ASTPtr & query_ptr_, const Context & context_, bool allow_materialized_)
+    : query_ptr(query_ptr_), context(context_), allow_materialized(allow_materialized_)
 {
     ProfileEvents::increment(ProfileEvents::DeleteQuery);
 }
@@ -50,24 +50,24 @@ BlockIO InterpreterDeleteQuery::execute()
     if (merge_tree && merge_tree->getData().merging_params.mode != MergeTreeData::MergingParams::Mutable)
         throw("Only MutableMergeTree support Delete.");
 
-    auto table_lock = table->lockStructure(true);
+    auto table_lock = table->lockStructure(true, __PRETTY_FUNCTION__);
 
-    NamesAndTypesListPtr required_columns = std::make_shared<NamesAndTypesList>(table->getColumnsList());
+    NamesAndTypesList required_columns = table->getColumnsList();
 
     BlockOutputStreamPtr out;
 
-    out = std::make_shared<PushingToViewsBlockOutputStream>(query.database, query.table, context, query_ptr);
+    out = std::make_shared<PushingToViewsBlockOutputStream>(query.database, query.table, table, context, query_ptr, true);
 
     out = std::make_shared<MaterializingBlockOutputStream>(out);
 
-    out = std::make_shared<AddingDefaultBlockOutputStream>(out,
-        required_columns, table->column_defaults, context, static_cast<bool>(context.getSettingsRef().strict_insert_defaults));
+    out = std::make_shared<AddingDefaultBlockOutputStream>(
+        out, required_columns, table->column_defaults, context, static_cast<bool>(context.getSettingsRef().strict_insert_defaults));
 
-    out = std::make_shared<ProhibitColumnsBlockOutputStream>(out, table->materialized_columns);
+    if (!allow_materialized)
+        out = std::make_shared<ProhibitColumnsBlockOutputStream>(out, table->materialized_columns);
 
-    out = std::make_shared<SquashingBlockOutputStream>(out,
-        context.getSettingsRef().min_insert_block_size_rows,
-        context.getSettingsRef().min_insert_block_size_bytes);
+    out = std::make_shared<SquashingBlockOutputStream>(
+        out, context.getSettingsRef().min_insert_block_size_rows, context.getSettingsRef().min_insert_block_size_bytes);
 
     auto out_wrapper = std::make_shared<CountingBlockOutputStream>(out);
     out_wrapper->setProcessListElement(context.getProcessListElement());

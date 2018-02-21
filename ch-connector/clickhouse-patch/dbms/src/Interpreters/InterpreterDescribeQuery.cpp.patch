@@ -1,8 +1,15 @@
 diff --git a/dbms/src/Interpreters/InterpreterDescribeQuery.cpp b/dbms/src/Interpreters/InterpreterDescribeQuery.cpp
-index af61a20..446100b 100644
+index af61a20..be6f3a5 100644
 --- a/dbms/src/Interpreters/InterpreterDescribeQuery.cpp
 +++ b/dbms/src/Interpreters/InterpreterDescribeQuery.cpp
-@@ -13,6 +13,7 @@
+@@ -1,4 +1,6 @@
+ #include <Storages/IStorage.h>
++#include <Storages/StorageMergeTree.h>
++#include <Storages/HiddenColumns.h>
+ #include <Parsers/TablePropertiesQueriesASTs.h>
+ #include <DataStreams/OneBlockInputStream.h>
+ #include <DataStreams/BlockIO.h>
+@@ -13,6 +15,7 @@
  #include <TableFunctions/ITableFunction.h>
  #include <Interpreters/InterpreterSelectQuery.h>
  #include <TableFunctions/TableFunctionFactory.h>
@@ -10,13 +17,12 @@ index af61a20..446100b 100644
  #include <Parsers/ASTIdentifier.h>
  #include <Parsers/ASTTablesInSelectQuery.h>
  
-@@ -109,8 +110,19 @@ BlockInputStreamPtr InterpreterDescribeQuery::executeImpl()
+@@ -109,8 +112,18 @@ BlockInputStreamPtr InterpreterDescribeQuery::executeImpl()
      Block sample_block = getSampleBlock();
      MutableColumns res_columns = sample_block.cloneEmptyColumns();
  
 +    OrderedNameSet filtered_names;
 +    {
-+        StoragePtr table = context.getTable(ast.database, ast.table);
 +        StorageMergeTree * merge_tree = typeid_cast<StorageMergeTree *>(&*table);
 +        if (merge_tree != nullptr)
 +            filtered_names = HiddenColumns::instance().get(merge_tree->getData().merging_params.mode);
