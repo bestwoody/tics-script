@@ -1,14 +1,14 @@
 #pragma once
 
 #include <Core/Names.h>
-#include <common/singleton.h>
+#include "Poco/SingletonHolder.h"
 #include <Storages/MergeTree/MergeTreeData.h>
 
 
 namespace DB
 {
 
-class HiddenColumns : public Singleton<HiddenColumns>
+class HiddenColumns
 {
 public:
     HiddenColumns()
@@ -42,5 +42,10 @@ private:
     OrderedNameSet mutable_hidden;
     OrderedNameSet all_hidden;
 };
+
+namespace
+{
+    static Poco::SingletonHolder<HiddenColumns> hiddenColumnsSingleton;
+}
 
 }
