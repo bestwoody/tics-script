@@ -50,7 +50,7 @@ size_t setFilterByDeleteMarkColumn(const Block & block, IColumn::Filter & filter
 
 // TODO: OPTI do not copy data, just wrap the IColumn with "A new column + del-marks", lower version rows also treat as deleted
 // TODO: OPTI delay batch insert
-void MergeMutableSortedBlockInputStream::insertRow(ColumnPlainPtrs & merged_columns, size_t & merged_rows)
+void MergeMutableSortedBlockInputStream::insertRow(MutableColumns & merged_columns, size_t & merged_rows)
 {
     UInt64 delmark = delmark_column_number != -1
         ? selected_row.columns[delmark_column_number]->get64(selected_row.row_num)
@@ -71,7 +71,7 @@ Block MergeMutableSortedBlockInputStream::readImpl()
         return Block();
 
     Block merged_block;
-    ColumnPlainPtrs merged_columns;
+    MutableColumns merged_columns;
 
     init(merged_block, merged_columns);
     if (merged_columns.empty())
@@ -99,7 +99,7 @@ Block MergeMutableSortedBlockInputStream::readImpl()
 
 
 template<class TSortCursor>
-void MergeMutableSortedBlockInputStream::merge(ColumnPlainPtrs & merged_columns, std::priority_queue<TSortCursor> & queue)
+void MergeMutableSortedBlockInputStream::merge(MutableColumns & merged_columns, std::priority_queue<TSortCursor> & queue)
 {
     size_t merged_rows = 0;
 

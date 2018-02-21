@@ -70,10 +70,10 @@ private:
     UInt64 max_version = 0;     /// Max version for current primary key.
 
     template<class TSortCursor>
-    void merge(ColumnPlainPtrs & merged_columns, std::priority_queue<TSortCursor> & queue);
+    void merge(MutableColumns & merged_columns, std::priority_queue<TSortCursor> & queue);
 
     /// Output into result the rows for current primary key.
-    void insertRow(ColumnPlainPtrs & merged_columns, size_t & merged_rows);
+    void insertRow(MutableColumns & merged_columns, size_t & merged_rows);
 };
 
 }
