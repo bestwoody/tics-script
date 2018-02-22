@@ -1,4 +1,4 @@
->> drop table t if exists
+>> drop table if exists t
 
 >> create table t (a Int32) engine=Log
 >> insert into table t values (0)
@@ -6,11 +6,11 @@
 
 >> select * from t
 ┌─a─┐
-│ 0 │
+│ 1 │
+│ 1 │
 └───┘
 ┌─a─┐
-│ 1 │
-│ 1 │
+│ 0 │
 └───┘
 
 >> select * from t where a <= 0
