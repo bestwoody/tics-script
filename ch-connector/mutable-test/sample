@@ -1,0 +1,19 @@
+>> drop table t if exists
+
+>> create table t (a Int32) engine=Log
+>> insert into table t values (0)
+>> insert into table t values (1), (1)
+
+>> select * from t
+┌─a─┐
+│ 0 │
+└───┘
+┌─a─┐
+│ 1 │
+│ 1 │
+└───┘
+
+>> select * from t where a <= 0
+┌─a─┐
+│ 0 │
+└───┘
