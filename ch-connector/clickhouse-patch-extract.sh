@@ -34,7 +34,10 @@ patch_diff()
 	if [ -f "$patch" ]; then
 		cp -f "$modified" "$patch"
 	else
-		git diff "$modified" > "$patch.patch"
+		local delta=`git diff "$modified"`
+		if [ ! -z "$delta" ]; then
+			echo "$delta" > "$patch.patch"
+		fi
 	fi
 }
 
@@ -51,7 +54,7 @@ untracked_extract() {
 	fi
 }
 
-patch_extract()
+patch_extract_repo()
 {
 	local target="$1"
 
@@ -64,8 +67,30 @@ patch_extract()
 	done
 }
 
+patch_extract_one()
+{
+	local target="$1"
+	local modified="$2"
+	cd "$target"
+	patch_diff "$target" "$modified"
+}
+
+patch_extract()
+{
+	local target="$1"
+	local path="$2"
+
+	if [ -z "$path" ]; then
+		patch_ensure_not_changed "$target"
+		patch_extract_repo "$target"
+	else
+		patch_extract_one "$target" "$path"
+	fi
+}
+
+extract_file="$1"
+target="clickhouse"
+
 set -eu
 
-target="clickhouse"
-patch_ensure_not_changed "$target"
-patch_extract "$target"
+patch_extract "$target" "$extract_file"
