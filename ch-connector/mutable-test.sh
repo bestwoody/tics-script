@@ -43,12 +43,21 @@ function run_path()
 
 target="$1"
 dbc="$2"
+debug="$3"
 
 if [ -z "$target" ]; then
 	target="mutable-test"
 fi
+
+if [ -z "$debug" ]; then
+	debug="false"
+fi
+
 if [ -z "$dbc" ]; then
-	dbc="build/dbms/src/Server/clickhouse client --stacktrace -f PrettyCompactNoEscapes --query"
+	if [ "$debug" != "false" ] && [ "$debug" != "0" ]; then
+		debug="--stacktrace"
+	fi
+	dbc="build/dbms/src/Server/clickhouse client $debug -f PrettyCompactNoEscapes --query"
 fi
 
 run_path "$dbc" "$target"
