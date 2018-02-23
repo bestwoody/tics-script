@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/InterpreterAlterQuery.cpp b/dbms/src/Interpreters/InterpreterAlterQuery.cpp
-index 76fef51..e874649 100644
+index 76fef51..e958f88 100644
 --- a/dbms/src/Interpreters/InterpreterAlterQuery.cpp
 +++ b/dbms/src/Interpreters/InterpreterAlterQuery.cpp
 @@ -15,6 +15,9 @@
@@ -21,7 +21,7 @@ index 76fef51..e874649 100644
  
      partition_commands.validate(table.get());
      for (const PartitionCommand & command : partition_commands)
-@@ -90,10 +93,17 @@ BlockIO InterpreterAlterQuery::execute()
+@@ -90,10 +93,12 @@ BlockIO InterpreterAlterQuery::execute()
  
  void InterpreterAlterQuery::parseAlter(
      const ASTAlterQuery::ParameterContainer & params_container,
@@ -30,17 +30,12 @@ index 76fef51..e874649 100644
  {
      const DataTypeFactory & data_type_factory = DataTypeFactory::instance();
  
-+    OrderedNameSet filtered_names;
-+    {
-+        StorageMergeTree * merge_tree = typeid_cast<StorageMergeTree *>(&*table);
-+        if (merge_tree != nullptr)
-+            filtered_names = HiddenColumns::instance().get(merge_tree->getData().merging_params.mode);
-+    }
++    OrderedNameSet filtered_names = HiddenColumns::instance().get(table->getName());
 +
      for (const auto & params : params_container)
      {
          if (params.type == ASTAlterQuery::ADD_COLUMN)
-@@ -103,6 +113,10 @@ void InterpreterAlterQuery::parseAlter(
+@@ -103,6 +108,10 @@ void InterpreterAlterQuery::parseAlter(
  
              const auto & ast_col_decl = typeid_cast<const ASTColumnDeclaration &>(*params.col_decl);
  
@@ -51,7 +46,7 @@ index 76fef51..e874649 100644
              command.column_name = ast_col_decl.name;
              if (ast_col_decl.type)
              {
-@@ -130,6 +144,13 @@ void InterpreterAlterQuery::parseAlter(
+@@ -130,6 +139,13 @@ void InterpreterAlterQuery::parseAlter(
  
                  const Field & column_name = typeid_cast<const ASTIdentifier &>(*(params.column)).name;
  
@@ -65,7 +60,7 @@ index 76fef51..e874649 100644
                  out_partition_commands.emplace_back(PartitionCommand::clearColumn(params.partition, column_name));
              }
              else
-@@ -141,6 +162,10 @@ void InterpreterAlterQuery::parseAlter(
+@@ -141,6 +157,10 @@ void InterpreterAlterQuery::parseAlter(
                  command.type = AlterCommand::DROP_COLUMN;
                  command.column_name = typeid_cast<const ASTIdentifier &>(*(params.column)).name;
  
@@ -76,7 +71,7 @@ index 76fef51..e874649 100644
                  out_alter_commands.emplace_back(std::move(command));
              }
          }
-@@ -151,6 +176,10 @@ void InterpreterAlterQuery::parseAlter(
+@@ -151,6 +171,10 @@ void InterpreterAlterQuery::parseAlter(
  
              const auto & ast_col_decl = typeid_cast<const ASTColumnDeclaration &>(*params.col_decl);
  

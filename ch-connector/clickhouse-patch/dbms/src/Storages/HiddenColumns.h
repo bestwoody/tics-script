@@ -19,16 +19,16 @@ public:
         all_hidden.insert(all_hidden.end(), mutable_hidden.begin(), mutable_hidden.end());
     }
 
-    const OrderedNameSet & get(MergeTreeData::MergingParams::Mode mode)
+    const OrderedNameSet & get(std::string table_type_name)
     {
-        if (MergeTreeData::MergingParams::Mutable == mode)
+        if ("MutableMergeTree" == table_type_name)
             return mutable_hidden;
         return empty;
     }
 
-    void eraseHiddenColumns(Block & block, MergeTreeData::MergingParams::Mode mode)
+    void eraseHiddenColumns(Block & block, std::string table_type_name)
     {
-        const OrderedNameSet & names = get(mode);
+        const OrderedNameSet & names = get(table_type_name);
         for (auto & it : names)
             if (block.has(it))
                 block.erase(it);

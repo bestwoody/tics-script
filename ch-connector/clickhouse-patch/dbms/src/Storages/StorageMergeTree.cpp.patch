@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..6a74403 100644
+index 7e0c703..345792b 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
 @@ -15,6 +15,15 @@
@@ -119,7 +119,7 @@ index 7e0c703..6a74403 100644
  
 +const OrderedNameSet & StorageMergeTree::getHiddenColumnsImpl() const
 +{
-+    return HiddenColumns::instance().get(data.merging_params.mode);
++    return HiddenColumns::instance().get(getName());
 +}
 +
  void StorageMergeTree::drop()
