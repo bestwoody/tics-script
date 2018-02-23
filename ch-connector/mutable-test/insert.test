@@ -1,3 +1,4 @@
+!return
 >> drop table if exists test
 >> create table test (
 	dt Date
