@@ -70,6 +70,8 @@ def parse_exe_match(path, executor):
             if line.startswith(COMMENT_PREFIX) or len(line) == 0:
                 continue
             if origin.startswith(UNFINISHED_1_PREFIX) or origin.startswith(UNFINISHED_2_PREFIX):
+                if cached[-1] == ',':
+                    cached += ' '
                 cached += line
                 continue
             if cached != None and not matcher.on_line(cached):
@@ -89,14 +91,19 @@ def main():
 
     matched, matcher = parse_exe_match(path, Executor(dbc))
 
+    def display(lines):
+        if len(lines) == 0:
+            print ' ' * 4 + '<nothing>'
+        else:
+            for it in lines:
+                print ' ' * 4 + it
+
     if not matched:
         print '  Error:', matcher.query
         print '  Result:'
-        for it in matcher.outputs:
-            print ' ' * 4, it
+        display(matcher.outputs)
         print '  Expected:'
-        for it in matcher.matches:
-            print ' ' * 4, it
+        display(matcher.matches)
         sys.exit(1)
 
 main()
