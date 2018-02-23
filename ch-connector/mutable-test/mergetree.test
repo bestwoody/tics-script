@@ -1,0 +1,17 @@
+>> drop table if exists test
+>> create table test (
+	dt Date
+	) engine = MergeTree(dt, (dt), 8192)
+
+>> desc test
+┌─name─┬─type─┬─default_type─┬─default_expression─┐
+│ dt   │ Date │              │                    │
+└──────┴──────┴──────────────┴────────────────────┘
+
+>> insert into test values (0)
+>> select * from test
+┌─────────dt─┐
+│ 0000-00-00 │
+└────────────┘
+
+>> drop table if exists test

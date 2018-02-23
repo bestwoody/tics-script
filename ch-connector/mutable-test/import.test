@@ -1,0 +1,12 @@
+>> drop table if exists test
+>> create table test (
+	dt Date
+	) engine = MutableMergeTree(dt, (dt), 8192)
+
+>> import into test values (0, 0, 0)
+>> select * from test
+┌─────────dt─┐
+│ 0000-00-00 │
+└────────────┘
+
+>> drop table if exists test
