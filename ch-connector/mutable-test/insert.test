@@ -1,13 +1,25 @@
-!return
 >> drop table if exists test
 >> create table test (
 	dt Date
 	) engine = MutableMergeTree(dt, (dt), 8192)
 
->> insert into test values (0)
+>> insert into test values (0), (0)
 >> select * from test
 ┌─────────dt─┐
 │ 0000-00-00 │
+│ 0000-00-00 │
 └────────────┘
+
+>> select * from test
+┌─────────dt─┐
+│ 0000-00-00 │
+│ 0000-00-00 │
+└────────────┘
+
+>> selraw * from test
+┌─────────dt─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐
+│ 0000-00-00 │           1000000 │                 0 │
+│ 0000-00-00 │           1000001 │                 0 │
+└────────────┴───────────────────┴───────────────────┘
 
 >> drop table if exists test

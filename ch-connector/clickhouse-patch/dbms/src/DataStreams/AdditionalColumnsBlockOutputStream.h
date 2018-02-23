@@ -30,8 +30,12 @@ public:
     ColumnWithTypeAndName genColumn(const Block & ref) const override
     {
         auto data_type = std::make_shared<AdditionalDataType>();
-        auto column = data_type->createColumnConst(ref.rows(), UInt64(value));
-        return ColumnWithTypeAndName(column, data_type, name);
+        auto column = data_type->createColumn();
+        Field data = value;
+        size_t size = ref.rows();
+        for (size_t i = 0; i < size; i++)
+            column->insert(data);
+        return ColumnWithTypeAndName(std::move(column), data_type, name);
     }
 
     const std::string & getName() const override
