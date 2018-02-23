@@ -3,6 +3,7 @@
     <logger>
         <level>trace</level>
         <log>/data/ch-server/server.log</log>
+        <errorlog>/data/ch-server/error.log</errorlog>
         <size>4000M</size>
         <count>10</count>
     </logger>

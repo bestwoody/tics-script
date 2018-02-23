@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
-index 0b3b2a1..e52d458 100644
+index 0b3b2a1..76f3cf5 100644
 --- a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 +++ b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 @@ -1,6 +1,7 @@
@@ -19,17 +19,7 @@ index 0b3b2a1..e52d458 100644
      else if (name_part == "Graphite")
          merging_params.mode = MergeTreeData::MergingParams::Graphite;
      else if (!name_part.empty())
-@@ -418,6 +421,9 @@ static StoragePtr create(const StorageFactory::Arguments & args)
-     case MergeTreeData::MergingParams::Replacing:
-         add_optional_param("version");
-         break;
-+    case MergeTreeData::MergingParams::Mutable:
-+        add_mandatory_param("version");
-+        break;
-     case MergeTreeData::MergingParams::Collapsing:
-         add_mandatory_param("sign column");
-         break;
-@@ -482,6 +488,8 @@ static StoragePtr create(const StorageFactory::Arguments & args)
+@@ -482,6 +485,8 @@ static StoragePtr create(const StorageFactory::Arguments & args)
          engine_args.erase(engine_args.begin(), engine_args.begin() + 2);
      }
  
@@ -38,14 +28,14 @@ index 0b3b2a1..e52d458 100644
      if (merging_params.mode == MergeTreeData::MergingParams::Collapsing)
      {
          if (auto ast = typeid_cast<const ASTIdentifier *>(engine_args.back().get()))
-@@ -508,6 +516,16 @@ static StoragePtr create(const StorageFactory::Arguments & args)
+@@ -508,6 +513,16 @@ static StoragePtr create(const StorageFactory::Arguments & args)
              engine_args.pop_back();
          }
      }
 +    else if (merging_params.mode == MergeTreeData::MergingParams::Mutable)
 +    {
 +        // Add version column and del-mark column, set to engine params.
-+        const Names & names = extractColumnNames(engine_args.back());
++        const Names & names = args.columns.getNames();
 +        if (std::find(names.begin(), names.end(), HiddenColumns::mutable_version_column_name) == names.end())
 +            columns.push_back(NameAndTypePair(HiddenColumns::mutable_version_column_name, std::make_shared<DataTypeUInt64>()));
 +        if (std::find(names.begin(), names.end(), HiddenColumns::mutable_delmark_column_name) == names.end())
@@ -55,7 +45,7 @@ index 0b3b2a1..e52d458 100644
      else if (merging_params.mode == MergeTreeData::MergingParams::Summing)
      {
          /// If the last element is not index_granularity or replica_name (a literal), then this is a list of summable columns.
-@@ -588,14 +606,14 @@ static StoragePtr create(const StorageFactory::Arguments & args)
+@@ -588,14 +603,14 @@ static StoragePtr create(const StorageFactory::Arguments & args)
      if (replicated)
          return StorageReplicatedMergeTree::create(
              zookeeper_path, replica_name, args.attach, args.data_path, args.database_name, args.table_name,
@@ -72,7 +62,7 @@ index 0b3b2a1..e52d458 100644
              args.context, primary_expr_list, date_column_name, partition_expr_list,
              sampling_expression, merging_params, storage_settings,
              args.has_force_restore_data_flag);
-@@ -607,6 +625,7 @@ void registerStorageMergeTree(StorageFactory & factory)
+@@ -607,6 +622,7 @@ void registerStorageMergeTree(StorageFactory & factory)
      factory.registerStorage("MergeTree", create);
      factory.registerStorage("CollapsingMergeTree", create);
      factory.registerStorage("ReplacingMergeTree", create);
@@ -80,7 +70,7 @@ index 0b3b2a1..e52d458 100644
      factory.registerStorage("AggregatingMergeTree", create);
      factory.registerStorage("SummingMergeTree", create);
      factory.registerStorage("GraphiteMergeTree", create);
-@@ -614,6 +633,7 @@ void registerStorageMergeTree(StorageFactory & factory)
+@@ -614,6 +630,7 @@ void registerStorageMergeTree(StorageFactory & factory)
      factory.registerStorage("ReplicatedMergeTree", create);
      factory.registerStorage("ReplicatedCollapsingMergeTree", create);
      factory.registerStorage("ReplicatedReplacingMergeTree", create);
