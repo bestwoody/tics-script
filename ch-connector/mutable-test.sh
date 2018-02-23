@@ -48,7 +48,7 @@ if [ -z "$target" ]; then
 	target="mutable-test"
 fi
 if [ -z "$dbc" ]; then
-	dbc="build/dbms/src/Server/clickhouse client -f PrettyCompactNoEscapes --query"
+	dbc="build/dbms/src/Server/clickhouse client --stacktrace -f PrettyCompactNoEscapes --query"
 fi
 
 run_path "$dbc" "$target"

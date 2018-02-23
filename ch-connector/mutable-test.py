@@ -5,6 +5,7 @@ import sys
 
 CMD_PREFIX = '>> '
 COMMENT_PREFIX = '#'
+RETURN_PREFIX = '!return'
 UNFINISHED_1_PREFIX = '\t'
 UNFINISHED_2_PREFIX = '   '
 
@@ -69,6 +70,8 @@ def parse_exe_match(path, executor):
             line = origin.strip()
             if line.startswith(COMMENT_PREFIX) or len(line) == 0:
                 continue
+            if line.startswith(RETURN_PREFIX):
+                break
             if origin.startswith(UNFINISHED_1_PREFIX) or origin.startswith(UNFINISHED_2_PREFIX):
                 if cached[-1] == ',':
                     cached += ' '
