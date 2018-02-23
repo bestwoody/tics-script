@@ -33,12 +33,15 @@ def matched(outputs, matches):
 
 def parse_exe_match(path, executor):
     CMD_PREFIX = '>> '
+    COMMENT_PREFIX = '#'
     with open(path) as f:
         query = None
         outputs = None
         matches = []
         for line in f:
             line = line[:-1].strip()
+            if line.startswith(COMMENT_PREFIX) or len(line) == 0:
+                continue
             if line.startswith(CMD_PREFIX):
                 if outputs != None and not matched(outputs, matches):
                     return False, query, outputs, matches
@@ -47,7 +50,7 @@ def parse_exe_match(path, executor):
                 outputs = map(lambda x: x.strip(), outputs)
                 outputs = filter(lambda x: len(x) != 0, outputs)
                 matches = []
-            elif len(line) > 0:
+            else:
                 matches.append(line)
         if outputs != None and not matched(outputs, matches):
             return False, query, outputs, matches
