@@ -1,8 +1,11 @@
 >> drop table if exists t
 
->> create table t (a Int32) engine=Log
->> insert into table t values (0)
->> insert into table t values (1), (1)
+>> create table t (
+	a Int32
+	) engine = Log
+
+>> insert into t values (0)
+>> insert into t values (1), (1)
 
 >> select * from t
 ┌─a─┐
@@ -17,3 +20,5 @@
 ┌─a─┐
 │ 0 │
 └───┘
+
+>> drop table if exists t

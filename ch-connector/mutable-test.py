@@ -3,6 +3,11 @@
 import os
 import sys
 
+CMD_PREFIX = '>> '
+COMMENT_PREFIX = '#'
+UNFINISHED_1_PREFIX = '\t'
+UNFINISHED_2_PREFIX = '   '
+
 class Executor:
     def __init__(self, dbc):
         self.dbc = dbc
@@ -31,30 +36,48 @@ def matched(outputs, matches):
     b = parse_table_parts(matches)
     return a == b
 
+class Matcher:
+    def __init__(self, executor):
+        self.executor = executor
+        self.query = None
+        self.outputs = None
+        self.matches = []
+
+    def on_line(self, line):
+        if line.startswith(CMD_PREFIX):
+            if self.outputs != None and not matched(self.outputs, self.matches):
+                return False
+            self.query = line[len(CMD_PREFIX):]
+            self.outputs = self.executor.exe(self.query)
+            self.outputs = map(lambda x: x.strip(), self.outputs)
+            self.outputs = filter(lambda x: len(x) != 0, self.outputs)
+            self.matches = []
+        else:
+            self.matches.append(line)
+        return True
+
+    def on_finish(self):
+        if self.outputs != None and not matched(self.outputs, self.matches):
+            return False
+        return True
+
 def parse_exe_match(path, executor):
-    CMD_PREFIX = '>> '
-    COMMENT_PREFIX = '#'
-    with open(path) as f:
-        query = None
-        outputs = None
-        matches = []
-        for line in f:
-            line = line[:-1].strip()
+    with open(path) as file:
+        matcher = Matcher(executor)
+        cached = None
+        for origin in file:
+            line = origin.strip()
             if line.startswith(COMMENT_PREFIX) or len(line) == 0:
                 continue
-            if line.startswith(CMD_PREFIX):
-                if outputs != None and not matched(outputs, matches):
-                    return False, query, outputs, matches
-                query = line[len(CMD_PREFIX):]
-                outputs = executor.exe(query)
-                outputs = map(lambda x: x.strip(), outputs)
-                outputs = filter(lambda x: len(x) != 0, outputs)
-                matches = []
-            else:
-                matches.append(line)
-        if outputs != None and not matched(outputs, matches):
-            return False, query, outputs, matches
-    return True, query, outputs, matches
+            if origin.startswith(UNFINISHED_1_PREFIX) or origin.startswith(UNFINISHED_2_PREFIX):
+                cached += line
+                continue
+            if cached != None and not matcher.on_line(cached):
+                return False, matcher
+            cached = line
+        if (cached != None and not matcher.on_line(cached)) or not matcher.on_finish():
+            return False, matcher
+        return True, matcher
 
 def main():
     if len(sys.argv) != 3:
@@ -64,15 +87,15 @@ def main():
     dbc = sys.argv[1]
     path = sys.argv[2]
 
-    matched, query, outputs, matches = parse_exe_match(path, Executor(dbc))
+    matched, matcher = parse_exe_match(path, Executor(dbc))
 
     if not matched:
-        print '  Error:', query
+        print '  Error:', matcher.query
         print '  Result:'
-        for it in outputs:
+        for it in matcher.outputs:
             print ' ' * 4, it
         print '  Expected:'
-        for it in matches:
+        for it in matcher.matches:
             print ' ' * 4, it
         sys.exit(1)
 
