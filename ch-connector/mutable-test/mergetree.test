@@ -11,10 +11,18 @@
 └──────┴───────┴──────────────┴────────────────────┘
 
 >> insert into test values (0, 3)
-
 >> select * from test
 ┌─────────dt─┬─v─┐
 │ 0000-00-00 │ 3 │
+└────────────┴───┘
+
+>> insert into test values (0, 6)
+>> select * from test
+┌─────────dt─┬─v─┐
+│ 0000-00-00 │ 3 │
+└────────────┴───┘
+┌─────────dt─┬─v─┐
+│ 0000-00-00 │ 6 │
 └────────────┴───┘
 
 >> select _INTERNAL_VERSION from test
