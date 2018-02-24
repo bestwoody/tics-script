@@ -33,15 +33,18 @@ def parse_table_parts(lines):
 def is_blank_char(c):
     return c in [' ', '\n', '\t']
 
-def is_brace(c):
+def is_brace_char(c):
     return c in ['{', '[', '(', ')', ']', '}']
+
+def is_break_char(c):
+    return (c in [',', ';']) or is_brace_char(c) or is_blank_char(c)
 
 def match_ph_word(line):
     i = 0
     while is_blank_char(line[i]):
         i += 1
     found = False
-    while not is_blank_char(line[i]) and not is_brace(line[i]):
+    while not is_break_char(line[i]):
         i += 1
         found = True
     if not found:
