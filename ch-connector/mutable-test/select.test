@@ -1,3 +1,5 @@
+## Prepare data:
+
 >> drop table if exists test
 >> create table test (
 	dt Date,
@@ -5,6 +7,8 @@
 	) engine = MutableMergeTree(dt, (dt), 8192)
 
 >> insert into test values (0, 4), (0, 8)
+
+## Test ordinary columns:
 
 >> select dt, v from test
 ┌─────────dt─┬─v─┐
@@ -18,18 +22,7 @@
 │ 8 │
 └───┘
 
->> select * from test
-┌─────────dt─┬─v─┐
-│ 0000-00-00 │ 4 │
-│ 0000-00-00 │ 8 │
-└────────────┴───┘
-
 >> select count() from test
-┌─count()─┐
-│       2 │
-└─────────┘
-
->> select count(*) from test
 ┌─count()─┐
 │       2 │
 └─────────┘
@@ -54,9 +47,25 @@
 │      8 │
 └────────┘
 
+## Test asterisk:
+
+>> select count(*) from test
+┌─count()─┐
+│       2 │
+└─────────┘
+
+>> select * from test
+┌─────────dt─┬─v─┐
+│ 0000-00-00 │ 4 │
+│ 0000-00-00 │ 8 │
+└────────────┴───┘
+
+## Test hidden columns:
+
 #TODO Uncorrented exception info: columns should be dt, v.
 >> select _INTERNAL_VERSION from test
 Received exception from server (version {#WORD}):
 Code: 10. DB::Exception: Received from {#WORD}, {#WORD} DB::Exception: Not found column _INTERNAL_VERSION in block. There are only columns: dt.
 
+## Clean up:
 >> drop table if exists test
