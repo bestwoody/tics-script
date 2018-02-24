@@ -1,0 +1,30 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreeData.h b/dbms/src/Storages/MergeTree/MergeTreeData.h
+index b9797dc..a6ce511 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreeData.h
++++ b/dbms/src/Storages/MergeTree/MergeTreeData.h
+@@ -36,7 +36,6 @@ namespace ErrorCodes
+     extern const int TABLE_DIFFERS_TOO_MUCH;
+ }
+ 
+-
+ /// Data structure for *MergeTree engines.
+ /// Merge tree is used for incremental sorting of data.
+ /// The table consists of several sorted parts.
+@@ -242,6 +241,7 @@ public:
+             Unsorted    = 4,
+             Replacing   = 5,
+             Graphite    = 6,
++            Mutable     = 7,
+         };
+ 
+         Mode mode;
+@@ -300,7 +300,8 @@ public:
+         return merging_params.mode == MergingParams::Collapsing
+             || merging_params.mode == MergingParams::Summing
+             || merging_params.mode == MergingParams::Aggregating
+-            || merging_params.mode == MergingParams::Replacing;
++            || merging_params.mode == MergingParams::Replacing
++            || merging_params.mode == MergingParams::Mutable;
+     }
+ 
+     bool mayBenefitFromIndexForIn(const ASTPtr & left_in_operand) const;

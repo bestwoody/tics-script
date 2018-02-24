@@ -1,0 +1,33 @@
+diff --git a/dbms/src/Interpreters/InterpreterDescribeQuery.cpp b/dbms/src/Interpreters/InterpreterDescribeQuery.cpp
+index af61a20..34e7dfa 100644
+--- a/dbms/src/Interpreters/InterpreterDescribeQuery.cpp
++++ b/dbms/src/Interpreters/InterpreterDescribeQuery.cpp
+@@ -1,4 +1,6 @@
+ #include <Storages/IStorage.h>
++#include <Storages/StorageMergeTree.h>
++#include <Storages/HiddenColumns.h>
+ #include <Parsers/TablePropertiesQueriesASTs.h>
+ #include <DataStreams/OneBlockInputStream.h>
+ #include <DataStreams/BlockIO.h>
+@@ -13,6 +15,7 @@
+ #include <TableFunctions/ITableFunction.h>
+ #include <Interpreters/InterpreterSelectQuery.h>
+ #include <TableFunctions/TableFunctionFactory.h>
++
+ #include <Parsers/ASTIdentifier.h>
+ #include <Parsers/ASTTablesInSelectQuery.h>
+ 
+@@ -109,8 +112,13 @@ BlockInputStreamPtr InterpreterDescribeQuery::executeImpl()
+     Block sample_block = getSampleBlock();
+     MutableColumns res_columns = sample_block.cloneEmptyColumns();
+ 
++    OrderedNameSet filtered_names = HiddenColumns::instance().get(table->getName());
++
+     for (const auto & column : columns)
+     {
++        if (filtered_names.has(column.name))
++            continue;
++
+         res_columns[0]->insert(column.name);
+         res_columns[1]->insert(column.type->getName());
+ 

@@ -1,0 +1,73 @@
+diff --git a/dbms/src/Storages/ITableDeclaration.cpp b/dbms/src/Storages/ITableDeclaration.cpp
+index 8bc53a8..19e66a1 100644
+--- a/dbms/src/Storages/ITableDeclaration.cpp
++++ b/dbms/src/Storages/ITableDeclaration.cpp
+@@ -121,6 +121,68 @@ Block ITableDeclaration::getSampleBlockNonMaterialized() const
+ }
+ 
+ 
++Block ITableDeclaration::getSampleBlockNoHidden() const
++{
++    Block res;
++    const OrderedNameSet & hidden = getHiddenColumnsImpl();
++
++    for (const auto & col : getColumnsListRange())
++        if (!hidden.has(col.name))
++            res.insert({ col.type->createColumn(), col.type, col.name });
++
++    return res;
++}
++
++
++Block ITableDeclaration::getSampleBlockNonMaterializedNoHidden() const
++{
++    Block res;
++    const OrderedNameSet & hidden = getHiddenColumnsImpl();
++
++    for (const auto & col : getColumnsListNonMaterialized())
++        if (!hidden.has(col.name))
++            res.insert({ col.type->createColumn(), col.type, col.name });
++
++    return res;
++}
++
++
++NamesAndTypesList ITableDeclaration::getColumnsListNoHidden() const
++{
++    NamesAndTypesList all = getColumnsList();
++    const OrderedNameSet & hidden = getHiddenColumnsImpl();
++    NamesAndTypesList res;
++    for (const auto & it : all)
++        if (!hidden.has(it.name))
++            res.push_back(it);
++    return res;
++}
++
++
++NamesAndTypesList ITableDeclaration::getColumnsListNonMaterializedNoHidden() const
++{
++    NamesAndTypesList all = getColumnsListNonMaterialized();
++    const OrderedNameSet & hidden = getHiddenColumnsImpl();
++    NamesAndTypesList res;
++    for (const auto & it : all)
++        if (!hidden.has(it.name))
++            res.push_back(it);
++    return res;
++}
++
++
++Names ITableDeclaration::getColumnNamesListNoHidden() const
++{
++    Names all = getColumnNamesList();
++    const OrderedNameSet & hidden = getHiddenColumnsImpl();
++    Names res;
++    for (const auto & it : all)
++        if (!hidden.has(it))
++            res.push_back(it);
++    return res;
++}
++
++
+ static std::string listOfColumns(const NamesAndTypesList & available_columns)
+ {
+     std::stringstream s;

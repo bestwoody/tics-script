@@ -1,0 +1,77 @@
+diff --git a/dbms/src/Core/SortCursor.h b/dbms/src/Core/SortCursor.h
+index cd427fe..4d7b16d 100644
+--- a/dbms/src/Core/SortCursor.h
++++ b/dbms/src/Core/SortCursor.h
+@@ -107,6 +107,19 @@ struct SortCursor
+         return impl->order > rhs.impl->order;
+     }
+ 
++    bool equalAtIgnOrder(const SortCursor & rhs, size_t lhs_pos, size_t rhs_pos) const
++    {
++        for (size_t i = 0; i < impl->sort_columns_size; ++i)
++        {
++            int direction = impl->desc[i].direction;
++            int nulls_direction = impl->desc[i].nulls_direction;
++            int res = direction * impl->sort_columns[i]->compareAt(lhs_pos, rhs_pos, *(rhs.impl->sort_columns[i]), nulls_direction);
++            if (res != 0)
++                return false;
++        }
++        return true;
++    }
++
+     /// Checks that all rows in the current block of this cursor are less than or equal to all the rows of the current block of another cursor.
+     bool totallyLessOrEquals(const SortCursor & rhs) const
+     {
+@@ -122,6 +135,11 @@ struct SortCursor
+         return greaterAt(rhs, impl->pos, rhs.impl->pos);
+     }
+ 
++    bool equalIgnOrder(const SortCursor & rhs) const
++    {
++        return equalAtIgnOrder(rhs, impl->pos, rhs.impl->pos);
++    }
++
+     /// Inverted so that the priority queue elements are removed in ascending order.
+     bool operator< (const SortCursor & rhs) const
+     {
+@@ -163,6 +181,28 @@ struct SortCursorWithCollation
+         return impl->order > rhs.impl->order;
+     }
+ 
++    bool equalAtIgnOrder(const SortCursorWithCollation & rhs, size_t lhs_pos, size_t rhs_pos) const
++    {
++        for (size_t i = 0; i < impl->sort_columns_size; ++i)
++        {
++            int direction = impl->desc[i].direction;
++            int nulls_direction = impl->desc[i].nulls_direction;
++            int res;
++            if (impl->need_collation[i])
++            {
++                const ColumnString & column_string = static_cast<const ColumnString &>(*impl->sort_columns[i]);
++                res = column_string.compareAtWithCollation(lhs_pos, rhs_pos, *(rhs.impl->sort_columns[i]), *impl->desc[i].collator);
++            }
++            else
++                res = impl->sort_columns[i]->compareAt(lhs_pos, rhs_pos, *(rhs.impl->sort_columns[i]), nulls_direction);
++
++            res *= direction;
++            if (res != 0)
++                return false;
++        }
++        return true;
++    }
++
+     bool totallyLessOrEquals(const SortCursorWithCollation & rhs) const
+     {
+         if (impl->rows == 0 || rhs.impl->rows == 0)
+@@ -177,6 +217,11 @@ struct SortCursorWithCollation
+         return greaterAt(rhs, impl->pos, rhs.impl->pos);
+     }
+ 
++    bool equalIgnOrder(const SortCursorWithCollation & rhs) const
++    {
++        return equalAtIgnOrder(rhs, impl->pos, rhs.impl->pos);
++    }
++
+     bool operator< (const SortCursorWithCollation & rhs) const
+     {
+         return greater(rhs);

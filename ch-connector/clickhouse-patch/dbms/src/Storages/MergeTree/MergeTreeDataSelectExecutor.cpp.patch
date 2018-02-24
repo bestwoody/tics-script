@@ -1,0 +1,59 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
+index 1766f60..643a277 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
++++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
+@@ -7,10 +7,14 @@
+ #include <Storages/MergeTree/MergeTreeReadPool.h>
+ #include <Storages/MergeTree/MergeTreeThreadBlockInputStream.h>
+ #include <Storages/MergeTree/PKCondition.h>
++
++#include <Storages/HiddenColumns.h>
++
+ #include <Parsers/ASTIdentifier.h>
+ #include <Parsers/ASTFunction.h>
+ #include <Parsers/ASTSampleRatio.h>
+ 
++
+ /// Allow to use __uint128_t as a template parameter for boost::rational.
+ // https://stackoverflow.com/questions/41198673/uint128-t-not-working-with-clang-and-libstdc
+ #if !defined(__GLIBCXX_BITSIZE_INT_N_0) && defined(__SIZEOF_INT128__)
+@@ -546,6 +550,12 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+ 
+     BlockInputStreams res;
+ 
++    if (data.merging_params.mode == MergeTreeData::MergingParams::Mutable)
++    {
++        column_names_to_read.insert(column_names_to_read.end(), HiddenColumns::mutable_version_column_name);
++        column_names_to_read.insert(column_names_to_read.end(), HiddenColumns::mutable_delmark_column_name);
++    }
++
+     if (select.final())
+     {
+         /// Add columns needed to calculate primary key and the sign.
+@@ -573,6 +583,14 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+     }
+     else
+     {
++        if (data.merging_params.mode == MergeTreeData::MergingParams::Mutable)
++        {
++            std::vector<String> add_columns = data.getPrimaryExpression()->getRequiredColumns();
++            column_names_to_read.insert(column_names_to_read.end(), add_columns.begin(), add_columns.end());
++            std::sort(column_names_to_read.begin(), column_names_to_read.end());
++            column_names_to_read.erase(std::unique(column_names_to_read.begin(), column_names_to_read.end()), column_names_to_read.end());
++        }
++
+         res = spreadMarkRangesAmongStreams(
+             std::move(parts_with_ranges),
+             num_streams,
+@@ -823,6 +841,11 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+                     data.getSortDescription(), data.merging_params.version_column, max_block_size);
+                 break;
+ 
++            case MergeTreeData::MergingParams::Mutable:    /// TODO Ref TODO above
++                merged = std::make_shared<ReplacingSortedBlockInputStream>(to_merge,
++                    data.getSortDescription(), data.merging_params.version_column, max_block_size);
++                break;
++
+             case MergeTreeData::MergingParams::Unsorted:
+                 throw Exception("UnsortedMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
+ 

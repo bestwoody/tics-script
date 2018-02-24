@@ -1,0 +1,12 @@
+diff --git a/dbms/src/Common/ProfileEvents.cpp b/dbms/src/Common/ProfileEvents.cpp
+index d225f36..f85d3e1 100644
+--- a/dbms/src/Common/ProfileEvents.cpp
++++ b/dbms/src/Common/ProfileEvents.cpp
+@@ -6,6 +6,7 @@
+     M(Query) \
+     M(SelectQuery) \
+     M(InsertQuery) \
++    M(DeleteQuery) \
+     M(FileOpen) \
+     M(FileOpenFailed) \
+     M(Seek) \

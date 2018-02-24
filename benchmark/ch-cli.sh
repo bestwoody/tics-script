@@ -1,5 +1,3 @@
 set -eu
-
 source _env.sh
-
-$chbin client
+"$chbin" client --host "$chserver"
