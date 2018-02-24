@@ -4,8 +4,9 @@ import os
 import sys
 
 CMD_PREFIX = '>> '
+RETURN_PREFIX = '#RETURN'
+TODO_PREFIX = '#TODO'
 COMMENT_PREFIX = '#'
-RETURN_PREFIX = '!return'
 UNFINISHED_1_PREFIX = '\t'
 UNFINISHED_2_PREFIX = '   '
 
@@ -63,26 +64,30 @@ class Matcher:
         return True
 
 def parse_exe_match(path, executor):
+    todos = []
     with open(path) as file:
         matcher = Matcher(executor)
         cached = None
         for origin in file:
             line = origin.strip()
-            if line.startswith(COMMENT_PREFIX) or len(line) == 0:
-                continue
             if line.startswith(RETURN_PREFIX):
                 break
+            if line.startswith(TODO_PREFIX):
+                todos.append(line[len(TODO_PREFIX):].strip())
+                continue
+            if line.startswith(COMMENT_PREFIX) or len(line) == 0:
+                continue
             if origin.startswith(UNFINISHED_1_PREFIX) or origin.startswith(UNFINISHED_2_PREFIX):
                 if cached[-1] == ',':
                     cached += ' '
                 cached += line
                 continue
             if cached != None and not matcher.on_line(cached):
-                return False, matcher
+                return False, matcher, todos
             cached = line
         if (cached != None and not matcher.on_line(cached)) or not matcher.on_finish():
-            return False, matcher
-        return True, matcher
+            return False, matcher, todos
+        return True, matcher, todos
 
 def main():
     if len(sys.argv) != 3:
@@ -92,7 +97,7 @@ def main():
     dbc = sys.argv[1]
     path = sys.argv[2]
 
-    matched, matcher = parse_exe_match(path, Executor(dbc))
+    matched, matcher, todos = parse_exe_match(path, Executor(dbc))
 
     def display(lines):
         if len(lines) == 0:
@@ -108,5 +113,9 @@ def main():
         print '  Expected:'
         display(matcher.matches)
         sys.exit(1)
+    if len(todos) != 0:
+        print '  TODO:'
+        for it in todos:
+            print ' ' * 4 + it
 
 main()
