@@ -9,6 +9,7 @@ TODO_PREFIX = '#TODO'
 COMMENT_PREFIX = '#'
 UNFINISHED_1_PREFIX = '\t'
 UNFINISHED_2_PREFIX = '   '
+WORD_PH = '{#WORD}'
 
 class Executor:
     def __init__(self, dbc):
@@ -29,14 +30,55 @@ def parse_table_parts(lines):
         parts.add('\n'.join(curr))
     return parts
 
+def is_blank_char(c):
+    return c in [' ', '\n', '\t']
+
+def is_brace(c):
+    return c in ['{', '[', '(', ')', ']', '}']
+
+def match_ph_word(line):
+    i = 0
+    while is_blank_char(line[i]):
+        i += 1
+    found = False
+    while not is_blank_char(line[i]) and not is_brace(line[i]):
+        i += 1
+        found = True
+    if not found:
+        return 0
+    return i
+
+# TODO: Support more place holders, eg: {#NUMBER}
+def compare_line(line, template):
+    while True:
+        i = template.find(WORD_PH)
+        if i < 0:
+            return line == template
+        else:
+            if line[:i] != template[:i]:
+                return False
+            j = match_ph_word(line[i:])
+            if j == 0:
+                return False
+            template = template[i + len(WORD_PH):]
+            line = line[i + j:]
+
 def matched(outputs, matches):
     if len(outputs) != len(matches):
         return False
     if len(outputs) == 0:
         return True
-    a = parse_table_parts(outputs)
-    b = parse_table_parts(matches)
-    return a == b
+
+    is_table_parts = matches[0].startswith('┌')
+    if is_table_parts:
+        a = parse_table_parts(outputs)
+        b = parse_table_parts(matches)
+        return a == b
+    else:
+        for i in range(0, len(outputs)):
+            if not compare_line(outputs[i], matches[i]):
+                return False
+        return True
 
 class Matcher:
     def __init__(self, executor):
