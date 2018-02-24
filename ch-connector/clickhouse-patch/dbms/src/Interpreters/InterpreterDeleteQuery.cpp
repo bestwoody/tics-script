@@ -1,24 +1,25 @@
 #include <IO/ConcatReadBuffer.h>
 
-#include <DataStreams/ProhibitColumnsBlockOutputStream.h>
-#include <DataStreams/MaterializingBlockOutputStream.h>
+#include <Common/typeid_cast.h>
+
 #include <DataStreams/AddingDefaultBlockOutputStream.h>
-#include <DataStreams/PushingToViewsBlockOutputStream.h>
-#include <DataStreams/NullAndDoCopyBlockInputStream.h>
-#include <DataStreams/SquashingBlockOutputStream.h>
-#include <DataStreams/CountingBlockOutputStream.h>
-#include <DataStreams/NullableAdapterBlockInputStream.h>
 #include <DataStreams/CastTypeBlockInputStream.h>
+#include <DataStreams/CountingBlockOutputStream.h>
+#include <DataStreams/MaterializingBlockOutputStream.h>
+#include <DataStreams/NullAndDoCopyBlockInputStream.h>
+#include <DataStreams/NullableAdapterBlockInputStream.h>
+#include <DataStreams/ProhibitColumnsBlockOutputStream.h>
+#include <DataStreams/PushingToViewsBlockOutputStream.h>
+#include <DataStreams/SquashingBlockOutputStream.h>
 #include <DataStreams/copyData.h>
 
-#include <Parsers/ASTDeleteQuery.h>
 #include <Parsers/ASTIdentifier.h>
+#include <Parsers/ASTDeleteQuery.h>
 
 #include <Interpreters/InterpreterDeleteQuery.h>
 
-#include <Storages/MergeTree/MergeTreeData.h>
-#include <Storages/StorageMergeTree.h>
-
+#include <TableFunctions/TableFunctionFactory.h>
+#include <Parsers/ASTFunction.h>
 
 namespace ProfileEvents
 {
@@ -31,8 +32,8 @@ namespace DB
 namespace ErrorCodes
 {
     extern const int NO_SUCH_COLUMN_IN_TABLE;
+    extern const int READONLY;
 }
-
 
 InterpreterDeleteQuery::InterpreterDeleteQuery(const ASTPtr & query_ptr_, const Context & context_, bool allow_materialized_)
     : query_ptr(query_ptr_), context(context_), allow_materialized(allow_materialized_)
@@ -40,14 +41,13 @@ InterpreterDeleteQuery::InterpreterDeleteQuery(const ASTPtr & query_ptr_, const 
     ProfileEvents::increment(ProfileEvents::DeleteQuery);
 }
 
-
 BlockIO InterpreterDeleteQuery::execute()
 {
     ASTDeleteQuery & query = typeid_cast<ASTDeleteQuery &>(*query_ptr);
-    StoragePtr table = context.getTable(query.database, query.table);
+    checkAccess(query);
 
-    StorageMergeTree * merge_tree = typeid_cast<StorageMergeTree *>(&*table);
-    if (merge_tree && merge_tree->getData().merging_params.mode != MergeTreeData::MergingParams::Mutable)
+    StoragePtr table = context.getTable(query.database, query.table);
+    if (table->getName() != "MutableMergeTree")
         throw("Only MutableMergeTree support Delete.");
 
     auto table_lock = table->lockStructure(true, __PRETTY_FUNCTION__);
@@ -56,7 +56,7 @@ BlockIO InterpreterDeleteQuery::execute()
 
     BlockOutputStreamPtr out;
 
-    out = std::make_shared<PushingToViewsBlockOutputStream>(query.database, query.table, table, context, query_ptr, true);
+    out = std::make_shared<PushingToViewsBlockOutputStream>(query.database, query.table, table, context, query_ptr, false);
 
     out = std::make_shared<MaterializingBlockOutputStream>(out);
 
@@ -92,5 +92,17 @@ BlockIO InterpreterDeleteQuery::execute()
     return res;
 }
 
+void InterpreterDeleteQuery::checkAccess(const ASTDeleteQuery & query)
+{
+    const Settings & settings = context.getSettingsRef();
+    auto readonly = settings.limits.readonly;
+
+    if (!readonly || (query.database.empty() && context.tryGetExternalTable(query.table) && readonly >= 2))
+    {
+        return;
+    }
+
+    throw Exception("Cannot delete data from table in readonly mode", ErrorCodes::READONLY);
+}
 
 }

@@ -16,8 +16,6 @@
 ## Test delete in one table part
 >> delete from test where k = 1
 
-#TODO Fix it: delete failed
-#RETURN
 >> selraw * from test
 ┌─────────dt─┬─k─┬──v─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐
 │ 0000-00-00 │ 1 │ 11 │           1000000 │                 0 │

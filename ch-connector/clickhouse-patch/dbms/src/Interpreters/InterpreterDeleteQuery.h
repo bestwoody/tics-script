@@ -4,11 +4,10 @@
 #include <DataStreams/BlockIO.h>
 #include <Interpreters/Context.h>
 #include <Interpreters/IInterpreter.h>
-
+#include <Parsers/ASTDeleteQuery.h>
 
 namespace DB
 {
-
 
 /** Interprets the DELETE query.
   */
@@ -20,10 +19,11 @@ public:
     BlockIO execute() override;
 
 private:
+    void checkAccess(const ASTDeleteQuery & query);
+
     ASTPtr query_ptr;
-    Context context;
+    const Context & context;
     bool allow_materialized;
 };
-
 
 }
