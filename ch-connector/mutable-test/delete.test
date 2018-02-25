@@ -16,6 +16,11 @@
 ## Test delete in one table part
 >> delete from test where k = 1
 
+>> select * from test
+┌─────────dt─┬─k─┬──v─┐
+│ 0000-00-00 │ 2 │ 22 │
+└────────────┴───┴────┘
+
 >> selraw * from test
 ┌─────────dt─┬─k─┬──v─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐
 │ 0000-00-00 │ 1 │ 11 │           1000000 │                 0 │
@@ -24,11 +29,6 @@
 ┌─────────dt─┬─k─┬──v─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐
 │ 0000-00-00 │ 1 │ 11 │           2000000 │                 1 │
 └────────────┴───┴────┴───────────────────┴───────────────────┘
-
->> select * from test
-┌─────────dt─┬─k─┬──v─┐
-│ 0000-00-00 │ 2 │ 22 │
-└────────────┴───┴────┘
 
 ## Clean up:
 >> drop table if exists test
