@@ -17,7 +17,7 @@ function run_dir()
 	local dbc="$1"
 	local path="$2"
 
-	for file in $path/*; do
+	find "$path" -name "*.test" -type f | while read file; do
 		if [ -f "$file" ]; then
 			run_file "$dbc" "$file"
 		fi
