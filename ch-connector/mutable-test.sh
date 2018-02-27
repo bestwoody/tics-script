@@ -3,7 +3,7 @@ function run_file()
 	local dbc="$1"
 	local path="$2"
 
-	#python mutable-test.py "$dbc" "$path"
+	python mutable-test.py "$dbc" "$path"
 	if [ $? == 0 ]; then
 		echo $path: OK
 	else
@@ -17,15 +17,21 @@ function run_dir()
 	local dbc="$1"
 	local path="$2"
 
-	find "$path" -name "*.v" -type f | while read file; do
+	find "$path" -name "*.visual" -depth 1 -type f | sort | while read file; do
 		if [ -f "$file" ]; then
 			python mutable-test-visual.py "$file"
 		fi
 	done
 
-	find "$path" -name "*.t" -type f | while read file; do
+	find "$path" -name "*.test" -depth 1 -type f | sort | while read file; do
 		if [ -f "$file" ]; then
 			run_file "$dbc" "$file"
+		fi
+	done
+
+	find "$path" -depth 1 -type d | sort -r | while read dir; do
+		if [ -d "$dir" ]; then
+			run_dir "$dbc" "$dir"
 		fi
 	done
 }
@@ -50,6 +56,8 @@ function run_path()
 target="$1"
 dbc="$2"
 debug="$3"
+
+set -eu
 
 if [ -z "$target" ]; then
 	target="mutable-test"
