@@ -1,17 +1,39 @@
 import sys
 import os
 
-def gen(output, title, rows, num):
+def gen(output, title, rows, gn, order):
     # TODO
-    path = os.path.join(output, title + '_' + str(num) + '.test')
+    path = os.path.join(output, title + '_g' + str(gn) + '_o' + str(order) + '.test')
     print path
     for row in rows:
         print ' ' * 4 + row
 
+class IdGen:
+    def __init__(self):
+        self.id = 0
+    def get(self):
+        self.id += 1
+        return self.id
+
+def gen_diff_orders(idg, output, title, rows, gn):
+    if len(rows) == 1 or len(rows) == 2 and rows[0] == rows[1]:
+        gen(output, title, rows, gn, idg.get())
+        return
+    def perm(array, begin, end):
+        if begin >= end:
+            gen(output, title, map(lambda x: rows[x], array), gn, idg.get())
+        else:
+            i = begin
+            for n in range(begin, end):
+                array[n], array[i] = array[i], array[n]
+                perm(array, begin + 1, end)
+                array[n], array[i] = array[i], array[n]
+    perm(range(0, len(rows)), 0, len(rows))
+
 def parse_and_gen(path, output):
     title = ''
     rows = []
-    num = 0
+    gn = 0
     with open(path) as file:
         for origin in file:
             line = origin.strip()
@@ -24,12 +46,12 @@ def parse_and_gen(path, output):
                 line = ''.join(line).strip('_')
                 if len(line) != 0:
                     title = line
-                    num = 0
+                    gn = 0
             else:
                 if len(line) == 0:
                     if len(rows) != 0:
-                        gen(output, title, rows, num)
-                        num += 1
+                        gen_diff_orders(IdGen(), output, title, rows, gn)
+                        gn += 1
                     rows = []
                 else:
                     rows.append(line)
