@@ -1,12 +1,64 @@
+# -*- coding:utf-8 -*-
+
 import sys
 import os
 
+# TODO
+class TestData:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def insert_values(self):
+        return [[(10, 10), (11, 11)], [(20, 20)]]
+
+    def select_result_parts(self):
+        return [[(10, 10), (11, 11)], [(20, 20)]]
+
+    def selraw_result_parts(self):
+        return [[(10, 10, 1000000), (11, 11, 1000001)], [(20, 20, 2000000)]]
+
 def gen(output, title, rows, gn, order):
-    # TODO
-    path = os.path.join(output, title + '_g' + str(gn) + '_o' + str(order) + '.test')
+    path = os.path.join(output, 'dedup_' + title + '_g' + str(gn) + '_o' + str(order) + '.test')
+    data = TestData(rows)
+    with open(path, "w") as file:
+        file.write('# Visualization of table parts and keys:\n')
+        for row in rows:
+            file.write('# ' + row + '\n')
+        file.write('\n')
+        file.write('>> drop table if exists test\n')
+        file.write('>> create table test (\n')
+        file.write('\tdt Date,\n')
+        file.write('\tk Int32,\n')
+        file.write('\tv Int32\n')
+        file.write('\t) engine = MutableMergeTree(dt, (k), 8192)\n')
+        file.write('\n')
+        for values in data.insert_values():
+            file.write('>> insert into test values ')
+            for i in range(0, len(values)):
+                k, v = values[i]
+                file.write('(0, ' + str(k) + ', ' + str(v) + ')')
+                if i != len(values) - 1:
+                    file.write(', ')
+                else:
+                    file.write('\n')
+        file.write('\n')
+        file.write('>> select * from test\n')
+        for parts in data.select_result_parts():
+            file.write('┌─────────dt─┬──k─┬──v─┐\n')
+            for k, v in parts:
+                file.write('│ 0000-00-00 │ ' + str(k) + ' │ ' + str(v) + ' │\n')
+            file.write('└────────────┴────┴────┘\n')
+        file.write('\n')
+        file.write('>> selraw * from test\n')
+        for parts in data.selraw_result_parts():
+            file.write('┌─────────dt─┬──k─┬──v─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐\n')
+            for k, v, ver in parts:
+                file.write('│ 0000-00-00 │ ' + str(k) + ' │ ' + str(v) + ' │           ' + str(ver) + ' │                 0 │\n')
+            file.write('└────────────┴────┴────┴───────────────────┴───────────────────┘\n')
+        file.write('\n')
+        file.write('>> drop table if exists test\n')
+
     print path
-    for row in rows:
-        print ' ' * 4 + row
 
 class IdGen:
     def __init__(self):
@@ -41,7 +93,7 @@ def parse_and_gen(path, output):
                 continue
             if line.startswith('#'):
                 line = line[1:].strip().lower()
-                line = filter(lambda x: x != '-' and x != '+', line)
+                line = filter(lambda x: x != '-' and x != '+' and x != '.' and x != ',', line)
                 line = map(lambda x: (x >= 'a' and x <= 'z' or x >= '0' and x <= '9') and x or '_', line)
                 line = ''.join(line).strip('_')
                 if len(line) != 0:
@@ -54,7 +106,7 @@ def parse_and_gen(path, output):
                         gn += 1
                     rows = []
                 else:
-                    rows.append(line)
+                    rows.append(origin.strip('\n'))
 
 def main():
     if len(sys.argv) != 2:
