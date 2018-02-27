@@ -19,7 +19,7 @@ function run_dir()
 
 	find "$path" -name "*.visual" -depth 1 -type f | sort | while read file; do
 		if [ -f "$file" ]; then
-			python mutable-test-visual.py "$file"
+			python gen-test-from-visual.py "$file"
 		fi
 		if [ $? != 0 ]; then
 			echo "Generate test files failed: $file" >&2
