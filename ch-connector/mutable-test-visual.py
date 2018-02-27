@@ -6,22 +6,66 @@ import os
 # TODO
 class TestData:
     def __init__(self, rows):
-        self.rows = rows
+        key_base = 10
+        value_base = 10
+        part_ver_inc = 1000000
+
+        self._rows = rows
+        self._inserts = []
+        self._selects = []
+        self._selraws = []
+        self._dedup_key = None
+
+        dedup_key_last_pos = None
+        for r in range(0, len(rows)):
+            row = rows[r]
+            i = row.rfind('+')
+            if i >= 0:
+                dedup_key_last_pos= (r, i)
+
+        for r in range(0, len(rows)):
+            row = rows[r]
+            n = 0
+            inserts = []
+            selects = []
+            selraws = []
+            for i in range(0, len(row)):
+                c = row[i]
+                if c == ' ':
+                    continue
+                elif c == '-':
+                    inserts.append((key_base + i, value_base + i + r))
+                    selects.append((key_base + i, value_base + i + r))
+                    selraws.append((key_base + i, value_base + i + r, n + part_ver_inc * (r + 1)))
+                    n += 1
+                elif c == '+':
+                    if self._dedup_key == None:
+                        self._dedup_key = key_base + i
+                    inserts.append((self._dedup_key, value_base + i + r))
+                    if dedup_key_last_pos != None and dedup_key_last_pos[0] == r and dedup_key_last_pos[1] == i:
+                        selects.append((self._dedup_key, value_base + i + r))
+                    selraws.append((self._dedup_key, value_base + i + r, n + part_ver_inc * (r + 1)))
+                    n += 1
+                else:
+                    raise Exception('Invalid visual rows:' + rows)
+            self._inserts.append(inserts)
+            self._selects.append(selects)
+            self._selraws.append(selraws)
 
     def insert_values(self):
-        return [[(10, 10), (11, 11)], [(20, 20)]]
+        return self._inserts
 
     def select_result_parts(self):
-        return [[(10, 10), (11, 11)], [(20, 20)]]
+        return self._selects
 
     def selraw_result_parts(self):
-        return [[(10, 10, 1000000), (11, 11, 1000001)], [(20, 20, 2000000)]]
+        return self._selraws
 
 def gen(output, title, rows, gn, order):
-    path = os.path.join(output, 'dedup_' + title + '_g' + str(gn) + '_o' + str(order) + '.test')
+    path = os.path.join(output, 'dedup_' + title + '_g' + str(gn) + ((order != None) and ('_o' + str(order)) or '') + '.test')
     data = TestData(rows)
     with open(path, "w") as file:
-        file.write('# Visualization of table parts and keys:\n')
+        file.write('# Visual of table parts and keys:\n')
         for row in rows:
             file.write('# ' + row + '\n')
         file.write('\n')
@@ -44,10 +88,11 @@ def gen(output, title, rows, gn, order):
         file.write('\n')
         file.write('>> select * from test\n')
         for parts in data.select_result_parts():
-            file.write('┌─────────dt─┬──k─┬──v─┐\n')
-            for k, v in parts:
-                file.write('│ 0000-00-00 │ ' + str(k) + ' │ ' + str(v) + ' │\n')
-            file.write('└────────────┴────┴────┘\n')
+            if len(parts) != 0:
+                file.write('┌─────────dt─┬──k─┬──v─┐\n')
+                for k, v in parts:
+                    file.write('│ 0000-00-00 │ ' + str(k) + ' │ ' + str(v) + ' │\n')
+                file.write('└────────────┴────┴────┘\n')
         file.write('\n')
         file.write('>> selraw * from test\n')
         for parts in data.selraw_result_parts():
@@ -58,8 +103,6 @@ def gen(output, title, rows, gn, order):
         file.write('\n')
         file.write('>> drop table if exists test\n')
 
-    print path
-
 class IdGen:
     def __init__(self):
         self.id = 0
@@ -69,7 +112,7 @@ class IdGen:
 
 def gen_diff_orders(idg, output, title, rows, gn):
     if len(rows) == 1 or len(rows) == 2 and rows[0] == rows[1]:
-        gen(output, title, rows, gn, idg.get())
+        gen(output, title, rows, gn, None)
         return
     def perm(array, begin, end):
         if begin >= end:

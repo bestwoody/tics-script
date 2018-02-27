@@ -3,7 +3,7 @@ function run_file()
 	local dbc="$1"
 	local path="$2"
 
-	python mutable-test.py "$dbc" "$path"
+	#python mutable-test.py "$dbc" "$path"
 	if [ $? == 0 ]; then
 		echo $path: OK
 	else
@@ -17,7 +17,13 @@ function run_dir()
 	local dbc="$1"
 	local path="$2"
 
-	find "$path" -name "*.test" -type f | while read file; do
+	find "$path" -name "*.v" -type f | while read file; do
+		if [ -f "$file" ]; then
+			python mutable-test-visual.py "$file"
+		fi
+	done
+
+	find "$path" -name "*.t" -type f | while read file; do
 		if [ -f "$file" ]; then
 			run_file "$dbc" "$file"
 		fi
