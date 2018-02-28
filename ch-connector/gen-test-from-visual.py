@@ -3,7 +3,6 @@
 import sys
 import os
 
-# TODO
 class TestData:
     def __init__(self, rows):
         key_base = 10
@@ -70,13 +69,15 @@ class TestData:
     def selraw_result_parts(self):
         return self._selraws
 
-def gen(output, title, rows, gn, order):
+def gen(output, title, rows, gn, order, source, ln):
     path = os.path.join(output, 'dedup_' + title + '_g' + str(gn) + ((order != None) and ('_o' + str(order)) or '') + '.test')
     data = TestData(rows)
     with open(path, "w") as file:
-        file.write('# Visual of table parts and keys:\n')
+        file.write('# Generated from: ' + source + '#L' + str(ln) + '\n')
+        file.write('#\n')
         for row in rows:
             file.write('# ' + row + '\n')
+        file.write('#\n')
         file.write('\n')
         file.write('>> drop table if exists test\n')
         file.write('>> create table test (\n')
@@ -119,13 +120,13 @@ class IdGen:
         self.id += 1
         return self.id
 
-def gen_diff_orders(idg, output, title, rows, gn):
+def gen_diff_orders(idg, output, title, rows, gn, source, ln):
     if len(rows) == 1 or len(rows) == 2 and rows[0] == rows[1]:
-        gen(output, title, rows, gn, None)
+        gen(output, title, rows, gn, None, source, ln)
         return
     def perm(array, begin, end):
         if begin >= end:
-            gen(output, title, map(lambda x: rows[x], array), gn, idg.get())
+            gen(output, title, map(lambda x: rows[x], array), gn, idg.get(), source, ln)
         else:
             i = begin
             for n in range(begin, end):
@@ -139,8 +140,11 @@ def parse_and_gen(path, output):
     rows = []
     gn = 0
     with open(path) as file:
+        ln = 0
         for origin in file:
+            origin = origin.strip('\n')
             line = origin.strip()
+            ln += 1
             if line.startswith('##'):
                 continue
             if line.startswith('#'):
@@ -154,11 +158,11 @@ def parse_and_gen(path, output):
             else:
                 if len(line) == 0:
                     if len(rows) != 0:
-                        gen_diff_orders(IdGen(), output, title, rows, gn)
+                        gen_diff_orders(IdGen(), output, title, rows, gn, path, ln - len(rows))
                         gn += 1
                     rows = []
                 else:
-                    rows.append(origin.strip('\n'))
+                    rows.append(origin)
 
 def main():
     if len(sys.argv) != 2:
