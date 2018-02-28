@@ -70,7 +70,7 @@ class TestData:
         return self._selraws
 
 def gen(output, title, rows, gn, order, source, ln):
-    path = os.path.join(output, 'dedup_' + title + '_g' + str(gn) + ((order != None) and ('_o' + str(order)) or '') + '.test')
+    path = os.path.join(output, 'dedup_l' + str(ln) + '_' + title + '_g' + str(gn) + ((order != None) and ('_o' + str(order)) or '') + '.test')
     data = TestData(rows)
     with open(path, "w") as file:
         file.write('# Generated from: ' + source + '#L' + str(ln) + '\n')
