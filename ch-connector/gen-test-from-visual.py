@@ -16,12 +16,20 @@ class TestData:
         self._selraws = []
         self._dedup_key = None
 
+        regular_key_last_pos = {}
         dedup_key_last_pos = None
         for r in range(0, len(rows)):
             row = rows[r]
-            i = row.rfind('+')
-            if i >= 0:
-                dedup_key_last_pos= (r, i)
+            for i in range(0, len(row)):
+                c = row[i]
+                if c == ' ':
+                    continue
+                elif c == '-':
+                    regular_key_last_pos[i] = (r, i)
+                elif c == '+':
+                    dedup_key_last_pos = (r, i)
+                else:
+                    raise Exception('Invalid visual rows:' + rows)
 
         for r in range(0, len(rows)):
             row = rows[r]
@@ -35,19 +43,20 @@ class TestData:
                     continue
                 elif c == '-':
                     inserts.append((key_base + i, value_base + i + r))
-                    selects.append((key_base + i, value_base + i + r))
+                    if (r, i) == regular_key_last_pos[i]:
+                        selects.append((key_base + i, value_base + i + r))
                     selraws.append((key_base + i, value_base + i + r, n + part_ver_inc * (r + 1)))
                     n += 1
                 elif c == '+':
                     if self._dedup_key == None:
                         self._dedup_key = key_base + i
                     inserts.append((self._dedup_key, value_base + i + r))
-                    if dedup_key_last_pos != None and dedup_key_last_pos[0] == r and dedup_key_last_pos[1] == i:
+                    if dedup_key_last_pos != None and (r, i) == dedup_key_last_pos:
                         selects.append((self._dedup_key, value_base + i + r))
                     selraws.append((self._dedup_key, value_base + i + r, n + part_ver_inc * (r + 1)))
                     n += 1
                 else:
-                    raise Exception('Invalid visual rows:' + rows)
+                    pass
             self._inserts.append(inserts)
             self._selects.append(selects)
             self._selraws.append(selraws)
