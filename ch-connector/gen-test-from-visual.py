@@ -3,7 +3,6 @@
 import sys
 import os
 
-# TODO
 class TestData:
     def __init__(self, rows):
         key_base = 10
@@ -16,12 +15,20 @@ class TestData:
         self._selraws = []
         self._dedup_key = None
 
+        regular_key_last_pos = {}
         dedup_key_last_pos = None
         for r in range(0, len(rows)):
             row = rows[r]
-            i = row.rfind('+')
-            if i >= 0:
-                dedup_key_last_pos= (r, i)
+            for i in range(0, len(row)):
+                c = row[i]
+                if c == ' ':
+                    continue
+                elif c == '-':
+                    regular_key_last_pos[i] = (r, i)
+                elif c == '+':
+                    dedup_key_last_pos = (r, i)
+                else:
+                    raise Exception('Invalid visual rows:' + rows)
 
         for r in range(0, len(rows)):
             row = rows[r]
@@ -35,19 +42,20 @@ class TestData:
                     continue
                 elif c == '-':
                     inserts.append((key_base + i, value_base + i + r))
-                    selects.append((key_base + i, value_base + i + r))
+                    if (r, i) == regular_key_last_pos[i]:
+                        selects.append((key_base + i, value_base + i + r))
                     selraws.append((key_base + i, value_base + i + r, n + part_ver_inc * (r + 1)))
                     n += 1
                 elif c == '+':
                     if self._dedup_key == None:
                         self._dedup_key = key_base + i
                     inserts.append((self._dedup_key, value_base + i + r))
-                    if dedup_key_last_pos != None and dedup_key_last_pos[0] == r and dedup_key_last_pos[1] == i:
+                    if dedup_key_last_pos != None and (r, i) == dedup_key_last_pos:
                         selects.append((self._dedup_key, value_base + i + r))
                     selraws.append((self._dedup_key, value_base + i + r, n + part_ver_inc * (r + 1)))
                     n += 1
                 else:
-                    raise Exception('Invalid visual rows:' + rows)
+                    pass
             self._inserts.append(inserts)
             self._selects.append(selects)
             self._selraws.append(selraws)
@@ -61,13 +69,15 @@ class TestData:
     def selraw_result_parts(self):
         return self._selraws
 
-def gen(output, title, rows, gn, order):
-    path = os.path.join(output, 'dedup_' + title + '_g' + str(gn) + ((order != None) and ('_o' + str(order)) or '') + '.test')
+def gen(output, title, rows, gn, order, source, ln):
+    path = os.path.join(output, 'dedup_l' + str(ln) + '_' + title + '_g' + str(gn) + ((order != None) and ('_o' + str(order)) or '') + '.test')
     data = TestData(rows)
     with open(path, "w") as file:
-        file.write('# Visual of table parts and keys:\n')
+        file.write('# Generated from: ' + source + '#L' + str(ln) + '\n')
+        file.write('#\n')
         for row in rows:
             file.write('# ' + row + '\n')
+        file.write('#\n')
         file.write('\n')
         file.write('>> drop table if exists test\n')
         file.write('>> create table test (\n')
@@ -110,13 +120,13 @@ class IdGen:
         self.id += 1
         return self.id
 
-def gen_diff_orders(idg, output, title, rows, gn):
+def gen_diff_orders(idg, output, title, rows, gn, source, ln):
     if len(rows) == 1 or len(rows) == 2 and rows[0] == rows[1]:
-        gen(output, title, rows, gn, None)
+        gen(output, title, rows, gn, None, source, ln)
         return
     def perm(array, begin, end):
         if begin >= end:
-            gen(output, title, map(lambda x: rows[x], array), gn, idg.get())
+            gen(output, title, map(lambda x: rows[x], array), gn, idg.get(), source, ln)
         else:
             i = begin
             for n in range(begin, end):
@@ -130,8 +140,11 @@ def parse_and_gen(path, output):
     rows = []
     gn = 0
     with open(path) as file:
+        ln = 0
         for origin in file:
+            origin = origin.strip('\n')
             line = origin.strip()
+            ln += 1
             if line.startswith('##'):
                 continue
             if line.startswith('#'):
@@ -145,11 +158,11 @@ def parse_and_gen(path, output):
             else:
                 if len(line) == 0:
                     if len(rows) != 0:
-                        gen_diff_orders(IdGen(), output, title, rows, gn)
+                        gen_diff_orders(IdGen(), output, title, rows, gn, path, ln - len(rows))
                         gn += 1
                     rows = []
                 else:
-                    rows.append(origin.strip('\n'))
+                    rows.append(origin)
 
 def main():
     if len(sys.argv) != 2:

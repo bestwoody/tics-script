@@ -17,9 +17,9 @@ function run_dir()
 	local dbc="$1"
 	local path="$2"
 
-	find "$path" -name "*.visual" -depth 1 -type f | sort | while read file; do
+	find "$path" -name "*.visual" -depth 1 -type f | sort -V | while read file; do
 		if [ -f "$file" ]; then
-			python mutable-test-visual.py "$file"
+			python gen-test-from-visual.py "$file"
 		fi
 		if [ $? != 0 ]; then
 			echo "Generate test files failed: $file" >&2
@@ -32,7 +32,7 @@ function run_dir()
 		exit 1
 	fi
 
-	find "$path" -name "*.test" -depth 1 -type f | sort | while read file; do
+	find "$path" -name "*.test" -depth 1 -type f | sort -V | while read file; do
 		if [ -f "$file" ]; then
 			run_file "$dbc" "$file"
 		fi
@@ -42,7 +42,7 @@ function run_dir()
 		exit 1
 	fi
 
-	find "$path" -depth 1 -type d | sort -r | while read dir; do
+	find "$path" -depth 1 -type d | sort -Vr | while read dir; do
 		if [ -d "$dir" ]; then
 			run_dir "$dbc" "$dir"
 		fi
