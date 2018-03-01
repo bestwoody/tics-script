@@ -16,6 +16,8 @@
 #include <Parsers/ASTIdentifier.h>
 #include <Parsers/ASTDeleteQuery.h>
 
+#include <Storages/MutableSupport.h>
+
 #include <Interpreters/InterpreterDeleteQuery.h>
 
 #include <TableFunctions/TableFunctionFactory.h>
@@ -47,8 +49,8 @@ BlockIO InterpreterDeleteQuery::execute()
     checkAccess(query);
 
     StoragePtr table = context.getTable(query.database, query.table);
-    if (table->getName() != "MutableMergeTree")
-        throw("Only MutableMergeTree support Delete.");
+    if (table->getName() != MutableSupport::storage_name)
+        throw("Only " + MutableSupport::storage_name + " support Delete.");
 
     auto table_lock = table->lockStructure(true, __PRETTY_FUNCTION__);
 

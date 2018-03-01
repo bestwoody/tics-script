@@ -7,7 +7,7 @@
 #include <DataStreams/MergingSortedBlockInputStream.h>
 #include <DataStreams/MergeMutableSortedBlockInputStream.h>
 
-#include <Storages/HiddenColumns.h>
+#include <Storages/MutableSupport.h>
 #include <Columns/ColumnsNumber.h>
 
 #include <Common/MemoryTracker.h>
@@ -100,9 +100,9 @@ private:
     public:
         VersionColumn(const Block & block) : column(0)
         {
-            if (!block.has(HiddenColumns::mutable_version_column_name))
+            if (!block.has(MutableSupport::version_column_name))
                 return;
-            const ColumnWithTypeAndName & version_column = block.getByName(HiddenColumns::mutable_version_column_name);
+            const ColumnWithTypeAndName & version_column = block.getByName(MutableSupport::version_column_name);
             column = typeid_cast<const ColumnUInt64 *>(version_column.column.get());
         }
 

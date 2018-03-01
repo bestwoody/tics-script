@@ -39,7 +39,7 @@ enum DedupCalculater
     DedupCalculaterAsynParallel = 2,
 
     // Pipeline and Vertical Deduping, using priority-queue:
-    //  - Similar to DedupCalculaterAsynTable, except use priority-queue instead of hash-table.
+    //  - similar to DedupCalculaterAsynTable, except use priority-queue instead of hash-table.
     //  - Bottle neck: data waiting as above
     //  - Speed: best ~= 60%CH, worst ~= 55%CH
     DedupCalculaterAsynQueue = 3,

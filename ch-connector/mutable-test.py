@@ -15,7 +15,7 @@ class Executor:
     def __init__(self, dbc):
         self.dbc = dbc
     def exe(self, cmd):
-        return os.popen(self.dbc + ' "' + cmd + '" 2>&1').readlines()
+        return os.popen((self.dbc + ' "' + cmd + '" 2>&1').strip()).readlines()
 
 def parse_table_parts(lines):
     parts = set()
