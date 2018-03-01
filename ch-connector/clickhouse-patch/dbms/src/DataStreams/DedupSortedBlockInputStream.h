@@ -127,6 +127,7 @@ private:
             : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows()), deleted_rows(0)
         {
             std::lock_guard<std::mutex> lock(mutex);
+            // TODO: unnecessary deleting, if there is InBlockDedupBlockInputStream in the pipeline.
             deleted_rows = setFilterByDeleteMarkColumn(block, filter, true);
         }
 

@@ -20,6 +20,7 @@ namespace CurrentMetrics
 namespace DB
 {
 
+// TODO: Use 'children'
 BlockInputStreams DedupSortedBlockInputStream::createStreams(
     BlockInputStreams & inputs, const SortDescription & description, bool parallel, bool hash_dedup)
 {
