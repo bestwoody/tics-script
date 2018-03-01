@@ -1,0 +1,25 @@
+diff --git a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
+index 0e7fdad..31fcd21 100644
+--- a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
++++ b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
+@@ -16,9 +16,9 @@ class ReplacingSortedBlockInputStream : public MergingSortedBlockInputStream
+ {
+ public:
+     ReplacingSortedBlockInputStream(BlockInputStreams inputs_, const SortDescription & description_,
+-        const String & version_column_, size_t max_block_size_, WriteBuffer * out_row_sources_buf_ = nullptr)
++        const String & version_column_, size_t max_block_size_, WriteBuffer * out_row_sources_buf_ = nullptr, bool in_block_dedup_ = false)
+         : MergingSortedBlockInputStream(inputs_, description_, max_block_size_, 0, out_row_sources_buf_),
+-        version_column(version_column_)
++        version_column(version_column_), in_block_dedup(in_block_dedup_)
+     {
+     }
+ 
+@@ -63,6 +63,8 @@ private:
+ 
+     PODArray<RowSourcePart> current_row_sources;   /// Sources of rows with the current primary key
+ 
++    bool in_block_dedup;
++
+     void merge(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue);
+ 
+     /// Output into result the rows for current primary key.

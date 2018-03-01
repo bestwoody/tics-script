@@ -1,6 +1,6 @@
 #include <DataStreams/MergeMutableSortedBlockInputStream.h>
 #include <Columns/ColumnsNumber.h>
-#include <Storages/HiddenColumns.h>
+#include <Storages/MutableSupport.h>
 #include <common/logger_useful.h>
 
 
@@ -20,10 +20,10 @@ void deleteRows(Block & block, const IColumn::Filter & filter)
 
 size_t setFilterByDeleteMarkColumn(const Block & block, IColumn::Filter & filter, bool init)
 {
-    if (!block.has(HiddenColumns::mutable_delmark_column_name))
+    if (!block.has(MutableSupport::delmark_column_name))
         return 0;
 
-    const ColumnWithTypeAndName & delmark_column =  block.getByName(HiddenColumns::mutable_delmark_column_name);
+    const ColumnWithTypeAndName & delmark_column =  block.getByName(MutableSupport::delmark_column_name);
     const ColumnUInt8 * column = typeid_cast<const ColumnUInt8 *>(delmark_column.column.get());
     if (!column)
         throw("Del-mark column should be type ColumnUInt8.");
@@ -85,7 +85,7 @@ Block MergeMutableSortedBlockInputStream::readImpl()
         if (!version_column.empty())
             version_column_number = merged_block.getPositionByName(version_column);
 
-        delmark_column = HiddenColumns::mutable_delmark_column_name;
+        delmark_column = MutableSupport::delmark_column_name;
         delmark_column_number = merged_block.getPositionByName(delmark_column);
     }
 

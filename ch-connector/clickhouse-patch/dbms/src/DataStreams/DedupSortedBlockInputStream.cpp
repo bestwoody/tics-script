@@ -3,7 +3,7 @@
 #include <Common/setThreadName.h>
 #include <Common/CurrentMetrics.h>
 
-#define DEDUP_TRACER
+//#define DEDUP_TRACER
 
 #ifndef DEDUP_TRACER
     #define TRACER(message)
@@ -20,6 +20,7 @@ namespace CurrentMetrics
 namespace DB
 {
 
+// TODO: Use 'children'
 BlockInputStreams DedupSortedBlockInputStream::createStreams(
     BlockInputStreams & inputs, const SortDescription & description, bool parallel, bool hash_dedup)
 {

@@ -7,7 +7,7 @@
 #include <DataStreams/MergingSortedBlockInputStream.h>
 #include <DataStreams/MergeMutableSortedBlockInputStream.h>
 
-#include <Storages/HiddenColumns.h>
+#include <Storages/MutableSupport.h>
 #include <Columns/ColumnsNumber.h>
 
 #include <Common/MemoryTracker.h>
@@ -100,9 +100,9 @@ private:
     public:
         VersionColumn(const Block & block) : column(0)
         {
-            if (!block.has(HiddenColumns::mutable_version_column_name))
+            if (!block.has(MutableSupport::version_column_name))
                 return;
-            const ColumnWithTypeAndName & version_column = block.getByName(HiddenColumns::mutable_version_column_name);
+            const ColumnWithTypeAndName & version_column = block.getByName(MutableSupport::version_column_name);
             column = typeid_cast<const ColumnUInt64 *>(version_column.column.get());
         }
 
@@ -127,6 +127,7 @@ private:
             : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows()), deleted_rows(0)
         {
             std::lock_guard<std::mutex> lock(mutex);
+            // TODO: unnecessary deleting, if there is InBlockDedupBlockInputStream in the pipeline.
             deleted_rows = setFilterByDeleteMarkColumn(block, filter, true);
         }
 

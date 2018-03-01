@@ -1,13 +1,13 @@
 diff --git a/dbms/src/Interpreters/ExpressionAnalyzer.cpp b/dbms/src/Interpreters/ExpressionAnalyzer.cpp
-index b144b04..b5cc906 100644
+index b144b04..000459a 100644
 --- a/dbms/src/Interpreters/ExpressionAnalyzer.cpp
 +++ b/dbms/src/Interpreters/ExpressionAnalyzer.cpp
 @@ -40,6 +40,8 @@
  #include <Storages/StorageMemory.h>
  #include <Storages/StorageSet.h>
  #include <Storages/StorageJoin.h>
-+#include <Storages/HiddenColumns.h>
 +#include <Storages/StorageMergeTree.h>
++#include <Storages/MutableSupport.h>
  
  #include <DataStreams/LazyBlockInputStream.h>
  #include <DataStreams/copyData.h>
@@ -19,26 +19,20 @@ index b144b04..b5cc906 100644
  namespace DB
  {
  
-@@ -1096,6 +1097,26 @@ void ExpressionAnalyzer::normalizeTreeImpl(
+@@ -1096,6 +1097,20 @@ void ExpressionAnalyzer::normalizeTreeImpl(
      }
      else if (ASTExpressionList * node = typeid_cast<ASTExpressionList *>(ast.get()))
      {
-+        // Get hidden column names of MutableMergeTree
++        // Get hidden column names of mutable storage
 +        OrderedNameSet filtered_names;
 +        {
 +            StoragePtr table = getTable();
 +            if (table != nullptr)
 +            {
-+                StorageMergeTree * merge_tree = typeid_cast<StorageMergeTree *>(&*table);
-+                if (merge_tree != nullptr && select_query && !select_query->raw_for_mutable)
++                if (table->getName() == MutableSupport::storage_name && select_query && !select_query->raw_for_mutable)
 +                {
 +                    // LOG_DEBUG(&Logger::get("ExpressionAnalyzer"), "Filter hidden columns for mutable table.");
-+                    filtered_names = HiddenColumns::instance().get(table->getName());
-+                }
-+                else if (table->getName() == "MutableMergeTree")
-+                {
-+                    // TODO: this cast failed, fix it
-+                    LOG_DEBUG(&Logger::get("ExpressionAnalyzer"), "TODO: this cast failed, fix it");
++                    filtered_names = MutableSupport::instance().hiddenColumns(table->getName());
 +                }
 +            }
 +        }
@@ -46,7 +40,7 @@ index b144b04..b5cc906 100644
          /// Replace * with a list of columns.
          ASTs & asts = node->children;
          for (int i = static_cast<int>(asts.size()) - 1; i >= 0; --i)
-@@ -1104,7 +1125,8 @@ void ExpressionAnalyzer::normalizeTreeImpl(
+@@ -1104,7 +1119,8 @@ void ExpressionAnalyzer::normalizeTreeImpl(
              {
                  ASTs all_columns;
                  for (const auto & column_name_type : columns)
