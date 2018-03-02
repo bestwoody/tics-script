@@ -17,17 +17,22 @@ class Executor:
     def exe(self, cmd):
         return os.popen((self.dbc + ' "' + cmd + '" 2>&1').strip()).readlines()
 
-def parse_table_parts(lines):
+def parse_table_parts(lines, fuzz):
     parts = set()
-    curr = []
-    for line in lines:
-        if line.startswith('┌'):
-            if len(curr) != 0:
-                parts.add('\n'.join(curr))
-                curr = []
-        curr.append(line)
-    if len(curr) != 0:
-        parts.add('\n'.join(curr))
+    if not fuzz:
+        curr = []
+        for line in lines:
+            if line.startswith('┌'):
+                if len(curr) != 0:
+                    parts.add('\n'.join(curr))
+                    curr = []
+            curr.append(line)
+        if len(curr) != 0:
+            parts.add('\n'.join(curr))
+    else:
+        for line in lines:
+            if not line.startswith('┌') and not line.startswith('└') :
+                parts.add(line)
     return parts
 
 def is_blank_char(c):
@@ -66,16 +71,14 @@ def compare_line(line, template):
             template = template[i + len(WORD_PH):]
             line = line[i + j:]
 
-def matched(outputs, matches):
-    if len(outputs) != len(matches):
-        return False
-    if len(outputs) == 0:
+def matched(outputs, matches, fuzz):
+    if len(outputs) == 0 and len(matches) == 0:
         return True
 
-    is_table_parts = matches[0].startswith('┌')
+    is_table_parts = len(matches) > 0 and matches[0].startswith('┌')
     if is_table_parts:
-        a = parse_table_parts(outputs)
-        b = parse_table_parts(matches)
+        a = parse_table_parts(outputs, fuzz)
+        b = parse_table_parts(matches, fuzz)
         return a == b
     else:
         for i in range(0, len(outputs)):
@@ -84,15 +87,16 @@ def matched(outputs, matches):
         return True
 
 class Matcher:
-    def __init__(self, executor):
+    def __init__(self, executor, fuzz):
         self.executor = executor
+        self.fuzz = fuzz
         self.query = None
         self.outputs = None
         self.matches = []
 
     def on_line(self, line):
         if line.startswith(CMD_PREFIX):
-            if self.outputs != None and not matched(self.outputs, self.matches):
+            if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz):
                 return False
             self.query = line[len(CMD_PREFIX):]
             self.outputs = self.executor.exe(self.query)
@@ -104,14 +108,14 @@ class Matcher:
         return True
 
     def on_finish(self):
-        if self.outputs != None and not matched(self.outputs, self.matches):
+        if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz):
             return False
         return True
 
-def parse_exe_match(path, executor):
+def parse_exe_match(path, executor, fuzz):
     todos = []
     with open(path) as file:
-        matcher = Matcher(executor)
+        matcher = Matcher(executor, fuzz)
         cached = None
         for origin in file:
             line = origin.strip()
@@ -134,7 +138,7 @@ def parse_exe_match(path, executor):
             return False, matcher, todos
         return True, matcher, todos
 
-def main():
+def main(fuzz):
     if len(sys.argv) != 3:
         print 'usage: <bin> database-client-cmd test-file-path'
         sys.exit(1)
@@ -142,7 +146,7 @@ def main():
     dbc = sys.argv[1]
     path = sys.argv[2]
 
-    matched, matcher, todos = parse_exe_match(path, Executor(dbc))
+    matched, matcher, todos = parse_exe_match(path, Executor(dbc), fuzz)
 
     def display(lines):
         if len(lines) == 0:
@@ -163,4 +167,4 @@ def main():
         for it in todos:
             print ' ' * 4 + it
 
-main()
+main(True)
