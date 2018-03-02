@@ -9,8 +9,6 @@
 >> delete from test where 1
 
 >> select * from test
-┌─────────dt─┬─k─┬──v─┐
-└────────────┴───┴────┘
 
 >> selraw * from test
 ┌─────────dt─┬─k─┬──v─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐
