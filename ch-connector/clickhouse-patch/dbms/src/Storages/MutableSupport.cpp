@@ -14,9 +14,9 @@ const std::string MutableSupport::delmark_column_name = "_INTERNAL_DELMARK";
 // const bool MutableSupport::in_block_dedup_on_read = false;
 
 // Passed test:
-// const DedupCalculator MutableSupport::pipeline_dedup_calculator = DedupCalculatorAsynTable;
-// const bool MutableSupport::in_block_dedup_on_write = false;
-// const bool MutableSupport::in_block_dedup_on_read = false;
+const DedupCalculator MutableSupport::pipeline_dedup_calculator = DedupCalculatorAsynTable;
+const bool MutableSupport::in_block_dedup_on_write = false;
+const bool MutableSupport::in_block_dedup_on_read = false;
 
 // Not passed test:
 // ++
@@ -32,8 +32,17 @@ const std::string MutableSupport::delmark_column_name = "_INTERNAL_DELMARK";
 //  --
 // (mutable-test/dedup/dedup_l116_two_small_parts_g8_o1.test)
 //
-const DedupCalculator MutableSupport::pipeline_dedup_calculator = DedupCalculatorAsynQueue;
-const bool MutableSupport::in_block_dedup_on_write = false;
-const bool MutableSupport::in_block_dedup_on_read = false;
+// const DedupCalculator MutableSupport::pipeline_dedup_calculator = DedupCalculatorAsynQueue;
+// const bool MutableSupport::in_block_dedup_on_write = false;
+// const bool MutableSupport::in_block_dedup_on_read = false;
+
+// Not passed test:
+// -- -
+//  --
+// (mutable-test/dedup/dedup_l116_two_small_parts_g8_o1.test)
+//
+// const DedupCalculator MutableSupport::pipeline_dedup_calculator = DedupCalculatorAsynQueue;
+// const bool MutableSupport::in_block_dedup_on_write = false;
+// const bool MutableSupport::in_block_dedup_on_read = true;
 
 }
