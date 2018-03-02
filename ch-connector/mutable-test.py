@@ -171,4 +171,4 @@ def main(fuzz):
         for it in todos:
             print ' ' * 4 + it
 
-main(True)
+main(False)
