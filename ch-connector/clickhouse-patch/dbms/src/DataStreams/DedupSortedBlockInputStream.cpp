@@ -3,7 +3,7 @@
 #include <Common/setThreadName.h>
 #include <Common/CurrentMetrics.h>
 
-//#define DEDUP_TRACER
+#define DEDUP_TRACER
 
 #ifndef DEDUP_TRACER
     #define TRACER(message)
@@ -601,6 +601,46 @@ size_t DedupSortedBlockInputStream::dedupEdgeByTable(BoundQueue & bounds, DedupB
     }
 
     return overlapeds;
+}
+
+void deleteRows(Block & block, const IColumn::Filter & filter)
+{
+    for (size_t i = 0; i < block.columns(); i++)
+    {
+        ColumnWithTypeAndName column = block.getByPosition(i);
+        column.column = column.column->filter(filter, 0);
+        block.erase(i);
+        block.insert(i, column);
+    }
+}
+
+size_t setFilterByDeleteMarkColumn(const Block & block, IColumn::Filter & filter, bool init)
+{
+    if (!block.has(MutableSupport::delmark_column_name))
+        return 0;
+
+    const ColumnWithTypeAndName & delmark_column =  block.getByName(MutableSupport::delmark_column_name);
+    const ColumnUInt8 * column = typeid_cast<const ColumnUInt8 *>(delmark_column.column.get());
+    if (!column)
+        throw("Del-mark column should be type ColumnUInt8.");
+
+    size_t rows = block.rows();
+    filter.resize(rows);
+    if (init)
+        for (size_t i = 0; i < rows; i++)
+            filter[i] = 1;
+
+    size_t sum = 0;
+    for (size_t i = 0; i < rows; i++)
+    {
+        if (column->getElement(i))
+        {
+            filter[i] = 0;
+            sum += 1;
+        }
+    }
+
+    return sum;
 }
 
 }

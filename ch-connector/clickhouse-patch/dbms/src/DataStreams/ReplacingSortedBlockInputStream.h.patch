@@ -1,8 +1,8 @@
 diff --git a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
-index 0e7fdad..31fcd21 100644
+index 0e7fdad..cccb0b4 100644
 --- a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
 +++ b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
-@@ -16,9 +16,9 @@ class ReplacingSortedBlockInputStream : public MergingSortedBlockInputStream
+@@ -16,18 +16,23 @@ class ReplacingSortedBlockInputStream : public MergingSortedBlockInputStream
  {
  public:
      ReplacingSortedBlockInputStream(BlockInputStreams inputs_, const SortDescription & description_,
@@ -14,7 +14,23 @@ index 0e7fdad..31fcd21 100644
      {
      }
  
-@@ -63,6 +63,8 @@ private:
+-    String getName() const override { return "ReplacingSorted"; }
++    String getName() const override
++    {
++        if (in_block_dedup)
++            return "ReplacingSortedInBlock";
++        return "ReplacingSorted";
++    }
+ 
+     String getID() const override
+     {
+         std::stringstream res;
+-        res << "ReplacingSorted(inputs";
++        res << getName() << "(inputs";
+ 
+         for (size_t i = 0; i < children.size(); ++i)
+             res << ", " << children[i]->getID();
+@@ -63,6 +68,8 @@ private:
  
      PODArray<RowSourcePart> current_row_sources;   /// Sources of rows with the current primary key
  

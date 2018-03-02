@@ -5,7 +5,6 @@
 
 #include <DataStreams/IProfilingBlockInputStream.h>
 #include <DataStreams/MergingSortedBlockInputStream.h>
-#include <DataStreams/MergeMutableSortedBlockInputStream.h>
 
 #include <Storages/MutableSupport.h>
 #include <Columns/ColumnsNumber.h>
@@ -26,6 +25,10 @@
 
 namespace DB
 {
+
+void deleteRows(Block & block, const IColumn::Filter & filter);
+
+size_t setFilterByDeleteMarkColumn(const Block & block, IColumn::Filter & filter, bool init);
 
 class DedupSortedBlockInputStream
 {
