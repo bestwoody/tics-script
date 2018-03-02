@@ -31,7 +31,9 @@ def parse_table_parts(lines, fuzz):
             parts.add('\n'.join(curr))
     else:
         for line in lines:
-            if not line.startswith('┌') and not line.startswith('└') :
+            if not line.startswith('┌') and not line.startswith('└'):
+                if line in parts:
+                    line += '-extra'
                 parts.add(line)
     return parts
 
