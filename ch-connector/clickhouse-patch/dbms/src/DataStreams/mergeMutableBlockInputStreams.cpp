@@ -1,8 +1,7 @@
 #include <DataStreams/LimitByBlockInputStream.h>
 #include <DataStreams/mergeMutableBlockInputStreams.h>
-#include <DataStreams/MergeMutableSortedBlockInputStream.h>
+#include <DataStreams/ReplacingSortedBlockInputStream.h>
 #include <DataStreams/IProfilingBlockInputStream.h>
-#include <DataStreams/MergeMutableSortedBlockInputStream.h>
 #include <DataStreams/DedupSortedBlockInputStream.h>
 #include <common/logger_useful.h>
 
@@ -61,33 +60,33 @@ private:
     BlockInputStreamPtr input;
 };
 
+BlockInputStreams mergeMutableBlockInputStreams(BlockInputStreams inputs, const SortDescription & description,
+    const String & version_column, size_t max_block_size)
+{
+    BlockInputStreams res;
+    BlockInputStreamPtr wrapped = std::make_shared<ReplacingSortedBlockInputStream>(
+        inputs, description, version_column, max_block_size, nullptr, true);
+    wrapped = std::make_shared<FilterDeletedOnePartBlockInputStream>(wrapped);
+    res.emplace_back(wrapped);
+    return res;
+}
 
 BlockInputStreams mergeMutableBlockInputStreams(BlockInputStreams inputs, const SortDescription & description,
-    const String & version_column, size_t max_block_size, DedupCalculater calculater)
+    const String & version_column, size_t max_block_size, DedupCalculator calculater)
 {
     if (inputs.size() == 1)
-    {
-        BlockInputStreams res;
-        res.emplace_back(std::make_shared<FilterDeletedOnePartBlockInputStream>(inputs[0]));
-        return res;
-    }
+        return mergeMutableBlockInputStreams(inputs, description, version_column, max_block_size);
 
     switch (calculater)
     {
-        case DedupCalculaterAsynTable:
+        case DedupCalculatorAsynTable:
             return DedupSortedBlockInputStream::createStreams(inputs, description, false, true);
-
-        case DedupCalculaterAsynQueue:
+        case DedupCalculatorAsynQueue:
             return DedupSortedBlockInputStream::createStreams(inputs, description, false, false);
-
-        case DedupCalculaterAsynParallel:
+        case DedupCalculatorAsynParallel:
             return DedupSortedBlockInputStream::createStreams(inputs, description, true, true);
-
         default:
-            BlockInputStreams res;
-            res.emplace_back(std::make_shared<MergeMutableSortedBlockInputStream>(
-                inputs, description, version_column, max_block_size));
-            return res;
+            return mergeMutableBlockInputStreams(inputs, description, version_column, max_block_size);
     }
 }
 
