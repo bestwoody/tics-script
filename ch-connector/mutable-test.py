@@ -142,13 +142,14 @@ def parse_exe_match(path, executor, fuzz):
             return False, matcher, todos
         return True, matcher, todos
 
-def main(fuzz):
-    if len(sys.argv) != 3:
-        print 'usage: <bin> database-client-cmd test-file-path'
+def run():
+    if len(sys.argv) != 4:
+        print 'usage: <bin> database-client-cmd test-file-path [fuzz=false]'
         sys.exit(1)
 
     dbc = sys.argv[1]
     path = sys.argv[2]
+    fuzz = (sys.argv[3] == 'true')
 
     matched, matcher, todos = parse_exe_match(path, Executor(dbc), fuzz)
 
@@ -171,4 +172,11 @@ def main(fuzz):
         for it in todos:
             print ' ' * 4 + it
 
-main(False)
+def main():
+    try:
+        run()
+    except KeyboardInterrupt:
+        print 'KeyboardInterrupted'
+        sys.exit(1)
+
+main()
