@@ -170,7 +170,9 @@ def main():
         sys.exit(1)
 
     path = sys.argv[1]
-    output = os.path.dirname(path)
+    output = path + '.test'
+    os.makedirs(output)
+
     parse_and_gen(path, output)
 
 main()
