@@ -68,7 +68,7 @@ DedupSortedBlockInputStream::DedupSortedBlockInputStream(
         else
         {
             LOG_DEBUG(log, "Start deduping in single thread, using priority-queue");
-            dedup_thread = std::make_unique<std::thread>([this, hash_dedup] { asynDedupByQueue(); });
+            dedup_thread = std::make_unique<std::thread>([this, hash_dedup] { asynDedupByQueue2(); });
         }
     }
 }
@@ -155,6 +155,8 @@ void DedupSortedBlockInputStream::asynDedupByTable()
             bound = bounds.top();
             bounds.pop();
 
+            TRACER("P Pop " << bound);
+
             // For equal row comparing
             bound.setMaxOrder();
 
@@ -174,7 +176,7 @@ void DedupSortedBlockInputStream::asynDedupByTable()
 
         if (!*block)
         {
-            TRACER("P Finish #" << position << " " << *block);
+            TRACER("P Finish #" << position);
             cursors[position] = std::make_shared<DedupCursor>(tracer++);
             output_blocks[position]->push(block);
             continue;
@@ -224,7 +226,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
                 deduped.flag(it.position());
             }
 
-            total_compared += dedupRange(cursors, bound, prev_max);
+            total_compared += dedupRangeLessThan(cursors, bound, prev_max);
             TRACER("P Compared " << total_compared);
         }
         while (!bound.is_bottom);
@@ -256,6 +258,86 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
 }
 
 
+void DedupSortedBlockInputStream::asynDedupByQueue2()
+{
+    BoundQueue bounds;
+    DedupCursors cursors(source_blocks.size());
+    readFromSource(cursors, bounds, &has_collation);
+    CursorQueue queue;
+
+    while (!bounds.empty())
+    {
+        DedupBound bound = bounds.top();
+        bounds.pop();
+        size_t position = bound.position();
+        DedupCursor & cursor = *(cursors[position]);
+
+        if (queue.size() == 0)
+        {
+            queue.push(CursorPlainPtr(&cursor));
+            continue;
+        }
+
+        if (queue.size() == 1)
+        {
+            if (!bound.is_bottom)
+                queue.top().ptr->skipToNotLessThan(bound);
+            else
+                queue.top().ptr->assignCursorPos(bound);
+            queue.push(CursorPlainPtr(&cursor));
+            continue;
+        }
+
+        queue.push(CursorPlainPtr(&cursor));
+        DedupCursor * max = nullptr;
+
+        while (true)
+        {
+            DedupCursor & cursor = *(queue.top().ptr);
+            if (!max)
+            {
+                max = &cursor;
+                continue;
+            }
+
+            DedupCursor * deleted = dedupCursor(*max, cursor);
+            if (!deleted || deleted == max)
+            {
+                if (max->isLast())
+                    output_blocks[position]->push(cursors[position]->block);
+                max = &cursor;
+            }
+
+            if (!cursor.isLast())
+            {
+                cursor.next();
+                queue.push(CursorPlainPtr(&cursor));
+            }
+            else
+            {
+                BlockInfoPtr block = source_blocks[position]->pop();
+                if (!*block)
+                {
+                    cursors[position] = std::make_shared<DedupCursor>(tracer++);
+                    output_blocks[position]->push(block);
+                }
+                else
+                {
+                    pushBlockBounds(block, bounds);
+                    cursors[position] = std::make_shared<DedupCursor>(
+                        SortCursorImpl(*block, description, order++), block, has_collation, tracer++);
+                }
+            }
+
+            if (cursor.isTheSame(bound))
+                break;
+            else
+                queue.pop();
+        }
+    }
+}
+
+
 DedupSortedBlockInputStream::DedupCursor * DedupSortedBlockInputStream::dedupCursor(DedupCursor & lhs, DedupCursor & rhs)
 {
     if (!lhs.equal(rhs))
@@ -276,7 +358,7 @@ DedupSortedBlockInputStream::DedupCursor * DedupSortedBlockInputStream::dedupCur
 }
 
 
-size_t DedupSortedBlockInputStream::dedupRange(DedupCursors & cursors, DedupBound & bound, DedupCursor & prev_max)
+size_t DedupSortedBlockInputStream::dedupRangeLessThan(DedupCursors & cursors, DedupBound & bound, DedupCursor & prev_max)
 {
     StreamMasks streams(cursors.size());
 
@@ -363,7 +445,7 @@ size_t DedupSortedBlockInputStream::dedupRange(DedupCursors & cursors, DedupBoun
         // If bound is a leading bound, skip calculating hash. A lot faster if data is well-ordered.
         if (i != bound.position())
         {
-            size_t column_compared_rows = dedupColumn(cursor, bound, table);
+            size_t column_compared_rows = dedupStream(cursor, bound, table);
             overlaped += (column_compared_rows  > 0) ? 1 : 0;
             compared += column_compared_rows;
         }
@@ -375,7 +457,7 @@ size_t DedupSortedBlockInputStream::dedupRange(DedupCursors & cursors, DedupBoun
     DedupCursor & cursor = *(cursors[bound.position()]);
     if (overlaped > 1 && cursor)
     {
-        compared += dedupColumn(cursor, bound, table);
+        compared += dedupStream(cursor, bound, table);
         cursor.backward();
     }
 
@@ -492,7 +574,7 @@ void DedupSortedBlockInputStream::asynDedupRange(DedupJobsFifoPtr & input, size_
             continue;
         }
 
-        size_t compared = dedupColumn(*(job->cursors[position]), job->bound, *(job->table));
+        size_t compared = dedupStream(*(job->cursors[position]), job->bound, *(job->table));
         TRACER("R #" << position << " " << job->str(position) << " Dedup " << compared);
 
         {
@@ -516,7 +598,7 @@ void DedupSortedBlockInputStream::asynDedupRange(DedupJobsFifoPtr & input, size_
 }
 
 
-size_t DedupSortedBlockInputStream::dedupColumn(DedupCursor & cursor, DedupBound & bound, DedupTable & table)
+size_t DedupSortedBlockInputStream::dedupStream(DedupCursor & cursor, DedupBound & bound, DedupTable & table)
 {
     size_t compared = 0;
 
@@ -569,11 +651,11 @@ void DedupSortedBlockInputStream::pushBlockBounds(const BlockInfoPtr & block, Qu
 {
     if (block->rows() > 1)
     {
-        DedupBound bound(DedupCursor(SortCursorImpl(*block, description, order++), block, has_collation, tracer++));
+        DedupBound bound(DedupCursor(SortCursorImpl(*block, description), block, has_collation, tracer++));
         bounds.push(bound);
     }
 
-    DedupBound bottom(DedupCursor(SortCursorImpl(*block, description, order++), block, has_collation, tracer++));
+    DedupBound bottom(DedupCursor(SortCursorImpl(*block, description), block, has_collation, tracer++));
     bottom.setToBottom();
     bounds.push(bottom);
 }
