@@ -496,7 +496,7 @@ private:
             }
             else
                 ostr << block->str();
-            ostr << "/" << cursor.pos;
+            ostr << "/" << cursor.pos << "*" << cursor.order;
             return ostr.str();
         }
 
@@ -543,7 +543,12 @@ private:
 
         bool operator < (const CursorPlainPtr & rhs) const
         {
-            return (*rhs.ptr) < (*ptr);
+            return (*ptr) < (*rhs.ptr);
+        }
+
+        friend std::ostream & operator << (std::ostream & out, CursorPlainPtr & self)
+        {
+            return (self.ptr == 0) ? (out << "null") : (out << (*self.ptr));
         }
     };
 
