@@ -511,8 +511,9 @@ private:
     protected:
         SortCursorImpl cursor;
         bool has_collation;
-
         std::mutex mutex;
+
+    public:
         size_t tracer;
     };
 
@@ -520,6 +521,8 @@ private:
     struct CursorPlainPtr
     {
         DedupCursor * ptr;
+
+        CursorPlainPtr() : ptr(0) {}
 
         CursorPlainPtr(DedupCursor * ptr_) : ptr(ptr_) {}
 

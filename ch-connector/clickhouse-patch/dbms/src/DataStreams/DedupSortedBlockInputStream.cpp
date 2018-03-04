@@ -265,6 +265,8 @@ void DedupSortedBlockInputStream::asynDedupByQueue2()
     readFromSource(cursors, bounds, &has_collation);
     CursorQueue queue;
 
+    TRACER("P Init Bounds " << bounds.str(true) << " Cursors " << cursors.size());
+
     while (!bounds.empty())
     {
         DedupBound bound = bounds.top();
@@ -272,69 +274,131 @@ void DedupSortedBlockInputStream::asynDedupByQueue2()
         size_t position = bound.position();
         DedupCursor & cursor = *(cursors[position]);
 
+        TRACER("P Pop " << bound << " <= " << bounds.str(true));
+
         if (queue.size() == 0)
         {
             queue.push(CursorPlainPtr(&cursor));
+            TRACER("Q Push " << cursor << " => " << queue.str(true));
             continue;
         }
 
         if (queue.size() == 1)
         {
             if (!bound.is_bottom)
-                queue.top().ptr->skipToNotLessThan(bound);
+            {
+                DedupCursor & single = *(queue.top().ptr);
+                TRACER("Q SkipToNotLessThan B " << single);
+                queue.pop();
+                single.skipToNotLessThan(bound);
+                queue.push(CursorPlainPtr(&single));
+                TRACER("Q SkipToNotLessThan E " << single << " In " << queue.str(true));
+            }
             else
-                queue.top().ptr->assignCursorPos(bound);
-            queue.push(CursorPlainPtr(&cursor));
-            continue;
+            {
+                DedupCursor & single = *(queue.top().ptr);
+                TRACER("Q AssignCursorPos B " << single);
+                queue.pop();
+                single.assignCursorPos(bound);
+                queue.push(CursorPlainPtr(&single));
+                TRACER("Q AssignCursorPos E " << single << " In " << queue.str(true));
+            }
         }
 
         queue.push(CursorPlainPtr(&cursor));
+        TRACER("Q Push " << cursor << " => " << queue.str(true));
+
         DedupCursor * max = nullptr;
 
-        while (true)
+        while (!queue.empty())
         {
             DedupCursor & cursor = *(queue.top().ptr);
+            queue.pop();
+            TRACER("Q Top " << cursor << " In " << queue.str(true));
             if (!max)
             {
                 max = &cursor;
+                TRACER("Q Max Init " << *max);
                 continue;
             }
 
+            TRACER("Q DedupCursor Max " << *max << " Cursor " << cursor);
             DedupCursor * deleted = dedupCursor(*max, cursor);
+            TRACER("Q DedupCursor Max " << *max << " Cursor " << cursor << " Del = " << !!deleted << " DelMax = " << (deleted == max));
             if (!deleted || deleted == max)
             {
                 if (max->isLast())
-                    output_blocks[position]->push(cursors[position]->block);
+                {
+                    TRACER("Q Output " << *max);
+                    size_t position = max->position();
+                    output_blocks[position]->push(max->block);
+
+                    BlockInfoPtr block = source_blocks[position]->pop();
+                    if (!*block)
+                    {
+                        TRACER("Q Finish #" << position << " Bounds " << bounds.str(true) << " Queue " << queue.str(true) << " Max " << *max);
+                        cursors[position] = std::make_shared<DedupCursor>(tracer++);
+                        output_blocks[position]->push(block);
+                    }
+                    else
+                    {
+                        TRACER("Q New Block " << block << " #" << position);
+                        pushBlockBounds(block, bounds);
+                        cursors[position] = std::make_shared<DedupCursor>(
+                            SortCursorImpl(*block, description, order++), block, has_collation, tracer++);
+                    }
+                }
                 max = &cursor;
+                TRACER("Q Max Update " << *max);
+            }
+
+            TRACER("Q Check Done " << cursor << " ?= " << bound);
+            if (cursor.isTheSame(bound))
+            {
+                TRACER("Q Range Done " << cursor << " == " << bound);
+                break;
             }
 
             if (!cursor.isLast())
             {
                 cursor.next();
                 queue.push(CursorPlainPtr(&cursor));
+                TRACER("Q Push " << cursor << " => " << queue.str(true));
             }
-            else
-            {
-                BlockInfoPtr block = source_blocks[position]->pop();
-                if (!*block)
-                {
-                    cursors[position] = std::make_shared<DedupCursor>(tracer++);
-                    output_blocks[position]->push(block);
-                }
-                else
-                {
-                    pushBlockBounds(block, bounds);
-                    cursors[position] = std::make_shared<DedupCursor>(
-                        SortCursorImpl(*block, description, order++), block, has_collation, tracer++);
-                }
-            }
+        }
+        TRACER("P Range Done");
+    }
 
-            if (cursor.isTheSame(bound))
-                break;
-            else
-                queue.pop();
+    if (queue.size() > 1)
+        throw Exception("Found too much residue data in deduping.");
+
+    while (!queue.empty())
+    {
+        DedupCursor & cursor = *(queue.top().ptr);
+        queue.pop();
+        if (cursor.isLast())
+        {
+            TRACER("P Residue " << cursor << " In " << queue.str(true));
+            size_t position = cursor.position();
+            output_blocks[position]->push(cursor.block);
+            BlockInfoPtr block = source_blocks[position]->pop();
+            if (*block)
+            {
+                TRACER("Q Not Finish #" << position << " Bounds " << bounds.str(true) << " Queue " << queue.str(true));
+                throw Exception("Stream is not finished as expected");
+            }
+            TRACER("Q Finish #" << position << " Bounds " << bounds.str(true) << " Queue " << queue.str(true));
+            cursors[position] = std::make_shared<DedupCursor>(tracer++);
+            output_blocks[position]->push(block);
+        }
+        else
+        {
+            TRACER("P Bad residue " << cursor << " In " << queue.str(true));
+            throw Exception("Found residue data in deduping but is not last row.");
         }
     }
+
+    TRACER("P All Done " << queue.str(true));
 }
 
 

@@ -34,4 +34,13 @@ const DedupCalculator MutableSupport::pipeline_dedup_calculator = DedupCalculato
 const bool MutableSupport::in_block_dedup_on_write = false;
 const bool MutableSupport::in_block_dedup_on_read = true;
 
+// Not passed test:
+// -- -
+//  --
+// (mutable-test/dedup/dedup_l116_two_small_parts_g8_o1.test)
+//
+// const DedupCalculator MutableSupport::pipeline_dedup_calculator = DedupCalculatorAsynQueue;
+// const bool MutableSupport::in_block_dedup_on_write = false;
+// const bool MutableSupport::in_block_dedup_on_read = true;
+
 }
