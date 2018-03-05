@@ -180,7 +180,7 @@ private:
             return block;
         }
 
-        String str()
+        String str(bool trace = false)
         {
             std::lock_guard<std::mutex> lock(mutex);
 
@@ -190,9 +190,11 @@ private:
                 ostr << "?";
             else
                 ostr << stream_position;
-            ostr << "@" << tracer << ":";
+            if (trace)
+                ostr << "@" << tracer;
+            ostr << ":";
             if (block)
-                ostr << "-" << deleted_rows << "+" << block.rows();
+                ostr << block.rows() << "-" << deleted_rows;
             else
                 ostr << "?";
             return ostr.str();
@@ -483,20 +485,21 @@ private:
             return const_cast<DedupCursor *>(this)->greater(rhs);
         }
 
-        String str()
+        String str(bool trace = false)
         {
             std::lock_guard<std::mutex> lock(mutex);
             std::stringstream ostr;
 
-            ostr << ">" << tracer;
+            if (trace)
+                ostr << ">" << tracer;
             if (!block)
             {
                 ostr << "#?";
                 return ostr.str();
             }
             else
-                ostr << block->str();
-            ostr << "/" << cursor.pos << "*" << cursor.order;
+                ostr << block->str(trace);
+            ostr << "/" << cursor.pos << "\\" << cursor.order;
             return ostr.str();
         }
 
@@ -555,7 +558,7 @@ private:
     class CursorQueue : public std::priority_queue<CursorPlainPtr>
     {
     public:
-        String str(bool detail = false)
+        String str(bool trace = false)
         {
             std::stringstream ostr;
             ostr << "Q:" << size();
@@ -565,17 +568,14 @@ private:
             {
                 CursorPlainPtr it = copy.top();
                 copy.pop();
-                if (detail)
-                    ostr << "|" << it->str();
-                else
-                    ostr << " " << it->block->tracer << "#"<< it->position();
+                ostr << "|" << it->str(trace);
             }
             return ostr.str();
         }
 
         friend std::ostream & operator << (std::ostream & out, CursorQueue & self)
         {
-            return out << self.str(false);
+            return out << self.str();
         }
     };
 
@@ -612,12 +612,12 @@ private:
             return DedupCursor::greater(rhs);
         }
 
-        String str()
+        String str(bool trace = false)
         {
             std::stringstream ostr;
-            ostr << DedupCursor::str();
+            ostr << DedupCursor::str(trace);
             std::lock_guard<std::mutex> lock(mutex);
-            ostr << (is_bottom ? "$" : "^");
+            ostr << (is_bottom ? "L" : "F");
             return ostr.str();
         }
 
@@ -633,7 +633,7 @@ private:
     class BoundQueue : public std::priority_queue<DedupBound>
     {
     public:
-        String str(bool detail = false)
+        String str(bool trace = false)
         {
             std::stringstream ostr;
             ostr << "Q:" << size();
@@ -643,17 +643,14 @@ private:
             {
                 DedupBound it = copy.top();
                 copy.pop();
-                if (detail)
-                    ostr << "|" << it.str();
-                else
-                    ostr << " " << it.block->tracer << (it.is_bottom ? "L#" : "F#") << it.position();
+                ostr << "|" << it.str(trace);
             }
             return ostr.str();
         }
 
         friend std::ostream & operator << (std::ostream & out, BoundQueue & self)
         {
-            return out << self.str(false);
+            return out << self.str();
         }
     };
 
@@ -1087,11 +1084,10 @@ private:
     size_t dedupStream(DedupCursor & cursor, DedupBound & bound, DedupTable & table);
 
     template <typename Queue>
-    void pushBlockBounds(const BlockInfoPtr & block, Queue & queue);
+    void pushBlockBounds(const BlockInfoPtr & block, Queue & queue, bool skip_one_row_top = true);
 
     void asynRead(size_t pisition);
-    void readFromSource(DedupCursors & output, BoundQueue & bounds, bool * collation = 0);
-
+    void readFromSource(DedupCursors & output, BoundQueue & bounds, bool * collation = 0, bool skip_one_row_top = true);
 
 private:
     Logger * log;
