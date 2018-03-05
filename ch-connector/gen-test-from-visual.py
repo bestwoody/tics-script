@@ -171,7 +171,11 @@ def main():
 
     path = sys.argv[1]
     output = path + '.test'
-    os.makedirs(output)
+
+    try:
+        os.makedirs(output)
+    except:
+        pass
 
     parse_and_gen(path, output)
 
