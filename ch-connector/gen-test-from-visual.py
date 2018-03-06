@@ -69,8 +69,9 @@ class TestData:
     def selraw_result_parts(self):
         return self._selraws
 
-def gen(output, title, rows, gn, order, source, ln):
-    path = os.path.join(output, 'dedup_l' + str(ln) + '_' + title + '_g' + str(gn) + ((order != None) and ('_o' + str(order)) or '') + '.test')
+def gen(output, title, rows, gn, order, source, ln, selraw_first):
+    name = 'dedup_l' + str(ln) + '_' + title + '_g' + str(gn) + ((order != None) and ('_o' + str(order)) or '') + '.test'
+    path = os.path.join(output, name)
     data = TestData(rows)
     with open(path, "w") as file:
         file.write('# Generated from: ' + source + '#L' + str(ln) + '\n')
@@ -79,6 +80,7 @@ def gen(output, title, rows, gn, order, source, ln):
             file.write('# ' + row + '\n')
         file.write('#\n')
         file.write('\n')
+
         file.write('>> drop table if exists test\n')
         file.write('>> create table test (\n')
         file.write('\tdt Date,\n')
@@ -86,6 +88,7 @@ def gen(output, title, rows, gn, order, source, ln):
         file.write('\tv Int32\n')
         file.write('\t) engine = MutableMergeTree(dt, (k), 8192)\n')
         file.write('\n')
+
         for values in data.insert_values():
             file.write('>> insert into test values ')
             for i in range(0, len(values)):
@@ -96,21 +99,33 @@ def gen(output, title, rows, gn, order, source, ln):
                 else:
                     file.write('\n')
         file.write('\n')
-        file.write('>> select * from test\n')
-        for parts in data.select_result_parts():
-            if len(parts) != 0:
-                file.write('┌─────────dt─┬──k─┬──v─┐\n')
-                for k, v in parts:
-                    file.write('│ 0000-00-00 │ ' + str(k) + ' │ ' + str(v) + ' │\n')
-                file.write('└────────────┴────┴────┘\n')
-        file.write('\n')
-        file.write('>> selraw * from test\n')
-        for parts in data.selraw_result_parts():
-            file.write('┌─────────dt─┬──k─┬──v─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐\n')
-            for k, v, ver in parts:
-                file.write('│ 0000-00-00 │ ' + str(k) + ' │ ' + str(v) + ' │           ' + str(ver) + ' │                 0 │\n')
-            file.write('└────────────┴────┴────┴───────────────────┴───────────────────┘\n')
-        file.write('\n')
+
+        def gen_select():
+            file.write('>> select * from test\n')
+            for parts in data.select_result_parts():
+                if len(parts) != 0:
+                    file.write('┌─────────dt─┬──k─┬──v─┐\n')
+                    for k, v in parts:
+                        file.write('│ 0000-00-00 │ ' + str(k) + ' │ ' + str(v) + ' │\n')
+                    file.write('└────────────┴────┴────┘\n')
+            file.write('\n')
+
+        def gen_selraw():
+            file.write('>> selraw * from test\n')
+            for parts in data.selraw_result_parts():
+                file.write('┌─────────dt─┬──k─┬──v─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐\n')
+                for k, v, ver in parts:
+                    file.write('│ 0000-00-00 │ ' + str(k) + ' │ ' + str(v) + ' │           ' + str(ver) + ' │                 0 │\n')
+                file.write('└────────────┴────┴────┴───────────────────┴───────────────────┘\n')
+            file.write('\n')
+
+        if selraw_first:
+            gen_selraw()
+            gen_select()
+        else:
+            gen_select()
+            gen_selraw()
+
         file.write('>> drop table if exists test\n')
 
 class IdGen:
@@ -120,13 +135,13 @@ class IdGen:
         self.id += 1
         return self.id
 
-def gen_diff_orders(idg, output, title, rows, gn, source, ln):
+def gen_diff_orders(idg, output, title, rows, gn, source, ln, selraw_first):
     if len(rows) == 1 or len(rows) == 2 and rows[0] == rows[1]:
-        gen(output, title, rows, gn, None, source, ln)
+        gen(output, title, rows, gn, None, source, ln, selraw_first)
         return
     def perm(array, begin, end):
         if begin >= end:
-            gen(output, title, map(lambda x: rows[x], array), gn, idg.get(), source, ln)
+            gen(output, title, map(lambda x: rows[x], array), gn, idg.get(), source, ln, selraw_first)
         else:
             i = begin
             for n in range(begin, end):
@@ -135,7 +150,7 @@ def gen_diff_orders(idg, output, title, rows, gn, source, ln):
                 array[n], array[i] = array[i], array[n]
     perm(range(0, len(rows)), 0, len(rows))
 
-def parse_and_gen(path, output):
+def parse_and_gen(path, output, selraw_first):
     title = ''
     rows = []
     gn = 0
@@ -158,7 +173,7 @@ def parse_and_gen(path, output):
             else:
                 if len(line) == 0:
                     if len(rows) != 0:
-                        gen_diff_orders(IdGen(), output, title, rows, gn, path, ln - len(rows))
+                        gen_diff_orders(IdGen(), output, title, rows, gn, path, ln - len(rows), selraw_first)
                         gn += 1
                     rows = []
                 else:
@@ -170,7 +185,14 @@ def main():
         sys.exit(1)
 
     path = sys.argv[1]
-    output = os.path.dirname(path)
-    parse_and_gen(path, output)
+    output = path + '.test'
+    selraw_first = True
+
+    try:
+        os.makedirs(output)
+    except:
+        pass
+
+    parse_and_gen(path, output, selraw_first)
 
 main()

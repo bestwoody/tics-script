@@ -12,14 +12,12 @@
 │ 0000-00-00 │ 2 │ 22 │
 └────────────┴───┴────┘
 
->> delete from test
-Code: 62. DB::Exception: Syntax error: failed at position 17 (end of query): . Expected one of: ., WHERE
+>> upsert into test values (0, 1, 44)
 
->> delete from test where k = 1
-
->> select * from test
+>> select * from test order by v
 ┌─────────dt─┬─k─┬──v─┐
 │ 0000-00-00 │ 2 │ 22 │
+│ 0000-00-00 │ 1 │ 44 │
 └────────────┴───┴────┘
 
 >> selraw * from test
@@ -28,7 +26,7 @@ Code: 62. DB::Exception: Syntax error: failed at position 17 (end of query): . E
 │ 0000-00-00 │ 2 │ 22 │           1000001 │                 0 │
 └────────────┴───┴────┴───────────────────┴───────────────────┘
 ┌─────────dt─┬─k─┬──v─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐
-│ 0000-00-00 │ 1 │ 11 │           2000000 │                 1 │
+│ 0000-00-00 │ 1 │ 44 │           2000000 │                 0 │
 └────────────┴───┴────┴───────────────────┴───────────────────┘
 
 >> drop table if exists test

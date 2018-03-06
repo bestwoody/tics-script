@@ -180,7 +180,7 @@ private:
             return block;
         }
 
-        String str()
+        String str(bool trace = false)
         {
             std::lock_guard<std::mutex> lock(mutex);
 
@@ -190,9 +190,11 @@ private:
                 ostr << "?";
             else
                 ostr << stream_position;
-            ostr << "@" << tracer << ":";
+            if (trace)
+                ostr << "@" << tracer;
+            ostr << ":";
             if (block)
-                ostr << "-" << deleted_rows << "+" << block.rows();
+                ostr << block.rows() << "-" << deleted_rows;
             else
                 ostr << "?";
             return ostr.str();
@@ -306,20 +308,29 @@ private:
         DedupCursor(size_t tracer_ = 0) : tracer(tracer_) {}
 
         DedupCursor(const DedupCursor & rhs)
-            : block(rhs.block), cursor(rhs.cursor), has_collation(rhs.has_collation), tracer(rhs.tracer) {}
+            : block(rhs.block), cursor(rhs.cursor), has_collation(rhs.has_collation), tracer(rhs.tracer)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            cursor.order = block->versions()[cursor.pos];
+        }
 
         DedupCursor & operator = (const DedupCursor & rhs)
         {
             std::lock_guard<std::mutex> lock(mutex);
             block = rhs.block;
             cursor = rhs.cursor;
+            cursor.order = block->versions()[cursor.pos];
             has_collation = rhs.has_collation;
             tracer = rhs.tracer;
             return *this;
         }
 
         DedupCursor(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, bool has_collation_, size_t tracer_)
-            : block(block_), cursor(cursor_), has_collation(has_collation_), tracer(tracer_) {}
+            : block(block_), cursor(cursor_), has_collation(has_collation_), tracer(tracer_)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            cursor.order = block->versions()[cursor.pos];
+        }
 
         operator bool ()
         {
@@ -345,6 +356,28 @@ private:
         {
             std::lock_guard<std::mutex> lock(mutex);
             block->setDeleted(row);
+        }
+
+        void assignCursorPos(const DedupCursor & rhs)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            cursor.pos = rhs.cursor.pos;
+            cursor.order = block->versions()[cursor.pos];
+        }
+
+        void skipToNotLessThan(DedupCursor & bound)
+        {
+            // TODO: binary search position
+            std::lock_guard<std::mutex> lock(mutex);
+            while (bound.greater(*this))
+                cursor.next();
+            cursor.order = block->versions()[cursor.pos];
+        }
+
+        bool isTheSame(const DedupCursor & rhs)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            return block->stream_position == rhs.block->stream_position && cursor.pos == rhs.cursor.pos;
         }
 
         size_t position()
@@ -389,12 +422,14 @@ private:
         {
             std::lock_guard<std::mutex> lock(mutex);
             cursor.next();
+            cursor.order = block->versions()[cursor.pos];
         }
 
         void backward()
         {
             std::lock_guard<std::mutex> lock(mutex);
             cursor.pos = cursor.pos > 0 ? cursor.pos - 1 : 0;
+            cursor.order = block->versions()[cursor.pos];
         }
 
         UInt64 hash()
@@ -450,20 +485,21 @@ private:
             return const_cast<DedupCursor *>(this)->greater(rhs);
         }
 
-        String str()
+        String str(bool trace = false)
         {
             std::lock_guard<std::mutex> lock(mutex);
             std::stringstream ostr;
 
-            ostr << ">" << tracer;
+            if (trace)
+                ostr << ">" << tracer;
             if (!block)
             {
                 ostr << "#?";
                 return ostr.str();
             }
             else
-                ostr << block->str();
-            ostr << "/" << cursor.pos;
+                ostr << block->str(trace);
+            ostr << "/" << cursor.pos << "\\" << cursor.order;
             return ostr.str();
         }
 
@@ -478,8 +514,9 @@ private:
     protected:
         SortCursorImpl cursor;
         bool has_collation;
-
         std::mutex mutex;
+
+    public:
         size_t tracer;
     };
 
@@ -487,6 +524,8 @@ private:
     struct CursorPlainPtr
     {
         DedupCursor * ptr;
+
+        CursorPlainPtr() : ptr(0) {}
 
         CursorPlainPtr(DedupCursor * ptr_) : ptr(ptr_) {}
 
@@ -507,14 +546,19 @@ private:
 
         bool operator < (const CursorPlainPtr & rhs) const
         {
-            return (*rhs.ptr) < (*ptr);
+            return (*ptr) < (*rhs.ptr);
+        }
+
+        friend std::ostream & operator << (std::ostream & out, CursorPlainPtr & self)
+        {
+            return (self.ptr == 0) ? (out << "null") : (out << (*self.ptr));
         }
     };
 
     class CursorQueue : public std::priority_queue<CursorPlainPtr>
     {
     public:
-        String str(bool detail = false)
+        String str(bool trace = false)
         {
             std::stringstream ostr;
             ostr << "Q:" << size();
@@ -524,17 +568,14 @@ private:
             {
                 CursorPlainPtr it = copy.top();
                 copy.pop();
-                if (detail)
-                    ostr << "|" << it->str();
-                else
-                    ostr << " " << it->block->tracer << "#"<< it->position();
+                ostr << "|" << it->str(trace);
             }
             return ostr.str();
         }
 
         friend std::ostream & operator << (std::ostream & out, CursorQueue & self)
         {
-            return out << self.str(false);
+            return out << self.str();
         }
     };
 
@@ -553,11 +594,11 @@ private:
         void setToBottom()
         {
             std::lock_guard<std::mutex> lock(mutex);
-
             if (block->rows() > 1)
                 cursor.pos = block->rows() - 1;
             else
                 cursor.pos = 0;
+            cursor.order = block->versions()[cursor.pos];
             is_bottom = true;
         }
 
@@ -571,12 +612,12 @@ private:
             return DedupCursor::greater(rhs);
         }
 
-        String str()
+        String str(bool trace = false)
         {
             std::stringstream ostr;
-            ostr << DedupCursor::str();
+            ostr << DedupCursor::str(trace);
             std::lock_guard<std::mutex> lock(mutex);
-            ostr << (is_bottom ? "$" : "^");
+            ostr << (is_bottom ? "L" : "F");
             return ostr.str();
         }
 
@@ -592,7 +633,7 @@ private:
     class BoundQueue : public std::priority_queue<DedupBound>
     {
     public:
-        String str(bool detail = false)
+        String str(bool trace = false)
         {
             std::stringstream ostr;
             ostr << "Q:" << size();
@@ -602,17 +643,14 @@ private:
             {
                 DedupBound it = copy.top();
                 copy.pop();
-                if (detail)
-                    ostr << "|" << it.str();
-                else
-                    ostr << " " << it.block->tracer << (it.is_bottom ? "L#" : "F#") << it.position();
+                ostr << "|" << it.str(trace);
             }
             return ostr.str();
         }
 
         friend std::ostream & operator << (std::ostream & out, BoundQueue & self)
         {
-            return out << self.str(false);
+            return out << self.str();
         }
     };
 
@@ -1031,7 +1069,7 @@ private:
 
     // Like asynDedupByTable, use priority-queue
     void asynDedupByQueue();
-    size_t dedupRange(DedupCursors & cursors, DedupBound & bound, DedupCursor & prev_max);
+    size_t dedupRangeLessThan(DedupCursors & cursors, DedupBound & bound, DedupCursor & prev_max);
     DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
     size_t dedupEdgeByTable(BoundQueue & bounds, DedupBound & bound);
 
@@ -1041,14 +1079,14 @@ private:
     void dedupRow(DedupCursor & cursor, DedupTable & table);
 
     // Tools use by all kind of deduping.
-    size_t dedupColumn(DedupCursor & cursor, DedupBound & bound, DedupTable & table);
+    size_t dedupStream(DedupCursor & cursor, DedupBound & bound, DedupTable & table);
 
     template <typename Queue>
-    void pushBlockBounds(const BlockInfoPtr & block, Queue & queue);
+    void pushBlockBounds(const BlockInfoPtr & block, Queue & queue, bool skip_one_row_top = true);
 
     void asynRead(size_t pisition);
-    void readFromSource(DedupCursors & output, BoundQueue & bounds, bool * collation = 0);
-
+    void readFromSource(DedupCursors & output, BoundQueue & bounds, bool * collation = 0, bool skip_one_row_top = true);
+    bool outputAndUpdateCursor(DedupCursors & cursors, BoundQueue & bounds, DedupCursor & cursor);
 
 private:
     Logger * log;
