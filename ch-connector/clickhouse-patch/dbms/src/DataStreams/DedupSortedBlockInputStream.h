@@ -1073,8 +1073,6 @@ private:
     DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
     size_t dedupEdgeByTable(BoundQueue & bounds, DedupBound & bound);
 
-    void asynDedupByQueue2();
-
     // Parrallel range deduping, use hash-table.
     void asynDedupParallel();
     void asynDedupRange(DedupJobsFifoPtr & input, size_t position);
@@ -1088,6 +1086,7 @@ private:
 
     void asynRead(size_t pisition);
     void readFromSource(DedupCursors & output, BoundQueue & bounds, bool * collation = 0, bool skip_one_row_top = true);
+    bool outputAndUpdateCursor(DedupCursors & cursors, BoundQueue & bounds, DedupCursor & cursor);
 
 private:
     Logger * log;
