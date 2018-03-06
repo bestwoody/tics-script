@@ -118,6 +118,7 @@ void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQue
         if (!*block)
             continue;
 
+        TRACER("R Read #" << i << " " << block->str(TRACE_ID));
         blocks[i] = block;
         pushBlockBounds(block, bounds, skip_one_row_top);
 
@@ -264,11 +265,11 @@ void DedupSortedBlockInputStream::asynDedupByQueue2()
     BoundQueue bounds;
     DedupCursors cursors(source_blocks.size());
     readFromSource(cursors, bounds, &has_collation, true);
-    CursorQueue queue;
-
     TRACER("P Init Bounds " << bounds.str(TRACE_ID) << " Cursors " << cursors.size());
 
+    CursorQueue queue;
     DedupCursor max;
+    size_t finished = 0;
 
     while (!bounds.empty())
     {
@@ -278,6 +279,8 @@ void DedupSortedBlockInputStream::asynDedupByQueue2()
         DedupCursor & cursor = *(cursors[position]);
         TRACER("P Pop " << bound.str(TRACE_ID) << " + " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID));
 
+        /*
+        // TODO: Should compare with max befor skipping.
         if (queue.size() == 1)
         {
             if (!bound.is_bottom)
@@ -293,6 +296,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue2()
                 TRACER("Q SkipToBottomE " << cursor.str(TRACE_ID));
             }
         }
+        */
 
         if (!bound.is_bottom || bound.block->rows() == 1)
         {
@@ -325,6 +329,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue2()
                             " Queue " << queue.str(TRACE_ID) << " Max " << max.str(TRACE_ID));
                         cursors[position] = std::make_shared<DedupCursor>(tracer++);
                         output_blocks[position]->push(block);
+                        finished += 1;
                     }
                     else
                     {
@@ -367,6 +372,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue2()
                 " Queue " << queue.str(TRACE_ID) << " Max " << max.str(TRACE_ID));
             cursors[position] = std::make_shared<DedupCursor>(tracer++);
             output_blocks[position]->push(block);
+            finished += 1;
         }
         else
         {
@@ -378,6 +384,9 @@ void DedupSortedBlockInputStream::asynDedupByQueue2()
     }
 
     TRACER("P All Done " << queue.str(TRACE_ID));
+
+    if (finished != cursors.size())
+        throw Exception("Stream not finished in deduplicating.");
 }
 
 
@@ -692,15 +701,20 @@ void DedupSortedBlockInputStream::dedupRow(DedupCursor & cursor, DedupTable & ta
 template <typename Queue>
 void DedupSortedBlockInputStream::pushBlockBounds(const BlockInfoPtr & block, Queue & bounds, bool skip_one_row_top)
 {
+    TRACER("B Push " << block->str(TRACE_ID) << " To " << bounds.str(TRACE_ID));
     if (!skip_one_row_top || block->rows() > 1)
     {
         DedupBound bound(DedupCursor(SortCursorImpl(*block, description), block, has_collation, tracer++));
+        TRACER("B New Top " << bound.str(TRACE_ID));
         bounds.push(bound);
+        TRACER("B Push Top To " << bounds.str(TRACE_ID));
     }
 
     DedupBound bottom(DedupCursor(SortCursorImpl(*block, description), block, has_collation, tracer++));
     bottom.setToBottom();
+    TRACER("B New Bottom " << bottom.str(TRACE_ID));
     bounds.push(bottom);
+    TRACER("B Push Bottom To " << bounds.str(TRACE_ID));
 }
 
 

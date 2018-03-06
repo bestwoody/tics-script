@@ -594,11 +594,11 @@ private:
         void setToBottom()
         {
             std::lock_guard<std::mutex> lock(mutex);
-
             if (block->rows() > 1)
                 cursor.pos = block->rows() - 1;
             else
                 cursor.pos = 0;
+            cursor.order = block->versions()[cursor.pos];
             is_bottom = true;
         }
 
