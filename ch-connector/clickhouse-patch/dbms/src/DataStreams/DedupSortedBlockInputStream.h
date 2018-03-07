@@ -465,7 +465,7 @@ private:
         {
             std::lock_guard<std::mutex> lock(mutex);
 
-            if (block->stream_position == rhs.block->stream_position)
+            if (!MutableSupport::in_block_dedup_on_dedup_calculator && block->stream_position == rhs.block->stream_position)
                 return cursor.pos == rhs.cursor.pos;
 
             SortCursorImpl * lc = const_cast<SortCursorImpl *>(&cursor);
@@ -1069,7 +1069,6 @@ private:
 
     // Like asynDedupByTable, use priority-queue
     void asynDedupByQueue();
-    size_t dedupRangeLessThan(DedupCursors & cursors, DedupBound & bound, DedupCursor & prev_max);
     DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
     size_t dedupEdgeByTable(BoundQueue & bounds, DedupBound & bound);
 
