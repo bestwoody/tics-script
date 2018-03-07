@@ -244,17 +244,21 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
     {
         if (bounds.empty())
         {
-            TRACER("Q SecondWind Start " << max << " Bounds " << bounds.str(TRACE_ID));
+            TRACER("Q SecondWind Check " << max << " Bounds " << bounds.str(TRACE_ID));
             if (!max)
                 throw Exception("Deduping: if bounds are empty and loops are going on, max must be assigned.");
             if (max.isLast())
             {
                 bool finished = outputAndUpdateCursor(cursors, bounds, max);
                 finisheds += finished ? 1 : 0;
+                max = DedupCursor();
                 if (!finished)
                     TRACER("Q SecondWind " << bounds.str(TRACE_ID));
                 else
+                {
+                    TRACER("Q No SecondWind " << bounds.str(TRACE_ID));
                     break;
+                }
             }
             else
                 throw Exception("Deduping: max must be the last row of the block here.");
