@@ -34,11 +34,11 @@ public:
         return input->isGroupedOutput();
     }
 
+    // TODO: May be not right
     bool isSortedOutput() const override
     {
         return input->isSortedOutput();
     }
-
     const SortDescription & getSortDescription() const override
     {
         return input->getSortDescription();

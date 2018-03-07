@@ -8,6 +8,7 @@ namespace DB
 {
 
 /** Remove specified columns by name from a stream
+  * TODO: Use RemoveColumnsBlockInputStream
   */
 class FilterColumnsBlockInputStream : public IProfilingBlockInputStream
 {

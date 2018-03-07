@@ -42,6 +42,7 @@ public:
     static const DedupCalculator pipeline_dedup_calculator;
     static const bool in_block_dedup_on_write;
     static const bool in_block_dedup_on_read;
+    static const bool in_block_dedup_on_dedup_calculator;
 
 private:
     OrderedNameSet empty;
