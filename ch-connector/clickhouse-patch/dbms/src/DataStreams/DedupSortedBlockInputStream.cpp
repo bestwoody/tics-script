@@ -117,10 +117,7 @@ void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQue
     {
         BlockInfoPtr block = source_blocks[i]->pop();
         if (!*block)
-        {
-            TRACER("R Read null #" << i);
             continue;
-        }
 
         blocks[i] = block;
         TRACER("R Read #" << i << " " << blocks[i]->str(TRACE_ID));
@@ -136,7 +133,12 @@ void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQue
         if (blocks[i])
             output[i] = std::make_shared<DedupCursor>(cursors_initing[i], blocks[i], *has_collation, tracer++);
         else
+        {
+            TRACER("R Read Null #" << i);
             output[i] = std::make_shared<DedupCursor>(tracer++);
+            output_blocks[i]->push(blocks[i]);
+            finished_streams += 1;
+        }
     }
 }
 
@@ -238,23 +240,26 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
 
     CursorQueue queue;
     DedupCursor max;
-    size_t finisheds = 0;
 
     while (!bounds.empty() || max)
     {
         if (bounds.empty())
         {
-            TRACER("Q SecondWind Start " << max << " Bounds " << bounds.str(TRACE_ID));
+            TRACER("Q SecondWind Check " << max << " Bounds " << bounds.str(TRACE_ID));
             if (!max)
                 throw Exception("Deduping: if bounds are empty and loops are going on, max must be assigned.");
             if (max.isLast())
             {
                 bool finished = outputAndUpdateCursor(cursors, bounds, max);
-                finisheds += finished ? 1 : 0;
+                finished_streams += finished ? 1 : 0;
+                max = DedupCursor();
                 if (!finished)
                     TRACER("Q SecondWind " << bounds.str(TRACE_ID));
                 else
+                {
+                    TRACER("Q No SecondWind " << bounds.str(TRACE_ID));
                     break;
+                }
             }
             else
                 throw Exception("Deduping: max must be the last row of the block here.");
@@ -276,7 +281,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
                 dedupCursor(max, cursor);
                 TRACER("Q Skiping DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
                 if (max.isLast())
-                    finisheds += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
+                    finished_streams += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
             }
 
             if (!bound.is_bottom)
@@ -312,7 +317,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
                 auto deleted = dedupCursor(max, cursor);
                 TRACER("Q DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID) << " Deleted " << deleted);
                 if (max.isLast())
-                    finisheds += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
+                    finished_streams += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
             }
 
             max = cursor;
@@ -335,9 +340,9 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
 
     TRACER("P All Done. Bounds " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID));
 
-    if (finisheds != cursors.size())
+    if (finished_streams != cursors.size())
     {
-        TRACER("P Streams not finished " << finisheds << "/" << cursors.size());
+        TRACER("P Streams not finished " << finished_streams << "/" << cursors.size());
         //throw Exception("Streams not finished in deduplicating.");
     }
 }

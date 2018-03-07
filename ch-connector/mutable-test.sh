@@ -23,7 +23,7 @@ function run_dir()
 	local continue_on_error="$3"
 	local fuzz="$4"
 
-	find "$path" -name "*.visual" -depth 1 -type f | sort -V | while read file; do
+	find "$path" -maxdepth 1 -name "*.visual" -type f | sort -V | while read file; do
 		if [ -f "$file" ]; then
 			python gen-test-from-visual.py "$file"
 		fi
@@ -38,7 +38,7 @@ function run_dir()
 		exit 1
 	fi
 
-	find "$path" -name "*.test" -depth 1 -type f | sort -V | while read file; do
+	find "$path" -maxdepth 1 -name "*.test" -type f | sort -V | while read file; do
 		if [ -f "$file" ]; then
 			run_file "$dbc" "$file" "$continue_on_error" "$fuzz"
 		fi
@@ -48,8 +48,8 @@ function run_dir()
 		exit 1
 	fi
 
-	find "$path" -depth 1 -type d | sort -Vr | while read dir; do
-		if [ -d "$dir" ]; then
+	find "$path" -maxdepth 1 -type d | sort -Vr | while read dir; do
+		if [ -d "$dir" ] && [ "$dir" != "$path" ]; then
 			run_dir "$dbc" "$dir" "$continue_on_error" "$fuzz"
 		fi
 	done
