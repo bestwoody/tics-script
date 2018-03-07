@@ -1107,6 +1107,7 @@ private:
 
     ThreadPool readers;
 
+    size_t finished_streams = 0;
     size_t total_compared = 0;
     std::mutex mutex;
 };
