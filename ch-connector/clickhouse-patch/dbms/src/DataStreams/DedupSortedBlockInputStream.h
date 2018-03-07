@@ -311,7 +311,8 @@ private:
             : block(rhs.block), cursor(rhs.cursor), has_collation(rhs.has_collation), tracer(rhs.tracer)
         {
             std::lock_guard<std::mutex> lock(mutex);
-            cursor.order = block->versions()[cursor.pos];
+            if (block)
+                cursor.order = block->versions()[cursor.pos];
         }
 
         DedupCursor & operator = (const DedupCursor & rhs)
@@ -319,7 +320,8 @@ private:
             std::lock_guard<std::mutex> lock(mutex);
             block = rhs.block;
             cursor = rhs.cursor;
-            cursor.order = block->versions()[cursor.pos];
+            if (block)
+                cursor.order = block->versions()[cursor.pos];
             has_collation = rhs.has_collation;
             tracer = rhs.tracer;
             return *this;
