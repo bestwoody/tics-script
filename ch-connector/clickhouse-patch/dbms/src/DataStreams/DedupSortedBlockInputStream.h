@@ -86,11 +86,9 @@ public:
 
 
 public:
-    static BlockInputStreams createStreams(BlockInputStreams & inputs, const SortDescription & description,
-        bool parallel, bool hash_dedup);
+    static BlockInputStreams createStreams(BlockInputStreams & inputs, const SortDescription & description);
 
-    DedupSortedBlockInputStream(BlockInputStreams & inputs, const SortDescription & description,
-        bool parallel, bool hash_dedup);
+    DedupSortedBlockInputStream(BlockInputStreams & inputs, const SortDescription & description);
 
     ~DedupSortedBlockInputStream();
 
@@ -1065,27 +1063,12 @@ private:
 
 
 private:
-    // Single thread, use hash-table, range by range deduping, ranges are splited by bottom bound of blocks.
-    void asynDedupByTable();
-    size_t dedupRange(DedupCursors & cursors, DedupBound & bound, DedupTable & table);
-
-    // Like asynDedupByTable, use priority-queue
     void asynDedupByQueue();
+    void asynRead(size_t pisition);
+
     DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
-    size_t dedupEdgeByTable(BoundQueue & bounds, DedupBound & bound);
-
-    // Parrallel range deduping, use hash-table.
-    void asynDedupParallel();
-    void asynDedupRange(DedupJobsFifoPtr & input, size_t position);
-    void dedupRow(DedupCursor & cursor, DedupTable & table);
-
-    // Tools use by all kind of deduping.
-    size_t dedupStream(DedupCursor & cursor, DedupBound & bound, DedupTable & table);
-
     template <typename Queue>
     void pushBlockBounds(const BlockInfoPtr & block, Queue & queue, bool skip_one_row_top = true);
-
-    void asynRead(size_t pisition);
     void readFromSource(DedupCursors & output, BoundQueue & bounds, bool * collation = 0, bool skip_one_row_top = true);
     bool outputAndUpdateCursor(DedupCursors & cursors, BoundQueue & bounds, DedupCursor & cursor);
 

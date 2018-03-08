@@ -79,12 +79,8 @@ BlockInputStreams mergeMutableBlockInputStreams(BlockInputStreams inputs, const 
 
     switch (calculater)
     {
-        case DedupCalculatorAsynTable:
-            return DedupSortedBlockInputStream::createStreams(inputs, description, false, true);
         case DedupCalculatorAsynQueue:
-            return DedupSortedBlockInputStream::createStreams(inputs, description, false, false);
-        case DedupCalculatorAsynParallel:
-            return DedupSortedBlockInputStream::createStreams(inputs, description, true, true);
+            return DedupSortedBlockInputStream::createStreams(inputs, description);
         default:
             return mergeMutableBlockInputStreams(inputs, description, version_column, max_block_size);
     }
