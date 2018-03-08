@@ -165,13 +165,14 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
         DedupCursor & cursor = *(cursors[position]);
         TRACER("P Pop " << bound.str(TRACE_ID) << " + " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID));
 
+        // TODO: if !MutableSupport::in_block_deduped_before_decup_calculator, wrap it, make sure skipping can work.
         if (MutableSupport::in_block_deduped_before_decup_calculator && queue.size() == 1)
         {
             if (max)
             {
-                TRACER("Q Skiping DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+                TRACER("Q Skipping DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
                 dedupCursor(max, cursor);
-                TRACER("Q Skiping DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+                TRACER("Q Skipping DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
                 if (max.isLast())
                     finished_streams += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
             }
