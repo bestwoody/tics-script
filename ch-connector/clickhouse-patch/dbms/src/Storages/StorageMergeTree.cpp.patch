@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..2f9e742 100644
+index 7e0c703..1b61c7d 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
 @@ -15,6 +15,15 @@
@@ -33,7 +33,7 @@ index 7e0c703..2f9e742 100644
 +        {
 +            LOG_DEBUG(log, "Mutable table dedup read.");
 +            res = mergeMutableBlockInputStreams(res, data.getSortDescription(),
-+                MutableSupport::version_column_name, max_block_size, MutableSupport::pipeline_dedup_calculator);
++                MutableSupport::version_column_name, max_block_size);
 +
 +            Names filtered_names;
 +            filtered_names.push_back(MutableSupport::version_column_name);

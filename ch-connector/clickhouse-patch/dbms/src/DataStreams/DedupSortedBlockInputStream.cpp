@@ -22,10 +22,9 @@ namespace DB
 {
 
 // TODO: Use 'children'
-BlockInputStreams DedupSortedBlockInputStream::createStreams(
-    BlockInputStreams & inputs, const SortDescription & description, bool parallel, bool hash_dedup)
+BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & inputs, const SortDescription & description)
 {
-    auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description, parallel, hash_dedup);
+    auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
     BlockInputStreams res;
     for (size_t i = 0; i < inputs.size(); ++i)
@@ -35,8 +34,7 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(
 }
 
 
-DedupSortedBlockInputStream::DedupSortedBlockInputStream(
-    BlockInputStreams & inputs_, const SortDescription & description_, bool parallel, bool hash_dedup)
+DedupSortedBlockInputStream::DedupSortedBlockInputStream(BlockInputStreams & inputs_, const SortDescription & description_)
     : description(description_), queue_max(3), has_collation(false), order(1),
         source_blocks(inputs_.size(), queue_max), output_blocks(inputs_.size(), queue_max), readers(inputs_.size())
 {
@@ -47,31 +45,8 @@ DedupSortedBlockInputStream::DedupSortedBlockInputStream(
     for (size_t i = 0; i < inputs_.size(); ++i)
         readers.schedule(std::bind(&DedupSortedBlockInputStream::asynRead, this, i));
 
-    if (parallel)
-    {
-        if (hash_dedup)
-        {
-            LOG_DEBUG(log, "Start deduping in parallel.");
-            dedup_thread = std::make_unique<std::thread>([this] { asynDedupParallel(); });
-        }
-        else
-        {
-            throw("Parallel deduping (use priority queue) no impl.");
-        }
-    }
-    else
-    {
-        if (hash_dedup)
-        {
-            LOG_DEBUG(log, "Start deduping in single thread, using hash-table.");
-            dedup_thread = std::make_unique<std::thread>([this, hash_dedup] { asynDedupByTable(); });
-        }
-        else
-        {
-            LOG_DEBUG(log, "Start deduping in single thread, using priority-queue");
-            dedup_thread = std::make_unique<std::thread>([this, hash_dedup] { asynDedupByQueue(); });
-        }
-    }
+    LOG_DEBUG(log, "Start deduping in single thread, using priority-queue");
+    dedup_thread = std::make_unique<std::thread>([this] { asynDedupByQueue(); });
 }
 
 
@@ -143,87 +118,6 @@ void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQue
 }
 
 
-// Single thread dedup process, fast in in well-order data (speed up by skipping).
-// Slow down when data is heavily overlap.
-
-void DedupSortedBlockInputStream::asynDedupByTable()
-{
-    BoundQueue bounds;
-    DedupCursors cursors(source_blocks.size());
-
-    readFromSource(cursors, bounds, &has_collation);
-
-    while (!bounds.empty())
-    {
-        DedupBound bound;
-        do
-        {
-            TRACER("P Queue " << bounds.str(true));
-
-            bound = bounds.top();
-            bounds.pop();
-
-            TRACER("P Pop " << bound);
-
-            // For equal row comparing
-            bound.setMaxOrder();
-
-            DedupTable table;
-            total_compared += dedupRange(cursors, bound, table);
-
-            TRACER("P Compared " << total_compared);
-        }
-        while (!bound.is_bottom);
-
-        TRACER("P Output " << bound);
-
-        size_t position = bound.position();
-        output_blocks[position]->push(cursors[position]->block);
-
-        BlockInfoPtr block = source_blocks[position]->pop();
-
-        if (!*block)
-        {
-            TRACER("P Finish #" << position);
-            cursors[position] = std::make_shared<DedupCursor>(tracer++);
-            output_blocks[position]->push(block);
-            continue;
-        }
-
-        pushBlockBounds(block, bounds);
-
-        cursors[position] = std::make_shared<DedupCursor>(
-            SortCursorImpl(*block, description, order++), block, has_collation, tracer++);
-
-        TRACER("P Cursor " << *(cursors[position]));
-    }
-}
-
-bool DedupSortedBlockInputStream::outputAndUpdateCursor(DedupCursors & cursors, BoundQueue & bounds, DedupCursor & cursor)
-{
-    TRACER("Q Output " << cursor);
-    size_t position = cursor.position();
-    output_blocks[position]->push(cursor.block);
-
-    BlockInfoPtr block = source_blocks[position]->pop();
-    if (!*block)
-    {
-        TRACER("Q Finish #" << position << " Bounds " << bounds.str(TRACE_ID) << " Cursors " << cursors.size());
-        cursors[position] = std::make_shared<DedupCursor>(tracer++);
-        output_blocks[position]->push(block);
-        return true;
-    }
-    else
-    {
-        TRACER("Q New Block " << block->str(TRACE_ID) << " #" << position);
-        pushBlockBounds(block, bounds, true);
-        cursors[position] = std::make_shared<DedupCursor>(
-            SortCursorImpl(*block, description, order++), block, has_collation, tracer++);
-        return false;
-    }
-}
-
-
 void DedupSortedBlockInputStream::asynDedupByQueue()
 {
     // TRACER("D SortingDesc " << description.size());
@@ -271,9 +165,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
         DedupCursor & cursor = *(cursors[position]);
         TRACER("P Pop " << bound.str(TRACE_ID) << " + " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID));
 
-        /*
-        // TODO: Skipping will be much faster, requred in-block-dedup first.
-        if (queue.size() == 1)
+        if (MutableSupport::in_block_deduped_before_decup_calculator && queue.size() == 1)
         {
             if (max)
             {
@@ -297,7 +189,6 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
                 TRACER("Q ToBottomE " << cursor.str(TRACE_ID));
             }
         }
-        */
 
         if (!bound.is_bottom || bound.block->rows() == 1)
         {
@@ -348,6 +239,31 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
 }
 
 
+bool DedupSortedBlockInputStream::outputAndUpdateCursor(DedupCursors & cursors, BoundQueue & bounds, DedupCursor & cursor)
+{
+    TRACER("Q Output " << cursor);
+    size_t position = cursor.position();
+    output_blocks[position]->push(cursor.block);
+
+    BlockInfoPtr block = source_blocks[position]->pop();
+    if (!*block)
+    {
+        TRACER("Q Finish #" << position << " Bounds " << bounds.str(TRACE_ID) << " Cursors " << cursors.size());
+        cursors[position] = std::make_shared<DedupCursor>(tracer++);
+        output_blocks[position]->push(block);
+        return true;
+    }
+    else
+    {
+        TRACER("Q New Block " << block->str(TRACE_ID) << " #" << position);
+        pushBlockBounds(block, bounds, true);
+        cursors[position] = std::make_shared<DedupCursor>(
+            SortCursorImpl(*block, description, order++), block, has_collation, tracer++);
+        return false;
+    }
+}
+
+
 DedupSortedBlockInputStream::DedupCursor * DedupSortedBlockInputStream::dedupCursor(DedupCursor & lhs, DedupCursor & rhs)
 {
     if (!lhs.equal(rhs))
@@ -371,221 +287,6 @@ DedupSortedBlockInputStream::DedupCursor * DedupSortedBlockInputStream::dedupCur
 }
 
 
-size_t DedupSortedBlockInputStream::dedupRange(DedupCursors & cursors, DedupBound & bound, DedupTable & table)
-{
-    size_t overlaped = 1;
-    size_t compared = 0;
-
-    for (size_t i = 0; i < cursors.size(); i++)
-    {
-        DedupCursor & cursor = *(cursors[i]);
-        if (!cursor)
-            continue;
-
-        // If bound is a leading bound, skip calculating hash. A lot faster if data is well-ordered.
-        if (i != bound.position())
-        {
-            size_t column_compared_rows = dedupStream(cursor, bound, table);
-            overlaped += (column_compared_rows  > 0) ? 1 : 0;
-            compared += column_compared_rows;
-        }
-
-        // For: if next bound is equal to this one
-        cursor.backward();
-    }
-
-    DedupCursor & cursor = *(cursors[bound.position()]);
-    if (overlaped > 1 && cursor)
-    {
-        compared += dedupStream(cursor, bound, table);
-        cursor.backward();
-    }
-
-    return compared;
-}
-
-
-void DedupSortedBlockInputStream::asynDedupParallel()
-{
-    DedupCursors cursors(source_blocks.size());
-
-    BoundQueue queue;
-    readFromSource(cursors, queue, &has_collation);
-
-    BoundCalculater bounds(queue, cursors.size(), this);
-
-    const size_t job_queue_max = queue_max * 2;
-    DedupJobs jobs(cursors.size(), job_queue_max);
-
-    ThreadPool workers(cursors.size());
-
-    for (size_t i = 0; i < cursors.size(); ++i)
-        workers.schedule(std::bind(&DedupSortedBlockInputStream::asynDedupRange, this, jobs[i], i));
-
-    StreamMasks finisheds(cursors.size());
-
-    TRACER("P Jobs " << jobs);
-
-    while (!bounds.empty())
-    {
-        TRACER("P Queue " << bounds.str(true));
-
-        BoundCalculater::Task task = bounds.pop(tracer++);
-        size_t position = task.position();
-
-        dedupEdgeByTable(bounds, task.bound);
-
-        TRACER("P Task " << task << " #" << position << "EL " << jobs << " " << bounds);
-
-        DedupTablePtr table = std::make_shared<DedupTable>();
-
-        if (task.overlapeds <= 1)
-        {
-            DedupJobPtr job = std::make_shared<DedupJob>(task.bound.block, tracer++);
-            jobs[position]->push(job);
-            TRACER("P Q=>#" << position << " " << job->str(position) << " " << jobs);
-        }
-        else
-        {
-            DedupCounterPtr counter = std::make_shared<DedupCounter>(task.masks.flags());
-
-            for (size_t i = 0; i < cursors.size(); ++i)
-            {
-                if (!task.masks.flaged(i))
-                {
-                    TRACER("P #" << i << task << " Filter M");
-                    continue;
-                }
-
-                if (!*cursors[position])
-                {
-                    TRACER("P #" << i << *(cursors[position]) << " " << jobs << " Filter C");
-                    continue;
-                }
-
-                DedupJobPtr job = std::make_shared<DedupJob>(cursors, task.bound, table, counter, tracer++);
-
-                jobs[i]->push(job);
-                TRACER("P J=>#" << i << " " << job->str(i) << " " << jobs);
-            }
-        }
-
-        BlockInfoPtr block = source_blocks[position]->pop();
-        TRACER("P Fetch " << *block);
-
-        if (!*block)
-        {
-            DedupJobPtr job = std::make_shared<DedupJob>(block, tracer++);
-            jobs[position]->push(job);
-            TRACER("P N=>#" << position << " " << job->str(position));
-            cursors[position] = std::make_shared<DedupCursor>(tracer++);
-        }
-        else
-        {
-            pushBlockBounds(block, bounds);
-            cursors[position] = std::make_shared<DedupCursor>(SortCursorImpl(*block, description, order++),
-                block, has_collation, tracer++);
-        }
-
-        TRACER("P #" << position << " " << *(cursors[position]) << " " << jobs << " Cursor");
-    }
-
-    workers.wait();
-}
-
-
-void DedupSortedBlockInputStream::asynDedupRange(DedupJobsFifoPtr & input, size_t position)
-{
-    while (true)
-    {
-        DedupJobPtr job = input->pop();
-        TRACER("R #" << position << " " << job->str(position) << " Job");
-
-        if (job->directOutput())
-        {
-            output_blocks[position]->push(job->direct);
-            TRACER("R #" << position << " " << job->str(position) << " Direct");
-
-            if (job->directEmpty())
-            {
-                TRACER("R #" << position << " " << job->str(position) << " Break");
-                break;
-            }
-            continue;
-        }
-
-        size_t compared = dedupStream(*(job->cursors[position]), job->bound, *(job->table));
-        TRACER("R #" << position << " " << job->str(position) << " Dedup " << compared);
-
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            total_compared += compared;
-        }
-
-        {
-            std::lock_guard<std::mutex> lock(job->counter->locker());
-
-            job->counter->increase();
-
-            if (job->counter->deduped())
-            {
-                job->table->clear();
-                output_blocks[position]->push(job->block());
-                TRACER("R #" << position << " " << job->str(position) << " Output");
-            }
-        }
-    }
-}
-
-
-size_t DedupSortedBlockInputStream::dedupStream(DedupCursor & cursor, DedupBound & bound, DedupTable & table)
-{
-    size_t compared = 0;
-
-    while (bound.greater(cursor))
-    {
-        dedupRow(cursor, table);
-        compared += 1;
-
-        if (cursor.isLast())
-        {
-            break;
-        }
-        cursor.next();
-    }
-
-    return compared;
-}
-
-
-void DedupSortedBlockInputStream::dedupRow(DedupCursor & cursor, DedupTable & table)
-{
-    UInt64 digest = cursor.hash();
-    UInt64 version = cursor.version();
-
-    RowRef matched = table.find(digest);
-    if (matched.empty())
-    {
-        table.insert(digest, RowRef {version, cursor.block, cursor.row()});
-        return;
-    }
-
-    if (matched.isTheSame(cursor.position(), cursor.row()))
-    {
-        // Meet self, do nothing
-    }
-    else if (matched.version < version)
-    {
-        matched.block->setDeleted(matched.row);
-        table.insert(digest, RowRef {version, cursor.block, cursor.row()});
-    }
-    else
-    {
-        cursor.setDeleted(cursor.row());
-    }
-}
-
-
 template <typename Queue>
 void DedupSortedBlockInputStream::pushBlockBounds(const BlockInfoPtr & block, Queue & bounds, bool skip_one_row_top)
 {
@@ -605,30 +306,6 @@ void DedupSortedBlockInputStream::pushBlockBounds(const BlockInfoPtr & block, Qu
     TRACER("B Push Bottom To " << bounds.str(TRACE_ID));
 }
 
-
-size_t DedupSortedBlockInputStream::dedupEdgeByTable(BoundQueue & bounds, DedupBound & bound)
-{
-    size_t overlapeds = 1;
-
-    DedupTable table;
-
-    dedupRow(bound, table);
-
-    BoundQueue copy = bounds;
-    while (!copy.empty())
-    {
-        DedupBound it = copy.top();
-        copy.pop();
-
-        if (bound.greater(it))
-        {
-            overlapeds += 1;
-            dedupRow(it, table);
-        }
-    }
-
-    return overlapeds;
-}
 
 void deleteRows(Block & block, const IColumn::Filter & filter)
 {
