@@ -70,7 +70,7 @@ BlockInputStreams mergeMutableBlockInputStreams(BlockInputStreams inputs, const 
         BlockInputStreamPtr wrapped;
         if (MutableSupport::in_block_deduped_before_decup_calculator)
         {
-            BlockInputStreamPtr wrapped = std::make_shared<FilterDeletedOnePartBlockInputStream>(inputs[0]);
+            wrapped = std::make_shared<FilterDeletedOnePartBlockInputStream>(inputs[0]);
         }
         else
         {
