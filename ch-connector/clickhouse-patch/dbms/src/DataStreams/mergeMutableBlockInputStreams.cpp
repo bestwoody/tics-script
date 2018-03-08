@@ -60,30 +60,29 @@ private:
     BlockInputStreamPtr input;
 };
 
+
 BlockInputStreams mergeMutableBlockInputStreams(BlockInputStreams inputs, const SortDescription & description,
     const String & version_column, size_t max_block_size)
 {
-    BlockInputStreams res;
-    BlockInputStreamPtr wrapped = std::make_shared<ReplacingSortedBlockInputStream>(
-        inputs, description, version_column, max_block_size, nullptr, true);
-    wrapped = std::make_shared<FilterDeletedOnePartBlockInputStream>(wrapped);
-    res.emplace_back(wrapped);
-    return res;
-}
-
-BlockInputStreams mergeMutableBlockInputStreams(BlockInputStreams inputs, const SortDescription & description,
-    const String & version_column, size_t max_block_size, DedupCalculator calculater)
-{
     if (inputs.size() == 1)
-        return mergeMutableBlockInputStreams(inputs, description, version_column, max_block_size);
-
-    switch (calculater)
     {
-        case DedupCalculatorAsynQueue:
-            return DedupSortedBlockInputStream::createStreams(inputs, description);
-        default:
-            return mergeMutableBlockInputStreams(inputs, description, version_column, max_block_size);
+        BlockInputStreams res;
+        BlockInputStreamPtr wrapped;
+        if (MutableSupport::in_block_deduped_before_decup_calculator)
+        {
+            BlockInputStreamPtr wrapped = std::make_shared<FilterDeletedOnePartBlockInputStream>(inputs[0]);
+        }
+        else
+        {
+            wrapped = std::make_shared<ReplacingSortedBlockInputStream>(
+                inputs, description, version_column, max_block_size, nullptr, true);
+            wrapped = std::make_shared<FilterDeletedOnePartBlockInputStream>(wrapped);
+        }
+        res.emplace_back(wrapped);
+        return res;
     }
+
+    return DedupSortedBlockInputStream::createStreams(inputs, description);
 }
 
 }

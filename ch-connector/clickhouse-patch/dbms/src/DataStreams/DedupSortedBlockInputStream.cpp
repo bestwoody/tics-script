@@ -165,9 +165,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
         DedupCursor & cursor = *(cursors[position]);
         TRACER("P Pop " << bound.str(TRACE_ID) << " + " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID));
 
-        /*
-        // TODO: Skipping will be much faster, requred in-block-dedup first.
-        if (queue.size() == 1)
+        if (MutableSupport::in_block_deduped_before_decup_calculator && queue.size() == 1)
         {
             if (max)
             {
@@ -191,7 +189,6 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
                 TRACER("Q ToBottomE " << cursor.str(TRACE_ID));
             }
         }
-        */
 
         if (!bound.is_bottom || bound.block->rows() == 1)
         {

@@ -39,10 +39,7 @@ public:
     static const std::string version_column_name;
     static const std::string delmark_column_name;
 
-    static const DedupCalculator pipeline_dedup_calculator;
-    static const bool in_block_dedup_on_write;
-    static const bool in_block_dedup_on_read;
-    static const bool in_block_dedup_on_dedup_calculator;
+    static const bool in_block_deduped_before_decup_calculator;
 
 private:
     OrderedNameSet empty;

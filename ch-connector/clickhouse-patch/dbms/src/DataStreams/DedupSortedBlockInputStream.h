@@ -465,8 +465,8 @@ private:
         {
             std::lock_guard<std::mutex> lock(mutex);
 
-            if (!MutableSupport::in_block_dedup_on_dedup_calculator && block->stream_position == rhs.block->stream_position)
-                return cursor.pos == rhs.cursor.pos;
+            if (MutableSupport::in_block_deduped_before_decup_calculator)
+                return block->stream_position == rhs.block->stream_position && cursor.pos == rhs.cursor.pos;
 
             SortCursorImpl * lc = const_cast<SortCursorImpl *>(&cursor);
             SortCursorImpl * rc = const_cast<SortCursorImpl *>(&rhs.cursor);
