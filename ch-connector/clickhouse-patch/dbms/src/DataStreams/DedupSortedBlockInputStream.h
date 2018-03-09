@@ -171,12 +171,12 @@ private:
         BlockInfo & operator = (const BlockInfo &);
 
     public:
-        BlockInfo(const Block & block_, const size_t stream_position_, size_t tracer_ = 0)
-            : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows()), deleted_rows(0)
+        BlockInfo(const Block & block_, const size_t stream_position_, bool set_deleted_rows, size_t tracer_ = 0)
+            : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows(), 1), deleted_rows(0)
         {
             std::lock_guard<std::mutex> lock(mutex);
-            // TODO: unnecessary deleting, if there is InBlockDedupBlockInputStream in the pipeline.
-            deleted_rows = setFilterByDeleteMarkColumn(block, filter, true);
+            if (set_deleted_rows)
+                deleted_rows = setFilterByDeleteMarkColumn(block, filter, true);
         }
 
         operator bool ()
@@ -505,10 +505,6 @@ private:
         bool equal(const DedupCursor & rhs)
         {
             std::lock_guard<std::mutex> lock(mutex);
-
-            if (MutableSupport::in_block_deduped_before_decup_calculator)
-                return block->stream_position == rhs.block->stream_position && cursor.pos == rhs.cursor.pos;
-
             SortCursorImpl * lc = const_cast<SortCursorImpl *>(&cursor);
             SortCursorImpl * rc = const_cast<SortCursorImpl *>(&rhs.cursor);
             if (!lc || !rc)

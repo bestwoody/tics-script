@@ -32,7 +32,7 @@ Block DedupSortedBlockInputStream::InBlockDedupBlockInputStream::readImpl()
     if (!block)
         return block;
 
-    BlockInfoPtr block_info = std::make_shared<BlockInfo>(block, position);
+    BlockInfoPtr block_info = std::make_shared<BlockInfo>(block, position, false);
     SortCursorImpl cursor_impl(*block_info, description);
     DedupCursor cursor(cursor_impl, block_info);
 
@@ -41,9 +41,9 @@ Block DedupSortedBlockInputStream::InBlockDedupBlockInputStream::readImpl()
     {
         if (max)
         {
-            TRACER("B InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+            TRACER("D InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
             dedupCursor(max, cursor);
-            TRACER("B InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+            TRACER("D InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
         }
 
         max = cursor;
@@ -57,17 +57,18 @@ Block DedupSortedBlockInputStream::InBlockDedupBlockInputStream::readImpl()
 }
 
 
-BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & inputs, const SortDescription & description)
+BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & origin, const SortDescription & description)
 {
+    BlockInputStreams inputs;
+    if (!MutableSupport::in_block_deduped_before_decup_calculator)
+        for (size_t i = 0; i < origin.size(); ++i)
+            inputs.emplace_back(std::make_shared<InBlockDedupBlockInputStream>(origin[i], description, i));
+
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
     BlockInputStreams res;
     for (size_t i = 0; i < inputs.size(); ++i)
-    {
-        BlockInputStreamPtr wrapped = std::make_shared<InBlockDedupBlockInputStream>(inputs[i], description, i);
-        wrapped = std::make_shared<BlockInputStream>(inputs[i], description, parent, i);
-        res.emplace_back(wrapped);
-    }
+        res.emplace_back(std::make_shared<BlockInputStream>(inputs[i], description, parent, i));
 
     return res;
 }
@@ -115,7 +116,7 @@ void DedupSortedBlockInputStream::asynRead(size_t position)
     {
         Block block = children[position]->read();
         TRACER("A Origin read, #" << position << ", rows:" << block.rows());
-        source_blocks[position]->push(std::make_shared<BlockInfo>(block, position, tracer++));
+        source_blocks[position]->push(std::make_shared<BlockInfo>(block, position, true, tracer++));
         if (!block)
             break;
     }
@@ -180,7 +181,9 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
                 finished_streams += finished ? 1 : 0;
                 max = DedupCursor();
                 if (!finished)
+                {
                     TRACER("Q SecondWind " << bounds.str(TRACE_ID));
+                }
                 else
                 {
                     TRACER("Q No SecondWind " << bounds.str(TRACE_ID));
@@ -197,8 +200,8 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
         DedupCursor & cursor = *(cursors[position]);
         TRACER("P Pop " << bound.str(TRACE_ID) << " + " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID));
 
-        // TODO: if !MutableSupport::in_block_deduped_before_decup_calculator, wrap it, make sure skipping can work.
-        if (MutableSupport::in_block_deduped_before_decup_calculator && queue.size() == 1)
+        /*
+        if (queue.size() == 1)
         {
             if (max)
             {
@@ -221,7 +224,11 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
                 cursor.assignCursorPos(bound);
                 TRACER("Q ToBottomE " << cursor.str(TRACE_ID));
             }
+
+            max = bound;
+            TRACER("Q Skipping Max Update " << max.str(TRACE_ID));
         }
+        */
 
         if (!bound.is_bottom || bound.block->rows() == 1)
         {
@@ -238,8 +245,8 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
             if (max)
             {
                 TRACER("Q DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
-                auto deleted = dedupCursor(max, cursor);
-                TRACER("Q DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID) << " Deleted " << deleted);
+                dedupCursor(max, cursor);
+                TRACER("Q DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
                 if (max.isLast())
                     finished_streams += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
             }
@@ -262,13 +269,8 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
         }
     }
 
-    TRACER("P All Done. Bounds " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID));
-
-    if (finished_streams != cursors.size())
-    {
-        TRACER("P Streams not finished " << finished_streams << "/" << cursors.size());
-        //throw Exception("Streams not finished in deduplicating.");
-    }
+    TRACER("P All Done. Bounds " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID) <<
+        "Streams finished " << finished_streams << "/" << cursors.size());
 }
 
 
