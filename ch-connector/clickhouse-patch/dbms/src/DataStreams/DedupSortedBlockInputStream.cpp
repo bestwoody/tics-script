@@ -231,9 +231,14 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
                     finished_streams += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
 
                 if (skipping.position() == position)
+                {
                     max = DedupCursor();
+                }
                 else
-                    max = bound;
+                {
+                    max = skipping;
+                    max.backward();
+                }
                 TRACER("Q Skipping Max Update " << max.str(TRACE_ID));
             }
 
