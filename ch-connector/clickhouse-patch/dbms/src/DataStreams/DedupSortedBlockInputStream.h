@@ -305,8 +305,7 @@ private:
     public:
         DedupCursor(size_t tracer_ = 0) : tracer(tracer_) {}
 
-        DedupCursor(const DedupCursor & rhs)
-            : block(rhs.block), cursor(rhs.cursor), has_collation(rhs.has_collation), tracer(rhs.tracer)
+        DedupCursor(const DedupCursor & rhs) : block(rhs.block), cursor(rhs.cursor), tracer(rhs.tracer)
         {
             std::lock_guard<std::mutex> lock(mutex);
             if (block)
@@ -320,13 +319,12 @@ private:
             cursor = rhs.cursor;
             if (block)
                 cursor.order = block->versions()[cursor.pos];
-            has_collation = rhs.has_collation;
             tracer = rhs.tracer;
             return *this;
         }
 
-        DedupCursor(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, bool has_collation_, size_t tracer_)
-            : block(block_), cursor(cursor_), has_collation(has_collation_), tracer(tracer_)
+        DedupCursor(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, size_t tracer_)
+            : block(block_), cursor(cursor_), tracer(tracer_)
         {
             std::lock_guard<std::mutex> lock(mutex);
             cursor.order = block->versions()[cursor.pos];
@@ -454,11 +452,7 @@ private:
             SortCursorImpl * rc = const_cast<SortCursorImpl *>(&rhs.cursor);
             if (!lc || !rc)
                 throw("SortCursorImpl const_cast Failed!");
-
-            if (has_collation)
-                return SortCursorWithCollation(lc).greater(SortCursorWithCollation(rc));
-            else
-                return SortCursor(lc).greater(SortCursor(rc));
+            return SortCursor(lc).greater(SortCursor(rc));
         }
 
         bool equal(const DedupCursor & rhs)
@@ -472,11 +466,7 @@ private:
             SortCursorImpl * rc = const_cast<SortCursorImpl *>(&rhs.cursor);
             if (!lc || !rc)
                 throw("SortCursorImpl const_cast Failed!");
-
-            if (has_collation)
-                return SortCursorWithCollation(lc).equalIgnOrder(SortCursorWithCollation(rc));
-            else
-                return SortCursor(lc).equalIgnOrder(SortCursor(rc));
+             return SortCursor(lc).equalIgnOrder(SortCursor(rc));
         }
 
         // Inverst for pririoty queue
@@ -513,7 +503,6 @@ private:
 
     protected:
         SortCursorImpl cursor;
-        bool has_collation;
         std::mutex mutex;
 
     public:
@@ -588,8 +577,8 @@ private:
 
         DedupBound(const DedupCursor & rhs) : DedupCursor(rhs), is_bottom(false) {}
 
-        DedupBound(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, bool has_collation_, size_t tracer_)
-            : DedupCursor(cursor_, block_, has_collation_, tracer_), is_bottom(false) {}
+        DedupBound(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, size_t tracer_)
+            : DedupCursor(cursor_, block_, tracer_), is_bottom(false) {}
 
         void setToBottom()
         {
@@ -737,7 +726,7 @@ private:
     DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
     template <typename Queue>
     void pushBlockBounds(const BlockInfoPtr & block, Queue & queue, bool skip_one_row_top = true);
-    void readFromSource(DedupCursors & output, BoundQueue & bounds, bool * collation = 0, bool skip_one_row_top = true);
+    void readFromSource(DedupCursors & output, BoundQueue & bounds, bool skip_one_row_top = true);
     bool outputAndUpdateCursor(DedupCursors & cursors, BoundQueue & bounds, DedupCursor & cursor);
 
 private:
@@ -746,7 +735,6 @@ private:
     const SortDescription description;
 
     const size_t queue_max;
-    bool has_collation = false;
 
     IdGen order;
     IdGen tracer;

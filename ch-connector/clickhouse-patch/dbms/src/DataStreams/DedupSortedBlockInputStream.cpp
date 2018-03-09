@@ -18,6 +18,11 @@ namespace CurrentMetrics
     extern const Metric QueryThread;
 }
 
+namespace ErrorCodes
+{
+    extern const int LOGICAL_ERROR;
+}
+
 namespace DB
 {
 
@@ -35,7 +40,7 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams &
 
 
 DedupSortedBlockInputStream::DedupSortedBlockInputStream(BlockInputStreams & inputs_, const SortDescription & description_)
-    : description(description_), queue_max(3), has_collation(false), order(1),
+    : description(description_), queue_max(3), order(1),
         source_blocks(inputs_.size(), queue_max), output_blocks(inputs_.size(), queue_max), readers(inputs_.size())
 {
     log = &Logger::get("DedupSorted");
@@ -83,7 +88,7 @@ void DedupSortedBlockInputStream::asynRead(size_t position)
 }
 
 
-void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQueue & bounds, bool * has_collation, bool skip_one_row_top)
+void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQueue & bounds, bool skip_one_row_top)
 {
     std::vector<BlockInfoPtr> blocks(source_blocks.size());
     std::vector<SortCursorImpl> cursors_initing(source_blocks.size());
@@ -99,14 +104,14 @@ void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQue
         pushBlockBounds(block, bounds, skip_one_row_top);
 
         cursors_initing[i] = SortCursorImpl(*block, description, order++);
-        if (has_collation)
-            *has_collation |= cursors_initing[i].has_collation;
+        if (cursors_initing[i].has_collation)
+            throw Exception("Logical error: DedupSortedBlockInputStream does not support collations", ErrorCodes::LOGICAL_ERROR);
     }
 
     for (size_t i = 0; i < blocks.size(); i++)
     {
         if (blocks[i])
-            output[i] = std::make_shared<DedupCursor>(cursors_initing[i], blocks[i], *has_collation, tracer++);
+            output[i] = std::make_shared<DedupCursor>(cursors_initing[i], blocks[i], tracer++);
         else
         {
             TRACER("R Read Null #" << i);
@@ -129,7 +134,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
 
     BoundQueue bounds;
     DedupCursors cursors(source_blocks.size());
-    readFromSource(cursors, bounds, &has_collation, true);
+    readFromSource(cursors, bounds, true);
     TRACER("P Init Bounds " << bounds.str(TRACE_ID) << " Cursors " << cursors.size());
 
     CursorQueue queue;
@@ -258,8 +263,7 @@ bool DedupSortedBlockInputStream::outputAndUpdateCursor(DedupCursors & cursors, 
     {
         TRACER("Q New Block " << block->str(TRACE_ID) << " #" << position);
         pushBlockBounds(block, bounds, true);
-        cursors[position] = std::make_shared<DedupCursor>(
-            SortCursorImpl(*block, description, order++), block, has_collation, tracer++);
+        cursors[position] = std::make_shared<DedupCursor>(SortCursorImpl(*block, description, order++), block, tracer++);
         return false;
     }
 }
@@ -294,13 +298,13 @@ void DedupSortedBlockInputStream::pushBlockBounds(const BlockInfoPtr & block, Qu
     TRACER("B Push " << block->str(TRACE_ID) << " To " << bounds.str(TRACE_ID));
     if (!skip_one_row_top || block->rows() > 1)
     {
-        DedupBound bound(DedupCursor(SortCursorImpl(*block, description), block, has_collation, tracer++));
+        DedupBound bound(DedupCursor(SortCursorImpl(*block, description), block, tracer++));
         TRACER("B New Top " << bound.str(TRACE_ID));
         bounds.push(bound);
         TRACER("B Push Top To " << bounds.str(TRACE_ID));
     }
 
-    DedupBound bottom(DedupCursor(SortCursorImpl(*block, description), block, has_collation, tracer++));
+    DedupBound bottom(DedupCursor(SortCursorImpl(*block, description), block, tracer++));
     bottom.setToBottom();
     TRACER("B New Bottom " << bottom.str(TRACE_ID));
     bounds.push(bottom);
