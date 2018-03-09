@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 1766f60..817260f 100644
+index 1766f60..dd0016b 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -7,10 +7,14 @@
@@ -68,24 +68,17 @@ index 1766f60..817260f 100644
      {
          BlockInputStreamPtr merged;
  
-@@ -823,6 +837,16 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -823,6 +837,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
                      data.getSortDescription(), data.merging_params.version_column, max_block_size);
                  break;
  
 +            case MergeTreeData::MergingParams::Mutable:
-+                if (MutableSupport::in_block_deduped_before_decup_calculator)
-+                {
-+                    // TODO: Move to writing.
-+                    // Sorted and deduplicated
-+                    merged = std::make_shared<ReplacingSortedBlockInputStream>(to_merge,
-+                        data.getSortDescription(), data.merging_params.version_column, max_block_size, nullptr, true);
-+                }
 +                break;
 +
              case MergeTreeData::MergingParams::Unsorted:
                  throw Exception("UnsortedMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
  
-@@ -830,7 +854,10 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -830,7 +847,10 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
                  throw Exception("GraphiteMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
          }
  

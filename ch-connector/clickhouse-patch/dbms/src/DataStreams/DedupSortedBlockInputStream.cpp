@@ -58,10 +58,10 @@ Block DedupSortedBlockInputStream::InBlockDedupBlockInputStream::readImpl()
 
 BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & origin, const SortDescription & description)
 {
+    // TODO: Move in-block deduping to writing.
     BlockInputStreams inputs;
-    if (!MutableSupport::in_block_deduped_before_decup_calculator)
-        for (size_t i = 0; i < origin.size(); ++i)
-            inputs.emplace_back(std::make_shared<InBlockDedupBlockInputStream>(origin[i], description, i));
+    for (size_t i = 0; i < origin.size(); ++i)
+        inputs.emplace_back(std::make_shared<InBlockDedupBlockInputStream>(origin[i], description, i));
 
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 

@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..1b61c7d 100644
+index 7e0c703..2a02b5e 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
-@@ -15,6 +15,15 @@
+@@ -15,6 +15,14 @@
  #include <Storages/MergeTree/MergeTreeData.h>
  #include <Storages/MergeTree/ActiveDataPartSet.h>
  
@@ -10,7 +10,6 @@ index 7e0c703..1b61c7d 100644
 +#include <Parsers/ASTInsertQuery.h>
 +#include <Parsers/ASTDeleteQuery.h>
 +
-+#include <DataStreams/mergeMutableBlockInputStreams.h>
 +#include <DataStreams/RemoveColumnsBlockInputStream.h>
 +#include <DataStreams/AdditionalColumnsBlockOutputStream.h>
 +#include <DataStreams/DedupSortedBlockInputStream.h>
@@ -18,7 +17,7 @@ index 7e0c703..1b61c7d 100644
  #include <Poco/DirectoryIterator.h>
  #include <Poco/File.h>
  
-@@ -114,12 +123,94 @@ BlockInputStreams StorageMergeTree::read(
+@@ -114,12 +122,93 @@ BlockInputStreams StorageMergeTree::read(
      const size_t max_block_size,
      const unsigned num_streams)
  {
@@ -32,8 +31,7 @@ index 7e0c703..1b61c7d 100644
 +        if (select_query && !select_query->raw_for_mutable)
 +        {
 +            LOG_DEBUG(log, "Mutable table dedup read.");
-+            res = mergeMutableBlockInputStreams(res, data.getSortDescription(),
-+                MutableSupport::version_column_name, max_block_size);
++            res = DedupSortedBlockInputStream::createStreams(res, data.getSortDescription());
 +
 +            Names filtered_names;
 +            filtered_names.push_back(MutableSupport::version_column_name);
@@ -116,7 +114,7 @@ index 7e0c703..1b61c7d 100644
  }
  
  bool StorageMergeTree::checkTableCanBeDropped() const
-@@ -129,6 +220,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
+@@ -129,6 +218,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
      return true;
  }
  
