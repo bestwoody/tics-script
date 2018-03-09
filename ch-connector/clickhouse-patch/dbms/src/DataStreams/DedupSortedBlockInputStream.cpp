@@ -41,9 +41,9 @@ Block DedupSortedBlockInputStream::InBlockDedupBlockInputStream::readImpl()
     {
         if (max)
         {
-            TRACER("D InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+            // TRACER("D InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
             dedupCursor(max, cursor);
-            TRACER("D InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+            // TRACER("D InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
         }
 
         max = cursor;
@@ -115,7 +115,7 @@ void DedupSortedBlockInputStream::asynRead(size_t position)
     while (true)
     {
         Block block = children[position]->read();
-        TRACER("A Origin read, #" << position << ", rows:" << block.rows());
+        // TRACER("A Origin read, #" << position << ", rows:" << block.rows());
         source_blocks[position]->push(std::make_shared<BlockInfo>(block, position, true, tracer++));
         if (!block)
             break;
@@ -196,40 +196,54 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
 
         DedupBound bound = bounds.top();
         bounds.pop();
-        size_t position = bound.position();
-        DedupCursor & cursor = *(cursors[position]);
         TRACER("P Pop " << bound.str(TRACE_ID) << " + " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID));
 
-        if (queue.size() == 1)
+        size_t position = bound.position();
+
+        // Skipping optimizations
+        if (queue.size() == 1 && (!bound.is_bottom || queue.top().ptr->position() == position))
         {
             size_t skipped = 0;
+            DedupCursor & skipping = *(queue.top().ptr);
+            DedupCursor from = skipping;
+            queue.pop();
+            TRACER("Q Skipping Pop " << skipping.str(TRACE_ID));
+
             if (!bound.is_bottom)
             {
-                TRACER("Q NotLessThanB " << cursor.str(TRACE_ID));
-                skipped = cursor.skipToNotLessThan(bound);
-                TRACER("Q NotLessThanE " << cursor.str(TRACE_ID) << " Skipped " << skipped);
+                TRACER("Q GreaterEqualB " << skipping.str(TRACE_ID));
+                skipped = skipping.skipToGreaterEqual(bound);
+                TRACER("Q GreaterEqualE " << skipping.str(TRACE_ID) << " Skipped " << skipped);
             }
-            /*else
+            else if (skipping.position() == position)
             {
-                TRACER("Q ToBottomB " << cursor.str(TRACE_ID));
-                skipped = cursor.assignCursorPos(bound);
-                TRACER("Q ToBottomE " << cursor.str(TRACE_ID) << " Skipped " << skipped);
-            }*/
+                TRACER("Q ToBottomB " << skipping.str(TRACE_ID));
+                skipped = skipping.assignCursorPos(bound);
+                TRACER("Q ToBottomE " << skipping.str(TRACE_ID) << " Skipped " << skipped);
+            }
 
             if (max && skipped > 0)
             {
-                TRACER("Q Skipping DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
-                dedupCursor(max, cursor);
-                TRACER("Q Skipping DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+                TRACER("Q Skipping DedupB Max " << max.str(TRACE_ID) << " Cursor " << from.str(TRACE_ID));
+                dedupCursor(max, from);
+                TRACER("Q Skipping DedupE Max " << max.str(TRACE_ID) << " Cursor " << from.str(TRACE_ID));
                 if (max.isLast())
                     finished_streams += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
-                max = bound;
+
+                if (skipping.position() == position)
+                    max = DedupCursor();
+                else
+                    max = bound;
                 TRACER("Q Skipping Max Update " << max.str(TRACE_ID));
             }
+
+            TRACER("Q Skipping PushBack " << skipping.str(TRACE_ID) << " ~ " << queue.str(TRACE_ID));
+            queue.push(CursorPlainPtr(&skipping));
         }
 
         if (!bound.is_bottom || bound.block->rows() == 1)
         {
+            DedupCursor & cursor = *(cursors[position]);
             queue.push(CursorPlainPtr(&cursor));
             TRACER("Q Push " << cursor.str(TRACE_ID) << " ~ " << queue.str(TRACE_ID));
         }

@@ -214,6 +214,8 @@ private:
         Block finalize()
         {
             deleteRows(block, filter);
+            if (block.rows() == 0)
+                return Block();
             return block;
         }
 
@@ -393,7 +395,7 @@ private:
             return skipped;
         }
 
-        size_t skipToNotLessThan(DedupCursor & bound)
+        size_t skipToGreaterEqual(DedupCursor & bound)
         {
             // TODO: binary search position
             size_t origin_pos = cursor.pos;
