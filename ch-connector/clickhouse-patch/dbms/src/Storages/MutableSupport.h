@@ -4,8 +4,6 @@
 #include <ext/singleton.h>
 #include <Storages/MergeTree/MergeTreeData.h>
 
-#include <DataStreams/mergeMutableBlockInputStreams.h>
-
 namespace DB
 {
 
@@ -38,8 +36,6 @@ public:
     static const std::string storage_name;
     static const std::string version_column_name;
     static const std::string delmark_column_name;
-
-    static const bool in_block_deduped_before_decup_calculator;
 
 private:
     OrderedNameSet empty;
