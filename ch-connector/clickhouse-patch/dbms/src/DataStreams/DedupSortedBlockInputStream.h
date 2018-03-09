@@ -395,9 +395,26 @@ private:
             return skipped;
         }
 
-        size_t skipToGreaterEqual(DedupCursor & bound)
+        size_t skipToGreaterEqualBySearch(DedupCursor & bound)
         {
-            // TODO: binary search position
+            size_t origin_pos = cursor.pos;
+            size_t low = cursor.pos;
+            size_t high = rows() - 1;
+            while (low < high)
+            {
+                cursor.pos = ((high - low) >> 1) + low;
+                if (bound.greater(*this))
+                    low = cursor.pos + 1;
+                else
+                    high = cursor.pos;
+            }
+            cursor.pos = high;
+            cursor.order = block->versions()[cursor.pos];
+            return cursor.pos - origin_pos;
+        }
+
+        size_t skipToGreaterEqualByNext(DedupCursor & bound)
+        {
             size_t origin_pos = cursor.pos;
             while (bound.greater(*this))
                 cursor.next();
