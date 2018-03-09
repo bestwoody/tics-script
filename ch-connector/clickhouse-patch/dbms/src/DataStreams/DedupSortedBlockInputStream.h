@@ -33,6 +33,53 @@ size_t setFilterByDeleteMarkColumn(const Block & block, IColumn::Filter & filter
 class DedupSortedBlockInputStream
 {
 public:
+    class InBlockDedupBlockInputStream : public IProfilingBlockInputStream
+    {
+    public:
+        InBlockDedupBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, size_t position_)
+            : input(input_), description(description_), position(position_)
+        {
+            log = &Logger::get("InBlockDedup");
+            children.emplace_back(input_);
+        }
+
+        String getName() const override
+        {
+            return "InBlockDedupBlockInputStream";
+        }
+
+        String getID() const override
+        {
+            std::stringstream ostr(getName());
+            ostr << "(" << input->getID() << ")";
+            return ostr.str();
+        }
+
+        bool isGroupedOutput() const override
+        {
+            return true;
+        }
+
+        bool isSortedOutput() const override
+        {
+            return true;
+        }
+
+        const SortDescription & getSortDescription() const override
+        {
+            return description;
+        }
+
+    private:
+        Block readImpl() override;
+
+    private:
+        Logger * log;
+        BlockInputStreamPtr input;
+        const SortDescription description;
+        size_t position;
+    };
+
     using ParentPtr = std::shared_ptr<DedupSortedBlockInputStream>;
 
     class BlockInputStream : public IProfilingBlockInputStream
@@ -124,48 +171,41 @@ private:
         BlockInfo & operator = (const BlockInfo &);
 
     public:
-        BlockInfo(const Block & block_, const size_t stream_position_, size_t tracer_)
-            : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows()), deleted_rows(0)
+        BlockInfo(const Block & block_, const size_t stream_position_, bool set_deleted_rows, size_t tracer_ = 0)
+            : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows(), 1), deleted_rows(0)
         {
-            std::lock_guard<std::mutex> lock(mutex);
-            // TODO: unnecessary deleting, if there is InBlockDedupBlockInputStream in the pipeline.
-            deleted_rows = setFilterByDeleteMarkColumn(block, filter, true);
+            if (set_deleted_rows)
+                deleted_rows = setFilterByDeleteMarkColumn(block, filter, true);
         }
 
         operator bool ()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return bool(block);
         }
 
         operator const Block & ()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return block;
         }
 
         size_t rows()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return block.rows();
         }
 
         size_t deleteds()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return deleted_rows;
         }
 
         void setDeleted(size_t i)
         {
-            std::lock_guard<std::mutex> lock(mutex);
             filter[i] = 0;
             deleted_rows += 1;
         }
 
         VersionColumn & versions()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             if (!version_column)
                 version_column = std::make_shared<VersionColumn>(block);
             return *version_column;
@@ -173,14 +213,12 @@ private:
 
         Block finalize()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             deleteRows(block, filter);
             return block;
         }
 
         String str(bool trace = false)
         {
-            std::lock_guard<std::mutex> lock(mutex);
 
             std::stringstream ostr;
             ostr << "#";
@@ -213,8 +251,6 @@ private:
         IColumn::Filter filter;
         size_t deleted_rows;
         std::shared_ptr<VersionColumn> version_column;
-
-        std::mutex mutex;
     };
 
     using BlockInfoPtr = std::shared_ptr<BlockInfo>;
@@ -305,42 +341,35 @@ private:
     public:
         DedupCursor(size_t tracer_ = 0) : tracer(tracer_) {}
 
-        DedupCursor(const DedupCursor & rhs)
-            : block(rhs.block), cursor(rhs.cursor), has_collation(rhs.has_collation), tracer(rhs.tracer)
+        DedupCursor(const DedupCursor & rhs) : block(rhs.block), cursor(rhs.cursor), tracer(rhs.tracer)
         {
-            std::lock_guard<std::mutex> lock(mutex);
             if (block)
                 cursor.order = block->versions()[cursor.pos];
         }
 
         DedupCursor & operator = (const DedupCursor & rhs)
         {
-            std::lock_guard<std::mutex> lock(mutex);
             block = rhs.block;
             cursor = rhs.cursor;
             if (block)
                 cursor.order = block->versions()[cursor.pos];
-            has_collation = rhs.has_collation;
             tracer = rhs.tracer;
             return *this;
         }
 
-        DedupCursor(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, bool has_collation_, size_t tracer_)
-            : block(block_), cursor(cursor_), has_collation(has_collation_), tracer(tracer_)
+        DedupCursor(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, size_t tracer_ = 0)
+            : block(block_), cursor(cursor_), tracer(tracer_)
         {
-            std::lock_guard<std::mutex> lock(mutex);
             cursor.order = block->versions()[cursor.pos];
         }
 
         operator bool ()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return bool(block) && block->rows();
         }
 
         size_t setMaxOrder()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             size_t order = cursor.order;
             cursor.order = size_t(-1);
             return order;
@@ -348,41 +377,39 @@ private:
 
         UInt64 version()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return block->versions()[cursor.pos];
         }
 
         void setDeleted(size_t row)
         {
-            std::lock_guard<std::mutex> lock(mutex);
             block->setDeleted(row);
         }
 
-        void assignCursorPos(const DedupCursor & rhs)
+        size_t assignCursorPos(const DedupCursor & rhs)
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            size_t skipped = rhs.cursor.pos - cursor.pos;
             cursor.pos = rhs.cursor.pos;
             cursor.order = block->versions()[cursor.pos];
+            return skipped;
         }
 
-        void skipToNotLessThan(DedupCursor & bound)
+        size_t skipToNotLessThan(DedupCursor & bound)
         {
             // TODO: binary search position
-            std::lock_guard<std::mutex> lock(mutex);
+            size_t origin_pos = cursor.pos;
             while (bound.greater(*this))
                 cursor.next();
             cursor.order = block->versions()[cursor.pos];
+            return cursor.pos - origin_pos;
         }
 
         bool isTheSame(const DedupCursor & rhs)
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return block->stream_position == rhs.block->stream_position && cursor.pos == rhs.cursor.pos;
         }
 
         size_t position()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             if (!block)
                 return size_t(-1);
             return block->stream_position;
@@ -390,93 +417,59 @@ private:
 
         size_t row()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return cursor.pos;
         }
 
         size_t order()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return cursor.order;
         }
 
         size_t rows()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return block->rows();
         }
 
         bool isLast()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return cursor.isLast();
         }
 
         operator Block ()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             return (Block)*block;
         }
 
         void next()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             cursor.next();
             cursor.order = block->versions()[cursor.pos];
         }
 
         void backward()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             cursor.pos = cursor.pos > 0 ? cursor.pos - 1 : 0;
             cursor.order = block->versions()[cursor.pos];
         }
 
-        UInt64 hash()
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-
-            size_t row = cursor.pos;
-            SipHash hash;
-            for (size_t i = 0; i < cursor.sort_columns_size; ++i)
-                cursor.sort_columns[i]->updateHashWithValue(row, hash);
-            return hash.get64();
-        }
-
         bool greater(const DedupCursor & rhs)
         {
-            std::lock_guard<std::mutex> lock(mutex);
-
             if (block->stream_position == rhs.block->stream_position)
                 return (cursor.pos == rhs.cursor.pos) ? (cursor.order > rhs.cursor.order) : (cursor.pos > rhs.cursor.pos);
-
             SortCursorImpl * lc = const_cast<SortCursorImpl *>(&cursor);
             SortCursorImpl * rc = const_cast<SortCursorImpl *>(&rhs.cursor);
             if (!lc || !rc)
                 throw("SortCursorImpl const_cast Failed!");
-
-            if (has_collation)
-                return SortCursorWithCollation(lc).greater(SortCursorWithCollation(rc));
-            else
-                return SortCursor(lc).greater(SortCursor(rc));
+            return SortCursor(lc).greater(SortCursor(rc));
         }
 
         bool equal(const DedupCursor & rhs)
         {
-            std::lock_guard<std::mutex> lock(mutex);
-
-            if (MutableSupport::in_block_deduped_before_decup_calculator)
-                return block->stream_position == rhs.block->stream_position && cursor.pos == rhs.cursor.pos;
-
             SortCursorImpl * lc = const_cast<SortCursorImpl *>(&cursor);
             SortCursorImpl * rc = const_cast<SortCursorImpl *>(&rhs.cursor);
             if (!lc || !rc)
                 throw("SortCursorImpl const_cast Failed!");
-
-            if (has_collation)
-                return SortCursorWithCollation(lc).equalIgnOrder(SortCursorWithCollation(rc));
-            else
-                return SortCursor(lc).equalIgnOrder(SortCursor(rc));
+             return SortCursor(lc).equalIgnOrder(SortCursor(rc));
         }
 
         // Inverst for pririoty queue
@@ -487,7 +480,6 @@ private:
 
         String str(bool trace = false)
         {
-            std::lock_guard<std::mutex> lock(mutex);
             std::stringstream ostr;
 
             if (trace)
@@ -513,8 +505,6 @@ private:
 
     protected:
         SortCursorImpl cursor;
-        bool has_collation;
-        std::mutex mutex;
 
     public:
         size_t tracer;
@@ -588,12 +578,11 @@ private:
 
         DedupBound(const DedupCursor & rhs) : DedupCursor(rhs), is_bottom(false) {}
 
-        DedupBound(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, bool has_collation_, size_t tracer_)
-            : DedupCursor(cursor_, block_, has_collation_, tracer_), is_bottom(false) {}
+        DedupBound(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, size_t tracer_)
+            : DedupCursor(cursor_, block_, tracer_), is_bottom(false) {}
 
         void setToBottom()
         {
-            std::lock_guard<std::mutex> lock(mutex);
             if (block->rows() > 1)
                 cursor.pos = block->rows() - 1;
             else
@@ -616,7 +605,6 @@ private:
         {
             std::stringstream ostr;
             ostr << DedupCursor::str(trace);
-            std::lock_guard<std::mutex> lock(mutex);
             ostr << (is_bottom ? "L" : "F");
             return ostr.str();
         }
@@ -734,10 +722,10 @@ private:
     void asynDedupByQueue();
     void asynRead(size_t pisition);
 
-    DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
+    static DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
     template <typename Queue>
     void pushBlockBounds(const BlockInfoPtr & block, Queue & queue, bool skip_one_row_top = true);
-    void readFromSource(DedupCursors & output, BoundQueue & bounds, bool * collation = 0, bool skip_one_row_top = true);
+    void readFromSource(DedupCursors & output, BoundQueue & bounds, bool skip_one_row_top = true);
     bool outputAndUpdateCursor(DedupCursors & cursors, BoundQueue & bounds, DedupCursor & cursor);
 
 private:
@@ -746,7 +734,6 @@ private:
     const SortDescription description;
 
     const size_t queue_max;
-    bool has_collation = false;
 
     IdGen order;
     IdGen tracer;
