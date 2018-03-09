@@ -33,6 +33,53 @@ size_t setFilterByDeleteMarkColumn(const Block & block, IColumn::Filter & filter
 class DedupSortedBlockInputStream
 {
 public:
+    class InBlockDedupBlockInputStream : public IProfilingBlockInputStream
+    {
+    public:
+        InBlockDedupBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, size_t position_)
+            : input(input_), description(description_), position(position_)
+        {
+            log = &Logger::get("InBlockDedup");
+            children.emplace_back(input_);
+        }
+
+        String getName() const override
+        {
+            return "InBlockDedupBlockInputStream";
+        }
+
+        String getID() const override
+        {
+            std::stringstream ostr(getName());
+            ostr << "(" << input->getID() << ")";
+            return ostr.str();
+        }
+
+        bool isGroupedOutput() const override
+        {
+            return true;
+        }
+
+        bool isSortedOutput() const override
+        {
+            return true;
+        }
+
+        const SortDescription & getSortDescription() const override
+        {
+            return description;
+        }
+
+    private:
+        Block readImpl() override;
+
+    private:
+        Logger * log;
+        BlockInputStreamPtr input;
+        const SortDescription description;
+        size_t position;
+    };
+
     using ParentPtr = std::shared_ptr<DedupSortedBlockInputStream>;
 
     class BlockInputStream : public IProfilingBlockInputStream
@@ -124,7 +171,7 @@ private:
         BlockInfo & operator = (const BlockInfo &);
 
     public:
-        BlockInfo(const Block & block_, const size_t stream_position_, size_t tracer_)
+        BlockInfo(const Block & block_, const size_t stream_position_, size_t tracer_ = 0)
             : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows()), deleted_rows(0)
         {
             std::lock_guard<std::mutex> lock(mutex);
@@ -323,7 +370,7 @@ private:
             return *this;
         }
 
-        DedupCursor(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, size_t tracer_)
+        DedupCursor(const SortCursorImpl & cursor_, const BlockInfoPtr & block_, size_t tracer_ = 0)
             : block(block_), cursor(cursor_), tracer(tracer_)
         {
             std::lock_guard<std::mutex> lock(mutex);
@@ -723,7 +770,7 @@ private:
     void asynDedupByQueue();
     void asynRead(size_t pisition);
 
-    DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
+    static DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
     template <typename Queue>
     void pushBlockBounds(const BlockInfoPtr & block, Queue & queue, bool skip_one_row_top = true);
     void readFromSource(DedupCursors & output, BoundQueue & bounds, bool skip_one_row_top = true);

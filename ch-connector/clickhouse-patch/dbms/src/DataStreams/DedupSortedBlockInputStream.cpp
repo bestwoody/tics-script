@@ -26,14 +26,48 @@ namespace ErrorCodes
 namespace DB
 {
 
-// TODO: Use 'children'
+Block DedupSortedBlockInputStream::InBlockDedupBlockInputStream::readImpl()
+{
+    Block block = input->read();
+    if (!block)
+        return block;
+
+    BlockInfoPtr block_info = std::make_shared<BlockInfo>(block, position);
+    SortCursorImpl cursor_impl(*block_info, description);
+    DedupCursor cursor(cursor_impl, block_info);
+
+    DedupCursor max;
+    while (true)
+    {
+        if (max)
+        {
+            TRACER("B InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+            dedupCursor(max, cursor);
+            TRACER("B InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+        }
+
+        max = cursor;
+        if (cursor.isLast())
+            break;
+        else
+            cursor.next();
+    }
+
+    return block_info->finalize();
+}
+
+
 BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & inputs, const SortDescription & description)
 {
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
     BlockInputStreams res;
     for (size_t i = 0; i < inputs.size(); ++i)
-        res.emplace_back(std::make_shared<BlockInputStream>(inputs[i], description, parent, i));
+    {
+        BlockInputStreamPtr wrapped = std::make_shared<InBlockDedupBlockInputStream>(inputs[i], description, i);
+        wrapped = std::make_shared<BlockInputStream>(inputs[i], description, parent, i);
+        res.emplace_back(wrapped);
+    }
 
     return res;
 }
@@ -125,13 +159,6 @@ void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQue
 
 void DedupSortedBlockInputStream::asynDedupByQueue()
 {
-    // TRACER("D SortingDesc " << description.size());
-    // for (auto it = description.begin(); it != description.end(); ++it)
-    //     TRACER("D Column '" << it->column_name << "' #" << it->column_number << (it->direction > 0 ? " Asc" : " Desc"));
-    // TRACER("D IsChildrenSorted " << children.size());
-    // for (auto it = children.begin(); it != children.end(); ++it)
-    //     TRACER("D Child " << (*it)->getID() << " " << ((*it)->isSortedOutput() ? "Sorted" : "Unsorted"));
-
     BoundQueue bounds;
     DedupCursors cursors(source_blocks.size());
     readFromSource(cursors, bounds, true);
@@ -272,10 +299,7 @@ bool DedupSortedBlockInputStream::outputAndUpdateCursor(DedupCursors & cursors, 
 DedupSortedBlockInputStream::DedupCursor * DedupSortedBlockInputStream::dedupCursor(DedupCursor & lhs, DedupCursor & rhs)
 {
     if (!lhs.equal(rhs))
-    {
-        TRACER("X Skip " << lhs << " != " << rhs);
         return 0;
-    }
 
     DedupCursor * deleted = 0;
 
