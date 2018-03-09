@@ -403,20 +403,24 @@ private:
             block->setDeleted(row);
         }
 
-        void assignCursorPos(const DedupCursor & rhs)
+        size_t assignCursorPos(const DedupCursor & rhs)
         {
             std::lock_guard<std::mutex> lock(mutex);
+            size_t skipped = rhs.cursor.pos - cursor.pos;
             cursor.pos = rhs.cursor.pos;
             cursor.order = block->versions()[cursor.pos];
+            return skipped;
         }
 
-        void skipToNotLessThan(DedupCursor & bound)
+        size_t skipToNotLessThan(DedupCursor & bound)
         {
             // TODO: binary search position
             std::lock_guard<std::mutex> lock(mutex);
+            size_t origin_pos = cursor.pos;
             while (bound.greater(*this))
                 cursor.next();
             cursor.order = block->versions()[cursor.pos];
+            return cursor.pos - origin_pos;
         }
 
         bool isTheSame(const DedupCursor & rhs)

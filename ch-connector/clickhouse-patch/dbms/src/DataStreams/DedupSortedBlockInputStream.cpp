@@ -200,35 +200,33 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
         DedupCursor & cursor = *(cursors[position]);
         TRACER("P Pop " << bound.str(TRACE_ID) << " + " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID));
 
-        /*
         if (queue.size() == 1)
         {
-            if (max)
+            size_t skipped = 0;
+            if (!bound.is_bottom)
+            {
+                TRACER("Q NotLessThanB " << cursor.str(TRACE_ID));
+                skipped = cursor.skipToNotLessThan(bound);
+                TRACER("Q NotLessThanE " << cursor.str(TRACE_ID) << " Skipped " << skipped);
+            }
+            /*else
+            {
+                TRACER("Q ToBottomB " << cursor.str(TRACE_ID));
+                skipped = cursor.assignCursorPos(bound);
+                TRACER("Q ToBottomE " << cursor.str(TRACE_ID) << " Skipped " << skipped);
+            }*/
+
+            if (max && skipped > 0)
             {
                 TRACER("Q Skipping DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
                 dedupCursor(max, cursor);
                 TRACER("Q Skipping DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
                 if (max.isLast())
                     finished_streams += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
+                max = bound;
+                TRACER("Q Skipping Max Update " << max.str(TRACE_ID));
             }
-
-            if (!bound.is_bottom)
-            {
-                TRACER("Q NotLessThanB " << cursor.str(TRACE_ID));
-                cursor.skipToNotLessThan(bound);
-                TRACER("Q NotLessThanE " << cursor.str(TRACE_ID));
-            }
-            else
-            {
-                TRACER("Q ToBottomB " << cursor.str(TRACE_ID));
-                cursor.assignCursorPos(bound);
-                TRACER("Q ToBottomE " << cursor.str(TRACE_ID));
-            }
-
-            max = bound;
-            TRACER("Q Skipping Max Update " << max.str(TRACE_ID));
         }
-        */
 
         if (!bound.is_bottom || bound.block->rows() == 1)
         {
