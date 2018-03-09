@@ -12,7 +12,6 @@
     #define TRACER(message) LOG_TRACE(log, message)
 #endif
 
-
 namespace CurrentMetrics
 {
     extern const Metric QueryThread;
@@ -212,7 +211,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
             if (!bound.is_bottom)
             {
                 TRACER("Q GreaterEqualB " << skipping.str(TRACE_ID));
-                skipped = skipping.skipToGreaterEqual(bound);
+                skipped = skipping.skipToGreaterEqualBySearch(bound);
                 TRACER("Q GreaterEqualE " << skipping.str(TRACE_ID) << " Skipped " << skipped);
             }
             else if (skipping.position() == position)
@@ -231,9 +230,14 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
                     finished_streams += outputAndUpdateCursor(cursors, bounds, max) ? 1 : 0;
 
                 if (skipping.position() == position)
+                {
                     max = DedupCursor();
+                }
                 else
-                    max = bound;
+                {
+                    max = skipping;
+                    max.backward();
+                }
                 TRACER("Q Skipping Max Update " << max.str(TRACE_ID));
             }
 
