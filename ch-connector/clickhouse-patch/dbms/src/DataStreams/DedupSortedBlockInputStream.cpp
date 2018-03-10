@@ -25,24 +25,23 @@ namespace ErrorCodes
 namespace DB
 {
 
-Block DedupSortedBlockInputStream::InBlockDedupBlockInputStream::readImpl()
+Block dedupInBlock(Block block, const SortDescription & description, Logger * log, size_t stream_position)
 {
-    Block block = input->read();
     if (!block)
         return block;
 
-    BlockInfoPtr block_info = std::make_shared<BlockInfo>(block, position, false);
+    DedupSortedBlockInputStream::BlockInfoPtr block_info = std::make_shared<DedupSortedBlockInputStream::BlockInfo>(block, stream_position, false);
     SortCursorImpl cursor_impl(*block_info, description);
-    DedupCursor cursor(cursor_impl, block_info);
+    DedupSortedBlockInputStream::DedupCursor cursor(cursor_impl, block_info);
 
-    DedupCursor max;
+    DedupSortedBlockInputStream::DedupCursor max;
     while (true)
     {
         if (max)
         {
-            // TRACER("D InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+            TRACER("D InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
             dedupCursor(max, cursor);
-            // TRACER("D InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+            TRACER("D InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
         }
 
         max = cursor;
@@ -60,8 +59,11 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams &
 {
     // TODO: Move in-block deduping to writing.
     BlockInputStreams inputs;
-    for (size_t i = 0; i < origin.size(); ++i)
-        inputs.emplace_back(std::make_shared<InBlockDedupBlockInputStream>(origin[i], description, i));
+    if (MutableSupport::in_block_dedup_on_read)
+        for (size_t i = 0; i < origin.size(); ++i)
+            inputs.emplace_back(std::make_shared<InBlockDedupBlockInputStream>(origin[i], description, i));
+    else
+        inputs = origin;
 
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
@@ -314,7 +316,8 @@ bool DedupSortedBlockInputStream::outputAndUpdateCursor(DedupCursors & cursors, 
 }
 
 
-DedupSortedBlockInputStream::DedupCursor * DedupSortedBlockInputStream::dedupCursor(DedupCursor & lhs, DedupCursor & rhs)
+template <class DedupCursor>
+DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs)
 {
     if (!lhs.equal(rhs))
         return 0;
