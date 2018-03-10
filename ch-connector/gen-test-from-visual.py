@@ -69,7 +69,7 @@ class TestData:
     def selraw_result_parts(self):
         return self._selraws
 
-def gen(output, title, rows, gn, order, source, ln, selraw_first):
+def gen(output, title, rows, gn, order, source, ln, selraw_first, no_selraw):
     name = 'dedup_l' + str(ln) + '_' + title + '_g' + str(gn) + ((order != None) and ('_o' + str(order)) or '') + '.test'
     path = os.path.join(output, name)
     data = TestData(rows)
@@ -111,6 +111,8 @@ def gen(output, title, rows, gn, order, source, ln, selraw_first):
             file.write('\n')
 
         def gen_selraw():
+            if no_selraw:
+                return
             file.write('>> selraw * from test\n')
             for parts in data.selraw_result_parts():
                 file.write('┌─────────dt─┬──k─┬──v─┬─_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐\n')
@@ -135,13 +137,13 @@ class IdGen:
         self.id += 1
         return self.id
 
-def gen_diff_orders(idg, output, title, rows, gn, source, ln, selraw_first):
+def gen_diff_orders(idg, output, title, rows, gn, source, ln, selraw_first, no_selraw):
     if len(rows) == 1 or len(rows) == 2 and rows[0] == rows[1]:
-        gen(output, title, rows, gn, None, source, ln, selraw_first)
+        gen(output, title, rows, gn, None, source, ln, selraw_first, no_selraw)
         return
     def perm(array, begin, end):
         if begin >= end:
-            gen(output, title, map(lambda x: rows[x], array), gn, idg.get(), source, ln, selraw_first)
+            gen(output, title, map(lambda x: rows[x], array), gn, idg.get(), source, ln, selraw_first, no_selraw)
         else:
             i = begin
             for n in range(begin, end):
@@ -150,7 +152,7 @@ def gen_diff_orders(idg, output, title, rows, gn, source, ln, selraw_first):
                 array[n], array[i] = array[i], array[n]
     perm(range(0, len(rows)), 0, len(rows))
 
-def parse_and_gen(path, output, selraw_first):
+def parse_and_gen(path, output, selraw_first, no_selraw):
     title = ''
     rows = []
     gn = 0
@@ -173,26 +175,28 @@ def parse_and_gen(path, output, selraw_first):
             else:
                 if len(line) == 0:
                     if len(rows) != 0:
-                        gen_diff_orders(IdGen(), output, title, rows, gn, path, ln - len(rows), selraw_first)
+                        gen_diff_orders(IdGen(), output, title, rows, gn, path, ln - len(rows), selraw_first, no_selraw)
                         gn += 1
                     rows = []
                 else:
                     rows.append(origin)
 
 def main():
-    if len(sys.argv) != 2:
-        print 'usage: <bin> visual-test-file-path'
+    if len(sys.argv) != 3:
+        print 'usage: <bin> visual-test-file-path skip_selraw_test'
         sys.exit(1)
 
     path = sys.argv[1]
+    no_selraw = (sys.argv[2] == 'true')
+
     output = path + '.test'
-    selraw_first = True
+    selraw_first = False
 
     try:
         os.makedirs(output)
     except:
         pass
 
-    parse_and_gen(path, output, selraw_first)
+    parse_and_gen(path, output, selraw_first, no_selraw)
 
 main()
