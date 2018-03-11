@@ -65,7 +65,7 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams &
     else
         inputs = origin;
 
-    auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description, false);
+    auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
     BlockInputStreams res;
     for (size_t i = 0; i < inputs.size(); ++i)
@@ -75,21 +75,9 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams &
 }
 
 
-std::shared_ptr<IProfilingBlockInputStream> DedupSortedBlockInputStream::createStream(BlockInputStreams & origin, const SortDescription & description)
-{
-    BlockInputStreams inputs;
-    if (MutableSupport::in_block_dedup_on_read)
-        for (size_t i = 0; i < origin.size(); ++i)
-            inputs.emplace_back(std::make_shared<InBlockDedupBlockInputStream>(origin[i], description, i));
-    else
-        inputs = origin;
-    return std::make_shared<DedupSortedBlockInputStream>(inputs, description, true);
-}
-
-
-DedupSortedBlockInputStream::DedupSortedBlockInputStream(BlockInputStreams & inputs_, const SortDescription & description_, bool single_output_)
-    : description(description_), queue_max(3), order(1), source_blocks(inputs_.size(), queue_max), output_blocks(inputs_.size(), queue_max),
-        output_block(queue_max), single_output(single_output_), readers(inputs_.size())
+DedupSortedBlockInputStream::DedupSortedBlockInputStream(BlockInputStreams & inputs_, const SortDescription & description_)
+    : description(description_), queue_max(3), order(1),
+        source_blocks(inputs_.size(), queue_max), output_blocks(inputs_.size(), queue_max), readers(inputs_.size())
 {
     log = &Logger::get("DedupSorted");
 
@@ -116,7 +104,6 @@ DedupSortedBlockInputStream::~DedupSortedBlockInputStream()
 
 Block DedupSortedBlockInputStream::read(size_t position)
 {
-    assert(!single_output);
     BlockInfoPtr block = output_blocks[position]->pop();
     if (!*block)
         return Block();
@@ -165,7 +152,7 @@ void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQue
         {
             TRACER("R Read Null #" << i);
             output[i] = std::make_shared<DedupCursor>(tracer++);
-            outputBlock(blocks[i], i);
+            output_blocks[i]->push(blocks[i]);
             finished_streams += 1;
         }
     }
@@ -309,14 +296,14 @@ bool DedupSortedBlockInputStream::outputAndUpdateCursor(DedupCursors & cursors, 
 {
     TRACER("Q Output " << cursor);
     size_t position = cursor.position();
-    outputBlock(cursor.block, position);
+    output_blocks[position]->push(cursor.block);
 
     BlockInfoPtr block = source_blocks[position]->pop();
     if (!*block)
     {
         TRACER("Q Finish #" << position << " Bounds " << bounds.str(TRACE_ID) << " Cursors " << cursors.size());
         cursors[position] = std::make_shared<DedupCursor>(tracer++);
-        outputBlock(block, position);
+        output_blocks[position]->push(block);
         return true;
     }
     else

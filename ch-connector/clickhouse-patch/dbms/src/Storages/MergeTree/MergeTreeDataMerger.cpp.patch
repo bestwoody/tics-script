@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
-index 36bdd6f..cbd99a6 100644
+index 36bdd6f..eeb2e5c 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
 @@ -336,7 +336,8 @@ static void extractMergingAndGatheringColumns(const NamesAndTypesList & all_colu
@@ -17,7 +17,7 @@ index 36bdd6f..cbd99a6 100644
              break;
  
 +        case MergeTreeData::MergingParams::Mutable:
-+            // TODO: Use DedupSorted instead of ReplacingSort, much faster.
++            // TODO: Use DedupSorted+MergingSorted instead of ReplacingSort, may be faster.
 +            merged_stream = std::make_unique<ReplacingSortedBlockInputStream>(
 +                src_streams, sort_desc, data.merging_params.version_column, DEFAULT_MERGE_BLOCK_SIZE, rows_sources_write_buf.get());
 +            break;
