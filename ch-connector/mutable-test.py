@@ -144,7 +144,7 @@ def parse_exe_match(path, executor, fuzz):
 
 def run():
     if len(sys.argv) != 4:
-        print 'usage: <bin> database-client-cmd test-file-path [fuzz=false]'
+        print 'usage: <bin> database-client-cmd test-file-path fuzz-check'
         sys.exit(1)
 
     dbc = sys.argv[1]

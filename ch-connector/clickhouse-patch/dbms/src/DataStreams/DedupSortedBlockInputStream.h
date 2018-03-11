@@ -30,6 +30,12 @@ void deleteRows(Block & block, const IColumn::Filter & filter);
 
 size_t setFilterByDeleteMarkColumn(const Block & block, IColumn::Filter & filter, bool init);
 
+template <class DedupCursor>
+DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
+
+Block dedupInBlock(Block block, const SortDescription & description, Logger * log, size_t stream_position = size_t(-1));
+
+
 class DedupSortedBlockInputStream
 {
 public:
@@ -39,7 +45,7 @@ public:
         InBlockDedupBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, size_t position_)
             : input(input_), description(description_), position(position_)
         {
-            log = &Logger::get("InBlockDedup");
+            log = &Logger::get("InBlockDedupBlockInputStream");
             children.emplace_back(input_);
         }
 
@@ -71,7 +77,10 @@ public:
         }
 
     private:
-        Block readImpl() override;
+        Block readImpl() override
+        {
+            return dedupInBlock(input->read(), description, log, position);
+        }
 
     private:
         Logger * log;
@@ -142,7 +151,7 @@ public:
     Block read(size_t position);
 
 
-private:
+public:
     class VersionColumn
     {
     public:
@@ -741,10 +750,11 @@ private:
     void asynDedupByQueue();
     void asynRead(size_t pisition);
 
-    static DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
     template <typename Queue>
     void pushBlockBounds(const BlockInfoPtr & block, Queue & queue, bool skip_one_row_top = true);
+
     void readFromSource(DedupCursors & output, BoundQueue & bounds, bool skip_one_row_top = true);
+
     bool outputAndUpdateCursor(DedupCursors & cursors, BoundQueue & bounds, DedupCursor & cursor);
 
 private:
