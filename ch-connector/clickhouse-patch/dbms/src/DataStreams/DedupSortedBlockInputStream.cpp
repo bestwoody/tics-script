@@ -25,7 +25,7 @@ namespace ErrorCodes
 namespace DB
 {
 
-Block dedupInBlock(Block block, const SortDescription & description, Logger * log, size_t stream_position)
+Block dedupInBlock(Block block, const SortDescription & description, Logger * /* log */, size_t stream_position)
 {
     if (!block)
         return block;
@@ -39,9 +39,9 @@ Block dedupInBlock(Block block, const SortDescription & description, Logger * lo
     {
         if (max)
         {
-            TRACER("D InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+            // TRACER("D InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
             dedupCursor(max, cursor);
-            TRACER("D InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
+            // TRACER("D InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
         }
 
         max = cursor;
