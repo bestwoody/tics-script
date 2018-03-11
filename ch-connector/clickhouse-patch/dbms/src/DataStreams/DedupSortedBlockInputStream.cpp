@@ -3,7 +3,7 @@
 #include <Common/setThreadName.h>
 #include <Common/CurrentMetrics.h>
 
-#define DEDUP_TRACER
+// #define DEDUP_TRACER
 #define TRACE_ID false
 
 #ifndef DEDUP_TRACER
