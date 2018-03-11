@@ -36,7 +36,7 @@ DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs);
 Block dedupInBlock(Block block, const SortDescription & description, Logger * log, size_t stream_position = size_t(-1));
 
 
-class DedupSortedBlockInputStream
+class DedupSortedBlockInputStream : public IProfilingBlockInputStream
 {
 public:
     class InBlockDedupBlockInputStream : public IProfilingBlockInputStream
@@ -45,13 +45,13 @@ public:
         InBlockDedupBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, size_t position_)
             : input(input_), description(description_), position(position_)
         {
-            log = &Logger::get("InBlockDedupBlockInputStream");
+            log = &Logger::get("InBlockDedupInput");
             children.emplace_back(input_);
         }
 
         String getName() const override
         {
-            return "InBlockDedupBlockInputStream";
+            return "InBlockDedupInput";
         }
 
         String getID() const override
@@ -91,10 +91,10 @@ public:
 
     using ParentPtr = std::shared_ptr<DedupSortedBlockInputStream>;
 
-    class BlockInputStream : public IProfilingBlockInputStream
+    class DedupSortedChildBlockInputStream: public IProfilingBlockInputStream
     {
     public:
-        BlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, ParentPtr parent_, size_t position_)
+        DedupSortedChildBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, ParentPtr parent_, size_t position_)
             : input(input_), description(description_), parent(parent_), position(position_)
         {
             children.emplace_back(input_);
@@ -102,7 +102,7 @@ public:
 
         String getName() const override
         {
-            return "DedupSortedBlockInputStream";
+            return "DedupSortedChild";
         }
 
         String getID() const override
@@ -144,11 +144,52 @@ public:
 public:
     static BlockInputStreams createStreams(BlockInputStreams & inputs, const SortDescription & description);
 
-    DedupSortedBlockInputStream(BlockInputStreams & inputs, const SortDescription & description);
+    // TODO: Not fully test yet.
+    static std::shared_ptr<IProfilingBlockInputStream> createStream(BlockInputStreams & inputs, const SortDescription & description);
+
+    DedupSortedBlockInputStream(BlockInputStreams & inputs, const SortDescription & description, bool single_output);
 
     ~DedupSortedBlockInputStream();
 
+    // For children data reading
     Block read(size_t position);
+
+public:
+    // Implement of IBlockInputStream
+
+    String getName() const override
+    {
+        return "DedupSorted";
+    }
+
+    String getID() const override
+    {
+        return getName();
+    }
+
+    bool isGroupedOutput() const override
+    {
+        return true;
+    }
+
+    bool isSortedOutput() const override
+    {
+        return true;
+    }
+
+    const SortDescription & getSortDescription() const override
+    {
+        return description;
+    }
+
+    Block readImpl() override
+    {
+        assert(single_output);
+        BlockInfoPtr block = output_block.pop();
+        if (!*block)
+            return Block();
+        return block->finalize();
+    }
 
 
 public:
@@ -181,7 +222,7 @@ public:
 
     public:
         BlockInfo(const Block & block_, const size_t stream_position_, bool set_deleted_rows, size_t tracer_ = 0)
-            : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows(), 1), deleted_rows(0)
+            : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows(), 1), deleted_rows(0), finalized(false)
         {
             if (set_deleted_rows)
                 deleted_rows = setFilterByDeleteMarkColumn(block, filter, true);
@@ -222,6 +263,9 @@ public:
 
         Block finalize()
         {
+            if (finalized)
+                throw Exception("Block already finalized: " + str());
+            finalized = true;
             deleteRows(block, filter);
             if (block.rows() == 0)
                 return Block();
@@ -261,6 +305,7 @@ public:
 
         IColumn::Filter filter;
         size_t deleted_rows;
+        bool finalized;
         std::shared_ptr<VersionColumn> version_column;
     };
 
@@ -757,6 +802,14 @@ private:
 
     bool outputAndUpdateCursor(DedupCursors & cursors, BoundQueue & bounds, DedupCursor & cursor);
 
+    void outputBlock(BlockInfoPtr & block, size_t position)
+    {
+        if (single_output)
+            output_block.push(block);
+        else
+            output_blocks[position]->push(block);
+    }
+
 private:
     Logger * log;
     BlockInputStreams children;
@@ -770,13 +823,15 @@ private:
     BlocksFifoPtrs source_blocks;
     BlocksFifoPtrs output_blocks;
 
+    BlocksFifo output_block;
+    const bool single_output;
+
     std::unique_ptr<std::thread> dedup_thread;
 
     ThreadPool readers;
 
     size_t finished_streams = 0;
     size_t total_compared = 0;
-    std::mutex mutex;
 };
 
 }
