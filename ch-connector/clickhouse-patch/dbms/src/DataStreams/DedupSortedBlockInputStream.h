@@ -45,13 +45,13 @@ public:
         InBlockDedupBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, size_t position_)
             : input(input_), description(description_), position(position_)
         {
-            log = &Logger::get("InBlockDedupBlockInputStream");
+            log = &Logger::get("InBlockDedupInput");
             children.emplace_back(input_);
         }
 
         String getName() const override
         {
-            return "InBlockDedupBlockInputStream";
+            return "InBlockDedupInput";
         }
 
         String getID() const override
@@ -91,10 +91,10 @@ public:
 
     using ParentPtr = std::shared_ptr<DedupSortedBlockInputStream>;
 
-    class BlockInputStream : public IProfilingBlockInputStream
+    class DedupSortedChildBlockInputStream : public IProfilingBlockInputStream
     {
     public:
-        BlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, ParentPtr parent_, size_t position_)
+        DedupSortedChildBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, ParentPtr parent_, size_t position_)
             : input(input_), description(description_), parent(parent_), position(position_)
         {
             children.emplace_back(input_);
@@ -102,7 +102,7 @@ public:
 
         String getName() const override
         {
-            return "DedupSortedBlockInputStream";
+            return "DedupSortedChild";
         }
 
         String getID() const override
@@ -776,7 +776,6 @@ private:
 
     size_t finished_streams = 0;
     size_t total_compared = 0;
-    std::mutex mutex;
 };
 
 }

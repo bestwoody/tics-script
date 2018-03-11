@@ -3,7 +3,7 @@
 #include <Common/setThreadName.h>
 #include <Common/CurrentMetrics.h>
 
-#define DEDUP_TRACER
+// #define DEDUP_TRACER
 #define TRACE_ID false
 
 #ifndef DEDUP_TRACER
@@ -69,7 +69,7 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams &
 
     BlockInputStreams res;
     for (size_t i = 0; i < inputs.size(); ++i)
-        res.emplace_back(std::make_shared<BlockInputStream>(inputs[i], description, parent, i));
+        res.emplace_back(std::make_shared<DedupSortedChildBlockInputStream>(inputs[i], description, parent, i));
 
     return res;
 }
