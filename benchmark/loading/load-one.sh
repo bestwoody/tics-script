@@ -19,7 +19,7 @@ fi
 dbgen "$blocks" "$table"
 trans_table "$blocks" "$table"
 
-"$chbin" client --host="$chserver" -d "$chdb" --query="create database if not exists $chdb"
+"$chbin" client --host="$chserver" --query="create database if not exists $chdb"
 if [ $? != 0 ]; then
 	echo "create database '"$chdb"' failed" >&2
 	exit 1
