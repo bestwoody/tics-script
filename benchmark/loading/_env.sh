@@ -3,6 +3,7 @@ source _vars.sh
 
 export chbin="$repo_dir/ch-connector/build/dbms/src/Server/clickhouse"
 export chserver="127.0.0.1"
+export chdb="default"
 
 export dbgen_dir="$repo_dir/benchmark/tpch-dbgen"
 export meta_dir="$this_dir/meta"
