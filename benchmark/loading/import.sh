@@ -8,6 +8,12 @@ if [ -z "$table" ] && [ -z "$blocks" ]; then
 	exit 1
 fi
 
+"$chbin" client --host="$chserver" -d "$chdb" --query="create database if not exists $chdb"
+if [ $? != 0 ]; then
+	echo "create database '"$chdb"' failed" >&2
+	exit 1
+fi
+
 source _import.sh
 
 schema="$meta_dir/schema/$table.schema"
@@ -16,7 +22,7 @@ if [ ! -f "$schema" ]; then
 	exit 1
 fi
 
-"$chbin" client --host="$chserver" --query="`cat $schema`"
+"$chbin" client --host="$chserver" -d "$chdb" --query="`cat $schema`"
 
 if [ -z "$blocks" ]; then
 	blocks="$tpch_blocks"
