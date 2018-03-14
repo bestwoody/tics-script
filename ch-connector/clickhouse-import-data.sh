@@ -9,8 +9,6 @@ if [ -z "$name" ]; then
 	exit 1
 fi
 
-bin="build/dbms/src/Server/clickhouse"
-
 gen=""
 data="running/data/$name.data"
 if [ -f "$data" ]; then
@@ -45,4 +43,4 @@ if [ -f "$schema" ]; then
 	DYLD_LIBRARY_PATH="" "$bin" client --host 127.0.0.1 --query="`cat $schema`"
 fi
 
-$gen | "$bin" client --host 127.0.0.1 --query="INSERT INTO $name FORMAT CSV"
+$gen | "$chbin" client --host 127.0.0.1 --query="INSERT INTO $name FORMAT CSV"

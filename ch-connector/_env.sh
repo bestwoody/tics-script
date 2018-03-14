@@ -1,3 +1,7 @@
 # TODO: Find lib path
-DYLD_LIBRARY_PATH=""
-LD_LIBRARY_PATH="/usr/local/lib64"
+export DYLD_LIBRARY_PATH=""
+export LD_LIBRARY_PATH="/usr/local/lib64"
+
+export chbin="build/dbms/src/Server/clickhouse"
+export chserver="127.0.0.1"
+export chdb="mutable"

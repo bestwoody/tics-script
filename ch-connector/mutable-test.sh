@@ -122,7 +122,7 @@ if [ -z "$dbc" ]; then
 	if [ "$debug" != "false" ] && [ "$debug" != "0" ]; then
 		debug="--stacktrace"
 	fi
-	dbc="build/dbms/src/Server/clickhouse client $debug -f PrettyCompactNoEscapes --query"
+	dbc="$chbin client --host $chserver -d $chdb  $debug -f PrettyCompactNoEscapes --query"
 fi
 
 if [ -z "$continue_on_error" ]; then
