@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..2a02b5e 100644
+index 7e0c703..5dc2919 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
-@@ -15,6 +15,14 @@
+@@ -15,6 +15,15 @@
  #include <Storages/MergeTree/MergeTreeData.h>
  #include <Storages/MergeTree/ActiveDataPartSet.h>
  
@@ -13,11 +13,12 @@ index 7e0c703..2a02b5e 100644
 +#include <DataStreams/RemoveColumnsBlockInputStream.h>
 +#include <DataStreams/AdditionalColumnsBlockOutputStream.h>
 +#include <DataStreams/DedupSortedBlockInputStream.h>
++#include <DataStreams/InBlockDedupBlockOutputStream.h>
 +
  #include <Poco/DirectoryIterator.h>
  #include <Poco/File.h>
  
-@@ -114,12 +122,93 @@ BlockInputStreams StorageMergeTree::read(
+@@ -114,12 +123,95 @@ BlockInputStreams StorageMergeTree::read(
      const size_t max_block_size,
      const unsigned num_streams)
  {
@@ -89,6 +90,7 @@ index 7e0c703..2a02b5e 100644
 +                    std::make_shared<AdditionalBlockGeneratorConst<UInt8>>(MutableSupport::delmark_column_name, 0)
 +                };
 +                res = std::make_shared<AdditionalColumnsBlockOutputStream>(res, gens);
++                res = std::make_shared<InBlockDedupBlockOutputStream>(res, data.getSortDescription());
 +            }
 +            else
 +                LOG_DEBUG(log, "Mutable table importing.");
@@ -103,6 +105,7 @@ index 7e0c703..2a02b5e 100644
 +                std::make_shared<AdditionalBlockGeneratorConst<UInt8>>(MutableSupport::delmark_column_name, 1)
 +            };
 +            res = std::make_shared<AdditionalColumnsBlockOutputStream>(res, gens);
++            res = std::make_shared<InBlockDedupBlockOutputStream>(res, data.getSortDescription());
 +        }
 +    }
 +    else if ((insert_query && insert_query->is_import) || delete_query)
@@ -114,7 +117,7 @@ index 7e0c703..2a02b5e 100644
  }
  
  bool StorageMergeTree::checkTableCanBeDropped() const
-@@ -129,6 +218,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
+@@ -129,6 +221,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
      return true;
  }
  

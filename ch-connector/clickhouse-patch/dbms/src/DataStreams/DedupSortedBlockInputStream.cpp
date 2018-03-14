@@ -55,16 +55,8 @@ Block dedupInBlock(Block block, const SortDescription & description, Logger * /*
 }
 
 
-BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & origin, const SortDescription & description)
+BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & inputs, const SortDescription & description)
 {
-    // TODO: Move in-block deduping to writing.
-    BlockInputStreams inputs;
-    if (MutableSupport::in_block_dedup_on_read)
-        for (size_t i = 0; i < origin.size(); ++i)
-            inputs.emplace_back(std::make_shared<InBlockDedupBlockInputStream>(origin[i], description, i));
-    else
-        inputs = origin;
-
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
     BlockInputStreams res;

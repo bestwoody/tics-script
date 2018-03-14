@@ -37,9 +37,6 @@ public:
     static const std::string version_column_name;
     static const std::string delmark_column_name;
 
-    static const bool in_block_dedup_on_write;
-    static const bool in_block_dedup_on_read;
-
 private:
     OrderedNameSet empty;
     OrderedNameSet mutable_hidden;
