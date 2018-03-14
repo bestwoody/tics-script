@@ -102,6 +102,8 @@ debug="$4"
 continue_on_error="$5"
 dbc="$6"
 
+source _env.sh
+
 if [ -z "$target" ]; then
 	target="mutable-test"
 fi

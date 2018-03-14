@@ -65,7 +65,7 @@
 #TODO Uncorrented exception info: columns should be dt, v.
 >> select _INTERNAL_VERSION from test
 Received exception from server (version {#WORD}):
-Code: 10. DB::Exception: Received from {#WORD}, {#WORD} DB::Exception: Not found column _INTERNAL_VERSION in block. There are only columns: v.
+Code: 10. DB::Exception: Received from {#WORD} DB::Exception: Not found column _INTERNAL_VERSION in block. There are only columns: v.
 
 ## Clean up:
 >> drop table if exists test
