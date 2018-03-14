@@ -94,11 +94,8 @@ DedupSortedBlockInputStream::DedupSortedBlockInputStream(BlockInputStreams & inp
 DedupSortedBlockInputStream::~DedupSortedBlockInputStream()
 {
     readers.wait();
-
     if (dedup_thread && dedup_thread->joinable())
         dedup_thread->join();
-
-    TRACER("Total compare rows: " << total_compared);
 }
 
 
