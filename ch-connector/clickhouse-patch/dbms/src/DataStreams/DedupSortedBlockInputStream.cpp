@@ -1,4 +1,5 @@
 #include <DataStreams/DedupSortedBlockInputStream.h>
+#include <DataStreams/DedupSortedChildBlockInputStream.h>
 #include <DataStreams/ReplacingSortedBlockInputStream.h>
 
 #include <Common/setThreadName.h>
@@ -112,7 +113,7 @@ void DedupSortedBlockInputStream::asynFetch(size_t position)
 }
 
 
-void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQueue & bounds, bool skip_one_row_top)
+void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQueue & bounds)
 {
     std::vector<DedupingBlockPtr> blocks(source_blocks.size());
     std::vector<SortCursorImpl> cursors_initing(source_blocks.size());
@@ -125,7 +126,7 @@ void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQue
 
         blocks[i] = block;
         TRACER("R Read #" << i << " " << *blocks[i]);
-        pushBlockBounds(block, bounds, skip_one_row_top);
+        pushBlockBounds(block, bounds);
 
         cursors_initing[i] = SortCursorImpl(*block, description);
         if (cursors_initing[i].has_collation)
@@ -151,7 +152,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
 {
     BoundQueue bounds;
     DedupCursors cursors(source_blocks.size());
-    readFromSource(cursors, bounds, true);
+    readFromSource(cursors, bounds);
     LOG_DEBUG(log, "P Init Bounds " << bounds.str() << " Cursors " << cursors.size());
 
     CursorQueue queue;
@@ -297,18 +298,17 @@ bool DedupSortedBlockInputStream::outputAndUpdateCursor(DedupCursors & cursors, 
     else
     {
         TRACER("Q New Block " << *block << " #" << position);
-        pushBlockBounds(block, bounds, true);
+        pushBlockBounds(block, bounds);
         cursors[position] = std::make_shared<DedupCursor>(SortCursorImpl(*block, description), block);
         return false;
     }
 }
 
 
-template <typename Queue>
-void DedupSortedBlockInputStream::pushBlockBounds(const DedupingBlockPtr & block, Queue & bounds, bool skip_one_row_top)
+void DedupSortedBlockInputStream::pushBlockBounds(const DedupingBlockPtr & block, BoundQueue & bounds)
 {
     TRACER("B Push " << *block << " To " << bounds);
-    if (!skip_one_row_top || block->rows() > 1)
+    if (block->rows() > 1)
     {
         DedupBound bound(DedupCursor(SortCursorImpl(*block, description), block));
         TRACER("B New Top " << bound);
