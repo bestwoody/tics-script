@@ -80,8 +80,8 @@ private:
     DedupingBlock & operator = (const DedupingBlock &);
 
 public:
-    DedupingBlock(const Block & block_, const size_t stream_position_, bool set_deleted_rows, size_t tracer_ = 0)
-        : stream_position(stream_position_), tracer(tracer_), block(block_), filter(block_.rows(), 1), deleted_rows(0)
+    DedupingBlock(const Block & block_, const size_t stream_position_, bool set_deleted_rows)
+        : stream_position(stream_position_), block(block_), filter(block_.rows(), 1), deleted_rows(0)
     {
         if (set_deleted_rows)
             deleted_rows = setFilterByDeleteMarkColumn(block, filter);
@@ -128,7 +128,7 @@ public:
         return block;
     }
 
-    String str(bool trace = false)
+    String str()
     {
 
         std::stringstream ostr;
@@ -137,8 +137,6 @@ public:
             ostr << "?";
         else
             ostr << stream_position;
-        if (trace)
-            ostr << "@" << tracer;
         ostr << ":";
         if (block)
             ostr << block.rows() << "-" << deleted_rows;
@@ -154,7 +152,6 @@ public:
 
 public:
     const size_t stream_position;
-    const size_t tracer;
 
 private:
     Block block;
@@ -250,9 +247,9 @@ using BlocksFifoPtrs = FifoPtrs<BlocksFifo>;
 class DedupCursor
 {
 public:
-    DedupCursor(size_t tracer_ = 0) : tracer(tracer_) {}
+    DedupCursor() {}
 
-    DedupCursor(const DedupCursor & rhs) : block(rhs.block), cursor(rhs.cursor), tracer(rhs.tracer)
+    DedupCursor(const DedupCursor & rhs) : block(rhs.block), cursor(rhs.cursor)
     {
         if (block)
             cursor.order = block->versions()[cursor.pos];
@@ -264,12 +261,11 @@ public:
         cursor = rhs.cursor;
         if (block)
             cursor.order = block->versions()[cursor.pos];
-        tracer = rhs.tracer;
         return *this;
     }
 
-    DedupCursor(const SortCursorImpl & cursor_, const DedupingBlockPtr & block_, size_t tracer_ = 0)
-        : block(block_), cursor(cursor_), tracer(tracer_)
+    DedupCursor(const SortCursorImpl & cursor_, const DedupingBlockPtr & block_)
+        : block(block_), cursor(cursor_)
     {
         cursor.order = block->versions()[cursor.pos];
     }
@@ -406,19 +402,17 @@ public:
         return const_cast<DedupCursor *>(this)->greater(rhs);
     }
 
-    String str(bool trace = false)
+    String str()
     {
         std::stringstream ostr;
 
-        if (trace)
-            ostr << ">" << tracer;
         if (!block)
         {
             ostr << "#?";
             return ostr.str();
         }
         else
-            ostr << block->str(trace);
+            ostr << block->str();
         ostr << "/" << cursor.pos << "\\" << cursor.order;
         return ostr.str();
     }
@@ -433,9 +427,6 @@ public:
 
 protected:
     SortCursorImpl cursor;
-
-public:
-    size_t tracer;
 };
 
 
@@ -478,7 +469,7 @@ struct CursorPlainPtr
 class CursorQueue : public std::priority_queue<CursorPlainPtr>
 {
 public:
-    String str(bool trace = false)
+    String str()
     {
         std::stringstream ostr;
         ostr << "Q:" << size();
@@ -488,7 +479,7 @@ public:
         {
             CursorPlainPtr it = copy.top();
             copy.pop();
-            ostr << "|" << it->str(trace);
+            ostr << "|" << it->str();
         }
         return ostr.str();
     }
@@ -504,12 +495,12 @@ struct DedupBound : public DedupCursor
 {
     bool is_bottom;
 
-    DedupBound(size_t tracer = 0) : DedupCursor(tracer), is_bottom(false) {}
+    DedupBound() : DedupCursor(), is_bottom(false) {}
 
     DedupBound(const DedupCursor & rhs) : DedupCursor(rhs), is_bottom(false) {}
 
-    DedupBound(const SortCursorImpl & cursor_, const DedupingBlockPtr & block_, size_t tracer_)
-        : DedupCursor(cursor_, block_, tracer_), is_bottom(false) {}
+    DedupBound(const SortCursorImpl & cursor_, const DedupingBlockPtr & block_)
+        : DedupCursor(cursor_, block_), is_bottom(false) {}
 
     void setToBottom()
     {
@@ -531,10 +522,10 @@ struct DedupBound : public DedupCursor
         return DedupCursor::greater(rhs);
     }
 
-    String str(bool trace = false)
+    String str()
     {
         std::stringstream ostr;
-        ostr << DedupCursor::str(trace);
+        ostr << DedupCursor::str();
         ostr << (is_bottom ? "L" : "F");
         return ostr.str();
     }
@@ -551,7 +542,7 @@ using DedupBoundPtr = std::shared_ptr<DedupBound>;
 class BoundQueue : public std::priority_queue<DedupBound>
 {
 public:
-    String str(bool trace = false)
+    String str()
     {
         std::stringstream ostr;
         ostr << "Q:" << size();
@@ -561,7 +552,7 @@ public:
         {
             DedupBound it = copy.top();
             copy.pop();
-            ostr << "|" << it.str(trace);
+            ostr << "|" << it.str();
         }
         return ostr.str();
     }

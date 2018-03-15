@@ -81,7 +81,9 @@ public:
 
 private:
     void asynDedupByQueue();
-    void asynRead(size_t pisition);
+    void asynFetch(size_t pisition);
+
+    void fetchBlock(size_t pisition);
 
     template <typename Queue>
     void pushBlockBounds(const DedupingBlockPtr & block, Queue & queue, bool skip_one_row_top = true);
@@ -96,9 +98,6 @@ private:
     const SortDescription description;
 
     const size_t queue_max;
-
-    IdGen order;
-    IdGen tracer;
 
     BlocksFifoPtrs source_blocks;
     BlocksFifoPtrs output_blocks;
