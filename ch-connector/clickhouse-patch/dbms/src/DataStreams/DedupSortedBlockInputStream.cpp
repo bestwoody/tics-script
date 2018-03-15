@@ -1,6 +1,7 @@
 #include <DataStreams/DedupSortedBlockInputStream.h>
 #include <DataStreams/DedupSortedChildBlockInputStream.h>
 #include <DataStreams/ReplacingSortedBlockInputStream.h>
+#include <DataStreams/ReplacingDeletingSortedBlockInputStream.h>
 
 #include <Common/setThreadName.h>
 #include <Common/CurrentMetrics.h>
@@ -56,6 +57,17 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams &
         return res;
     }
     */
+
+    // Debuging ReplacingDeletingSorted
+    if (inputs.size() > 0)
+    {
+        BlockInputStreams res;
+        BlockInputStreamPtr finalize = std::make_shared<ReplacingDeletingSortedBlockInputStream>(
+            inputs, description, MutableSupport::version_column_name, MutableSupport::delmark_column_name,
+            DEFAULT_MERGE_BLOCK_SIZE, nullptr, false, true);
+        res.emplace_back(finalize);
+        return res;
+    }
 
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
