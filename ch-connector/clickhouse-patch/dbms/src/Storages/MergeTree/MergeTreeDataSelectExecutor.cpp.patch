@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 1766f60..dd0016b 100644
+index 1766f60..4502dd2 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -7,10 +7,14 @@
@@ -17,24 +17,49 @@ index 1766f60..dd0016b 100644
  /// Allow to use __uint128_t as a template parameter for boost::rational.
  // https://stackoverflow.com/questions/41198673/uint128-t-not-working-with-clang-and-libstdc
  #if !defined(__GLIBCXX_BITSIZE_INT_N_0) && defined(__SIZEOF_INT128__)
-@@ -546,7 +550,15 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+@@ -510,6 +514,8 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+             CreatingSetsBlockInputStream(std::make_shared<NullBlockInputStream>(), prewhere_subqueries, settings.limits).read();
+     }
+ 
++    bool is_mutable_engine = (data.merging_params.mode == MergeTreeData::MergingParams::Mutable && !select.raw_for_mutable);
++
+     RangesInDataParts parts_with_ranges;
+ 
+     /// Let's find what range to read from each part.
+@@ -546,7 +552,31 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
  
      BlockInputStreams res;
  
 -    if (select.final())
-+    bool is_mutable_engine = (data.merging_params.mode == MergeTreeData::MergingParams::Mutable && !select.raw_for_mutable);
-+
 +    if (is_mutable_engine)
 +    {
 +        column_names_to_read.insert(column_names_to_read.end(), MutableSupport::version_column_name);
 +        column_names_to_read.insert(column_names_to_read.end(), MutableSupport::delmark_column_name);
-+    }
 +
-+    if (select.final() || is_mutable_engine)
++        std::vector<String> add_columns = data.getPrimaryExpression()->getRequiredColumns();
++        column_names_to_read.insert(column_names_to_read.end(), add_columns.begin(), add_columns.end());
++
++        std::sort(column_names_to_read.begin(), column_names_to_read.end());
++        column_names_to_read.erase(std::unique(column_names_to_read.begin(), column_names_to_read.end()), column_names_to_read.end());
++
++        res = spreadMarkRangesAmongStreamsFinal(
++            std::move(parts_with_ranges),
++            column_names_to_read,
++            max_block_size,
++            is_mutable_engine,
++            settings.use_uncompressed_cache,
++            prewhere_actions,
++            prewhere_column,
++            virt_column_names,
++            settings,
++            context);
++
++    }
++    else if (select.final())
      {
          /// Add columns needed to calculate primary key and the sign.
          std::vector<String> add_columns = data.getPrimaryExpression()->getRequiredColumns();
-@@ -564,6 +576,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+@@ -564,6 +594,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
              std::move(parts_with_ranges),
              column_names_to_read,
              max_block_size,
@@ -42,7 +67,7 @@ index 1766f60..dd0016b 100644
              settings.use_uncompressed_cache,
              prewhere_actions,
              prewhere_column,
-@@ -745,6 +758,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -745,6 +776,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
      RangesInDataParts && parts,
      const Names & column_names,
      size_t max_block_size,
@@ -50,7 +75,7 @@ index 1766f60..dd0016b 100644
      bool use_uncompressed_cache,
      ExpressionActionsPtr prewhere_actions,
      const String & prewhere_column,
-@@ -781,7 +795,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -781,7 +813,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
      }
  
      BlockInputStreams res;
@@ -59,7 +84,7 @@ index 1766f60..dd0016b 100644
      {
          if (!data.merging_params.sign_column.empty())
          {
-@@ -795,7 +809,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -795,7 +827,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
          else
              res = to_merge;
      }
@@ -68,7 +93,7 @@ index 1766f60..dd0016b 100644
      {
          BlockInputStreamPtr merged;
  
-@@ -823,6 +837,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -823,6 +855,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
                      data.getSortDescription(), data.merging_params.version_column, max_block_size);
                  break;
  
@@ -78,7 +103,7 @@ index 1766f60..dd0016b 100644
              case MergeTreeData::MergingParams::Unsorted:
                  throw Exception("UnsortedMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
  
-@@ -830,7 +847,10 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -830,7 +865,10 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
                  throw Exception("GraphiteMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
          }
  
