@@ -1,4 +1,5 @@
 #include <DataStreams/DedupSortedBlockInputStream.h>
+#include <DataStreams/ReplacingSortedBlockInputStream.h>
 
 #include <Common/setThreadName.h>
 #include <Common/CurrentMetrics.h>
@@ -14,6 +15,7 @@
 
 namespace CurrentMetrics
 {
+    // TODO: increase it
     extern const Metric QueryThread;
 }
 
@@ -25,38 +27,37 @@ namespace ErrorCodes
 namespace DB
 {
 
-Block dedupInBlock(Block block, const SortDescription & description, Logger * /* log */, size_t stream_position)
-{
-    if (!block)
-        return block;
-
-    DedupSortedBlockInputStream::BlockInfoPtr block_info = std::make_shared<DedupSortedBlockInputStream::BlockInfo>(block, stream_position, false);
-    SortCursorImpl cursor_impl(*block_info, description);
-    DedupSortedBlockInputStream::DedupCursor cursor(cursor_impl, block_info);
-
-    DedupSortedBlockInputStream::DedupCursor max;
-    while (true)
-    {
-        if (max)
-        {
-            // TRACER("D InBlock DedupB Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
-            dedupCursor(max, cursor);
-            // TRACER("D InBlock DedupE Max " << max.str(TRACE_ID) << " Cursor " << cursor.str(TRACE_ID));
-        }
-
-        max = cursor;
-        if (cursor.isLast())
-            break;
-        else
-            cursor.next();
-    }
-
-    return block_info->finalize();
-}
-
-
 BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & inputs, const SortDescription & description)
 {
+    // For speed test, no deleted handling.
+    /*
+    if (inputs.size() > 32)
+    {
+        size_t conc = 16;
+        std::vector<BlockInputStreams> splited(conc);
+        size_t curr = 0;
+        for (size_t i = 0; i < inputs.size(); i++)
+        {
+            splited[curr].emplace_back(inputs[i]);
+            curr += 1;
+            if (curr >= conc)
+                curr = 0;
+        }
+        BlockInputStreams subs;
+        for (size_t i = 0; i < conc; i++)
+        {
+            BlockInputStreamPtr replacing = std::make_shared<ReplacingSortedBlockInputStream>(
+                splited[i], description, MutableSupport::version_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false);
+            subs.emplace_back(replacing);
+        }
+        BlockInputStreams res;
+        BlockInputStreamPtr finalize = std::make_shared<ReplacingSortedBlockInputStream>(
+            subs, description, MutableSupport::version_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false);
+        res.emplace_back(finalize);
+        return res;
+    }
+    */
+
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
     BlockInputStreams res;
@@ -93,7 +94,7 @@ DedupSortedBlockInputStream::~DedupSortedBlockInputStream()
 
 Block DedupSortedBlockInputStream::read(size_t position)
 {
-    BlockInfoPtr block = output_blocks[position]->pop();
+    DedupingBlockPtr block = output_blocks[position]->pop();
     if (!*block)
         return Block();
     return block->finalize();
@@ -106,7 +107,7 @@ void DedupSortedBlockInputStream::asynRead(size_t position)
     {
         Block block = children[position]->read();
         // TRACER("A Origin read, #" << position << ", rows:" << block.rows());
-        source_blocks[position]->push(std::make_shared<BlockInfo>(block, position, true, tracer++));
+        source_blocks[position]->push(std::make_shared<DedupingBlock>(block, position, true, tracer++));
         if (!block)
             break;
     }
@@ -115,12 +116,12 @@ void DedupSortedBlockInputStream::asynRead(size_t position)
 
 void DedupSortedBlockInputStream::readFromSource(DedupCursors & output, BoundQueue & bounds, bool skip_one_row_top)
 {
-    std::vector<BlockInfoPtr> blocks(source_blocks.size());
+    std::vector<DedupingBlockPtr> blocks(source_blocks.size());
     std::vector<SortCursorImpl> cursors_initing(source_blocks.size());
 
     for (size_t i = 0; i < source_blocks.size(); i++)
     {
-        BlockInfoPtr block = source_blocks[i]->pop();
+        DedupingBlockPtr block = source_blocks[i]->pop();
         if (!*block)
             continue;
 
@@ -153,7 +154,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
     BoundQueue bounds;
     DedupCursors cursors(source_blocks.size());
     readFromSource(cursors, bounds, true);
-    TRACER("P Init Bounds " << bounds.str(TRACE_ID) << " Cursors " << cursors.size());
+    LOG_DEBUG(log, "P Init Bounds " << bounds.str(TRACE_ID) << " Cursors " << cursors.size());
 
     CursorQueue queue;
     DedupCursor max;
@@ -276,7 +277,7 @@ void DedupSortedBlockInputStream::asynDedupByQueue()
         }
     }
 
-    TRACER("P All Done. Bounds " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID) <<
+    LOG_DEBUG(log, "P All Done. Bounds " << bounds.str(TRACE_ID) << " Queue " << queue.str(TRACE_ID) <<
         "Streams finished " << finished_streams << "/" << cursors.size());
 }
 
@@ -287,7 +288,7 @@ bool DedupSortedBlockInputStream::outputAndUpdateCursor(DedupCursors & cursors, 
     size_t position = cursor.position();
     output_blocks[position]->push(cursor.block);
 
-    BlockInfoPtr block = source_blocks[position]->pop();
+    DedupingBlockPtr block = source_blocks[position]->pop();
     if (!*block)
     {
         TRACER("Q Finish #" << position << " Bounds " << bounds.str(TRACE_ID) << " Cursors " << cursors.size());
@@ -305,29 +306,8 @@ bool DedupSortedBlockInputStream::outputAndUpdateCursor(DedupCursors & cursors, 
 }
 
 
-template <class DedupCursor>
-DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs)
-{
-    if (!lhs.equal(rhs))
-        return 0;
-
-    DedupCursor * deleted = 0;
-
-    UInt64 version_lhs = lhs.block->versions()[lhs.row()];
-    UInt64 version_rhs = rhs.block->versions()[rhs.row()];
-
-    if (version_lhs > version_rhs)
-        deleted = &rhs;
-    else
-        deleted = &lhs;
-
-    deleted->block->setDeleted(deleted->row());
-    return deleted;
-}
-
-
 template <typename Queue>
-void DedupSortedBlockInputStream::pushBlockBounds(const BlockInfoPtr & block, Queue & bounds, bool skip_one_row_top)
+void DedupSortedBlockInputStream::pushBlockBounds(const DedupingBlockPtr & block, Queue & bounds, bool skip_one_row_top)
 {
     TRACER("B Push " << block->str(TRACE_ID) << " To " << bounds.str(TRACE_ID));
     if (!skip_one_row_top || block->rows() > 1)
@@ -345,45 +325,5 @@ void DedupSortedBlockInputStream::pushBlockBounds(const BlockInfoPtr & block, Qu
     TRACER("B Push Bottom To " << bounds.str(TRACE_ID));
 }
 
-
-void deleteRows(Block & block, const IColumn::Filter & filter)
-{
-    for (size_t i = 0; i < block.columns(); i++)
-    {
-        ColumnWithTypeAndName column = block.getByPosition(i);
-        column.column = column.column->filter(filter, 0);
-        block.erase(i);
-        block.insert(i, column);
-    }
-}
-
-size_t setFilterByDeleteMarkColumn(const Block & block, IColumn::Filter & filter, bool init)
-{
-    if (!block.has(MutableSupport::delmark_column_name))
-        return 0;
-
-    const ColumnWithTypeAndName & delmark_column =  block.getByName(MutableSupport::delmark_column_name);
-    const ColumnUInt8 * column = typeid_cast<const ColumnUInt8 *>(delmark_column.column.get());
-    if (!column)
-        throw("Del-mark column should be type ColumnUInt8.");
-
-    size_t rows = block.rows();
-    filter.resize(rows);
-    if (init)
-        for (size_t i = 0; i < rows; i++)
-            filter[i] = 1;
-
-    size_t sum = 0;
-    for (size_t i = 0; i < rows; i++)
-    {
-        if (column->getElement(i))
-        {
-            filter[i] = 0;
-            sum += 1;
-        }
-    }
-
-    return sum;
-}
 
 }
