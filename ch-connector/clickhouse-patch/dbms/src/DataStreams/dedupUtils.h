@@ -300,6 +300,7 @@ public:
         return skipped;
     }
 
+    // TODO: May have bug: should ignore cursor.order.
     size_t skipToGreaterEqualBySearch(DedupCursor & bound)
     {
         size_t origin_pos = cursor.pos;
@@ -318,6 +319,7 @@ public:
         return cursor.pos - origin_pos;
     }
 
+    // TODO: May have bug: should ignore cursor.order.
     size_t skipToGreaterEqualByNext(DedupCursor & bound)
     {
         size_t origin_pos = cursor.pos;
@@ -660,6 +662,7 @@ inline DedupCursor * dedupCursor(DedupCursor & lhs, DedupCursor & rhs)
     return deleted;
 }
 
+
 inline Block dedupInBlock(Block block, const SortDescription & description, size_t stream_position = size_t(-1))
 {
     if (!block)
@@ -685,5 +688,36 @@ inline Block dedupInBlock(Block block, const SortDescription & description, size
     return deduping_block->finalize();
 }
 
+
+inline void splitBlockByGreaterThanKey(const SortDescription description, SortCursorImpl & key, const Block & block, Block & head, Block & tail)
+{
+    head = block.cloneEmpty();
+    tail = block.cloneEmpty();
+
+    SortCursorImpl cursor(block, description);
+    size_t low = 0;
+    size_t high = block.rows() - 1;
+
+    while (low < high)
+    {
+        cursor.pos = ((high - low) >> 1) + low;
+        if (!SortCursor(const_cast<SortCursorImpl *>(&cursor)).greater(SortCursor(const_cast<SortCursorImpl *>(&key))))
+            low = cursor.pos + 1;
+        else
+            high = cursor.pos;
+    }
+
+    cursor.pos = high;
+    if (!SortCursor(const_cast<SortCursorImpl *>(&cursor)).greater(SortCursor(const_cast<SortCursorImpl *>(&key))))
+        throw Exception("Split block by key (greater than) failed, matched data not found.");
+
+    size_t tail_first_row = high;
+
+    for (size_t col = 0; col < block.columns(); ++col)
+    {
+        head.getByPosition(col).column = block.getByPosition(col).column->cut(0, tail_first_row);
+        tail.getByPosition(col).column = block.getByPosition(col).column->cut(tail_first_row, block.rows() - tail_first_row);
+    }
+}
 
 }

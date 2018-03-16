@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..5dc2919 100644
+index 7e0c703..31a0944 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
-@@ -15,6 +15,15 @@
+@@ -15,6 +15,17 @@
  #include <Storages/MergeTree/MergeTreeData.h>
  #include <Storages/MergeTree/ActiveDataPartSet.h>
  
@@ -15,15 +15,27 @@ index 7e0c703..5dc2919 100644
 +#include <DataStreams/DedupSortedBlockInputStream.h>
 +#include <DataStreams/InBlockDedupBlockOutputStream.h>
 +
++#include <DataStreams/PlaygroundBlockInputStream.h>
++
  #include <Poco/DirectoryIterator.h>
  #include <Poco/File.h>
  
-@@ -114,12 +123,95 @@ BlockInputStreams StorageMergeTree::read(
+@@ -114,12 +125,105 @@ BlockInputStreams StorageMergeTree::read(
      const size_t max_block_size,
      const unsigned num_streams)
  {
 -    return reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
 +    auto res = reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
++
++    // For fun
++    /*
++    {
++        BlockInputStreams players(res.size());
++        for (size_t i = 0; i < res.size(); ++i)
++            players[i] = std::make_shared<PlaygroundBlockInputStream>(res[i], data.getSortDescription());
++        res = players;
++    }
++    */
 +
 +    const ASTSelectQuery * select_query = typeid_cast<const ASTSelectQuery *>(&*query_info.query);
 +
@@ -117,7 +129,7 @@ index 7e0c703..5dc2919 100644
  }
  
  bool StorageMergeTree::checkTableCanBeDropped() const
-@@ -129,6 +221,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
+@@ -129,6 +233,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
      return true;
  }
  
