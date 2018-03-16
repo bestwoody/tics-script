@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 1766f60..bde5af6 100644
+index 1766f60..ab339b4 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -7,10 +7,14 @@
@@ -125,7 +125,7 @@ index 1766f60..bde5af6 100644
              case MergeTreeData::MergingParams::Unsorted:
                  throw Exception("UnsortedMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
  
-@@ -837,6 +874,82 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -837,6 +874,75 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
  }
  
  
@@ -176,13 +176,6 @@ index 1766f60..bde5af6 100644
 +
 +    const size_t max_marks_to_use_cache =
 +        (settings.merge_tree_max_rows_to_use_cache + data.index_granularity - 1) / data.index_granularity;
-+
-+    // TODO: Check and remove this
-+    sum_marks = 0;
-+    for (size_t i = 0; i < parts_with_ranges.size(); ++i)
-+        for (size_t j = 0; j < parts_with_ranges[i].ranges.size(); ++j)
-+            sum_marks += parts_with_ranges[i].ranges[j].end - parts_with_ranges[i].ranges[j].begin;
-+    LOG_DEBUG(log, "On mutable engine selected " << sum_marks << " marks to read");
 +
 +    if (sum_marks > max_marks_to_use_cache)
 +        use_uncompressed_cache = false;
