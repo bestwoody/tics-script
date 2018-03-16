@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 1766f60..949d6d2 100644
+index 1766f60..429f352 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -7,10 +7,14 @@
@@ -164,7 +164,7 @@ index 1766f60..949d6d2 100644
 +    else
 +    {
 +        // TODO: Split by range
-+        return {}
++        return {};
 +    }
 +}
 +
