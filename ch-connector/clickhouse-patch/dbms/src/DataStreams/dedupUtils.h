@@ -720,4 +720,41 @@ inline void splitBlockByGreaterThanKey(const SortDescription description, SortCu
     }
 }
 
+
+inline void readStreamToList(BlockInputStreamPtr input, BlocksList & output)
+{
+    input->readPrefix();
+    while (true)
+    {
+        Block block = input->read();
+        if (!block)
+            break;
+        output.emplace_back(block);
+    }
+    input->readSuffix();
+}
+
+
+inline void readStreamToBlock(BlockInputStreamPtr input, Block & output)
+{
+    input->readPrefix();
+    while (true)
+    {
+        Block block = input->read();
+        if (!block)
+        {
+            if (!output)
+                throw Exception("Stream should have one block, but not found.");
+            break;
+        }
+        else
+        {
+            if (output)
+                throw Exception("Stream should have one block, too many found.");
+            output = block;
+        }
+    }
+    input->readSuffix();
+}
+
 }
