@@ -9,8 +9,8 @@ namespace DB
 class ExtraHeadTailBlockInputStream : public IProfilingBlockInputStream
 {
 public:
-    ExtraHeadTailBlockInputStream(BlockInputStreamPtr & input_, const Block & head_, const Block & tail_)
-        : input(input_), head(head_), tail(tail_), head_done(!head), input_done(false), tail_done(!tail)
+    ExtraHeadTailBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, const Block & head_, const Block & tail_)
+        : input(input_), description(description_), head(head_), tail(tail_), head_done(!head), input_done(false), tail_done(!tail)
     {
         log = &Logger::get("ExtraHeadTailInput");
         children.emplace_back(input_);
@@ -77,6 +77,7 @@ private:
 private:
     Logger * log;
     BlockInputStreamPtr input;
+    const SortDescription description;
     Block head;
     Block tail;
     bool head_done;

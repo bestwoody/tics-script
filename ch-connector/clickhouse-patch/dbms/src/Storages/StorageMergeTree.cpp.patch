@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..31a0944 100644
+index 7e0c703..604f8eb 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
-@@ -15,6 +15,17 @@
+@@ -15,6 +15,19 @@
  #include <Storages/MergeTree/MergeTreeData.h>
  #include <Storages/MergeTree/ActiveDataPartSet.h>
  
@@ -15,27 +15,52 @@ index 7e0c703..31a0944 100644
 +#include <DataStreams/DedupSortedBlockInputStream.h>
 +#include <DataStreams/InBlockDedupBlockOutputStream.h>
 +
++#include <DataStreams/OneBlockInputStream.h>
 +#include <DataStreams/PlaygroundBlockInputStream.h>
++#include <DataStreams/ExtraHeadTailBlockInputStream.h>
 +
  #include <Poco/DirectoryIterator.h>
  #include <Poco/File.h>
  
-@@ -114,12 +125,105 @@ BlockInputStreams StorageMergeTree::read(
+@@ -114,12 +127,128 @@ BlockInputStreams StorageMergeTree::read(
      const size_t max_block_size,
      const unsigned num_streams)
  {
 -    return reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
 +    auto res = reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
++    const SortDescription & description = data.getSortDescription();
 +
-+    // For fun
++    // For fun begin
++
 +    /*
 +    {
 +        BlockInputStreams players(res.size());
 +        for (size_t i = 0; i < res.size(); ++i)
-+            players[i] = std::make_shared<PlaygroundBlockInputStream>(res[i], data.getSortDescription());
++        {
++            Block block;
++            readStreamToBlock(res[i], block);
++            Block head;
++            Block tail;
++            SortCursorImpl key(block, description);
++            splitBlockByGreaterThanKey(description, key, block, head, tail);
++            BlockInputStreamPtr origin = std::make_shared<OneBlockInputStream>(block);
++            BlockInputStreamPtr extra = std::make_shared<ExtraHeadTailBlockInputStream>(origin, description, head, tail);
++            players[i] = extra;
++        }
 +        res = players;
 +    }
 +    */
++
++    /*
++    {
++        BlockInputStreams players(res.size());
++        for (size_t i = 0; i < res.size(); ++i)
++            players[i] = std::make_shared<PlaygroundBlockInputStream>(res[i], description);
++        res = players;
++    }
++    */
++
++    // For fun end
 +
 +    const ASTSelectQuery * select_query = typeid_cast<const ASTSelectQuery *>(&*query_info.query);
 +
@@ -44,7 +69,7 @@ index 7e0c703..31a0944 100644
 +        if (select_query && !select_query->raw_for_mutable)
 +        {
 +            LOG_DEBUG(log, "Mutable table dedup read.");
-+            res = DedupSortedBlockInputStream::createStreams(res, data.getSortDescription());
++            res = DedupSortedBlockInputStream::createStreams(res, description);
 +
 +            Names filtered_names;
 +            filtered_names.push_back(MutableSupport::version_column_name);
@@ -62,12 +87,10 @@ index 7e0c703..31a0944 100644
 +        throw Exception("Only " + MutableSupport::storage_name + " support SELRAW.", ErrorCodes::BAD_ARGUMENTS);
 +    }
 +    return res;
- }
- 
--BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & /*query*/, const Settings & /*settings*/)
++}
++
 +UInt64 StorageMergeTree::getVersionSeed(const Settings & /* settings */) const
- {
--    return std::make_shared<MergeTreeBlockOutputStream>(*this);
++{
 +    // NOTE:
 +    // We don't guarantee thread safe.
 +    // In that case, we assume data not related in diffent thread.
@@ -79,10 +102,12 @@ index 7e0c703..31a0944 100644
 +    // It's faster if we use (increment.value << 32).
 +    // We use '* 1000000' for readable results, just for now
 +    return (increment.value + 1) * 1000000;
-+}
-+
+ }
+ 
+-BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & /*query*/, const Settings & /*settings*/)
 +BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & query, const Settings & settings)
-+{
+ {
+-    return std::make_shared<MergeTreeBlockOutputStream>(*this);
 +    BlockOutputStreamPtr res = std::make_shared<MergeTreeBlockOutputStream>(*this);
 +
 +    const ASTInsertQuery * insert_query = typeid_cast<const ASTInsertQuery *>(&*query);
@@ -129,7 +154,7 @@ index 7e0c703..31a0944 100644
  }
  
  bool StorageMergeTree::checkTableCanBeDropped() const
-@@ -129,6 +233,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
+@@ -129,6 +258,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
      return true;
  }
  

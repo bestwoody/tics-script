@@ -8,8 +8,8 @@ namespace DB
 class InBlockDedupBlockInputStream : public IProfilingBlockInputStream
 {
 public:
-    InBlockDedupBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, size_t position_)
-        : input(input_), description(description_), position(position_)
+    InBlockDedupBlockInputStream(BlockInputStreamPtr & input_, const SortDescription & description_, size_t stream_position_)
+        : input(input_), description(description_), stream_position(stream_position_)
     {
         log = &Logger::get("InBlockDedupInput");
         children.emplace_back(input_);
@@ -45,14 +45,14 @@ public:
 private:
     Block readImpl() override
     {
-        return dedupInBlock(input->read(), description, position);
+        return dedupInBlock(input->read(), description, stream_position);
     }
 
 private:
     Logger * log;
     BlockInputStreamPtr input;
     const SortDescription description;
-    size_t position;
+    size_t stream_position;
 };
 
 }
