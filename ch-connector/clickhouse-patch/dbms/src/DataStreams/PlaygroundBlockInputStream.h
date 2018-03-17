@@ -61,7 +61,6 @@ private:
     Logger * log;
     BlockInputStreamPtr input;
     const SortDescription description;
-    size_t position;
 };
 
 }
