@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 1766f60..253f967 100644
+index 1766f60..f75b396 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -7,10 +7,16 @@
@@ -82,7 +82,8 @@ index 1766f60..253f967 100644
 -    BlockInputStreams res;
 +        std::sort(column_names_to_read.begin(), column_names_to_read.end());
 +        column_names_to_read.erase(std::unique(column_names_to_read.begin(), column_names_to_read.end()), column_names_to_read.end());
-+
+ 
+-    if (select.final())
 +        res = spreadMarkRangesAmongStreamsOnMutableEngine(
 +            parts,
 +            key_condition,
@@ -94,8 +95,7 @@ index 1766f60..253f967 100644
 +            prewhere_column,
 +            virt_column_names,
 +            settings);
- 
--    if (select.final())
++
 +        if (res.size() == 0)
 +            return res;
 +    }
@@ -121,7 +121,7 @@ index 1766f60..253f967 100644
              case MergeTreeData::MergingParams::Unsorted:
                  throw Exception("UnsortedMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
  
-@@ -837,6 +847,137 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -837,6 +847,166 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
  }
  
  
@@ -147,6 +147,7 @@ index 1766f60..253f967 100644
 +        use_uncompressed_cache = false;
 +
 +    // TODO: Implement: split parts to sections
++    // TODO: If data is small enough, use simple DedupSorted
 +    {
 +        Stopwatch watch;
 +        const size_t min_marks_for_concurrent_read =
@@ -155,33 +156,40 @@ index 1766f60..253f967 100644
 +            num_streams = std::max((sum_marks + min_marks_for_concurrent_read - 1) / min_marks_for_concurrent_read, parts.size());
 +
 +        size_t each_section_marks = (sum_marks + num_streams / 2) / num_streams;
++        size_t marks_increase_step = std::max(sum_marks / 16, 1);
 +
-+        LOG_DEBUG(log, "Each section marks: " << each_section_marks);
++        LOG_DEBUG(log, "Each section marks: " << each_section_marks << ", splitting increase step" << marks_increase_step);
 +
-+        struct SplitedPartStream
++        struct SplittedPartStream
 +        {
-+            RangesInDataPart part;
++            RangesInDataPart gathered_ranges_in_part;
 +            Block extra_head;
 +            Block extra_tail;
 +        };
 +
-+        using SplitedSortingStream = std::vector<SplitedPartStream>;
++        using SplittedSortingStream = std::vector<SplittedPartStream>;
 +
 +        /*
-+        std::vector<SplitedSortingStream> splited_sorting_streams;
++        std::vector<SplittedSortingStream> splitted_sorting_streams;
 +
-+        SplitedSortingStream curr_spliting(ranges_with_parts.size());
++        SplittedSortingStream curr_gathering(ranges_with_parts.size());
++        for (size_t i = 0; i < ranges_with_parts.size(); ++i)
++            curr_gathering[i].gathered_ranges_in_part.part_index_in_query = ranges_with_parts[i].gathered_ranges_in_part;
++
 +        size_t num_ranges_in_curr_section = 0;
 +
 +        struct RangeCursor
 +        {
-+            size_t part_index;
++            RangesInDataPart * ranges_in_part;
 +            size_t range_index;
 +
-+            // TODO: Compare by range right bound.
++            // Base 0, not MarkRange.begin
++            size_t mark_index;
++
++            // TODO: Impliment: compare part index value of cursor right bound.
 +            static friend operator < (const RangeCursor & l, const RangeCursor & r)
 +            {
-+                return l.part_index < r.part_index;
++                return l.ranges_in_part->part_index_in_query < r.ranges_in_part->part_index_in_query;
 +            }
 +        };
 +
@@ -194,36 +202,57 @@ index 1766f60..253f967 100644
 +        {
 +            RangeCursor cursor = ranges_queue.top();
 +            ranges_queue.pop();
++
++            auto & gathering_part = curr_gathering[cursor.ranges_in_part->part_index_in_query];
++            auto & gathering_ranges = gathering_part.gathered_ranges_in_part.ranges;
++            auto & splitting_range = cursor.ranges_in_parts.ranges[cursor.range_index];
++
++            size_t increase_step = std::min(splitting_range.end - splitting_range.begin - cursor.mark_index, marks_increase_step);
++
++            MarkRange range = {splitting_range.begin + cursor.mark_index, splitting_range.begin + cursor.mark_index + increase_step};
++
 +            // TODO: Check/Read/Split the block cross bound
-+            // TODO: range != mark
-+            curr_spliting[cursor.part_index].part.ranges.emplace_back(ranges_with_parts[cursor.part_index].ranges[cursor.range_index]);
-+            num_ranges_in_curr_section += 1;
-+            if (num_ranges_in_curr_section >= each_section_marks && splited_sorting_streams.size() < num_streams)
++
++            gathering_ranges.emplace_back(range);
++            num_ranges_in_curr_section += increase_step;
++
++            if (num_ranges_in_curr_section >= each_section_marks && splitted_sorting_streams.size() < num_streams)
 +            {
-+                splited_sorting_streams.emplace_back(curr_spliting);
-+                for (size_t i = 0; i < curr_spliting.size(); ++i)
-+                    curr_spliting[i] = {};
++                splitted_sorting_streams.emplace_back(curr_gathering);
++                curr_gathering = SplittedSortingStream(ranges_with_parts.size());
++                for (size_t i = 0; i < ranges_with_parts.size(); ++i)
++                    curr_gathering[i].gathered_ranges_in_part.part_index_in_query = ranges_with_parts[i].gathered_ranges_in_part;
 +            }
 +
-+            cursor.range_index += 1;
-+            if (cursor.range_index < ranges_with_parts[cursor.part_index].ranges.size())
++            cursor.mark_index += increase_step;
++            if (cursor.mark_index < splitting_range.end - splitting_range.begin)
++            {
 +                ranges_queue.push(cursor);
++            }
++            else
++            {
++                cursor.range_index += 1;
++                cursor.mark_index = 0;
++                if (cursor.range_index < cursor.ranges_in_part->ranges.size())
++                    ranges_queue.push(cursor);
++            }
 +        }
-+        splited_sorting_streams.emplace_back(curr_spliting);
++
++        splitted_sorting_streams.emplace_back(curr_gathering);
 +
 +        BlockInputStreams res;
-+        for (auto & splited : splited_sorting_streams)
++        for (auto & splitted_parts : splitted_sorting_streams)
 +        {
 +            BlockInputStreams part_streams;
-+            for (auto & part : splited)
++            for (auto & splitted_part : splitted_parts)
 +            {
 +                BlockInputStreamPtr part_stream = std::make_shared<MergeTreeBlockInputStream>(
-+                    data, part.part, max_block_size, settings.preferred_block_size_bytes,
-+                    settings.preferred_max_column_in_block_size_bytes, column_names, part.part.ranges, use_uncompressed_cache,
-+                    prewhere_actions, prewhere_column, true, settings.min_bytes_to_use_direct_io, settings.max_read_buffer_size, true,
-+                    virt_columns, part.part.part_index_in_query);
++                    data, splitted_part.gathered_ranges_in_part, max_block_size, settings.preferred_block_size_bytes,
++                    settings.preferred_max_column_in_block_size_bytes, column_names, splitted_part.gathered_ranges_in_part.ranges,
++                    use_uncompressed_cache, prewhere_actions, prewhere_column, true, settings.min_bytes_to_use_direct_io,
++                    settings.max_read_buffer_size, true, virt_columns, splitted_part.gathered_ranges_in_part.part_index_in_query);
 +                part_stream = std::make_shared<ExtraHeadTailBlockInputStream(part_stream, part.head, part.tail);
-+                // TODO: remove?
++                // TODO: Remove it?
 +                part_streams.emplace_back(std::make_shared<ExpressionBlockInputStream>(part_stream, data.getPrimaryExpression()));
 +            }
 +            res.emplace_back(std::make_share<ReplacingDeletingBlockInputStream>(part_streams));
@@ -259,7 +288,7 @@ index 1766f60..253f967 100644
  void MergeTreeDataSelectExecutor::createPositiveSignCondition(
      ExpressionActionsPtr & out_expression, String & out_column, const Context & context) const
  {
-@@ -948,4 +1089,45 @@ MarkRanges MergeTreeDataSelectExecutor::markRangesFromPKRange(
+@@ -948,4 +1118,45 @@ MarkRanges MergeTreeDataSelectExecutor::markRangesFromPKRange(
      return res;
  }
  
