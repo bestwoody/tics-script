@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 1766f60..c1bcce9 100644
+index 1766f60..5c78972 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -7,10 +7,14 @@
@@ -165,9 +165,9 @@ index 1766f60..c1bcce9 100644
 +            num_streams = std::max((sum_marks + min_marks_for_concurrent_read - 1) / min_marks_for_concurrent_read, parts.size());
 +
 +        size_t each_section_marks = (sum_marks + num_streams / 2) / num_streams;
-+        size_t marks_increase_step = std::max(sum_marks / 16, 1);
++        size_t marks_increase_step = std::max(each_section_marks / 16, 1);
 +
-+        LOG_DEBUG(log, "Each section marks: " << each_section_marks << ", splitting increase step" << marks_increase_step);
++        LOG_DEBUG(log, "Each section marks: " << each_section_marks << ", splitting increase step " << marks_increase_step);
 +
 +        struct SplittedPartStream
 +        {
