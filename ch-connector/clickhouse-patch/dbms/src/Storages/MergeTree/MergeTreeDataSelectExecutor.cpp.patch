@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 1766f60..5c78972 100644
+index 1766f60..f9836b2 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -7,10 +7,14 @@
@@ -17,18 +17,19 @@ index 1766f60..5c78972 100644
  /// Allow to use __uint128_t as a template parameter for boost::rational.
  // https://stackoverflow.com/questions/41198673/uint128-t-not-working-with-clang-and-libstdc
  #if !defined(__GLIBCXX_BITSIZE_INT_N_0) && defined(__SIZEOF_INT128__)
-@@ -43,6 +47,10 @@ namespace std
+@@ -43,6 +47,11 @@ namespace std
  #include <DataTypes/DataTypeEnum.h>
  #include <Storages/VirtualColumnUtils.h>
  
 +#include <Storages/MutableSupport.h>
 +#include <DataStreams/ExtraHeadTailBlockInputStream.h>
 +#include <DataStreams/ReplacingDeletingSortedBlockInputStream.h>
++#include <DataStreams/AsynchronousBlockInputStream.h>
 +
  
  namespace ProfileEvents
  {
-@@ -138,8 +146,6 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+@@ -138,8 +147,6 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
      const unsigned num_streams,
      Int64 max_block_number_to_read) const
  {
@@ -37,7 +38,7 @@ index 1766f60..5c78972 100644
      MergeTreeData::DataPartsVector parts = data.getDataPartsVector();
  
      /// If query contains restrictions on the virtual column `_part` or `_part_index`, select only parts suitable for it.
-@@ -510,43 +516,45 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+@@ -510,43 +517,45 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
              CreatingSetsBlockInputStream(std::make_shared<NullBlockInputStream>(), prewhere_subqueries, settings.limits).read();
      }
  
@@ -112,7 +113,7 @@ index 1766f60..5c78972 100644
      {
          /// Add columns needed to calculate primary key and the sign.
          std::vector<String> add_columns = data.getPrimaryExpression()->getRequiredColumns();
-@@ -741,6 +749,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreams(
+@@ -741,6 +750,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreams(
      return res;
  }
  
@@ -120,7 +121,7 @@ index 1766f60..5c78972 100644
  BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal(
      RangesInDataParts && parts,
      const Names & column_names,
-@@ -823,6 +832,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -823,6 +833,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
                      data.getSortDescription(), data.merging_params.version_column, max_block_size);
                  break;
  
@@ -130,7 +131,7 @@ index 1766f60..5c78972 100644
              case MergeTreeData::MergingParams::Unsorted:
                  throw Exception("UnsortedMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
  
-@@ -837,6 +849,172 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -837,6 +850,174 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
  }
  
  
@@ -178,7 +179,6 @@ index 1766f60..5c78972 100644
 +
 +        using SplittedSortingStream = std::vector<SplittedPartStream>;
 +
-+        ///*
 +        std::vector<SplittedSortingStream> splitted_sorting_streams;
 +
 +        SplittedSortingStream curr_gathering(parts_with_ranges.size());
@@ -259,25 +259,28 @@ index 1766f60..5c78972 100644
 +            BlockInputStreams part_streams;
 +            for (auto & splitted_part : splitted_parts)
 +            {
++                if (splitted_part.gathered_ranges_in_part.ranges.empty())
++                    continue;
 +                BlockInputStreamPtr part_stream = std::make_shared<MergeTreeBlockInputStream>(
 +                    data, splitted_part.gathered_ranges_in_part.data_part, max_block_size, settings.preferred_block_size_bytes,
 +                    settings.preferred_max_column_in_block_size_bytes, column_names, splitted_part.gathered_ranges_in_part.ranges,
 +                    use_uncompressed_cache, prewhere_actions, prewhere_column, true, settings.min_bytes_to_use_direct_io,
 +                    settings.max_read_buffer_size, true, virt_columns, splitted_part.gathered_ranges_in_part.part_index_in_query);
 +                part_stream = std::make_shared<ExtraHeadTailBlockInputStream>(part_stream, description,
-+                    splitted_part.extra_head, splitted_part.extra_tail);
++                   splitted_part.extra_head, splitted_part.extra_tail);
++                part_stream = std::make_shared<AsynchronousBlockInputStream>(part_stream);
 +                // TODO: Remove it?
-+                part_streams.emplace_back(std::make_shared<ExpressionBlockInputStream>(part_stream, data.getPrimaryExpression()));
++                part_stream = std::make_shared<ExpressionBlockInputStream>(part_stream, data.getPrimaryExpression());
++                part_streams.emplace_back(part_stream);
 +            }
 +            res.emplace_back(std::make_shared<ReplacingDeletingSortedBlockInputStream>(part_streams, description,
 +                MutableSupport::version_column_name, MutableSupport::delmark_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false, true));
 +        }
-+        //*/
 +
 +        watch.stop();
 +        LOG_INFO(log, std::fixed << std::setprecision(3) << "Create reading plan in " << watch.elapsedSeconds() << " sec.");
 +
-+        //return res;
++        return res;
 +    }
 +
 +    // Origin reading
@@ -303,7 +306,7 @@ index 1766f60..5c78972 100644
  void MergeTreeDataSelectExecutor::createPositiveSignCondition(
      ExpressionActionsPtr & out_expression, String & out_column, const Context & context) const
  {
-@@ -948,4 +1126,45 @@ MarkRanges MergeTreeDataSelectExecutor::markRangesFromPKRange(
+@@ -948,4 +1129,45 @@ MarkRanges MergeTreeDataSelectExecutor::markRangesFromPKRange(
      return res;
  }
  

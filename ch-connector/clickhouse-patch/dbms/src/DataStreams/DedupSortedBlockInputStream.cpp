@@ -29,6 +29,7 @@ namespace DB
 
 BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & inputs, const SortDescription & description)
 {
+    return inputs;
     // For speed test, no deleted handling.
     /*
     if (inputs.size() > 32)
