@@ -29,10 +29,9 @@ namespace DB
 
 BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & inputs, const SortDescription & description)
 {
-    return inputs;
     // For speed test, no deleted handling.
     /*
-    if (inputs.size() > 32)
+    if (inputs.size() > 0)
     {
         size_t conc = 16;
         std::vector<BlockInputStreams> splited(conc);
@@ -51,6 +50,8 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams &
                 splited[i], description, MutableSupport::version_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false);
             subs.emplace_back(replacing);
         }
+        // Test one level dedup
+        return subs;
         BlockInputStreams res;
         BlockInputStreamPtr finalize = std::make_shared<ReplacingSortedBlockInputStream>(
             subs, description, MutableSupport::version_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false);
@@ -60,6 +61,7 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams &
     */
 
     // Debuging ReplacingDeletingSorted
+    /*
     if (inputs.size() > 0)
     {
         BlockInputStreams res;
@@ -69,6 +71,7 @@ BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams &
         res.emplace_back(finalize);
         return res;
     }
+    */
 
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 

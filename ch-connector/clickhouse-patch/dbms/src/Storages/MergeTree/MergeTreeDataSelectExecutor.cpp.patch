@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 1766f60..f9836b2 100644
+index 1766f60..e8b50c3 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -7,10 +7,14 @@
@@ -280,7 +280,7 @@ index 1766f60..f9836b2 100644
 +        watch.stop();
 +        LOG_INFO(log, std::fixed << std::setprecision(3) << "Create reading plan in " << watch.elapsedSeconds() << " sec.");
 +
-+        return res;
++        // return res;
 +    }
 +
 +    // Origin reading
