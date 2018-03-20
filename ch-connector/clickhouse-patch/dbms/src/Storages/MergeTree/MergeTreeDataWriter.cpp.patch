@@ -1,8 +1,44 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
-index 4781a00..48d1de6 100644
+index 4781a00..43277a0 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
-@@ -71,19 +71,28 @@ BlocksWithPartition MergeTreeDataWriter::splitBlockIntoParts(const Block & block
+@@ -6,6 +6,9 @@
+ #include <IO/HashingWriteBuffer.h>
+ #include <Poco/File.h>
+ 
++#include <Storages/MutableSupport.h>
++#include <Common/FieldVisitors.h>
++
+ 
+ namespace ProfileEvents
+ {
+@@ -24,6 +27,7 @@ namespace
+ 
+ void buildScatterSelector(
+         const ColumnRawPtrs & columns,
++        const size_t partition_mod,
+         PODArray<size_t> & partition_num_to_first_row,
+         IColumn::Selector & selector)
+ {
+@@ -36,6 +40,9 @@ void buildScatterSelector(
+     for (size_t i = 0; i < num_rows; ++i)
+     {
+         Data::key_type key = hash128(i, columns.size(), columns);
++        // TODO: Better mod calculating.
++        key = (partition_mod == 1) ? key : UInt128(key.low % partition_mod);
++
+         typename Data::iterator it;
+         bool inserted;
+         partitions_map.emplace(key, it, inserted);
+@@ -43,6 +50,7 @@ void buildScatterSelector(
+         if (inserted)
+         {
+             partition_num_to_first_row.push_back(i);
++
+             it->second = partitions_count;
+ 
+             ++partitions_count;
+@@ -71,29 +79,47 @@ BlocksWithPartition MergeTreeDataWriter::splitBlockIntoParts(const Block & block
      data.check(block, true);
      block.checkNumberOfRows();
  
@@ -37,3 +73,23 @@ index 4781a00..48d1de6 100644
  
      PODArray<size_t> partition_num_to_first_row;
      IColumn::Selector selector;
+-    buildScatterSelector(partition_columns, partition_num_to_first_row, selector);
++    // TODO: 16 => engine args
++    size_t partition_mod = (data.merging_params.mode != MergeTreeData::MergingParams::Mutable) ? 1 : MutableSupport::default_partition_num;
++    buildScatterSelector(partition_columns, partition_mod, partition_num_to_first_row, selector);
+ 
+     size_t partitions_count = partition_num_to_first_row.size();
+     result.reserve(partitions_count);
+ 
+     auto get_partition = [&](size_t num)
+     {
++        if (data.merging_params.mode == MergeTreeData::MergingParams::Mutable)
++        {
++            Row partition(1);
++            partition[0] = UInt64(num);
++            return partition;
++        }
++
+         Row partition(partition_columns.size());
+         for (size_t i = 0; i < partition_columns.size(); ++i)
+             partition[i] = Field((*partition_columns[i])[partition_num_to_first_row[num]]);

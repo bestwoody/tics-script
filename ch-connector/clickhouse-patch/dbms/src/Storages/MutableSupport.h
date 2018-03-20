@@ -37,6 +37,8 @@ public:
     static const std::string version_column_name;
     static const std::string delmark_column_name;
 
+    static const size_t default_partition_num;
+
 private:
     OrderedNameSet empty;
     OrderedNameSet mutable_hidden;
