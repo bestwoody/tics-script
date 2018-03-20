@@ -29,50 +29,6 @@ namespace DB
 
 BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & inputs, const SortDescription & description)
 {
-    // For speed test, no deleted handling.
-    /*
-    if (inputs.size() > 0)
-    {
-        size_t conc = 16;
-        std::vector<BlockInputStreams> splited(conc);
-        size_t curr = 0;
-        for (size_t i = 0; i < inputs.size(); i++)
-        {
-            splited[curr].emplace_back(inputs[i]);
-            curr += 1;
-            if (curr >= conc)
-                curr = 0;
-        }
-        BlockInputStreams subs;
-        for (size_t i = 0; i < conc; i++)
-        {
-            BlockInputStreamPtr replacing = std::make_shared<ReplacingSortedBlockInputStream>(
-                splited[i], description, MutableSupport::version_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false);
-            subs.emplace_back(replacing);
-        }
-        // Test one level dedup
-        return subs;
-        BlockInputStreams res;
-        BlockInputStreamPtr finalize = std::make_shared<ReplacingSortedBlockInputStream>(
-            subs, description, MutableSupport::version_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false);
-        res.emplace_back(finalize);
-        return res;
-    }
-    */
-
-    // Debuging ReplacingDeletingSorted
-    /*
-    if (inputs.size() > 0)
-    {
-        BlockInputStreams res;
-        BlockInputStreamPtr finalize = std::make_shared<ReplacingDeletingSortedBlockInputStream>(
-            inputs, description, MutableSupport::version_column_name, MutableSupport::delmark_column_name,
-            DEFAULT_MERGE_BLOCK_SIZE, nullptr, false, true);
-        res.emplace_back(finalize);
-        return res;
-    }
-    */
-
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
     BlockInputStreams res;

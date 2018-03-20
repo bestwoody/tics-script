@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
-index 0b3b2a1..db090f0 100644
+index 0b3b2a1..86a5ccd 100644
 --- a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 +++ b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 @@ -1,6 +1,7 @@
@@ -23,7 +23,7 @@ index 0b3b2a1..db090f0 100644
              "Unknown storage " + args.engine_name + getMergeTreeVerboseHelp(is_extended_storage_def),
              ErrorCodes::UNKNOWN_STORAGE);
  
-+    bool is_mutable_engine = (merging_params.mode != MergeTreeData::MergingParams::Mutable);
++    bool is_mutable_engine = (merging_params.mode == MergeTreeData::MergingParams::Mutable);
 +
      /// NOTE Quite complicated.
  
