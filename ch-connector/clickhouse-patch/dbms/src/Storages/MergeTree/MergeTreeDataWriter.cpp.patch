@@ -1,0 +1,39 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
+index 4781a00..48d1de6 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
++++ b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
+@@ -71,19 +71,28 @@ BlocksWithPartition MergeTreeDataWriter::splitBlockIntoParts(const Block & block
+     data.check(block, true);
+     block.checkNumberOfRows();
+ 
+-    if (!data.partition_expr) /// Table is not partitioned.
++    if (!data.partition_expr && data.merging_params.mode != MergeTreeData::MergingParams::Mutable) /// Table is not partitioned.
+     {
+         result.emplace_back(Block(block), Row());
+         return result;
+     }
+ 
+     Block block_copy = block;
+-    data.partition_expr->execute(block_copy);
+-
+     ColumnRawPtrs partition_columns;
+-    partition_columns.reserve(data.partition_expr_columns.size());
+-    for (const String & name : data.partition_expr_columns)
+-        partition_columns.emplace_back(block_copy.getByName(name).column.get());
++    if (data.merging_params.mode != MergeTreeData::MergingParams::Mutable)
++    {
++        data.partition_expr->execute(block_copy);
++        partition_columns.reserve(data.partition_expr_columns.size());
++        for (const String & name : data.partition_expr_columns)
++            partition_columns.emplace_back(block_copy.getByName(name).column.get());
++    }
++    else
++    {
++        std::vector<String> primary_columns = data.getPrimaryExpression()->getRequiredColumns();
++        partition_columns.reserve(primary_columns.size());
++        for (const String & name : primary_columns)
++            partition_columns.emplace_back(block_copy.getByName(name).column.get());
++    }
+ 
+     PODArray<size_t> partition_num_to_first_row;
+     IColumn::Selector selector;
