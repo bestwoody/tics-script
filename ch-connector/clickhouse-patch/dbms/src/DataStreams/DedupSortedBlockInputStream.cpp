@@ -29,6 +29,9 @@ namespace DB
 
 BlockInputStreams DedupSortedBlockInputStream::createStreams(BlockInputStreams & inputs, const SortDescription & description)
 {
+    // TODO
+    return inputs;
+
     auto parent = std::make_shared<DedupSortedBlockInputStream>(inputs, description);
 
     BlockInputStreams res;
