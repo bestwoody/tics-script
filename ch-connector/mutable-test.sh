@@ -130,4 +130,11 @@ fi
 if [ -z "$continue_on_error" ]; then
 	continue_on_error="false"
 fi
+
+"$chbin" client --host="$chserver" --query="create database if not exists $chdb"
+if [ $? != 0 ]; then
+	echo "create database '"$chdb"' failed" >&2
+	exit 1
+fi
+
 run_path "$dbc" "$target" "$continue_on_error" "$fuzz" "$skip_raw_test"

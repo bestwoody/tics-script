@@ -5,7 +5,7 @@
 	dt Date,
 	a Int32,
 	b Int32
-	) engine = MutableMergeTree(dt, (b), 8192)
+	) engine = MutableMergeTree((b), 8192)
 
 >> insert into test values (0, 1, 1), (0, 2, 2)
 >> select * from test
