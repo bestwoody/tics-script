@@ -2,6 +2,7 @@
 
 #include <Storages/MutableSupport.h>
 #include <Columns/ColumnsNumber.h>
+#include <Columns/ColumnFixedString.h>
 
 #include <Core/SortDescription.h>
 #include <Core/SortCursor.h>
@@ -756,5 +757,92 @@ inline void readStreamToBlock(BlockInputStreamPtr input, Block & output)
     }
     input->readSuffix();
 }
+
+
+// Not a effective implement, for test/dev only.
+struct DebugPrinter
+{
+    template <class T>
+    static void print(std::ostream & writer, const ColumnRawPtrs & columns)
+    {
+        for (size_t i = 0; i < columns.size(); i++)
+        {
+            print<T>(writer, columns, i);
+            writer << std::endl;
+        }
+    }
+
+    template <class T>
+    static void print(std::ostream & writer, const ColumnRawPtrs & columns, size_t i)
+    {
+        for (size_t j = 0; j < columns.size(); j++)
+        {
+            const auto column = typeid_cast<const T *>(columns[j]);
+            if (column)
+                writer << column->getElement(i) << ", ";
+        }
+    }
+
+    static void print(std::ostream & writer, const Block & block)
+    {
+        for (size_t i = 0; i < block.rows(); i++)
+        {
+            print(writer, block, i);
+            writer << std::endl;
+        }
+    }
+
+    static void print(std::ostream & writer, const Block & block, size_t i)
+    {
+        for (size_t j = 0; j < block.columns(); j++)
+        {
+            ColumnWithTypeAndName data = block.getByPosition(j);
+            print(writer, data.column.get(), data.type.get(), i);
+        }
+    }
+
+    static void print(std::ostream & writer, const IColumn * column, const IDataType * type, size_t i)
+    {
+        auto name = type->getName();
+
+        if (std::string(type->getFamilyName()) == "FixedString")
+            print(writer, typeid_cast<const ColumnFixedString *>(column)->getDataAt(i).toString());
+        else if (name == "String")
+            print(writer, typeid_cast<const ColumnString *>(column)->getDataAt(i).toString());
+        else if (name == "DateTime")
+            print(writer, (int64_t)typeid_cast<const ColumnUInt32 *>(column)->getElement(i));
+        else if (name == "Int8")
+            print(writer, (int64_t)typeid_cast<const ColumnInt8 *>(column)->getElement(i));
+        else if (name == "Int16")
+            print(writer, (int64_t)typeid_cast<const ColumnInt16 *>(column)->getElement(i));
+        else if (name == "Int32")
+            print(writer, (int64_t)typeid_cast<const ColumnInt32 *>(column)->getElement(i));
+        else if (name == "Int64")
+            print(writer, (int64_t)typeid_cast<const ColumnInt64 *>(column)->getElement(i));
+        else if (name == "UInt8")
+            print(writer, (int64_t)typeid_cast<const ColumnUInt8 *>(column)->getElement(i));
+        else if (name == "UInt16")
+            print(writer, (int64_t)typeid_cast<const ColumnUInt16 *>(column)->getElement(i));
+        else if (name == "UInt32")
+            print(writer, (int64_t)typeid_cast<const ColumnUInt32 *>(column)->getElement(i));
+        else if (name == "UInt64")
+            print(writer, (uint64_t)typeid_cast<const ColumnUInt64 *>(column)->getElement(i));
+        else if (name == "Float32")
+            print(writer, typeid_cast<const ColumnFloat32 *>(column)->getElement(i));
+        else if (name == "Float64")
+            print(writer, typeid_cast<const ColumnFloat64 *>(column)->getElement(i));
+        else if (name == "Date")
+            print(writer, typeid_cast<const ColumnUInt16 *>(column)->getElement(i));
+        else
+            throw Exception("Unknown type name: " + name);
+    }
+
+private:
+    template <typename T>
+    static void print(std::ostream & writer, const T v)
+    {
+        writer << v << ", ";
+    }
+};
 
 }
