@@ -113,11 +113,11 @@ if [ -z "$debug" ]; then
 fi
 
 if [ -z "$fuzz" ]; then
-	fuzz="false"
+	fuzz="true"
 fi
 
 if [ -z "$skip_raw_test" ]; then
-	skip_raw_test="false"
+	skip_raw_test="true"
 fi
 
 if [ -z "$dbc" ]; then
