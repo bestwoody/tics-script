@@ -6,7 +6,7 @@
 #include <Common/setThreadName.h>
 #include <Common/CurrentMetrics.h>
 
-// #define DEDUP_TRACER
+#define DEDUP_TRACER
 #ifndef DEDUP_TRACER
     #define TRACER(message)
 #else
