@@ -1,5 +1,7 @@
 set -eu
 
+source ./_env.sh
+
 partitions="8"
 decoders="8"
 
@@ -15,7 +17,7 @@ echo 'spark.conf.set("spark.ch.plan.pushdown.agg", "true")' >> "$tmp"
 echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./ch-q.sh "show tables" | while read table; do
-	echo "ch.mapCHClusterTable(table=\"$table\", partitions=$partitions, decoders=$decoders)" >> "$tmp"
+	echo "ch.mapCHClusterTable(database=\"$chdb\", table=\"$table\", partitions=$partitions, decoders=$decoders)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"
