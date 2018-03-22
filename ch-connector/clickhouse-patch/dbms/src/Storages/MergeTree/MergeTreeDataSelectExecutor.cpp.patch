@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 1766f60..b1aac84 100644
+index 1766f60..2393a03 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -7,10 +7,13 @@
@@ -130,7 +130,7 @@ index 1766f60..b1aac84 100644
              case MergeTreeData::MergingParams::Unsorted:
                  throw Exception("UnsortedMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
  
-@@ -837,6 +849,124 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -837,6 +849,161 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
  }
  
  
@@ -168,13 +168,26 @@ index 1766f60..b1aac84 100644
 +    }
 +
 +    // TODO: Use one stream if data is small enough
-+    bool origin_streams = false;
-+    bool origin_unity = false;
-+    bool unity_stream = false;
 +
-+    if (origin_unity)
++    BlockInputStreams res;
++
++    if (MutableSupport::deduper == MutableSupport::DeduperOriginStreams)
 +    {
-+        BlockInputStreams res;
++        for (auto it = parts_with_ranges.begin(); it != parts_with_ranges.end(); ++it)
++        {
++            RangesInDataPart & part = *it;
++            BlockInputStreamPtr source_stream = std::make_shared<MergeTreeBlockInputStream>(
++                data, part.data_part, max_block_size, settings.preferred_block_size_bytes,
++                settings.preferred_max_column_in_block_size_bytes, column_names, part.ranges, use_uncompressed_cache,
++                prewhere_actions, prewhere_column, true, settings.min_bytes_to_use_direct_io, settings.max_read_buffer_size, true,
++                virt_columns, part.part_index_in_query);
++            // source_stream = std::make_shared<DebugPrintBlockInputStream>(source_stream);
++            source_stream = std::make_shared<ExpressionBlockInputStream>(source_stream, data.getPrimaryExpression());
++            res.emplace_back(source_stream);
++        }
++    }
++    else if (MutableSupport::deduper == MutableSupport::DeduperOriginUnity)
++    {
 +        BlockInputStreams merging;
 +        for (auto it = parts_with_ranges.begin(); it != parts_with_ranges.end(); ++it)
 +        {
@@ -188,15 +201,11 @@ index 1766f60..b1aac84 100644
 +            source_stream = std::make_shared<ExpressionBlockInputStream>(source_stream, data.getPrimaryExpression());
 +            merging.emplace_back(source_stream);
 +        }
-+        if (origin_streams)
-+            return merging;
 +        res.emplace_back(std::make_shared<ReplacingDeletingSortedBlockInputStream>(merging, data.getSortDescription(),
 +            MutableSupport::version_column_name, MutableSupport::delmark_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false, true));
-+        return res;
 +    }
-+    else if (unity_stream)
++    else if (MutableSupport::deduper == MutableSupport::DeduperReplacingUnity)
 +    {
-+        BlockInputStreams res;
 +        BlockInputStreams merging;
 +        for (auto it = partitions.begin(); it != partitions.end(); ++it)
 +        {
@@ -217,11 +226,9 @@ index 1766f60..b1aac84 100644
 +        }
 +        res.emplace_back(std::make_shared<ReplacingDeletingSortedBlockInputStream>(merging, data.getSortDescription(),
 +            MutableSupport::version_column_name, MutableSupport::delmark_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false, true));
-+        return res;
 +    }
-+    else
++    else if (MutableSupport::deduper == MutableSupport::DeduperReplacingPartitioning)
 +    {
-+        BlockInputStreams res;
 +        for (auto it = partitions.begin(); it != partitions.end(); ++it)
 +        {
 +            RangesInDataParts & parts = it->second;
@@ -247,15 +254,45 @@ index 1766f60..b1aac84 100644
 +            // merged = std::make_shared<DebugPrintBlockInputStream>(merged, "partition-" + parts[0].data_part->partition.getID(data));
 +            res.emplace_back(merged);
 +        }
-+        return res;
 +    }
++    else if (MutableSupport::deduper == MutableSupport::DeduperDedupPartitioning)
++    {
++        for (auto it = partitions.begin(); it != partitions.end(); ++it)
++        {
++            RangesInDataParts & parts = it->second;
++            BlockInputStreams merging;
++
++            for (size_t i = 0; i < parts.size(); ++i)
++            {
++                RangesInDataPart & part = parts[i];
++
++                BlockInputStreamPtr source_stream = std::make_shared<MergeTreeBlockInputStream>(
++                    data, part.data_part, max_block_size, settings.preferred_block_size_bytes,
++                    settings.preferred_max_column_in_block_size_bytes, column_names, part.ranges, use_uncompressed_cache,
++                    prewhere_actions, prewhere_column, true, settings.min_bytes_to_use_direct_io, settings.max_read_buffer_size, true,
++                    virt_columns, part.part_index_in_query);
++                // source_stream = std::make_shared<DebugPrintBlockInputStream>(source_stream,
++                //     "partition-" + part.data_part->partition.getID(data) + ".part-" + part.data_part->name);
++                source_stream = std::make_shared<ExpressionBlockInputStream>(source_stream, data.getPrimaryExpression());
++                merging.emplace_back(source_stream);
++            }
++
++            // TODO: Use DedupSortedBlockInputStream
++            BlockInputStreamPtr merged = std::make_shared<ReplacingDeletingSortedBlockInputStream>(merging, data.getSortDescription(),
++                MutableSupport::version_column_name, MutableSupport::delmark_column_name, DEFAULT_MERGE_BLOCK_SIZE, nullptr, false, true);
++            // merged = std::make_shared<DebugPrintBlockInputStream>(merged, "partition-" + parts[0].data_part->partition.getID(data));
++            res.emplace_back(merged);
++        }
++    }
++
++    return res;
 +}
 +
 +
  void MergeTreeDataSelectExecutor::createPositiveSignCondition(
      ExpressionActionsPtr & out_expression, String & out_column, const Context & context) const
  {
-@@ -948,4 +1078,45 @@ MarkRanges MergeTreeDataSelectExecutor::markRangesFromPKRange(
+@@ -948,4 +1115,45 @@ MarkRanges MergeTreeDataSelectExecutor::markRangesFromPKRange(
      return res;
  }
  

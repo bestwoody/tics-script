@@ -39,6 +39,17 @@ public:
 
     static const size_t default_partition_num;
 
+    enum DeduperType
+    {
+        DeduperOriginStreams,
+        DeduperOriginUnity,
+        DeduperReplacingUnity,
+        DeduperReplacingPartitioning,
+        DeduperDedupPartitioning
+    };
+
+    static const DeduperType deduper;
+
 private:
     OrderedNameSet empty;
     OrderedNameSet mutable_hidden;

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..604f8eb 100644
+index 7e0c703..751230b 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
 @@ -15,6 +15,19 @@
@@ -22,45 +22,13 @@ index 7e0c703..604f8eb 100644
  #include <Poco/DirectoryIterator.h>
  #include <Poco/File.h>
  
-@@ -114,12 +127,128 @@ BlockInputStreams StorageMergeTree::read(
+@@ -114,12 +127,94 @@ BlockInputStreams StorageMergeTree::read(
      const size_t max_block_size,
      const unsigned num_streams)
  {
 -    return reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
 +    auto res = reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
 +    const SortDescription & description = data.getSortDescription();
-+
-+    // For fun begin
-+
-+    /*
-+    {
-+        BlockInputStreams players(res.size());
-+        for (size_t i = 0; i < res.size(); ++i)
-+        {
-+            Block block;
-+            readStreamToBlock(res[i], block);
-+            Block head;
-+            Block tail;
-+            SortCursorImpl key(block, description);
-+            splitBlockByGreaterThanKey(description, key, block, head, tail);
-+            BlockInputStreamPtr origin = std::make_shared<OneBlockInputStream>(block);
-+            BlockInputStreamPtr extra = std::make_shared<ExtraHeadTailBlockInputStream>(origin, description, head, tail);
-+            players[i] = extra;
-+        }
-+        res = players;
-+    }
-+    */
-+
-+    /*
-+    {
-+        BlockInputStreams players(res.size());
-+        for (size_t i = 0; i < res.size(); ++i)
-+            players[i] = std::make_shared<PlaygroundBlockInputStream>(res[i], description);
-+        res = players;
-+    }
-+    */
-+
-+    // For fun end
 +
 +    const ASTSelectQuery * select_query = typeid_cast<const ASTSelectQuery *>(&*query_info.query);
 +
@@ -69,8 +37,6 @@ index 7e0c703..604f8eb 100644
 +        if (select_query && !select_query->raw_for_mutable)
 +        {
 +            LOG_DEBUG(log, "Mutable table dedup read.");
-+            res = DedupSortedBlockInputStream::createStreams(res, description);
-+
 +            Names filtered_names;
 +            filtered_names.push_back(MutableSupport::version_column_name);
 +            filtered_names.push_back(MutableSupport::delmark_column_name);
@@ -154,7 +120,7 @@ index 7e0c703..604f8eb 100644
  }
  
  bool StorageMergeTree::checkTableCanBeDropped() const
-@@ -129,6 +258,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
+@@ -129,6 +224,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
      return true;
  }
  
