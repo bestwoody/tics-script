@@ -37,8 +37,6 @@ public:
     static const std::string version_column_name;
     static const std::string delmark_column_name;
 
-    static const size_t default_partition_num;
-
     enum DeduperType
     {
         DeduperOriginStreams,

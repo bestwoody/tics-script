@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
-index 4781a00..9376ee9 100644
+index 4781a00..d97656a 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 @@ -6,6 +6,8 @@
@@ -77,8 +77,8 @@ index 4781a00..9376ee9 100644
 +    PODArray<UInt128> partition_num_to_key;
      IColumn::Selector selector;
 -    buildScatterSelector(partition_columns, partition_num_to_first_row, selector);
-+    // TODO: 16 => engine args
-+    size_t partition_mod = (data.merging_params.mode != MergeTreeData::MergingParams::Mutable) ? 1 : MutableSupport::default_partition_num;
++    size_t partition_mod = (data.merging_params.mode != MergeTreeData::MergingParams::Mutable)
++        ? 1 : size_t(data.settings.mutable_mergetree_partition_number);
 +    buildScatterSelector(partition_columns, partition_mod, partition_num_to_first_row, partition_num_to_key, selector);
  
      size_t partitions_count = partition_num_to_first_row.size();
