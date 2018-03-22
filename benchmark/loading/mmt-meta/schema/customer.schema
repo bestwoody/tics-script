@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS customer(
 	C_ACCTBAL     Float64,
 	C_MKTSEGMENT  String,
 	C_COMMENT     String
-) ENGINE = Log;
+) ENGINE = MutableMergeTree((C_CUSTKEY), 8192);

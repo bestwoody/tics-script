@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS part(
 	P_CONTAINER   String,
 	P_RETAILPRICE Float64,
 	P_COMMENT     String
-) ENGINE = Log;
+) ENGINE = MutableMergeTree((P_PARTKEY), 8192);

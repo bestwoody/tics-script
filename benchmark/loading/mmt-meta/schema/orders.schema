@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS orders (
 	O_CLERK          String,
 	O_SHIPPRIORITY   Int32,
 	O_COMMENT        String
-) ENGINE = MergeTree(O_ORDERDATE, (O_ORDERKEY, O_ORDERDATE), 8192);
+) ENGINE = MutableMergeTree((O_ORDERKEY), 8192);
