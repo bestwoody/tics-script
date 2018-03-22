@@ -12,7 +12,7 @@
 namespace DB
 {
 
-class DedupSortedBlockInputStream
+class DedupSortedBlockInputStream : public IProfilingBlockInputStream
 {
 public:
     static BlockInputStreams createStreams(BlockInputStreams & inputs, const SortDescription & description);
@@ -21,7 +21,32 @@ public:
 
     ~DedupSortedBlockInputStream();
 
-    Block read(size_t position);
+    Block readImpl() override;
+
+    String getName() const override
+    {
+        return "DedupSorted";
+    }
+
+    String getID() const override
+    {
+        return getName();
+    }
+
+    bool isGroupedOutput() const override
+    {
+        return true;
+    }
+
+    bool isSortedOutput() const override
+    {
+        return false;
+    }
+
+    const SortDescription & getSortDescription() const override
+    {
+        return description;
+    }
 
 private:
     void asynDedupByQueue();
@@ -43,7 +68,7 @@ private:
     const size_t queue_max;
 
     BlocksFifoPtrs source_blocks;
-    BlocksFifoPtrs output_blocks;
+    BlocksFifo output_block;
 
     std::unique_ptr<std::thread> dedup_thread;
 
