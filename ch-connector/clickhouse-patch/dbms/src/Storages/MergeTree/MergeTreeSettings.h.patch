@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeSettings.h b/dbms/src/Storages/MergeTree/MergeTreeSettings.h
-index f91ca88..c653538 100644
+index f91ca88..377b4fd 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeSettings.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeSettings.h
 @@ -21,6 +21,9 @@ struct MergeTreeSettings
@@ -7,7 +7,7 @@ index f91ca88..c653538 100644
      M(SettingUInt64, index_granularity, 8192)                                                                 \
                                                                                                                \
 +    /** MutableMergeTree partition number. */                                                                 \
-+    M(SettingUInt64, mutable_mergetree_partition_number, 32)                                                  \
++    M(SettingUInt64, mutable_mergetree_partition_number, 16)                                                  \
 +                                                                                                              \
      /** Merge settings. */                                                                                    \
                                                                                                                \

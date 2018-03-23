@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
-index 0b3b2a1..47353c2 100644
+index 0b3b2a1..ad85b64 100644
 --- a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 +++ b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 @@ -1,6 +1,7 @@
@@ -22,7 +22,7 @@ index 0b3b2a1..47353c2 100644
 +
 +MutableMergeTree is slightly different from the others:
 +- it only support non-replicated
-+- it won't take a 'date' type column for partitioning, instead, it take a number as partition count (default = 32).
++- it won't take a 'date' type column for partitioning, instead, it take a number as partition count (default = 16).
 +
 +Examples of creating a MutableMergeTree table:
 +- Create Table ... MutableMergeTree((CounterID, EventDate), 8192)
