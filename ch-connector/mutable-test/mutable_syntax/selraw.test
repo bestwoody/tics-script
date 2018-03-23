@@ -4,7 +4,7 @@
 >> create table test (
 	dt Date,
 	v Int32
-	) engine = MutableMergeTree(dt, (dt), 8192)
+	) engine = MutableMergeTree((v), 8192)
 
 >> insert into test values (0, 4), (0, 8)
 

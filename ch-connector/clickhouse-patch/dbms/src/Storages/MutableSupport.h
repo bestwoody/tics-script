@@ -37,8 +37,16 @@ public:
     static const std::string version_column_name;
     static const std::string delmark_column_name;
 
-    static const bool in_block_dedup_on_write;
-    static const bool in_block_dedup_on_read;
+    enum DeduperType
+    {
+        DeduperOriginStreams,
+        DeduperOriginUnity,
+        DeduperReplacingUnity,
+        DeduperReplacingPartitioning,
+        DeduperDedupPartitioning
+    };
+
+    static const DeduperType deduper;
 
 private:
     OrderedNameSet empty;

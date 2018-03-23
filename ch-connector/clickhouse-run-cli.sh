@@ -1,3 +1,3 @@
 set -eu
 source _env.sh
-build/dbms/src/Server/clickhouse client
+"$chbin" client --host "$chserver" -d "$chdb"

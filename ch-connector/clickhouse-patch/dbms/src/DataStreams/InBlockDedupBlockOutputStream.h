@@ -18,7 +18,7 @@ public:
     void write(const Block & block) override
     {
         // TODO: Use origin CursorImpl to compare, will be faster
-        Block deduped = dedupInBlock(block, description, log);
+        Block deduped = dedupInBlock(block, description);
         output->write(deduped);
     }
 

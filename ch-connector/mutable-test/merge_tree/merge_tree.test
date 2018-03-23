@@ -27,6 +27,6 @@
 
 >> select _INTERNAL_VERSION from test
 Received exception from server (version {#WORD}):
-Code: 47. DB::Exception: Received from {#WORD}, {#WORD} DB::Exception: Unknown identifier: _INTERNAL_VERSION.
+Code: 47. DB::Exception: Received from {#WORD} DB::Exception: Unknown identifier: _INTERNAL_VERSION.
 
 >> drop table if exists test

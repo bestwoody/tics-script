@@ -1,0 +1,23 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreePartition.cpp b/dbms/src/Storages/MergeTree/MergeTreePartition.cpp
+index 56de34f..be4fb54 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreePartition.cpp
++++ b/dbms/src/Storages/MergeTree/MergeTreePartition.cpp
+@@ -11,6 +11,8 @@
+ 
+ #include <Poco/File.h>
+ 
++#include <Storages/MutableSupport.h>
++
+ namespace DB
+ {
+ 
+@@ -23,6 +25,9 @@ static ReadBufferFromFile openForReading(const String & path)
+ /// So if you want to change this method, be sure to guarantee compatibility with existing table data.
+ String MergeTreePartition::getID(const MergeTreeData & storage) const
+ {
++    if (storage.merging_params.mode == MergeTreeData::MergingParams::Mutable)
++        return toString(value[0].safeGet<UInt64>());
++
+     if (value.size() != storage.partition_expr_columns.size())
+         throw Exception("Invalid partition key size: " + toString(value.size()), ErrorCodes::LOGICAL_ERROR);
+ 

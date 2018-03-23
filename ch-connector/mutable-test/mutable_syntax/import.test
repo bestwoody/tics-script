@@ -1,7 +1,7 @@
 >> drop table if exists test
 >> create table test (
 	dt Date
-	) engine = MutableMergeTree(dt, (dt), 8192)
+	) engine = MutableMergeTree((dt), 8192)
 
 >> import into test values (0, 100, 0)
 >> select * from test

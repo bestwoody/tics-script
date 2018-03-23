@@ -102,6 +102,8 @@ debug="$4"
 continue_on_error="$5"
 dbc="$6"
 
+source _env.sh
+
 if [ -z "$target" ]; then
 	target="mutable-test"
 fi
@@ -111,21 +113,28 @@ if [ -z "$debug" ]; then
 fi
 
 if [ -z "$fuzz" ]; then
-	fuzz="false"
+	fuzz="true"
 fi
 
 if [ -z "$skip_raw_test" ]; then
-	skip_raw_test="false"
+	skip_raw_test="true"
 fi
 
 if [ -z "$dbc" ]; then
 	if [ "$debug" != "false" ] && [ "$debug" != "0" ]; then
 		debug="--stacktrace"
 	fi
-	dbc="build/dbms/src/Server/clickhouse client $debug -f PrettyCompactNoEscapes --query"
+	dbc="$chbin client --host $chserver -d $chdb  $debug -f PrettyCompactNoEscapes --query"
 fi
 
 if [ -z "$continue_on_error" ]; then
 	continue_on_error="false"
 fi
+
+"$chbin" client --host="$chserver" --query="create database if not exists $chdb"
+if [ $? != 0 ]; then
+	echo "create database '"$chdb"' failed" >&2
+	exit 1
+fi
+
 run_path "$dbc" "$target" "$continue_on_error" "$fuzz" "$skip_raw_test"

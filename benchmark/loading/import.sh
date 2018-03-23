@@ -10,13 +10,19 @@ fi
 
 source _import.sh
 
+"$chbin" client --host="$chserver" --query="create database if not exists $chdb"
+if [ $? != 0 ]; then
+	echo "create database '"$chdb"' failed" >&2
+	exit 1
+fi
+
 schema="$meta_dir/schema/$table.schema"
 if [ ! -f "$schema" ]; then
 	echo "$schema schema file not found" >&2
 	exit 1
 fi
 
-"$chbin" client --host="$chserver" --query="`cat $schema`"
+"$chbin" client --host="$chserver" -d "$chdb" --query="`cat $schema`"
 
 if [ -z "$blocks" ]; then
 	blocks="$tpch_blocks"

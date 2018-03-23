@@ -12,7 +12,7 @@ import_blocks()
 			echo "$data: not found" >&2
 			return 1
 		fi
-		cat "$data" | "$chbin" client --host="$chserver" --query="INSERT INTO $table FORMAT CSV" &
+		cat "$data" | "$chbin" client --host="$chserver" -d "$chdb" --query="INSERT INTO $table FORMAT CSV" &
 	done
 
 	wait_sub_procs
@@ -27,7 +27,7 @@ import_block()
 		echo "$data: not found" >&2
 		return 1
 	fi
-	cat "$data" | "$chbin" client --host="$chserver" --query="INSERT INTO $table FORMAT CSV"
+	cat "$data" | "$chbin" client --host="$chserver" -d "$chdb" --query="INSERT INTO $table FORMAT CSV"
 }
 
 import_table()

@@ -1,12 +1,37 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
-index fd0b026..d635f61 100644
+index fd0b026..5ff40f7 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
-@@ -49,6 +49,7 @@ private:
-         RangesInDataParts && parts,
-         const Names & column_names,
-         size_t max_block_size,
-+        bool is_mutable_engine,
-         bool use_uncompressed_cache,
-         ExpressionActionsPtr prewhere_actions,
-         const String & prewhere_column,
+@@ -56,6 +56,18 @@ private:
+         const Settings & settings,
+         const Context & context) const;
+ 
++    BlockInputStreams spreadMarkRangesAmongStreamsOnMutableEngine(
++        MergeTreeData::DataPartsVector & parts,
++        const PKCondition & key_condition,
++        const Names & column_names,
++        size_t max_block_size,
++        unsigned num_streams,
++        bool use_uncompressed_cache,
++        ExpressionActionsPtr prewhere_actions,
++        const String & prewhere_column,
++        const Names & virt_columns,
++        const Settings & settings) const;
++
+     /// Get the approximate value (bottom estimate - only by full marks) of the number of rows falling under the index.
+     size_t getApproximateTotalRowsToRead(
+         const MergeTreeData::DataPartsVector & parts,
+@@ -72,6 +84,13 @@ private:
+         const MergeTreeData::DataPart::Index & index,
+         const PKCondition & key_condition,
+         const Settings & settings) const;
++
++    void getPartsWithRanges(
++        MergeTreeData::DataPartsVector & parts,
++        const PKCondition & key_condition,
++        const Settings & settings,
++        RangesInDataParts & parts_with_ranges,
++        size_t * out_sum_marks = nullptr) const;
+ };
+ 
+ }

@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS lineitem (
+	L_ORDERKEY    Int32,
+	L_PARTKEY     Int32,
+	L_SUPPKEY     Int32,
+	L_LINENUMBER  Int32,
+	L_QUANTITY    Float32,
+	L_EXTENDEDPRICE  Float32,
+	L_DISCOUNT    Float64,
+	L_TAX         Float64,
+	L_RETURNFLAG  FixedString(1),
+	L_LINESTATUS  FixedString(1),
+	L_SHIPDATE    Date,
+	L_COMMITDATE  Date,
+	L_RECEIPTDATE Date,
+	L_SHIPINSTRUCT String,
+	L_SHIPMODE     String,
+	L_COMMENT      String
+) ENGINE = MutableMergeTree((L_ORDERKEY, L_LINENUMBER), 8192);

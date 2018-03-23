@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 7e0c703..2a02b5e 100644
+index 7e0c703..751230b 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
-@@ -15,6 +15,14 @@
+@@ -15,6 +15,19 @@
  #include <Storages/MergeTree/MergeTreeData.h>
  #include <Storages/MergeTree/ActiveDataPartSet.h>
  
@@ -13,16 +13,22 @@ index 7e0c703..2a02b5e 100644
 +#include <DataStreams/RemoveColumnsBlockInputStream.h>
 +#include <DataStreams/AdditionalColumnsBlockOutputStream.h>
 +#include <DataStreams/DedupSortedBlockInputStream.h>
++#include <DataStreams/InBlockDedupBlockOutputStream.h>
++
++#include <DataStreams/OneBlockInputStream.h>
++#include <DataStreams/PlaygroundBlockInputStream.h>
++#include <DataStreams/ExtraHeadTailBlockInputStream.h>
 +
  #include <Poco/DirectoryIterator.h>
  #include <Poco/File.h>
  
-@@ -114,12 +122,93 @@ BlockInputStreams StorageMergeTree::read(
+@@ -114,12 +127,94 @@ BlockInputStreams StorageMergeTree::read(
      const size_t max_block_size,
      const unsigned num_streams)
  {
 -    return reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
 +    auto res = reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
++    const SortDescription & description = data.getSortDescription();
 +
 +    const ASTSelectQuery * select_query = typeid_cast<const ASTSelectQuery *>(&*query_info.query);
 +
@@ -31,8 +37,6 @@ index 7e0c703..2a02b5e 100644
 +        if (select_query && !select_query->raw_for_mutable)
 +        {
 +            LOG_DEBUG(log, "Mutable table dedup read.");
-+            res = DedupSortedBlockInputStream::createStreams(res, data.getSortDescription());
-+
 +            Names filtered_names;
 +            filtered_names.push_back(MutableSupport::version_column_name);
 +            filtered_names.push_back(MutableSupport::delmark_column_name);
@@ -49,12 +53,10 @@ index 7e0c703..2a02b5e 100644
 +        throw Exception("Only " + MutableSupport::storage_name + " support SELRAW.", ErrorCodes::BAD_ARGUMENTS);
 +    }
 +    return res;
- }
- 
--BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & /*query*/, const Settings & /*settings*/)
++}
++
 +UInt64 StorageMergeTree::getVersionSeed(const Settings & /* settings */) const
- {
--    return std::make_shared<MergeTreeBlockOutputStream>(*this);
++{
 +    // NOTE:
 +    // We don't guarantee thread safe.
 +    // In that case, we assume data not related in diffent thread.
@@ -66,10 +68,12 @@ index 7e0c703..2a02b5e 100644
 +    // It's faster if we use (increment.value << 32).
 +    // We use '* 1000000' for readable results, just for now
 +    return (increment.value + 1) * 1000000;
-+}
-+
+ }
+ 
+-BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & /*query*/, const Settings & /*settings*/)
 +BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & query, const Settings & settings)
-+{
+ {
+-    return std::make_shared<MergeTreeBlockOutputStream>(*this);
 +    BlockOutputStreamPtr res = std::make_shared<MergeTreeBlockOutputStream>(*this);
 +
 +    const ASTInsertQuery * insert_query = typeid_cast<const ASTInsertQuery *>(&*query);
@@ -89,6 +93,7 @@ index 7e0c703..2a02b5e 100644
 +                    std::make_shared<AdditionalBlockGeneratorConst<UInt8>>(MutableSupport::delmark_column_name, 0)
 +                };
 +                res = std::make_shared<AdditionalColumnsBlockOutputStream>(res, gens);
++                res = std::make_shared<InBlockDedupBlockOutputStream>(res, data.getSortDescription());
 +            }
 +            else
 +                LOG_DEBUG(log, "Mutable table importing.");
@@ -103,6 +108,7 @@ index 7e0c703..2a02b5e 100644
 +                std::make_shared<AdditionalBlockGeneratorConst<UInt8>>(MutableSupport::delmark_column_name, 1)
 +            };
 +            res = std::make_shared<AdditionalColumnsBlockOutputStream>(res, gens);
++            res = std::make_shared<InBlockDedupBlockOutputStream>(res, data.getSortDescription());
 +        }
 +    }
 +    else if ((insert_query && insert_query->is_import) || delete_query)
@@ -114,7 +120,7 @@ index 7e0c703..2a02b5e 100644
  }
  
  bool StorageMergeTree::checkTableCanBeDropped() const
-@@ -129,6 +218,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
+@@ -129,6 +224,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
      return true;
  }
  

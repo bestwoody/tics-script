@@ -2,4 +2,4 @@ set -eu
 
 source _env.sh
 
-"$chbin" client --host "$chserver" --query "$@"
+"$chbin" client --host "$chserver" -d "$chdb" --query "$@"

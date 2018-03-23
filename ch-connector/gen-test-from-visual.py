@@ -86,7 +86,7 @@ def gen(output, title, rows, gn, order, source, ln, selraw_first, no_selraw):
         file.write('\tdt Date,\n')
         file.write('\tk Int32,\n')
         file.write('\tv Int32\n')
-        file.write('\t) engine = MutableMergeTree(dt, (k), 8192)\n')
+        file.write('\t) engine = MutableMergeTree((k), 8192)\n')
         file.write('\n')
 
         for values in data.insert_values():

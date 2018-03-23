@@ -13,6 +13,10 @@ trans_blocks()
 			echo "$file: not found" >&2
 			return 1
 		fi
+		if [ -f "$data" ]; then
+			echo "$data: exists, skipped" >&2
+			continue
+		fi
 		cat "$file" | python "$meta_dir/trans/$table.py" > "$data" &
 	done
 
@@ -28,6 +32,10 @@ trans_block()
 	if [ ! -f "$file" ]; then
 		echo "$file: not found" >&2
 		return 1
+	fi
+	if [ -f "$data" ]; then
+		echo "$data: exists, skipped" >&2
+		return 0
 	fi
 	cat "$file" | python "$meta_dir/trans/$table.py" > "$data"
 }

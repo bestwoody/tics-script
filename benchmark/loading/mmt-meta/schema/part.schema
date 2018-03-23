@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS part(
+	P_PARTKEY     Int32,
+	P_NAME        String,
+	P_MFGR        String,
+	P_BRAND       String,
+	P_TYPE        String,
+	P_SIZE        Int32,
+	P_CONTAINER   String,
+	P_RETAILPRICE Float64,
+	P_COMMENT     String
+) ENGINE = MutableMergeTree((P_PARTKEY), 8192);

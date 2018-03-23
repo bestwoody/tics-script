@@ -33,7 +33,7 @@ echo 'spark.conf.set("spark.ch.plan.pushdown.agg", "'$pushdown'")' >> "$tmp"
 echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./ch-q.sh "show tables" | while read table; do
-	echo "ch.mapCHClusterTable(table=\"$table\", partitions=$partitions, decoders=$decoders, encoders=$encoders)" >> "$tmp"
+	echo "ch.mapCHClusterTable(database=\"$chdb\", table=\"$table\", partitions=$partitions, decoders=$decoders, encoders=$encoders)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"
