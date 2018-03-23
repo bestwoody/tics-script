@@ -4,12 +4,19 @@
 * `clickhouse`
     * The official repository
     * Git submodule of `theflash` repository
-* `delta`
+* `clickhouse-patch`
     * Patch source code
-    * `clickhouse` + `delta` = `CH-Connector`
+    * `clickhouse` + `patch` = `CH-Connector`
 * `running`
     * Running env
     * Test data set, configs, etc
+* `arrow`
+    * Arrow submodule, 0.8
+* `arrow-delta`
+    * Arrow patch ONLY for mac.
+* `mutable-test`
+    * MutableMergeTree engine testcases
+    * Run by: mutable-test.sh
 
 ## Dev on ClickHouse and keep syncing with the official repository
 * See [dev-on-ch](./dev-on-ch.md)
