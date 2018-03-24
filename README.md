@@ -56,7 +56,7 @@ An OLAP project of TiDB
             * `theflash/benchmark> vim tpch.log.md`: check report
 
 
-## TODOs
+## TODO
 Online:
 ```
 [Features]
@@ -69,5 +69,5 @@ Online:
 Further Features:
 ```
 ----- External executor
------ Shares storage
+----- Share storage
 ```
