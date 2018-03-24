@@ -94,8 +94,8 @@ object CHUtil {
     fields
   }
 
-  def getRowCount(table: CHTableRef): Long = {
-    val resp = new CHExecutorParall(CHUtil.genQueryId("C"), CHSql.count(table.absName), table.host, table.port, table.absName, 1)
+  def getRowCount(table: CHTableRef, useSelraw: Boolean = false): Long = {
+    val resp = new CHExecutorParall(CHUtil.genQueryId("C"), CHSql.count(table.absName, useSelraw), table.host, table.port, table.absName, 1)
     var block: resp.Result = resp.next
 
     if (block == null) {

@@ -14,7 +14,7 @@ trans_blocks()
 			return 1
 		fi
 		if [ -f "$data" ]; then
-			echo "$data: exists, skipped" >&2
+			echo "$data: exists, skipped transform" >&2
 			continue
 		fi
 		cat "$file" | python "$meta_dir/trans/$table.py" > "$data" &
@@ -34,7 +34,7 @@ trans_block()
 		return 1
 	fi
 	if [ -f "$data" ]; then
-		echo "$data: exists, skipped" >&2
+		echo "$data: exists, skipped transform" >&2
 		return 0
 	fi
 	cat "$file" | python "$meta_dir/trans/$table.py" > "$data"

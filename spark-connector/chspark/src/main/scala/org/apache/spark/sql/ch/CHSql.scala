@@ -56,38 +56,38 @@ object CHSql {
     "DESC " + table
   }
 
-  def count(table: String): String = {
-    "SELECT COUNT(*) FROM " + table
+  def count(table: String, useSelraw: Boolean = false): String = {
+    (if (useSelraw) "SELRAW" else "SELECT") + " COUNT(*) FROM " + table
   }
 
-  def scan(table: String): String = {
-    scan(table, null, null)
+  def scan(table: String, useSelraw: Boolean): String = {
+    scan(table, null, null, useSelraw: Boolean)
   }
 
-  def scan(table: String, columns: Seq[String]): String = {
-    scan(table, columns, null)
+  def scan(table: String, columns: Seq[String], useSelraw: Boolean): String = {
+    scan(table, columns, null, useSelraw)
   }
 
-  def scan(table: String, filter: String): String = {
-    scan(table, null, filter)
+  def scan(table: String, filter: String, useSelraw: Boolean): String = {
+    scan(table, null, filter, useSelraw: Boolean)
   }
 
-  def scan(table: String, columns: Seq[String], filter: String): String = {
-    "SELECT " + columnsStr(columns) + " FROM " + table + filterStr(filter)
+  def scan(table: String, columns: Seq[String], filter: String, useSelraw: Boolean): String = {
+    (if (useSelraw) "SELRAW" else "SELECT") + " " + columnsStr(columns) + " FROM " + table + filterStr(filter)
   }
 
-  def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg): String = {
+  def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg, useSelraw: Boolean): String = {
     if (aggregation == null) {
-      scan(table, columns, filter)
+      scan(table, columns, filter, useSelraw)
     } else {
       // TODO: Check Set(columns) == Set(agg columns)
-      "SELECT " + columnsStr(columns) + " FROM " + table + filterStr(filter) +
+      (if (useSelraw) "SELRAW" else "SELECT") + " " + columnsStr(columns) + " FROM " + table + filterStr(filter) +
         groupByColumnsStr(aggregation.groupByColumns)
     }
   }
 
-  def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg, topN: CHSqlTopN): String = {
-    var sql = scan(table, columns, filter, aggregation)
+  def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg, topN: CHSqlTopN, useSelraw: Boolean): String = {
+    var sql = scan(table, columns, filter, aggregation, useSelraw)
     if (topN != null) {
       val orderByColumns = topN.orderByColumns
       val limit = topN.limit

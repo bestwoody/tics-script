@@ -49,14 +49,14 @@ An OLAP project of TiDB
         * `theflash/benchmark/loading> ./load-all.sh`: generate/transform/load data, make sure you have enough disk space
     * Run TPCH benchmark
         * `theflash/benchmark/loading> vim _env.sh`: check the config
-        * `theflash/benchmark> tpch-spark-q.sh 1`: run TPCH Q1
+        * `theflash/benchmark> ./tpch-spark-q.sh 1`: run TPCH Q1
         * Loop running
-            * `theflash/benchmark> stable-test-ch-stable.sh`: loop running TPCH Q1-Q22
+            * `theflash/benchmark> ./stable-test-ch-stable.sh`: loop running TPCH Q1-Q22
             * `theflash/benchmark> vim tpch.log`: check log
             * `theflash/benchmark> vim tpch.log.md`: check report
 
 
-## TODOs
+## TODO
 Online:
 ```
 [Features]
@@ -69,5 +69,5 @@ Online:
 Further Features:
 ```
 ----- External executor
------ Shares storage
+----- Share storage
 ```

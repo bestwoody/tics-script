@@ -37,13 +37,15 @@ class CHRDD(
   private val decoderCount: Int,
   private val encoderCount: Int) extends RDD[Row](sparkSession.sparkContext, Nil) {
 
+  val useSelraw = sparkSession.sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW, "false").toBoolean
+
   @throws[Exception]
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
 
     val part = split.asInstanceOf[CHPartition]
     val table = part.table
     val qid = part.qid
-    val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
+    val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN, useSelraw)
 
     logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + sql)
 

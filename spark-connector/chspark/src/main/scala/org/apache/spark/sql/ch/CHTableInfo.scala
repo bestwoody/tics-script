@@ -23,7 +23,7 @@ import org.apache.spark.sql.types.StructType
 class TableInfo(var schema: StructType, var rowWidth: Int, var rowCount: Long) extends Serializable {
 }
 
-class CHTableInfo(val table: CHTableRef) extends Serializable {
+class CHTableInfo(val table: CHTableRef, val useSelraw: Boolean) extends Serializable {
   private var info: TableInfo = new TableInfo(null, -1, -1)
 
   def getSchema(): StructType = {
@@ -48,7 +48,7 @@ class CHTableInfo(val table: CHTableRef) extends Serializable {
   }
 
   def fetchRows(): Unit = {
-    info.rowCount = CHUtil.getRowCount(table)
+    info.rowCount = CHUtil.getRowCount(table, useSelraw)
   }
 
   // TODO: Parallel fetch
@@ -65,19 +65,19 @@ object CHTableInfos {
   val instances: Map[CHTableRef, CHTableInfo] = Map()
 
   // TODO: Background refresh
-  def getInfo(table: CHTableRef): CHTableInfo = this.synchronized {
+  def getInfo(table: CHTableRef, useSelraw: Boolean): CHTableInfo = this.synchronized {
     if (!instances.contains(table)) {
-      instances += (table -> new CHTableInfo(table))
+      instances += (table -> new CHTableInfo(table, useSelraw))
     }
     instances(table)
   }
 
   // TODO: Parallel fetch
   // TODO: Data tiling in different tables should be considered
-  def getInfo(clusterTable: Seq[CHTableRef]): TableInfo = {
+  def getInfo(clusterTable: Seq[CHTableRef], useSelraw: Boolean): TableInfo = {
     var info: TableInfo = null
     clusterTable.map(table => {
-      val curr = getInfo(table).getInfo
+      val curr = getInfo(table, useSelraw).getInfo
       if (info == null) {
         info = new TableInfo(curr.schema, curr.rowWidth, curr.rowCount)
       } else {
