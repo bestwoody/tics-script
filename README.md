@@ -4,12 +4,13 @@ An OLAP project of TiDB
 ## Design
 * [The big picture](./docs/the-big-picture.md)
 * [The CH-Spark solution](./docs/ch-spark-tcp.md)
+* [Speed compare to parquet](./docs/benchmark-result/theflash-tpch-1-node.md)
 * [More docs](./docs)
 
 
 ## Quick start guide
 * Build
-    * `theflash> git submodule update --init --recursive`: fetch all submodule first
+    * `theflash> git submodule update --init --recursive`: fetch all submodule
     * Build patched ClickHouse:
         * `theflash/ch-connector> ./arrow-build-<your-os>.sh`: build Arrow, run it again if script fail
         * `theflash/ch-connector> ./clickhouse-patch-apply.sh`: apply patch to ClickHouse
@@ -21,7 +22,7 @@ An OLAP project of TiDB
     * With Patched ClickHouse
         * `theflash/benchmark> ./ch-server.sh`: run ClickHouse server
         * `theflash/benchmark> ./ch-cli.sh`: play with ClickHouse
-        * `theflash/ch-connector> ./clickhouse-import.sh <name>`: import `ch-connector/running/data/<name>` to ClickHouse
+        * `theflash/ch-connector> ./clickhouse-import.sh <name>`: import table data `ch-connector/running/data/<name>` to ClickHouse
         * Look around
             * `theflash/ch-connector> vim _env.sh`: check the config, IMPORTANT: `chdb`
             * `theflash/benchmark> vim _env.sh`: each `_env.sh` ONLY affect the current dir
@@ -54,7 +55,7 @@ An OLAP project of TiDB
             * `theflash/benchmark> vim tpch.log.md`: check report
 
 
-## Progress
+## TODOs
 Online:
 ```
 [Features]
@@ -69,18 +70,3 @@ Further Features:
 ----- External executor
 ----- Shares storage
 ```
-
-
-## Done jobs
-* POC:
-    * Magic Protocol
-    * CH-Magic Connector
-    * Spark-Magic Connector
-* Optimizations:
-    * Aggregation pushdown
-    * Spark codegen
-    * Small table broadcast
-    * Session-module read
-* Tests
-    * Features test
-    * Stability test
