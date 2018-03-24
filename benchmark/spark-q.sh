@@ -30,6 +30,8 @@ echo 'import java.util.Date' >> "$tmp"
 
 echo 'spark.conf.set("spark.ch.plan.codegen", "'$codegen'")' >> "$tmp"
 echo 'spark.conf.set("spark.ch.plan.pushdown.agg", "'$pushdown'")' >> "$tmp"
+echo 'spark.conf.set("spark.ch.storage.tableinfo.selraw", "'$selraw_tableinfo'")' >> "$tmp"
+
 echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./ch-q.sh "show tables" | while read table; do

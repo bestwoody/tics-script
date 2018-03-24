@@ -23,15 +23,17 @@ import org.apache.spark.sql.types.StructType
 class CHRelation(val tables: Seq[CHTableRef], val partitions: Int, val decoders: Int, val encoders: Int)
   (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
 
+  val useSelraw = sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW_TABLE_INFO, "false").toBoolean
+
   if (tables.size != tables.toSet.size)
     throw new Exception("Duplicated tables: " + tables.toString)
 
   override lazy val schema: StructType = {
-    CHTableInfos.getInfo(tables).schema
+    CHTableInfos.getInfo(tables, useSelraw).schema
   }
 
   override def sizeInBytes: Long = {
-    val tableInfo = CHTableInfos.getInfo(tables)
+    val tableInfo = CHTableInfos.getInfo(tables, useSelraw)
     // TODO consider rowWidth
     val size = tableInfo.rowCount * 64 // Assuming each row is 64 bytes in width
     size

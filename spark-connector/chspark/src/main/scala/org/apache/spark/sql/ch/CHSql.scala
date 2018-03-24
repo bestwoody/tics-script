@@ -56,8 +56,8 @@ object CHSql {
     "DESC " + table
   }
 
-  def count(table: String): String = {
-    "SELECT COUNT(*) FROM " + table
+  def count(table: String, useSelraw: Boolean = false): String = {
+    (if (useSelraw) "SELRAW" else "SELECT") + " COUNT(*) FROM " + table
   }
 
   def scan(table: String): String = {
