@@ -21,7 +21,8 @@ An OLAP project of TiDB
 * Play around
     * With Patched ClickHouse
         * `theflash/benchmark> ./ch-server.sh`: run ClickHouse server
-        * `theflash/benchmark> ./ch-cli.sh`: play with ClickHouse
+        * `theflash/benchmark> ./ch-cli.sh`: play with ClickHouse in intereactive mode
+        * `theflash/benchmark> ./ch-q.sh <sql>`: play with ClickHouse in command mode
         * `theflash/ch-connector> ./clickhouse-import.sh <name>`: import table data `ch-connector/running/data/<name>` to ClickHouse
         * Look around
             * `theflash/ch-connector> vim _env.sh`: check the config, IMPORTANT: `chdb`
