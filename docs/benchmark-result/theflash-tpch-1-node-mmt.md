@@ -10,8 +10,8 @@
         * Support Update/Delete
         * Dedupcating algorithm: partitioning(16) + parallel-ReplacingDeletingSorted(simple priority queue)
     * A vs B
-        * + faster
-        * - slower
+        * `+` faster
+        * `-` slower
 
 | Query    | Parquet | Origin  | Mutable | Origin vs Parquet | Origin vs Mutable | Mutable vs Parquet |
 | -------- | ------: | ------: | ------: | ----------------- | ----------------- | ------------------ |
