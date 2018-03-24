@@ -9,7 +9,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch.{CHSqlAgg, CHSqlTopN, CHSql}
-import org.apache.spark.sql.ch.{CHExecutorParall, CHTableRef, CHPartition, CHUtil}
+import org.apache.spark.sql.ch.{CHExecutorParall, CHTableRef, CHPartition, CHUtil, CHConfigConst}
 import org.apache.spark.internal.Logging
 
 import com.pingcap.theflash.codegene.ArrowColumnBatch
@@ -26,13 +26,15 @@ class CHScanRDD(
   private val decoderCount: Int,
   private val encoderCount: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
 
+  val useSelraw = sparkSession.sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW, "false").toBoolean
+
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] =
     new Iterator[ArrowColumnBatch] {
 
     private val part = split.asInstanceOf[CHPartition]
     private val table = part.table
     private val qid = part.qid
-    private val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN)
+    private val sql = CHSql.scan(table.absName, requiredColumns, filterString, aggregation, topN, useSelraw)
 
     logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + sql)
 

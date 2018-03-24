@@ -16,4 +16,6 @@ export default_encoders="16"
 
 export pushdown="true"
 export codegen="true"
+
+export selraw="false"
 export selraw_tableinfo="false"
