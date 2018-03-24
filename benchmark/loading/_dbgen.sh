@@ -18,7 +18,7 @@ dbgen_all_in_one()
 	local dir="$dbgen_result_dir_prefix"1
 
 	if [ -d "$dir" ]; then
-		echo "$dir: exists, exit" >&2
+		echo "$dir: exists, skipped dbgen" >&2
 		return 1
 	fi
 
@@ -37,7 +37,7 @@ dbgen_table_in_one()
 	local flag=`get_dbgen_flag $table`
 
 	if [ -f "$dir/$table.tbl" ]; then
-		echo "$dir/$table.tbl: exists, exit" >&2
+		echo "$dir/$table.tbl: exists, skipped dbgen" >&2
 		return 1
 	fi
 	if [ -z "$flag" ]; then
@@ -60,11 +60,11 @@ dbgen_table_blocks()
 	local dir="$dbgen_result_dir_prefix""$blocks"
 
 	if [ -f "$dir/$table.tbl" ]; then
-		echo "$dir/$table.tbl: exists, skip" >&2
+		echo "$dir/$table.tbl: exists, skipped dbgen" >&2
 		return 1
 	fi
 	if [ -f "$dir/$table.tbl.1" ]; then
-		echo "$dir/$table.tbl.*: exists, skip" >&2
+		echo "$dir/$table.tbl.*: exists, skipped dbgen" >&2
 		return 1
 	fi
 
