@@ -114,9 +114,6 @@ Q22, avg: 102.6, detail: [109.1, 100.1, 101.1, 106.0, 94.5, 105.1, 103.2, 101.1,
 * SPARK WORKER CORES=16
 
 ## TheFlash
-* Partitions=16
-* Decoders=4
-* Encoders=8
 * Pushdown=true
 * Codegen=true
 * Broadcast: tables bigger than 160k rows
