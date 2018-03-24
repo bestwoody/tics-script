@@ -58,14 +58,7 @@
    |   +- - ^ - - - - - - - - - - - - - - - - - - - - -+
    |        |
    |        |
-   |        |
-+--|--------|----------------------------+
-|  |        |                            |  Latch Service and Engine can be in
-|  |        |   Latch Service:           |  the same process
-|  +--------+     Coordinator of readers |
-|  |              an writer(s)           |
-|  |                                     |
-+--|-------------------------------------+
+   +--------+
    |
    |
    | Caculator Engine protocol, eg: Spark RDD
