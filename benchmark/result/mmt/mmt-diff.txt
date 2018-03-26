@@ -1,7 +1,7 @@
 # Q1:
 TiSpark ~= MergeTree: float accuracy.
 MergeTree !~= MutableMergeTree: float accuracy. SUM_DISC_PRICE and SUM_DISC_PRICE not matched.
-MergeTree ~= Selraw on MutableMergeTree: float accuracy
+MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +------------+------------+-------------+--------------------+--------------------+--------------------+------------------+-----------------+--------------------+-----------+
@@ -47,7 +47,7 @@ MergeTree ~= Selraw on MutableMergeTree: float accuracy
 # Q2:
 TiSpark ~= MergeTree: float accuracy.
 MergeTree ~= MutableMergeTree: float accuracy.
-MergeTree ~= Selraw on MutableMergeTree: float accuracy
+MutableMergeTree == Selraw on MutableMergeTree
 
 ## TiSpark
 +---------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
@@ -158,6 +158,7 @@ MergeTree ~= Selraw on MutableMergeTree: float accuracy
 # Q3
 TiSpark ~= MergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row(L_ORDERKEY=18869634) not matched.
 MergeTree !~= MutableMergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row(L_ORDERKEY=18869634) not matched, TiSpark == MutableMergeTree on this two rows.
+MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +----------+------------------+-----------+--------------+
@@ -267,6 +268,7 @@ MergeTree !~= MutableMergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row
 # Q4
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+Selraw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +---------------+-----------+
@@ -301,6 +303,7 @@ MergeTree == MutableMergeTree
 # Q5
 TiSpark != MergeTree: may be plan error
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree == Selraw on MutableMergeTree
 
 ## TiSpark
 +---------+--------------------+
@@ -350,6 +353,7 @@ MergeTree ~= MutableMergeTree: float accuracy
 # Q6
 TiSpark != MergeTree: may be plan error
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +-------------------+
@@ -383,6 +387,7 @@ MergeTree ~= MutableMergeTree: float accuracy
 # Q7
 TiSpark ~= MergeTree: float accuracy. Second row not match
 MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~= MutableMergeTree on this row.
+MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +-----------+-----------+------+--------------------+
@@ -428,6 +433,7 @@ MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~=
 # Q8
 TiSpark ~= MergeTree: float accuracy. Second row not match
 MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~= MutableMergeTree on this row.
+MutableMergeTree == Selraw on MutableMergeTree
 
 
 ## TiSpark
@@ -466,6 +472,7 @@ MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~=
 # Q9
 TiSpark ~= MergeTree: float accuracy
 MergeTree ~= MutableMergeTree: float accuracy
+Selraw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +---------+------+--------------------+
@@ -549,6 +556,7 @@ MergeTree ~= MutableMergeTree: float accuracy
 # Q10
 TiSpark != MergeTree: totally different
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree == Selraw on MutableMergeTree
 
 ## TiSpark
 +---------+------------------+-----------------+-------------------+--------------+--------------------+---------------+--------------------+
@@ -658,6 +666,7 @@ MergeTree ~= MutableMergeTree: float accuracy
 # Q11
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+MutableMergeTree == Selraw on MutableMergeTree
 
 ## TiSpark
 +----------+-----+
@@ -687,6 +696,7 @@ MergeTree == MutableMergeTree
 # Q12
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+MutableMergeTree == Selraw on MutableMergeTree
 
 ## TiSpark
 +----------+---------------+--------------+
@@ -724,6 +734,7 @@ MergeTree == MutableMergeTree
 # Q13
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+MutableMergeTree == Selraw on MutableMergeTree
 
 ## TiSpark
 +-------+--------+
@@ -833,6 +844,7 @@ MergeTree == MutableMergeTree
 # Q14
 TiSpark ~= MergeTree: float accuracy
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree == Selraw on MutableMergeTree
 
 ## TiSpark
 +------------------+
@@ -866,11 +878,13 @@ MergeTree ~= MutableMergeTree: float accuracy
 # Q15
 MergeTree: not tested, TODO
 MutableMergeTree: not tested, TODO
+Selraw on MutableMergeTree: not tested, TODO
 
 
 # Q16
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+MutableMergeTree == Selraw on MutableMergeTree
 
 ## TiSpark
 +--------+--------------------+------+------------+
@@ -980,6 +994,7 @@ MergeTree == MutableMergeTree
 # Q17
 TiSpark ~= MergeTree: float accuracy
 MutableMergeTree: not tested, TODO
+Selraw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +--------------------+
@@ -998,10 +1013,14 @@ MutableMergeTree: not tested, TODO
 ## MutableMergeTree
 TODO
 
+## Selraw on MutableMergeTree
+TODO
+
 
 # Q18
 TiSpark: not tested, TODO
 MutableMergeTree: not tested, TODO
+Selraw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 TODO
@@ -1035,10 +1054,14 @@ TODO
 ## MutableMergeTree
 TODO
 
+## Selraw on MutableMergeTree
+TODO
+
 
 # Q19
 TiSpark ~= MergeTree: float accuracy.
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree == Selraw on MutableMergeTree
 
 ## TiSpark
 +--------------------+
@@ -1061,7 +1084,6 @@ MergeTree ~= MutableMergeTree: float accuracy
 |2.9893772883558065E8|
 +--------------------+
 
-# Q19
 # SelRow on MutableMergeTree
 +--------------------+
 |REVENUE             |
@@ -1073,6 +1095,7 @@ MergeTree ~= MutableMergeTree: float accuracy
 # Q20
 TiSpark == MergeTree
 MutableMergeTree: not tested, TODO
+Selraw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +------------------+--------------------+
@@ -1129,10 +1152,14 @@ MutableMergeTree: not tested, TODO
 ## MutableMergeTree
 TODO
 
+## Selraw on MutableMergeTree
+TODO
+
 
 # Q21
 MergeTree: not tested, TODO
 MutableMergeTree: not tested, TODO
+Selraw on MutableMergeTree: not tested, TODO
 
 
 # Q22
