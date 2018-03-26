@@ -1,7 +1,7 @@
 # Q1:
 TiSpark ~= MergeTree: float accuracy.
 MergeTree !~= MutableMergeTree: float accuracy. SUM_DISC_PRICE and SUM_DISC_PRICE not matched.
-MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
+MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +------------+------------+-------------+--------------------+--------------------+--------------------+------------------+-----------------+--------------------+-----------+
@@ -47,7 +47,7 @@ MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
 # Q2:
 TiSpark ~= MergeTree: float accuracy.
 MergeTree ~= MutableMergeTree: float accuracy.
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +---------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
@@ -158,7 +158,7 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q3
 TiSpark ~= MergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row(L_ORDERKEY=18869634) not matched.
 MergeTree !~= MutableMergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row(L_ORDERKEY=18869634) not matched, TiSpark == MutableMergeTree on this two rows.
-MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
+MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +----------+------------------+-----------+--------------+
@@ -268,7 +268,7 @@ MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
 # Q4
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
-Selraw on MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +---------------+-----------+
@@ -303,7 +303,7 @@ Selraw on MutableMergeTree: not tested, TODO
 # Q5
 TiSpark != MergeTree: may be plan error
 MergeTree ~= MutableMergeTree: float accuracy
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +---------+--------------------+
@@ -353,7 +353,7 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q6
 TiSpark != MergeTree: may be plan error
 MergeTree ~= MutableMergeTree: float accuracy
-MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
+MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +-------------------+
@@ -387,7 +387,7 @@ MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
 # Q7
 TiSpark ~= MergeTree: float accuracy. Second row not match
 MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~= MutableMergeTree on this row.
-MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
+MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +-----------+-----------+------+--------------------+
@@ -433,7 +433,7 @@ MutableMergeTree ~= Selraw on MutableMergeTree: float accuracy
 # Q8
 TiSpark ~= MergeTree: float accuracy. Second row not match
 MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~= MutableMergeTree on this row.
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 
 ## TiSpark
@@ -472,7 +472,7 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q9
 TiSpark ~= MergeTree: float accuracy
 MergeTree ~= MutableMergeTree: float accuracy
-Selraw on MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +---------+------+--------------------+
@@ -556,7 +556,7 @@ Selraw on MutableMergeTree: not tested, TODO
 # Q10
 TiSpark != MergeTree: totally different
 MergeTree ~= MutableMergeTree: float accuracy
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +---------+------------------+-----------------+-------------------+--------------+--------------------+---------------+--------------------+
@@ -666,7 +666,7 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q11
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +----------+-----+
@@ -696,7 +696,7 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q12
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +----------+---------------+--------------+
@@ -734,7 +734,7 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q13
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +-------+--------+
@@ -844,7 +844,7 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q14
 TiSpark ~= MergeTree: float accuracy
 MergeTree ~= MutableMergeTree: float accuracy
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +------------------+
@@ -878,13 +878,13 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q15
 MergeTree: not tested, TODO
 MutableMergeTree: not tested, TODO
-Selraw on MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 
 # Q16
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +--------+--------------------+------+------------+
@@ -994,7 +994,7 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q17
 TiSpark ~= MergeTree: float accuracy
 MutableMergeTree: not tested, TODO
-Selraw on MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +--------------------+
@@ -1013,14 +1013,14 @@ Selraw on MutableMergeTree: not tested, TODO
 ## MutableMergeTree
 TODO
 
-## Selraw on MutableMergeTree
+## SelRaw on MutableMergeTree
 TODO
 
 
 # Q18
 TiSpark: not tested, TODO
 MutableMergeTree: not tested, TODO
-Selraw on MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 TODO
@@ -1054,14 +1054,14 @@ TODO
 ## MutableMergeTree
 TODO
 
-## Selraw on MutableMergeTree
+## SelRaw on MutableMergeTree
 TODO
 
 
 # Q19
 TiSpark ~= MergeTree: float accuracy.
 MergeTree ~= MutableMergeTree: float accuracy
-MutableMergeTree == Selraw on MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +--------------------+
@@ -1095,7 +1095,7 @@ MutableMergeTree == Selraw on MutableMergeTree
 # Q20
 TiSpark == MergeTree
 MutableMergeTree: not tested, TODO
-Selraw on MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +------------------+--------------------+
@@ -1152,14 +1152,14 @@ Selraw on MutableMergeTree: not tested, TODO
 ## MutableMergeTree
 TODO
 
-## Selraw on MutableMergeTree
+## SelRaw on MutableMergeTree
 TODO
 
 
 # Q21
 MergeTree: not tested, TODO
 MutableMergeTree: not tested, TODO
-Selraw on MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 
 # Q22
