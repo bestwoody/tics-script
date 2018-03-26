@@ -1,6 +1,7 @@
 # Q1:
 TiSpark ~= MergeTree: float accuracy.
 MergeTree !~= MutableMergeTree: float accuracy. SUM_DISC_PRICE and SUM_DISC_PRICE not matched.
+MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +------------+------------+-------------+--------------------+--------------------+--------------------+------------------+-----------------+--------------------+-----------+
@@ -32,10 +33,21 @@ MergeTree !~= MutableMergeTree: float accuracy. SUM_DISC_PRICE and SUM_DISC_PRIC
 |R           |F           |3.77572497E9 |5.661603032737652E12 |5.661595629096689E12 |5.661601552309472E12 |25.50006628406532 |38236.69725840105 |0.05000130434119821 |148067261  |
 +------------+------------+-------------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
 
+# SelRow on MutableMergeTree
++------------+------------+-------------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
+|L_RETURNFLAG|L_LINESTATUS|SUM_QTY      |SUM_BASE_PRICE       |SUM_DISC_PRICE       |SUM_CHARGE           |AVG_QTY           |AVG_PRICE         |AVG_DISC            |COUNT_ORDER|
++------------+------------+-------------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
+|A           |F           |3.775127758E9|5.660776097175267E12 |5.660768694364236E12 |5.660774616410006E12 |25.499370423275426|38236.11698417532 |0.050002243532473734|148047881  |
+|N           |F           |9.8553062E7  |1.477710983880666E11 |1.4777090521518912E11|1.477710597824849E11 |25.501556956882876|38237.19938934443 |0.04998528433812529 |3864590    |
+|N           |O           |7.436302976E9|1.1150725681377672E13|1.1150711100282045E13|1.1150722765678064E13|25.500009404374193|38237.227646374944|0.04999791831849547 |291619617  |
+|R           |F           |3.77572497E9 |5.661603032737652E12 |5.66159562909675E12  |5.661601552309346E12 |25.50006628406532 |38236.69725840105 |0.050001304341197726|148067261  |
++------------+------------+-------------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
+
 
 # Q2:
 TiSpark ~= MergeTree: float accuracy.
 MergeTree ~= MutableMergeTree: float accuracy.
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +---------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
@@ -116,10 +128,37 @@ MergeTree ~= MutableMergeTree: float accuracy.
 |9995.42  |Supplier#000220794|ROMANIA       |12470757 |Manufacturer#1|kwxtCRMG9VWfJ75Sij2K                    |29-557-942-9023|. carefully pending platelets haggle after the final, regular packa                       |
 +---------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
 
+# SelRow on MutableMergeTree
++---------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
+|S_ACCTBAL|S_NAME            |N_NAME        |P_PARTKEY|P_MFGR        |S_ADDRESS                               |S_PHONE        |S_COMMENT                                                                                 |
++---------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
+|9999.7   |Supplier#000239544|UNITED KINGDOM|6739531  |Manufacturer#4|,6oexY7ft68JKJCN1SQ LUO5Xf              |33-509-584-9496|ets are. blithely special accounts wake across t                                          |
+|9999.65  |Supplier#000143654|FRANCE        |2393647  |Manufacturer#3|HhHCZ,RosE8He4uYvyIDqsPZe,7cZiJh1y9,    |16-166-504-5864| special accounts. never dogged deposits                                                  |
+|9999.49  |Supplier#000615014|GERMANY       |12365001 |Manufacturer#3|4C,uOuJDig7z,4e                         |17-780-902-4027| pinto beans affix along th                                                               |
+|9999.28  |Supplier#000494480|ROMANIA       |17244462 |Manufacturer#3|hNB2qcYmnyeqrd em,o29TxzLwwrl           |29-756-312-1779|ly. slyly final pains detect furiously qu                                                 |
+|9998.87  |Supplier#000826281|ROMANIA       |14326252 |Manufacturer#3|LkGmLSAjbjgKS5ZRepL                     |29-775-451-4774| slyly silent accounts affix furiously across the final, even ideas; tithe                |
+|9998.56  |Supplier#000039514|UNITED KINGDOM|7539499  |Manufacturer#2|fUN95rpikfiqeGo,okl,27ItSq9fMpr         |33-317-828-7758|olites use about the blithely regular warhorses. carefully final instructions a           |
+|9997.89  |Supplier#000319666|RUSSIA        |19319665 |Manufacturer#1|SZtdx3rzXnFuiVuJzKathV9                 |32-972-151-6038|furiously ironic pearls. furiously regular foxes along the furiously                      |
+|9997.85  |Supplier#000718770|ROMANIA       |718769   |Manufacturer#1|2173woKsCg7zpHCqhiEXFTmYYqpT4XONnRAsUryE|29-663-409-2865|posits sleep across the blithely express requests.                                        |
+|9997.83  |Supplier#000348318|FRANCE        |9348317  |Manufacturer#4|AvfnvjCFAg1aNpj                         |16-718-707-5676|e pending requests: furiously even deposits boost furiously slyly even requests.          |
+|9997.73  |Supplier#000329974|RUSSIA        |4079969  |Manufacturer#3|eKtIadopsE                              |32-268-488-7178|uickly. furiously ironic requests are slyly above the regula                              |
+|9997.46  |Supplier#000906546|FRANCE        |1406543  |Manufacturer#2|aMZ13ITqaYCGwqW42qXJ92ho                |16-249-122-4511|endencies above the furiously even                                                        |
+|9997.2   |Supplier#000487664|FRANCE        |2737657  |Manufacturer#2| ShFSQYlV,8EvuNQkB7B                    |16-714-518-5435|mong the ideas. accounts poach p                                                          |
+|9997.17  |Supplier#000123140|ROMANIA       |5373124  |Manufacturer#2|O80qPjM5qonzjxGI,ClSnI7Vf3dlZCztkNx3ho  |29-567-411-4572|uriously slyly bold forges. slyly pending platelets haggle after the excuses. quickly pend|
+|9997.06  |Supplier#000725417|GERMANY       |10225396 |Manufacturer#1|10iRwq3,LeyTjZx8G                       |17-577-582-2010|arefully dogged accounts. final, pending asymptote                                        |
+|9996.45  |Supplier#000795554|ROMANIA       |14795553 |Manufacturer#2|qRD x8  zsS 7n11Cu6uMJkgSDL2Pv          |29-305-384-2702| instructions believe slyly i                                                             |
+|9995.96  |Supplier#000566208|FRANCE        |9816180  |Manufacturer#5|RMnISVay,G0prBUAZ,yqqm7ftyZbjH0CfJyXP95 |16-665-147-8314|mong the ironic requests caj                                                              |
+|9995.96  |Supplier#000629520|FRANCE        |13129493 |Manufacturer#3|kjmenylD2Ut5JJxh1n8P1,cl,XqR            |16-785-547-3814|foxes detect blithely. even, ironic courts a                                              |
+|9995.93  |Supplier#000388258|UNITED KINGDOM|6138251  |Manufacturer#2|rUB88zGIucl73Jl4                        |33-829-188-2160|arefully express requests. pending, express pinto beans                                   |
+|9995.79  |Supplier#000998425|FRANCE        |248424   |Manufacturer#4|tjoKE1Srnp3l9lpwSP40nMonOOM7F2fa        |16-228-926-9937|ding foxes haggle fluffily. carefully ironic ideas                                        |
+|9995.42  |Supplier#000220794|ROMANIA       |12470757 |Manufacturer#1|kwxtCRMG9VWfJ75Sij2K                    |29-557-942-9023|. carefully pending platelets haggle after the final, regular packa                       |
++---------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
+
 
 # Q3
 TiSpark ~= MergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row(L_ORDERKEY=18869634) not matched.
 MergeTree !~= MutableMergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row(L_ORDERKEY=18869634) not matched, TiSpark == MutableMergeTree on this two rows.
+MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +----------+------------------+-----------+--------------+
@@ -199,10 +238,37 @@ MergeTree !~= MutableMergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row
 |18869634  |452696.30609375   |1995-01-10 08:00:00.0|0             |
 +----------+------------------+---------------------+--------------+
 
+# SelRow on MutableMergeTree
++----------+------------------+---------------------+--------------+
+|L_ORDERKEY|REVENUE           |O_ORDERDATE          |O_SHIPPRIORITY|
++----------+------------------+---------------------+--------------+
+|249739810 |492136.86382812494|1995-02-28 08:00:00.0|0             |
+|165214338 |485645.52499999997|1995-03-09 08:00:00.0|0             |
+|507274210 |485256.2525       |1995-03-10 08:00:00.0|0             |
+|202071367 |474746.407734375  |1995-03-12 08:00:00.0|0             |
+|37307463  |474325.18546874996|1995-02-06 08:00:00.0|0             |
+|461984355 |468002.52171875   |1995-03-13 08:00:00.0|0             |
+|100810368 |467932.758203125  |1995-02-28 08:00:00.0|0             |
+|74015523  |467786.8109374999 |1995-03-14 08:00:00.0|0             |
+|402772582 |463367.064296875  |1995-03-10 08:00:00.0|0             |
+|367111712 |462559.3963281249 |1995-03-01 08:00:00.0|0             |
+|351107681 |460519.174375     |1995-02-05 08:00:00.0|0             |
+|81316036  |459781.38242187497|1995-02-24 08:00:00.0|0             |
+|121258023 |459226.9412890625 |1995-03-12 08:00:00.0|0             |
+|177643398 |457452.46921875   |1995-03-14 08:00:00.0|0             |
+|270119367 |456181.449453125  |1995-02-14 08:00:00.0|0             |
+|262164675 |456177.35222656245|1995-03-14 08:00:00.0|0             |
+|2845094   |454144.25390624994|1995-03-06 08:00:00.0|0             |
+|235806279 |454105.23058593745|1995-02-03 08:00:00.0|0             |
+|349319744 |453079.8645703125 |1995-01-23 08:00:00.0|0             |
+|18869634  |452696.30609374994|1995-01-10 08:00:00.0|0             |
++----------+------------------+---------------------+--------------+
+
 
 # Q4
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +---------------+-----------+
@@ -237,6 +303,7 @@ MergeTree == MutableMergeTree
 # Q5
 TiSpark != MergeTree: may be plan error
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +---------+--------------------+
@@ -271,10 +338,22 @@ MergeTree ~= MutableMergeTree: float accuracy
 |JAPAN    |1.57708890553602E10  |
 +---------+---------------------+
 
+# SelRow on MutableMergeTree
++---------+---------------------+
+|N_NAME   |REVENUE              |
++---------+---------------------+
+|VIETNAM  |1.5955086090168962E10|
+|INDIA    |1.5870173114566084E10|
+|CHINA    |1.5858082557179054E10|
+|INDONESIA|1.5788682030845963E10|
+|JAPAN    |1.57708890553602E10  |
++---------+---------------------+
+
 
 # Q6
 TiSpark != MergeTree: may be plan error
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +-------------------+
@@ -297,10 +376,18 @@ MergeTree ~= MutableMergeTree: float accuracy
 |1.2330426888575514E10|
 +---------------------+
 
+# SelRow on MutableMergeTree
++---------------------+
+|REVENUE              |
++---------------------+
+|1.2330426888575548E10|
++---------------------+
+
 
 # Q7
 TiSpark ~= MergeTree: float accuracy. Second row not match
 MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~= MutableMergeTree on this row.
+MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
 +-----------+-----------+------+--------------------+
@@ -332,10 +419,21 @@ MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~=
 |JAPAN      |INDIA      |1996  |5.26583672829538E9  |
 +-----------+-----------+------+--------------------+
 
+# SelRow on MutableMergeTree
++-----------+-----------+------+--------------------+
+|SUPP_NATION|CUST_NATION|L_YEAR|REVENUE             |
++-----------+-----------+------+--------------------+
+|INDIA      |JAPAN      |1995  |5.28936560927596E9  |
+|INDIA      |JAPAN      |1996  |5.300247223942606E9 |
+|JAPAN      |INDIA      |1995  |5.2390749880590515E9|
+|JAPAN      |INDIA      |1996  |5.26583672829538E9  |
++-----------+-----------+------+--------------------+
+
 
 # Q8
 TiSpark ~= MergeTree: float accuracy. Second row not match
 MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~= MutableMergeTree on this row.
+MutableMergeTree == SelRaw on MutableMergeTree
 
 
 ## TiSpark
@@ -362,10 +460,19 @@ MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~=
 |1996  |0.04040081944013415 |
 +------+--------------------+
 
+# SelRow on MutableMergeTree
++------+--------------------+
+|O_YEAR|MKT_SHARE           |
++------+--------------------+
+|1995  |0.040137166037420735|
+|1996  |0.04040081944013415 |
++------+--------------------+
+
 
 # Q9
 TiSpark ~= MergeTree: float accuracy
 MergeTree ~= MutableMergeTree: float accuracy
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +---------+------+--------------------+
@@ -449,6 +556,7 @@ MergeTree ~= MutableMergeTree: float accuracy
 # Q10
 TiSpark != MergeTree: totally different
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +---------+------------------+-----------------+-------------------+--------------+--------------------+---------------+--------------------+
@@ -528,10 +636,37 @@ MergeTree ~= MutableMergeTree: float accuracy
 |7808450  |Customer#007808450|851.1918090820312|3079.23  |PERU         |BYThSZLP5WqsAzRus6ZVZ,teau48D           |27-638-603-8071|ole slyly. slyly bold deposits across the blithely regular deposits affix fluffily alongside of                    |
 +---------+------------------+-----------------+---------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
 
+# SelRow on MutableMergeTree
++---------+------------------+-----------------+---------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
+|C_CUSTKEY|C_NAME            |REVENUE          |C_ACCTBAL|N_NAME       |C_ADDRESS                               |C_PHONE        |C_COMMENT                                                                                                          |
++---------+------------------+-----------------+---------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
+|8512915  |Customer#008512915|817.9020263671875|1410.87  |KENYA        |NhpUoYd9t8WoGvtSz                       |24-520-846-1990|lar theodolites alongside of the quickly ironic ideas doze fluffily ironic instruct                                |
+|6466141  |Customer#006466141|819.8279846191407|8693.7   |MOZAMBIQUE   |,xZmmFeb,GzeQtr                         |26-467-102-2689|; theodolites haggle across the                                                                                    |
+|14630047 |Customer#014630047|820.4469244384766|3202.15  |JORDAN       |R6b13OhLbEiUgOdHWJphVXTOXPs2Mud         |23-187-125-1007|ithely! carefully ironic packages sleep. express theodolites wake slyly! carefully unusual packages according t    |
+|9558751  |Customer#009558751|821.2229736328126|142.28   |PERU         |WvdnSfIUpLaul1yjjvIc3R0SYs9MZUJ         |27-266-384-9191|. even requests doze among the ironic, even pinto beans. furiously unusual realms according to the qu              |
+|11902993 |Customer#011902993|830.7090087890625|5918.33  |UNITED STATES|2dJtTMTvg5mjNAKLkQXGPspn                |34-199-654-1543|ckly ironic requests haggle furiously blithely regular accounts. quickly                                           |
+|2096896  |Customer#002096896|831.2220153808594|9836.78  |INDIA        |03LOx4Syet7PD mZ19qKLuzUUs,tkU41XfJJpT  |18-852-944-9487|ould have to detect about the furiously express pains. slyly ironic accou                                          |
+|12406759 |Customer#012406759|831.4942822265625|4147.13  |UNITED STATES|tXCJRndNWd0EeZerqK                      |34-389-561-8610|ithely across the slyly express packages. carefully final requests nag among the thinly unusual accounts; idly     |
+|10420093 |Customer#010420093|838.3375         |8968.07  |JORDAN       |ysgROObPoIBk3Lfb jTjcFZpCS2Tln7         |23-896-336-3893|ckey players. furiously regular packages about the furio                                                           |
+|6853996  |Customer#006853996|838.7909912109375|-948.33  |PERU         |nH375djPq0vTss2CmO YwjPEbP9EBigm        |27-112-534-6990|he accounts are blithely after the special, regular deposits. carefully bold platelets                             |
+|9520792  |Customer#009520792|838.9979736328125|5795.98  |RUSSIA       |CB8uu,6iAW2ZARWqO2IY9H9W,2H I6HbAYECyvKF|32-459-758-7649|usly express ideas. slyly ironic instructions wake.                                                                |
+|147865   |Customer#000147865|839.3251977539063|3826.15  |JAPAN        |YR4Mu09VNE9Je2T                         |22-936-624-3382|ng somas. final instructions wake busily according to the express excuses.                                         |
+|5661656  |Customer#005661656|842.1776733398438|7206.13  |FRANCE       |1YHfvreaBk7Td7Mrk7du8U2Y                |16-530-814-6788|sides the express deposits are evenly at the pending deposits. accounts                                            |
+|502595   |Customer#000502595|843.1649780273438|7948.37  |UNITED STATES|6z b8R6TFmPR                            |34-845-338-6307|e sometimes across the carefully i                                                                                 |
+|10348054 |Customer#010348054|844.3748931884766|9789.05  |ETHIOPIA     |nsGCoW7x1sadBxiws5TPoYXtPZhpOA3WXOri3O3D|15-287-107-4646|accounts. slow sentiments are after the blithely ironic theodolites. asymptotes about the final the                |
+|7463794  |Customer#007463794|845.25           |2295.33  |ALGERIA      |TzK6CLgOOr1zNq0Sl5g                     |10-433-200-7798|uctions use furiously. carefully regular requ                                                                      |
+|9398483  |Customer#009398483|845.4779846191407|8796.15  |MOZAMBIQUE   |E1bf KUoocsTtOoFLeHO399o SRz            |26-949-910-8311|ietly instead of the pending ideas.                                                                                |
+|11287087 |Customer#011287087|847.6971752929688|3540.73  |MOROCCO      |gmGQ1e4uaS                              |25-523-782-5707|press deposits above the bold, special deposits maintain quickly ev                                                |
+|14835935 |Customer#014835935|849.7855932617188|5674.65  |BRAZIL       |56sCfv X2ZA1fLSEaCUrD7osRu2T1mcZez      |12-949-239-7330|y. carefully unusual accounts against the regular pinto beans are about the car                                    |
+|14180938 |Customer#014180938|850.4189758300781|9749.04  |KENYA        |6ikA1jynMJf8KrBHBq                      |24-630-460-5202|e around the carefully regular dependencies. ironic, final deposits sublate alongside of the furiously careful pack|
+|7808450  |Customer#007808450|851.1918090820312|3079.23  |PERU         |BYThSZLP5WqsAzRus6ZVZ,teau48D           |27-638-603-8071|ole slyly. slyly bold deposits across the blithely regular deposits affix fluffily alongside of                    |
++---------+------------------+-----------------+---------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
+
 
 # Q11
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +----------+-----+
@@ -551,10 +686,17 @@ MergeTree == MutableMergeTree
 +----------+-----+
 +----------+-----+
 
+# SelRow on MutableMergeTree
++----------+-----+
+|PS_PARTKEY|VALUE|
++----------+-----+
++----------+-----+
+
 
 # Q12
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +----------+---------------+--------------+
@@ -580,10 +722,19 @@ MergeTree == MutableMergeTree
 |SHIP      |622979         |934534        |
 +----------+---------------+--------------+
 
+# SelRow on MutableMergeTree
++----------+---------------+--------------+
+|L_SHIPMODE|HIGH_LINE_COUNT|LOW_LINE_COUNT|
++----------+---------------+--------------+
+|MAIL      |623115         |934713        |
+|SHIP      |622979         |934534        |
++----------+---------------+--------------+
+
 
 # Q13
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +-------+--------+
@@ -663,10 +814,37 @@ MergeTree == MutableMergeTree
 |24     |269619  |
 +-------+--------+
 
+# SelRow on MutableMergeTree
++-------+--------+
+|C_COUNT|CUSTDIST|
++-------+--------+
+|0      |5000189 |
+|10     |676448  |
+|9      |664171  |
+|11     |633070  |
+|8      |590423  |
+|12     |563465  |
+|13     |494117  |
+|19     |476211  |
+|18     |469287  |
+|20     |465907  |
+|7      |464303  |
+|17     |450590  |
+|14     |445104  |
+|21     |434431  |
+|16     |430846  |
+|15     |424682  |
+|22     |388440  |
+|23     |331583  |
+|6      |318557  |
+|24     |269619  |
++-------+--------+
+
 
 # Q14
 TiSpark ~= MergeTree: float accuracy
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +------------------+
@@ -689,15 +867,24 @@ MergeTree ~= MutableMergeTree: float accuracy
 |16.64035743308056|
 +-----------------+
 
+# SelRow on MutableMergeTree
++-----------------+
+|PROMO_REVENUE    |
++-----------------+
+|16.64035743308056|
++-----------------+
+
 
 # Q15
 MergeTree: not tested, TODO
 MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 
 # Q16
 TiSpark == MergeTree
 MergeTree == MutableMergeTree
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +--------+--------------------+------+------------+
@@ -777,10 +964,37 @@ MergeTree == MutableMergeTree
 |Brand#12|ECONOMY BURNISHED TIN   |14    |568         |
 +--------+------------------------+------+------------+
 
+# SelRow on MutableMergeTree
++--------+------------------------+------+------------+
+|P_BRAND |P_TYPE                  |P_SIZE|SUPPLIER_CNT|
++--------+------------------------+------+------------+
+|Brand#14|SMALL BRUSHED BRASS     |45    |596         |
+|Brand#34|ECONOMY BURNISHED STEEL |23    |592         |
+|Brand#44|PROMO POLISHED NICKEL   |49    |592         |
+|Brand#54|LARGE BURNISHED STEEL   |36    |584         |
+|Brand#14|ECONOMY BRUSHED COPPER  |19    |580         |
+|Brand#13|STANDARD BRUSHED BRASS  |45    |579         |
+|Brand#21|PROMO POLISHED TIN      |36    |579         |
+|Brand#12|STANDARD BRUSHED TIN    |9     |576         |
+|Brand#32|STANDARD ANODIZED COPPER|14    |576         |
+|Brand#32|STANDARD BURNISHED STEEL|36    |576         |
+|Brand#54|STANDARD BRUSHED TIN    |49    |576         |
+|Brand#25|ECONOMY POLISHED BRASS  |36    |575         |
+|Brand#54|LARGE PLATED STEEL      |9     |574         |
+|Brand#12|MEDIUM BURNISHED STEEL  |36    |572         |
+|Brand#22|PROMO POLISHED TIN      |23    |572         |
+|Brand#25|LARGE ANODIZED NICKEL   |3     |572         |
+|Brand#51|SMALL PLATED STEEL      |36    |572         |
+|Brand#25|STANDARD PLATED NICKEL  |19    |571         |
+|Brand#15|SMALL ANODIZED STEEL    |36    |570         |
+|Brand#12|ECONOMY BURNISHED TIN   |14    |568         |
++--------+------------------------+------+------------+
+
 
 # Q17
 TiSpark ~= MergeTree: float accuracy
 MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +--------------------+
@@ -799,10 +1013,14 @@ MutableMergeTree: not tested, TODO
 ## MutableMergeTree
 TODO
 
+## SelRaw on MutableMergeTree
+TODO
+
 
 # Q18
 TiSpark: not tested, TODO
 MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 TODO
@@ -836,10 +1054,14 @@ TODO
 ## MutableMergeTree
 TODO
 
+## SelRaw on MutableMergeTree
+TODO
+
 
 # Q19
 TiSpark ~= MergeTree: float accuracy.
 MergeTree ~= MutableMergeTree: float accuracy
+MutableMergeTree == SelRaw on MutableMergeTree
 
 ## TiSpark
 +--------------------+
@@ -862,10 +1084,18 @@ MergeTree ~= MutableMergeTree: float accuracy
 |2.9893772883558065E8|
 +--------------------+
 
+# SelRow on MutableMergeTree
++--------------------+
+|REVENUE             |
++--------------------+
+|2.9893772883558065E8|
++--------------------+
+
 
 # Q20
 TiSpark == MergeTree
 MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
 +------------------+--------------------+
@@ -922,10 +1152,14 @@ MutableMergeTree: not tested, TODO
 ## MutableMergeTree
 TODO
 
+## SelRaw on MutableMergeTree
+TODO
+
 
 # Q21
 MergeTree: not tested, TODO
 MutableMergeTree: not tested, TODO
+SelRaw on MutableMergeTree: not tested, TODO
 
 
 # Q22
@@ -953,6 +1187,16 @@ MergeTree ~= MutableMergeTree: float accuracy
 +---------+-------+-------------------+
 
 ## MutableMergeTree
++---------+-------+-------------------+
+|CNTRYCODE|NUMCUST|TOTACCTBAL         |
++---------+-------+-------------------+
+|20       |91141  |6.835606868800001E8|
+|21       |90903  |6.816397848100001E8|
+|22       |90407  |6.774423523699998E8|
+|30       |91362  |6.851383806500001E8|
++---------+-------+-------------------+
+
+# SelRow on MutableMergeTree
 +---------+-------+-------------------+
 |CNTRYCODE|NUMCUST|TOTACCTBAL         |
 +---------+-------+-------------------+

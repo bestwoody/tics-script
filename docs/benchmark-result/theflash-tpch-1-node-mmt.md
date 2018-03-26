@@ -3,34 +3,57 @@
 ## Result
 
 * Time unit: sec
-* Comparation
-    * Parquet: Spark + Parquet
-    * Origin: Spark + CH, MergeTree engine
-    * Mutable: Spark + CH, MutableMergeTree engine
-        * Support Update/Delete
+
+* Comparation columns
+    * Parquet:
+        * Spark + Parquet
+    * Origin:
+        * Spark + CH
+        * Original MergeTree engine, partitioning by `YYMM(date)`
+    * SelRaw:
+        * Spark + CH
+        * MutableMergeTree engine, partitioning by `hash(primary key) / mod`
+        * Use SelRaw instead of Select, allow duplicated primary key
+    * Mutable
+        * Spark + CH, Support Update/Delete
+        * MutableMergeTree engine, partitioning by `hash(primary key) / mod`
         * Dedupcating algorithm: partitioning(16) + parallel-ReplacingDeletingSorted(simple priority queue)
     * A vs B
         * `+` faster
         * `-` slower
 
-| Query    | Parquet | Origin  | Mutable | Origin vs Parquet | Origin vs Mutable | Mutable vs Parquet |
-| -------- | ------: | ------: | ------: | ----------------- | ----------------- | ------------------ |
-| Q01      |  134.4  |   10.4  |    34.6 | ++++++++++++++++  | +++               | ++++++++++++++     |
-| Q02      |   48.4  |   44.0  |    56.7 | +                 | +                 | -                  |
-| Q03      |  223.0  |   70.1  |   117.6 | +++++++++++       | ++                | ++++               |
-| Q04      |  335.0  |  299.1  |         | +                 | NO DATA           | NO DATA            |
-| Q05      |  233.3  |  122.2  |   177.3 | ++++++++          | ++                | +++++++            |
-| Q06      |  207.2  |    4.4  |    24.6 | +++++++++++++++++ | +++++             | +++++++++++++++++  |
-| Q07      |  260.8  |   90.4  |   144.3 | +++++++++++       | +++               | +++++++++          |
-| Q08      |  162.1  |  132.1  |   172.3 | ++++              | ++                | -                  |
-| Q09      |  150.3  |  176.1  |   231.2 | -                 | ++                | --                 |
-| Q10      |   99.2  |   56.9  |   110.7 | ++++++++          | ++                | -                  |
-| Q11      |   35.0  |   18.2  |    29.5 | ++++++++          | ++                | +                  |
-| Q12      |   45.7  |   36.8  |    93.9 | ++                | +++               | ---                |
-| Q13      |   57.0  |   57.1  |    64.5 | EQUAL             | +                 | -                  |
-| Q14      |  188.0  |   13.0  |    59.6 | +++++++++++++++++ | +++++             | ++++++++++         |
-| Q19      |   29.2  |   53.2  |    92.5 | ----              | +++               | ----------         |
-| Q22      |   76.8  |   88.4  |   102.6 | -                 | +                 | -                  |
+* Comparation result and why
+    * `Origin > Parquet`
+        * CH is faster
+        * Origin is partitioned by date
+    * `Origin > SelRaw`
+        * Origin is partitioned by date, MutableMergeTree has no date index
+    * `SelRaw > Mutable`
+        * MutableMergeTree has extra `deduplicating on read` operation
+    * `Origin > Mutable`
+        * Origin is partitioned by date, MutableMergeTree has no date index
+        * MutableMergeTree has extra `deduplicating on read` operation
+        * Origin is IO bond (2G/s), MutableMergeTree is CPU bound (700-900M/s)
+
+| Query    | Parquet | Origin  | SelRaw  | Mutable | Origin vs Parquet | Origin vs Mutable | Mutable vs Parquet |
+| -------- | ------: | ------: | ------: | ------: | ----------------- | ----------------- | ------------------ |
+| Q01      |  134.4  |   10.4  |    14.7 |    34.6 | ++++++++++++++++  | +++               | ++++++++++++++     |
+| Q02      |   48.4  |   44.0  |    46.9 |    56.7 | +                 | +                 | -                  |
+| Q03      |  223.0  |   70.1  |    76.5 |   117.6 | +++++++++++       | ++                | ++++               |
+| Q04      |  335.0  |  299.1  |         |         | +                 | NO DATA           | NO DATA            |
+| Q05      |  233.3  |  122.2  |   154.8 |   177.3 | ++++++++          | ++                | +++++++            |
+| Q06      |  207.2  |    4.4  |     7.8 |    24.6 | +++++++++++++++++ | +++++             | +++++++++++++++++  |
+| Q07      |  260.8  |   90.4  |   102.8 |   144.3 | +++++++++++       | +++               | +++++++++          |
+| Q08      |  162.1  |  132.1  |   177.8 |   172.3 | ++++              | ++                | -                  |
+| Q09      |  150.3  |  176.1  |   177.5 |   231.2 | -                 | ++                | --                 |
+| Q10      |   99.2  |   56.9  |    63.1 |   110.7 | ++++++++          | ++                | -                  |
+| Q11      |   35.0  |   18.2  |    19.9 |    29.5 | ++++++++          | ++                | +                  |
+| Q12      |   45.7  |   36.8  |    46.1 |    93.9 | ++                | +++               | ---                |
+| Q13      |   57.0  |   57.1  |    59.8 |    64.5 | EQUAL             | +                 | -                  |
+| Q14      |  188.0  |   13.0  |    25.7 |    59.6 | +++++++++++++++++ | +++++             | ++++++++++         |
+| Q19      |   29.2  |   53.2  |    56.0 |    92.5 | ----              | +++               | ----------         |
+| Q22      |   76.8  |   88.4  |    92.4 |   102.6 | -                 | +                 | -                  |
+
 
 ## Raw result data
 * Parquet: default config
@@ -94,6 +117,25 @@ Q14, avg:  59.6, detail: [58.3, 61.8, 59.5, 60.4, 59.9, 58.8, 57.9, 61.9, 60.3, 
 Q16, avg: 124.9, detail: [119.7, 132.8, 125.6, 136.0, 131.5, 124.0, 118.9, 122.6, 117.1, 121.1, 124.9]
 Q19, avg:  92.5, detail: [96.8, 90.7, 92.3, 91.5, 93.5, 89.6, 93.1, 90.7, 92.4, 91.4, 92.4, 94.3, 91.2, 93.4, 94.1, 92.1]
 Q22, avg: 102.6, detail: [109.1, 100.1, 101.1, 106.0, 94.5, 105.1, 103.2, 101.1, 104.3, 109.8, 96.7, 104.9, 100.4, 96.9, 103.0, 105.1]
+```
+* SelRaw on MutableMergeTree: partitions=16, decoders=1, encoders=16
+```
+Q01, avg:  14.7, detail: [14.3, 14.6, 14.5, 15.3]
+Q02, avg:  46.9, detail: [50.8, 45.9, 45.6, 45.2]
+Q03, avg:  76.5, detail: [75.6, 78.2, 78.1, 74.2]
+Q05, avg: 154.8, detail: [216.5, 139.1, 129.6, 134.1]
+Q06, avg:   7.8, detail: [6.8, 8.1, 7.9, 8.5]
+Q07, avg: 102.8, detail: [106.6, 97.8, 98.9, 107.8]
+Q08, avg: 177.8, detail: [223.6, 215.6, 136.4, 135.4]
+Q09, avg: 177.5, detail: [174.7, 180.3]
+Q10, avg:  63.1, detail: [60.8, 67.1, 61.0, 63.4]
+Q11, avg:  19.9, detail: [19.9, 21.4, 18.8, 19.4]
+Q12, avg:  46.1, detail: [50.6, 44.3, 43.4]
+Q13, avg:  59.8, detail: [57.5, 62.5, 59.3]
+Q14, avg:  25.7, detail: [22.3, 31.2, 23.7]
+Q16, avg: 124.9, detail: [122.5, 121.0, 131.3]
+Q19, avg:  56.0, detail: [55.6, 57.3, 55.1]
+Q22, avg:  92.4, detail: [93.0, 94.0, 90.2]
 ```
 
 ## Environment
