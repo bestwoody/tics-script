@@ -17,7 +17,7 @@
     * Mutable
         * Spark + CH, Support Update/Delete
         * MutableMergeTree engine, partitioning by `hash(primary key) / mod`
-        * Dedupcating algorithm: partitioning(16) + parallel-ReplacingDeletingSorted(simple priority queue)
+        * Dedupcating algorithm: parallel ReplacingDeletingSortedInputStream(it's a simple priority queue)
     * A vs B
         * `+` faster
         * `-` slower
@@ -156,6 +156,7 @@ Q22, avg:  92.4, detail: [93.0, 94.0, 90.2]
 * SPARK WORKER CORES=16
 
 ## TheFlash
+* MutableMergeTree partition number: 16
 * Pushdown=true
 * Codegen=true
 * Broadcast: tables bigger than 160k rows
