@@ -118,7 +118,7 @@ Q16, avg: 124.9, detail: [119.7, 132.8, 125.6, 136.0, 131.5, 124.0, 118.9, 122.6
 Q19, avg:  92.5, detail: [96.8, 90.7, 92.3, 91.5, 93.5, 89.6, 93.1, 90.7, 92.4, 91.4, 92.4, 94.3, 91.2, 93.4, 94.1, 92.1]
 Q22, avg: 102.6, detail: [109.1, 100.1, 101.1, 106.0, 94.5, 105.1, 103.2, 101.1, 104.3, 109.8, 96.7, 104.9, 100.4, 96.9, 103.0, 105.1]
 ```
-* SelRaw on MutableMergeTree: partitions=16, decoders=1, encoders=16
+* SelRaw on MutableMergeTree: rdd-partitions=16, decoders=1, encoders=16, storage-partitions=16
 ```
 Q01, avg:  14.7, detail: [14.3, 14.6, 14.5, 15.3]
 Q02, avg:  46.9, detail: [50.8, 45.9, 45.6, 45.2]
