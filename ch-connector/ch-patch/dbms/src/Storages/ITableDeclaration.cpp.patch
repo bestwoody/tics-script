@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/ITableDeclaration.cpp b/dbms/src/Storages/ITableDeclaration.cpp
-index 9a6ac0e..f52aa04 100644
+index 9a6ac0e..b34ad7c 100644
 --- a/dbms/src/Storages/ITableDeclaration.cpp
 +++ b/dbms/src/Storages/ITableDeclaration.cpp
-@@ -79,6 +79,68 @@ Block ITableDeclaration::getSampleBlockForColumns(const Names & column_names) co
+@@ -79,6 +79,32 @@ Block ITableDeclaration::getSampleBlockForColumns(const Names & column_names) co
  }
  
  
@@ -11,7 +11,7 @@ index 9a6ac0e..f52aa04 100644
 +    Block res;
 +    const OrderedNameSet & hidden = getHiddenColumnsImpl();
 +
-+    for (const auto & col : getColumnsListRange())
++    for (const auto & col : boost::join(getColumns().ordinary, getColumns().materialized))
 +        if (!hidden.has(col.name))
 +            res.insert({ col.type->createColumn(), col.type, col.name });
 +
@@ -24,46 +24,10 @@ index 9a6ac0e..f52aa04 100644
 +    Block res;
 +    const OrderedNameSet & hidden = getHiddenColumnsImpl();
 +
-+    for (const auto & col : getColumnsListNonMaterialized())
++    for (const auto & col : getColumns().ordinary)
 +        if (!hidden.has(col.name))
 +            res.insert({ col.type->createColumn(), col.type, col.name });
 +
-+    return res;
-+}
-+
-+
-+NamesAndTypesList ITableDeclaration::getColumnsListNoHidden() const
-+{
-+    NamesAndTypesList all = getColumnsList();
-+    const OrderedNameSet & hidden = getHiddenColumnsImpl();
-+    NamesAndTypesList res;
-+    for (const auto & it : all)
-+        if (!hidden.has(it.name))
-+            res.push_back(it);
-+    return res;
-+}
-+
-+
-+NamesAndTypesList ITableDeclaration::getColumnsListNonMaterializedNoHidden() const
-+{
-+    NamesAndTypesList all = getColumnsListNonMaterialized();
-+    const OrderedNameSet & hidden = getHiddenColumnsImpl();
-+    NamesAndTypesList res;
-+    for (const auto & it : all)
-+        if (!hidden.has(it.name))
-+            res.push_back(it);
-+    return res;
-+}
-+
-+
-+Names ITableDeclaration::getColumnNamesListNoHidden() const
-+{
-+    Names all = getColumnNamesList();
-+    const OrderedNameSet & hidden = getHiddenColumnsImpl();
-+    Names res;
-+    for (const auto & it : all)
-+        if (!hidden.has(it))
-+            res.push_back(it);
 +    return res;
 +}
 +

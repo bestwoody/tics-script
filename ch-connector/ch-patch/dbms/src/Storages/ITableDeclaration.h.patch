@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/ITableDeclaration.h b/dbms/src/Storages/ITableDeclaration.h
-index 270ab17..273f92c 100644
+index 270ab17..c62a77c 100644
 --- a/dbms/src/Storages/ITableDeclaration.h
 +++ b/dbms/src/Storages/ITableDeclaration.h
-@@ -24,6 +24,15 @@ public:
+@@ -24,6 +24,11 @@ public:
      Block getSampleBlockNonMaterialized() const;
      Block getSampleBlockForColumns(const Names & column_names) const;
  
@@ -11,17 +11,14 @@ index 270ab17..273f92c 100644
 +    Block getSampleBlockNoHidden() const;
 +    Block getSampleBlockNonMaterializedNoHidden() const;
 +
-+    NamesAndTypesList getColumnsListNoHidden() const;
-+    NamesAndTypesList getColumnsListNonMaterializedNoHidden() const;
-+    Names getColumnNamesListNoHidden() const;
-+
      /** Verify that all the requested names are in the table and are set correctly.
        * (the list of names is not empty and the names do not repeat)
        */
-@@ -50,6 +59,12 @@ public:
+@@ -50,6 +55,13 @@ public:
  
  private:
      ColumnsDescription columns;
++
 +    OrderedNameSet empty_names;
 +
 +    virtual const OrderedNameSet & getHiddenColumnsImpl() const
