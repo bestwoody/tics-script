@@ -297,7 +297,7 @@ Q22, avg: 114.5, detail: [111.2, 122.7, 104.9, 125.6, 108.3]
 ### Software
 * CentOS Linux release 7.2.1511
 * Spark version 2.1.1
-* ClickHouse server version 1.1.54310
+* CH server version 1.1.54310
 
 ### Data Set
 * TPCH-100 100G data scala

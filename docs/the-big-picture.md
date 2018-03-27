@@ -19,15 +19,15 @@
    |
    |
 +--+-------------------------+
-|                            |  Magic Writer and Engine can be in the
-|  Magic Writer:             |  same process
+|                            |  TheFlash Writer and Engine can be in the
+|  TheFlash Writer:          |  same process
 |    Poll and write data to  |
 |    store engine.           |
 |    In a specify interval   |  Interval can be changed at runtime
 |                            |
 +--+-------------------------+
    |
-   | Magic API (Write/Scan)
+   | TheFlash API (Write/Scan)
    |
    | (Transaction safe)
    |
@@ -37,7 +37,7 @@
    |      Store Engine:                                |  can use different
    |   |    Persist and index data, no replication        data layout and
    |      Connector:                                   |  indexes, so we
-   |   |     Provide Magic API procotal                   keep the ability of
+   |   |     Provide TheFlash API procotal                keep the ability of
    |         Provide Caculator Engine procotal         |  switching engines
    |   |
    |      Engine and Connector can be in the           |

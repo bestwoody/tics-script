@@ -21,8 +21,8 @@
 |  +---------------------------------------+  |
 |                                             |
 |  +---------------------------------------+  |
-|  |  Magic API Connector:                 |  |
-|  |    Magic protocol (write/scan)        |  |
+|  |  TheFlash API Connector:              |  |
+|  |    TheFlash protocol (write/scan)     |  |
 |  |    Arrow format encoding              |  |
 |  |    Export API to '.so' or TCP server  |  |
 |  +---------------------------------------+  |
@@ -37,17 +37,17 @@
 |  Common modules for all engines             |
 |                                             |
 |  +---------------------------------------+  |
-|  |  Magic Writer:                        |  |
+|  |  TheFlash Writer:                     |  |
 |  |    Link to engine                     |  |
 |  |    Read Binlog                        |  |
-|  |    Use Magic API, write to engine     |  |
+|  |    Use TheFlash API, write to engine  |  |
 |  +---------------------------------------+  |
 |                                             |
 |  +---------------------------------------+  |
-|  |  Spark-Magic Connector:               |  |
+|  |  Spark-CH Connector:                  |  |
 |  |    Jar package for Spark              |  |
 |  |    Link to engine                     |  |
-|  |    Wire Spark to Magic protocol       |  |
+|  |    Wire Spark to TheFlash protocol    |  |
 |  |    Decode Arrow format to RDD         |  |
 |  +---------------------------------------+  |
 |                                             |

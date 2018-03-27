@@ -42,7 +42,7 @@
 ### Software
 * CentOS Linux release 7.2.1511
 * Spark version 2.1.1
-* ClickHouse server version 1.1.54310
+* CH server version 1.1.54310
 * Hadoop version 2.7.5
 
 ### Spark

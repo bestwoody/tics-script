@@ -8,7 +8,7 @@
 | --------                       | -----:  | ----:  | :----: |
 | CH-Spark                       | Q1      | 01:44  | 01:50  |
 | CH-Spark push down             | Q1      | 00:09  | 00:10  |
-| ClickHouse                     | Q1      | 00:04  | 00:04  |
+| CH                             | Q1      | 00:04  | 00:04  |
 | Spark Parquet                  | Q1      | 01:58  | 02:06  |
 | Spark Persist Memory           | Q1      | 01:37  | 01:35  |
 | Spark Persist Disk             | Q1      | 01:42  | 01:44  |
@@ -92,7 +92,7 @@
 ### Software
 * CentOS Linux release 7.2.1511
 * Spark version 2.1.1
-* ClickHouse server version 1.1.54310
+* CH server version 1.1.54310
 
 ### Spark
 * SPARK EXECUTOR MEMORY=12G

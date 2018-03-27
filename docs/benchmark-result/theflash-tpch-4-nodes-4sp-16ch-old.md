@@ -1,6 +1,6 @@
 # TPCH-Test cluster
 
-## TPCH  test  : 4 Spark Workers vs 16 ClickHouse
+## TPCH  test  : 4 Spark Workers vs 16 CH
 | Test Type             | Case | Time  1 | Time 2 | Time 3 |
 | --------------------- | :--- | :------ | :----- | :----- |
 | CH-Spark              | Q1   | 00:41   | 00:33  | 00:39  |
@@ -120,7 +120,7 @@
 ## Software Configuration
 * CentOS Linux release 7.2.1511
 * Spark version 2.1.0
-* ClickHouse server version 1.1.54310
+* CH server version 1.1.54310
 
 ## Spark Config
 * SPARK EXECUTOR MEMORY=36G
@@ -128,7 +128,7 @@
 * SPARK WORKER CORES=24
 * SPARK Workers: 4
 
-## ClickHouse Config
+## CH Config
 * Server nodes: 16
 
 # Data scale

@@ -1,4 +1,4 @@
-# Magic TCP Protocol
+# TheFlash TCP Protocol
 
 
 * Encoding base:

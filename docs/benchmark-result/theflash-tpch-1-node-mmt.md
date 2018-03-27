@@ -148,7 +148,7 @@ Q22, avg:  92.4, detail: [93.0, 94.0, 90.2]
 ### Software
 * CentOS Linux release 7.2.1511
 * Spark version 2.1.1
-* ClickHouse server version 1.1.54310
+* CH server version 1.1.54310
 
 ### Spark
 * SPARK EXECUTOR MEMORY=12G

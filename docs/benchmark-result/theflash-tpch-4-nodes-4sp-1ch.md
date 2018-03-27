@@ -100,7 +100,7 @@
 ## Software Configuration
 * CentOS Linux release 7.2.1511
 * Spark version 2.1.0
-* ClickHouse server version 1.1.54310
+* CH server version 1.1.54310
 
 ## Spark Config
 * SPARK EXECUTOR MEMORY=36G
@@ -108,7 +108,7 @@
 * SPARK WORKER CORES=24
 * SPARK Workers: 4
 
-## ClickHouse Config
+## CH Config
 * Server nodes: 1
 
 # Data scale

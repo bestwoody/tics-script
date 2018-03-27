@@ -1,4 +1,4 @@
-ClickHouse is fast, may be the fastest.  
+CH is fast, may be the fastest.  
 But it has limit, it lack of data mutation supporting.  
 So here we are, injecting the magic dose to the giant.  
 
@@ -120,7 +120,7 @@ DataStreams/AdditionalColumnsBlockOutputStream
 Storages/StorageMergeTree::getVersionSeed
 Storage/StorageMergeTree::write
     Auto gen values for version and del-mark columns when write
-    TODO: disable ClickHouse default value columns creating
+    TODO: disable CH default value columns creating
 ```
 ```
 Storages/ITableDeclaration::getHiddenColumnsImpl
