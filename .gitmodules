@@ -1,7 +1,3 @@
-[submodule "ch-connector/clickhouse"]
-	path = ch-connector/clickhouse
-	url = http://github.com/yandex/clickhouse
-	ignore = dirty
 [submodule "benchmark/tpch-dbgen"]
 	path = benchmark/tpch-dbgen
 	url = http://github.com/electrum/tpch-dbgen
