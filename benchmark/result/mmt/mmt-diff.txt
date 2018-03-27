@@ -507,28 +507,28 @@ SelRaw on MutableMergeTree: not tested, TODO
 
 ## MergeTree
 +---------+------+--------------------+
-|   NATION|O_YEAR|          SUM_PROFIT|
+|NATION   |O_YEAR|SUM_PROFIT          |
 +---------+------+--------------------+
-|  ALGERIA|  1998| 2.722170927186589E9|
-|  ALGERIA|  1997|  4.65488467186959E9|
-|  ALGERIA|  1996| 4.659635947948011E9|
-|  ALGERIA|  1995| 4.656459982770949E9|
-|  ALGERIA|  1994|4.6439924345962515E9|
-|  ALGERIA|  1993| 4.650595614212375E9|
-|  ALGERIA|  1992| 4.633949324474221E9|
-|ARGENTINA|  1998|2.7294872947967787E9|
-|ARGENTINA|  1997|  4.65366055413907E9|
-|ARGENTINA|  1996| 4.663775202179401E9|
-|ARGENTINA|  1995| 4.636426969903169E9|
-|ARGENTINA|  1994| 4.619237027348613E9|
-|ARGENTINA|  1993| 4.660399414781057E9|
-|ARGENTINA|  1992| 4.625731247445256E9|
-|   BRAZIL|  1998|2.7458109905978007E9|
-|   BRAZIL|  1997| 4.662101562801116E9|
-|   BRAZIL|  1996| 4.656026370545942E9|
-|   BRAZIL|  1995| 4.664941632404644E9|
-|   BRAZIL|  1994| 4.680062290763401E9|
-|   BRAZIL|  1993|4.6325938716447735E9|
+|ALGERIA  |1998  |2.7221709433674283E9|
+|ALGERIA  |1997  |4.654884700289842E9 |
+|ALGERIA  |1996  |4.659635975352843E9 |
+|ALGERIA  |1995  |4.656460010893536E9 |
+|ALGERIA  |1994  |4.643992463426201E9 |
+|ALGERIA  |1993  |4.650595643713693E9 |
+|ALGERIA  |1992  |4.633949352257095E9 |
+|ARGENTINA|1998  |2.729487311173461E9 |
+|ARGENTINA|1997  |4.653660582288512E9 |
+|ARGENTINA|1996  |4.6637752305832205E9|
+|ARGENTINA|1995  |4.636426997119802E9 |
+|ARGENTINA|1994  |4.619237055914407E9 |
+|ARGENTINA|1993  |4.660399443342413E9 |
+|ARGENTINA|1992  |4.625731275060194E9 |
+|BRAZIL   |1998  |2.74581100763904E9  |
+|BRAZIL   |1997  |4.662101591273891E9 |
+|BRAZIL   |1996  |4.656026399800223E9 |
+|BRAZIL   |1995  |4.664941659546016E9 |
+|BRAZIL   |1994  |4.680062318315669E9 |
+|BRAZIL   |1993  |4.6325938997653885E9|
 +---------+------+--------------------+
 
 ## MutableMergeTree
@@ -590,30 +590,30 @@ MutableMergeTree == SelRaw on MutableMergeTree
 +---------+------------------+-----------------+-------------------+--------------+--------------------+---------------+--------------------+
 
 ## MergeTree
-+---------+------------------+-----------------+------------------+-------------+--------------------+---------------+--------------------+
-|C_CUSTKEY|            C_NAME|          REVENUE|         C_ACCTBAL|       N_NAME|           C_ADDRESS|        C_PHONE|           C_COMMENT|
-+---------+------------------+-----------------+------------------+-------------+--------------------+---------------+--------------------+
-|  8512915|Customer#008512915|817.9020263671875|           1410.87|        KENYA|   NhpUoYd9t8WoGvtSz|24-520-846-1990|lar theodolites a...|
-|  6466141|Customer#006466141|819.8280395507812|            8693.7|   MOZAMBIQUE|     ,xZmmFeb,GzeQtr|26-467-102-2689|; theodolites hag...|
-| 14630047|Customer#014630047|820.4469244384766|           3202.15|       JORDAN|R6b13OhLbEiUgOdHW...|23-187-125-1007|ithely! carefully...|
-|  9558751|Customer#009558751|821.2230285644531|            142.28|         PERU|WvdnSfIUpLaul1yjj...|27-266-384-9191|. even requests d...|
-| 11902993|Customer#011902993|830.7090087890625|           5918.33|UNITED STATES|2dJtTMTvg5mjNAKLk...|34-199-654-1543|ckly ironic reque...|
-|  2096896|Customer#002096896|831.2220153808594|           9836.78|        INDIA|03LOx4Syet7PD mZ1...|18-852-944-9487|ould have to dete...|
-| 12406759|Customer#012406759|831.4943377685547|           4147.13|UNITED STATES|  tXCJRndNWd0EeZerqK|34-389-561-8610|ithely across the...|
-| 10420093|Customer#010420093|         838.3375|           8968.07|       JORDAN|ysgROObPoIBk3Lfb ...|23-896-336-3893|ckey players. fur...|
-|  6853996|Customer#006853996|838.7910461425781|-948.3299999999999|         PERU|nH375djPq0vTss2Cm...|27-112-534-6990|he accounts are b...|
-|  9520792|Customer#009520792|838.9980285644532|           5795.98|       RUSSIA|CB8uu,6iAW2ZARWqO...|32-459-758-7649|usly express idea...|
-|   147865|Customer#000147865|839.3251977539063|           3826.15|        JAPAN|     YR4Mu09VNE9Je2T|22-936-624-3382|ng somas. final i...|
-|  5661656|Customer#005661656| 842.177728881836|           7206.13|       FRANCE|1YHfvreaBk7Td7Mrk...|16-530-814-6788|sides the express...|
-|   502595|Customer#000502595|843.1649780273438|           7948.37|UNITED STATES|        6z b8R6TFmPR|34-845-338-6307|e sometimes acros...|
-| 10348054|Customer#010348054|844.3749499511719|           9789.05|     ETHIOPIA|nsGCoW7x1sadBxiws...|15-287-107-4646|accounts. slow se...|
-|  7463794|Customer#007463794|           845.25|2295.3300000000004|      ALGERIA| TzK6CLgOOr1zNq0Sl5g|10-433-200-7798|uctions use furio...|
-|  9398483|Customer#009398483|845.4780395507813|           8796.15|   MOZAMBIQUE|E1bf KUoocsTtOoFL...|26-949-910-8311|ietly instead of ...|
-| 11287087|Customer#011287087|847.6972314453126|           3540.73|      MOROCCO|          gmGQ1e4uaS|25-523-782-5707|press deposits ab...|
-| 14835935|Customer#014835935|849.7855932617188| 5674.650000000001|       BRAZIL|56sCfv X2ZA1fLSEa...|12-949-239-7330|y. carefully unus...|
-| 14180938|Customer#014180938|850.4190307617188|           9749.04|        KENYA|  6ikA1jynMJf8KrBHBq|24-630-460-5202|e around the care...|
-|  7808450|Customer#007808450|851.1918090820312|           3079.23|         PERU|BYThSZLP5WqsAzRus...|27-638-603-8071|ole slyly. slyly ...|
-+---------+------------------+-----------------+------------------+-------------+--------------------+---------------+--------------------+
++---------+------------------+-----------------+---------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
+|C_CUSTKEY|C_NAME            |REVENUE          |C_ACCTBAL|N_NAME       |C_ADDRESS                               |C_PHONE        |C_COMMENT                                                                                                          |
++---------+------------------+-----------------+---------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
+|8512915  |Customer#008512915|817.9020263671875|1410.87  |KENYA        |NhpUoYd9t8WoGvtSz                       |24-520-846-1990|lar theodolites alongside of the quickly ironic ideas doze fluffily ironic instruct                                |
+|6466141  |Customer#006466141|819.8279846191407|8693.7   |MOZAMBIQUE   |,xZmmFeb,GzeQtr                         |26-467-102-2689|; theodolites haggle across the                                                                                    |
+|14630047 |Customer#014630047|820.4469244384766|3202.15  |JORDAN       |R6b13OhLbEiUgOdHWJphVXTOXPs2Mud         |23-187-125-1007|ithely! carefully ironic packages sleep. express theodolites wake slyly! carefully unusual packages according t    |
+|9558751  |Customer#009558751|821.2229736328126|142.28   |PERU         |WvdnSfIUpLaul1yjjvIc3R0SYs9MZUJ         |27-266-384-9191|. even requests doze among the ironic, even pinto beans. furiously unusual realms according to the qu              |
+|11902993 |Customer#011902993|830.7090087890625|5918.33  |UNITED STATES|2dJtTMTvg5mjNAKLkQXGPspn                |34-199-654-1543|ckly ironic requests haggle furiously blithely regular accounts. quickly                                           |
+|2096896  |Customer#002096896|831.2220153808594|9836.78  |INDIA        |03LOx4Syet7PD mZ19qKLuzUUs,tkU41XfJJpT  |18-852-944-9487|ould have to detect about the furiously express pains. slyly ironic accou                                          |
+|12406759 |Customer#012406759|831.4942822265625|4147.13  |UNITED STATES|tXCJRndNWd0EeZerqK                      |34-389-561-8610|ithely across the slyly express packages. carefully final requests nag among the thinly unusual accounts; idly     |
+|10420093 |Customer#010420093|838.3375         |8968.07  |JORDAN       |ysgROObPoIBk3Lfb jTjcFZpCS2Tln7         |23-896-336-3893|ckey players. furiously regular packages about the furio                                                           |
+|6853996  |Customer#006853996|838.7909912109375|-948.33  |PERU         |nH375djPq0vTss2CmO YwjPEbP9EBigm        |27-112-534-6990|he accounts are blithely after the special, regular deposits. carefully bold platelets                             |
+|9520792  |Customer#009520792|838.9979736328125|5795.98  |RUSSIA       |CB8uu,6iAW2ZARWqO2IY9H9W,2H I6HbAYECyvKF|32-459-758-7649|usly express ideas. slyly ironic instructions wake.                                                                |
+|147865   |Customer#000147865|839.3251977539063|3826.15  |JAPAN        |YR4Mu09VNE9Je2T                         |22-936-624-3382|ng somas. final instructions wake busily according to the express excuses.                                         |
+|5661656  |Customer#005661656|842.1776733398438|7206.13  |FRANCE       |1YHfvreaBk7Td7Mrk7du8U2Y                |16-530-814-6788|sides the express deposits are evenly at the pending deposits. accounts                                            |
+|502595   |Customer#000502595|843.1649780273438|7948.37  |UNITED STATES|6z b8R6TFmPR                            |34-845-338-6307|e sometimes across the carefully i                                                                                 |
+|10348054 |Customer#010348054|844.3748931884766|9789.05  |ETHIOPIA     |nsGCoW7x1sadBxiws5TPoYXtPZhpOA3WXOri3O3D|15-287-107-4646|accounts. slow sentiments are after the blithely ironic theodolites. asymptotes about the final the                |
+|7463794  |Customer#007463794|845.25           |2295.33  |ALGERIA      |TzK6CLgOOr1zNq0Sl5g                     |10-433-200-7798|uctions use furiously. carefully regular requ                                                                      |
+|9398483  |Customer#009398483|845.4779846191407|8796.15  |MOZAMBIQUE   |E1bf KUoocsTtOoFLeHO399o SRz            |26-949-910-8311|ietly instead of the pending ideas.                                                                                |
+|11287087 |Customer#011287087|847.6971752929688|3540.73  |MOROCCO      |gmGQ1e4uaS                              |25-523-782-5707|press deposits above the bold, special deposits maintain quickly ev                                                |
+|14835935 |Customer#014835935|849.7855932617188|5674.65  |BRAZIL       |56sCfv X2ZA1fLSEaCUrD7osRu2T1mcZez      |12-949-239-7330|y. carefully unusual accounts against the regular pinto beans are about the car                                    |
+|14180938 |Customer#014180938|850.4189758300781|9749.04  |KENYA        |6ikA1jynMJf8KrBHBq                      |24-630-460-5202|e around the carefully regular dependencies. ironic, final deposits sublate alongside of the furiously careful pack|
+|7808450  |Customer#007808450|851.1918090820312|3079.23  |PERU         |BYThSZLP5WqsAzRus6ZVZ,teau48D           |27-638-603-8071|ole slyly. slyly bold deposits across the blithely regular deposits affix fluffily alongside of                    |
++---------+------------------+-----------------+---------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
 
 ## MutableMergeTree
 +---------+------------------+-----------------+---------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
@@ -715,8 +715,8 @@ MutableMergeTree == SelRaw on MutableMergeTree
 +----------+---------------+--------------+
 |L_SHIPMODE|HIGH_LINE_COUNT|LOW_LINE_COUNT|
 +----------+---------------+--------------+
-|      MAIL|         623115|        934713|
-|      SHIP|         622979|        934534|
+|MAIL      |623115         |934713        |
+|SHIP      |622979         |934534        |
 +----------+---------------+--------------+
 
 ## MutableMergeTree
@@ -771,26 +771,26 @@ MutableMergeTree == SelRaw on MutableMergeTree
 +-------+--------+
 |C_COUNT|CUSTDIST|
 +-------+--------+
-|      0| 5000189|
-|     10|  676448|
-|      9|  664171|
-|     11|  633070|
-|      8|  590423|
-|     12|  563465|
-|     13|  494117|
-|     19|  476211|
-|     18|  469287|
-|     20|  465907|
-|      7|  464303|
-|     17|  450590|
-|     14|  445104|
-|     21|  434431|
-|     16|  430846|
-|     15|  424682|
-|     22|  388440|
-|     23|  331583|
-|      6|  318557|
-|     24|  269619|
+|0      |5000189 |
+|10     |676448  |
+|9      |664171  |
+|11     |633070  |
+|8      |590423  |
+|12     |563465  |
+|13     |494117  |
+|19     |476211  |
+|18     |469287  |
+|20     |465907  |
+|7      |464303  |
+|17     |450590  |
+|14     |445104  |
+|21     |434431  |
+|16     |430846  |
+|15     |424682  |
+|22     |388440  |
+|23     |331583  |
+|6      |318557  |
+|24     |269619  |
 +-------+--------+
 
 ## MutableMergeTree
@@ -859,11 +859,11 @@ MutableMergeTree == SelRaw on MutableMergeTree
 +------------------+
 
 ## MergeTree
-+------------------+
-|     PROMO_REVENUE|
-+------------------+
-|16.640357433728195|
-+------------------+
++-----------------+
+|PROMO_REVENUE    |
++-----------------+
+|16.64035743308056|
++-----------------+
 
 ## MutableMergeTree
 +-----------------+
@@ -918,30 +918,30 @@ MutableMergeTree == SelRaw on MutableMergeTree
 +--------+--------------------+------+------------+
 
 ## MergeTree
-+--------+--------------------+------+------------+
-| P_BRAND|              P_TYPE|P_SIZE|SUPPLIER_CNT|
-+--------+--------------------+------+------------+
-|Brand#14| SMALL BRUSHED BRASS|    45|         596|
-|Brand#34|ECONOMY BURNISHED...|    23|         592|
-|Brand#44|PROMO POLISHED NI...|    49|         592|
-|Brand#54|LARGE BURNISHED S...|    36|         584|
-|Brand#14|ECONOMY BRUSHED C...|    19|         580|
-|Brand#13|STANDARD BRUSHED ...|    45|         579|
-|Brand#21|  PROMO POLISHED TIN|    36|         579|
-|Brand#12|STANDARD BRUSHED TIN|     9|         576|
-|Brand#32|STANDARD ANODIZED...|    14|         576|
-|Brand#32|STANDARD BURNISHE...|    36|         576|
-|Brand#54|STANDARD BRUSHED TIN|    49|         576|
-|Brand#25|ECONOMY POLISHED ...|    36|         575|
-|Brand#54|  LARGE PLATED STEEL|     9|         574|
-|Brand#12|MEDIUM BURNISHED ...|    36|         572|
-|Brand#22|  PROMO POLISHED TIN|    23|         572|
-|Brand#25|LARGE ANODIZED NI...|     3|         572|
-|Brand#51|  SMALL PLATED STEEL|    36|         572|
-|Brand#25|STANDARD PLATED N...|    19|         571|
-|Brand#15|SMALL ANODIZED STEEL|    36|         570|
-|Brand#12|ECONOMY BURNISHED...|    14|         568|
-+--------+--------------------+------+------------+
++--------+------------------------+------+------------+
+|P_BRAND |P_TYPE                  |P_SIZE|SUPPLIER_CNT|
++--------+------------------------+------+------------+
+|Brand#14|SMALL BRUSHED BRASS     |45    |596         |
+|Brand#34|ECONOMY BURNISHED STEEL |23    |592         |
+|Brand#44|PROMO POLISHED NICKEL   |49    |592         |
+|Brand#54|LARGE BURNISHED STEEL   |36    |584         |
+|Brand#14|ECONOMY BRUSHED COPPER  |19    |580         |
+|Brand#13|STANDARD BRUSHED BRASS  |45    |579         |
+|Brand#21|PROMO POLISHED TIN      |36    |579         |
+|Brand#12|STANDARD BRUSHED TIN    |9     |576         |
+|Brand#32|STANDARD ANODIZED COPPER|14    |576         |
+|Brand#32|STANDARD BURNISHED STEEL|36    |576         |
+|Brand#54|STANDARD BRUSHED TIN    |49    |576         |
+|Brand#25|ECONOMY POLISHED BRASS  |36    |575         |
+|Brand#54|LARGE PLATED STEEL      |9     |574         |
+|Brand#12|MEDIUM BURNISHED STEEL  |36    |572         |
+|Brand#22|PROMO POLISHED TIN      |23    |572         |
+|Brand#25|LARGE ANODIZED NICKEL   |3     |572         |
+|Brand#51|SMALL PLATED STEEL      |36    |572         |
+|Brand#25|STANDARD PLATED NICKEL  |19    |571         |
+|Brand#15|SMALL ANODIZED STEEL    |36    |570         |
+|Brand#12|ECONOMY BURNISHED TIN   |14    |568         |
++--------+------------------------+------+------------+
 
 ## MutableMergeTree
 +--------+------------------------+------+------------+
@@ -996,7 +996,7 @@ MutableMergeTree == SelRaw on MutableMergeTree
 +--------+------------------------+------+------------+
 
 
-# Q17
+# Q17: TODO
 TiSpark ~= MergeTree: float accuracy
 MutableMergeTree: not tested, TODO
 SelRaw on MutableMergeTree: not tested, TODO
@@ -1076,11 +1076,11 @@ MutableMergeTree == SelRaw on MutableMergeTree
 +--------------------+
 
 ## MergeTree
-+--------------------+
-|             REVENUE|
-+--------------------+
-|2.9893772715087074E8|
-+--------------------+
++-------------------+
+|REVENUE            |
++-------------------+
+|2.989377288355806E8|
++-------------------+
 
 ## MutableMergeTree
 +--------------------+
@@ -1183,12 +1183,12 @@ MergeTree ~= MutableMergeTree: float accuracy
 
 ## MergeTree
 +---------+-------+-------------------+
-|CNTRYCODE|NUMCUST|         TOTACCTBAL|
+|CNTRYCODE|NUMCUST|TOTACCTBAL         |
 +---------+-------+-------------------+
-|       20|  91141|6.835606868799998E8|
-|       21|  90903|6.816397848100002E8|
-|       22|  90407|6.774423523699998E8|
-|       30|  91362|6.851383806500006E8|
+|20       |91141  |6.835606868800001E8|
+|21       |90903  |6.816397848100001E8|
+|22       |90407  |6.774423523699998E8|
+|30       |91362  |6.851383806500001E8|
 +---------+-------+-------------------+
 
 ## MutableMergeTree
