@@ -32,7 +32,7 @@
     </query_log>
     <dictionaries_config>*_dictionary.xml</dictionaries_config>
     <resharding>
-        <task_queue_path>/clickhouse/task_queue</task_queue_path>
+        <task_queue_path>/theflash/task_queue</task_queue_path>
     </resharding>
     <graphite_rollup_example>
         <pattern>

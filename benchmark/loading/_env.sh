@@ -1,11 +1,11 @@
 source _helper.sh
 source _vars.sh
 
-# ClickHouse executable path
-export chbin="$repo_dir/ch-connector/build/dbms/src/Server/clickhouse"
-# ClickHouse server address to receive data
+# Client executable path
+export chbin="$repo_dir/ch-connector/build/dbms/src/Server/theflash"
+# Server address to receive data
 export chserver="127.0.0.1"
-# ClickHouse database to receive data
+# Database to receive data
 export chdb="mutable"
 export chdb="default"
 

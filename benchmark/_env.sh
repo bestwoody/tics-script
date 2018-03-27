@@ -5,11 +5,11 @@ export DYLD_LIBRARY_PATH=""
 # *.so/*.a path for linux
 export LD_LIBRARY_PATH="/usr/lib:/usr/local/lib:/usr/lib64:/usr/local/lib64"
 
-# ClickHouse executable path
-export chbin="$repo_dir/ch-connector/build/dbms/src/Server/clickhouse"
-# ClickHouse server address for scripts and Spark
+# Executable path
+export chbin="$repo_dir/ch-connector/build/dbms/src/Server/theflash"
+# Server address for scripts and Spark
 export chserver="127.0.0.1"
-# ClickHouse default database when we run scripts or in Spark
+# Default database when we run scripts or in Spark
 export chdb="mutable"
 export chdb="default"
 
