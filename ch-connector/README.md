@@ -1,12 +1,12 @@
-# CH-Connector: Dev on ClickHouse
+# CH-Connector: Dev on CH
 
 ## Dir notes:
-* `clickhouse`
-    * The official repository
+* `ch`
+    * The CH official repository
     * Git submodule of `theflash` repository
-* `clickhouse-patch`
+* `ch-patch`
     * Patch source code
-    * `clickhouse` + `patch` = `CH-Connector`
+    * `ch` + `patch` = `CH-Connector`
 * `running`
     * Running env
     * Test data set, configs, etc
@@ -18,7 +18,7 @@
     * MutableMergeTree engine testcases
     * Run by: mutable-test.sh
 
-## Dev on ClickHouse and keep syncing with the official repository
+## Dev on CH and keep syncing with the official repository
 * See [dev-on-ch](./dev-on-ch.md)
 
 ## Progress

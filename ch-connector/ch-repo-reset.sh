@@ -2,5 +2,5 @@ set -eu
 
 source _reset.sh
 
-cd "clickhouse"
+cd "ch"
 repo_reset "."

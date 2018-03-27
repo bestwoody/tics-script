@@ -89,7 +89,7 @@ patch_extract()
 }
 
 extract_file="$1"
-target="clickhouse"
+target="ch"
 
 set -eu
 

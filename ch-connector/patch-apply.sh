@@ -44,6 +44,6 @@ patch_apply()
 
 set -eu
 
-target="clickhouse"
+target="ch"
 origin_ensure_not_changed "$target"
 patch_apply "$target"

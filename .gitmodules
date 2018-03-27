@@ -14,3 +14,4 @@
 	path = ch-connector/ch
 	url = git@github.com:yandex/ClickHouse
 	branch = v1.1.54370-stable
+	ignore = dirty

@@ -4,12 +4,12 @@ export DYLD_LIBRARY_PATH=""
 # *.so/*.a path for linux
 export LD_LIBRARY_PATH="/usr/local/lib64"
 
-# ClickHouse executable path
-export chbin="build/dbms/src/Server/clickhouse"
+# Executable path
+export chbin="build/dbms/src/Server/theflash"
 
-# ClickHouse server address for scripts
+# Server address for scripts
 export chserver="127.0.0.1"
 
-# ClickHouse default database for scripts
+# Default database for scripts
 export chdb="mutable"
 export chdb="default"
