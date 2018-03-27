@@ -1,14 +1,13 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
-index 1b3caee..1e2b30d 100644
+index 1b3caee..28633db 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
-@@ -58,6 +58,18 @@ private:
+@@ -58,6 +58,17 @@ private:
          const Settings & settings,
          const Context & context) const;
  
 +    BlockInputStreams spreadMarkRangesAmongStreamsOnMutableEngine(
-+        MergeTreeData::DataPartsVector & parts,
-+        const PKCondition & key_condition,
++        const RangesInDataParts & parts_with_ranges,
 +        const Names & column_names,
 +        size_t max_block_size,
 +        unsigned num_streams,
