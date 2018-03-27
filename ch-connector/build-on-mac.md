@@ -5,7 +5,7 @@
 ## Build CH
 * Building CH strickly require g++(not clang wrap in g++ alias)
 * Follow instructings on CH docs
-* Or just run `ch-connector> ./clickhouse-build.sh`
+* Or just run `ch-connector> ./build.sh`
 
 ## Build POC projects (Benchmark, Protocol, etc)
 * No special things.
