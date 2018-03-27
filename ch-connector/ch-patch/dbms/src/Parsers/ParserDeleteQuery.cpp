@@ -27,8 +27,6 @@ namespace ErrorCodes
 
 bool ParserDeleteQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {
-    Pos begin = pos;
-
     ParserKeyword s_delete_from("DELETE FROM");
     ParserKeyword s_dot(".");
     ParserKeyword s_where("WHERE");
@@ -59,13 +57,15 @@ bool ParserDeleteQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
     if (!exp_elem.parse(pos, where, expected))
         return false;
 
-    std::shared_ptr<ASTDeleteQuery> query = std::make_shared<ASTDeleteQuery>(StringRange(begin, pos));
+    std::shared_ptr<ASTDeleteQuery> query = std::make_shared<ASTDeleteQuery>();
     node = query;
 
     if (database)
         query->database = typeid_cast<ASTIdentifier &>(*database).name;
 
     query->table = typeid_cast<ASTIdentifier &>(*table).name;
+
+    // TODO: Support syntax without 'where'
 
     if (where)
     {
@@ -83,9 +83,9 @@ bool ParserDeleteQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 
         auto table_expr = std::make_shared<ASTTableExpression>();
         table_expr->database_and_table_name =
-            std::make_shared<ASTIdentifier>(StringRange(),
-            query->database.size() ? query->database + '.' + query->table : query->table,
-            ASTIdentifier::Table);
+            std::make_shared<ASTIdentifier>(
+                query->database.size() ? query->database + '.' + query->table : query->table,
+                ASTIdentifier::Table);
 
         auto table_element = std::make_shared<ASTTablesInSelectQueryElement>();
         table_element->table_expression = table_expr;

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeData.h b/dbms/src/Storages/MergeTree/MergeTreeData.h
-index 47abd95..f75d5e3 100644
+index 47abd95..fdb0b1e 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeData.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeData.h
 @@ -36,7 +36,6 @@ namespace ErrorCodes
@@ -22,7 +22,7 @@ index 47abd95..f75d5e3 100644
              || merging_params.mode == MergingParams::Summing
              || merging_params.mode == MergingParams::Aggregating
              || merging_params.mode == MergingParams::Replacing
-+            || merging_params.mode == MergingParams::Mutable,
++            || merging_params.mode == MergingParams::Mutable
              || merging_params.mode == MergingParams::VersionedCollapsing;
      }
  

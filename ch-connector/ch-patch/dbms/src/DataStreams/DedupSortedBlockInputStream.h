@@ -28,11 +28,6 @@ public:
         return "DedupSorted";
     }
 
-    String getID() const override
-    {
-        return getName();
-    }
-
     bool isGroupedOutput() const override
     {
         return true;

@@ -20,13 +20,6 @@ public:
         return "InBlockDedupInput";
     }
 
-    String getID() const override
-    {
-        std::stringstream ostr(getName());
-        ostr << "(" << input->getID() << ")";
-        return ostr.str();
-    }
-
     bool isGroupedOutput() const override
     {
         return true;

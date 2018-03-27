@@ -26,7 +26,7 @@ void ReplacingDeletingSortedBlockInputStream::insertRow(MutableColumns & merged_
 
     ++merged_rows;
     for (size_t i = 0; i < num_columns; ++i)
-        merged_columns[i]->insertFrom(*selected_row.columns[i], selected_row.row_num);
+        merged_columns[i]->insertFrom(*(*selected_row.columns)[i], selected_row.row_num);
 }
 
 
@@ -52,7 +52,7 @@ Block ReplacingDeletingSortedBlockInputStream::readImpl()
     /// Additional initialization.
     if (selected_row.empty())
     {
-        selected_row.columns.resize(num_columns);
+        selected_row.columns->resize(num_columns);
 
         if (!version_column.empty())
             version_column_number = header.getPositionByName(version_column);
@@ -76,8 +76,8 @@ void ReplacingDeletingSortedBlockInputStream::merge(MutableColumns & merged_colu
 
         if (current_key.empty())
         {
-            current_key.columns.resize(description.size());
-            next_key.columns.resize(description.size());
+            current_key.columns->resize(description.size());
+            next_key.columns->resize(description.size());
 
             setPrimaryKeyRef(current_key, current);
         }

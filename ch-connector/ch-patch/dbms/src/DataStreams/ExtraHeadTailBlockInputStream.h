@@ -21,13 +21,6 @@ public:
         return "ExtraHeadTailInput";
     }
 
-    String getID() const override
-    {
-        std::stringstream ostr(getName());
-        ostr << ", head: " << head.rows() << ", tail: " << tail.rows() << " (" << input->getID() << ")";
-        return ostr.str();
-    }
-
     bool isGroupedOutput() const override
     {
         return input->isGroupedOutput();

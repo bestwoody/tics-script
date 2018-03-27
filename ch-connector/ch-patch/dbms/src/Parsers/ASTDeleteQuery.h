@@ -19,9 +19,6 @@ public:
     // Just for execute.
     ASTPtr select;
 
-    ASTDeleteQuery() = default;
-    ASTDeleteQuery(const StringRange range_) : IAST(range_) {}
-
     /** Get the text that identifies this element. */
     String getID() const override { return "DeleteQuery_" + database + "_" + table; };
 

@@ -35,13 +35,6 @@ public:
         return "PlaygroundInput";
     }
 
-    String getID() const override
-    {
-        std::stringstream ostr(getName());
-        ostr << "(" << input->getID() << ")";
-        return ostr.str();
-    }
-
     bool isGroupedOutput() const override
     {
         return input->isGroupedOutput();

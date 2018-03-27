@@ -19,7 +19,7 @@ endif()
 
 add_executable(ch-raw
     ../Server/StatusFile.cpp
-    ../Server/ConfigReloader.cpp
+    ../Common/Config/ConfigReloader.cpp
     CHRaw.cpp)
 
 target_link_libraries (
