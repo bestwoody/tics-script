@@ -21,9 +21,9 @@ namespace ErrorCodes
 {
     extern const int POCO_EXCEPTION;
     extern const int UNKNOWN_DATABASE;
-    extern const int MAGIC_BAD_REQUEST;
-    extern const int MAGIC_ENCODER_ERROR;
-    extern const int MAGIC_SESSION_ERROR;
+    extern const int THEFLASH_BAD_REQUEST;
+    extern const int THEFLASH_ENCODER_ERROR;
+    extern const int THEFLASH_SESSION_ERROR;
 }
 
 }
@@ -130,7 +130,7 @@ void TCPArrowHandler::startExecuting()
     {
         io = executeQuery(query, query_context, false, DB::QueryProcessingStage::Complete);
         if (io.out)
-            throw DB::Exception("Not support insert query.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
+            throw DB::Exception("Not support insert query.", DB::ErrorCodes::THEFLASH_BAD_REQUEST);
 
         size_t this_encoder_count = 8;
 
@@ -139,11 +139,11 @@ void TCPArrowHandler::startExecuting()
         if (encoder_count > 0)
             this_encoder_count = encoder_count;
         if (this_encoder_count <= 0)
-            throw DB::Exception("Invalid encoder count.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
+            throw DB::Exception("Invalid encoder count.", DB::ErrorCodes::THEFLASH_BAD_REQUEST);
 
         encoder = std::make_shared<ArrowEncoderParall>(io, this_encoder_count);
         if (encoder->hasError())
-            throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::MAGIC_ENCODER_ERROR);
+            throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::THEFLASH_ENCODER_ERROR);
 
         joined = true;
 
@@ -181,7 +181,7 @@ void TCPArrowHandler::run()
 TCPArrowHandler::EncoderPtr TCPArrowHandler::getExecution()
 {
     if (!encoder)
-        throw DB::Exception("Sharing empty arrow encoder.", DB::ErrorCodes::MAGIC_SESSION_ERROR);
+        throw DB::Exception("Sharing empty arrow encoder.", DB::ErrorCodes::THEFLASH_SESSION_ERROR);
     return encoder;
 }
 
@@ -215,7 +215,7 @@ void TCPArrowHandler::processOrdinaryQuery()
 {
     auto schema = encoder->getEncodedSchema();
     if (encoder->hasError())
-        throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::MAGIC_ENCODER_ERROR);
+        throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::THEFLASH_ENCODER_ERROR);
 
     writeInt64(Protocol::ArrowSchema, *out);
     writeInt64(schema->size(), *out);
@@ -226,7 +226,7 @@ void TCPArrowHandler::processOrdinaryQuery()
     {
         auto block = encoder->getEncodedBlock();
         if (encoder->hasError())
-            throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::MAGIC_ENCODER_ERROR);
+            throw DB::Exception(encoder->getErrorString(), DB::ErrorCodes::THEFLASH_ENCODER_ERROR);
         if (!block)
             break;
 
@@ -245,7 +245,7 @@ void TCPArrowHandler::processOrdinaryQuery()
     {
         std::stringstream error_ss;
         error_ss << "End process query, residue != 0: " << residue;
-        throw DB::Exception(error_ss.str(), DB::ErrorCodes::MAGIC_SESSION_ERROR);
+        throw DB::Exception(error_ss.str(), DB::ErrorCodes::THEFLASH_SESSION_ERROR);
     }
 }
 
@@ -253,7 +253,7 @@ void TCPArrowHandler::recvHeader()
 {
     Int64 flag = TheFlash::readInt64(*in);
     if (flag != Protocol::Header)
-        throw DB::Exception("First package should be header.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
+        throw DB::Exception("First package should be header.", DB::ErrorCodes::THEFLASH_BAD_REQUEST);
 
     protocol_version_major = TheFlash::readInt64(*in);
     protocol_version_minor = TheFlash::readInt64(*in);
@@ -269,7 +269,7 @@ void TCPArrowHandler::recvHeader()
             PROTOCOL_VERSION_MAJOR <<
             "." <<
             PROTOCOL_VERSION_MINOR;
-        throw DB::Exception(error_ss.str(), DB::ErrorCodes::MAGIC_BAD_REQUEST);
+        throw DB::Exception(error_ss.str(), DB::ErrorCodes::THEFLASH_BAD_REQUEST);
     }
 
     TheFlash::readString(client_name, *in);
@@ -281,7 +281,7 @@ void TCPArrowHandler::recvHeader()
 
     TheFlash::readString(encoder_name, *in);
     if (encoder_name != "arrow")
-        throw DB::Exception("Only support arrow encoding.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
+        throw DB::Exception("Only support arrow encoding.", DB::ErrorCodes::THEFLASH_BAD_REQUEST);
 
     encoder_version = TheFlash::readInt64(*in);
     if (encoder_version != PROTOCOL_ENCODER_VERSION)
@@ -292,14 +292,14 @@ void TCPArrowHandler::recvHeader()
             encoder_version <<
             " vs " <<
             PROTOCOL_ENCODER_VERSION;
-        throw DB::Exception(error_ss.str(), DB::ErrorCodes::MAGIC_BAD_REQUEST);
+        throw DB::Exception(error_ss.str(), DB::ErrorCodes::THEFLASH_BAD_REQUEST);
     }
     encoder_count = TheFlash::readInt64(*in);
 
     client_count = TheFlash::readInt64(*in);
     client_index = TheFlash::readInt64(*in);
     if (client_count <= client_index || client_count <= 0 || client_index < 0 || client_count >= MAX_CLIENT_COUNT)
-        throw DB::Exception("Invalid client index/count.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
+        throw DB::Exception("Invalid client index/count.", DB::ErrorCodes::THEFLASH_BAD_REQUEST);
 
     LOG_TRACE(log,
         "Received header, proto ver: " <<
@@ -324,11 +324,11 @@ void TCPArrowHandler::recvQuery()
 {
     DB::Int64 flag = TheFlash::readInt64(*in);
     if (flag != Protocol::Utf8Query)
-        throw DB::Exception("Only receive query string after header.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
+        throw DB::Exception("Only receive query string after header.", DB::ErrorCodes::THEFLASH_BAD_REQUEST);
 
     TheFlash::readString(query_id, *in);
     if (query_id.empty())
-        throw DB::Exception("Receive empty query_id.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
+        throw DB::Exception("Receive empty query_id.", DB::ErrorCodes::THEFLASH_BAD_REQUEST);
     query_context.setCurrentQueryId(query_id);
     TheFlash::readString(query, *in);
 }

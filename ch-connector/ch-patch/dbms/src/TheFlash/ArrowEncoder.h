@@ -23,7 +23,7 @@ namespace DB
 
 namespace ErrorCodes
 {
-    extern const int MAGIC_UNHANDLED_TYPE_CONVERTION;
+    extern const int THEFLASH_UNHANDLED_TYPE_CONVERTION;
 }
 
 }
@@ -560,7 +560,7 @@ private:
             return arrow::float64();
         else
             throw DB::Exception("Unhandled DataType: " + name + ", TODO:  convert it to ArrowType.",
-                DB::ErrorCodes::MAGIC_UNHANDLED_TYPE_CONVERTION);
+                DB::ErrorCodes::THEFLASH_UNHANDLED_TYPE_CONVERTION);
         return arrow::null();
     }
 

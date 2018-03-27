@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Common/ErrorCodes.cpp b/dbms/src/Common/ErrorCodes.cpp
-index 46b4c33..8985804 100644
+index 46b4c33..49c64db 100644
 --- a/dbms/src/Common/ErrorCodes.cpp
 +++ b/dbms/src/Common/ErrorCodes.cpp
 @@ -379,6 +379,11 @@ namespace ErrorCodes
@@ -7,10 +7,10 @@ index 46b4c33..8985804 100644
      extern const int STD_EXCEPTION = 1001;
      extern const int UNKNOWN_EXCEPTION = 1002;
 +
-+    extern const int MAGIC_UNHANDLED_TYPE_CONVERTION = 9000;
-+    extern const int MAGIC_BAD_REQUEST = 9001;
-+    extern const int MAGIC_ENCODER_ERROR = 9002;
-+    extern const int MAGIC_SESSION_ERROR = 9003;
++    extern const int THEFLASH_UNHANDLED_TYPE_CONVERTION = 9000;
++    extern const int THEFLASH_BAD_REQUEST = 9001;
++    extern const int THEFLASH_ENCODER_ERROR = 9002;
++    extern const int THEFLASH_SESSION_ERROR = 9003;
  }
  
  }
