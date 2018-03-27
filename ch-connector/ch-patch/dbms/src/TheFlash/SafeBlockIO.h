@@ -20,7 +20,7 @@ public:
 
     DB::Block sample()
     {
-        return input.in_sample;
+        return input.in->getHeader();
     }
 
     void read(std::vector<DB::Block> & dest, bool & closed, size_t batch_size = 4)
