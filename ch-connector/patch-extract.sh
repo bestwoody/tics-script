@@ -16,7 +16,7 @@ patch_cp()
 	local target="$1"
 	local modified="$2"
 
-	local patch="../$target-patch/${modified#*$target}"
+	local patch="../$target-patch/""${modified#*$target/}"
 	local path=`dirname "$patch"`
 	mkdir -p "$path"
 	cp -f "$modified" "$patch"
@@ -27,7 +27,7 @@ patch_diff()
 	local target="$1"
 	local modified="$2"
 
-	local patch="../$target-patch/${modified#*$target}"
+	local patch="../$target-patch/${modified#*$target/}"
 	local path=`dirname "$patch"`
 	mkdir -p "$path"
 
@@ -46,6 +46,9 @@ untracked_extract() {
 	local untracked="$2"
 
 	if [ -d "$untracked" ]; then
+		if [ "${untracked:((${#untracked} - 1))}" == "/" ]; then
+			untracked=${untracked%/*}
+		fi
 		find "$untracked" -type f | while read file; do
 			untracked_extract "$target" "$file"
 		done
