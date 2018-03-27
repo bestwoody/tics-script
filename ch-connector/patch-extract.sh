@@ -78,19 +78,23 @@ patch_extract_one()
 patch_extract()
 {
 	local target="$1"
-	local path="$2"
+	local force="$2"
+	local path="$3"
 
 	if [ -z "$path" ]; then
-		patch_ensure_not_changed "$target"
+		if [ "$force" != "true" ]; then
+			patch_ensure_not_changed "$target"
+		fi
 		patch_extract_repo "$target"
 	else
 		patch_extract_one "$target" "$path"
 	fi
 }
 
-extract_file="$1"
+force="$1"
+extract_file="$2"
 target="ch"
 
 set -eu
 
-patch_extract "$target" "$extract_file"
+patch_extract "$target" "$force" "$extract_file"
