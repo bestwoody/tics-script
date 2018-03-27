@@ -1,6 +1,6 @@
 # Q1:
-TiSpark ~= MergeTree: float accuracy.
-MergeTree !~= MutableMergeTree: float accuracy. SUM_DISC_PRICE and SUM_DISC_PRICE not matched.
+TiSpark ~= MergeTree: float accuracy. SUM_DISC_PRICE and SUM_PRICE not matched.
+MergeTree !~= MutableMergeTree: float accuracy
 MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
@@ -14,14 +14,15 @@ MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 +------------+------------+-------------+--------------------+--------------------+--------------------+------------------+-----------------+--------------------+-----------+
 
 ## MergeTree
-+------------+------------+-------------+--------------------+--------------------+--------------------+------------------+-----------------+-------------------+-----------+
-|L_RETURNFLAG|L_LINESTATUS|      SUM_QTY|      SUM_BASE_PRICE|      SUM_DISC_PRICE|          SUM_CHARGE|           AVG_QTY|        AVG_PRICE|           AVG_DISC|COUNT_ORDER|
-+------------+------------+-------------+--------------------+--------------------+--------------------+------------------+-----------------+-------------------+-----------+
-|           A|           F|3.775127758E9|5.660776074767208E12|5.377736376878293E12|5.592847407358363E12|25.499370423275426|38236.11683281849|0.05000224353087152|  148047881|
-|           N|           F|  9.8553062E7|1.477710977951999...|1.403849654038039...|1.459997924490948...|25.501556956882876|38237.19923593446|0.04998528433807816|    3864590|
-|           N|           O|7.431523656E9|1.114356056061604...|1.058638809424748...|1.100985261346620...| 25.50003948264419| 38237.2777678669|0.04999793090546204|  291431849|
-|           R|           F| 3.77572497E9|5.661603010311334E12|5.378513542603718E12| 5.59366223050292E12| 25.50006628406532| 38236.6971069407|0.05000130433959643|  148067261|
-+------------+------------+-------------+--------------------+--------------------+--------------------+------------------+-----------------+-------------------+-----------+
++------------+------------+-------------+---------------------+---------------------+---------------------+------------------+-----------------+-------------------+-----------+
+|L_RETURNFLAG|L_LINESTATUS|SUM_QTY      |SUM_BASE_PRICE       |SUM_DISC_PRICE       |SUM_CHARGE           |AVG_QTY           |AVG_PRICE        |AVG_DISC           |COUNT_ORDER|
++------------+------------+-------------+---------------------+---------------------+---------------------+------------------+-----------------+-------------------+-----------+
+|A           |F           |3.775127758E9|5.660776097175258E12 |5.660768692506256E12 |5.6607746160172705E12|25.499370423275426|38236.11698417526|0.05000224355283711|148047881  |
+|N           |F           |9.8553062E7  |1.477710983880666E11 |1.4777090521555957E11|1.4777105978250937E11|25.501556956882876|38237.19938934443|0.04998528433793035|3864590    |
+|N           |O           |7.436302976E9|1.1150725681377207E13|1.115071109890494E13 |1.1150722765417057E13|25.500009404374193|38237.22764637335|0.04999791830473853|291619617  |
+|R           |F           |3.77572497E9 |5.66160303273765E12  |5.661595627236636E12 |5.66160155191608E12  |25.50006628406532 |38236.69725840104|0.05000130436156619|148067261  |
++------------+------------+-------------+---------------------+---------------------+---------------------+------------------+-----------------+-------------------+-----------+
+
 
 ## MutableMergeTree
 +------------+------------+-------------+---------------------+---------------------+---------------------+------------------+------------------+--------------------+-----------+
@@ -76,31 +77,31 @@ MutableMergeTree == SelRaw on MutableMergeTree
 +---------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
 
 ## MergeTree
++---------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
+|S_ACCTBAL|S_NAME            |N_NAME        |P_PARTKEY|P_MFGR        |S_ADDRESS                               |S_PHONE        |S_COMMENT                                                                                 |
++---------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
+|9999.7   |Supplier#000239544|UNITED KINGDOM|6739531  |Manufacturer#4|,6oexY7ft68JKJCN1SQ LUO5Xf              |33-509-584-9496|ets are. blithely special accounts wake across t                                          |
+|9999.65  |Supplier#000143654|FRANCE        |2393647  |Manufacturer#3|HhHCZ,RosE8He4uYvyIDqsPZe,7cZiJh1y9,    |16-166-504-5864| special accounts. never dogged deposits                                                  |
+|9999.49  |Supplier#000615014|GERMANY       |12365001 |Manufacturer#3|4C,uOuJDig7z,4e                         |17-780-902-4027| pinto beans affix along th                                                               |
+|9999.28  |Supplier#000494480|ROMANIA       |17244462 |Manufacturer#3|hNB2qcYmnyeqrd em,o29TxzLwwrl           |29-756-312-1779|ly. slyly final pains detect furiously qu                                                 |
+|9998.87  |Supplier#000826281|ROMANIA       |14326252 |Manufacturer#3|LkGmLSAjbjgKS5ZRepL                     |29-775-451-4774| slyly silent accounts affix furiously across the final, even ideas; tithe                |
+|9998.56  |Supplier#000039514|UNITED KINGDOM|7539499  |Manufacturer#2|fUN95rpikfiqeGo,okl,27ItSq9fMpr         |33-317-828-7758|olites use about the blithely regular warhorses. carefully final instructions a           |
+|9997.89  |Supplier#000319666|RUSSIA        |19319665 |Manufacturer#1|SZtdx3rzXnFuiVuJzKathV9                 |32-972-151-6038|furiously ironic pearls. furiously regular foxes along the furiously                      |
+|9997.85  |Supplier#000718770|ROMANIA       |718769   |Manufacturer#1|2173woKsCg7zpHCqhiEXFTmYYqpT4XONnRAsUryE|29-663-409-2865|posits sleep across the blithely express requests.                                        |
+|9997.83  |Supplier#000348318|FRANCE        |9348317  |Manufacturer#4|AvfnvjCFAg1aNpj                         |16-718-707-5676|e pending requests: furiously even deposits boost furiously slyly even requests.          |
+|9997.73  |Supplier#000329974|RUSSIA        |4079969  |Manufacturer#3|eKtIadopsE                              |32-268-488-7178|uickly. furiously ironic requests are slyly above the regula                              |
+|9997.46  |Supplier#000906546|FRANCE        |1406543  |Manufacturer#2|aMZ13ITqaYCGwqW42qXJ92ho                |16-249-122-4511|endencies above the furiously even                                                        |
+|9997.2   |Supplier#000487664|FRANCE        |2737657  |Manufacturer#2| ShFSQYlV,8EvuNQkB7B                    |16-714-518-5435|mong the ideas. accounts poach p                                                          |
+|9997.17  |Supplier#000123140|ROMANIA       |5373124  |Manufacturer#2|O80qPjM5qonzjxGI,ClSnI7Vf3dlZCztkNx3ho  |29-567-411-4572|uriously slyly bold forges. slyly pending platelets haggle after the excuses. quickly pend|
+|9997.06  |Supplier#000725417|GERMANY       |10225396 |Manufacturer#1|10iRwq3,LeyTjZx8G                       |17-577-582-2010|arefully dogged accounts. final, pending asymptote                                        |
+|9996.45  |Supplier#000795554|ROMANIA       |14795553 |Manufacturer#2|qRD x8  zsS 7n11Cu6uMJkgSDL2Pv          |29-305-384-2702| instructions believe slyly i                                                             |
+|9995.96  |Supplier#000566208|FRANCE        |9816180  |Manufacturer#5|RMnISVay,G0prBUAZ,yqqm7ftyZbjH0CfJyXP95 |16-665-147-8314|mong the ironic requests caj                                                              |
+|9995.96  |Supplier#000629520|FRANCE        |13129493 |Manufacturer#3|kjmenylD2Ut5JJxh1n8P1,cl,XqR            |16-785-547-3814|foxes detect blithely. even, ironic courts a                                              |
+|9995.93  |Supplier#000388258|UNITED KINGDOM|6138251  |Manufacturer#2|rUB88zGIucl73Jl4                        |33-829-188-2160|arefully express requests. pending, express pinto beans                                   |
+|9995.79  |Supplier#000998425|FRANCE        |248424   |Manufacturer#4|tjoKE1Srnp3l9lpwSP40nMonOOM7F2fa        |16-228-926-9937|ding foxes haggle fluffily. carefully ironic ideas                                        |
+|9995.42  |Supplier#000220794|ROMANIA       |12470757 |Manufacturer#1|kwxtCRMG9VWfJ75Sij2K                    |29-557-942-9023|. carefully pending platelets haggle after the final, regular packa                       |
++---------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
 
-+-----------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
-|        S_ACCTBAL|            S_NAME|        N_NAME|P_PARTKEY|        P_MFGR|           S_ADDRESS|        S_PHONE|           S_COMMENT|
-+-----------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
-|           9999.7|Supplier#000239544|UNITED KINGDOM|  6739531|Manufacturer#4|,6oexY7ft68JKJCN1...|33-509-584-9496|ets are. blithely...|
-|          9999.65|Supplier#000143654|        FRANCE|  2393647|Manufacturer#3|HhHCZ,RosE8He4uYv...|16-166-504-5864| special accounts...|
-|          9999.49|Supplier#000615014|       GERMANY| 12365001|Manufacturer#3|     4C,uOuJDig7z,4e|17-780-902-4027| pinto beans affi...|
-|          9999.28|Supplier#000494480|       ROMANIA| 17244462|Manufacturer#3|hNB2qcYmnyeqrd em...|29-756-312-1779|ly. slyly final p...|
-|9998.869999999999|Supplier#000826281|       ROMANIA| 14326252|Manufacturer#3| LkGmLSAjbjgKS5ZRepL|29-775-451-4774| slyly silent acc...|
-|          9998.56|Supplier#000039514|UNITED KINGDOM|  7539499|Manufacturer#2|fUN95rpikfiqeGo,o...|33-317-828-7758|olites use about ...|
-|          9997.89|Supplier#000319666|        RUSSIA| 19319665|Manufacturer#1|SZtdx3rzXnFuiVuJz...|32-972-151-6038|furiously ironic ...|
-|9997.849999999999|Supplier#000718770|       ROMANIA|   718769|Manufacturer#1|2173woKsCg7zpHCqh...|29-663-409-2865|posits sleep acro...|
-|          9997.83|Supplier#000348318|        FRANCE|  9348317|Manufacturer#4|     AvfnvjCFAg1aNpj|16-718-707-5676|e pending request...|
-|9997.730000000001|Supplier#000329974|        RUSSIA|  4079969|Manufacturer#3|          eKtIadopsE|32-268-488-7178|uickly. furiously...|
-|          9997.46|Supplier#000906546|        FRANCE|  1406543|Manufacturer#2|aMZ13ITqaYCGwqW42...|16-249-122-4511|endencies above t...|
-|           9997.2|Supplier#000487664|        FRANCE|  2737657|Manufacturer#2| ShFSQYlV,8EvuNQkB7B|16-714-518-5435|mong the ideas. a...|
-|          9997.17|Supplier#000123140|       ROMANIA|  5373124|Manufacturer#2|O80qPjM5qonzjxGI,...|29-567-411-4572|uriously slyly bo...|
-|          9997.06|Supplier#000725417|       GERMANY| 10225396|Manufacturer#1|   10iRwq3,LeyTjZx8G|17-577-582-2010|arefully dogged a...|
-|9996.449999999999|Supplier#000795554|       ROMANIA| 14795553|Manufacturer#2|qRD x8  zsS 7n11C...|29-305-384-2702| instructions bel...|
-|          9995.96|Supplier#000566208|        FRANCE|  9816180|Manufacturer#5|RMnISVay,G0prBUAZ...|16-665-147-8314|mong the ironic r...|
-|          9995.96|Supplier#000629520|        FRANCE| 13129493|Manufacturer#3|kjmenylD2Ut5JJxh1...|16-785-547-3814|foxes detect blit...|
-|          9995.93|Supplier#000388258|UNITED KINGDOM|  6138251|Manufacturer#2|    rUB88zGIucl73Jl4|33-829-188-2160|arefully express ...|
-|          9995.79|Supplier#000998425|        FRANCE|   248424|Manufacturer#4|tjoKE1Srnp3l9lpwS...|16-228-926-9937|ding foxes haggle...|
-|          9995.42|Supplier#000220794|       ROMANIA| 12470757|Manufacturer#1|kwxtCRMG9VWfJ75Sij2K|29-557-942-9023|. carefully pendi...|
-+-----------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
 
 ## MutableMergeTree
 +---------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
@@ -156,8 +157,8 @@ MutableMergeTree == SelRaw on MutableMergeTree
 
 
 # Q3
-TiSpark ~= MergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row(L_ORDERKEY=18869634) not matched.
-MergeTree !~= MutableMergeTree: float accuracy. Row(L_ORDERKEY=69628995) and row(L_ORDERKEY=18869634) not matched, TiSpark == MutableMergeTree on this two rows.
+TiSpark ~= MergeTree: float accuracy
+MergeTree ~= MutableMergeTree: float accuracy
 MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
@@ -187,30 +188,31 @@ MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 +----------+------------------+-----------+--------------+
 
 ## MergeTree
-+----------+------------------+--------------------+--------------+
-|L_ORDERKEY|           REVENUE|         O_ORDERDATE|O_SHIPPRIORITY|
-+----------+------------------+--------------------+--------------+
-| 249739810|492136.85632812505|1995-02-28 08:00:...|             0|
-| 165214338|  485645.517734375|1995-03-09 08:00:...|             0|
-| 507274210|485256.25953125005|1995-03-10 08:00:...|             0|
-| 202071367|  474746.408203125|1995-03-12 08:00:...|             0|
-|  37307463|  474325.192734375|1995-02-06 08:00:...|             0|
-| 461984355|   468002.52171875|1995-03-13 08:00:...|             0|
-| 100810368|467932.76203125005|1995-02-28 08:00:...|             0|
-|  74015523|    467786.8109375|1995-03-14 08:00:...|             0|
-|  69628995|463767.86046874995|1995-03-10 08:00:...|             0|
-| 402772582| 463367.0676171875|1995-03-10 08:00:...|             0|
-| 367111712| 462559.4072265625|1995-03-01 08:00:...|             0|
-| 351107681|460519.16539062496|1995-02-05 08:00:...|             0|
-|  81316036|      459781.38625|1995-02-24 08:00:...|             0|
-| 121258023| 459226.9337890625|1995-03-12 08:00:...|             0|
-| 177643398|  457452.473046875|1995-03-14 08:00:...|             0|
-| 270119367| 456181.4423437499|1995-02-14 08:00:...|             0|
-| 262164675|456177.34441406245|1995-03-14 08:00:...|             0|
-|   2845094|454144.24652343744|1995-03-06 08:00:...|             0|
-| 235806279| 454105.2342578124|1995-02-03 08:00:...|             0|
-| 349319744|453079.86816406256|1995-01-23 08:00:...|             0|
-+----------+------------------+--------------------+--------------+
++----------+------------------+---------------------+--------------+
+|L_ORDERKEY|REVENUE           |O_ORDERDATE          |O_SHIPPRIORITY|
++----------+------------------+---------------------+--------------+
+|249739810 |492136.863828125  |1995-02-28 08:00:00.0|0             |
+|165214338 |485645.525        |1995-03-09 08:00:00.0|0             |
+|507274210 |485256.25249999994|1995-03-10 08:00:00.0|0             |
+|202071367 |474746.40773437504|1995-03-12 08:00:00.0|0             |
+|37307463  |474325.18546874996|1995-02-06 08:00:00.0|0             |
+|461984355 |468002.52171875   |1995-03-13 08:00:00.0|0             |
+|100810368 |467932.75820312503|1995-02-28 08:00:00.0|0             |
+|74015523  |467786.81093750003|1995-03-14 08:00:00.0|0             |
+|402772582 |463367.06429687503|1995-03-10 08:00:00.0|0             |
+|367111712 |462559.39632812503|1995-03-01 08:00:00.0|0             |
+|351107681 |460519.174375     |1995-02-05 08:00:00.0|0             |
+|81316036  |459781.382421875  |1995-02-24 08:00:00.0|0             |
+|121258023 |459226.9412890625 |1995-03-12 08:00:00.0|0             |
+|177643398 |457452.46921875   |1995-03-14 08:00:00.0|0             |
+|270119367 |456181.449453125  |1995-02-14 08:00:00.0|0             |
+|262164675 |456177.35222656245|1995-03-14 08:00:00.0|0             |
+|2845094   |454144.25390624994|1995-03-06 08:00:00.0|0             |
+|235806279 |454105.2305859374 |1995-02-03 08:00:00.0|0             |
+|349319744 |453079.8645703125 |1995-01-23 08:00:00.0|0             |
+|18869634  |452696.30609375006|1995-01-10 08:00:00.0|0             |
++----------+------------------+---------------------+--------------+
+
 
 ## MutableMergeTree
 +----------+------------------+---------------------+--------------+
@@ -283,12 +285,13 @@ SelRaw on MutableMergeTree: not tested, TODO
 +---------------+-----------+
 |O_ORDERPRIORITY|ORDER_COUNT|
 +---------------+-----------+
-|       1-URGENT|    1051801|
-|         2-HIGH|    1051366|
-|       3-MEDIUM|    1051587|
-|4-NOT SPECIFIED|    1050950|
-|          5-LOW|    1051725|
+|1-URGENT       |1051801    |
+|2-HIGH         |1051366    |
+|3-MEDIUM       |1051587    |
+|4-NOT SPECIFIED|1050950    |
+|5-LOW          |1051725    |
 +---------------+-----------+
+
 
 ## MutableMergeTree
 +---------------+-----------+
@@ -317,15 +320,16 @@ MutableMergeTree == SelRaw on MutableMergeTree
 +---------+--------------------+
 
 ## MergeTree
-+---------+--------------------+
-|   N_NAME|             REVENUE|
-+---------+--------------------+
-|  VIETNAM|1.595508602670207...|
-|    INDIA|1.587017305147212...|
-|    CHINA|1.585808249445024...|
-|INDONESIA|1.578868196881177...|
-|    JAPAN|1.577088899127831...|
-+---------+--------------------+
++---------+---------------------+
+|N_NAME   |REVENUE              |
++---------+---------------------+
+|VIETNAM  |1.5955086090168962E10|
+|INDIA    |1.5870173114566084E10|
+|CHINA    |1.5858082557179054E10|
+|INDONESIA|1.5788682030845966E10|
+|JAPAN    |1.57708890553602E10  |
++---------+---------------------+
+
 
 ## MutableMergeTree
 +---------+---------------------+
@@ -363,11 +367,12 @@ MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 +-------------------+
 
 ## MergeTree
-+--------------------+
-|             REVENUE|
-+--------------------+
-|1.233042683238763E10|
-+--------------------+
++---------------------+
+|REVENUE              |
++---------------------+
+|1.2330426888575788E10|
++---------------------+
+
 
 ## MutableMergeTree
 +---------------------+
@@ -385,8 +390,8 @@ MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 
 # Q7
-TiSpark ~= MergeTree: float accuracy. Second row not match
-MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~= MutableMergeTree on this row.
+TiSpark ~= MergeTree: float accuracy
+MergeTree ~= MutableMergeTree: float accuracy
 MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## TiSpark
@@ -401,12 +406,12 @@ MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 ## MergeTree
 +-----------+-----------+------+--------------------+
-|SUPP_NATION|CUST_NATION|L_YEAR|             REVENUE|
+|SUPP_NATION|CUST_NATION|L_YEAR|REVENUE             |
 +-----------+-----------+------+--------------------+
-|      INDIA|      JAPAN|  1995| 5.289365587207781E9|
-|      INDIA|      JAPAN|  1996| 5.285805158759188E9|
-|      JAPAN|      INDIA|  1995|5.2390749681004715E9|
-|      JAPAN|      INDIA|  1996| 5.250822450849409E9|
+|INDIA      |JAPAN      |1995  |5.28936560927596E9  |
+|INDIA      |JAPAN      |1996  |5.300247223942606E9 |
+|JAPAN      |INDIA      |1995  |5.2390749880590515E9|
+|JAPAN      |INDIA      |1996  |5.26583672829538E9  |
 +-----------+-----------+------+--------------------+
 
 ## MutableMergeTree
@@ -431,8 +436,8 @@ MutableMergeTree ~= SelRaw on MutableMergeTree: float accuracy
 
 
 # Q8
-TiSpark ~= MergeTree: float accuracy. Second row not match
-MergeTree !~= MutableMergeTree: float accuracy. Second row not match, TiSpark ~= MutableMergeTree on this row.
+TiSpark ~= MergeTree: float accuracy
+MergeTree == MutableMergeTree
 MutableMergeTree == SelRaw on MutableMergeTree
 
 
@@ -446,10 +451,10 @@ MutableMergeTree == SelRaw on MutableMergeTree
 
 ## MergeTree
 +------+--------------------+
-|O_YEAR|           MKT_SHARE|
+|O_YEAR|MKT_SHARE           |
 +------+--------------------+
-|  1995| 0.04013716605075298|
-|  1996|0.040377769753030535|
+|1995  |0.040137166037420735|
+|1996  |0.04040081944013415 |
 +------+--------------------+
 
 ## MutableMergeTree
