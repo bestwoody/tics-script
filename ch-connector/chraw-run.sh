@@ -9,4 +9,4 @@ if [ -z "$query" ]; then
 	exit 1
 fi
 
-build/dbms/src/Magic/ch-raw "running/config/config.xml" "$query"
+build/dbms/src/TheFlash/ch-raw "running/config/config.xml" "$query"
