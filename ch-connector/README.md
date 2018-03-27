@@ -12,7 +12,7 @@
     * Test data set, configs, etc
 * `arrow`
     * Arrow submodule, 0.8
-* `arrow-delta`
+* `arrow-mac-patch`
     * Arrow patch ONLY for mac.
 * `mutable-test`
     * MutableMergeTree engine testcases

@@ -5,9 +5,9 @@ setup_gcc_on_mac
 
 # Remove '-stdlib=libc++' in arrow/cpp/*
 cf="cpp/cmake_modules/SetupCxxFlags.cmake"
-cp "arrow-delta/$cf" "arrow/$cf"
+cp "arrow-mac-patch/$cf" "arrow/$cf"
 cf="cpp/cmake_modules/ThirdpartyToolchain.cmake"
-cp "arrow-delta/$cf" "arrow/$cf"
+cp "arrow-mac-patch/$cf" "arrow/$cf"
 
 build_path="g++_build"
 cd arrow/cpp
@@ -19,7 +19,7 @@ cmake .. -DARROW_BUILD_TESTS=off -DARROW_WITH_SNAPPY=off -DARROW_WITH_ZLIB=off -
 
 # Remove '-stdlib=libc++' in arrow/cpp/g++_build/*
 cf="flatbuffers_ep-prefix/src/flatbuffers_ep/CMakeLists.txt"
-cp "../../../arrow-delta/cpp/g++_build/$cf" "$cf"
+cp "../../../arrow-mac-patch/cpp/g++_build/$cf" "$cf"
 
 make
 
