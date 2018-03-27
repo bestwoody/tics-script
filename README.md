@@ -11,19 +11,19 @@ An OLAP project of TiDB
 ## Quick start guide
 * Build
     * `theflash> git submodule update --init --recursive`: fetch all submodule
-    * Build patched ClickHouse:
+    * Build patched CH:
         * `theflash/ch-connector> ./arrow-build-<your-os>.sh`: build Arrow, run it again if script fail
-        * `theflash/ch-connector> ./clickhouse-patch-apply.sh`: apply patch to ClickHouse
-        * `theflash/ch-connector> ./clickhouse-build.sh`: build patched ClickHouse
+        * `theflash/ch-connector> ./patch-apply.sh`: apply patch to CH
+        * `theflash/ch-connector> ./build.sh`: build patched CH
     * Build Spark and CHSpark
         * `theflash/spark-connector/spark> follow the build method of Spark`: build Spark
         * `theflash/spark-connector> ./build-all.sh`: build CHSpark
 * Play around
-    * With Patched ClickHouse
-        * `theflash/benchmark> ./ch-server.sh`: run ClickHouse server
-        * `theflash/benchmark> ./ch-cli.sh`: play with ClickHouse in intereactive mode
-        * `theflash/benchmark> ./ch-q.sh <sql>`: play with ClickHouse in command mode
-        * `theflash/ch-connector> ./clickhouse-import.sh <name>`: import table data `ch-connector/running/data/<name>` to ClickHouse
+    * With Patched CH
+        * `theflash/benchmark> ./ch-server.sh`: run CH server
+        * `theflash/benchmark> ./ch-cli.sh`: play with CH in intereactive mode
+        * `theflash/benchmark> ./ch-q.sh <sql>`: play with CH in command mode
+        * `theflash/ch-connector> ./import.sh <name>`: import table data `ch-connector/running/data/<name>` to CH
         * Look around
             * `theflash/ch-connector> vim _env.sh`: check the config, IMPORTANT: `chdb`
             * `theflash/benchmark> vim _env.sh`: each `_env.sh` ONLY affect the current dir
@@ -34,13 +34,13 @@ An OLAP project of TiDB
         * `theflash/spark-connector> ./start-all.sh 127.0.0.1`: run Spark master and workers
         * `theflash/spark-connector> ./spark-shell.sh`: play with Spark
         * `theflash/benchmark> ./spark-shell.sh`: play with Spark
-    * With Spark connecting to ClickHouse
+    * With Spark connecting to CH
         * Command mode
-            * `theflash/benchmark> ./spark-q.sh <sql>`: can access ClickHouse tables in your sql
+            * `theflash/benchmark> ./spark-q.sh <sql>`: can access CH tables in your sql
         * Intereactive mode
             * `theflash/benchmark> ./spark-shell.sh`: start Spark as usual
-            * `scala> val ch = new org.apache.spark.sql.CHContext(spark)`: create ClickHouse context
-            * `scala> ch.mapCHClusterTable(database=<>, table=<>)`: map a ClickHouse table to Spark
+            * `scala> val ch = new org.apache.spark.sql.CHContext(spark)`: create CH context
+            * `scala> ch.mapCHClusterTable(database=<>, table=<>)`: map a CH table to Spark
             * `scala> ch.sql("select count(*) from <>")`: use the mapped table in Spark
 * TPCH benchmark
     * Load data
