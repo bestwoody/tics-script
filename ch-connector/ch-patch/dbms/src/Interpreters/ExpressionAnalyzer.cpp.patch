@@ -1,25 +1,18 @@
 diff --git a/dbms/src/Interpreters/ExpressionAnalyzer.cpp b/dbms/src/Interpreters/ExpressionAnalyzer.cpp
-index b144b04..000459a 100644
+index abe5031..f191442 100644
 --- a/dbms/src/Interpreters/ExpressionAnalyzer.cpp
 +++ b/dbms/src/Interpreters/ExpressionAnalyzer.cpp
-@@ -40,6 +40,8 @@
- #include <Storages/StorageMemory.h>
- #include <Storages/StorageSet.h>
- #include <Storages/StorageJoin.h>
-+#include <Storages/StorageMergeTree.h>
-+#include <Storages/MutableSupport.h>
- 
- #include <DataStreams/LazyBlockInputStream.h>
- #include <DataStreams/copyData.h>
-@@ -59,7 +61,6 @@
+@@ -61,6 +61,9 @@
  #include <DataTypes/DataTypeFunction.h>
  #include <Functions/FunctionsMiscellaneous.h>
  
--
++#include <Storages/StorageMergeTree.h>
++#include <Storages/MutableSupport.h>
++
+ 
  namespace DB
  {
- 
-@@ -1096,6 +1097,20 @@ void ExpressionAnalyzer::normalizeTreeImpl(
+@@ -1040,6 +1043,20 @@ void ExpressionAnalyzer::normalizeTreeImpl(
      }
      else if (ASTExpressionList * node = typeid_cast<ASTExpressionList *>(ast.get()))
      {
@@ -40,13 +33,13 @@ index b144b04..000459a 100644
          /// Replace * with a list of columns.
          ASTs & asts = node->children;
          for (int i = static_cast<int>(asts.size()) - 1; i >= 0; --i)
-@@ -1104,7 +1119,8 @@ void ExpressionAnalyzer::normalizeTreeImpl(
-             {
-                 ASTs all_columns;
-                 for (const auto & column_name_type : columns)
--                    all_columns.emplace_back(std::make_shared<ASTIdentifier>(asterisk->range, column_name_type.name));
-+                    if (!filtered_names.has(column_name_type.name))
-+                        all_columns.emplace_back(std::make_shared<ASTIdentifier>(asterisk->range, column_name_type.name));
- 
-                 asts.erase(asts.begin() + i);
-                 asts.insert(asts.begin() + i, all_columns.begin(), all_columns.end());
+@@ -1052,7 +1069,8 @@ void ExpressionAnalyzer::normalizeTreeImpl(
+                 {
+                     /// If we select from a table, get only not MATERIALIZED, not ALIAS columns.
+                     for (const auto & name_type : storage->getColumns().ordinary)
+-                        all_columns.emplace_back(std::make_shared<ASTIdentifier>(name_type.name));
++                        if (!filtered_names.has(name_type.name))
++                            all_columns.emplace_back(std::make_shared<ASTIdentifier>(asterisk->range, name_type.name));
+                 }
+                 else
+                 {

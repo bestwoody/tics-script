@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreePartition.cpp b/dbms/src/Storages/MergeTree/MergeTreePartition.cpp
-index 56de34f..be4fb54 100644
+index b95916b..5595092 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreePartition.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreePartition.cpp
 @@ -11,6 +11,8 @@
@@ -18,6 +18,6 @@ index 56de34f..be4fb54 100644
 +    if (storage.merging_params.mode == MergeTreeData::MergingParams::Mutable)
 +        return toString(value[0].safeGet<UInt64>());
 +
-     if (value.size() != storage.partition_expr_columns.size())
+     if (value.size() != storage.partition_key_sample.columns())
          throw Exception("Invalid partition key size: " + toString(value.size()), ErrorCodes::LOGICAL_ERROR);
  

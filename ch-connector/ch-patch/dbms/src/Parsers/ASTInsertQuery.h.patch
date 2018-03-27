@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Parsers/ASTInsertQuery.h b/dbms/src/Parsers/ASTInsertQuery.h
-index bbd730a..32ef4f1 100644
+index 12e3de2..aa201bd 100644
 --- a/dbms/src/Parsers/ASTInsertQuery.h
 +++ b/dbms/src/Parsers/ASTInsertQuery.h
 @@ -26,6 +26,8 @@ public:
@@ -8,6 +8,6 @@ index bbd730a..32ef4f1 100644
  
 +    bool is_import;
 +
-     ASTInsertQuery() = default;
-     explicit ASTInsertQuery(const StringRange range_) : IAST(range_) {}
+     /** Get the text that identifies this element. */
+     String getID() const override { return "InsertQuery_" + database + "_" + table; };
  

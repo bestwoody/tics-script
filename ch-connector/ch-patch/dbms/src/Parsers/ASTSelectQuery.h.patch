@@ -1,11 +1,11 @@
 diff --git a/dbms/src/Parsers/ASTSelectQuery.h b/dbms/src/Parsers/ASTSelectQuery.h
-index 5f4898d..c6e9040 100644
+index c31e91f..580d248 100644
 --- a/dbms/src/Parsers/ASTSelectQuery.h
 +++ b/dbms/src/Parsers/ASTSelectQuery.h
-@@ -45,6 +45,7 @@ private:
-     std::shared_ptr<ASTSelectQuery> cloneImpl(bool traverse_union_all) const;
+@@ -20,6 +20,7 @@ public:
  
- public:
+     ASTPtr clone() const override;
+ 
 +    bool raw_for_mutable = false;
      bool distinct = false;
      ASTPtr with_expression_list;

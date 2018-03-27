@@ -1,10 +1,10 @@
 diff --git a/dbms/src/Storages/ITableDeclaration.h b/dbms/src/Storages/ITableDeclaration.h
-index 19c57d4..9327924 100644
+index 270ab17..273f92c 100644
 --- a/dbms/src/Storages/ITableDeclaration.h
 +++ b/dbms/src/Storages/ITableDeclaration.h
-@@ -60,6 +60,15 @@ public:
-     Block getSampleBlock() const;
+@@ -24,6 +24,15 @@ public:
      Block getSampleBlockNonMaterialized() const;
+     Block getSampleBlockForColumns(const Names & column_names) const;
  
 +    /** The hidden coloumns will not be returned. Mainly for INSERT query.
 +      */
@@ -18,15 +18,10 @@ index 19c57d4..9327924 100644
      /** Verify that all the requested names are in the table and are set correctly.
        * (the list of names is not empty and the names do not repeat)
        */
-@@ -100,9 +109,17 @@ private:
-         return columns;
-     }
+@@ -50,6 +59,12 @@ public:
  
-+
-     using ColumnsListRange = boost::range::joined_range<const NamesAndTypesList, const NamesAndTypesList>;
-     /// Returns a lazily joined range of table's ordinary and materialized columns, without unnecessary copying
-     ColumnsListRange getColumnsListRange() const;
-+
+ private:
+     ColumnsDescription columns;
 +    OrderedNameSet empty_names;
 +
 +    virtual const OrderedNameSet & getHiddenColumnsImpl() const

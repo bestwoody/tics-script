@@ -1,15 +1,15 @@
 diff --git a/libs/libdaemon/src/BaseDaemon.cpp b/libs/libdaemon/src/BaseDaemon.cpp
-index 54398be..ff8bd5b 100644
+index 849a80f..a288751 100644
 --- a/libs/libdaemon/src/BaseDaemon.cpp
 +++ b/libs/libdaemon/src/BaseDaemon.cpp
-@@ -645,7 +645,9 @@ void BaseDaemon::buildLoggers()
+@@ -758,7 +758,9 @@ void BaseDaemon::buildLoggers(Poco::Util::AbstractConfiguration & config)
          syslog_channel->open();
      }
  
--    if (config().getBool("logger.console", false) || (!config().hasProperty("logger.console") && !is_daemon && (isatty(STDIN_FILENO) || isatty(STDERR_FILENO))))
+-    if (config.getBool("logger.console", false) || (!config.hasProperty("logger.console") && !is_daemon && (isatty(STDIN_FILENO) || isatty(STDERR_FILENO))))
 +    // We need it logging to file even not in deamon mode.
 +    if (false)
-+    // if (config().getBool("logger.console", false) || (!config().hasProperty("logger.console") && !is_daemon && (isatty(STDIN_FILENO) || isatty(STDERR_FILENO))))
++    // if (config.getBool("logger.console", false) || (!config.hasProperty("logger.console") && !is_daemon && (isatty(STDIN_FILENO) || isatty(STDERR_FILENO))))
      {
          Poco::AutoPtr<ConsoleChannel> file = new ConsoleChannel;
          Poco::AutoPtr<OwnPatternFormatter> pf = new OwnPatternFormatter(this);

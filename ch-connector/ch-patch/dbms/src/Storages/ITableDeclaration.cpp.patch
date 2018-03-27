@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/ITableDeclaration.cpp b/dbms/src/Storages/ITableDeclaration.cpp
-index 8bc53a8..19e66a1 100644
+index 9a6ac0e..f52aa04 100644
 --- a/dbms/src/Storages/ITableDeclaration.cpp
 +++ b/dbms/src/Storages/ITableDeclaration.cpp
-@@ -121,6 +121,68 @@ Block ITableDeclaration::getSampleBlockNonMaterialized() const
+@@ -79,6 +79,68 @@ Block ITableDeclaration::getSampleBlockForColumns(const Names & column_names) co
  }
  
  

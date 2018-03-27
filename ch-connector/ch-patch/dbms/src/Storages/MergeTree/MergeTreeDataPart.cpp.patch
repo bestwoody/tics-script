@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp
-index 1b0196f..3996db9 100644
+index 8ab7699..db96cd4 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp
-@@ -38,6 +38,7 @@ namespace ErrorCodes
+@@ -40,6 +40,7 @@ namespace ErrorCodes
      extern const int UNKNOWN_FORMAT;
      extern const int UNEXPECTED_FILE_IN_DATA_PART;
      extern const int NOT_FOUND_EXPECTED_DATA_PART;
@@ -10,7 +10,7 @@ index 1b0196f..3996db9 100644
  }
  
  
-@@ -681,7 +682,18 @@ void MergeTreeDataPart::loadIndex()
+@@ -683,7 +684,18 @@ void MergeTreeDataPart::loadIndex()
  
  void MergeTreeDataPart::loadPartitionAndMinMaxIndex()
  {

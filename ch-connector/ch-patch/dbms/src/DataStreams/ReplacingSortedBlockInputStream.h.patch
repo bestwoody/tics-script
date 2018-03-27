@@ -1,5 +1,5 @@
 diff --git a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
-index 0e7fdad..cc59953 100644
+index b8592a0..26e473e 100644
 --- a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
 +++ b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
 @@ -16,9 +16,9 @@ class ReplacingSortedBlockInputStream : public MergingSortedBlockInputStream
@@ -14,7 +14,7 @@ index 0e7fdad..cc59953 100644
      {
      }
  
-@@ -47,6 +47,7 @@ protected:
+@@ -30,6 +30,7 @@ protected:
  
  private:
      String version_column;

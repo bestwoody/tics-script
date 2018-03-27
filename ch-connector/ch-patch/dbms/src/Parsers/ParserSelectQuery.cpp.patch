@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Parsers/ParserSelectQuery.cpp b/dbms/src/Parsers/ParserSelectQuery.cpp
-index 99240a3..72e6078 100644
+index 4bf89d4..649869c 100644
 --- a/dbms/src/Parsers/ParserSelectQuery.cpp
 +++ b/dbms/src/Parsers/ParserSelectQuery.cpp
-@@ -28,6 +28,7 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+@@ -26,6 +26,7 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
      node = select_query;
  
      ParserKeyword s_select("SELECT");
@@ -10,7 +10,7 @@ index 99240a3..72e6078 100644
      ParserKeyword s_distinct("DISTINCT");
      ParserKeyword s_from("FROM");
      ParserKeyword s_prewhere("PREWHERE");
-@@ -58,8 +59,11 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+@@ -56,8 +57,11 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
  
      /// SELECT [DISTINCT] expr list
      {

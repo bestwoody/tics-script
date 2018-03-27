@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Server/CMakeLists.txt b/dbms/src/Server/CMakeLists.txt
-index 1844045..80120da 100644
+index d268851..c1d9b48 100644
 --- a/dbms/src/Server/CMakeLists.txt
 +++ b/dbms/src/Server/CMakeLists.txt
-@@ -14,9 +14,9 @@ add_library (clickhouse-server-lib
+@@ -25,9 +25,9 @@ add_library (clickhouse-server-lib
      Server.cpp
      StatusFile.cpp
      TCPHandler.cpp
