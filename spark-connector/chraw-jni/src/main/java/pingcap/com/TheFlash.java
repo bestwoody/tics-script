@@ -15,42 +15,42 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorLoader;
 
-public class Magic {
-	public static class MagicException extends Exception {
-		public MagicException(String msg) {
+public class TheFlash {
+	public static class TheFlashException extends Exception {
+		public TheFlashException(String msg) {
 			super(msg);
 		}
 	}
 
 	public class Query {
-		public Query(Magic magic, long token) {
-			this.magic = magic;
+		public Query(TheFlash lib, long token) {
+			this.lib = lib;
 			this.token = token;
 		}
 
-		public Schema schema() throws IOException, MagicException {
+		public Schema schema() throws IOException, TheFlashException {
 			if (schema == null) {
-				schema = magic.schema(token);
+				schema = lib.schema(token);
 			}
 			return schema;
 		}
 
-		public VectorSchemaRoot next() throws IOException, MagicException {
-			return magic.next(schema(), token);
+		public VectorSchemaRoot next() throws IOException, TheFlashException {
+			return lib.next(schema(), token);
 		}
 
-		public void close() throws MagicException {
-			magic.close(token);
+		public void close() throws TheFlashException {
+			lib.close(token);
 		}
 
-		public final Magic magic;
+		public final TheFlash lib;
 		private final long token;
 		private Schema schema;
 	}
 
-	public Magic() {
+	public TheFlash() {
 		System.loadLibrary("ch");
-		this.lib = new MagicProto();
+		this.lib = new TheFlashProto();
 		this.alloc = new RootAllocator(Long.MAX_VALUE);
 	}
 
@@ -62,52 +62,52 @@ public class Magic {
 		this.path = path;
 	}
 
-	public void _init() throws MagicException {
+	public void _init() throws TheFlashException {
 		if (inited) {
 			return;
 		}
 		if (path == null) {
-			throw new MagicException("init failed: path not set");
+			throw new TheFlashException("init failed: path not set");
 		}
-		MagicProto.InitResult result = lib.init(path);
+		TheFlashProto.InitResult result = lib.init(path);
 		if (result.error != null) {
-			throw new MagicException("init failed: " + result.error);
+			throw new TheFlashException("init failed: " + result.error);
 		}
 		inited = true;
 	}
 
-	public Query query(String query) throws MagicException {
+	public Query query(String query) throws TheFlashException {
 		_init();
-		MagicProto.QueryResult result = lib.query(query);
+		TheFlashProto.QueryResult result = lib.query(query);
 		if (result.error != null) {
-			throw new MagicException("query failed: " + result.error);
+			throw new TheFlashException("query failed: " + result.error);
 		}
 		return new Query(this, result.token);
 	}
 
-	public Schema schema(long token) throws IOException, MagicException {
+	public Schema schema(long token) throws IOException, TheFlashException {
 		if (!inited) {
-			throw new MagicException("get schema failed: uninited");
+			throw new TheFlashException("get schema failed: uninited");
 		}
 		// TODO: maybe better: Schema::deserialize(ByteBuffer buffer)
 		byte[] result = lib.schema(token);
 		if (result == null) {
-			throw new MagicException("get schema failed: " + lib.error(token));
+			throw new TheFlashException("get schema failed: " + lib.error(token));
 		}
 		ByteArrayInputStream in = new ByteArrayInputStream(result);
 		ReadChannel channel = new ReadChannel(Channels.newChannel(in));
 		return MessageSerializer.deserializeSchema(channel);
 	}
 
-	public VectorSchemaRoot next(Schema schema, long token) throws IOException, MagicException {
+	public VectorSchemaRoot next(Schema schema, long token) throws IOException, TheFlashException {
 		if (!inited) {
-			throw new MagicException("get next block failed: uninited");
+			throw new TheFlashException("get next block failed: uninited");
 		}
 		byte[] result = lib.next(token);
 		if (result == null) {
 			String error = lib.error(token);
 			if (error != null) {
-				throw new MagicException("get next block failed: " + error);
+				throw new TheFlashException("get next block failed: " + error);
 			}
 			return null;
 		}
@@ -122,25 +122,25 @@ public class Magic {
 		return block;
 	}
 
-	public void close(long token) throws MagicException {
+	public void close(long token) throws TheFlashException {
 		if (!inited) {
 			return;
 		}
 		lib.close(token);
 		String error = lib.error(token);
 		if (error != null) {
-			throw new MagicException("close failed: " + error);
+			throw new TheFlashException("close failed: " + error);
 		}
 	}
 
-	public void close() throws MagicException {
-		MagicProto.FinishResult result = lib.finish();
+	public void close() throws TheFlashException {
+		TheFlashProto.FinishResult result = lib.finish();
 		if (result.error != null) {
-			throw new MagicException("finish failed: " + result.error);
+			throw new TheFlashException("finish failed: " + result.error);
 		}
 	}
 
-	public final MagicProto lib;
+	public final TheFlashProto lib;
 	private String path;
 	private boolean inited;
 	private final BufferAllocator alloc;
