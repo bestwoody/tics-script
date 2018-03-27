@@ -28,7 +28,7 @@ namespace ErrorCodes
 
 }
 
-namespace Magic
+namespace TheFlash
 {
 
 static Int64 PROTOCOL_VERSION_MAJOR = 1;
@@ -251,12 +251,12 @@ void TCPArrowHandler::processOrdinaryQuery()
 
 void TCPArrowHandler::recvHeader()
 {
-    Int64 flag = Magic::readInt64(*in);
+    Int64 flag = TheFlash::readInt64(*in);
     if (flag != Protocol::Header)
         throw DB::Exception("First package should be header.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
-    protocol_version_major = Magic::readInt64(*in);
-    protocol_version_minor = Magic::readInt64(*in);
+    protocol_version_major = TheFlash::readInt64(*in);
+    protocol_version_minor = TheFlash::readInt64(*in);
     if (protocol_version_major != PROTOCOL_VERSION_MAJOR || protocol_version_minor != PROTOCOL_VERSION_MINOR)
     {
         std::stringstream error_ss;
@@ -272,18 +272,18 @@ void TCPArrowHandler::recvHeader()
         throw DB::Exception(error_ss.str(), DB::ErrorCodes::MAGIC_BAD_REQUEST);
     }
 
-    Magic::readString(client_name, *in);
-    Magic::readString(default_database, *in);
+    TheFlash::readString(client_name, *in);
+    TheFlash::readString(default_database, *in);
 
     user = "default";
-    Magic::readString(user, *in);
-    Magic::readString(password, *in);
+    TheFlash::readString(user, *in);
+    TheFlash::readString(password, *in);
 
-    Magic::readString(encoder_name, *in);
+    TheFlash::readString(encoder_name, *in);
     if (encoder_name != "arrow")
         throw DB::Exception("Only support arrow encoding.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
-    encoder_version = Magic::readInt64(*in);
+    encoder_version = TheFlash::readInt64(*in);
     if (encoder_version != PROTOCOL_ENCODER_VERSION)
     {
         std::stringstream error_ss;
@@ -294,10 +294,10 @@ void TCPArrowHandler::recvHeader()
             PROTOCOL_ENCODER_VERSION;
         throw DB::Exception(error_ss.str(), DB::ErrorCodes::MAGIC_BAD_REQUEST);
     }
-    encoder_count = Magic::readInt64(*in);
+    encoder_count = TheFlash::readInt64(*in);
 
-    client_count = Magic::readInt64(*in);
-    client_index = Magic::readInt64(*in);
+    client_count = TheFlash::readInt64(*in);
+    client_index = TheFlash::readInt64(*in);
     if (client_count <= client_index || client_count <= 0 || client_index < 0 || client_count >= MAX_CLIENT_COUNT)
         throw DB::Exception("Invalid client index/count.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
@@ -322,15 +322,15 @@ void TCPArrowHandler::recvHeader()
 
 void TCPArrowHandler::recvQuery()
 {
-    DB::Int64 flag = Magic::readInt64(*in);
+    DB::Int64 flag = TheFlash::readInt64(*in);
     if (flag != Protocol::Utf8Query)
         throw DB::Exception("Only receive query string after header.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
 
-    Magic::readString(query_id, *in);
+    TheFlash::readString(query_id, *in);
     if (query_id.empty())
         throw DB::Exception("Receive empty query_id.", DB::ErrorCodes::MAGIC_BAD_REQUEST);
     query_context.setCurrentQueryId(query_id);
-    Magic::readString(query, *in);
+    TheFlash::readString(query, *in);
 }
 
 std::string TCPArrowHandler::toStr()

@@ -20,7 +20,7 @@ namespace Poco
     class Logger;
 }
 
-namespace Magic
+namespace TheFlash
 {
 
 class TCPArrowHandler : public Poco::Net::TCPServerConnection

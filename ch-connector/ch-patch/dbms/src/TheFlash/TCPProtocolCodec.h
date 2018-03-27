@@ -4,7 +4,7 @@
 #include <IO/WriteBufferFromPocoSocket.h>
 #include <IO/ReadHelpers.h>
 
-namespace Magic
+namespace TheFlash
 {
 
 namespace Protocol

@@ -9,7 +9,7 @@
 
 #include "TCPArrowHandler.h"
 
-namespace Magic
+namespace TheFlash
 {
 
 // TODO: Move to config file

@@ -28,7 +28,7 @@ namespace ErrorCodes
 
 }
 
-namespace Magic
+namespace TheFlash
 {
 
 class ArrowEncoder

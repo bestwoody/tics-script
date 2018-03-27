@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Server/CMakeLists.txt b/dbms/src/Server/CMakeLists.txt
-index d268851..c1d9b48 100644
+index d268851..fac4704 100644
 --- a/dbms/src/Server/CMakeLists.txt
 +++ b/dbms/src/Server/CMakeLists.txt
 @@ -25,9 +25,9 @@ add_library (clickhouse-server-lib
@@ -7,7 +7,7 @@ index d268851..c1d9b48 100644
      StatusFile.cpp
      TCPHandler.cpp
 -    )
-+    ../Magic/TCPArrowHandler.cpp)
++    ../TheFlash/TCPArrowHandler.cpp)
  
 -target_link_libraries (clickhouse-server-lib clickhouse_common_io daemon clickhouse_storages_system clickhouse_functions clickhouse_aggregate_functions clickhouse_table_functions)
 +target_link_libraries (clickhouse-server-lib clickhouse_common_io daemon clickhouse_storages_system clickhouse_functions clickhouse_aggregate_functions clickhouse_table_functions arrow)

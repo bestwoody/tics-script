@@ -2,7 +2,7 @@
 
 #include <DataStreams/BlockIO.h>
 
-namespace Magic
+namespace TheFlash
 {
 
 class SafeBlockIO

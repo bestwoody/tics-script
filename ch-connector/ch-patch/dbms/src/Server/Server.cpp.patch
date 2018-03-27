@@ -1,12 +1,12 @@
 diff --git a/dbms/src/Server/Server.cpp b/dbms/src/Server/Server.cpp
-index 12598af..89fa7a9 100644
+index 12598af..f6c0e53 100644
 --- a/dbms/src/Server/Server.cpp
 +++ b/dbms/src/Server/Server.cpp
 @@ -41,6 +41,8 @@
  #include <Poco/Net/SecureServerSocket.h>
  #endif
  
-+#include "Magic/TCPArrowHandlerFactory.h"
++#include "TheFlash/TCPArrowHandlerFactory.h"
 +
  namespace CurrentMetrics
  {
@@ -24,7 +24,7 @@ index 12598af..89fa7a9 100644
 +                    tcp_socket.setReceiveTimeout(settings.receive_timeout);
 +                    tcp_socket.setSendTimeout(settings.send_timeout);
 +                    servers.emplace_back(new Poco::Net::TCPServer(
-+                        new Magic::TCPArrowHandlerFactory(*this),
++                        new TheFlash::TCPArrowHandlerFactory(*this),
 +                        server_pool,
 +                        tcp_socket,
 +                        new Poco::Net::TCPServerParams));

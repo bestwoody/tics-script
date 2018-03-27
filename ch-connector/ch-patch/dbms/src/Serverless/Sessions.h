@@ -6,7 +6,7 @@
 #include "Context.h"
 #include "ArrowEncoder.h"
 
-namespace Magic {
+namespace TheFlash {
 
 class Sessions
 {

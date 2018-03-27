@@ -1,4 +1,4 @@
-#include "pingcap_com_MagicProto.h"
+#include "pingcap_com_TheFlashProto.h"
 #include "Sessions.h"
 #include "Context.h"
 
@@ -14,23 +14,23 @@ namespace JNIHelper
     }
 }
 
-JNIEXPORT jstring JNICALL Java_pingcap_com_MagicProto_version(JNIEnv * env, jobject obj)
+JNIEXPORT jstring JNICALL Java_pingcap_com_TheFlashProto_version(JNIEnv * env, jobject obj)
 {
     static const char *version = "v0.1";
     return env->NewStringUTF(version);
 }
 
-JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_init(JNIEnv * env, jobject obj, jstring config)
+JNIEXPORT jobject JNICALL Java_pingcap_com_TheFlashProto_init(JNIEnv * env, jobject obj, jstring config)
 {
     jclass resultNull = NULL;
-    jclass result = env->FindClass("pingcap/com/MagicProto$InitResult");
+    jclass result = env->FindClass("pingcap/com/TheFlashProto$InitResult");
     if (!result)
         return resultNull;
     jfieldID errorId = env->GetFieldID(result, "error", "Ljava/lang/String;");
     if (!errorId)
         return resultNull;
 
-    auto sessions = Magic::Sessions::global();
+    auto sessions = TheFlash::Sessions::global();
     auto config_cstr = env->GetStringUTFChars(config, 0);
     auto error = sessions->init(config_cstr);
     env->ReleaseStringUTFChars(config, config_cstr);
@@ -40,17 +40,17 @@ JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_init(JNIEnv * env, jobject
     return result;
 }
 
-JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_finish(JNIEnv * env, jobject obj)
+JNIEXPORT jobject JNICALL Java_pingcap_com_TheFlashProto_finish(JNIEnv * env, jobject obj)
 {
     jclass resultNull = NULL;
-    jclass result = env->FindClass("pingcap/com/MagicProto$FinishResult");
+    jclass result = env->FindClass("pingcap/com/TheFlashProto$FinishResult");
     if (!result)
         return resultNull;
     jfieldID errorId = env->GetFieldID(result, "error", "Ljava/lang/String;");
     if (!errorId)
         return resultNull;
 
-    auto sessions = Magic::Sessions::global();
+    auto sessions = TheFlash::Sessions::global();
     auto error = sessions->close();
 
     if (!error.empty())
@@ -58,10 +58,10 @@ JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_finish(JNIEnv * env, jobje
     return result;
 }
 
-JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, jobject obj, jstring query)
+JNIEXPORT jobject JNICALL Java_pingcap_com_TheFlashProto_query(JNIEnv * env, jobject obj, jstring query)
 {
     jclass resultNull = NULL;
-    jclass result = env->FindClass("pingcap/com/MagicProto$QueryResult");
+    jclass result = env->FindClass("pingcap/com/TheFlashProto$QueryResult");
     if (!result)
         return resultNull;
     jfieldID errorId = env->GetFieldID(result, "error", "Ljava/lang/String;");
@@ -76,7 +76,7 @@ JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, jobjec
     auto query_cstr = env->GetStringUTFChars(query, 0);
     if (query_cstr)
     {
-        auto sessions = Magic::Sessions::global();
+        auto sessions = TheFlash::Sessions::global();
         auto session = sessions->newSession(query_cstr);
         env->ReleaseStringUTFChars(query, query_cstr);
         token = session.token;
@@ -91,10 +91,10 @@ JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_query(JNIEnv * env, jobjec
     return result;
 }
 
-JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_querys(JNIEnv * env, jobject obj)
+JNIEXPORT jobject JNICALL Java_pingcap_com_TheFlashProto_querys(JNIEnv * env, jobject obj)
 {
     jclass resultNull = NULL;
-    jclass result = env->FindClass("pingcap/com/MagicProto$QuerysResult");
+    jclass result = env->FindClass("pingcap/com/TheFlashProto$QuerysResult");
     if (!result)
         return resultNull;
     jfieldID errorId = env->GetFieldID(result, "error", "Ljava/lang/String;");
@@ -105,17 +105,17 @@ JNIEXPORT jobject JNICALL Java_pingcap_com_MagicProto_querys(JNIEnv * env, jobje
     return result;
 }
 
-JNIEXPORT void JNICALL Java_pingcap_com_MagicProto_close(JNIEnv * env, jobject obj, jlong token)
+JNIEXPORT void JNICALL Java_pingcap_com_TheFlashProto_close(JNIEnv * env, jobject obj, jlong token)
 {
-    auto sessions = Magic::Sessions::global();
+    auto sessions = TheFlash::Sessions::global();
     auto session = sessions->getSession(token);
     if (session)
         sessions->closeSession(token);
 }
 
-JNIEXPORT jstring JNICALL Java_pingcap_com_MagicProto_error(JNIEnv * env, jobject obj, jlong token)
+JNIEXPORT jstring JNICALL Java_pingcap_com_TheFlashProto_error(JNIEnv * env, jobject obj, jlong token)
 {
-    auto sessions = Magic::Sessions::global();
+    auto sessions = TheFlash::Sessions::global();
     auto session = sessions->getSession(token);
     jstring result = NULL;
     if (!session)
@@ -126,9 +126,9 @@ JNIEXPORT jstring JNICALL Java_pingcap_com_MagicProto_error(JNIEnv * env, jobjec
     return env->NewStringUTF(error.c_str());
 }
 
-JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_next(JNIEnv * env, jobject obj, jlong token)
+JNIEXPORT jbyteArray JNICALL Java_pingcap_com_TheFlashProto_next(JNIEnv * env, jobject obj, jlong token)
 {
-    auto sessions = Magic::Sessions::global();
+    auto sessions = TheFlash::Sessions::global();
     auto session = sessions->getSession(token);
     jbyteArray result = NULL;
     if (!session)
@@ -139,9 +139,9 @@ JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_next(JNIEnv * env, jobj
     return JNIHelper::bufferToJByteArray(env, (uint8_t*)buf->data(), buf->size());
 }
 
-JNIEXPORT jbyteArray JNICALL Java_pingcap_com_MagicProto_schema(JNIEnv * env, jobject obj, jlong token)
+JNIEXPORT jbyteArray JNICALL Java_pingcap_com_TheFlashProto_schema(JNIEnv * env, jobject obj, jlong token)
 {
-    auto sessions = Magic::Sessions::global();
+    auto sessions = TheFlash::Sessions::global();
     auto session = sessions->getSession(token);
     jbyteArray result = NULL;
     if (!session)

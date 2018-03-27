@@ -6,7 +6,7 @@
 
 #include "Context.h"
 
-namespace Magic
+namespace TheFlash
 {
 
 void queryDumpImpl(const char * config, char * query)
@@ -40,5 +40,5 @@ int main(int argc, char ** argv)
         std::cerr << "usage: <bin> config-file query-string" << std::endl;
         return -1;
     }
-    return Magic::queryDump(argv[1], argv[2]);
+    return TheFlash::queryDump(argv[1], argv[2]);
 }

@@ -56,7 +56,7 @@
 
 #include "BlockOutputStreamPrintRows.h"
 
-namespace Magic
+namespace TheFlash
 {
 
 class Application : public BaseDaemon

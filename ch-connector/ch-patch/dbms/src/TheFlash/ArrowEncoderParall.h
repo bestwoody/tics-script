@@ -3,7 +3,7 @@
 #include "QuotaChan.h"
 #include "ArrowEncoder.h"
 
-namespace Magic
+namespace TheFlash
 {
 
 class ArrowEncoderParall

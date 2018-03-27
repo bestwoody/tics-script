@@ -4,7 +4,8 @@
 #include <mutex>
 #include <queue>
 
-namespace Magic {
+namespace TheFlash
+{
 
 using std::condition_variable;
 using std::mutex;

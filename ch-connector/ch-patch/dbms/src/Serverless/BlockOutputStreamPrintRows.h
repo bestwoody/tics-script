@@ -9,7 +9,7 @@
 #include <DataStreams/copyData.h>
 #include <DataStreams/dedupUtils.h>
 
-namespace Magic
+namespace TheFlash
 {
 
 class BlockOutputStreamPrintRows : public DB::IBlockOutputStream
