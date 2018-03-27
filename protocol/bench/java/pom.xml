@@ -2,10 +2,10 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>pingcap.com</groupId>
-	<artifactId>MagicProtoBench</artifactId>
+	<artifactId>TheFlashProtoBench</artifactId>
 	<packaging>jar</packaging>
 	<version>1.0</version>
-	<name>MagicProtoBench</name>
+	<name>TheFlashProtoBench</name>
 	<url>http://maven.apache.org</url>
 	<build>
 		<plugins>
@@ -34,7 +34,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>pingcap.com</groupId>
-			<artifactId>MagicProto</artifactId>
+			<artifactId>TheFlashProto</artifactId>
 			<version>1.0</version>
 		</dependency>
 		<dependency>

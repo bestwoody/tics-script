@@ -14,4 +14,4 @@ if [ -f "$lib" ]; then
 	cp $lib .
 fi
 
-java -cp MagicProtoBench-1.0.jar:lib/* pingcap.com/App $args 2>&1 | grep -v 'SLF4J: '
+java -cp TheFlashProtoBench-1.0.jar:lib/* pingcap.com/App $args 2>&1 | grep -v 'SLF4J: '
