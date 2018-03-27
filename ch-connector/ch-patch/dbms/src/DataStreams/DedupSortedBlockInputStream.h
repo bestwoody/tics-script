@@ -23,6 +23,11 @@ public:
 
     Block readImpl() override;
 
+    Block getHeader() const override
+    {
+        return children[0]->getHeader();
+    }
+
     String getName() const override
     {
         return "DedupSorted";

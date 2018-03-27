@@ -22,6 +22,11 @@ public:
         output->write(deduped);
     }
 
+    Block getHeader() const override
+    {
+        return output->getHeader();
+    }
+
 private:
     BlockOutputStreamPtr output;
     const SortDescription description;

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
-index 4cdff05..3a5c25e 100644
+index 4cdff05..75688ac 100644
 --- a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 +++ b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 @@ -1,6 +1,7 @@
@@ -107,11 +107,11 @@ index 4cdff05..3a5c25e 100644
 +    else if (merging_params.mode == MergeTreeData::MergingParams::Mutable)
 +    {
 +        // Add version column and del-mark column, set to engine params.
-+        const Names & names = args.columns.getNames();
++        const Names & names = args.columns.getNamesOfPhysical();
 +        if (std::find(names.begin(), names.end(), MutableSupport::version_column_name) == names.end())
-+            columns.push_back(NameAndTypePair(MutableSupport::version_column_name, std::make_shared<DataTypeUInt64>()));
++            columns.ordinary.push_back(NameAndTypePair(MutableSupport::version_column_name, std::make_shared<DataTypeUInt64>()));
 +        if (std::find(names.begin(), names.end(), MutableSupport::delmark_column_name) == names.end())
-+            columns.push_back(NameAndTypePair(MutableSupport::delmark_column_name, std::make_shared<DataTypeUInt8>()));
++            columns.ordinary.push_back(NameAndTypePair(MutableSupport::delmark_column_name, std::make_shared<DataTypeUInt8>()));
 +        merging_params.version_column = MutableSupport::version_column_name;
 +    }
      else if (merging_params.mode == MergeTreeData::MergingParams::Summing)

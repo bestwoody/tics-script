@@ -88,6 +88,17 @@ public:
     AdditionalColumnsBlockOutputStream(BlockOutputStreamPtr output_, AdditionalBlockGenerators gens_)
         : output(output_), gens(gens_) {}
 
+    Block getHeader() const override
+    {
+        Block block = output->getHeader();
+        for (auto it: gens)
+        {
+            if (!block.has(it->getName()))
+                block.insert(it->genColumn(block));
+        }
+        return block;
+    }
+
     void write(const Block & block) override
     {
         if (block)

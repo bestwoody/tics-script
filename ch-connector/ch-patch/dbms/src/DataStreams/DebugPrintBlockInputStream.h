@@ -23,6 +23,11 @@ private:
         return block;
     }
 
+    Block getHeader() const override
+    {
+        return input->getHeader();
+    }
+
 public:
     DebugPrintBlockInputStream(BlockInputStreamPtr & input_, std::string log_prefix_ = "") : input(input_)
     {

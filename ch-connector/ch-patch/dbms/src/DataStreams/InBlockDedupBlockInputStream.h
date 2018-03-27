@@ -41,6 +41,11 @@ private:
         return dedupInBlock(input->read(), description, stream_position);
     }
 
+    Block getHeader() const override
+    {
+        return input->getHeader();
+    }
+
 private:
     Logger * log;
     BlockInputStreamPtr input;

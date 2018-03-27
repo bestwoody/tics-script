@@ -1,28 +1,25 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 293c325..bf773d3 100644
+index 293c325..b7d0b8a 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
-@@ -14,6 +14,19 @@
+@@ -14,6 +14,16 @@
  #include <Storages/MergeTree/MergeTreeData.h>
  #include <Storages/MergeTree/ActiveDataPartSet.h>
  
 +#include <Storages/MutableSupport.h>
 +#include <Parsers/ASTInsertQuery.h>
 +#include <Parsers/ASTDeleteQuery.h>
++#include <Parsers/ASTSelectQuery.h>
 +
 +#include <DataStreams/RemoveColumnsBlockInputStream.h>
 +#include <DataStreams/AdditionalColumnsBlockOutputStream.h>
 +#include <DataStreams/DedupSortedBlockInputStream.h>
 +#include <DataStreams/InBlockDedupBlockOutputStream.h>
 +
-+#include <DataStreams/OneBlockInputStream.h>
-+#include <DataStreams/PlaygroundBlockInputStream.h>
-+#include <DataStreams/ExtraHeadTailBlockInputStream.h>
-+
  #include <Poco/DirectoryIterator.h>
  #include <Poco/File.h>
  
-@@ -105,12 +118,94 @@ BlockInputStreams StorageMergeTree::read(
+@@ -105,12 +115,95 @@ BlockInputStreams StorageMergeTree::read(
      const size_t max_block_size,
      const unsigned num_streams)
  {
@@ -53,10 +50,12 @@ index 293c325..bf773d3 100644
 +        throw Exception("Only " + MutableSupport::storage_name + " support SELRAW.", ErrorCodes::BAD_ARGUMENTS);
 +    }
 +    return res;
-+}
-+
+ }
+ 
+-BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & /*query*/, const Settings & /*settings*/)
 +UInt64 StorageMergeTree::getVersionSeed(const Settings & /* settings */) const
-+{
+ {
+-    return std::make_shared<MergeTreeBlockOutputStream>(*this);
 +    // NOTE:
 +    // We don't guarantee thread safe.
 +    // In that case, we assume data not related in diffent thread.
@@ -68,12 +67,10 @@ index 293c325..bf773d3 100644
 +    // It's faster if we use (increment.value << 32).
 +    // We use '* 1000000' for readable results, just for now
 +    return (increment.value + 1) * 1000000;
- }
- 
--BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & /*query*/, const Settings & /*settings*/)
++}
++
 +BlockOutputStreamPtr StorageMergeTree::write(const ASTPtr & query, const Settings & settings)
- {
--    return std::make_shared<MergeTreeBlockOutputStream>(*this);
++{
 +    BlockOutputStreamPtr res = std::make_shared<MergeTreeBlockOutputStream>(*this);
 +
 +    const ASTInsertQuery * insert_query = typeid_cast<const ASTInsertQuery *>(&*query);
@@ -93,6 +90,7 @@ index 293c325..bf773d3 100644
 +                    std::make_shared<AdditionalBlockGeneratorConst<UInt8>>(MutableSupport::delmark_column_name, 0)
 +                };
 +                res = std::make_shared<AdditionalColumnsBlockOutputStream>(res, gens);
++                // TODO: Dedup in MergeTreeDataWriter may be better, in case some one glue some blocks together
 +                res = std::make_shared<InBlockDedupBlockOutputStream>(res, data.getSortDescription());
 +            }
 +            else
@@ -120,7 +118,7 @@ index 293c325..bf773d3 100644
  }
  
  bool StorageMergeTree::checkTableCanBeDropped() const
-@@ -120,6 +215,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
+@@ -120,6 +213,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
      return true;
  }
  
