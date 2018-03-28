@@ -7,6 +7,6 @@ if [ -z "$table" ]; then
 	exit 1
 fi
 
-source _trans.sh
+source _env.sh
 
-trans_table "$tpch_blocks" "$table"
+"$chbin" client --host="$chserver" -d "$chdb" --query="drop table $table"

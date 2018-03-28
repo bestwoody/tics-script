@@ -1,10 +1,9 @@
 table="$1"
-blocks="$2"
 
 set -u
 
-if [ -z "$table" ] && [ -z "$blocks" ]; then
-	echo "usage: <bin> [table-name] [block-numbers]" >&2
+if [ -z "$table" ]; then
+	echo "usage: <bin> table-name" >&2
 	exit 1
 fi
 
@@ -12,9 +11,7 @@ source _dbgen.sh
 source _trans.sh
 source _import.sh
 
-if [ -z "$blocks" ]; then
-	blocks="$tpch_blocks"
-fi
+blocks="$tpch_blocks"
 
 dbgen "$blocks" "$table"
 trans_table "$blocks" "$table"

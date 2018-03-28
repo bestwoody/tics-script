@@ -1,15 +1,19 @@
-selraw="$1"
+table="$1"
+selraw="$2"
 
 set -eu
+
+if [ -z "$table" ]; then
+	echo "usage: <bin> table-name [selraw=false]" >&2
+	exit 1
+fi
 
 select="select"
 if [ "$selraw" == "true" ]; then
 	select="selraw"
 fi
 
-source _meta.sh
+source _env.sh
 
-get_table_names | while read table; do
-	echo $table:
-	"$chbin" client --host="$chserver" --query="$select count() from $table"
-done
+echo [$table]
+"$chbin" client --host="$chserver" -d "$chdb" --query="$select count() from $table"
