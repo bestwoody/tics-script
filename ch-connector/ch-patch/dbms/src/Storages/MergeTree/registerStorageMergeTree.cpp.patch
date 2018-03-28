@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
-index 4cdff05..75688ac 100644
+index 4cdff05..03c2d47 100644
 --- a/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 +++ b/dbms/src/Storages/MergeTree/registerStorageMergeTree.cpp
 @@ -1,6 +1,7 @@
@@ -67,6 +67,15 @@ index 4cdff05..75688ac 100644
      /// NOTE Quite complicated.
  
      size_t min_num_params = 0;
+@@ -393,7 +415,7 @@ static StoragePtr create(const StorageFactory::Arguments & args)
+     auto add_optional_param = [&](const char * desc)
+     {
+         ++max_num_params;
+-        needed_params += needed_params.empty() ? "\n" : ",\n[";
++        needed_params += needed_params.empty() ? "\n[" : ",\n[";
+         needed_params += desc;
+         needed_params += "]";
+     };
 @@ -404,7 +426,13 @@ static StoragePtr create(const StorageFactory::Arguments & args)
          add_mandatory_param("replica name");
      }
