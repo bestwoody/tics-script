@@ -259,7 +259,6 @@ void TCPArrowHandler::onException(std::string msg)
     catch (...)
     {
         // Ignore sending errors, connection may have been lost
-        LOG_ERROR(log, "Try sending error info to client but failed:" + DB::getCurrentExceptionMessage(false));
     }
 }
 

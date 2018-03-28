@@ -42,7 +42,10 @@ public:
 
         if (conn->isFailed())
         {
-            LOG_ERROR(log, conn_info << ". Receivd a broken connection, can't find it's session. sessions: " << sessions.size());
+            if (query_id.empty())
+                LOG_ERROR(log, conn_info << ". Receivd a broken connection, can't find it's session.");
+            else
+                LOG_ERROR(log, conn_info << ". Receivd a broken connection.");
             return conn;
         }
 
