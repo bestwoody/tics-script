@@ -109,7 +109,8 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     }
     catch (...)
     {
-        onException();
+        auto msg = DB::getCurrentExceptionMessage(false);
+        onException("TCPArrowHandler init failed: " + msg);
     }
 }
 
@@ -153,7 +154,7 @@ void TCPArrowHandler::startExecuting()
     {
         auto msg = DB::getCurrentExceptionMessage(false);
         encoder = std::make_shared<ArrowEncoderParall>(msg);
-        onException(msg);
+        onException("TCPArrowHandler startExecuting faile:" + msg);
     }
 }
 
@@ -169,7 +170,8 @@ void TCPArrowHandler::run()
         }
         catch (...)
         {
-            onException();
+            auto msg = DB::getCurrentExceptionMessage(false);
+            onException("TCPArrowHandler process query failed: " + msg);
         }
     }
 
