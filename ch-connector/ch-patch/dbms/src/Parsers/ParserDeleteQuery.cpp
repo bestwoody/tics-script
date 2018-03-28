@@ -77,8 +77,6 @@ bool ParserDeleteQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
         std::shared_ptr<ASTAsterisk> asterisk = std::make_shared<ASTAsterisk>();
         std::shared_ptr<ASTExpressionList> table_columns = std::make_shared<ASTExpressionList>();
         table_columns->children.push_back(asterisk);
-        query->columns = table_columns;
-        query->children.push_back(table_columns);
 
         select_query->select_expression_list = table_columns;
         select_query->children.push_back(table_columns);

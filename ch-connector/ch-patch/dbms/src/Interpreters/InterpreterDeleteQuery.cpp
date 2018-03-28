@@ -16,6 +16,7 @@
 #include <Storages/MutableSupport.h>
 
 #include <Interpreters/InterpreterDeleteQuery.h>
+#include <Interpreters/InterpreterSelectQuery.h>
 #include <Interpreters/InterpreterSelectWithUnionQuery.h>
 
 #include <TableFunctions/TableFunctionFactory.h>
@@ -42,34 +43,6 @@ InterpreterDeleteQuery::InterpreterDeleteQuery(const ASTPtr & query_ptr_, const 
     ProfileEvents::increment(ProfileEvents::DeleteQuery);
 }
 
-Block InterpreterDeleteQuery::getSampleBlock(const ASTDeleteQuery & query, const StoragePtr & table)
-{
-    Block table_sample_non_materialized = table->getSampleBlockNonMaterializedNoHidden();
-
-    /// If the query does not include information about columns
-    if (!query.columns)
-        return table_sample_non_materialized;
-
-    Block table_sample = table->getSampleBlockNoHidden();
-
-    /// Form the block based on the column names from the query
-    Block res;
-    for (const auto & identifier : query.columns->children)
-    {
-        std::string current_name = identifier->getColumnName();
-
-        /// The table does not have a column with that name
-        if (!table_sample.has(current_name))
-            throw Exception("No such column " + current_name + " in table " + query.table, ErrorCodes::NO_SUCH_COLUMN_IN_TABLE);
-
-        if (!allow_materialized && !table_sample_non_materialized.has(current_name))
-            throw Exception("Cannot insert column " + current_name + ", because it is MATERIALIZED column.", ErrorCodes::ILLEGAL_COLUMN);
-
-        res.insert(ColumnWithTypeAndName(table_sample.getByName(current_name).type, current_name));
-    }
-    return res;
-}
-
 BlockIO InterpreterDeleteQuery::execute()
 {
     ASTDeleteQuery & query = typeid_cast<ASTDeleteQuery &>(*query_ptr);
@@ -88,16 +61,10 @@ BlockIO InterpreterDeleteQuery::execute()
     out = std::make_shared<PushingToViewsBlockOutputStream>(query.database, query.table, table, context, query_ptr, false);
 
     out = std::make_shared<AddingDefaultBlockOutputStream>(
-        //out, required_columns, table->column_defaults, context, static_cast<bool>(context.getSettingsRef().strict_insert_defaults));
-        out, getSampleBlock(query, table), required_columns, table->getColumns().defaults, context);
+        out, table->getSampleBlockNoHidden(), required_columns, table->getColumns().defaults, context);
 
-    /// Do not squash blocks if it is a sync INSERT into Distributed, since it lead to double bufferization on client and server side.
-    /// Client-side bufferization might cause excessive timeouts (especially in case of big blocks).
-    if (!(context.getSettingsRef().insert_distributed_sync && table->getName() == "Distributed"))
-    {
-        out = std::make_shared<SquashingBlockOutputStream>(
-            out, context.getSettingsRef().min_insert_block_size_rows, context.getSettingsRef().min_insert_block_size_bytes);
-    }
+    out = std::make_shared<SquashingBlockOutputStream>(
+        out, context.getSettingsRef().min_insert_block_size_rows, context.getSettingsRef().min_insert_block_size_bytes);
 
     auto out_wrapper = std::make_shared<CountingBlockOutputStream>(out);
     out_wrapper->setProcessListElement(context.getProcessListElement());
@@ -105,16 +72,13 @@ BlockIO InterpreterDeleteQuery::execute()
 
     BlockIO res;
     res.out = std::move(out);
-    // res.out_sample = table->getSampleBlockNonMaterializedNoHidden();
 
     if (!query.where)
         throw("Delete query must have WHERE.");
 
-    /// Passing 1 as subquery_depth will disable limiting size of intermediate result.
-    InterpreterSelectWithUnionQuery interpreter_select{query.select, context, {}, QueryProcessingStage::Complete, 1};
+    InterpreterSelectQuery interpreter_select(query.select, context);
 
     res.in = interpreter_select.execute().in;
-    // res.in_sample = interpreter_select.getSampleBlock();
 
     res.in = std::make_shared<ConvertingBlockInputStream>(context, res.in, res.out->getHeader(), ConvertingBlockInputStream::MatchColumnsMode::Position);
     res.in = std::make_shared<NullAndDoCopyBlockInputStream>(res.in, res.out);

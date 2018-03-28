@@ -19,7 +19,6 @@ public:
     BlockIO execute() override;
 
 private:
-    Block getSampleBlock(const ASTDeleteQuery & query, const StoragePtr & table);
     void checkAccess(const ASTDeleteQuery & query);
 
     ASTPtr query_ptr;

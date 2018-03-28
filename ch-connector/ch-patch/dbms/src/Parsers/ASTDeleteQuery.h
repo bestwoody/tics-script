@@ -14,7 +14,6 @@ class ASTDeleteQuery : public IAST
 public:
     String database;
     String table;
-    ASTPtr columns;
     ASTPtr where;
 
     // Just for execute.
@@ -28,11 +27,6 @@ public:
         auto res = std::make_shared<ASTDeleteQuery>(*this);
         res->children.clear();
 
-        if (columns)
-        {
-            res->columns = columns->clone();
-            res->children.push_back(res->columns);
-        }
         if (where)
         {
             res->where = where->clone();
