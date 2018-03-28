@@ -242,6 +242,7 @@ void TCPArrowHandler::onException(std::string msg)
         if (msg.empty())
             msg = DB::getCurrentExceptionMessage(false);
         msg = toStr() + ". " + msg;
+        LOG_ERROR(log, msg);
     }
     catch (...)
     {
