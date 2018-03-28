@@ -30,16 +30,23 @@ public:
     {
     }
 
+    // TODO: Keep the connection failed in initing, until all connections in the same session are failed.
+    // TODO: Session corrupted flag
     Poco::Net::TCPServerConnection * create(DB::IServer & server, const Poco::Net::StreamSocket & socket)
     {
         auto conn = new TCPArrowHandler(server, socket);
         auto query_id = conn->getQueryId();
         auto client_index = conn->getClientIndex();
 
+        if (conn->isFailed())
+        {
+            LOG_ERROR(log, conn_info << ". Receivd a broken connection, can't find it's session. sessions: " << sessions.size());
+            return conn;
+        }
+
         std::string conn_info = conn->toStr();
 
-        LOG_TRACE(log, conn_info << ", " << socket.peerAddress().toString() <<
-            " connected. " << conn->getQuery());
+        LOG_TRACE(log, conn_info << ", " << socket.peerAddress().toString() << " connected. " << conn->getQuery());
 
         std::unique_lock<std::mutex> lock{mutex};
 
