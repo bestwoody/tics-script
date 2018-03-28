@@ -42,6 +42,12 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     log(&Poco::Logger::get("TCPArrowHandler")),
     connection_context(server.context()),
     query_context(server.context()),
+    protocol_version_major(-1),
+    protocol_version_minor(-1),
+    encoder_version(-1),
+    encoder_count(-1),
+    client_count(-1),
+    client_index(-1),
     failed(false),
     joined(false)
 {
