@@ -46,7 +46,7 @@ An OLAP project of TiDB
     * Load data
         * `theflash/benchmark/tpch-dbgen> make`: build TPCH dbgen
         * `theflash/benchmark/loading> vim _env.sh`: check the loading config, IMPORTANT: `tpch_scale`
-        * `theflash/benchmark/loading> ./load-all.sh`: generate/transform/load data, make sure you have enough disk space
+        * `theflash/benchmark/loading> ./load-all.sh`: generate - transform - load data, make sure you have enough disk space
     * Run TPCH benchmark
         * `theflash/benchmark/loading> vim _env.sh`: check the config
         * `theflash/benchmark> ./tpch-spark-q.sh 1`: run TPCH Q1
