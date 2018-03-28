@@ -38,13 +38,13 @@ public:
         auto query_id = conn->getQueryId();
         auto client_index = conn->getClientIndex();
 
+        std::string conn_info = conn->toStr();
+
         if (conn->isFailed())
         {
             LOG_ERROR(log, conn_info << ". Receivd a broken connection, can't find it's session. sessions: " << sessions.size());
             return conn;
         }
-
-        std::string conn_info = conn->toStr();
 
         LOG_TRACE(log, conn_info << ", " << socket.peerAddress().toString() << " connected. " << conn->getQuery());
 
