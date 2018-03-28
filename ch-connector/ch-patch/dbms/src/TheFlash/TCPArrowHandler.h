@@ -48,6 +48,11 @@ public:
         return client_index;
     }
 
+    bool isFailed()
+    {
+        return failed;
+    }
+
     void setExecution(EncoderPtr & encoder)
     {
         this->encoder = encoder;

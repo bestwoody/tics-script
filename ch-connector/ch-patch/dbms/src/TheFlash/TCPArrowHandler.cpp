@@ -45,6 +45,8 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     failed(false),
     joined(false)
 {
+    size_t interval = 0;
+
     try
     {
         connection_context.setSessionContext(connection_context);
@@ -58,22 +60,42 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
         in = std::make_shared<DB::ReadBufferFromPocoSocket>(socket());
         out = std::make_shared<DB::WriteBufferFromPocoSocket>(socket());
 
-        auto interval = global_settings.poll_interval * 1000000;
-        while (!static_cast<DB::ReadBufferFromPocoSocket &>(*in).poll(interval) && !server.isCancelled());
+        interval = global_settings.poll_interval * 1000000;
 
-        if (server.isCancelled())
+        try
         {
-            ARROW_HANDLER_LOG_WARNING("Server have been cancelled.");
+            while (!static_cast<DB::ReadBufferFromPocoSocket &>(*in).poll(interval) && !server.isCancelled());
+
+            if (server.isCancelled())
+            {
+                ARROW_HANDLER_LOG_WARNING("Server have been cancelled.");
+                return;
+            }
+            if (in->eof())
+            {
+                ARROW_HANDLER_LOG_WARNING("Client has not sent any data.");
+                return;
+            }
+
+            recvHeader();
+        }
+        catch (...)
+        {
+            auto msg = DB::getCurrentExceptionMessage(false);
+            onException("TCPArrowHandler recv header failed: " + msg);
             return;
         }
-        if (in->eof())
-        {
-            ARROW_HANDLER_LOG_WARNING("Client has not sent any data.");
-            return;
-        }
 
-        recvHeader();
+    }
+    catch (...)
+    {
+        auto msg = DB::getCurrentExceptionMessage(false);
+        onException("TCPArrowHandler init or recv header failed: " + msg);
+        return;
+    }
 
+    try
+    {
         if (!default_database.empty())
         {
             if (!connection_context.isDatabaseExist(default_database))
@@ -91,7 +113,16 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
             client_info.client_version_minor = protocol_version_minor;
             client_info.interface = DB::ClientInfo::Interface::TCP;
         }
+    }
+    catch (...)
+    {
+        auto msg = DB::getCurrentExceptionMessage(false);
+        onException("TCPArrowHandler context setup failed: " + msg);
+        return;
+    }
 
+    try
+    {
         while (!static_cast<DB::ReadBufferFromPocoSocket &>(*in).poll(interval) && !server.isCancelled());
 
         if (server.isCancelled())
@@ -110,7 +141,8 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     catch (...)
     {
         auto msg = DB::getCurrentExceptionMessage(false);
-        onException("TCPArrowHandler init failed: " + msg);
+        onException("TCPArrowHandler recv query failed: " + msg);
+        return;
     }
 }
 
@@ -174,6 +206,10 @@ void TCPArrowHandler::run()
             onException("TCPArrowHandler process query failed: " + msg);
         }
     }
+    else
+    {
+        onException("Pulling data from a failed connection.");
+    }
 
     watch.stop();
     ARROW_HANDLER_LOG_TRACE(std::fixed << std::setprecision(3) <<
@@ -189,16 +225,29 @@ TCPArrowHandler::EncoderPtr TCPArrowHandler::getExecution()
 
 void TCPArrowHandler::onException(std::string msg)
 {
-    if (encoder)
-        encoder->cancal(true);
+    try
+    {
+        if (encoder)
+            encoder->cancal(true);
+    }
+    catch (...)
+    {
+        LOG_ERROR(log, "Try closing encoder but failed: " + DB::getCurrentExceptionMessage(false));
+    }
 
     failed = true;
 
-    if (msg.empty())
-        msg = DB::getCurrentExceptionMessage(false);
-    msg = toStr() + ". " + msg;
-
-    LOG_ERROR(log, msg);
+    try
+    {
+        if (msg.empty())
+            msg = DB::getCurrentExceptionMessage(false);
+        msg = toStr() + ". " + msg;
+    }
+    catch (...)
+    {
+        LOG_ERROR(log, "Try gathering error info but failed, origin error: " + msg +
+            ", gathering error: " + DB::getCurrentExceptionMessage(false));
+    }
 
     try
     {
@@ -210,6 +259,7 @@ void TCPArrowHandler::onException(std::string msg)
     catch (...)
     {
         // Ignore sending errors, connection may have been lost
+        LOG_ERROR(log, "Try sending error info to client but failed:" + DB::getCurrentExceptionMessage(false));
     }
 }
 
