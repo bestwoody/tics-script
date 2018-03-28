@@ -6,8 +6,8 @@ export chbin="$repo_dir/ch-connector/build/dbms/src/Server/theflash"
 # Server address to receive data
 export chserver="127.0.0.1"
 # Database to receive data
-export chdb="default"
 export chdb="mutable"
+export chdb="default"
 
 # Dbgen executable path
 export dbgen_dir="$repo_dir/benchmark/tpch-dbgen"
