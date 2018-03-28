@@ -1,9 +1,12 @@
 <?xml version="1.0"?>
 <yandex>
+    <application>
+        <runAsDaemon>true</runAsDaemon>
+    </application>
     <logger>
         <level>trace</level>
-        <!--log>/tmp/theflash/running/server.log</log-->
-        <errorlog>/tmp/theflash/running/server-err.log</errorlog>
+        <log>/tmp/theflash/running/server.log</log>
+        <log-error>/tmp/theflash/running/server-error.log</log-error>
         <size>1000M</size>
         <count>10</count>
     </logger>

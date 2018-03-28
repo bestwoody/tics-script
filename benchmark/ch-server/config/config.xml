@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <yandex>
+    <application>
+        <runAsDaemon>true</runAsDaemon>
+    </application>
     <logger>
         <level>trace</level>
         <log>/data/ch-server/server.log</log>
