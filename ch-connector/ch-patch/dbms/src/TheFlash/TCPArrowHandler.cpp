@@ -101,7 +101,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
         catch (...)
         {
             auto msg = getExceptionMessage();
-            onException("TCPArrowHandler recv header failed: " + msg);
+            onException("Recv header failed: " + msg);
             return;
         }
 
@@ -109,7 +109,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     catch (...)
     {
         auto msg = getExceptionMessage();
-        onException("TCPArrowHandler init or recv header failed: " + msg);
+        onException("Init failed: " + msg);
         return;
     }
 
@@ -136,7 +136,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     catch (...)
     {
         auto msg = getExceptionMessage();
-        onException("TCPArrowHandler context setup failed: " + msg);
+        onException("Context setup failed: " + msg);
         return;
     }
 
@@ -160,7 +160,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     catch (...)
     {
         auto msg = getExceptionMessage();
-        onException("TCPArrowHandler recv query failed: " + msg);
+        onException("Recv query failed: " + msg);
         return;
     }
 }
@@ -205,7 +205,7 @@ void TCPArrowHandler::startExecuting()
     {
         auto msg = getExceptionMessage();
         encoder = std::make_shared<ArrowEncoderParall>(msg);
-        onException("TCPArrowHandler startExecuting faile:" + msg);
+        onException("Start executing failed:" + msg);
     }
 }
 
@@ -222,7 +222,7 @@ void TCPArrowHandler::run()
         catch (...)
         {
             auto msg = getExceptionMessage();
-            onException("TCPArrowHandler process query failed: " + msg);
+            onException("Process query failed: " + msg);
         }
     }
     else
