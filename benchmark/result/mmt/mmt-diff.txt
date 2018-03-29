@@ -1024,7 +1024,7 @@ TODO
 
 # Q18
 TiSpark: not tested, TODO
-MutableMergeTree: not tested, TODO
+MergeTree == MutableMergeTree
 SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
@@ -1057,7 +1057,30 @@ TODO
 +------------------+---------+----------+---------------------+------------+---------------+
 
 ## MutableMergeTree
-TODO
++------------------+---------+----------+---------------------+------------+---------------+
+|C_NAME            |C_CUSTKEY|O_ORDERKEY|O_ORDERDATE          |O_TOTALPRICE|sum(L_QUANTITY)|
++------------------+---------+----------+---------------------+------------+---------------+
+|Customer#011472112|11472112 |458304292 |1998-02-05 08:00:00.0|591036.15   |322.0          |
+|Customer#012090925|12090925 |501322081 |1995-02-04 08:00:00.0|586945.44   |319.0          |
+|Customer#001392379|1392379  |332381222 |1998-01-24 08:00:00.0|575600.0    |311.0          |
+|Customer#013458721|13458721 |333307747 |1997-12-19 08:00:00.0|572334.88   |319.0          |
+|Customer#008643083|8643083  |84927619  |1997-06-29 08:00:00.0|571417.48   |316.0          |
+|Customer#010543705|10543705 |163142919 |1996-06-10 08:00:00.0|569798.1    |313.0          |
+|Customer#000026377|26377    |586594688 |1992-04-14 08:00:00.0|569044.84   |311.0          |
+|Customer#005914657|5914657  |55799200  |1996-02-11 08:00:00.0|568754.48   |327.0          |
+|Customer#011461310|11461310 |20662370  |1992-07-22 08:00:00.0|566353.2    |315.0          |
+|Customer#007682894|7682894  |532736640 |1993-07-22 08:00:00.0|563532.16   |316.0          |
+|Customer#012070685|12070685 |34201984  |1997-06-18 08:00:00.0|563492.49   |322.0          |
+|Customer#012878113|12878113 |42290181  |1997-11-26 08:00:00.0|563479.57   |318.0          |
+|Customer#000506836|506836   |116567399 |1992-03-21 08:00:00.0|563342.71   |319.0          |
+|Customer#012848143|12848143 |501771233 |1994-12-06 08:00:00.0|562642.03   |317.0          |
+|Customer#003493022|3493022  |182898470 |1996-01-09 08:00:00.0|561296.06   |318.0          |
+|Customer#013083751|13083751 |28077922  |1996-10-27 08:00:00.0|560893.88   |319.0          |
+|Customer#006580315|6580315  |343593507 |1994-05-20 08:00:00.0|560058.6    |321.0          |
+|Customer#009427249|9427249  |48881602  |1993-09-19 08:00:00.0|559502.82   |327.0          |
+|Customer#009995401|9995401  |530897159 |1994-05-02 08:00:00.0|558771.77   |305.0          |
+|Customer#006094567|6094567  |156159680 |1994-11-15 08:00:00.0|558037.12   |308.0          |
++------------------+---------+----------+---------------------+------------+---------------+
 
 ## SelRaw on MutableMergeTree
 TODO
@@ -1099,7 +1122,7 @@ MutableMergeTree == SelRaw on MutableMergeTree
 
 # Q20
 TiSpark == MergeTree
-MutableMergeTree: not tested, TODO
+MergeTree == MutableMergeTree
 SelRaw on MutableMergeTree: not tested, TODO
 
 ## TiSpark
@@ -1155,7 +1178,30 @@ SelRaw on MutableMergeTree: not tested, TODO
 +------------------+--------------------+
 
 ## MutableMergeTree
-TODO
++------------------+----------------------------------------+
+|S_NAME            |S_ADDRESS                               |
++------------------+----------------------------------------+
+|Supplier#000000091|YV45D7TkfdQanOOZ7q9QxkyGUapU1oOWU6q3    |
+|Supplier#000000157|,mEGorBfVIm                             |
+|Supplier#000000197|YC2Acon6kjY3zj3Fbxs2k4Vdf7X0cd2F        |
+|Supplier#000000205|rF uV8d0JNEk                            |
+|Supplier#000000287|7a9SP7qW5Yku5PvSg                       |
+|Supplier#000000354|w8fOo5W,aS                              |
+|Supplier#000000361|f8IUYRmdVXhQC9qJQjWknCXmzhe38vCbk6      |
+|Supplier#000000402|i9Sw4DoyMhzhKXCH9By,AYSgmD              |
+|Supplier#000000555|TfB,a5bfl3Ah 3Z 74GqnNs6zKVGM           |
+|Supplier#000000640|mvvtlQKsTOsJj5Ihk7,cq                   |
+|Supplier#000000710|f19YPvOyb QoYwjKC,oPycpGfieBAcwKJo      |
+|Supplier#000000736|l6i2nMwVuovfKnuVgaSGK2rDy65DlAFLegiL7   |
+|Supplier#000000761|zlSLelQUj2XrvTTFnv7WAcYZGvvMTx882d4     |
+|Supplier#000000848|tx44JAuF,Jnw1                           |
+|Supplier#000000884|bmhEShejaS                              |
+|Supplier#000000887|urEaTejH5POADP2ARrf                     |
+|Supplier#000000935|ij98czM 2KzWe7dDTOxB8sq0UfCdvrX         |
+|Supplier#000000975|,AC e,tBpNwKb5xMUzeohxlRn, hdZJo73gFQF8y|
+|Supplier#000001033|A6x1P,56sVHkb4DqVyUw32n,ChI             |
+|Supplier#000001367|42YSkFcAXMMcucsqeEefOE4HeCC             |
++------------------+----------------------------------------+
 
 ## SelRaw on MutableMergeTree
 TODO
