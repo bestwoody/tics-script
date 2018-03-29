@@ -19,7 +19,7 @@ dbgen_all_in_one()
 
 	if [ -d "$dir" ]; then
 		echo "$dir: exists, skipped dbgen" >&2
-		return 1
+		return 0
 	fi
 
 	local old=`pwd`
@@ -38,7 +38,7 @@ dbgen_table_in_one()
 
 	if [ -f "$dir/$table.tbl" ]; then
 		echo "$dir/$table.tbl: exists, skipped dbgen" >&2
-		return 1
+		return 0
 	fi
 	if [ -z "$flag" ]; then
 		echo "unknown table name: $table" >&2
@@ -61,11 +61,11 @@ dbgen_table_blocks()
 
 	if [ -f "$dir/$table.tbl" ]; then
 		echo "$dir/$table.tbl: exists, skipped dbgen" >&2
-		return 1
+		return 0
 	fi
 	if [ -f "$dir/$table.tbl.1" ]; then
 		echo "$dir/$table.tbl.*: exists, skipped dbgen" >&2
-		return 1
+		return 0
 	fi
 
 	local flag=`get_dbgen_flag $table`

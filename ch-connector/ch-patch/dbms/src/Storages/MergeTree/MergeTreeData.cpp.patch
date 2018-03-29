@@ -1,0 +1,23 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreeData.cpp b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
+index ef4b802..f2c3cc8 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreeData.cpp
++++ b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
+@@ -303,8 +303,8 @@ void MergeTreeData::MergingParams::check(const NamesAndTypesList & columns) cons
+         throw Exception("Sign column for MergeTree cannot be specified in modes except Collapsing or VersionedCollapsing.",
+                         ErrorCodes::LOGICAL_ERROR);
+ 
+-    if (!version_column.empty() && mode != MergingParams::Replacing && mode != MergingParams::VersionedCollapsing)
+-        throw Exception("Version column for MergeTree cannot be specified in modes except Replacing or VersionedCollapsing.",
++    if (!version_column.empty() && mode != MergingParams::Replacing && mode != MergingParams::VersionedCollapsing && mode != MergingParams::Mutable)
++        throw Exception("Version column for MergeTree cannot be specified in modes except Replacing or VersionedCollapsing or Mutable.",
+                         ErrorCodes::LOGICAL_ERROR);
+ 
+     if (!columns_to_sum.empty() && mode != MergingParams::Summing)
+@@ -407,6 +407,7 @@ String MergeTreeData::MergingParams::getModeName() const
+         case Summing:       return "Summing";
+         case Aggregating:   return "Aggregating";
+         case Replacing:     return "Replacing";
++        case Mutable:       return "Mutable";
+         case Graphite:      return "Graphite";
+         case VersionedCollapsing:  return "VersionedCollapsing";
+ 

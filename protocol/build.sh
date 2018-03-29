@@ -15,4 +15,4 @@ done
 
 # create jar file
 mvn package
-mvn install:install-file -Dfile=target/MagicProto-1.0.jar -DgroupId=pingcap.com -DartifactId=MagicProto -Dversion=1.0 -Dpackaging=jar
+mvn install:install-file -Dfile=target/TheFlashProto-1.0.jar -DgroupId=pingcap.com -DartifactId=TheFlashProto -Dversion=1.0 -Dpackaging=jar

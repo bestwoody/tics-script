@@ -1,0 +1,32 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp
+index 8ab7699..db96cd4 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp
++++ b/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp
+@@ -40,6 +40,7 @@ namespace ErrorCodes
+     extern const int UNKNOWN_FORMAT;
+     extern const int UNEXPECTED_FILE_IN_DATA_PART;
+     extern const int NOT_FOUND_EXPECTED_DATA_PART;
++    extern const int BAD_DATA_PART_NAME;
+ }
+ 
+ 
+@@ -683,7 +684,18 @@ void MergeTreeDataPart::loadIndex()
+ 
+ void MergeTreeDataPart::loadPartitionAndMinMaxIndex()
+ {
+-    if (storage.format_version < MERGE_TREE_DATA_MIN_FORMAT_VERSION_WITH_CUSTOM_PARTITIONING)
++    if (storage.merging_params.mode == MergeTreeData::MergingParams::Mutable)
++    {
++        UInt32 partition_name = 0;
++        ReadBufferFromString in(name);
++        if (!tryReadIntText(partition_name, in))
++            throw Exception("Unexpected part name: " + name, ErrorCodes::BAD_DATA_PART_NAME);
++
++        String full_path = getFullPath();
++        partition = MergeTreePartition(partition_name);
++        minmax_idx.load(storage, full_path);
++    }
++    else if (storage.format_version < MERGE_TREE_DATA_MIN_FORMAT_VERSION_WITH_CUSTOM_PARTITIONING)
+     {
+         DayNum_t min_date;
+         DayNum_t max_date;

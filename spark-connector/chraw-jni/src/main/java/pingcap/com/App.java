@@ -19,7 +19,7 @@ public class App {
 			field.getType().getTypeID() + " nullable:" + field.isNullable());
 	}
 
-	private void dump(Magic.Query query) throws Exception {
+	private void dump(TheFlash.Query query) throws Exception {
 		Schema schema = query.schema();
 		List<Field> fields = schema.getFields();
 		int i = 0;
@@ -64,10 +64,10 @@ public class App {
 		System.out.println("[query done]");
 	}
 
-	public void exec(Magic magic, String query) throws Exception {
+	public void exec(TheFlash lib, String query) throws Exception {
 		System.out.println("[query]");
 		System.out.println("    " + query);
-		Magic.Query result = magic.query(query);
+		TheFlash.Query result = lib.query(query);
 		dump(result);
 		result.close();
 	}
@@ -78,11 +78,11 @@ public class App {
 			return -1;
 		}
 
-		Magic magic = new Magic();
+		TheFlash lib = new TheFlash();
 		String cmd = args[0];
 
 		if (cmd.equals("version")) {
-			System.out.print("libch version: " + magic.version());
+			System.out.print("libch version: " + lib.version());
 			return 0;
 		}
 
@@ -92,7 +92,7 @@ public class App {
 		}
 
 		String path = args[1];
-		magic.init(path);
+		lib.init(path);
 
 		if (cmd.equals("cli")) {
 			System.out.println("[intereact mode, type 'quit' to exit]");
@@ -105,8 +105,8 @@ public class App {
 				} else if (line.equals("quit")) {
 					return 0;
 				} else if (line.equals("to-log")) {
-					System.out.println("[redirecting output to magic-java.log]");
-					System.setOut(new PrintStream(new File("magic-java.log")));
+					System.out.println("[redirecting output to theflash-java.log]");
+					System.setOut(new PrintStream(new File("theflash-java.log")));
 					continue;
 				} else if (line.equals("no-decode")) {
 					System.out.println("[throughput bench mode, disable data decoding and printing]");
@@ -119,7 +119,7 @@ public class App {
 					continue;
 				} else if (line.equals("version")) {
 					System.out.println("[libch version]");
-					System.out.println("    " + magic.version());
+					System.out.println("    " + lib.version());
 					continue;
 				} else if (line.equals("bench")) {
 					System.out.println("[enter simple data bench mode, type 'quit' to exit]");
@@ -138,7 +138,7 @@ public class App {
 				}
 				System.out.println();
 				try {
-					exec(magic, line);
+					exec(lib, line);
 				} catch (Exception e) {
 					System.err.println("[exception]");
 					System.err.println("    " + e);
@@ -153,7 +153,7 @@ public class App {
 				System.out.println("usage: <bin> query <db-path> <query-string>");
 				return -1;
 			}
-			exec(magic, args[2]);
+			exec(lib, args[2]);
 		}
 
 		if (cmd.equals("querys")) {
@@ -164,11 +164,11 @@ public class App {
 			String query = args[2];
 			int times = Integer.parseInt(args[3]);
 			for (int i = 0; i < times; ++i) {
-				exec(magic, query);
+				exec(lib, query);
 			}
 		}
 
-		magic.close();
+		lib.close();
 		return 0;
 	}
 

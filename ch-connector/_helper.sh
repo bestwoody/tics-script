@@ -17,11 +17,21 @@ setup_gcc_on_mac()
 		fi
 	fi
 
+	local sys_include="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include"
+
 	export CPLUS_INCLUDE_PATH=`$CXX -x c++ -v -E /dev/null 2>&1 | \
 		grep '<...> search starts here' -A 99 | \
 		grep 'End of search list' -B 99 | \
 		grep -v ' search ' | awk '{print $1}' | tr '\n' ':'`
-	export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH/usr/local/include"
+	export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/local/include:$sys_include"
+	echo "CXX include: $CPLUS_INCLUDE_PATH"
+
+	export C_INCLUDE_PATH=`$CXX -x c++ -v -E /dev/null 2>&1 | \
+		grep '<...> search starts here' -A 99 | \
+		grep 'End of search list' -B 99 | \
+		grep -v ' search ' | awk '{print $1}' | tr '\n' ':'`
+	export C_INCLUDE_PATH="$C_INCLUDE_PATH:/usr/local/include:$sys_include"
+	echo "C include: $C_INCLUDE_PATH"
 }
 export -f setup_gcc_on_mac
 

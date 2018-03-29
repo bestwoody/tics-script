@@ -1,10 +1,9 @@
 table="$1"
-blocks="$2"
 
 set -eu
 
-if [ -z "$table" ] && [ -z "$blocks" ]; then
-	echo "usage: <bin> [table-name] [block-numbers]" >&2
+if [ -z "$table" ]; then
+	echo "usage: <bin> table-name" >&2
 	exit 1
 fi
 
@@ -24,8 +23,4 @@ fi
 
 "$chbin" client --host="$chserver" -d "$chdb" --query="`cat $schema`"
 
-if [ -z "$blocks" ]; then
-	blocks="$tpch_blocks"
-fi
-
-import_table "$blocks" "$table"
+import_table "$tpch_blocks" "$table"

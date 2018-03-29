@@ -1,3 +1,3 @@
 set -eu
 source _build.sh
-build_ch "clickhouse" "ch"
+build_ch "ch" "ch"

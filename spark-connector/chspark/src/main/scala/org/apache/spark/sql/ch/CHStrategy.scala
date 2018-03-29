@@ -169,17 +169,16 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     }
 
     val residualAggregateExpressions = aggregateExpressions.map { aggExpr =>
-      // As `aggExpr` is being pushing down to Clickhouse, we need to replace the original Catalyst
-      // aggregate expressions with new ones that merges the partial aggregation results returned by
-      // Clickhouse.
+      // As `aggExpr` is being pushing down to CH, we need to replace the original Catalyst
+      // aggregate expressions with new ones that merges the partial aggregation results returned by CH.
       //
       // NOTE: Unlike simple aggregate functions (e.g., `Max`, `Min`, etc.), `Count` must be
-      // replaced with a `Sum` to sum up the partial counts returned by Clickhouse.
+      // replaced with a `Sum` to sum up the partial counts returned by CH.
       //
       // NOTE: All `Average`s should have already been rewritten into `Sum`s and `Count`s by the
       // `CHAggregation` pattern extractor.
 
-      // An attribute referring to the partial aggregation results returned by Clickhouse.
+      // An attribute referring to the partial aggregation results returned by CH.
       val partialResultRef = aliasPushedPartialResult(aggExpr).toAttribute
 
       aggExpr.aggregateFunction match {
@@ -325,7 +324,7 @@ object CHAggregation {
     resultExpressions: Seq[NamedExpression]): (Seq[AggregateExpression],Seq[NamedExpression]) = {
 
     // Rewrites all `Average`s into the form of `Divide(Sum / Count)` so that we can push the
-    // converted `Sum`s and `Count`s down to Clickhouse.
+    // converted `Sum`s and `Count`s down to CH.
     val (averages, averagesEliminated) = aggregateExpressions.partition {
       case AggregateExpression(_: Average, _, _, _) => true
       case _ => false

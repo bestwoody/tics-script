@@ -33,7 +33,7 @@ public class App {
 
 		String cmd = args[0];
 		int times = Integer.parseInt(args[1]);
-		MagicProtoBench bench = new MagicProtoBench();
+		TheFlashProtoBench bench = new TheFlashProtoBench();
 
 		if (cmd.equals("sum-int")) {
 			int result = 0;

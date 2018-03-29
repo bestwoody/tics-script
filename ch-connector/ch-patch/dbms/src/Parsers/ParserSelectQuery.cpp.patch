@@ -1,0 +1,25 @@
+diff --git a/dbms/src/Parsers/ParserSelectQuery.cpp b/dbms/src/Parsers/ParserSelectQuery.cpp
+index 4bf89d4..649869c 100644
+--- a/dbms/src/Parsers/ParserSelectQuery.cpp
++++ b/dbms/src/Parsers/ParserSelectQuery.cpp
+@@ -26,6 +26,7 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+     node = select_query;
+ 
+     ParserKeyword s_select("SELECT");
++    ParserKeyword s_selraw("SELRAW");
+     ParserKeyword s_distinct("DISTINCT");
+     ParserKeyword s_from("FROM");
+     ParserKeyword s_prewhere("PREWHERE");
+@@ -56,8 +57,11 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+ 
+     /// SELECT [DISTINCT] expr list
+     {
+-        if (!s_select.ignore(pos, expected))
++        bool is_select = s_select.ignore(pos, expected);
++        bool is_selraw = s_selraw.ignore(pos, expected);
++        if (!is_select && !is_selraw)
+             return false;
++        select_query->raw_for_mutable = is_selraw;
+ 
+         if (s_distinct.ignore(pos, expected))
+             select_query->distinct = true;
