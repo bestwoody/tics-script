@@ -36,6 +36,19 @@ static Int64 PROTOCOL_VERSION_MINOR = 1;
 static Int64 PROTOCOL_ENCODER_VERSION = 1;
 static Int64 MAX_CLIENT_COUNT = 1024;
 
+// Not neccesary, but we still keep it for double safety.
+inline std::string getExceptionMessage()
+{
+    try
+    {
+        return DB::getCurrentExceptionMessage(false);
+    }
+    catch (...)
+    {
+        return "Exception when getExceptionMessage.";
+    }
+}
+
 TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamSocket & socket_) :
     Poco::Net::TCPServerConnection(socket_),
     server(server_),
@@ -87,7 +100,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
         }
         catch (...)
         {
-            auto msg = DB::getCurrentExceptionMessage(false);
+            auto msg = getExceptionMessage();
             onException("TCPArrowHandler recv header failed: " + msg);
             return;
         }
@@ -95,7 +108,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     }
     catch (...)
     {
-        auto msg = DB::getCurrentExceptionMessage(false);
+        auto msg = getExceptionMessage();
         onException("TCPArrowHandler init or recv header failed: " + msg);
         return;
     }
@@ -122,7 +135,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     }
     catch (...)
     {
-        auto msg = DB::getCurrentExceptionMessage(false);
+        auto msg = getExceptionMessage();
         onException("TCPArrowHandler context setup failed: " + msg);
         return;
     }
@@ -146,7 +159,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     }
     catch (...)
     {
-        auto msg = DB::getCurrentExceptionMessage(false);
+        auto msg = getExceptionMessage();
         onException("TCPArrowHandler recv query failed: " + msg);
         return;
     }
@@ -190,7 +203,7 @@ void TCPArrowHandler::startExecuting()
     }
     catch (...)
     {
-        auto msg = DB::getCurrentExceptionMessage(false);
+        auto msg = getExceptionMessage();
         encoder = std::make_shared<ArrowEncoderParall>(msg);
         onException("TCPArrowHandler startExecuting faile:" + msg);
     }
@@ -208,7 +221,7 @@ void TCPArrowHandler::run()
         }
         catch (...)
         {
-            auto msg = DB::getCurrentExceptionMessage(false);
+            auto msg = getExceptionMessage();
             onException("TCPArrowHandler process query failed: " + msg);
         }
     }
@@ -238,7 +251,7 @@ void TCPArrowHandler::onException(std::string msg)
     }
     catch (...)
     {
-        LOG_ERROR(log, "Try closing encoder but failed: " + DB::getCurrentExceptionMessage(false));
+        LOG_ERROR(log, "Try closing encoder but failed, origin error: " + msg);
     }
 
     failed = true;
@@ -246,14 +259,13 @@ void TCPArrowHandler::onException(std::string msg)
     try
     {
         if (msg.empty())
-            msg = DB::getCurrentExceptionMessage(false);
+            msg = getExceptionMessage();
         msg = toStr() + ". " + msg;
         LOG_ERROR(log, msg);
     }
     catch (...)
     {
-        LOG_ERROR(log, "Try gathering error info but failed, origin error: " + msg +
-            ", gathering error: " + DB::getCurrentExceptionMessage(false));
+        LOG_ERROR(log, "Try gathering error info but failed, origin error: " + msg);
     }
 
     try
