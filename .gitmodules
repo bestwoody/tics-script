@@ -12,6 +12,6 @@
 	ignore = dirty
 [submodule "ch-connector/ch"]
 	path = ch-connector/ch
-	url = git@github.com:yandex/ClickHouse
+	url = http://github.com/yandex/ClickHouse
 	branch = v1.1.54370-stable
 	ignore = dirty
