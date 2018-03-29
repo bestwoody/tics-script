@@ -1,0 +1,361 @@
+# TPCH 1 result on CHSpark+MergeTree
+
+
+# Q1
+
++------------+------------+-----------+---------------------+---------------------+---------------------+------------------+-----------------+--------------------+-----------+
+|L_RETURNFLAG|L_LINESTATUS|SUM_QTY    |SUM_BASE_PRICE       |SUM_DISC_PRICE       |SUM_CHARGE           |AVG_QTY           |AVG_PRICE        |AVG_DISC            |COUNT_ORDER|
++------------+------------+-----------+---------------------+---------------------+---------------------+------------------+-----------------+--------------------+-----------+
+|A           |F           |3.7734107E7|5.658655440272095E10 |5.6586480499696045E10|5.6586539638932846E10|25.522005853257337|38273.12973596828|0.049985295838460064|1478493    |
+|N           |F           |991417.0   |1.4875047106322021E9 |1.4875027643022342E9 |1.487504317532212E9  |25.516471920522985|38284.46776733932|0.05009342667421456 |38854      |
+|N           |O           |7.447604E7 |1.1170172970504553E11|1.1170158369624731E11|1.117017006225826E11 |25.50222676958499 |38249.11799140985|0.04999658605366858 |2920374    |
+|R           |F           |3.7719753E7|5.656804138398901E10 |5.656796742646357E10 |5.656802656062007E10 |25.50579361269077 |38250.85462818843|0.05000940583018906 |1478870    |
++------------+------------+-----------+---------------------+---------------------+---------------------+------------------+-----------------+--------------------+-----------+
+
+# Q2
++---------+------------------+--------------+---------+--------------+--------------------------------------+---------------+---------------------------------------------------------------------------------------------+
+|S_ACCTBAL|S_NAME            |N_NAME        |P_PARTKEY|P_MFGR        |S_ADDRESS                             |S_PHONE        |S_COMMENT                                                                                    |
++---------+------------------+--------------+---------+--------------+--------------------------------------+---------------+---------------------------------------------------------------------------------------------+
+|9938.53  |Supplier#000005359|UNITED KINGDOM|185358   |Manufacturer#4|QKuHYh,vZGiwu2FWEJoLDx04              |33-429-790-6131|uriously regular requests hag                                                                |
+|9937.84  |Supplier#000005969|ROMANIA       |108438   |Manufacturer#1|ANDENSOSmk,miq23Xfb5RWt6dvUcvt6Qa     |29-520-692-3537|efully express instructions. regular requests against the slyly fin                          |
+|9936.22  |Supplier#000005250|UNITED KINGDOM|249      |Manufacturer#4|B3rqp0xbSEim4Mpy2RH J                 |33-320-228-2957|etect about the furiously final accounts. slyly ironic pinto beans sleep inside the furiously|
+|9923.77  |Supplier#000002324|GERMANY       |29821    |Manufacturer#4|y3OD9UywSTOk                          |17-779-299-1839|ackages boost blithely. blithely regular deposits c                                          |
+|9871.22  |Supplier#000006373|GERMANY       |43868    |Manufacturer#5|J8fcXWsTqM                            |17-813-485-8637|etect blithely bold asymptotes. fluffily ironic platelets wake furiously; blit               |
+|9870.78  |Supplier#000001286|GERMANY       |81285    |Manufacturer#2|YKA,E2fjiVd7eUrzp2Ef8j1QxGo2DFnosaTEH |17-516-924-4574| regular accounts. furiously unusual courts above the fi                                     |
+|9870.78  |Supplier#000001286|GERMANY       |181285   |Manufacturer#4|YKA,E2fjiVd7eUrzp2Ef8j1QxGo2DFnosaTEH |17-516-924-4574| regular accounts. furiously unusual courts above the fi                                     |
+|9852.52  |Supplier#000008973|RUSSIA        |18972    |Manufacturer#2|t5L67YdBYYH6o,Vz24jpDyQ9              |32-188-594-7038|rns wake final foxes. carefully unusual depende                                              |
+|9847.83  |Supplier#000008097|RUSSIA        |130557   |Manufacturer#2|xMe97bpE69NzdwLoX                     |32-375-640-3593| the special excuses. silent sentiments serve carefully final ac                             |
+|9847.57  |Supplier#000006345|FRANCE        |86344    |Manufacturer#1|VSt3rzk3qG698u6ld8HhOByvrTcSTSvQlDQDag|16-886-766-7945|ges. slyly regular requests are. ruthless, express excuses cajole blithely across the unu    |
+|9847.57  |Supplier#000006345|FRANCE        |173827   |Manufacturer#2|VSt3rzk3qG698u6ld8HhOByvrTcSTSvQlDQDag|16-886-766-7945|ges. slyly regular requests are. ruthless, express excuses cajole blithely across the unu    |
+|9836.93  |Supplier#000007342|RUSSIA        |4841     |Manufacturer#4|JOlK7C1,7xrEZSSOw                     |32-399-414-5385|blithely carefully bold theodolites. fur                                                     |
+|9817.1   |Supplier#000002352|RUSSIA        |124815   |Manufacturer#2|4LfoHUZjgjEbAKw TgdKcgOc4D4uCYw       |32-551-831-1437|wake carefully alongside of the carefully final ex                                           |
+|9817.1   |Supplier#000002352|RUSSIA        |152351   |Manufacturer#3|4LfoHUZjgjEbAKw TgdKcgOc4D4uCYw       |32-551-831-1437|wake carefully alongside of the carefully final ex                                           |
+|9739.86  |Supplier#000003384|FRANCE        |138357   |Manufacturer#2|o,Z3v4POifevE k9U1b 6J1ucX,I          |16-494-913-5925|s after the furiously bold packages sleep fluffily idly final requests: quickly final        |
+|9721.95  |Supplier#000008757|UNITED KINGDOM|156241   |Manufacturer#3|Atg6GnM4dT2                           |33-821-407-2995|eep furiously sauternes; quickl                                                              |
+|9681.33  |Supplier#000008406|RUSSIA        |78405    |Manufacturer#1|,qUuXcftUl                            |32-139-873-8571|haggle slyly regular excuses. quic                                                           |
+|9643.55  |Supplier#000005148|ROMANIA       |107617   |Manufacturer#1|kT4ciVFslx9z4s79p Js825               |29-252-617-4850|final excuses. final ideas boost quickly furiously speci                                     |
+|9624.82  |Supplier#000001816|FRANCE        |34306    |Manufacturer#3|e7vab91vLJPWxxZnewmnDBpDmxYHrb        |16-392-237-6726|e packages are around the special ideas. special, pending foxes us                           |
+|9624.78  |Supplier#000009658|ROMANIA       |189657   |Manufacturer#1|oE9uBgEfSS4opIcepXyAYM,x              |29-748-876-2014|ronic asymptotes wake bravely final                                                          |
++---------+------------------+--------------+---------+--------------+--------------------------------------+---------------+---------------------------------------------------------------------------------------------+
+
+# Q3
++----------+------------------+---------------------+--------------+
+|L_ORDERKEY|REVENUE           |O_ORDERDATE          |O_SHIPPRIORITY|
++----------+------------------+---------------------+--------------+
+|2456423   |406181.01515625   |1995-03-05 08:00:00.0|0             |
+|3459808   |405838.70484375005|1995-03-04 08:00:00.0|0             |
+|492164    |390324.06851562497|1995-02-19 08:00:00.0|0             |
+|1188320   |384537.93976562493|1995-03-09 08:00:00.0|0             |
+|2435712   |378673.058828125  |1995-02-26 08:00:00.0|0             |
+|4878020   |378376.7949267578 |1995-03-12 08:00:00.0|0             |
+|5521732   |375153.9190625    |1995-03-13 08:00:00.0|0             |
+|2628192   |373133.31046875   |1995-02-22 08:00:00.0|0             |
+|993600    |371407.45328124997|1995-03-05 08:00:00.0|0             |
+|2300070   |367371.14687500003|1995-03-13 08:00:00.0|0             |
+|1166660   |365967.4389453125 |1995-02-27 08:00:00.0|0             |
+|1083941   |365184.4896875    |1995-02-21 08:00:00.0|0             |
+|405063    |359706.57687499997|1995-03-03 08:00:00.0|0             |
+|4212103   |356025.2159179688 |1995-02-14 08:00:00.0|0             |
+|4232067   |355384.53859375004|1995-02-21 08:00:00.0|0             |
+|817603    |354799.89218749997|1995-03-11 08:00:00.0|0             |
+|408035    |351700.18193359376|1995-03-08 08:00:00.0|0             |
+|4463334   |350549.0811279297 |1995-03-14 08:00:00.0|0             |
+|1546404   |350411.09039062494|1995-03-11 08:00:00.0|0             |
+|345664    |347632.92296874995|1995-03-08 08:00:00.0|0             |
++----------+------------------+---------------------+--------------+
+
+# Q4
++---------------+-----------+
+|O_ORDERPRIORITY|ORDER_COUNT|
++---------------+-----------+
+|1-URGENT       |10594      |
+|2-HIGH         |10476      |
+|3-MEDIUM       |10410      |
+|4-NOT SPECIFIED|10556      |
+|5-LOW          |10487      |
++---------------+-----------+
+
+# Q5
++---------+--------------------+
+|N_NAME   |REVENUE             |
++---------+--------------------+
+|INDONESIA|1.631215950372912E8 |
+|INDIA    |1.6222758034506163E8|
+|VIETNAM  |1.6107569872656012E8|
+|CHINA    |1.6019737512231445E8|
+|JAPAN    |1.426670780787829E8 |
++---------+--------------------+
+
+# Q6
++--------------------+
+|REVENUE             |
++--------------------+
+|1.2314107820773035E8|
++--------------------+
+
+# Q7
++-----------+-----------+------+-------------------+
+|SUPP_NATION|CUST_NATION|L_YEAR|REVENUE            |
++-----------+-----------+------+-------------------+
+|INDIA      |JAPAN      |1995  |5.405532199896487E7|
+|INDIA      |JAPAN      |1996  |5.825956707556642E7|
+|JAPAN      |INDIA      |1995  |5.05888113084699E7 |
+|JAPAN      |INDIA      |1996  |5.121153307929568E7|
++-----------+-----------+------+-------------------+
+
+# Q8
++------+-------------------+
+|O_YEAR|MKT_SHARE          |
++------+-------------------+
+|1995  |0.04039139002914467|
+|1996  |0.04570843685814853|
++------+-------------------+
+
+# Q9
++---------+------+--------------------+
+|NATION   |O_YEAR|SUM_PROFIT          |
++---------+------+--------------------+
+|ALGERIA  |1998  |3.0411405329757076E7|
+|ALGERIA  |1997  |5.092019978239015E7 |
+|ALGERIA  |1996  |4.9039923106540516E7|
+|ALGERIA  |1995  |5.188403026642574E7 |
+|ALGERIA  |1994  |4.837561492222655E7 |
+|ALGERIA  |1993  |4.709399344189637E7 |
+|ALGERIA  |1992  |5.418927296177976E7 |
+|ARGENTINA|1998  |2.8117945975726932E7|
+|ARGENTINA|1997  |4.7274792803769544E7|
+|ARGENTINA|1996  |4.682757769869386E7 |
+|ARGENTINA|1995  |4.94830214565613E7  |
+|ARGENTINA|1994  |4.8382755569807135E7|
+|ARGENTINA|1993  |4.681828781596496E7 |
+|ARGENTINA|1992  |4.81287046726898E7  |
+|BRAZIL   |1998  |2.8061196168187242E7|
+|BRAZIL   |1997  |4.610027971219783E7 |
+|BRAZIL   |1996  |4.849150551682925E7 |
+|BRAZIL   |1995  |4.5010513993654184E7|
+|BRAZIL   |1994  |4.5670109679041766E7|
+|BRAZIL   |1993  |4.688792595487424E7 |
++---------+------+--------------------+
+
+# Q10
++---------+------------------+------------------+---------+-------------+----------------------------------------+---------------+----------------------------------------------------------------------------------------------------------------+
+|C_CUSTKEY|C_NAME            |REVENUE           |C_ACCTBAL|N_NAME       |C_ADDRESS                               |C_PHONE        |C_COMMENT                                                                                                       |
++---------+------------------+------------------+---------+-------------+----------------------------------------+---------------+----------------------------------------------------------------------------------------------------------------+
+|64663    |Customer#000064663|861.3359802246094 |9291.67  |ARGENTINA    |8BnMPRCsGgQPxE1paRM0fBu6ywH7djCGQvqyZbav|11-610-265-2227|gular ideas. furiously silent attainments above the slyly si                                                    |
+|84998    |Customer#000084998|903.6359802246094 |8814.72  |INDONESIA    |8taVGFRAfSEYOtvXjYTdMaYHDMmjO           |19-686-130-7074|refully express requests wake blithel                                                                           |
+|22174    |Customer#000022174|917.6491284179688 |8652.24  |BRAZIL       |IGvgYwIbLRfonjCblqwebmHyxWwK            |12-119-873-3422| cajole regular, final dolphins. accounts haggle blithely against the final, unusual foxes. stealthily ex       |
+|8876     |Customer#000008876|941.1971795654297 |395.66   |ETHIOPIA     |HnbmNw4S3uTEYN7QYYsoSkPkvvPgUjqu        |15-282-807-4827|de of the even theodolites wake along the carefully exp                                                         |
+|68098    |Customer#000068098|967.1760162353515 |9005.13  |MOROCCO      |dsRf0Qj x2b5h6YL5AKToM8QmSYqi           |25-413-874-7739|cies sleep carefully. fluffily even pains sl                                                                    |
+|22225    |Customer#000022225|980.8303955078126 |5721.02  |ETHIOPIA     |cLjO71Hh8OewYs2ZVjr3dLucUZn4wXkgLs9Z084 |15-434-506-7638|iously. finally regular packages are carefully. furiously silent requests about the packages was requests: reg  |
+|108712   |Customer#000108712|986.267626953125  |836.75   |KENYA        |HE8Q6eESNG5NDNWrRROJU5b9P7wQ,           |24-248-542-4505|gainst the even theodolites. bold, express pinto beans across the requests ought to                             |
+|72314    |Customer#000072314|1007.698818359375 |2295.9   |MOROCCO      |a12wRkiWMlhD28FvrrFA                    |25-477-695-2916|ly regular packages cajole slyly. pending requests use enticingly against the fluffily                          |
+|43058    |Customer#000043058|1014.789638671875 |-23.45   |KENYA        |uguyUKAPSbp                             |24-734-718-3037|bold, even accounts. idly even fo                                                                               |
+|126217   |Customer#000126217|1035.18896484375  |2860.84  |UNITED STATES|Qj3V2Z5aWqrdynAxOKo7ZF,                 |34-685-838-8281|hinly express foxes. regular accounts are evenly regular packages. quickly express                              |
+|106537   |Customer#000106537|1036.08896484375  |2745.25  |CANADA       |dBop4mykaB6                             |13-619-383-3181|in pinto beans. carefully final accounts s                                                                      |
+|146230   |Customer#000146230|1044.0629516601564|8236.76  |EGYPT        |13UJPdx476SyCOFKFL                      |14-535-721-9754|after the express, ironic frets. furious theodolites detect. final foxes haggle bravely. quickly final accounts |
+|40978    |Customer#000040978|1055.652286376953 |-104.06  |INDIA        |LgEeOLfGQacpOKlD7qxXgi8iERQIYnNAlhgg    |18-667-757-4400|usly final packages cajole fluffily a                                                                           |
+|33880    |Customer#000033880|1056.0096093749999|9278.22  |IRAQ         |VSeKiv3VFMw DOVz17zdQBA9,gzQNJtrWcDS    |21-148-726-3963|s sleep carefully about the enticing epitaphs. carefull                                                         |
+|1375     |Customer#000001375|1062.378544921875 |2011.11  |KENYA        |lpKhW7g QK7Y13sxKlRvRYI7SItbTbcBxae     |24-620-497-1489|requests! even excuses are furiously express deposits: fluffily ironic                                          |
+|66497    |Customer#000066497|1071.5181408691406|8681.98  |IRAQ         |BiuXO8tyRd0UciIk5aS6FeQT                |21-409-848-8340|; quickly regular pinto beans haggle fluffily according t                                                       |
+|118070   |Customer#000118070|1075.743017578125 |4494.08  |MOROCCO      |wN7Zbt3rKBS0CEKG6g4oiP6x4XD95in6sB6hc   |25-463-734-5203|ole carefully above the quickly pe                                                                              |
+|39247    |Customer#000039247|1076.3880371093749|7710.39  |JORDAN       |0iZ YKQBvTXRBgPvJ cQrQD0U8S z           |23-202-820-2625|are furiously throughout the furiously regular theodolites. regular, regular packages after the                 |
+|20614    |Customer#000020614|1078.363995361328 |6766.61  |FRANCE       |0R SN4vwHwejX68Tep5nUXdA9OEI            |16-124-347-6515|ss the regular instructions haggle above the slyly final theodolites. foxes according to the slyl               |
+|90542    |Customer#000090542|1085.859619140625 |8714.65  |SAUDI ARABIA |NrbQOxeHdiTqkp97Tr1oY                   |30-809-575-7721|lly across the quickly regular accounts. quickly bold requests w                                                |
++---------+------------------+------------------+---------+-------------+----------------------------------------+---------------+----------------------------------------------------------------------------------------------------------------+
+
+# Q11
++----------+--------------------+
+|PS_PARTKEY|VALUE               |
++----------+--------------------+
+|129760    |1.753845686E7       |
+|166726    |1.650335392E7       |
+|191287    |1.6474801969999999E7|
+|161758    |1.610175554E7       |
+|34452     |1.598384472E7       |
+|139035    |1.590707834E7       |
+|9403      |1.5451755620000001E7|
+|154358    |1.5212937879999999E7|
+|38823     |1.506480286E7       |
+|85606     |1.5053957150000002E7|
+|33354     |1.44082974E7        |
+|154747    |1.440758068E7       |
+|82865     |1.4235489780000001E7|
+|76094     |1.409424704E7       |
+|222       |1.393777774E7       |
+|121271    |1.3908336E7         |
+|55221     |1.371612047E7       |
+|22819     |1.3666434280000001E7|
+|76281     |1.364685368E7       |
+|85298     |1.358115493E7       |
++----------+--------------------+
+
+# Q12
++----------+---------------+--------------+
+|L_SHIPMODE|HIGH_LINE_COUNT|LOW_LINE_COUNT|
++----------+---------------+--------------+
+|MAIL      |6202           |9324          |
+|SHIP      |6200           |9262          |
++----------+---------------+--------------+
+scala> val elapsed = (new Date().getTime - startTime.getTime) / 100 / 10.0
+elapsed: Double = 12.8
+scala> :quit
+
+# Q13
++-------+--------+
+|C_COUNT|CUSTDIST|
++-------+--------+
+|0      |50004   |
+|10     |6635    |
+|9      |6515    |
+|11     |6094    |
+|8      |5952    |
+|12     |5525    |
+|13     |5039    |
+|19     |4723    |
+|7      |4644    |
+|18     |4584    |
+|17     |4514    |
+|14     |4496    |
+|20     |4489    |
+|15     |4458    |
+|16     |4356    |
+|21     |4240    |
+|22     |3724    |
+|6      |3314    |
+|23     |3132    |
+|24     |2694    |
++-------+--------+
+
+# Q14
++-----------------+
+|PROMO_REVENUE    |
++-----------------+
+|16.38077862599815|
++-----------------+
+
+# Q14
+TODO
+
+# Q16
++--------+------------------------+------+------------+
+|P_BRAND |P_TYPE                  |P_SIZE|SUPPLIER_CNT|
++--------+------------------------+------+------------+
+|Brand#41|MEDIUM BRUSHED TIN      |3     |28          |
+|Brand#54|STANDARD BRUSHED COPPER |14    |27          |
+|Brand#11|STANDARD BRUSHED TIN    |23    |24          |
+|Brand#11|STANDARD BURNISHED BRASS|36    |24          |
+|Brand#15|MEDIUM ANODIZED NICKEL  |3     |24          |
+|Brand#15|SMALL ANODIZED BRASS    |45    |24          |
+|Brand#15|SMALL BURNISHED NICKEL  |19    |24          |
+|Brand#21|MEDIUM ANODIZED COPPER  |3     |24          |
+|Brand#22|SMALL BRUSHED NICKEL    |3     |24          |
+|Brand#22|SMALL BURNISHED BRASS   |19    |24          |
+|Brand#25|MEDIUM BURNISHED COPPER |36    |24          |
+|Brand#31|PROMO POLISHED COPPER   |36    |24          |
+|Brand#33|LARGE POLISHED TIN      |23    |24          |
+|Brand#33|PROMO POLISHED STEEL    |14    |24          |
+|Brand#35|PROMO BRUSHED NICKEL    |14    |24          |
+|Brand#41|ECONOMY BRUSHED STEEL   |9     |24          |
+|Brand#41|ECONOMY POLISHED TIN    |19    |24          |
+|Brand#41|LARGE PLATED COPPER     |36    |24          |
+|Brand#42|ECONOMY PLATED BRASS    |3     |24          |
+|Brand#42|STANDARD POLISHED TIN   |49    |24          |
++--------+------------------------+------+------------+
+
+# Q17
+TODO
+
+# Q18
++------------------+---------+----------+---------------------+------------+---------------+
+|C_NAME            |C_CUSTKEY|O_ORDERKEY|O_ORDERDATE          |O_TOTALPRICE|sum(L_QUANTITY)|
++------------------+---------+----------+---------------------+------------+---------------+
+|Customer#000128120|128120   |4722021   |1994-04-07 08:00:00.0|544089.09   |323.0          |
+|Customer#000144617|144617   |3043270   |1997-02-12 08:00:00.0|530604.44   |317.0          |
+|Customer#000013940|13940    |2232932   |1997-04-13 08:00:00.0|522720.61   |304.0          |
+|Customer#000066790|66790    |2199712   |1996-09-30 08:00:00.0|515531.82   |327.0          |
+|Customer#000046435|46435    |4745607   |1997-07-03 08:00:00.0|508047.99   |309.0          |
+|Customer#000015272|15272    |3883783   |1993-07-28 08:00:00.0|500241.33   |302.0          |
+|Customer#000146608|146608   |3342468   |1994-06-12 08:00:00.0|499794.58   |303.0          |
+|Customer#000096103|96103    |5984582   |1992-03-16 08:00:00.0|494398.79   |312.0          |
+|Customer#000024341|24341    |1474818   |1992-11-15 08:00:00.0|491348.26   |302.0          |
+|Customer#000137446|137446   |5489475   |1997-05-23 08:00:00.0|487763.25   |311.0          |
+|Customer#000107590|107590   |4267751   |1994-11-04 08:00:00.0|485141.38   |301.0          |
+|Customer#000050008|50008    |2366755   |1996-12-09 08:00:00.0|483891.26   |302.0          |
+|Customer#000015619|15619    |3767271   |1996-08-07 08:00:00.0|480083.96   |318.0          |
+|Customer#000077260|77260    |1436544   |1992-09-12 08:00:00.0|479499.43   |307.0          |
+|Customer#000109379|109379   |5746311   |1996-10-10 08:00:00.0|478064.11   |302.0          |
+|Customer#000054602|54602    |5832321   |1997-02-09 08:00:00.0|471220.08   |307.0          |
+|Customer#000105995|105995   |2096705   |1994-07-03 08:00:00.0|469692.58   |307.0          |
+|Customer#000148885|148885   |2942469   |1992-05-31 08:00:00.0|469630.44   |313.0          |
+|Customer#000114586|114586   |551136    |1993-05-19 08:00:00.0|469605.59   |308.0          |
+|Customer#000105260|105260   |5296167   |1996-09-06 08:00:00.0|469360.57   |303.0          |
++------------------+---------+----------+---------------------+------------+---------------+
+
+# Q19
++-----------------+
+|REVENUE          |
++-----------------+
+|3083843.060441894|
++-----------------+
+
+# Q20
++------------------+----------------------------------------+
+|S_NAME            |S_ADDRESS                               |
++------------------+----------------------------------------+
+|Supplier#000000020|iybAE,RmTymrZVYaFZva2SH,j               |
+|Supplier#000000091|YV45D7TkfdQanOOZ7q9QxkyGUapU1oOWU6q3    |
+|Supplier#000000205|rF uV8d0JNEk                            |
+|Supplier#000000285|Br7e1nnt1yxrw6ImgpJ7YdhFDjuBf           |
+|Supplier#000000287|7a9SP7qW5Yku5PvSg                       |
+|Supplier#000000354|w8fOo5W,aS                              |
+|Supplier#000000378|FfbhyCxWvcPrO8ltp9                      |
+|Supplier#000000402|i9Sw4DoyMhzhKXCH9By,AYSgmD              |
+|Supplier#000000530|0qwCMwobKY OcmLyfRXlagA8ukENJv,         |
+|Supplier#000000555|TfB,a5bfl3Ah 3Z 74GqnNs6zKVGM           |
+|Supplier#000000640|mvvtlQKsTOsJj5Ihk7,cq                   |
+|Supplier#000000729|pqck2ppy758TQpZCUAjPvlU55K3QjfL7Bi      |
+|Supplier#000000736|l6i2nMwVuovfKnuVgaSGK2rDy65DlAFLegiL7   |
+|Supplier#000000761|zlSLelQUj2XrvTTFnv7WAcYZGvvMTx882d4     |
+|Supplier#000000887|urEaTejH5POADP2ARrf                     |
+|Supplier#000000935|ij98czM 2KzWe7dDTOxB8sq0UfCdvrX         |
+|Supplier#000000975|,AC e,tBpNwKb5xMUzeohxlRn, hdZJo73gFQF8y|
+|Supplier#000001263|rQWr6nf8ZhB2TAiIDIvo5Io                 |
+|Supplier#000001367|42YSkFcAXMMcucsqeEefOE4HeCC             |
+|Supplier#000001426|bPOCc086oFm8sLtS,fGrH                   |
++------------------+----------------------------------------+
+
+# Q21
++------------------+-------+
+|S_NAME            |NUMWAIT|
++------------------+-------+
+|Supplier#000002829|20     |
+|Supplier#000005808|18     |
+|Supplier#000000262|17     |
+|Supplier#000000496|17     |
+|Supplier#000002160|17     |
+|Supplier#000002301|17     |
+|Supplier#000002540|17     |
+|Supplier#000003063|17     |
+|Supplier#000005178|17     |
+|Supplier#000008331|17     |
+|Supplier#000002005|16     |
+|Supplier#000002095|16     |
+|Supplier#000005799|16     |
+|Supplier#000005842|16     |
+|Supplier#000006450|16     |
+|Supplier#000006939|16     |
+|Supplier#000009200|16     |
+|Supplier#000009727|16     |
+|Supplier#000000486|15     |
+|Supplier#000000565|15     |
++------------------+-------+
+
+# Q22
++---------+-------+-----------------+
+|CNTRYCODE|NUMCUST|TOTACCTBAL       |
++---------+-------+-----------------+
+|20       |916    |6824676.019999997|
+|21       |955    |7235832.660000001|
+|22       |893    |6631741.430000005|
+|30       |910    |6813438.359999999|
++---------+-------+-----------------+

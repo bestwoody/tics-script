@@ -1,3 +1,6 @@
+# TPCH 100 result comparation
+
+
 # Q1:
 TiSpark ~= MergeTree: float accuracy. SUM_DISC_PRICE and SUM_PRICE not matched.
 MergeTree !~= MutableMergeTree: float accuracy
