@@ -1,4 +1,4 @@
-# TPCH 1 result on CHSpark+MergeTree
+# TPCH 1 result on CHSpark+MergeTree, unchecked
 
 
 # Q1
