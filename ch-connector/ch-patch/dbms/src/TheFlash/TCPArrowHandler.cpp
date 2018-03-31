@@ -83,7 +83,25 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
 
         try
         {
-            while (!static_cast<DB::ReadBufferFromPocoSocket &>(*in).poll(interval) && !server.isCancelled());
+            LOG_TRACE(log, "Socket poll interval: " << interval);
+
+            // TODO: This might have crush problem on MacOs, not sure yet, waiting for next crush for more info
+            // while (!static_cast<DB::ReadBufferFromPocoSocket &>(*in).poll(interval) && !server.isCancelled());
+
+            DB::ReadBufferFromPocoSocket * in_socket = static_cast<DB::ReadBufferFromPocoSocket *>(in.get());
+            while (true)
+            {
+                if (in_socket->poll(interval))
+                {
+                    break;
+                }
+                LOG_TRACE(log, "Socket polling might failed.");
+                if (server.isCancelled())
+                {
+                    LOG_TRACE(log, "Server have been cancelled.");
+                    break;
+                }
+            }
 
             if (server.isCancelled())
             {
@@ -96,18 +114,20 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
                 return;
             }
 
+            LOG_TRACE(log, "Reading connection header.");
             recvHeader();
         }
         catch (...)
         {
+            LOG_ERROR(log, "Recv header failed.");
             auto msg = getExceptionMessage();
             onException("Recv header failed: " + msg);
             return;
         }
-
     }
     catch (...)
     {
+        LOG_ERROR(log, "Init failed.");
         auto msg = getExceptionMessage();
         onException("Init failed: " + msg);
         return;
@@ -135,6 +155,7 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
     }
     catch (...)
     {
+        LOG_ERROR(log, "Context setup failed.");
         auto msg = getExceptionMessage();
         onException("Context setup failed: " + msg);
         return;
@@ -142,7 +163,22 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
 
     try
     {
-        while (!static_cast<DB::ReadBufferFromPocoSocket &>(*in).poll(interval) && !server.isCancelled());
+        // TODO: This might have crush problem on MacOs, not sure yet, waiting for next crush for more info
+        // while (!static_cast<DB::ReadBufferFromPocoSocket &>(*in).poll(interval) && !server.isCancelled());
+        DB::ReadBufferFromPocoSocket * in_socket = static_cast<DB::ReadBufferFromPocoSocket *>(in.get());
+        while (true)
+        {
+            if (in_socket->poll(interval))
+            {
+                break;
+            }
+            LOG_TRACE(log, "Socket polling might failed.");
+            if (server.isCancelled())
+            {
+                LOG_TRACE(log, "Server have been cancelled.");
+                break;
+            }
+        }
 
         if (server.isCancelled())
         {
@@ -155,10 +191,12 @@ TCPArrowHandler::TCPArrowHandler(DB::IServer & server_, const Poco::Net::StreamS
             return;
         }
 
+        LOG_TRACE(log, "Reading query.");
         recvQuery();
     }
     catch (...)
     {
+        LOG_ERROR(log, "Recv query failed.");
         auto msg = getExceptionMessage();
         onException("Recv query failed: " + msg);
         return;
@@ -169,6 +207,8 @@ TCPArrowHandler::~TCPArrowHandler()
 {
     if (joined)
         TCPArrowSessions::instance().clear(this, failed);
+    else
+        ARROW_HANDLER_LOG_TRACE("Connection done.");
 }
 
 void TCPArrowHandler::startExecuting()
@@ -203,6 +243,7 @@ void TCPArrowHandler::startExecuting()
     }
     catch (...)
     {
+        LOG_ERROR(log, "Start executing failed.");
         auto msg = getExceptionMessage();
         encoder = std::make_shared<ArrowEncoderParall>(msg);
         onException("Start executing failed:" + msg);
@@ -221,12 +262,14 @@ void TCPArrowHandler::run()
         }
         catch (...)
         {
+            LOG_ERROR(log, "Process query failed.");
             auto msg = getExceptionMessage();
             onException("Process query failed: " + msg);
         }
     }
     else
     {
+        // Trying to send exception to client
         onException("Pulling data from a failed connection.");
     }
 
@@ -244,20 +287,26 @@ TCPArrowHandler::EncoderPtr TCPArrowHandler::getExecution()
 
 void TCPArrowHandler::onException(std::string msg)
 {
+    LOG_TRACE(log, "Handling exception.");
     try
     {
         if (encoder)
+        {
+            LOG_TRACE(log, "Try closing encoder.");
             encoder->cancal(true);
+        }
     }
     catch (...)
     {
         LOG_ERROR(log, "Try closing encoder but failed, origin error: " + msg);
     }
 
+    LOG_TRACE(log, "Setting failed flag.");
     failed = true;
 
     try
     {
+        LOG_TRACE(log, "Gathering error info.");
         if (msg.empty())
             msg = getExceptionMessage();
         msg = toStr() + ". " + msg;
@@ -270,15 +319,19 @@ void TCPArrowHandler::onException(std::string msg)
 
     try
     {
+        LOG_TRACE(log, "Trying to send exception to client.");
         writeInt64(Protocol::Utf8Error, *out);
         writeInt64(msg.size(), *out);
         out->write((const char*)msg.c_str(), msg.size());
         out->next();
+        LOG_TRACE(log, "Exception had been sent.");
     }
     catch (...)
     {
         // Ignore sending errors, connection may have been lost
+        LOG_ERROR(log, "Sending exception to client failed.");
     }
+    LOG_TRACE(log, "Exception handled.");
 }
 
 void TCPArrowHandler::processOrdinaryQuery()
