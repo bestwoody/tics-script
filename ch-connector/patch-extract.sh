@@ -62,10 +62,12 @@ patch_extract_repo()
 	local target="$1"
 
 	cd "$target"
-	git status | grep modified | awk -F 'modified:' '{print $2}' | while read modified; do
+	git status --porcelain | grep '^ M ' | while read modified; do
+		local modified="${modified:2}"
 		patch_diff "$target" "$modified"
 	done
-	git status | grep 'Untracked files:' -A 99999 | grep "^\t" | while read untracked; do
+	git status --porcelain | grep '^\?? ' | while read untracked; do
+		local untracked="${untracked:3}"
 		untracked_extract "$target" "$untracked"
 	done
 }
