@@ -13,12 +13,13 @@ _untracked_reset()
 
 repo_reset()
 {
-	local target="$1"
+	git status --porcelain | grep '^ M ' | while read modified; do
+		local modified="${modified:2}"
+		git checkout "$modified"
+	done
 
-	#git status "$target" | grep modified | awk -F 'modified:' '{print $2}' | xargs git checkout
-	git checkout "$target"
-
-	git status "$target" | grep 'Untracked files:' -A 99999 | grep "^\t" | while read untracked; do
+	git status --porcelain | grep '^\?? ' | while read untracked; do
+		local untracked="${untracked:3}"
 		_untracked_reset "$untracked"
 	done
 }
