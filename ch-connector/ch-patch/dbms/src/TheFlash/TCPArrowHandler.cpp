@@ -41,7 +41,7 @@ inline std::string getExceptionMessage()
 {
     try
     {
-        return DB::getCurrentExceptionMessage(false);
+        return DB::getCurrentExceptionMessage(true);
     }
     catch (...)
     {
