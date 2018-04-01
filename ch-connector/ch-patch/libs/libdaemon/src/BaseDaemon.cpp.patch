@@ -1,19 +1,19 @@
 diff --git a/libs/libdaemon/src/BaseDaemon.cpp b/libs/libdaemon/src/BaseDaemon.cpp
-index 849a80f..ccf35eb 100644
+index 849a80f..7c61f4a 100644
 --- a/libs/libdaemon/src/BaseDaemon.cpp
 +++ b/libs/libdaemon/src/BaseDaemon.cpp
 @@ -372,12 +372,14 @@ private:
                      case BUS_OBJERR:
                          LOG_ERROR(log, "Object specific hardware error.");
                          break;
-+#ifndef __APPLE__
++/*
                      case BUS_MCEERR_AR:
                          LOG_ERROR(log, "Hardware memory error: action required.");
                          break;
                      case BUS_MCEERR_AO:
                          LOG_ERROR(log, "Hardware memory error: action optional.");
                          break;
-+#endif
++*/
                      default:
                          LOG_ERROR(log, "Unknown si_code.");
                          break;

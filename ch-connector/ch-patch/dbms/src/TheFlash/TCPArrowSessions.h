@@ -30,16 +30,19 @@ public:
     {
     }
 
-    // TODO: Keep the connection failed in initing, until all connections in the same session are failed.
     // TODO: Session corrupted flag
     Poco::Net::TCPServerConnection * create(DB::IServer & server, const Poco::Net::StreamSocket & socket)
     {
+        LOG_TRACE(log, "New connection arrived.");
         auto conn = new TCPArrowHandler(server, socket);
+        LOG_TRACE(log, "Connection handler created.");
+
         auto query_id = conn->getQueryId();
         auto client_index = conn->getClientIndex();
 
         std::string conn_info = conn->toStr();
 
+        // TODO: Keep the failed connection, until all connections in the same session are failed.
         if (conn->isFailed())
         {
             if (query_id.empty())
@@ -165,11 +168,14 @@ public:
         // The further operation: clean up tombstones
         if (sessions.size() >= max_sessions_count)
         {
+            LOG_TRACE(log, "Too many sessions, cleaning: " << sessions.size());
+
             time_t now = time(0);
             auto it = sessions.begin();
             while (it != sessions.end())
             {
                 auto & session = it->second;
+
                 auto seconds = difftime(now, session.create_time);
                 if (!session.finished())
                 {
