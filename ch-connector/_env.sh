@@ -2,7 +2,7 @@
 # *.dyso/*.a path for mac os
 export DYLD_LIBRARY_PATH=""
 # *.so/*.a path for linux
-export LD_LIBRARY_PATH="/usr/local/lib64"
+export LD_LIBRARY_PATH="/usr/local/lib64:/usr/local/lib"
 
 # Executable path
 export chbin="build/dbms/src/Server/theflash"

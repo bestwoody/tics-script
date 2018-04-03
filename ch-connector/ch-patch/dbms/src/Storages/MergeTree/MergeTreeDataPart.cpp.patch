@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp
-index 8ab7699..db96cd4 100644
+index 8ab7699a0..db96cd435 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataPart.cpp
 @@ -40,6 +40,7 @@ namespace ErrorCodes

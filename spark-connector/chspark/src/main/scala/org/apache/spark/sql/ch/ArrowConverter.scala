@@ -15,15 +15,15 @@
 
 package org.apache.spark.sql.ch
 
-import scala.collection.JavaConverters._
-
-import java.sql.Timestamp
+import java.sql.{Date, Timestamp}
 
 import org.apache.arrow.vector.types.pojo.{ArrowType, Schema}
 import org.apache.arrow.vector.util.Text
-
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRow
+import org.joda.time.DateTime
+
+import scala.collection.JavaConverters._
 
 @Deprecated
 class CHRows(private val schema: Schema, private val table: String, private val block: CHExecutor.Result)
@@ -39,7 +39,7 @@ class CHRows(private val schema: Schema, private val table: String, private val 
 
   override def next(): Row = {
     val fields = new Array[Any](columns.size)
-    for (i <- 0 until fields.length) {
+    for (i <- fields.indices) {
       fields(i) = ArrowConverter.fromArrow(fieldTypes(i), columns.get(i).getObject(curr))
     }
     curr += 1
@@ -48,9 +48,9 @@ class CHRows(private val schema: Schema, private val table: String, private val 
 
   def close(): Unit = {
     for (i <- 0 until columns.size) {
-      columns.get(i).close
+      columns.get(i).close()
     }
-    block.close
+    block.close()
   }
 }
 
@@ -64,7 +64,8 @@ object ArrowConverter {
 
   def fromArrow(arrowType: ArrowType, value: Any): Any = {
     arrowType match {
-      case time: ArrowType.Time => new Timestamp(value.asInstanceOf[Long] * 1000)
+      case _: ArrowType.Time => new Timestamp(value.asInstanceOf[Long] * 1000)
+      case _: ArrowType.Date => new Date(new DateTime(value.asInstanceOf[Int] * 24L * 60 * 60 * 1000).getMillis)
       case _ => {
         value match {
           case text: Text => text.toString
@@ -87,10 +88,11 @@ object ArrowConverter {
               int16.asInstanceOf[Int] + uint16Reverser
             }
           }
+          case int16: Int => {
+            int16
+          }
           case int32: Int => {
-            if (arrowType.isInstanceOf[ArrowType.Time]) {
-              int32
-            } else if (arrowType.asInstanceOf[ArrowType.Int].getIsSigned) {
+            if (arrowType.asInstanceOf[ArrowType.Int].getIsSigned) {
               int32
             } else {
               if (int32 >= 0) {

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.h b/dbms/src/Storages/StorageMergeTree.h
-index acb0e03..29eed6c 100644
+index acb0e03a6..29eed6c96 100644
 --- a/dbms/src/Storages/StorageMergeTree.h
 +++ b/dbms/src/Storages/StorageMergeTree.h
 @@ -59,6 +59,8 @@ public:

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Server/CMakeLists.txt b/dbms/src/Server/CMakeLists.txt
-index d268851..367b538 100644
+index d268851f6..367b5387a 100644
 --- a/dbms/src/Server/CMakeLists.txt
 +++ b/dbms/src/Server/CMakeLists.txt
 @@ -25,9 +25,9 @@ add_library (clickhouse-server-lib
