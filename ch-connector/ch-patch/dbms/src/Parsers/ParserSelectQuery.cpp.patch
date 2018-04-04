@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Parsers/ParserSelectQuery.cpp b/dbms/src/Parsers/ParserSelectQuery.cpp
-index 4bf89d4..649869c 100644
+index 4bf89d499848..649869c25ec3 100644
 --- a/dbms/src/Parsers/ParserSelectQuery.cpp
 +++ b/dbms/src/Parsers/ParserSelectQuery.cpp
 @@ -26,6 +26,7 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)

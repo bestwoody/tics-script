@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/InterpreterFactory.cpp b/dbms/src/Interpreters/InterpreterFactory.cpp
-index 9d30c58..561239a 100644
+index 9d30c5861293..561239a7ff53 100644
 --- a/dbms/src/Interpreters/InterpreterFactory.cpp
 +++ b/dbms/src/Interpreters/InterpreterFactory.cpp
 @@ -4,6 +4,7 @@

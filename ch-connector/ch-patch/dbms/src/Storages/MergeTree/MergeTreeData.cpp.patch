@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeData.cpp b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
-index ef4b802..f2c3cc8 100644
+index ef4b8022323a..f2c3cc896156 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeData.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
 @@ -303,8 +303,8 @@ void MergeTreeData::MergingParams::check(const NamesAndTypesList & columns) cons
