@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
-index ae8677c57..1b3a26f1f 100644
+index ae8677c57be6..1b3a26f1f354 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
 @@ -343,7 +343,8 @@ static void extractMergingAndGatheringColumns(const NamesAndTypesList & all_colu

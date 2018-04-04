@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Parsers/ASTSelectQuery.h b/dbms/src/Parsers/ASTSelectQuery.h
-index c31e91f31..580d248d4 100644
+index c31e91f31949..580d248d4559 100644
 --- a/dbms/src/Parsers/ASTSelectQuery.h
 +++ b/dbms/src/Parsers/ASTSelectQuery.h
 @@ -20,6 +20,7 @@ public:

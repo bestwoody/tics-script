@@ -34,7 +34,7 @@ patch_diff()
 	if [ -f "$patch" ]; then
 		cp -f "$modified" "$patch"
 	else
-		local delta=`git diff "$modified"`
+		local delta=`git -c core.abbrev=12 diff "$modified"`
 		if [ ! -z "$delta" ]; then
 			echo "$delta" > "$patch.patch"
 		fi

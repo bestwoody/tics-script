@@ -1,5 +1,5 @@
 diff --git a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
-index b8592a0e5..26e473e07 100644
+index b8592a0e5b66..26e473e07878 100644
 --- a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
 +++ b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.h
 @@ -16,9 +16,9 @@ class ReplacingSortedBlockInputStream : public MergingSortedBlockInputStream

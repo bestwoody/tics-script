@@ -1,5 +1,5 @@
 diff --git a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.cpp b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.cpp
-index 197fac9c2..3196e0eb0 100644
+index 197fac9c22dd..3196e0eb00ff 100644
 --- a/dbms/src/DataStreams/ReplacingSortedBlockInputStream.cpp
 +++ b/dbms/src/DataStreams/ReplacingSortedBlockInputStream.cpp
 @@ -35,7 +35,7 @@ Block ReplacingSortedBlockInputStream::readImpl()

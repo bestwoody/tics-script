@@ -1,5 +1,5 @@
 diff --git a/dbms/src/CMakeLists.txt b/dbms/src/CMakeLists.txt
-index d52fb965f..4041a8bba 100644
+index d52fb965f9e0..4041a8bbae07 100644
 --- a/dbms/src/CMakeLists.txt
 +++ b/dbms/src/CMakeLists.txt
 @@ -14,3 +14,4 @@ add_subdirectory (Server)

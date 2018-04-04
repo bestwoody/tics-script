@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Core/Names.h b/dbms/src/Core/Names.h
-index 5c3384112..09e10ca3b 100644
+index 5c3384112aef..09e10ca3b5eb 100644
 --- a/dbms/src/Core/Names.h
 +++ b/dbms/src/Core/Names.h
 @@ -13,4 +13,18 @@ using Names = std::vector<std::string>;

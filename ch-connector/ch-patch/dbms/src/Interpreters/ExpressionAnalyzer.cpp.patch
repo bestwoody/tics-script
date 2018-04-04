@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/ExpressionAnalyzer.cpp b/dbms/src/Interpreters/ExpressionAnalyzer.cpp
-index abe503137..fb913e63c 100644
+index abe503137cf3..fb913e63c7fe 100644
 --- a/dbms/src/Interpreters/ExpressionAnalyzer.cpp
 +++ b/dbms/src/Interpreters/ExpressionAnalyzer.cpp
 @@ -61,6 +61,9 @@

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
-index e85efa435..6e9936c68 100644
+index e85efa435fd0..6e9936c6840a 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 @@ -6,6 +6,8 @@
