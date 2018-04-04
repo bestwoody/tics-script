@@ -19,6 +19,7 @@ setup_gcc_on_mac()
 
 	local sys_include="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include"
 
+	# BUG: If this include path have '.' dir, build may fail on some version of mac (HS for now)
 	export CPLUS_INCLUDE_PATH=`$CXX -x c++ -v -E /dev/null 2>&1 | \
 		grep '<...> search starts here' -A 99 | \
 		grep 'End of search list' -B 99 | \
@@ -26,7 +27,7 @@ setup_gcc_on_mac()
 	export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/local/include:$sys_include"
 	echo "CXX include: $CPLUS_INCLUDE_PATH"
 
-	export C_INCLUDE_PATH=`$CXX -x c++ -v -E /dev/null 2>&1 | \
+	export C_INCLUDE_PATH=`$CC -x c++ -v -E /dev/null 2>&1 | \
 		grep '<...> search starts here' -A 99 | \
 		grep 'End of search list' -B 99 | \
 		grep -v ' search ' | awk '{print $1}' | tr '\n' ':'`
