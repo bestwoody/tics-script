@@ -17,38 +17,9 @@ package org.apache.spark.sql.ch
 
 import java.util.UUID
 
-import org.apache.arrow.vector.VectorSchemaRoot
-
-import org.apache.spark.sql.types.DataType
-import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.types.MetadataBuilder
-import org.apache.spark.sql.types.{StringType, TimestampType}
-import org.apache.spark.sql.types.{DoubleType, FloatType}
-import org.apache.spark.sql.types.{ByteType, IntegerType, LongType, ShortType}
-
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.expressions.Literal
-import org.apache.spark.sql.catalyst.expressions.AttributeReference
-import org.apache.spark.sql.catalyst.expressions.IsNotNull
-import org.apache.spark.sql.catalyst.expressions.Add
-import org.apache.spark.sql.catalyst.expressions.Subtract
-import org.apache.spark.sql.catalyst.expressions.Multiply
-import org.apache.spark.sql.catalyst.expressions.Divide
-import org.apache.spark.sql.catalyst.expressions.Remainder
-import org.apache.spark.sql.catalyst.expressions.Alias
-import org.apache.spark.sql.catalyst.expressions.GreaterThan
-import org.apache.spark.sql.catalyst.expressions.GreaterThanOrEqual
-import org.apache.spark.sql.catalyst.expressions.LessThan
-import org.apache.spark.sql.catalyst.expressions.LessThanOrEqual
-import org.apache.spark.sql.catalyst.expressions.EqualTo
-import org.apache.spark.sql.catalyst.expressions.Not
-import org.apache.spark.sql.catalyst.expressions.Cast
-
-import org.apache.spark.sql.catalyst.expressions.aggregate.Min
-import org.apache.spark.sql.catalyst.expressions.aggregate.Max
-import org.apache.spark.sql.catalyst.expressions.aggregate.Sum
-import org.apache.spark.sql.catalyst.expressions.aggregate.Average
-import org.apache.spark.sql.catalyst.expressions.aggregate.Count
+import org.apache.spark.sql.catalyst.expressions.{Add, Alias, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Remainder, Subtract}
+import org.apache.spark.sql.catalyst.expressions.aggregate._
+import org.apache.spark.sql.types._
 
 object CHUtil {
   def getFields(table: CHTableRef): Array[StructField] = {
@@ -238,7 +209,7 @@ object CHUtil {
       name match {
         case "String" => StringType
         case "DateTime" => TimestampType
-        case "Date" => TimestampType
+        case "Date" => DateType
         case "Int8" => ByteType
         case "Int16" => ShortType
         case "Int32" => IntegerType

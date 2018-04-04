@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeData.h b/dbms/src/Storages/MergeTree/MergeTreeData.h
-index 47abd95..fdb0b1e 100644
+index 47abd9596456..fdb0b1ea44a8 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeData.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeData.h
 @@ -36,7 +36,6 @@ namespace ErrorCodes

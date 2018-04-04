@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Parsers/ASTSelectQuery.cpp b/dbms/src/Parsers/ASTSelectQuery.cpp
-index f234b0a..e2938d4 100644
+index f234b0ae4b58..e2938d4acf68 100644
 --- a/dbms/src/Parsers/ASTSelectQuery.cpp
 +++ b/dbms/src/Parsers/ASTSelectQuery.cpp
 @@ -71,7 +71,12 @@ void ASTSelectQuery::formatImpl(const FormatSettings & s, FormatState & state, F

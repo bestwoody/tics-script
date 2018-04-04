@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Parsers/ParserInsertQuery.cpp b/dbms/src/Parsers/ParserInsertQuery.cpp
-index 399aa43..6a1962a 100644
+index 399aa43ea989..6a1962a7fa68 100644
 --- a/dbms/src/Parsers/ParserInsertQuery.cpp
 +++ b/dbms/src/Parsers/ParserInsertQuery.cpp
 @@ -11,6 +11,7 @@

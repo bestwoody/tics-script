@@ -1,17 +1,10 @@
 package org.apache.spark.sql.execution.arrow
 
-import scala.collection.JavaConverters._
-
-import org.apache.arrow.memory.RootAllocator
-import org.apache.arrow.vector.types.{DateUnit, FloatingPointPrecision, TimeUnit}
 import org.apache.arrow.vector.types.pojo.{ArrowType, Field, FieldType, Schema}
+import org.apache.arrow.vector.types.{DateUnit, FloatingPointPrecision, TimeUnit}
+import org.apache.spark.sql.types._
 
-import org.apache.spark.sql.types.{DataType, StructType, StructField}
-
-import org.apache.spark.sql.types.{ByteType, ShortType, IntegerType, LongType}
-import org.apache.spark.sql.types.{FloatType, DoubleType, DecimalType}
-import org.apache.spark.sql.types.{DateType, TimestampType}
-import org.apache.spark.sql.types.{BooleanType, StringType, BinaryType, ArrayType}
+import scala.collection.JavaConverters._
 
 object ArrowUtils {
   // Maps data type from Spark to Arrow. NOTE: timeZoneId required for TimestampTypes
