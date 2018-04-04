@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
-index 1b3caee..28633db 100644
+index 1b3caeeb2593..28633dbed5d8 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
 @@ -58,6 +58,17 @@ private:

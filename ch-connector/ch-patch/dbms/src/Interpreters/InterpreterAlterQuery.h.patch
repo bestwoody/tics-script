@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/InterpreterAlterQuery.h b/dbms/src/Interpreters/InterpreterAlterQuery.h
-index 011459a..46d643a 100644
+index 011459a1d321..46d643ae3168 100644
 --- a/dbms/src/Interpreters/InterpreterAlterQuery.h
 +++ b/dbms/src/Interpreters/InterpreterAlterQuery.h
 @@ -102,7 +102,7 @@ private:
