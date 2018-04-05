@@ -324,18 +324,17 @@ private:
         }
         else if (name == "Date")
         {
-            arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), pool);
-            static uint32_t date_to_sec = 24 * 60 * 60;
+            arrow::Date32Builder builder(arrow::date32(), pool);
             auto rows = column->size();
             builder.Reserve(rows);
             const auto data = typeid_cast<const DB::ColumnUInt16 *>(column.get());
             for (size_t i = 0; i < rows; ++i)
             {
                 uint16_t val = data->getElement(i);
-                status = builder.Append(date_to_sec * val);
+                status = builder.Append(val);
                 if (!status.ok())
                 {
-                    onError("columnToArrowArray, arrow::Time64Builder.Append " + status.ToString());
+                    onError("columnToArrowArray, arrow::Date32Builder.Append " + status.ToString());
                     return NULL;
                 }
             }
@@ -537,7 +536,7 @@ private:
         else if (name == "DateTime")
             return arrow::time64(arrow::TimeUnit::NANO);
         else if (name == "Date")
-            return arrow::time64(arrow::TimeUnit::NANO);
+            return arrow::date32();
         else if (name == "Int8")
             return arrow::int8();
         else if (name == "Int16")
