@@ -3,6 +3,8 @@ host="$2"
 
 set -eu
 
+source ./_env.sh
+
 wd="single-deploy"
 
 if [ -z "$dir" ]; then
@@ -16,11 +18,11 @@ fi
 mkdir -p "$wd"
 cd "$wd"
 
-ceph-deploy new "$host"
-ceph-deploy install --repo-url ceph-repo "$host"
-ceph-deploy mon create-initial
+ceph-deploy --username "$user" new "$host"
+ceph-deploy --username "$user" install --repo-url ceph-repo "$host"
+ceph-deploy --username "$user" mon create-initial
 
-ceph-deploy admin "$host"
-ceph-deploy mgr create "$host"
+ceph-deploy --username "$user" admin "$host"
+ceph-deploy --username "$user" mgr create "$host"
 
-ceph-deploy osd create --data "$dir" "$host"
+ceph-deploy --username "$user" osd create --data "$dir" "$host"
