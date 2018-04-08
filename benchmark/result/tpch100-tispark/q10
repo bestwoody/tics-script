@@ -1,24 +1,24 @@
-+---------+------------------+-----------------+-------------------+--------------+--------------------+---------------+--------------------+
-|c_custkey|            c_name|          revenue|          c_acctbal|        n_name|           c_address|        c_phone|           c_comment|
-+---------+------------------+-----------------+-------------------+--------------+--------------------+---------------+--------------------+
-|  7450894|Customer#007450894|936768.8383626376|  927.1799926757812|     ARGENTINA|hxPXtdJ84fyOre7gM...|11-833-256-7879|packages are insi...|
-|  9739771|Customer#009739771|842966.5320484764|   1286.47998046875|        JORDAN|  tC7c8bZ7 By6nEoHRL|23-281-450-4794|p furiously depos...|
-|  4571035|Customer#004571035| 838705.618509422|    6704.1298828125|UNITED KINGDOM|20IDf0Fx1ahSqImFX...|33-138-285-3770|e carefully acros...|
-|   637855|Customer#000637855|812034.3789657955|  2674.860107421875|    MOZAMBIQUE|         q5TskwlicGP|26-852-120-2850|al instructions s...|
-| 10781974|Customer#010781974|801735.5147361802|   5079.77001953125|       ROMANIA|Cv2p,eRTt8C  WwJV...|29-651-722-6239|egular notornis. ...|
-| 11361613|Customer#011361613|800558.4242075969|    4644.7099609375|     INDONESIA|     jWKghIqWp5Vzt2s|19-344-539-9187|latelets cajole s...|
-|  1259743|Customer#001259743|793274.7869297072|  2592.739990234375|      ETHIOPIA|YVe ,jDra4xnKtfzS...|15-733-636-6732|eposits sleep acc...|
-|  5154136|Customer#005154136|787191.1990831626|  1028.969970703125|       MOROCCO|Y,cjCdRGVz1j g8YQ...|25-841-379-9394|boost quickly sly...|
-| 14986552|Customer#014986552|781645.8534064809|   2678.93994140625|     ARGENTINA|          tl5yB8W1C0|11-671-762-3613|ual ideas sleep d...|
-|  2905816|Customer#002905816|778729.4391494109|   5085.52978515625| UNITED STATES|          bcLOp3b9PA|34-217-584-5820| the furiously ex...|
-|  6184141|Customer#006184141|772721.0960698561|    5901.8798828125|        BRAZIL|YouilzzEFBn8Q6atx...|12-563-743-4211|en instructions b...|
-|  7852024|Customer#007852024|769688.6639320634| 1197.5699462890625|         INDIA|2 lZJ,yBgPkRHVO6y...|18-141-580-3886|osits haggle quic...|
-|  7183231|Customer#007183231|768455.8776608094|  -683.010009765625|         INDIA|     ozSXeIbCwiOQJhN|18-270-127-8463|braids. furiously...|
-|  1627651|Customer#001627651| 768300.292633773|  3059.820068359375|       MOROCCO|cp3JS2a9Yu8cBKaDr...|25-732-202-4862|ts cajole careful...|
-| 13624771|Customer#013624771| 767856.161210835|-168.67999267578125|          IRAN|sxMG5r82qFaZLAqmC...|20-919-886-5399|the, final reques...|
-| 13896424|Customer#013896424|760957.6190857132|  3798.909912109375|     INDONESIA|          csALLLLaTB|19-494-837-4503| cajole carefully...|
-|  4926817|Customer#004926817|  758756.85382966|   5462.22021484375|        RUSSIA|       X9PvpAssUMkoi|32-610-751-1595|carefully unusual...|
-|   319150|Customer#000319150|757235.8892336925|  3257.679931640625|          IRAN|l1KV7LZ3ih7cgjuQU...|20-837-276-7259|ly ironic request...|
-|  5894188|Customer#005894188|756482.0613009541|             3062.0|        BRAZIL|1PrX23NPGc 81N8nM...|12-372-345-6045|unts after the sl...|
-|  3387028|Customer#003387028|755937.5764924467|  3726.639892578125|      ETHIOPIA|       j4HWo86pMyWym|15-880-219-8399|ckly among the fu...|
-+---------+------------------+-----------------+-------------------+--------------+--------------------+---------------+--------------------+
++---------+------------------+-----------------+------------------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
+|C_CUSTKEY|C_NAME            |REVENUE          |C_ACCTBAL         |N_NAME       |C_ADDRESS                               |C_PHONE        |C_COMMENT                                                                                                          |
++---------+------------------+-----------------+------------------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
+|8512915  |Customer#008512915|817.9020250129997|1410.8699951171875|KENYA        |NhpUoYd9t8WoGvtSz                       |24-520-846-1990|lar theodolites alongside of the quickly ironic ideas doze fluffily ironic instruct                                |
+|6466141  |Customer#006466141|819.8279832617641|8693.7001953125   |MOZAMBIQUE   |,xZmmFeb,GzeQtr                         |26-467-102-2689|; theodolites haggle across the                                                                                    |
+|14630047 |Customer#014630047|820.4469212141394|3202.14990234375  |JORDAN       |R6b13OhLbEiUgOdHWJphVXTOXPs2Mud         |23-187-125-1007|ithely! carefully ironic packages sleep. express theodolites wake slyly! carefully unusual packages according t    |
+|9558751  |Customer#009558751|821.2229722731263|142.27999877929688|PERU         |WvdnSfIUpLaul1yjjvIc3R0SYs9MZUJ         |27-266-384-9191|. even requests doze among the ironic, even pinto beans. furiously unusual realms according to the qu              |
+|11902993 |Customer#011902993|830.7090074136704|5918.330078125    |UNITED STATES|2dJtTMTvg5mjNAKLkQXGPspn                |34-199-654-1543|ckly ironic requests haggle furiously blithely regular accounts. quickly                                           |
+|2096896  |Customer#002096896|831.2220140046179|9836.7802734375   |INDIA        |03LOx4Syet7PD mZ19qKLuzUUs,tkU41XfJJpT  |18-852-944-9487|ould have to detect about the furiously express pains. slyly ironic accou                                          |
+|12406759 |Customer#012406759|831.4942789588094|4147.1298828125   |UNITED STATES|tXCJRndNWd0EeZerqK                      |34-389-561-8610|ithely across the slyly express packages. carefully final requests nag among the thinly unusual accounts; idly     |
+|10420093 |Customer#010420093|838.3374967053533|8968.0703125      |JORDAN       |ysgROObPoIBk3Lfb jTjcFZpCS2Tln7         |23-896-336-3893|ckey players. furiously regular packages about the furio                                                           |
+|6853996  |Customer#006853996|838.7909898221642|-948.3300170898438|PERU         |nH375djPq0vTss2CmO YwjPEbP9EBigm        |27-112-534-6990|he accounts are blithely after the special, regular deposits. carefully bold platelets                             |
+|9520792  |Customer#009520792|838.9979722436965|5795.97998046875  |RUSSIA       |CB8uu,6iAW2ZARWqO2IY9H9W,2H I6HbAYECyvKF|32-459-758-7649|usly express ideas. slyly ironic instructions wake.                                                                |
+|147865   |Customer#000147865|839.3251993852436|3826.14990234375  |JAPAN        |YR4Mu09VNE9Je2T                         |22-936-624-3382|ng somas. final instructions wake busily according to the express excuses.                                         |
+|5661656  |Customer#005661656|842.1776700301052|7206.1298828125   |FRANCE       |1YHfvreaBk7Td7Mrk7du8U2Y                |16-530-814-6788|sides the express deposits are evenly at the pending deposits. accounts                                            |
+|502595   |Customer#000502595|843.1649766313285|7948.3701171875   |UNITED STATES|6z b8R6TFmPR                            |34-845-338-6307|e sometimes across the carefully i                                                                                 |
+|10348054 |Customer#010348054|844.3748929178923|9789.0498046875   |ETHIOPIA     |nsGCoW7x1sadBxiws5TPoYXtPZhpOA3WXOri3O3D|15-287-107-4646|accounts. slow sentiments are after the blithely ironic theodolites. asymptotes about the final the                |
+|7463794  |Customer#007463794|845.250001642853 |2295.330078125    |ALGERIA      |TzK6CLgOOr1zNq0Sl5g                     |10-433-200-7798|uctions use furiously. carefully regular requ                                                                      |
+|9398483  |Customer#009398483|845.4779832192958|8796.150390625    |MOZAMBIQUE   |E1bf KUoocsTtOoFLeHO399o SRz            |26-949-910-8311|ietly instead of the pending ideas.                                                                                |
+|11287087 |Customer#011287087|847.6971769405782|3540.72998046875  |MOROCCO      |gmGQ1e4uaS                              |25-523-782-5707|press deposits above the bold, special deposits maintain quickly ev                                                |
+|14835935 |Customer#014835935|849.7855949133873|5674.64990234375  |BRAZIL       |56sCfv X2ZA1fLSEaCUrD7osRu2T1mcZez      |12-949-239-7330|y. carefully unusual accounts against the regular pinto beans are about the car                                    |
+|14180938 |Customer#014180938|850.4189744220525|9749.0400390625   |KENYA        |6ikA1jynMJf8KrBHBq                      |24-630-460-5202|e around the carefully regular dependencies. ironic, final deposits sublate alongside of the furiously careful pack|
+|7808450  |Customer#007808450|851.1918088092625|3079.22998046875  |PERU         |BYThSZLP5WqsAzRus6ZVZ,teau48D           |27-638-603-8071|ole slyly. slyly bold deposits across the blithely regular deposits affix fluffily alongside of                    |
++---------+------------------+-----------------+------------------+-------------+----------------------------------------+---------------+-------------------------------------------------------------------------------------------------------------------+
