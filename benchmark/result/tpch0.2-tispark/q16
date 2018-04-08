@@ -1,0 +1,25 @@
++--------+-----------------------+------+------------+                          
+|P_BRAND |P_TYPE                 |P_SIZE|SUPPLIER_CNT|
++--------+-----------------------+------+------------+
+|Brand#11|ECONOMY ANODIZED BRASS |23    |16          |
+|Brand#25|PROMO POLISHED COPPER  |14    |16          |
+|Brand#11|LARGE POLISHED COPPER  |49    |12          |
+|Brand#11|SMALL ANODIZED TIN     |45    |12          |
+|Brand#12|PROMO ANODIZED BRASS   |45    |12          |
+|Brand#12|STANDARD ANODIZED BRASS|3     |12          |
+|Brand#13|ECONOMY PLATED NICKEL  |3     |12          |
+|Brand#14|SMALL ANODIZED NICKEL  |45    |12          |
+|Brand#22|ECONOMY ANODIZED TIN   |49    |12          |
+|Brand#22|SMALL BURNISHED BRASS  |19    |12          |
+|Brand#24|ECONOMY ANODIZED BRASS |19    |12          |
+|Brand#24|ECONOMY BURNISHED STEEL|45    |12          |
+|Brand#24|SMALL ANODIZED NICKEL  |19    |12          |
+|Brand#25|MEDIUM BURNISHED TIN   |3     |12          |
+|Brand#25|SMALL BURNISHED STEEL  |14    |12          |
+|Brand#31|LARGE PLATED TIN       |14    |12          |
+|Brand#34|LARGE BURNISHED TIN    |49    |12          |
+|Brand#34|LARGE POLISHED NICKEL  |49    |12          |
+|Brand#35|LARGE ANODIZED NICKEL  |3     |12          |
+|Brand#35|LARGE ANODIZED STEEL   |45    |12          |
++--------+-----------------------+------+------------+
+
