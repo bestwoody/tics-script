@@ -306,7 +306,7 @@ SelRaw on MutableMergeTree: not tested, TODO
 +---------------+-----------+
 
 # Q5
-TiSpark != MergeTree: may be plan error
+TiSpark ~= MergeTree
 MergeTree ~= MutableMergeTree: float accuracy
 MutableMergeTree == SelRaw on MutableMergeTree
 
