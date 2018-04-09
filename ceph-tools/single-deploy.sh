@@ -20,7 +20,7 @@ cd "$wd"
 
 ceph-deploy --username "$user" new "$host"
 ceph-deploy --username "$user" install "$host"
-ceph-deploy --username "$user" mon create-initial
+ceph-deploy --username "$user" --overwrite-conf mon create-initial
 
 ceph-deploy --username "$user" admin "$host"
 ceph-deploy --username "$user" mgr create "$host"
