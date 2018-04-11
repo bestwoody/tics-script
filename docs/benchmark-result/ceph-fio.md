@@ -6,8 +6,11 @@
     * 16 Cores
     * 16G RAM
     * 300G SSD, 2.0G/s
-    * ping `<` 0.5ms between each two nodes (avg: 0.35ms)
-* h0: cephfs client, mounted by ceph-fuse
+* Network, between each two nodes:
+    * Ping `<` 0.5ms, avg: 0.35ms
+    * IO Throughput `>` 500MB/s
+* h0: cephfs client
+    * Mounted by ceph-fuse
 * h1-h3: ceph cluster
     * 1 `mon` (3 will be better, but can't be faster), 3 `mgr`, 3 `ods`
     * 300G raw disk for each `ods`
