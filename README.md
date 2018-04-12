@@ -54,20 +54,3 @@ An OLAP project of TiDB
             * `theflash/benchmark> ./stable-test-ch-stable.sh`: loop running TPCH Q1-Q22
             * `theflash/benchmark> vim tpch.log`: check log
             * `theflash/benchmark> vim tpch.log.md`: check report
-
-
-## TODO
-Online:
-```
-[Features]
-**--- Fully test (IMPORTANT: types system)
------ Writing transaction(batch level) support
-*---- Binlog syncer
-*---- MyDump data importer
-****- Data update supporting
-```
-Further Features:
-```
------ External executor
------ Share storage
-```
