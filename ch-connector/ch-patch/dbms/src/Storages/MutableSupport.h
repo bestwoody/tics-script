@@ -39,14 +39,21 @@ public:
 
     enum DeduperType
     {
-        DeduperOriginStreams,
-        DeduperOriginUnity,
-        DeduperReplacingUnity,
-        DeduperReplacingPartitioning,
-        DeduperDedupPartitioning
+        DeduperOriginStreams            = 0,
+        DeduperOriginUnity              = 1,
+        DeduperReplacingUnity           = 2,
+        DeduperReplacingPartitioning    = 3,
+        DeduperDedupPartitioning        = 4,
+        DeduperReplacingPartitioningOpt = 5,
     };
 
-    static const DeduperType deduper;
+    static DeduperType toDeduperType(UInt64 type)
+    {
+        if(type > 5){
+            throw Exception("illegal DeduperType: " + toString(type));
+        }
+        return (DeduperType)type;
+    }
 
 private:
     OrderedNameSet empty;

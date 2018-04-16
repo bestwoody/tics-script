@@ -13,9 +13,9 @@ class ReplacingDeletingSortedBlockInputStream : public MergingSortedBlockInputSt
 public:
     ReplacingDeletingSortedBlockInputStream(BlockInputStreams inputs_, const SortDescription & description_,
         const String & version_column_, const String & delmark_column_, size_t max_block_size_,
-        WriteBuffer * out_row_sources_buf_, bool skip_single_child_, bool perform_deleting_)
+        WriteBuffer * out_row_sources_buf_, bool skip_single_child_, bool perform_deleting_, bool is_optimized_ = false)
         : MergingSortedBlockInputStream(inputs_, description_, max_block_size_, 0, out_row_sources_buf_), version_column(version_column_),
-            delmark_column(delmark_column_), skip_single_child(skip_single_child_), perform_deleting(perform_deleting_)
+            delmark_column(delmark_column_), skip_single_child(skip_single_child_), perform_deleting(perform_deleting_), is_optimized(is_optimized_)
     {
     }
 
@@ -54,10 +54,15 @@ private:
 
     PODArray<RowSourcePart> current_row_sources;   /// Sources of rows with the current primary key
 
+    bool is_optimized;
+    size_t by_column = 0;
+    size_t by_row = 0;
+
     void merge(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue);
+
+    void merge_opt(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue);
 
     /// Output into result the rows for current primary key.
     void insertRow(MutableColumns & merged_columns, size_t & merged_rows);
 };
-
 }
