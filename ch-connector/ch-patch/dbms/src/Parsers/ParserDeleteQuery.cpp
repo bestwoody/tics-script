@@ -28,7 +28,7 @@ namespace ErrorCodes
 bool ParserDeleteQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {
     ParserKeyword s_delete_from("DELETE FROM");
-    ParserKeyword s_dot(".");
+    ParserToken s_dot(TokenType::Dot);
     ParserKeyword s_where("WHERE");
     ParserIdentifier name_p;
 
@@ -86,6 +86,11 @@ bool ParserDeleteQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
             std::make_shared<ASTIdentifier>(
                 query->database.size() ? query->database + '.' + query->table : query->table,
                 ASTIdentifier::Table);
+        if(!query->database.empty())
+        {
+            table_expr->database_and_table_name->children.emplace_back(std::make_shared<ASTIdentifier>(query->database, ASTIdentifier::Database));
+            table_expr->database_and_table_name->children.emplace_back(std::make_shared<ASTIdentifier>(query->table, ASTIdentifier::Table));
+        }
 
         auto table_element = std::make_shared<ASTTablesInSelectQueryElement>();
         table_element->table_expression = table_expr;
