@@ -39,7 +39,7 @@ function run_dir()
 	local fuzz="$4"
 	local skip_raw_test="$5"
 
-	find "$path" -maxdepth 1 -name "*.visual" -type f | sort -V | while read file; do
+	find "$path" -maxdepth 1 -name "*.visual" -type f | sort | while read file; do
 		if [ -f "$file" ]; then
 			python gen-test-from-visual.py "$file" "$skip_raw_test"
 		fi
@@ -54,7 +54,7 @@ function run_dir()
 		exit 1
 	fi
 
-	find "$path" -maxdepth 1 -name "*.test" -type f | sort -V | while read file; do
+	find "$path" -maxdepth 1 -name "*.test" -type f | sort | while read file; do
 		if [ -f "$file" ]; then
 			run_file "$dbc" "$file" "$continue_on_error" "$fuzz" "$skip_raw_test"
 		fi
@@ -64,7 +64,7 @@ function run_dir()
 		exit 1
 	fi
 
-	find "$path" -maxdepth 1 -type d | sort -Vr | while read dir; do
+	find "$path" -maxdepth 1 -type d | sort -r | while read dir; do
 		if [ -d "$dir" ] && [ "$dir" != "$path" ]; then
 			run_dir "$dbc" "$dir" "$continue_on_error" "$fuzz" "$skip_raw_test"
 		fi
