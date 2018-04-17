@@ -25,7 +25,7 @@ object CHUtil {
   def getFields(table: CHTableRef): Array[StructField] = {
     val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
 
-    val resp = new CHExecutorParall(CHUtil.genQueryId("D"), CHSql.desc(table.absName), table.host, table.port, table.absName, 1)
+    val resp = new CHExecutorParall(CHUtil.genQueryId("D"), CHSql.desc(table), table.host, table.port, table.absName, 1)
     var fields = new Array[StructField](0)
 
     var names = new Array[String](0)
@@ -66,7 +66,7 @@ object CHUtil {
   }
 
   def getRowCount(table: CHTableRef, useSelraw: Boolean = false): Long = {
-    val resp = new CHExecutorParall(CHUtil.genQueryId("C"), CHSql.count(table.absName, useSelraw), table.host, table.port, table.absName, 1)
+    val resp = new CHExecutorParall(CHUtil.genQueryId("C"), CHSql.count(table, useSelraw), table.host, table.port, table.absName, 1)
     var block: resp.Result = resp.next
 
     if (block == null) {
@@ -132,60 +132,16 @@ object CHUtil {
     }
   }
 
-  def expToCHString(filters: Seq[Expression]): String = {
-    filters.map(filter => {
-      "(" + expToCHString(filter) + ")"
-    }).mkString(" AND ")
-  }
-
-  def expToCHString(filter: Expression): String = {
-    filter match {
-      case Literal(value, dataType) =>
-        sparkValueToString(value, dataType)
-      case attr: AttributeReference =>
-        attr.name
-      case Cast(child, dataType) =>
-        getCastString(expToCHString(child), dataType)
-      case IsNotNull(child) =>
-        expToCHString(child) + " IS NOT NULL"
-      case Add(lhs, rhs) =>
-        expToCHString(lhs) + " + " + expToCHString(rhs)
-      case Subtract(lhs, rhs) =>
-        expToCHString(lhs) + " - " + expToCHString(rhs)
-      case Multiply(lhs, rhs) =>
-        expToCHString(lhs) + " * " + expToCHString(rhs)
-      case Divide(lhs, rhs) =>
-        expToCHString(lhs) + " / " + expToCHString(rhs)
-      // TODO: Check Remainder's handling is OK
-      case Remainder(lhs, rhs) =>
-        expToCHString(lhs) + " % " + expToCHString(rhs)
-      // TODO: Check Alias's handling is OK
-      case Alias(child, name) =>
-        expToCHString(child) + " AS " + name
-      case GreaterThan(lhs, rhs) =>
-        expToCHString(lhs) + " > " + expToCHString(rhs)
-      case GreaterThanOrEqual(lhs, rhs) =>
-        expToCHString(lhs) + " >= " + expToCHString(rhs)
-      case LessThan(lhs, rhs) =>
-        expToCHString(lhs) + " < " + expToCHString(rhs)
-      case LessThanOrEqual(lhs, rhs) =>
-        expToCHString(lhs) + " <= " + expToCHString(rhs)
-      case EqualTo(lhs, rhs) =>
-        expToCHString(lhs) + " = " + expToCHString(rhs)
-      // case Not(EqualTo(lhs), rhs) =>
-      //  getFilterString(lhs) + " != " + getFilterString(rhs)
-      case Sum(child) =>
-        "SUM(" + expToCHString(child) + ")"
-      case Average(child) =>
-        "AVG(" + expToCHString(child) + ")"
-      case Count(children) =>
-        "COUNT(" + children.map(expToCHString).mkString(",") + ")"
-      case Min(child) =>
-        "MIN(" + expToCHString(child) + ")"
-      case Max(child) =>
-        "MAX(" + expToCHString(child) + ")"
-      case Not(child) =>
-        "NOT " + expToCHString(child)
+  def isSupportedAggregate(aggregateFunction: AggregateFunction): Boolean = {
+    aggregateFunction match {
+      case Average(_) => true
+      case Sum(_) => true
+      case Count(_) => true
+      case Min(_) => true
+      case Max(_) => true
+      case First(_, _) => true
+      case Last(_, _) => true
+      case _ => false
     }
   }
 
@@ -193,11 +149,6 @@ object CHUtil {
     this.synchronized {
       prefix + UUID.randomUUID.toString
     }
-  }
-
-  private def getCastString(value: String, dataType: DataType) = {
-    // TODO: Handle cast
-    value
   }
 
   private def stringToSparkType(name: String): DataType = {
@@ -221,17 +172,6 @@ object CHUtil {
         case "Float32" => FloatType
         case "Float64" => DoubleType
         case _ => throw new Exception("stringToFieldType unhandled type name: " + name)
-      }
-    }
-  }
-
-  private def sparkValueToString(value: Any, dataType: DataType): String = {
-    if (dataType == null) {
-      null
-    } else {
-      dataType match {
-        case StringType => "'" + value.toString + "'"
-        case _ => value.toString
       }
     }
   }

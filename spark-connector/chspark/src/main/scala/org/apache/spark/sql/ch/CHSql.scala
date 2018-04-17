@@ -15,114 +15,101 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
+import org.apache.spark.sql.catalyst.expressions.{Abs, And, AttributeReference, BinaryOperator, Cast, Expression, IsNotNull, IsNull, Literal, UnaryExpression, UnaryMinus}
+import org.apache.spark.sql.types.{DataType, StringType}
 
-class CHSqlAggFunc(val function: String, val column: String) extends Serializable {
-  override def toString: String = {
-    function + "(" + column + ")"
-  }
-}
-
-object CHSqlAggFunc {
-  def apply(function: String, exp: Expression*): CHSqlAggFunc =
-    new CHSqlAggFunc(function, exp.map(CHUtil.expToCHString).mkString(","))
-}
-
-class CHSqlAgg(val groupByColumns: Seq[String], val functions: Seq[CHSqlAggFunc]) extends Serializable {
-  override def toString: String = {
-    s"aggFunc=${functions.mkString(",")},groupByCols=${groupByColumns.mkString(",")}"
-  }
-}
-
-class CHSqlOrderByCol(val orderByColName: String, val direction: String, val namedStructure: Boolean = false) extends Serializable {
-  override def toString: String = {
-    s"orderByCol=$orderByColName,direction=$direction"
-  }
-}
-
-object CHSqlOrderByCol {
-  def apply(orderByColName: String, direction: String, namedStructure: Boolean = false): CHSqlOrderByCol =
-    new CHSqlOrderByCol(orderByColName, direction, namedStructure)
-}
-
-class CHSqlTopN(val orderByColumns: Seq[CHSqlOrderByCol], val limit: String) extends Serializable {
-  override def toString: String = {
-    orderByColumns.mkString(";") + s";limit=$limit"
-  }
-}
-
+/**
+  * Compiler that compiles CHLogical/CHTableRef to CH SQL string.
+  */
 object CHSql {
-  def desc(table: String): String = {
-    "DESC " + table
+  /**
+    * Compose a query string based on input table and chLogical.
+    * @param table
+    * @param chLogicalPlan
+    * @param useSelraw
+    * @return
+    */
+  def query(table: CHTableRef, chLogicalPlan: CHLogicalPlan, useSelraw: Boolean = false): String = {
+    compileProject(chLogicalPlan.chProject, useSelraw) +
+    compileTable(table) +
+    compileFilter(chLogicalPlan.chFilter) +
+    compileAggregate(chLogicalPlan.chAggregate) +
+    compileTopN(chLogicalPlan.chTopN)
   }
 
-  def count(table: String, useSelraw: Boolean = false): String = {
-    (if (useSelraw) "SELRAW" else "SELECT") + " COUNT(*) FROM " + table
+  /**
+    * Compose a desc table string.
+    * @param table
+    * @return
+    */
+  def desc(table: CHTableRef): String = {
+    "DESC " + table.absName
   }
 
-  def scan(table: String, useSelraw: Boolean): String = {
-    scan(table, null, null, useSelraw: Boolean)
+  /**
+    * Compose a count(*) SQL string.
+    * @param table
+    * @param useSelraw
+    * @return
+    */
+  def count(table: CHTableRef, useSelraw: Boolean = false): String = {
+    (if (useSelraw) "SELRAW" else "SELECT") + " COUNT(*) FROM " + table.absName
   }
 
-  def scan(table: String, columns: Seq[String], useSelraw: Boolean): String = {
-    scan(table, columns, null, useSelraw)
+  private def compileProject(chProject: CHProject, useSelraw: Boolean): String = {
+    (if (useSelraw) "SELRAW " else "SELECT ") + chProject.projectList.map(compileExpression)
+      .mkString(", ")
   }
 
-  def scan(table: String, filter: String, useSelraw: Boolean): String = {
-    scan(table, null, filter, useSelraw: Boolean)
+  private def compileTable(table: CHTableRef): String = {
+    " FROM " + table.absName
   }
 
-  def scan(table: String, columns: Seq[String], filter: String, useSelraw: Boolean): String = {
-    (if (useSelraw) "SELRAW" else "SELECT") + " " + columnsStr(columns) + " FROM " + table + filterStr(filter)
-  }
-
-  def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg, useSelraw: Boolean): String = {
-    if (aggregation == null) {
-      scan(table, columns, filter, useSelraw)
-    } else {
-      // TODO: Check Set(columns) == Set(agg columns)
-      (if (useSelraw) "SELRAW" else "SELECT") + " " + columnsStr(columns) + " FROM " + table + filterStr(filter) +
-        groupByColumnsStr(aggregation.groupByColumns)
+  private def compileFilter(chFilter: CHFilter): String = {
+    if (chFilter.predicates.isEmpty) "" else {
+      " WHERE " + chFilter.predicates.reduceLeftOption(And).map(compileExpression).get
     }
   }
 
-  def scan(table: String, columns: Seq[String], filter: String, aggregation: CHSqlAgg, topN: CHSqlTopN, useSelraw: Boolean): String = {
-    var sql = scan(table, columns, filter, aggregation, useSelraw)
-    if (topN != null) {
-      val orderByColumns = topN.orderByColumns
-      val limit = topN.limit
+  private def compileAggregate(chAggregate: CHAggregate): String = {
+    if (chAggregate.groupingExpressions.isEmpty) "" else {
+      " GROUP BY " + chAggregate.groupingExpressions.map(compileExpression)
+      .mkString(", ")
+    }
+  }
 
-      if (orderByColumns != null && orderByColumns.nonEmpty) {
-        if (orderByColumns.head.namedStructure && orderByColumns.lengthCompare(1) == 0) {
-          sql += " ORDER BY (" + orderByColumns.head.orderByColName + ") " + orderByColumns.head.direction
+  private def compileTopN(chTopN: CHTopN): String = {
+    if (chTopN.sortOrders.isEmpty) "" else {
+      " ORDER BY " + chTopN.sortOrders.map(so => {
+        compileExpression(so.child) + " " + so.direction.sql
+      }).mkString(", ")
+    } + chTopN.n.map("LIMIT " + _).getOrElse("")
+  }
+
+  def compileExpression(expression: Expression): String = {
+    expression match {
+      case Literal(value, dataType) =>
+        if (dataType == null) {
+          null
         } else {
-          sql += " ORDER BY " + orderByColumns.map(order => order.orderByColName + " " + order.direction).mkString(", ")
+          dataType match {
+            case StringType => "'" + value.toString + "'"
+            case _ => value.toString
+          }
         }
-      }
-
-      if (limit != null && limit.nonEmpty) {
-        sql += " LIMIT " + limit
-      }
+      case attr: AttributeReference => attr.name
+      case IsNotNull(child) => s"(${compileExpression(child)} IS NOT NULL)"
+      case IsNull(child) => s"(${compileExpression(child)} IS NULL)"
+      case UnaryMinus(child) => s"-${compileExpression(child)}"
+      case bo @ BinaryOperator(lhs, rhs) =>
+        s"(${compileExpression(lhs)} ${bo.sqlOperator} ${compileExpression(rhs)})"
+      case Cast(child, dataType) =>
+        // TODO: Handle cast
+        s"(${compileExpression(child)})"
+      case AggregateExpression(aggregateFunction, _, _, _) => compileExpression(aggregateFunction)
+      case _ => s"${expression.prettyName}" +
+        s"(${expression.children.map(compileExpression).mkString(", ")})"
     }
-
-    sql
-  }
-
-  private def filterStr(filter: String): String = {
-    filter match {
-      case null => ""
-      case _ => " WHERE " + filter
-    }
-  }
-
-  private def columnsStr(columns: Seq[String]): String = {
-    columns match {
-      case null => "*"
-      case _ => columns.mkString(", ")
-    }
-  }
-
-  private def groupByColumnsStr(columns: Seq[String]): String = {
-    if (columns == null || columns.isEmpty) "" else " GROUP BY " + columns.mkString(", ")
   }
 }
