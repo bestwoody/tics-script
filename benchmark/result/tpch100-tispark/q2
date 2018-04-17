@@ -1,24 +1,24 @@
-+---------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
-|      s_acctbal|            s_name|        n_name|p_partkey|        p_mfgr|           s_address|        s_phone|           s_comment|
-+---------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
-|9999.7001953125|Supplier#000239544|UNITED KINGDOM|  6739531|Manufacturer#4|,6oexY7ft68JKJCN1...|33-509-584-9496|ets are. blithely...|
-| 9999.650390625|Supplier#000143654|        FRANCE|  2393647|Manufacturer#3|HhHCZ,RosE8He4uYv...|16-166-504-5864| special accounts...|
-| 9999.490234375|Supplier#000615014|       GERMANY| 12365001|Manufacturer#3|     4C,uOuJDig7z,4e|17-780-902-4027| pinto beans affi...|
-|9999.2802734375|Supplier#000494480|       ROMANIA| 17244462|Manufacturer#3|hNB2qcYmnyeqrd em...|29-756-312-1779|ly. slyly final p...|
-|9998.8701171875|Supplier#000826281|       ROMANIA| 14326252|Manufacturer#3| LkGmLSAjbjgKS5ZRepL|29-775-451-4774| slyly silent acc...|
-|9998.5595703125|Supplier#000039514|UNITED KINGDOM|  7539499|Manufacturer#2|fUN95rpikfiqeGo,o...|33-317-828-7758|olites use about ...|
-|9997.8896484375|Supplier#000319666|        RUSSIA| 19319665|Manufacturer#1|SZtdx3rzXnFuiVuJz...|32-972-151-6038|furiously ironic ...|
-| 9997.849609375|Supplier#000718770|       ROMANIA|   718769|Manufacturer#1|2173woKsCg7zpHCqh...|29-663-409-2865|posits sleep acro...|
-| 9997.830078125|Supplier#000348318|        FRANCE|  9348317|Manufacturer#4|     AvfnvjCFAg1aNpj|16-718-707-5676|e pending request...|
-|  9997.73046875|Supplier#000329974|        RUSSIA|  4079969|Manufacturer#3|          eKtIadopsE|32-268-488-7178|uickly. furiously...|
-|9997.4599609375|Supplier#000906546|        FRANCE|  1406543|Manufacturer#2|aMZ13ITqaYCGwqW42...|16-249-122-4511|endencies above t...|
-|9997.2001953125|Supplier#000487664|        FRANCE|  2737657|Manufacturer#2| ShFSQYlV,8EvuNQkB7B|16-714-518-5435|mong the ideas. a...|
-| 9997.169921875|Supplier#000123140|       ROMANIA|  5373124|Manufacturer#2|O80qPjM5qonzjxGI,...|29-567-411-4572|uriously slyly bo...|
-|9997.0595703125|Supplier#000725417|       GERMANY| 10225396|Manufacturer#1|   10iRwq3,LeyTjZx8G|17-577-582-2010|arefully dogged a...|
-|9996.4501953125|Supplier#000795554|       ROMANIA| 14795553|Manufacturer#2|qRD x8  zsS 7n11C...|29-305-384-2702| instructions bel...|
-|9995.9599609375|Supplier#000566208|        FRANCE|  9816180|Manufacturer#5|RMnISVay,G0prBUAZ...|16-665-147-8314|mong the ironic r...|
-|9995.9599609375|Supplier#000629520|        FRANCE| 13129493|Manufacturer#3|kjmenylD2Ut5JJxh1...|16-785-547-3814|foxes detect blit...|
-|   9995.9296875|Supplier#000388258|UNITED KINGDOM|  6138251|Manufacturer#2|    rUB88zGIucl73Jl4|33-829-188-2160|arefully express ...|
-|9995.7900390625|Supplier#000998425|        FRANCE|   248424|Manufacturer#4|tjoKE1Srnp3l9lpwS...|16-228-926-9937|ding foxes haggle...|
-| 9995.419921875|Supplier#000220794|       ROMANIA| 12470757|Manufacturer#1|kwxtCRMG9VWfJ75Sij2K|29-557-942-9023|. carefully pendi...|
-+---------------+------------------+--------------+---------+--------------+--------------------+---------------+--------------------+
++---------------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
+|S_ACCTBAL      |S_NAME            |N_NAME        |P_PARTKEY|P_MFGR        |S_ADDRESS                               |S_PHONE        |S_COMMENT                                                                                 |
++---------------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+
+|9999.7001953125|Supplier#000239544|UNITED KINGDOM|6739531  |Manufacturer#4|,6oexY7ft68JKJCN1SQ LUO5Xf              |33-509-584-9496|ets are. blithely special accounts wake across t                                          |
+|9999.650390625 |Supplier#000143654|FRANCE        |2393647  |Manufacturer#3|HhHCZ,RosE8He4uYvyIDqsPZe,7cZiJh1y9,    |16-166-504-5864| special accounts. never dogged deposits                                                  |
+|9999.490234375 |Supplier#000615014|GERMANY       |12365001 |Manufacturer#3|4C,uOuJDig7z,4e                         |17-780-902-4027| pinto beans affix along th                                                               |
+|9999.2802734375|Supplier#000494480|ROMANIA       |17244462 |Manufacturer#3|hNB2qcYmnyeqrd em,o29TxzLwwrl           |29-756-312-1779|ly. slyly final pains detect furiously qu                                                 |
+|9998.8701171875|Supplier#000826281|ROMANIA       |14326252 |Manufacturer#3|LkGmLSAjbjgKS5ZRepL                     |29-775-451-4774| slyly silent accounts affix furiously across the final, even ideas; tithe                |
+|9998.5595703125|Supplier#000039514|UNITED KINGDOM|7539499  |Manufacturer#2|fUN95rpikfiqeGo,okl,27ItSq9fMpr         |33-317-828-7758|olites use about the blithely regular warhorses. carefully final instructions a           |
+|9997.8896484375|Supplier#000319666|RUSSIA        |19319665 |Manufacturer#1|SZtdx3rzXnFuiVuJzKathV9                 |32-972-151-6038|furiously ironic pearls. furiously regular foxes along the furiously                      |
+|9997.849609375 |Supplier#000718770|ROMANIA       |718769   |Manufacturer#1|2173woKsCg7zpHCqhiEXFTmYYqpT4XONnRAsUryE|29-663-409-2865|posits sleep across the blithely express requests.                                        |
+|9997.830078125 |Supplier#000348318|FRANCE        |9348317  |Manufacturer#4|AvfnvjCFAg1aNpj                         |16-718-707-5676|e pending requests: furiously even deposits boost furiously slyly even requests.          |
+|9997.73046875  |Supplier#000329974|RUSSIA        |4079969  |Manufacturer#3|eKtIadopsE                              |32-268-488-7178|uickly. furiously ironic requests are slyly above the regula                              |
+|9997.4599609375|Supplier#000906546|FRANCE        |1406543  |Manufacturer#2|aMZ13ITqaYCGwqW42qXJ92ho                |16-249-122-4511|endencies above the furiously even                                                        |
+|9997.2001953125|Supplier#000487664|FRANCE        |2737657  |Manufacturer#2| ShFSQYlV,8EvuNQkB7B                    |16-714-518-5435|mong the ideas. accounts poach p                                                          |
+|9997.169921875 |Supplier#000123140|ROMANIA       |5373124  |Manufacturer#2|O80qPjM5qonzjxGI,ClSnI7Vf3dlZCztkNx3ho  |29-567-411-4572|uriously slyly bold forges. slyly pending platelets haggle after the excuses. quickly pend|
+|9997.0595703125|Supplier#000725417|GERMANY       |10225396 |Manufacturer#1|10iRwq3,LeyTjZx8G                       |17-577-582-2010|arefully dogged accounts. final, pending asymptote                                        |
+|9996.4501953125|Supplier#000795554|ROMANIA       |14795553 |Manufacturer#2|qRD x8  zsS 7n11Cu6uMJkgSDL2Pv          |29-305-384-2702| instructions believe slyly i                                                             |
+|9995.9599609375|Supplier#000566208|FRANCE        |9816180  |Manufacturer#5|RMnISVay,G0prBUAZ,yqqm7ftyZbjH0CfJyXP95 |16-665-147-8314|mong the ironic requests caj                                                              |
+|9995.9599609375|Supplier#000629520|FRANCE        |13129493 |Manufacturer#3|kjmenylD2Ut5JJxh1n8P1,cl,XqR            |16-785-547-3814|foxes detect blithely. even, ironic courts a                                              |
+|9995.9296875   |Supplier#000388258|UNITED KINGDOM|6138251  |Manufacturer#2|rUB88zGIucl73Jl4                        |33-829-188-2160|arefully express requests. pending, express pinto beans                                   |
+|9995.7900390625|Supplier#000998425|FRANCE        |248424   |Manufacturer#4|tjoKE1Srnp3l9lpwSP40nMonOOM7F2fa        |16-228-926-9937|ding foxes haggle fluffily. carefully ironic ideas                                        |
+|9995.419921875 |Supplier#000220794|ROMANIA       |12470757 |Manufacturer#1|kwxtCRMG9VWfJ75Sij2K                    |29-557-942-9023|. carefully pending platelets haggle after the final, regular packa                       |
++---------------+------------------+--------------+---------+--------------+----------------------------------------+---------------+------------------------------------------------------------------------------------------+

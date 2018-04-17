@@ -29,8 +29,9 @@ export pushdown="true"
 export codegen="true"
 
 # Use SELRAW for any query launch by CHSpark (except fetch table info)
-# Should be always true unless for tracing MutableMergeTree bugs
+# DON'T set to 'true' for Non-Mutable table
+# Should be always true on Mutable table, unless for tracing MutableMergeTree bugs
 export selraw="false"
 
-# Use SELRAW to fetch table info, can faster than SELECT on MutableMergeTree. DON'T set to 'true' for non-Mutable table
+# Use SELRAW to fetch table info, can faster than SELECT on MutableMergeTree. DON'T set to 'true' for Non-Mutable table
 export selraw_tableinfo="false"
