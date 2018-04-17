@@ -1,0 +1,26 @@
+diff --git a/dbms/src/IO/WriteHelpers.h b/dbms/src/IO/WriteHelpers.h
+index e082cc92dea3..54aad9a5538f 100644
+--- a/dbms/src/IO/WriteHelpers.h
++++ b/dbms/src/IO/WriteHelpers.h
+@@ -5,6 +5,7 @@
+ #include <limits>
+ #include <algorithm>
+ #include <iterator>
++#include <iomanip>
+ 
+ #include <common/DateLUT.h>
+ #include <common/LocalDate.h>
+@@ -800,4 +801,13 @@ inline String toString(const T & x)
+     return buf.str();
+ }
+ 
++template <typename T>
++inline std::enable_if_t<std::is_floating_point_v<T>, String>
++toString(const T & x, int precision)
++{
++    std::stringstream ss;
++    ss << std::fixed << std::setprecision(precision) << x;
++    return ss.str();
++}
++
+ }

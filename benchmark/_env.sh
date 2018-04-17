@@ -35,3 +35,6 @@ export selraw="false"
 
 # Use SELRAW to fetch table info, can faster than SELECT on MutableMergeTree. DON'T set to 'true' for Non-Mutable table
 export selraw_tableinfo="false"
+
+# The executor-memory parameter of spark-shell.
+export spark_executor_memory=12G
