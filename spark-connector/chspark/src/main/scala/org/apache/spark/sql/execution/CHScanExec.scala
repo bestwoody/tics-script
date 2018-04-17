@@ -23,8 +23,8 @@ import org.apache.spark.sql.ch.{CHConfigConst, CHLogicalPlan, CHRelation, CHSql}
 import org.apache.spark.sql.execution.datasources.CHScanRDD
 
 case class CHScanExec(
+  output: Seq[Attribute],
   @transient sparkSession: SparkSession,
-  @transient output: Seq[Attribute],
   @transient chRelation: CHRelation,
   @transient chLogicalPlan: CHLogicalPlan)
   extends LeafExecNode with ArrowBatchScan {

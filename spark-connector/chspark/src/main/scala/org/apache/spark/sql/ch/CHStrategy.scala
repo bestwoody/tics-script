@@ -182,7 +182,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     }
     */
 
-    val chPlan = new CHScanExec(sparkSession, output, relation, chLogicalPlan)
+    val chPlan = new CHScanExec(output, sparkSession, relation, chLogicalPlan)
 
     if (!isSingleCHNode(relation)) {
       AggUtils.planAggregateWithoutDistinct(
@@ -206,11 +206,8 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
 
     val projectSet = AttributeSet(projectList.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
-    val pushdownProjectList = (projectSet ++ filterSet).toSeq
-
-    val nameSet = pushdownProjectList.map(_.name).toSet
+    val nameSet = (projectSet ++ filterSet).map(_.name).toSet
     var output = relation.output.filter(attr => nameSet(attr.name))
-
     // TODO: Choose the smallest column (in prime keys, or the timestamp key of MergeTree) as dummy output
     if (output.isEmpty) {
       output = Seq(relation.output.head)
@@ -220,10 +217,10 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
       filterPredicates.partition((expression: Expression) => CHUtil.isSupportedFilter(expression))
     val residualFilter: Option[Expression] = residualFilters.reduceLeftOption(And)
 
-    val chLogicalPlan = CHLogicalPlan(pushdownProjectList, pushdownFilters,
+    val chLogicalPlan = CHLogicalPlan(output, pushdownFilters,
       Seq.empty, Seq.empty, sortOrders, limit)
 
-    val chExec = CHScanExec(sparkSession, output, chRelation, chLogicalPlan)
+    val chExec = CHScanExec(output, sparkSession, chRelation, chLogicalPlan)
 
     if (AttributeSet(projectList.map(_.toAttribute)) == projectSet &&
       filterSet.subsetOf(projectSet)) {
