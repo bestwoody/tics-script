@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeSet, Cast, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, Cast, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
@@ -153,34 +153,36 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     val aggregatesToPushdown = aggregateExpressions.filter(ae =>
       CHUtil.isSupportedAggregate(ae.aggregateFunction))
 
+    /**
+      * Backtrack the original expression for the given expression `e`
+      * which might have been rewritten by [[PhysicalAggregation]]
+      * (i.e. [[AggregateExpression]] SUM(a) => [[AttributeReference]] SUM(a#22))
+      * or assigned with an [[Alias]].
+      * @param e
+      * @return
+      */
+    def backtrackOriginalExpression(e: Expression): Expression = e transform {
+      // De-alias.
+      case Alias(child, _) => backtrackOriginalExpression(child)
+      // Find original aggregate expression referenced by an attribute reference
+      case ar: AttributeReference =>
+        aggregateExpressions.collectFirst {
+          case ae if ae.aggregateFunction.toString == ar.name => ae
+        }.getOrElse(ar)
+    }
+
+    // As for project list:
+    // 1. For non-single-node, we emit all aggregate functions followed by group by columns.
+    // 2. For single-node, we emit the entire result expression list. You may consider we push
+    // everything down.
     val projectList = if (!isSingleCHNode(relation)) {
       aggregatesToPushdown.map(_.asInstanceOf[Expression]) ++ groupingExpressions
     } else {
-      // TODO: integrate with PR#241
-      Seq.empty
+      resultExpressions.map(backtrackOriginalExpression)
     }
 
     val chLogicalPlan = CHLogicalPlan(projectList, filterPredicates,
       groupingExpressions, aggregatesToPushdown, Seq.empty, Option.empty)
-
-    /*
-    // As for required Columns, first we extract all aggregation functions and put them in the front most,
-    // then we append group by columns.
-    val requiredCols = if (!isSingleCHNode(relation)) {
-      chSqlAgg.functions.map { _.toString } ++ chSqlAgg.groupByColumns
-    } else {
-      resultExpressions.map {
-        case a@Alias(child, _) =>
-          child match {
-            case AttributeReference(attributeName, _, _, _) =>
-              val idx = aggregateExpressions.map(e => e.aggregateFunction.toString()).indexOf(attributeName)
-              aggregation(idx).toString()
-            case _ => a.name
-          }
-        case other => other.name
-      }
-    }
-    */
 
     val chPlan = new CHScanExec(output, sparkSession, relation, chLogicalPlan)
 
