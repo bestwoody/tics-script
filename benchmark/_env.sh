@@ -25,8 +25,6 @@ export default_encoders="16"
 
 # Pushdown aggregation ops, should be always true unless for tracing debugs
 export pushdown="true"
-# Use code gen, should be always true unless for tracing bugs
-export codegen="true"
 
 # Use SELRAW for any query launch by CHSpark (except fetch table info)
 # DON'T set to 'true' for Non-Mutable table
