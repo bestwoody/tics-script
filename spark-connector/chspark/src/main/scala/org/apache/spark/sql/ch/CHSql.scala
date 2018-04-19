@@ -24,7 +24,7 @@ import org.apache.spark.sql.types.StringType
  */
 object CHSql {
   /**
-    * Compose a query string based on input table and chLogical.
+    * Compose a query string based on given input table and CH logical plan.
     * @param table
     * @param chLogicalPlan
     * @param useSelraw

@@ -88,20 +88,20 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression(a.cast(DoubleType), "a")
   }
 
-  test("empty query") {
+  test("empty queries") {
     testQuery(t, CHLogicalPlan(
       Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None
     ), "SELECT  FROM d.t")
   }
 
-  test("project query") {
+  test("project queries") {
     testQuery(t, CHLogicalPlan(
       Seq(a, b, c),
       Seq.empty, Seq.empty, Seq.empty, Seq.empty, None
     ), "SELECT a, b, c FROM d.t")
   }
 
-  test("filter query") {
+  test("filter queries") {
     testQuery(t, CHLogicalPlan(
       Seq.empty,
       Seq(a, b, nullLiteral.isNotNull),
@@ -109,7 +109,7 @@ class CHSqlSuite extends SparkFunSuite {
     ), "SELECT  FROM d.t WHERE ((a AND b) AND NULL IS NOT NULL)")
   }
 
-  test("aggregate query") {
+  test("aggregate queries") {
     testQuery(t, CHLogicalPlan(
       Seq(a, b, sum(c)),
       Seq.empty,
@@ -118,7 +118,7 @@ class CHSqlSuite extends SparkFunSuite {
     ), "SELECT a, b, SUM(c) FROM d.t GROUP BY a, b")
   }
 
-  test("top-n query") {
+  test("top-n queries") {
     testQuery(t, CHLogicalPlan(
       Seq.empty, Seq.empty, Seq.empty, Seq.empty,
       Seq(a desc, b asc),

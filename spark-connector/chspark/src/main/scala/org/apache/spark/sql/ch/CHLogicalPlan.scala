@@ -15,7 +15,6 @@
 
 package org.apache.spark.sql.ch
 
-
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.util

@@ -59,7 +59,7 @@ class CHStrategySuite extends SharedSQLContext {
     super.afterAll()
   }
 
-  test("basic plan") {
+  test("basic plans") {
     testQuery("select mt_a from mt", Map((
       multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]")))
     testQuery("select mt_a a from mt", Map((
@@ -72,7 +72,7 @@ class CHStrategySuite extends SharedSQLContext {
       multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [(mt_b IS NOT NULL), (mt_b = 0)], Aggregate [], TopN []]")))
   }
 
-  test("multi-node aggregate plan") {
+  test("multi-node aggregate plans") {
     testQuery("select sum(mt_a) from mt", Map((
       multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT))]], TopN []]")))
     testQuery("select sum(mt_a) AS sum_mt_a from mt", Map((
@@ -87,7 +87,7 @@ class CHStrategySuite extends SharedSQLContext {
       multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))]], TopN []]")))
   }
 
-  test("single-node aggregate plan") {
+  test("single-node aggregate plans") {
     testQuery("select sum(st_a) from st", Map((
       singleNodeT, "CH plan [Project [sum(CAST(st_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(st_a AS BIGINT))]], TopN []]")))
     testQuery("select sum(st_a) AS sum_st_a from st", Map((
@@ -102,7 +102,7 @@ class CHStrategySuite extends SharedSQLContext {
       singleNodeT, "CH plan [Project [(avg(CAST(st_a AS BIGINT)) + avg(CAST(st_b AS BIGINT)))], Filter [], Aggregate [[avg(CAST(st_a AS BIGINT)), avg(CAST(st_b AS BIGINT))]], TopN []]")))
   }
 
-  test("top-n plan") {
+  test("top-n plans") {
     testQuery("select mt_a from mt order by mt_a", Map((
       multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]")))
     testQuery("select mt_a from mt limit 1", Map((
