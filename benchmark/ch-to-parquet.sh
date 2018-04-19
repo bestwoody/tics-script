@@ -13,6 +13,8 @@ echo 'import spark.implicits._' >> "$tmp"
 
 echo 'spark.conf.set("spark.ch.plan.pushdown.agg", "true")' >> "$tmp"
 
+echo 'spark.conf.set("spark.ch.plan.single.node.opt", "true")' >> "$tmp"
+
 echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./ch-q.sh "show tables" | while read table; do
