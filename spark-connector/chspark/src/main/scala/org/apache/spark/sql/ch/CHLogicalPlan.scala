@@ -19,15 +19,16 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression, SortOrder}
 
 /**
-  * IR for a CH query plan, mostly represented in Spark data structures.
-  * This IR is hopefully backend independent, thus can be further compiled into
-  * various physical representations.
-  */
+ * IR for a CH query plan, mostly represented in Spark data structures.
+ * This IR is hopefully backend independent, thus can be further compiled into
+ * various physical representations.
+ */
 class CHLogicalPlan(
   val chProject: CHProject,
   val chFilter: CHFilter,
   val chAggregate: CHAggregate,
   val chTopN: CHTopN) {
+  override def toString: String = s"CH plan [$chProject, $chFilter, $chAggregate, $chTopN]"
 }
 
 object CHLogicalPlan {
@@ -44,11 +45,27 @@ object CHLogicalPlan {
   }
 }
 
-class CHProject(val projectList: Seq[Expression]) {}
+class CHProject(val projectList: Seq[Expression]) {
+  override def toString: String = projectList.mkString("Project [", ", ", "]")
+}
 
-class CHFilter(val predicates: Seq[Expression]) {}
+class CHFilter(val predicates: Seq[Expression]) {
+  override def toString: String = predicates.mkString("Filter [", ", ", "]")
+}
 
 class CHAggregate(val groupingExpressions: Seq[NamedExpression],
-  val aggregateExpressions: Seq[AggregateExpression]) {}
+  val aggregateExpressions: Seq[AggregateExpression]) {
+  override def toString: String = Seq(
+    if (groupingExpressions.isEmpty) "" else groupingExpressions.mkString("[", ", ", "]"),
+    if (aggregateExpressions.isEmpty) "" else aggregateExpressions.mkString("[", ", ", "]"))
+    .filter(_.nonEmpty)
+    .mkString("Aggregate [", ", ", "]")
+}
 
-class CHTopN(val sortOrders: Seq[SortOrder], val n: Option[Int]) {}
+class CHTopN(val sortOrders: Seq[SortOrder], val n: Option[Int]) {
+  override def toString: String = Seq(
+    if (sortOrders.isEmpty) "" else sortOrders.mkString("[", ", ", "]"),
+    n.getOrElse("").toString)
+    .filter(_.nonEmpty)
+    .mkString("TopN [", ", ", "]")
+}
