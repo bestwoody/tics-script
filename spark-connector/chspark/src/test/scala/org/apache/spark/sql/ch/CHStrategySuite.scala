@@ -61,57 +61,57 @@ class CHStrategySuite extends SharedSQLContext {
 
   test("basic plan") {
     testQuery("select mt_a from mt", Map((
-      multiNodeT, "CH plan [Project [mt_a#3], Filter [], Aggregate [], TopN []]")))
+      multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]")))
     testQuery("select mt_a a from mt", Map((
-      multiNodeT, "CH plan [Project [mt_a#3], Filter [], Aggregate [], TopN []]")))
+      multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]")))
     testQuery("select * from mt", Map((
-      multiNodeT, "CH plan [Project [mt_a#3, mt_b#4, mt_c#5], Filter [], Aggregate [], TopN []]")))
+      multiNodeT, "CH plan [Project [mt_a, mt_b, mt_c], Filter [], Aggregate [], TopN []]")))
     testQuery("select mt_a from mt where mt_a = 0", Map((
-      multiNodeT, "CH plan [Project [mt_a#3], Filter [isnotnull(mt_a#3), (mt_a#3 = 0)], Aggregate [], TopN []]")))
+      multiNodeT, "CH plan [Project [mt_a], Filter [(mt_a IS NOT NULL), (mt_a = 0)], Aggregate [], TopN []]")))
     testQuery("select mt_a from mt where mt_b = 0", Map((
-      multiNodeT, "CH plan [Project [mt_a#3, mt_b#4], Filter [isnotnull(mt_b#4), (mt_b#4 = 0)], Aggregate [], TopN []]")))
+      multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [(mt_b IS NOT NULL), (mt_b = 0)], Aggregate [], TopN []]")))
   }
 
   test("multi-node aggregate plan") {
     testQuery("select sum(mt_a) from mt", Map((
-      multiNodeT, "CH plan [Project [sum(cast(mt_a#3 as bigint))], Filter [], Aggregate [[sum(cast(mt_a#3 as bigint))]], TopN []]")))
-    testQuery("select sum(mt_a) as sum_mt_a from mt", Map((
-      multiNodeT, "CH plan [Project [sum(cast(mt_a#3 as bigint))], Filter [], Aggregate [[sum(cast(mt_a#3 as bigint))]], TopN []]")))
+      multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT))]], TopN []]")))
+    testQuery("select sum(mt_a) AS sum_mt_a from mt", Map((
+      multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT))]], TopN []]")))
     testQuery("select sum(mt_a) + sum(mt_b) from mt", Map((
-      multiNodeT, "CH plan [Project [sum(cast(mt_a#3 as bigint)), sum(cast(mt_b#4 as bigint))], Filter [], Aggregate [[sum(cast(mt_a#3 as bigint)), sum(cast(mt_b#4 as bigint))]], TopN []]")))
-    testQuery("select sum(mt_a) + sum(mt_b) as sum_mt_a_mt_b from mt", Map((
-      multiNodeT, "CH plan [Project [sum(cast(mt_a#3 as bigint)), sum(cast(mt_b#4 as bigint))], Filter [], Aggregate [[sum(cast(mt_a#3 as bigint)), sum(cast(mt_b#4 as bigint))]], TopN []]")))
+      multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))]], TopN []]")))
+    testQuery("select sum(mt_a) + sum(mt_b) AS sum_mt_a_mt_b from mt", Map((
+      multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))]], TopN []]")))
     testQuery("select avg(mt_a) from mt", Map((
-      multiNodeT, "CH plan [Project [sum(cast(mt_a#3 as bigint)), count(cast(mt_a#3 as bigint))], Filter [], Aggregate [[sum(cast(mt_a#3 as bigint)), count(cast(mt_a#3 as bigint))]], TopN []]")))
+      multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))]], TopN []]")))
     testQuery("select avg(mt_a) + avg(mt_b) from mt", Map((
-      multiNodeT, "CH plan [Project [sum(cast(mt_a#3 as bigint)), count(cast(mt_a#3 as bigint)), sum(cast(mt_b#4 as bigint)), count(cast(mt_b#4 as bigint))], Filter [], Aggregate [[sum(cast(mt_a#3 as bigint)), count(cast(mt_a#3 as bigint)), sum(cast(mt_b#4 as bigint)), count(cast(mt_b#4 as bigint))]], TopN []]")))
+      multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))]], TopN []]")))
   }
 
   test("single-node aggregate plan") {
     testQuery("select sum(st_a) from st", Map((
-      singleNodeT, "CH plan [Project [sum(cast(st_a#14 as bigint))], Filter [], Aggregate [[sum(cast(st_a#14 as bigint))]], TopN []]")))
-    testQuery("select sum(st_a) as sum_st_a from st", Map((
-      singleNodeT, "CH plan [Project [sum(cast(st_a#14 as bigint))], Filter [], Aggregate [[sum(cast(st_a#14 as bigint))]], TopN []]")))
+      singleNodeT, "CH plan [Project [sum(CAST(st_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(st_a AS BIGINT))]], TopN []]")))
+    testQuery("select sum(st_a) AS sum_st_a from st", Map((
+      singleNodeT, "CH plan [Project [sum(CAST(st_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(st_a AS BIGINT))]], TopN []]")))
     testQuery("select sum(st_a) + sum(st_b) from st", Map((
-      singleNodeT, "CH plan [Project [(sum(cast(st_a#14 as bigint)) + sum(cast(st_b#15 as bigint)))], Filter [], Aggregate [[sum(cast(st_a#14 as bigint)), sum(cast(st_b#15 as bigint))]], TopN []]")))
-    testQuery("select sum(st_a) + sum(st_b) as sum_mt_a_mt_b from st", Map((
-      singleNodeT, "CH plan [Project [(sum(cast(st_a#14 as bigint)) + sum(cast(st_b#15 as bigint)))], Filter [], Aggregate [[sum(cast(st_a#14 as bigint)), sum(cast(st_b#15 as bigint))]], TopN []]")))
-    testQuery("select avg(st_a) as avg_st_a from st", Map((
-      singleNodeT, "CH plan [Project [avg(cast(st_a#14 as bigint))], Filter [], Aggregate [[avg(cast(st_a#14 as bigint))]], TopN []]")))
+      singleNodeT, "CH plan [Project [(sum(CAST(st_a AS BIGINT)) + sum(CAST(st_b AS BIGINT)))], Filter [], Aggregate [[sum(CAST(st_a AS BIGINT)), sum(CAST(st_b AS BIGINT))]], TopN []]")))
+    testQuery("select sum(st_a) + sum(st_b) AS sum_mt_a_mt_b from st", Map((
+      singleNodeT, "CH plan [Project [(sum(CAST(st_a AS BIGINT)) + sum(CAST(st_b AS BIGINT)))], Filter [], Aggregate [[sum(CAST(st_a AS BIGINT)), sum(CAST(st_b AS BIGINT))]], TopN []]")))
+    testQuery("select avg(st_a) AS avg_st_a from st", Map((
+      singleNodeT, "CH plan [Project [avg(CAST(st_a AS BIGINT))], Filter [], Aggregate [[avg(CAST(st_a AS BIGINT))]], TopN []]")))
     testQuery("select avg(st_a) + avg(st_b) from st", Map((
-      singleNodeT, "CH plan [Project [(avg(cast(st_a#14 as bigint)) + avg(cast(st_b#15 as bigint)))], Filter [], Aggregate [[avg(cast(st_a#14 as bigint)), avg(cast(st_b#15 as bigint))]], TopN []]")))
+      singleNodeT, "CH plan [Project [(avg(CAST(st_a AS BIGINT)) + avg(CAST(st_b AS BIGINT)))], Filter [], Aggregate [[avg(CAST(st_a AS BIGINT)), avg(CAST(st_b AS BIGINT))]], TopN []]")))
   }
 
   test("top-n plan") {
     testQuery("select mt_a from mt order by mt_a", Map((
-      multiNodeT, "CH plan [Project [mt_a#3], Filter [], Aggregate [], TopN []]")))
+      multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]")))
     testQuery("select mt_a from mt limit 1", Map((
-      multiNodeT, "CH plan [Project [mt_a#3], Filter [], Aggregate [], TopN [1]]")))
+      multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN [1]]")))
     testQuery("select mt_a from mt order by mt_a limit 1", Map((
-      multiNodeT, "CH plan [Project [mt_a#3], Filter [], Aggregate [], TopN [[mt_a#3 ASC NULLS FIRST], 1]]")))
+      multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN [[mt_a ASC NULLS FIRST], 1]]")))
     testQuery("select mt_a from mt order by mt_a asc, mt_b desc limit 1", Map((
-      multiNodeT, "CH plan [Project [mt_a#3, mt_b#4], Filter [], Aggregate [], TopN [[mt_a#3 ASC NULLS FIRST, mt_b#4 DESC NULLS LAST], 1]]")))
+      multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [], Aggregate [], TopN [[mt_a ASC NULLS FIRST, mt_b DESC NULLS LAST], 1]]")))
     testQuery("select mt_a from mt order by (mt_a, mt_b) desc limit 1", Map((
-      multiNodeT, "CH plan [Project [mt_a#3, mt_b#4], Filter [], Aggregate [], TopN [[named_struct(mt_a, mt_a#3, mt_b, mt_b#4) DESC NULLS LAST], 1]]")))
+      multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [], Aggregate [], TopN [[named_struct(mt_a, mt_a, mt_b, mt_b) DESC NULLS LAST], 1]]")))
   }
 }

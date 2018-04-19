@@ -43,7 +43,7 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression(!b.isNotNull, "NOT b IS NOT NULL")
   }
 
-  test("literals expressions") {
+  test("literal expressions") {
     testCompileExpression(nullLiteral, "NULL")
     testCompileExpression(one, "1.0")
     testCompileExpression(oneEMINUS4, "1.0E-4")
