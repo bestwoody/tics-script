@@ -15,13 +15,13 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
-import org.apache.spark.sql.catalyst.expressions.{Abs, And, AttributeReference, BinaryOperator, Cast, Expression, IsNotNull, IsNull, Literal, UnaryExpression, UnaryMinus}
-import org.apache.spark.sql.types.{DataType, StringType}
+import org.apache.spark.sql.catalyst.expressions.aggregate._
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.types.StringType
 
 /**
-  * Compiler that compiles CHLogical/CHTableRef to CH SQL string.
-  */
+ * Compiler that compiles CHLogicalPlan/CHTableRef to CH SQL string.
+ */
 object CHSql {
   /**
     * Compose a query string based on input table and chLogical.
@@ -99,17 +99,34 @@ object CHSql {
           }
         }
       case attr: AttributeReference => attr.name
-      case IsNotNull(child) => s"(${compileExpression(child)} IS NOT NULL)"
-      case IsNull(child) => s"(${compileExpression(child)} IS NULL)"
-      case UnaryMinus(child) => s"-${compileExpression(child)}"
-      case bo @ BinaryOperator(lhs, rhs) =>
-        s"(${compileExpression(lhs)} ${bo.sqlOperator} ${compileExpression(rhs)})"
       case Cast(child, dataType) =>
         // TODO: Handle cast
         s"(${compileExpression(child)})"
+      case IsNotNull(child) => s"${compileExpression(child)} IS NOT NULL"
+      case IsNull(child) => s"${compileExpression(child)} IS NULL"
+      case UnaryMinus(child) => s"-${compileExpression(child)}"
+      case Not(child) => s"NOT ${compileExpression(child)}"
+      case Abs(child) => s"ABS(${compileExpression(child)})"
+      case Add(left, right) => s"(${compileExpression(left)} + ${compileExpression(right)})"
+      case Subtract(left, right) => s"(${compileExpression(left)} - ${compileExpression(right)})"
+      case Multiply(left, right) => s"(${compileExpression(left)} * ${compileExpression(right)})"
+      case Divide(left, right) => s"(${compileExpression(left)} / ${compileExpression(right)})"
+      case Remainder(left, right) => s"(${compileExpression(left)} % ${compileExpression(right)})"
+      case GreaterThan(left, right) => s"(${compileExpression(left)} > ${compileExpression(right)})"
+      case GreaterThanOrEqual(left, right) => s"(${compileExpression(left)} >= ${compileExpression(right)})"
+      case LessThan(left, right) => s"(${compileExpression(left)} < ${compileExpression(right)})"
+      case LessThanOrEqual(left, right) => s"(${compileExpression(left)} <= ${compileExpression(right)})"
+      case EqualTo(left, right) => s"(${compileExpression(left)} = ${compileExpression(right)})"
+      case And(left, right) => s"(${compileExpression(left)} AND ${compileExpression(right)})"
+      case Or(left, right) => s"(${compileExpression(left)} OR ${compileExpression(right)})"
       case AggregateExpression(aggregateFunction, _, _, _) => compileExpression(aggregateFunction)
-      case _ => s"${expression.prettyName}" +
-        s"(${expression.children.map(compileExpression).mkString(", ")})"
+      case Average(child) => s"AVG(${compileExpression(child)})"
+      case Count(children) => s"Count(${children.map(compileExpression).mkString(", ")})"
+      case Max(child) => s"MAX(${compileExpression(child)})"
+      case Min(child) => s"MIN(${compileExpression(child)})"
+      case Sum(child) => s"SUM(${compileExpression(child)})"
+      // TODO: Support more expression types.
+      case _ => throw new UnsupportedOperationException(s"Expression ${expression} is not supported by CHSql.")
     }
   }
 }

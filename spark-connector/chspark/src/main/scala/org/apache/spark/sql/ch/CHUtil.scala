@@ -139,8 +139,6 @@ object CHUtil {
       case Count(_) => true
       case Min(_) => true
       case Max(_) => true
-      case First(_, _) => true
-      case Last(_, _) => true
       case _ => false
     }
   }
