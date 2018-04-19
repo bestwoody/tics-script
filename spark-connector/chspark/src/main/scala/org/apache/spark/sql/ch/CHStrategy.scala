@@ -31,10 +31,10 @@ import org.apache.spark.sql.{SparkSession, Strategy}
 class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   // -------------------- Dynamic configurations   --------------------
   val sqlConf: SQLConf = sparkSession.sqlContext.conf
-
-  private def enableAggPushdown: Boolean = {
+  val enableAggPushdown: Boolean =
     sqlConf.getConfString(CHConfigConst.ENABLE_PUSHDOWN_AGG, "true").toBoolean
-  }
+  val enableSingleNodeOpt: Boolean =
+    sqlConf.getConfString(CHConfigConst.ENABLE_SINGLE_NODE_OPT, "true").toBoolean
 
   // -------------------- Physical plan generation --------------------
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
@@ -63,7 +63,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
             CHAggregationProjection(filters, _, _, _)) if enableAggPushdown && filters.forall(CHUtil.isSupportedFilter) =>
             var aggExp = aggregateExpressions
             var resultExp = resultExpressions
-            if (!isSingleCHNode(relation)) {
+            if (!optimizeForSingleNode(relation)) {
               val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
               aggExp = rewriteResult._1
               resultExp = rewriteResult._2
@@ -76,7 +76,8 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     }.toSeq.flatten
   }
 
-  def isSingleCHNode(relation: CHRelation): Boolean = relation.tables.length == 1
+  def optimizeForSingleNode(relation: CHRelation): Boolean =
+    enableSingleNodeOpt && relation.tables.length == 1
 
   private def pruneTopNFilterProject(
     relation: LogicalRelation,
@@ -136,13 +137,13 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         case e: Min   => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
         case e: Sum   => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
         case e: First => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
-        case e: Count => if (!isSingleCHNode(relation)) aggExpr.copy(aggregateFunction = Sum(partialResultRef))
+        case e: Count => if (!optimizeForSingleNode(relation)) aggExpr.copy(aggregateFunction = Sum(partialResultRef))
                          else aggExpr.copy(aggregateFunction = e.copy(children = partialResultRef::Nil))
         case _ => aggExpr
       }
     }
 
-    val output = if (!isSingleCHNode(relation)) {
+    val output = if (!optimizeForSingleNode(relation)) {
       (aggregateExpressions.map(aliasPushedPartialResult) ++ groupingExpressions).map {
         _.toAttribute
       }
@@ -175,7 +176,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     // 1. For non-single-node, we emit all aggregate functions followed by group by columns.
     // 2. For single-node, we emit the entire result expression list. You may consider we push
     // everything down.
-    val projectList = if (!isSingleCHNode(relation)) {
+    val projectList = if (!optimizeForSingleNode(relation)) {
       aggregatesToPushdown.map(_.asInstanceOf[Expression]) ++ groupingExpressions
     } else {
       resultExpressions.map(backtrackOriginalExpression)
@@ -186,7 +187,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
 
     val chPlan = new CHScanExec(output, sparkSession, relation, chLogicalPlan)
 
-    if (!isSingleCHNode(relation)) {
+    if (!optimizeForSingleNode(relation)) {
       AggUtils.planAggregateWithoutDistinct(
         groupingExpressions,
         residualAggregateExpressions,
