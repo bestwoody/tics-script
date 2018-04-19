@@ -16,7 +16,7 @@
 package org.apache.spark.sql.ch
 
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.types.StringType
 
 /**
@@ -67,31 +67,32 @@ object CHSql {
   }
 
   private def compileFilter(chFilter: CHFilter): String = {
-    if (chFilter.predicates.isEmpty) "" else {
-      " WHERE " + chFilter.predicates.reduceLeftOption(And).map(compileExpression).get
-    }
+    if (chFilter.predicates.isEmpty) ""
+    else " WHERE " + chFilter.predicates.reduceLeftOption(And).map(compileExpression).get
   }
 
   private def compileAggregate(chAggregate: CHAggregate): String = {
-    if (chAggregate.groupingExpressions.isEmpty) "" else {
-      " GROUP BY " + chAggregate.groupingExpressions.map(compileExpression)
-      .mkString(", ")
-    }
+    if (chAggregate.groupingExpressions.isEmpty) ""
+    else " GROUP BY " + chAggregate.groupingExpressions.map(compileExpression).mkString(", ")
   }
 
   private def compileTopN(chTopN: CHTopN): String = {
-    if (chTopN.sortOrders.isEmpty) "" else {
-      " ORDER BY " + chTopN.sortOrders.map(so => {
-        compileExpression(so.child) + " " + so.direction.sql
-      }).mkString(", ")
-    } + chTopN.n.map("LIMIT " + _).getOrElse("")
+    (if (chTopN.sortOrders.isEmpty) "" else " ORDER BY " + chTopN.sortOrders.map(so => {
+      so.child match {
+        case ns@CreateNamedStruct(_) =>
+          // Spark will compile order by expression `(a + b, a)` to
+          // `named_struct("col1", a + b, "a", a)`.
+          // Need to emit the expression list enclosed by ().
+          ns.valExprs.map(compileExpression).mkString("(", ", ", ") ") + so.direction.sql
+        case _ => compileExpression(so.child) + " " + so.direction.sql
+      }}).mkString(", ")) + chTopN.n.map(" LIMIT " + _).getOrElse("")
   }
 
   def compileExpression(expression: Expression): String = {
     expression match {
       case Literal(value, dataType) =>
         if (dataType == null) {
-          null
+          "NULL"
         } else {
           dataType match {
             case StringType => "'" + value.toString + "'"
@@ -101,7 +102,7 @@ object CHSql {
       case attr: AttributeReference => attr.name
       case Cast(child, dataType) =>
         // TODO: Handle cast
-        s"(${compileExpression(child)})"
+        s"${compileExpression(child)}"
       case IsNotNull(child) => s"${compileExpression(child)} IS NOT NULL"
       case IsNull(child) => s"${compileExpression(child)} IS NULL"
       case UnaryMinus(child) => s"-${compileExpression(child)}"
@@ -121,7 +122,7 @@ object CHSql {
       case Or(left, right) => s"(${compileExpression(left)} OR ${compileExpression(right)})"
       case AggregateExpression(aggregateFunction, _, _, _) => compileExpression(aggregateFunction)
       case Average(child) => s"AVG(${compileExpression(child)})"
-      case Count(children) => s"Count(${children.map(compileExpression).mkString(", ")})"
+      case Count(children) => s"COUNT(${children.map(compileExpression).mkString(", ")})"
       case Max(child) => s"MAX(${compileExpression(child)})"
       case Min(child) => s"MIN(${compileExpression(child)})"
       case Sum(child) => s"SUM(${compileExpression(child)})"
