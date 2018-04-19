@@ -26,7 +26,7 @@ export default_encoders="16"
 # Pushdown aggregation ops, should be always true unless for tracing debugs
 export pushdown="true"
 
-# Aggressive optmization for single-node table, i.e. pushdown more aggregates.
+# Aggressive optimization for single-node table, i.e. pushdown more aggregates.
 # Should be always true unless for debug purpose.
 export single_node_opt="true"
 
