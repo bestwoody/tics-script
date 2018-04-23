@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import java.util.UUID
 
-import org.apache.spark.sql.catalyst.expressions.{Add, Alias, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IsNotNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Remainder, Subtract}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.types._
 
@@ -93,52 +93,60 @@ object CHUtil {
   }
 
   // TODO: Pushdown more, like `In`
-  def isSupportedFilter(exp: Expression): Boolean = {
-    // println("PROBE isSupportedFilter:" + exp.getClass.getName + ", " + exp)
+  def isSupportedExpression(exp: Expression): Boolean = {
+    // println("PROBE isSupportedExpression:" + exp.getClass.getName + ", " + exp)
     exp match {
       case _: Literal => true
       case _: AttributeReference => true
       case _: Cast => true
       // TODO: Don't pushdown IsNotNull maybe better
       case IsNotNull(child) =>
-        isSupportedFilter(child)
-      case Add(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      case Subtract(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      case Multiply(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      case Divide(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      case Remainder(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      // TODO: Check Alias's handling is OK
-      case Alias(child, name) =>
-        isSupportedFilter(child)
-      case GreaterThan(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      case GreaterThanOrEqual(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      case LessThan(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      case LessThanOrEqual(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      case EqualTo(lhs, rhs) =>
-        isSupportedFilter(lhs) && isSupportedFilter(rhs)
-      // TODO: !=
+        isSupportedExpression(child)
+      case IsNull(child) =>
+        isSupportedExpression(child)
+      case UnaryMinus(child) =>
+        isSupportedExpression(child)
       case Not(child) =>
-        isSupportedFilter(child)
+        isSupportedExpression(child)
+      case Abs(child) =>
+        isSupportedExpression(child)
+      case Add(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case Subtract(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case Multiply(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case Divide(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case Remainder(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case GreaterThan(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case GreaterThanOrEqual(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case LessThan(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case LessThanOrEqual(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case EqualTo(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case And(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case Or(lhs, rhs) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case AggregateExpression(aggregateFunction, _, _, _) =>
+        isSupportedAggregate(aggregateFunction)
       case _ => false
     }
   }
 
   def isSupportedAggregate(aggregateFunction: AggregateFunction): Boolean = {
     aggregateFunction match {
-      case Average(_) => true
-      case Sum(_) => true
-      case Count(_) => true
-      case Min(_) => true
-      case Max(_) => true
+      case Average(child) => isSupportedExpression(child)
+      case Count(children) => children.forall(isSupportedExpression)
+      case Min(child) => isSupportedExpression(child)
+      case Max(child) => isSupportedExpression(child)
+      case Sum(child) => isSupportedExpression(child)
       case _ => false
     }
   }

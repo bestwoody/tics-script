@@ -56,8 +56,8 @@ class CHSqlSuite extends SparkFunSuite {
 
   test("arithmetic expressions") {
     testCompileExpression(a + b, "(a + b)")
-    testCompileExpression(-(a + b), "-(a + b)")
-    testCompileExpression(a + b * -a, "(a + (b * -a))")
+    testCompileExpression(-(a + b), "(-(a + b))")
+    testCompileExpression(a + b * -a, "(a + (b * (-a)))")
     testCompileExpression(a / b * a, "((a / b) * a)")
     testCompileExpression(a / b * (a - abs(b)), "((a / b) * (a - ABS(b)))")
     testCompileExpression(a - b * (a / abs(b + a % 100)), "(a - (b * (a / ABS((b + (a % 100))))))")

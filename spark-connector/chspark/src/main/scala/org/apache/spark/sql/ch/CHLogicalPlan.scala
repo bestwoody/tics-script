@@ -40,6 +40,12 @@ object CHLogicalPlan {
     aggregateExpressions: Seq[AggregateExpression],
     sortOrders: Seq[SortOrder],
     limit: Option[Int]): CHLogicalPlan = {
+    if (!projectList.forall(CHUtil.isSupportedExpression)
+      || !filterPredicates.forall(CHUtil.isSupportedExpression)
+      || !groupingExpressions.forall(CHUtil.isSupportedExpression)
+      || !aggregateExpressions.forall(ae => CHUtil.isSupportedAggregate(ae.aggregateFunction))) {
+      throw new UnsupportedOperationException
+    }
     new CHLogicalPlan(
       new CHProject(projectList), new CHFilter(filterPredicates),
       new CHAggregate(groupingExpressions, aggregateExpressions), new CHTopN(sortOrders, limit))

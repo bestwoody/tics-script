@@ -38,42 +38,48 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
 
   // -------------------- Physical plan generation --------------------
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-    plan.collectFirst {
-      case rel@LogicalRelation(_: TypesTestRelation, _: Option[Seq[Attribute]], _) =>
-        TypesTestPlan(rel.output, sparkSession) :: Nil
-      case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) =>
-        plan match {
-          case ReturnAnswer(rootPlan) =>
-            rootPlan match {
-              case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
-                createTopNPlan(limit, order, child.output, child) :: Nil
-              case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
-                createTopNPlan(limit, order, projectList, child) :: Nil
-              case Limit(IntegerLiteral(limit), child) =>
-                CollectLimitExec(limit, createTopNPlan(limit, Nil, child.output, child)) :: Nil
-              case other => planLater(other) :: Nil
-            }
-          case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
-            createTopNPlan(limit, order, child.output, child) :: Nil
-          case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
-            createTopNPlan(limit, order, projectList, child) :: Nil
-          case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
-            createCHPlan(rel, chr, projectList, filterPredicates, Seq.empty, Option.empty) :: Nil
-          case CHAggregation(groupingExpressions, aggregateExpressions, resultExpressions,
-            CHAggregationProjection(filters, _, _, _)) if enableAggPushdown && filters.forall(CHUtil.isSupportedFilter) =>
-            var aggExp = aggregateExpressions
-            var resultExp = resultExpressions
-            if (!optimizeForSingleNode(relation)) {
-              val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
-              aggExp = rewriteResult._1
-              resultExp = rewriteResult._2
-            }
-            // Add group / aggregate to CHPlan
-            createAggregatePlan(groupingExpressions, aggExp, resultExp, relation, filters)
+    try {
+      plan.collectFirst {
+        case rel@LogicalRelation(_: TypesTestRelation, _: Option[Seq[Attribute]], _) =>
+          TypesTestPlan(rel.output, sparkSession) :: Nil
+        case rel@LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) =>
+          plan match {
+            case ReturnAnswer(rootPlan) =>
+              rootPlan match {
+                case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
+                  createTopNPlan(limit, order, child.output, child) :: Nil
+                case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
+                  createTopNPlan(limit, order, projectList, child) :: Nil
+                case Limit(IntegerLiteral(limit), child) =>
+                  CollectLimitExec(limit, createTopNPlan(limit, Nil, child.output, child)) :: Nil
+                case other => planLater(other) :: Nil
+              }
+            case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
+              createTopNPlan(limit, order, child.output, child) :: Nil
+            case Limit(IntegerLiteral(limit), Project(projectList, Sort(order, true, child))) =>
+              createTopNPlan(limit, order, projectList, child) :: Nil
+            case PhysicalOperation(projectList, filterPredicates, LogicalRelation(chr: CHRelation, _, _)) =>
+              createCHPlan(rel, chr, projectList, filterPredicates, Seq.empty, Option.empty) :: Nil
+            case CHAggregation(groupingExpressions, aggregateExpressions, resultExpressions,
+            CHAggregationProjection(filters, _, _, _)) if enableAggPushdown =>
+              var aggExp = aggregateExpressions
+              var resultExp = resultExpressions
+              if (!optimizeForSingleNode(relation)) {
+                val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
+                aggExp = rewriteResult._1
+                resultExp = rewriteResult._2
+              }
+              // Add group / aggregate to CHPlan
+              createAggregatePlan(groupingExpressions, aggExp, resultExp, relation, filters)
 
-          case _ => Nil
-        }
-    }.toSeq.flatten
+            case _ => Nil
+          }
+      }.toSeq.flatten
+    } catch {
+      case e: UnsupportedOperationException =>
+        logWarning("CHStrategy downgrading to Spark plan as strategy failed.")
+        Nil
+    }
   }
 
   def optimizeForSingleNode(relation: CHRelation): Boolean =
@@ -96,7 +102,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     child: LogicalPlan): SparkPlan = {
     child match {
       case PhysicalOperation(projectList, filters, rel@LogicalRelation(source: CHRelation, _, _))
-        if filters.forall(CHUtil.isSupportedFilter) =>
+        if filters.forall(CHUtil.isSupportedExpression) =>
         TakeOrderedAndProjectExec(
           limit, sortOrder, project,
           pruneTopNFilterProject(rel, source, projectList, filters, sortOrder, limit)
@@ -217,7 +223,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     }
 
     val (pushdownFilters: Seq[Expression], residualFilters: Seq[Expression]) =
-      filterPredicates.partition((expression: Expression) => CHUtil.isSupportedFilter(expression))
+      filterPredicates.partition(CHUtil.isSupportedExpression)
     val residualFilter: Option[Expression] = residualFilters.reduceLeftOption(And)
 
     val chLogicalPlan = CHLogicalPlan(output, pushdownFilters,
