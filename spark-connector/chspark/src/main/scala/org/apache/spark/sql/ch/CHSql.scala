@@ -91,11 +91,11 @@ object CHSql {
   def compileExpression(expression: Expression): String = {
     expression match {
       case Literal(value, dataType) =>
-        if (dataType == null) {
+        if (dataType == null || value == null) {
           "NULL"
         } else {
           dataType match {
-            case StringType => "'" + value.toString + "'"
+            case StringType => "'" + escapeString(value.toString) + "'"
             case _ => value.toString
           }
         }
@@ -105,7 +105,7 @@ object CHSql {
         s"${compileExpression(child)}"
       case IsNotNull(child) => s"${compileExpression(child)} IS NOT NULL"
       case IsNull(child) => s"${compileExpression(child)} IS NULL"
-      case UnaryMinus(child) => s"-${compileExpression(child)}"
+      case UnaryMinus(child) => s"(-${compileExpression(child)})"
       case Not(child) => s"NOT ${compileExpression(child)}"
       case Abs(child) => s"ABS(${compileExpression(child)})"
       case Add(left, right) => s"(${compileExpression(left)} + ${compileExpression(right)})"
@@ -130,4 +130,23 @@ object CHSql {
       case _ => throw new UnsupportedOperationException(s"Expression ${expression} is not supported by CHSql.")
     }
   }
+
+  /**
+    * Escape a string to CH string literal.
+    * See: http://clickhouse-docs.readthedocs.io/en/latest/query_language/syntax.html
+    * @param value
+    * @return
+    */
+  private def escapeString(value: String): String =
+    value.flatMap {
+      case '\\' => "\\\\"
+      case '\'' => "\\'"
+      case '\b' => "\\b"
+      case '\f' => "\\f"
+      case '\r' => "\\r"
+      case '\n' => "\\n"
+      case '\t' => "\\t"
+      case '\0' => "\\0"
+      case c => s"$c"
+    }
 }

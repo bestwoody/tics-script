@@ -49,6 +49,9 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression(oneEMINUS4, "1.0E-4")
     testCompileExpression(oneE8, "1.0E8")
     testCompileExpression(abc, "'abc'")
+    testCompileExpression("\\", "'\\\\'")
+    testCompileExpression("\'", "'\\''")
+    testCompileExpression("\"a\bb\fc\rd\ne\tf\0g\"", "'\"a\\bb\\fc\\rd\\ne\\tf\\0g\"'")
   }
 
   test("arithmetic expressions") {
