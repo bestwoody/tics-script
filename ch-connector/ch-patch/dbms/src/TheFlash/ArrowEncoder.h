@@ -17,7 +17,6 @@
 
 #include "SafeBlockIO.h"
 
-
 namespace DB
 {
 
@@ -258,12 +257,16 @@ private:
     // TODO: Only fetch types once
     // TODO: Check by id, not by name, or:
     // TODO: Use template + trait for faster and cleaner code
-    std::shared_ptr<arrow::Array> columnToArrowArray(DB::DataTypePtr & type, DB::ColumnPtr & column)
+    std::shared_ptr<arrow::Array> columnToArrowArray(const DB::DataTypePtr & type, DB::ColumnPtr column)
     {
         auto pool = arrow::default_memory_pool();
-        auto name = type->getName();
         std::shared_ptr<arrow::Array> array;
         arrow::Status status;
+
+        if (DB::ColumnPtr materialized = column->convertToFullColumnIfConst()) {
+            column = materialized;
+        }
+        auto name = type->getName();
 
         if (name == "String")
         {

@@ -65,7 +65,7 @@ public:
 
     void startExecuting();
 
-    void run();
+    void run() override;
 
     EncoderPtr getExecution();
 
