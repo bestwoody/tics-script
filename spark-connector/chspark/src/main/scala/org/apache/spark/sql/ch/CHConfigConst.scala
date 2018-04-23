@@ -16,8 +16,8 @@
 package org.apache.spark.sql.ch
 
 object CHConfigConst {
-  val ENABLE_CODE_GEN: String = "spark.ch.plan.codegen"
   val ENABLE_PUSHDOWN_AGG: String = "spark.ch.plan.pushdown.agg"
+  val ENABLE_SINGLE_NODE_OPT: String = "spark.ch.plan.single.node.opt"
   val ENABLE_SELRAW: String = "spark.ch.storage.selraw"
   val ENABLE_SELRAW_TABLE_INFO: String = "spark.ch.storage.tableinfo.selraw"
 }

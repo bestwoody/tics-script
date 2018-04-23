@@ -25,8 +25,10 @@ export default_encoders="16"
 
 # Pushdown aggregation ops, should be always true unless for tracing debugs
 export pushdown="true"
-# Use code gen, should be always true unless for tracing bugs
-export codegen="true"
+
+# Aggressive optimization for single-node table, i.e. pushdown more aggregates.
+# Should be always true unless for debug purpose.
+export single_node_opt="true"
 
 # Use SELRAW for any query launch by CHSpark (except fetch table info)
 # DON'T set to 'true' for Non-Mutable table
