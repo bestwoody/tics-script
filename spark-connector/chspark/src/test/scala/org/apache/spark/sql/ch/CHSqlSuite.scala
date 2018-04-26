@@ -69,6 +69,7 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression(a >= b, "(a >= b)")
     testCompileExpression(a < b, "(a < b)")
     testCompileExpression(a <= b, "(a <= b)")
+    testCompileExpression(a in (b, c), "a IN (b, c)")
   }
 
   test("logical expressions") {

@@ -16,7 +16,7 @@
 package org.apache.spark.sql.ch
 
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.types.StringType
 
 /**
@@ -120,6 +120,7 @@ object CHSql {
       case EqualTo(left, right) => s"(${compileExpression(left)} = ${compileExpression(right)})"
       case And(left, right) => s"(${compileExpression(left)} AND ${compileExpression(right)})"
       case Or(left, right) => s"(${compileExpression(left)} OR ${compileExpression(right)})"
+      case In(value, list) => s"${compileExpression(value)} IN (${list.map(compileExpression).mkString(", ")})"
       case AggregateExpression(aggregateFunction, _, _, _) => compileExpression(aggregateFunction)
       case Average(child) => s"AVG(${compileExpression(child)})"
       case Count(children) => s"COUNT(${children.map(compileExpression).mkString(", ")})"

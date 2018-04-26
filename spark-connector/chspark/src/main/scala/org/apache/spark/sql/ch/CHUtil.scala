@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import java.util.UUID
 
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.types._
 
@@ -92,7 +92,7 @@ object CHUtil {
     }
   }
 
-  // TODO: Pushdown more, like `In`
+  // TODO: Pushdown more.
   def isSupportedExpression(exp: Expression): Boolean = {
     // println("PROBE isSupportedExpression:" + exp.getClass.getName + ", " + exp)
     exp match {
@@ -134,6 +134,8 @@ object CHUtil {
         isSupportedExpression(lhs) && isSupportedExpression(rhs)
       case Or(lhs, rhs) =>
         isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case In(value, list) =>
+        isSupportedExpression(value) && list.forall(isSupportedExpression)
       case AggregateExpression(aggregateFunction, _, _, _) =>
         isSupportedAggregate(aggregateFunction)
       case _ => false

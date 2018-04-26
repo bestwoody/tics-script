@@ -70,6 +70,8 @@ class CHStrategySuite extends SharedSQLContext {
       multiNodeT, "CH plan [Project [mt_a], Filter [(mt_a IS NOT NULL), (mt_a = 0)], Aggregate [], TopN []]")))
     testQuery("select mt_a from mt where mt_b = 0", Map((
       multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [(mt_b IS NOT NULL), (mt_b = 0)], Aggregate [], TopN []]")))
+    testQuery("select mt_a from mt where mt_a in (1, 2, mt_b)", Map((
+      multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [(mt_a IN (1, 2, mt_b))], Aggregate [], TopN []]")))
   }
 
   test("multi-node aggregate plans") {
