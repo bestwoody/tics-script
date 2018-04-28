@@ -12,11 +12,11 @@
         * Original MergeTree engine, partitioning by `YYMM(date)`
     * SelRaw:
         * Spark + CH
-        * MutableMergeTree engine, partitioning by `hash(primary key) / mod`
+        * MutableMergeTree engine, partitioning by `hash(primary key) % mod`
         * Use SelRaw instead of Select, allow duplicated primary key
     * Mutable
         * Spark + CH, Support Update/Delete
-        * MutableMergeTree engine, partitioning by `hash(primary key) / mod`
+        * MutableMergeTree engine, partitioning by `hash(primary key) % mod`
         * Dedupcating algorithm: parallel ReplacingDeletingSortedInputStream(it's a simple priority queue)
     * A vs B
         * `+` faster
@@ -33,7 +33,7 @@
     * `Origin > Mutable`
         * Origin is partitioned by date, MutableMergeTree has no date index
         * MutableMergeTree has extra `deduplicating on read` operation
-        * Origin is IO bond (2G/s), MutableMergeTree is CPU bound (700-900M/s)
+        * Origin is IO bound (2G/s), MutableMergeTree is CPU bound (700-900M/s. TODO: optimized, faster now)
 
 | Query    | Parquet | Origin  | SelRaw  | Mutable | Origin vs Parquet | Origin vs Mutable | Mutable vs Parquet |
 | -------- | ------: | ------: | ------: | ------: | ----------------- | ----------------- | ------------------ |
@@ -162,6 +162,7 @@ Q22, avg:  92.4, detail: [93.0, 94.0, 90.2]
 * Pushdown=true
 * Codegen=true
 * Broadcast: tables bigger than 160k rows
+* CH memory limit: 2G
 
 ### Data Set
 * TPCH-100 100G data scala
