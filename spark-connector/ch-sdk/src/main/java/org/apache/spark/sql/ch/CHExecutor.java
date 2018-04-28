@@ -15,15 +15,14 @@
 
 package org.apache.spark.sql.ch;
 
-import java.net.Socket;
-
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
-import java.io.BufferedInputStream;
-import java.io.IOException;
-
-import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.types.pojo.Schema;
+
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
 
 public class CHExecutor {
     public static class CHExecutorException extends Exception {
@@ -231,8 +230,9 @@ public class CHExecutor {
     }
 
     private void sendString(String str) throws IOException {
-        writer.writeLong((long)str.length());
-        writer.writeBytes(str);
+        byte[] utf8Bytes = str.getBytes("UTF-8");
+        writer.writeLong((long)utf8Bytes.length);
+        writer.write(utf8Bytes);
     }
 
     private void fetchSchema() throws IOException, CHExecutorException {
