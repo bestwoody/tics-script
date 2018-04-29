@@ -1,6 +1,7 @@
 origin_ensure_not_changed()
 {
 	local target="$1"
+	local force="$2"
 	local old=`pwd`
 
 	cd "$target"
@@ -9,8 +10,12 @@ origin_ensure_not_changed()
 	local not_staged=`echo "$patch" | grep "Changes not staged"`
 	local untracked=`echo "$patch" | grep "Untracked"`
 	if [ ! -z "$not_staged" ] || [ ! -z "$untracked" ]; then
-		echo "origin dir has modified content, remove it first, aborted" >&2
-		exit 1
+		if [ "$force" == "true" ]; then
+			echo "WARNING!!! origin dir has modified content, but forced to apply patch!" >&2
+		else
+			echo "origin dir has modified content, remove it first, aborted" >&2
+			exit 1
+		fi
 	fi
 
 	cd "$old"
@@ -42,8 +47,15 @@ patch_apply()
 	done
 }
 
+p="$1"
+force=""
+
 set -eu
 
+if [ ! -z "$p" ] && [ "$p" = "-f" ]; then
+	force="true"
+fi
+
 target="ch"
-origin_ensure_not_changed "$target"
+origin_ensure_not_changed "$target" "$force"
 patch_apply "$target"
