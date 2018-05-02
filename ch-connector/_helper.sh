@@ -33,6 +33,16 @@ setup_gcc_on_linux()
 {
 	export CC="gcc"
 	export CXX="g++"
+	local gcc_major=`gcc -v 2>&1 | grep '^gcc' | awk '{print $3}' | awk -F '.' '{print $1}'`
+	local gxx_major=`g++ -v 2>&1 | grep '^gcc' | awk '{print $3}' | awk -F '.' '{print $1}'`
+	if [ "$gcc_major" != "7" ]; then
+		echo "gcc found but not gcc-7, install it first, exiting" >&2
+		exit 1
+	fi
+	if [ "$gxx_major" != "7" ]; then
+		echo "g++ found but not g++-7, install it first, exiting" >&2
+		exit 1
+	fi
 }
 export -f setup_gcc_on_linux
 
