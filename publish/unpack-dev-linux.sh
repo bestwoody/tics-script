@@ -13,11 +13,11 @@ function cp_required_lib
 {
 	ldd "./storage/theflash" | grep 'not found' | grep -v 'required by' | awk '{print $1}' | while read libfile; do
 		libfile=`basename $libfile`
-		if [ ! -f "./inventory/libs/$libfile" ]; then
-			echo "=> $libfile required by theflash but not found in inventory/libs, exiting" >&2
+		if [ ! -f "./inventory/dylibs/$libfile" ]; then
+			echo "=> $libfile required by theflash but not found in inventory/dylibs, exiting" >&2
 			exit 1
 		else
-			cp -f "./inventory/libs/$libfile" "./storage"
+			cp -f "./inventory/dylibs/$libfile" "./storage"
 		fi
 	done
 }
@@ -27,11 +27,11 @@ function cp_indirectly_required_lib
 	ldconfig
 	ldd "./theflash" | grep 'not found' | grep 'required by' | awk -F ':' '{print $2}' | uniq | while read libfile; do
 		libfile=`basename $libfile`
-		if [ ! -f "../inventory/libs/$libfile" ]; then
-			echo "=> $libfile required by theflash indirectly but not found in inventory/libs, exiting" >&2
+		if [ ! -f "../inventory/dylibs/$libfile" ]; then
+			echo "=> $libfile required by theflash indirectly but not found in inventory/dylibs, exiting" >&2
 			exit 1
 		else
-			cp -f "../inventory/libs/$libfile" "./"
+			cp -f "../inventory/dylibs/$libfile" "./"
 		fi
 	done
 	cd ".."
