@@ -17,69 +17,66 @@ package org.apache.spark.sql.ch
 
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.concurrent.atomic.AtomicLong
+
+import com.pingcap.theflash.CHSparkClient
 
 import scala.util.Random
 
 object CHRawScala {
   def main(args: Array[String]) {
-    if (args.size < 3) {
-      println("usage: <bin> query-sql partitions decoders encoders [verb=0|1|2] [host] [port]")
-      return;
+    if (args.size < 2) {
+      println("usage: <bin> query-sql partitions [verb=0|1|2] [host] [port]")
+      return
     }
 
     val query: String = args(0)
     val partitions: Int = args(1).toInt
-    val decoders: Int = args(2).toInt
-    val encoders: Int = args(3).toInt
 
-    val verb: Int = if (args.size >= 5) args(4).toInt else 2
+    val verb: Int = if (args.size >= 3) args(2).toInt else 2
 
-    val host: String = if (args.size >= 6) args(5) else "127.0.0.1"
-    val port: Int = if (args.size >= 7) args(6).toInt else 9006
+    val host: String = if (args.size >= 4) args(3) else "127.0.0.1"
+    val port: Int = if (args.size >= 5) args(4).toInt else 9000
 
     val rid = Random.nextInt
     val qid = "chraw-" + (if (rid < 0) -rid else rid)
 
     val workers = new Array[Thread](partitions);
 
-    var totalRows: Long = 0
-    var totalBlocks: Long = 0
-    var totalBytes: Long = 0
+    var totalRows: AtomicLong = new AtomicLong(0)
+    var totalBlocks: AtomicLong = new AtomicLong(0)
+    var totalBytes: AtomicLong = new AtomicLong(0)
 
     def addRows(n: Long, cb: Long): Unit = {
-      this.synchronized {
-        totalRows += n
-        totalBlocks += 1
-        totalBytes += cb
-      }
+      totalRows.addAndGet(n)
+      totalBlocks.incrementAndGet()
+      totalBytes.addAndGet(cb)
     }
 
     if (verb >= 0) {
-      println("Starting, partitions: " + partitions + ", decoders: " + decoders + ", encoders: " + encoders)
+      println("Starting, partitions: " + partitions)
     }
     val startTime = new Date()
 
     for (i <- 0 until partitions) {
       workers(i) = new Thread {
         override def run {
-          val resp = new CHExecutorParall(qid, query, host, port, "", decoders, encoders, partitions, i, false)
+          val client = new CHSparkClient(qid, query, host, port, partitions, i)
           if (verb >= 1) {
             println("#" + i + " start")
           }
           var n: Int = 0
-          var block = resp.next
-          while (block != null) {
+          while (client.hasNext) {
             if (verb >= 2) {
               println("#" + i + "@" + n + " block")
             }
-            val columns = block.decoded.block.getFieldVectors
-            val rows: Long = if (columns.isEmpty) 0 else { columns.get(0).getValueCount }
-            addRows(rows, block.dataSize)
-            block.close
-            block = resp.next
+            val block = client.next
+            val rows = block.rowCount()
+            addRows(rows, block.byteCount())
+            block.free()
             n += 1
           }
-          resp.close
+          client.close()
           if (verb >= 1) {
             println("#" + i + " finish")
           }
@@ -96,7 +93,7 @@ object CHRawScala {
 
     if (verb >= 0) {
       println("All finish, total rows: " + totalRows + ", blocks: " + totalBlocks + ", bytes: " + totalBytes)
-      println("Elapsed: " + dateFormat.format(elapsed) + ", bytes/s: " + (totalBytes * 1000 / elapsed))
+      println("Elapsed: " + dateFormat.format(elapsed) + ", mb/s: " + (totalBytes.get().toDouble / 1000 / elapsed))
     }
   }
 }

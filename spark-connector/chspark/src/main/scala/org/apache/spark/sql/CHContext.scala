@@ -38,7 +38,7 @@ class CHContext (val sparkSession: SparkSession)
 
   def mapCHTable(
     host: String = "127.0.0.1",
-    port: Int = 9006,
+    port: Int = 9000,
     database: String = null,
     table: String,
     partitions: Int = 16,
@@ -52,7 +52,7 @@ class CHContext (val sparkSession: SparkSession)
   }
 
   def mapCHClusterTable(
-    addresses: Seq[(String, Int)] = Seq(("127.0.0.1", 9006)),
+    addresses: Seq[(String, Int)] = Seq(("127.0.0.1", 9000)),
     database: String = null,
     table: String,
     partitions: Int = 16,
@@ -68,7 +68,7 @@ class CHContext (val sparkSession: SparkSession)
 
   def mapCHClusterTableSimple(
     hosts: String = "127.0.0.1",
-    port: Int = 9006,
+    port: Int = 9000,
     database: String = null,
     table: String,
     partitions: Int = 16,

@@ -1,0 +1,126 @@
+diff --git a/dbms/src/Server/TCPHandler.cpp b/dbms/src/Server/TCPHandler.cpp
+index 76a79d097229..e20cb37f1831 100644
+--- a/dbms/src/Server/TCPHandler.cpp
++++ b/dbms/src/Server/TCPHandler.cpp
+@@ -22,6 +22,7 @@
+ #include <Interpreters/executeQuery.h>
+ #include <Interpreters/Quota.h>
+ #include <Interpreters/TablesStatus.h>
++#include <Interpreters/SharedQueries.h>
+ 
+ #include <Storages/StorageMemory.h>
+ #include <Storages/StorageReplicatedMergeTree.h>
+@@ -134,6 +135,8 @@ void TCPHandler::runImpl()
+          */
+         std::unique_ptr<Exception> exception;
+ 
++        String shared_query_id;
++
+         try
+         {
+             /// Restore context of request.
+@@ -154,7 +157,29 @@ void TCPHandler::runImpl()
+             state.maybe_compressed_in.reset();  /// For more accurate accounting by MemoryTracker.
+ 
+             /// Processing Query
+-            state.io = executeQuery(state.query, query_context, false, state.stage);
++            const Settings & settings = query_context.getSettingsRef();
++            if (settings.shared_query_clients && !state.query_id.empty())
++            {
++                LOG_DEBUG(log, "shared query");
++
++                state.io = query_context.getSharedQueries()->getOrCreateBlockIO(
++                    state.query_id,
++                    settings.shared_query_clients,
++                    [&]()
++                    {
++                        return executeQuery(state.query, query_context, false, state.stage);
++                    });
++
++                /// As getOrCreateBlockIO could produce exception, this line must be put after.
++                shared_query_id = state.query_id;
++
++                if (state.io.out)
++                    throw Exception("Insert query is not supported in shared query mode");
++            }
++            else
++            {
++                state.io = executeQuery(state.query, query_context, false, state.stage);
++            }
+ 
+             if (state.io.out)
+                 state.need_receive_data_for_insert = true;
+@@ -165,6 +190,8 @@ void TCPHandler::runImpl()
+             /// Does the request require receive data from client?
+             if (state.need_receive_data_for_insert)
+                 processInsertQuery(global_settings);
++            else if (!shared_query_id.empty())
++                processSharedQuery();
+             else
+                 processOrdinaryQuery();
+ 
+@@ -207,6 +234,11 @@ void TCPHandler::runImpl()
+             exception = std::make_unique<Exception>("Unknown exception", ErrorCodes::UNKNOWN_EXCEPTION);
+         }
+ 
++        if (!shared_query_id.empty())
++        {
++            query_context.getSharedQueries()->onSharedQueryFinish(shared_query_id);
++        }
++
+         bool network_error = false;
+ 
+         try
+@@ -223,6 +255,13 @@ void TCPHandler::runImpl()
+ 
+         try
+         {
++            // Manually call cancel before reset, as state.io.in is shared between clients in shared mode.
++            if (!shared_query_id.empty())
++            {
++                if (IProfilingBlockInputStream * input = dynamic_cast<IProfilingBlockInputStream *>(state.io.in.get()))
++                    input->cancel(true);
++            }
++
+             state.reset();
+         }
+         catch (...)
+@@ -296,6 +335,38 @@ void TCPHandler::processInsertQuery(const Settings & global_settings)
+     state.io.onFinish();
+ }
+ 
++void TCPHandler::processSharedQuery()
++{
++    /// Send header-block, to allow client to prepare output format for data to send.
++    {
++        Block header = state.io.in->getHeader();
++        if (header)
++            sendData(header);
++    }
++
++    state.io.in->readPrefix();
++
++    while (true)
++    {
++        Block block;
++        if (isQueryCancelled())
++        {
++            LOG_WARNING(log, "Cancel input stream");
++            if (IProfilingBlockInputStream * input = dynamic_cast<IProfilingBlockInputStream *>(state.io.in.get()))
++                input->cancel(true);
++        }
++        else
++        {
++            block = state.io.in->read();
++        }
++        sendData(block);
++        if (!block)
++            break;
++    }
++
++    state.io.in->readSuffix();
++    state.io.onFinish();
++}
+ 
+ void TCPHandler::processOrdinaryQuery()
+ {

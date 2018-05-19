@@ -1,0 +1,35 @@
+diff --git a/dbms/src/Interpreters/Context.cpp b/dbms/src/Interpreters/Context.cpp
+index 8fe51bf5c08b..e20f1adcaa03 100644
+--- a/dbms/src/Interpreters/Context.cpp
++++ b/dbms/src/Interpreters/Context.cpp
+@@ -38,6 +38,7 @@
+ #include <Interpreters/SystemLog.h>
+ #include <Interpreters/QueryLog.h>
+ #include <Interpreters/PartLog.h>
++#include <Interpreters/SharedQueries.h>
+ #include <Interpreters/Context.h>
+ #include <Common/DNSCache.h>
+ #include <IO/ReadBufferFromFile.h>
+@@ -139,6 +140,7 @@ struct ContextShared
+     size_t max_table_size_to_drop = 50000000000lu;          /// Protects MergeTree tables from accidental DROP (50GB by default)
+     String format_schema_path;                              /// Path to a directory that contains schema files used by input formats.
+ 
++    SharedQueriesPtr shared_queries;                        /// The cache of shared queries.
+ 
+     /// Named sessions. The user could specify session identifier to reuse settings and temporary tables in subsequent requests.
+ 
+@@ -1684,6 +1686,14 @@ void Context::setFormatSchemaPath(const String & path)
+     shared->format_schema_path = path;
+ }
+ 
++SharedQueriesPtr Context::getSharedQueries()
++{
++    auto lock = getLock();
++
++    if(!shared->shared_queries)
++        shared->shared_queries = std::make_shared<SharedQueries>();
++    return shared->shared_queries;
++}
+ 
+ SessionCleaner::~SessionCleaner()
+ {

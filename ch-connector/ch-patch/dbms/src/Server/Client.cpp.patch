@@ -1,0 +1,49 @@
+diff --git a/dbms/src/Server/Client.cpp b/dbms/src/Server/Client.cpp
+index 1c838a99569b..1f3c0ff6ed49 100644
+--- a/dbms/src/Server/Client.cpp
++++ b/dbms/src/Server/Client.cpp
+@@ -114,6 +114,8 @@ private:
+     std::unique_ptr<Connection> connection;    /// Connection to DB.
+     String query;                        /// Current query.
+ 
++    String query_id;                     /// Use to debug shared query mode.
++
+     String format;                       /// Query results output format.
+     bool is_default_format = true;       /// false, if format is set in the config or command line.
+     size_t format_max_block_size = 0;    /// Max block size for console output.
+@@ -390,6 +392,8 @@ private:
+             ? Protocol::Encryption::Enable
+             : Protocol::Encryption::Disable;
+ 
++        query_id = config().getString("query_id", "");
++
+         String host = config().getString("host", "localhost");
+         UInt16 port = config().getInt("port", config().getInt(static_cast<bool>(encryption) ? "tcp_ssl_port" : "tcp_port", static_cast<bool>(encryption) ? DBMS_DEFAULT_SECURE_PORT : DBMS_DEFAULT_PORT));
+         String default_database = config().getString("database", "");
+@@ -735,7 +739,7 @@ private:
+     /// Process the query that doesn't require transfering data blocks to the server.
+     void processOrdinaryQuery()
+     {
+-        connection->sendQuery(query, "", QueryProcessingStage::Complete, &context.getSettingsRef(), nullptr, true);
++        connection->sendQuery(query, query_id, QueryProcessingStage::Complete, &context.getSettingsRef(), nullptr, true);
+         sendExternalTables();
+         receiveResult();
+     }
+@@ -753,7 +757,7 @@ private:
+         if (!parsed_insert_query.data && (is_interactive || (stdin_is_not_tty && std_in.eof())))
+             throw Exception("No data to insert", ErrorCodes::NO_DATA_TO_INSERT);
+ 
+-        connection->sendQuery(query_without_data, "", QueryProcessingStage::Complete, &context.getSettingsRef(), nullptr, true);
++        connection->sendQuery(query_without_data, query_id, QueryProcessingStage::Complete, &context.getSettingsRef(), nullptr, true);
+         sendExternalTables();
+ 
+         /// Receive description of table structure.
+@@ -1415,6 +1419,8 @@ public:
+             max_client_network_bandwidth = options["max_client_network_bandwidth"].as<int>();
+         if (options.count("compression"))
+             config().setBool("compression", options["compression"].as<bool>());
++        if (options.count("query_id"))
++            config().setString("query_id", options["query_id"].as<std::string>());
+     }
+ };
+ 

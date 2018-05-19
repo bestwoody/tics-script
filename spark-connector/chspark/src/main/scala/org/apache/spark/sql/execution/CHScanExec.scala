@@ -27,7 +27,7 @@ case class CHScanExec(
   @transient sparkSession: SparkSession,
   @transient chRelation: CHRelation,
   @transient chLogicalPlan: CHLogicalPlan)
-  extends LeafExecNode with ArrowBatchScan {
+  extends LeafExecNode with CHBatchScan {
 
   val useSelraw = sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW_TABLE_INFO, "false").toBoolean
 

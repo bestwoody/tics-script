@@ -15,6 +15,8 @@
 
 package org.apache.spark.sql.execution.datasources
 
+import com.pingcap.theflash.CHSparkClient
+
 import scala.collection.mutable.ListBuffer
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
@@ -23,7 +25,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch._
 import org.apache.spark.internal.Logging
-import com.pingcap.theflash.codegene.ArrowColumnBatch
+import com.pingcap.theflash.codegene.CHColumnBatch
 
 class CHScanRDD(
   @transient private val sparkSession: SparkSession,
@@ -33,53 +35,27 @@ class CHScanRDD(
   private val decoderCount: Int,
   private val encoderCount: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
 
-  override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] =
-    new Iterator[ArrowColumnBatch] {
-
-    private val part = split.asInstanceOf[CHPartition]
-    private val table = part.table
-    private val qid = part.qid
-    private val query = part.query
-
-    logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + query)
-
-    // TODO: Can't retry for now, because use the same qid to retry is illegal (expired query id).
-    private val resp = new CHExecutorParall(qid, query, table.host, table.port, table.absName,
-      decoderCount, encoderCount, partitionCount, part.clientIndex)
-
-    private def nextResult(): ArrowColumnBatch = {
-      val block = resp.next()
-      if (block != null) {
-        block.batch
-      } else {
-        null
-      }
+  override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
+    if (context.attemptNumber > 0){
+      throw new IllegalStateException("We don't support partition retry right now! partition: " + split.index + ", attemptNumber: " + context.attemptNumber())
     }
+    new Iterator[CHColumnBatch] {
 
-    private[this] var curResult: ArrowColumnBatch = _
+      private val part = split.asInstanceOf[CHPartition]
+      private val table = part.table
+      private val qid = part.qid
+      private val query = part.query
 
-    override def hasNext: Boolean = {
-      if (curResult == null) {
-        tryProceed
-      } else {
-        // close last and proceed next
-        curResult.close()
-        tryProceed
-      }
-    }
+      logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + query)
 
-    private def tryProceed = {
-      curResult = nextResult()
-      if (curResult == null) {
-        resp.close()
-        false
-      } else {
-        true
-      }
-    }
+      private val client = new CHSparkClient(qid, query, table.host, table.port, partitionCount, part.clientIndex)
 
-    override def next(): ArrowColumnBatch = curResult
-  }.asInstanceOf[Iterator[InternalRow]]
+      override def hasNext: Boolean = client.hasNext
+
+      override def next(): CHColumnBatch = new CHColumnBatch(client.next(), client.sparkSchema())
+
+    }.asInstanceOf[Iterator[InternalRow]]
+  }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
     split.asInstanceOf[CHPartition].table.host :: Nil

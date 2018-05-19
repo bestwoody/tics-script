@@ -1,0 +1,23 @@
+diff --git a/dbms/src/Interpreters/Context.h b/dbms/src/Interpreters/Context.h
+index 4f714842b620..fd2e24e86ea4 100644
+--- a/dbms/src/Interpreters/Context.h
++++ b/dbms/src/Interpreters/Context.h
+@@ -69,7 +69,8 @@ using BlockOutputStreamPtr = std::shared_ptr<IBlockOutputStream>;
+ class Block;
+ struct SystemLogs;
+ using SystemLogsPtr = std::shared_ptr<SystemLogs>;
+-
++class SharedQueries;
++using SharedQueriesPtr = std::shared_ptr<SharedQueries>;
+ 
+ /// (database name, table name)
+ using DatabaseAndTableName = std::pair<String, String>;
+@@ -385,6 +386,8 @@ public:
+     String getFormatSchemaPath() const;
+     void setFormatSchemaPath(const String & path);
+ 
++    SharedQueriesPtr getSharedQueries();
++
+     /// User name and session identifier. Named sessions are local to users.
+     using SessionKey = std::pair<String, String>;
+ 
