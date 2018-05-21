@@ -40,7 +40,7 @@ protocol/c-jni
 
 # ch-connector compile result and running data dir
 ch-connector/build
-ch-connector/origin
+ch-connector/ch-cache
 ch-connector/running
 
 # tpch generated data

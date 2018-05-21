@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Server/CMakeLists.txt b/dbms/src/Server/CMakeLists.txt
-index d268851f63a2..367b5387a449 100644
+index b2d72fb3c8b1..afa495fc1def 100644
 --- a/dbms/src/Server/CMakeLists.txt
 +++ b/dbms/src/Server/CMakeLists.txt
 @@ -25,9 +25,9 @@ add_library (clickhouse-server-lib
@@ -152,7 +152,7 @@ index d268851f63a2..367b5387a449 100644
  
      add_custom_target (clickhouse-bundle ALL DEPENDS ${CLICKHOUSE_BUNDLE})
  endif ()
-@@ -195,4 +195,4 @@ endif ()
+@@ -198,4 +198,4 @@ add_test(NAME GLIBC_required_version COMMAND bash -c "readelf -s ${CMAKE_CURRENT
  install (
      FILES config.xml users.xml
      DESTINATION  ${CLICKHOUSE_ETC_DIR}/clickhouse-server

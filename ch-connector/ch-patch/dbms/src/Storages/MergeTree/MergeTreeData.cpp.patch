@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeData.cpp b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
-index ef4b8022323a..f2c3cc896156 100644
+index a66fc19016b1..d25e2d61dccb 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeData.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
-@@ -303,8 +303,8 @@ void MergeTreeData::MergingParams::check(const NamesAndTypesList & columns) cons
+@@ -306,8 +306,8 @@ void MergeTreeData::MergingParams::check(const NamesAndTypesList & columns) cons
          throw Exception("Sign column for MergeTree cannot be specified in modes except Collapsing or VersionedCollapsing.",
                          ErrorCodes::LOGICAL_ERROR);
  
@@ -13,7 +13,7 @@ index ef4b8022323a..f2c3cc896156 100644
                          ErrorCodes::LOGICAL_ERROR);
  
      if (!columns_to_sum.empty() && mode != MergingParams::Summing)
-@@ -407,6 +407,7 @@ String MergeTreeData::MergingParams::getModeName() const
+@@ -410,6 +410,7 @@ String MergeTreeData::MergingParams::getModeName() const
          case Summing:       return "Summing";
          case Aggregating:   return "Aggregating";
          case Replacing:     return "Replacing";

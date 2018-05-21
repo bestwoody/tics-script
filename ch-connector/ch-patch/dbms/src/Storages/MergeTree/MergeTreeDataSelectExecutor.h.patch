@@ -1,10 +1,10 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
-index 1b3caeeb2593..28633dbed5d8 100644
+index e40baa9c6da7..a794d0dd1668 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.h
-@@ -58,6 +58,17 @@ private:
-         const Settings & settings,
-         const Context & context) const;
+@@ -57,6 +57,17 @@ private:
+         const Names & virt_columns,
+         const Settings & settings) const;
  
 +    BlockInputStreams spreadMarkRangesAmongStreamsOnMutableEngine(
 +        const RangesInDataParts & parts_with_ranges,

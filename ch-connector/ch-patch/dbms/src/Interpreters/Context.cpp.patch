@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/Context.cpp b/dbms/src/Interpreters/Context.cpp
-index 8fe51bf5c08b..e20f1adcaa03 100644
+index e95e4193cf8a..9f87958f034e 100644
 --- a/dbms/src/Interpreters/Context.cpp
 +++ b/dbms/src/Interpreters/Context.cpp
 @@ -38,6 +38,7 @@
@@ -10,7 +10,7 @@ index 8fe51bf5c08b..e20f1adcaa03 100644
  #include <Interpreters/Context.h>
  #include <Common/DNSCache.h>
  #include <IO/ReadBufferFromFile.h>
-@@ -139,6 +140,7 @@ struct ContextShared
+@@ -140,6 +141,7 @@ struct ContextShared
      size_t max_table_size_to_drop = 50000000000lu;          /// Protects MergeTree tables from accidental DROP (50GB by default)
      String format_schema_path;                              /// Path to a directory that contains schema files used by input formats.
  
@@ -18,7 +18,7 @@ index 8fe51bf5c08b..e20f1adcaa03 100644
  
      /// Named sessions. The user could specify session identifier to reuse settings and temporary tables in subsequent requests.
  
-@@ -1684,6 +1686,14 @@ void Context::setFormatSchemaPath(const String & path)
+@@ -1703,6 +1705,14 @@ void Context::setFormatSchemaPath(const String & path)
      shared->format_schema_path = path;
  }
  

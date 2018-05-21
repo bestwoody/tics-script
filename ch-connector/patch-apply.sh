@@ -1,61 +1,86 @@
-origin_ensure_not_changed()
+print_target_commit_hash()
 {
 	local target="$1"
-	local force="$2"
+
 	local old=`pwd`
-
 	cd "$target"
+	local hash=`git log HEAD -1 | grep commit | awk '{print $2}'`
+	cd "$old"
+	echo "$hash"
+}
 
-	local patch=`git status`
-	local not_staged=`echo "$patch" | grep "Changes not staged"`
-	local untracked=`echo "$patch" | grep "Untracked"`
-	if [ ! -z "$not_staged" ] || [ ! -z "$untracked" ]; then
-		if [ "$force" == "true" ]; then
-			echo "WARNING!!! origin dir has modified content, but forced to apply patch!" >&2
-		else
-			echo "origin dir has modified content, remove it first, aborted" >&2
-			exit 1
-		fi
+update_target_unpatched_cache()
+{
+	local target="$1"
+
+	mkdir -p "$target-cache"
+	local hash_file="$target-cache/_git_hash"
+	if [ ! -f "$hash_file" ] || [ "`print_target_commit_hash $target`" != "`cat $hash_file`" ]; then
+		rm -rf "$target-cache/*"
+		find "$target-patch" -type f | while read patch_file; do
+			local raw_file="${patch_file#*patch}"
+			local patch_ext="${patch_file##*.}"
+			if [ "$patch_ext" == "patch" ]; then
+				raw_file="${raw_file%.patch}"
+			fi
+			local origin_file="$target""$raw_file"
+
+			local cache_file="$target-cache""$raw_file"
+			local cache_path=`dirname "$cache_file"`
+			mkdir -p "$cache_path"
+			if [ "$patch_ext" == "patch" ]; then
+				if [ ! -f "$origin_file" ]; then
+					echo "origin file $origin_file missed, aborted" >&2
+				fi
+				cp "$origin_file" "$cache_file"
+			else
+				cp "$patch_file" "$cache_file"
+			fi
+		done
 	fi
 
-	cd "$old"
+	print_target_commit_hash $target > $hash_file
 }
 
 patch_apply()
 {
 	local target="$1"
 
-	find "$target-patch" -type f | while read patch_file; do
-		local origin_file="$target""${patch_file#*patch}"
-		local origin_path=`dirname "$origin_file"`
-		local patch_ext="${patch_file##*.}"
+	update_target_unpatched_cache "$target"
 
-		mkdir -p "$origin_path"
+	find "$target-patch" -type f | while read patch_file; do
+		local raw_file="${patch_file#*patch}"
+		local patch_ext="${patch_file##*.}"
+		if [ "$patch_ext" == "patch" ]; then
+			raw_file="${raw_file%.patch}"
+		fi
+
+		local origin_file="$target""$raw_file"
+		mkdir -p `dirname "$origin_file"`
+
+		local cache_file="$target-cache""$raw_file"
+		local patching_file="$cache_file.patching"
 
 		if [ "$patch_ext" == "patch" ]; then
-			origin_file="${origin_file%.patch}"
-			if [ ! -f "$origin_file" ]; then
-				echo "origin file $origin_file missed, aborted" >&2
+			cp "$cache_file" "$patching_file"
+			patch -p0 "$patching_file" < "$patch_file"
+			if [ -z "`diff $patching_file $origin_file`" ]; then
+				echo "ignore patching '$origin_file'"
+			else
+				echo "patching '$origin_file' with '$patch_file'"
+				mv "$patching_file" "$origin_file"
 			fi
-			# echo "patching '$origin_file' with '$patch_file'"
-			patch -p0 "$origin_file" < "$patch_file"
 		else
-			echo "cp '$origin_file'"
-			cp "$patch_file" "$origin_file"
+			if [ -f "$origin_file" ] && [ -z "`diff $patch_file $origin_file`" ]; then
+				echo "ignore cp '$origin_file'"
+			else
+				echo "cp '$origin_file'"
+				cp "$patch_file" "$origin_file"
+			fi
 		fi
 		echo "OK"
 	done
 }
 
-p="$1"
-force=""
-
 set -eu
-
-if [ ! -z "$p" ] && [ "$p" = "-f" ]; then
-	force="true"
-fi
-
-target="ch"
-origin_ensure_not_changed "$target" "$force"
-patch_apply "$target"
+patch_apply "ch"

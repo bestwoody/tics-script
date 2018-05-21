@@ -43,10 +43,8 @@ Block ReplacingDeletingSortedBlockInputStream::readImpl()
     if (children.size() == 1 && skip_single_child)
         return children[0]->read();
 
-    Block header;
     MutableColumns merged_columns;
-
-    init(header, merged_columns);
+    init(merged_columns);
 
     if (has_collation)
         throw Exception("Logical error: " + getName() + " does not support collations", ErrorCodes::LOGICAL_ERROR);
@@ -159,12 +157,12 @@ void ReplacingDeletingSortedBlockInputStream::merge_opt(MutableColumns & merged_
 
         bool is_complete_top = queue.empty() || current.totallyLessOrEquals(queue.top());
         bool is_clean_top = is_complete_top && current->isFirst() && (queue.empty() || current.totallyLessIgnOrder(queue.top()));
-        if(is_clean_top && merged_rows == 0 && current_key.empty())
+        if (is_clean_top && merged_rows == 0 && current_key.empty())
         {
             size_t source_num = current.impl->order;
 
             bool direct_move = true;
-            if(version_column_number != -1)
+            if (version_column_number != -1)
             {
                 const auto del_column =  typeid_cast<const ColumnUInt8 *>(current->all_columns[delmark_column_number]);
 
@@ -173,17 +171,19 @@ void ReplacingDeletingSortedBlockInputStream::merge_opt(MutableColumns & merged_
                 const IColumn::Filter & reverse_filter = del_column->getData();
                 IColumn::Filter filter(reverse_filter.size());
                 bool no_delete = true;
-                for(size_t i = 0; i < reverse_filter.size(); i ++)
+                for (size_t i = 0; i < reverse_filter.size(); i ++)
                 {
                     no_delete &= !reverse_filter[i];
                     filter[i] = reverse_filter[i] ^ (UInt8)1;
                 }
 
                 direct_move = no_delete;
-                if(!direct_move){
+                if (!direct_move)
+                {
                     for (size_t i = 0; i < num_columns; ++i)
                     {
-                        merged_columns[i] = source_blocks[source_num]->getByPosition(i).column->filter(filter, -1);
+                        ColumnPtr column = source_blocks[source_num]->getByPosition(i).column->filter(filter, -1);
+                        merged_columns[i] = (*std::move(column)).mutate();
                     }
 
                     RowSourcePart row_source(source_num);
@@ -199,10 +199,12 @@ void ReplacingDeletingSortedBlockInputStream::merge_opt(MutableColumns & merged_
                 }
             }
 
-            if(direct_move){
+            if (direct_move)
+            {
                 for (size_t i = 0; i < num_columns; ++i)
                 {
-                    merged_columns[i] = source_blocks[source_num]->getByPosition(i).column->mutate();
+                    ColumnPtr column = source_blocks[source_num]->getByPosition(i).column;
+                    merged_columns[i] = (*std::move(column)).mutate();
                 }
 
                 if (out_row_sources_buf)
@@ -224,9 +226,11 @@ void ReplacingDeletingSortedBlockInputStream::merge_opt(MutableColumns & merged_
             continue;
         }
 
-        while(true){
+        while (true)
+        {
             /// If there are enough rows and the last one is calculated completely.
-            if(merged_rows >= max_block_size){
+            if (merged_rows >= max_block_size)
+            {
                 queue.push(current);
                 return;
             }

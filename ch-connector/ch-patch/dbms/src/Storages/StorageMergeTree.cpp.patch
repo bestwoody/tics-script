@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index 293c3254a8f3..b7d0b8a3d1c8 100644
+index da205e9a2930..1df9c2b7862d 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
 @@ -14,6 +14,16 @@

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Server/Server.cpp b/dbms/src/Server/Server.cpp
-index 12598af18e67..f6c0e53183c8 100644
+index 66afef5cfc8f..af01419eeebb 100644
 --- a/dbms/src/Server/Server.cpp
 +++ b/dbms/src/Server/Server.cpp
 @@ -41,6 +41,8 @@
@@ -11,7 +11,7 @@ index 12598af18e67..f6c0e53183c8 100644
  namespace CurrentMetrics
  {
      extern const Metric Revision;
-@@ -406,6 +408,23 @@ int Server::main(const std::vector<std::string> & /*args*/)
+@@ -433,6 +435,23 @@ int Server::main(const std::vector<std::string> & /*args*/)
  #endif
                  }
  

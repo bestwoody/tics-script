@@ -1,42 +1,27 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index afc9700cf0b9..0e47f3fdd564 100644
+index 333f9c7cc602..1647407fd8fa 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-@@ -7,10 +7,14 @@
- #include <Storages/MergeTree/MergeTreeReadPool.h>
- #include <Storages/MergeTree/MergeTreeThreadBlockInputStream.h>
- #include <Storages/MergeTree/PKCondition.h>
-+
- #include <Parsers/ASTIdentifier.h>
+@@ -11,6 +11,12 @@
  #include <Parsers/ASTFunction.h>
  #include <Parsers/ASTSampleRatio.h>
  
++#include <Storages/MutableSupport.h>
 +#include <DataStreams/DebugPrintBlockInputStream.h>
 +#include <DataStreams/DedupSortedBlockInputStream.h>
++#include <DataStreams/ReplacingDeletingSortedBlockInputStream.h>
++#include <DataStreams/AsynchronousBlockInputStream.h>
 +
  /// Allow to use __uint128_t as a template parameter for boost::rational.
  // https://stackoverflow.com/questions/41198673/uint128-t-not-working-with-clang-and-libstdc
  #if !defined(__GLIBCXX_BITSIZE_INT_N_0) && defined(__SIZEOF_INT128__)
-@@ -44,6 +48,10 @@ namespace std
- #include <DataTypes/DataTypeEnum.h>
- #include <Storages/VirtualColumnUtils.h>
- 
-+#include <Storages/MutableSupport.h>
-+#include <DataStreams/ReplacingDeletingSortedBlockInputStream.h>
-+#include <DataStreams/AsynchronousBlockInputStream.h>
-+
- 
- namespace ProfileEvents
- {
-@@ -546,9 +554,36 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+@@ -546,9 +552,35 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
      ProfileEvents::increment(ProfileEvents::SelectedRanges, sum_ranges);
      ProfileEvents::increment(ProfileEvents::SelectedMarks, sum_marks);
  
 +    bool is_mutable_engine = (data.merging_params.mode == MergeTreeData::MergingParams::Mutable && !select.raw_for_mutable);
 +
      BlockInputStreams res;
- 
--    if (select.final())
 +    if (is_mutable_engine)
 +    {
 +        column_names_to_read.insert(column_names_to_read.end(), MutableSupport::version_column_name);
@@ -58,7 +43,8 @@ index afc9700cf0b9..0e47f3fdd564 100644
 +            prewhere_column,
 +            virt_column_names,
 +            settings);
-+
+ 
+-    if (select.final())
 +        if (res.size() == 0)
 +            return res;
 +    }
@@ -66,28 +52,21 @@ index afc9700cf0b9..0e47f3fdd564 100644
      {
          /// Add columns needed to calculate primary key and the sign.
          std::vector<String> add_columns = data.getPrimaryExpression()->getRequiredColumns();
-@@ -743,6 +778,7 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreams(
+@@ -814,6 +846,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+ 
+         case MergeTreeData::MergingParams::Graphite:
+             throw Exception("GraphiteMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
++
++        case MergeTreeData::MergingParams::Mutable:
++            throw Exception("MutableMergeTree doesn't handle here", ErrorCodes::LOGICAL_ERROR);
+     }
+ 
+     return {merged};
+@@ -926,4 +961,161 @@ MarkRanges MergeTreeDataSelectExecutor::markRangesFromPKRange(
      return res;
  }
  
 +
- BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal(
-     RangesInDataParts && parts,
-     const Names & column_names,
-@@ -833,6 +869,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
- 
-             case MergeTreeData::MergingParams::Graphite:
-                 throw Exception("GraphiteMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
-+
-+            case MergeTreeData::MergingParams::Mutable:
-+                throw Exception("MutableMergeTree doesn't handle here", ErrorCodes::LOGICAL_ERROR);
-         }
- 
-         res.emplace_back(merged);
-@@ -842,6 +881,163 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
- }
- 
- 
 +BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsOnMutableEngine(
 +    const RangesInDataParts & parts_with_ranges,
 +    const Names & column_names,
@@ -244,7 +223,4 @@ index afc9700cf0b9..0e47f3fdd564 100644
 +    return res;
 +}
 +
-+
- void MergeTreeDataSelectExecutor::createPositiveSignCondition(
-     ExpressionActionsPtr & out_expression, String & out_column, const Context & context) const
- {
+ }

@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Common/ErrorCodes.cpp b/dbms/src/Common/ErrorCodes.cpp
-index 46b4c3394e50..49c64dbea7e8 100644
+index 7ee9d799612e..5f4dd9e7bde3 100644
 --- a/dbms/src/Common/ErrorCodes.cpp
 +++ b/dbms/src/Common/ErrorCodes.cpp
-@@ -379,6 +379,11 @@ namespace ErrorCodes
+@@ -378,6 +378,11 @@ namespace ErrorCodes
      extern const int POCO_EXCEPTION = 1000;
      extern const int STD_EXCEPTION = 1001;
      extern const int UNKNOWN_EXCEPTION = 1002;

@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Server/TCPHandler.h b/dbms/src/Server/TCPHandler.h
-index 444d8eb49901..6204fc105cac 100644
+index 7202067dab8b..51a77541d52a 100644
 --- a/dbms/src/Server/TCPHandler.h
 +++ b/dbms/src/Server/TCPHandler.h
-@@ -126,7 +126,7 @@ private:
+@@ -134,7 +134,7 @@ private:
  
      /// Process a request that does not require the receiving of data blocks from the client
      void processOrdinaryQuery();

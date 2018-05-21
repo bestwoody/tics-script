@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/Context.h b/dbms/src/Interpreters/Context.h
-index 4f714842b620..fd2e24e86ea4 100644
+index a8bfc5975de6..72370e80b2d2 100644
 --- a/dbms/src/Interpreters/Context.h
 +++ b/dbms/src/Interpreters/Context.h
 @@ -69,7 +69,8 @@ using BlockOutputStreamPtr = std::shared_ptr<IBlockOutputStream>;
@@ -12,7 +12,7 @@ index 4f714842b620..fd2e24e86ea4 100644
  
  /// (database name, table name)
  using DatabaseAndTableName = std::pair<String, String>;
-@@ -385,6 +386,8 @@ public:
+@@ -388,6 +389,8 @@ public:
      String getFormatSchemaPath() const;
      void setFormatSchemaPath(const String & path);
  

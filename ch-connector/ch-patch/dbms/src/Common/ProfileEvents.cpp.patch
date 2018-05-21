@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Common/ProfileEvents.cpp b/dbms/src/Common/ProfileEvents.cpp
-index 71bf37c1a3a3..f332a12546bd 100644
+index 027f52b2f371..0c5bbb76a331 100644
 --- a/dbms/src/Common/ProfileEvents.cpp
 +++ b/dbms/src/Common/ProfileEvents.cpp
 @@ -6,6 +6,7 @@
