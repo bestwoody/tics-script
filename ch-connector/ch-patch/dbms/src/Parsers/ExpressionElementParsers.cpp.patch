@@ -1,0 +1,12 @@
+diff --git a/dbms/src/Parsers/ExpressionElementParsers.cpp b/dbms/src/Parsers/ExpressionElementParsers.cpp
+index 29cca1b2bda2..95ff93eae209 100644
+--- a/dbms/src/Parsers/ExpressionElementParsers.cpp
++++ b/dbms/src/Parsers/ExpressionElementParsers.cpp
+@@ -664,6 +664,7 @@ const char * ParserAliasBase::restricted_keywords[] =
+     "FORMAT",
+     "UNION",
+     "INTO",
++    "PARTITION",
+     nullptr
+ };
+ 

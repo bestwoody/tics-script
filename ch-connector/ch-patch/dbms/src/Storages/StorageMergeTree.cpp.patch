@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index da205e9a2930..1df9c2b7862d 100644
+index da205e9a2930..1f94b9e0a34e 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
 @@ -14,6 +14,16 @@
@@ -19,15 +19,13 @@ index da205e9a2930..1df9c2b7862d 100644
  #include <Poco/DirectoryIterator.h>
  #include <Poco/File.h>
  
-@@ -105,12 +115,95 @@ BlockInputStreams StorageMergeTree::read(
+@@ -105,12 +115,93 @@ BlockInputStreams StorageMergeTree::read(
      const size_t max_block_size,
      const unsigned num_streams)
  {
 -    return reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
 +    auto res = reader.read(column_names, query_info, context, processed_stage, max_block_size, num_streams, 0);
-+    const SortDescription & description = data.getSortDescription();
-+
-+    const ASTSelectQuery * select_query = typeid_cast<const ASTSelectQuery *>(&*query_info.query);
++    const ASTSelectQuery * select_query = typeid_cast<const ASTSelectQuery *>(query_info.query.get());
 +
 +    if (data.merging_params.mode == MergeTreeData::MergingParams::Mutable)
 +    {
@@ -118,7 +116,7 @@ index da205e9a2930..1df9c2b7862d 100644
  }
  
  bool StorageMergeTree::checkTableCanBeDropped() const
-@@ -120,6 +213,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
+@@ -120,6 +211,11 @@ bool StorageMergeTree::checkTableCanBeDropped() const
      return true;
  }
  

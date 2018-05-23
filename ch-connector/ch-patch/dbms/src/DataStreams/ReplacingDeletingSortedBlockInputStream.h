@@ -1,5 +1,10 @@
 #pragma once
 
+#if __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wunused-private-field"
+#endif
+
 #include <common/logger_useful.h>
 
 #include <DataStreams/MergingSortedBlockInputStream.h>
@@ -66,3 +71,7 @@ private:
     void insertRow(MutableColumns & merged_columns, size_t & merged_rows);
 };
 }
+
+#if __clang__
+    #pragma clang diagnostic pop
+#endif

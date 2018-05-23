@@ -23,7 +23,7 @@ public:
     String getName() const override { return "RemoveColumns"; }
 
 protected:
-    Block getHeader() const
+    Block getHeader() const override
     {
         Block res = children.back()->getHeader();
         if (!res)

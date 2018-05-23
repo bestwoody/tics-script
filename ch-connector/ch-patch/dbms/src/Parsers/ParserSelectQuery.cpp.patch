@@ -1,16 +1,27 @@
 diff --git a/dbms/src/Parsers/ParserSelectQuery.cpp b/dbms/src/Parsers/ParserSelectQuery.cpp
-index 4bf89d499848..649869c25ec3 100644
+index 4bf89d499848..51dda5565078 100644
 --- a/dbms/src/Parsers/ParserSelectQuery.cpp
 +++ b/dbms/src/Parsers/ParserSelectQuery.cpp
-@@ -26,6 +26,7 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+@@ -9,6 +9,7 @@
+ #include <Parsers/ParserSampleRatio.h>
+ #include <Parsers/ParserSelectQuery.h>
+ #include <Parsers/ParserTablesInSelectQuery.h>
++#include <Parsers/ParserPartition.h>
+ 
+ 
+ namespace DB
+@@ -26,8 +27,10 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
      node = select_query;
  
      ParserKeyword s_select("SELECT");
 +    ParserKeyword s_selraw("SELRAW");
      ParserKeyword s_distinct("DISTINCT");
      ParserKeyword s_from("FROM");
++    ParserKeyword s_partition("PARTITION");
      ParserKeyword s_prewhere("PREWHERE");
-@@ -56,8 +57,11 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+     ParserKeyword s_where("WHERE");
+     ParserKeyword s_group_by("GROUP BY");
+@@ -56,8 +59,11 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
  
      /// SELECT [DISTINCT] expr list
      {
@@ -23,3 +34,17 @@ index 4bf89d499848..649869c25ec3 100644
  
          if (s_distinct.ignore(pos, expected))
              select_query->distinct = true;
+@@ -73,6 +79,13 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+             return false;
+     }
+ 
++    /// PARTITION p or PARTITION (p1, p2, ...)
++    if (s_partition.ignore(pos, expected))
++    {
++        if (!ParserPartition().parse(pos, select_query->partition_expression_list, expected))
++            return false;
++    }
++
+     /// PREWHERE expr
+     if (s_prewhere.ignore(pos, expected))
+     {

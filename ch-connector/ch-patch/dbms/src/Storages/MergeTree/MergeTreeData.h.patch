@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeData.h b/dbms/src/Storages/MergeTree/MergeTreeData.h
-index 004bd8f9354d..05123b001aef 100644
+index 004bd8f9354d..a423e3b6247d 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeData.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeData.h
 @@ -36,7 +36,6 @@ namespace ErrorCodes
@@ -25,4 +25,13 @@ index 004bd8f9354d..05123b001aef 100644
 +            || merging_params.mode == MergingParams::Mutable
              || merging_params.mode == MergingParams::VersionedCollapsing;
      }
+ 
+@@ -477,6 +478,8 @@ public:
+     /// For ATTACH/DETACH/DROP PARTITION.
+     String getPartitionIDFromQuery(const ASTPtr & partition, const Context & context);
+ 
++  /// For PARTITION SELECT.
++    NameSet getPartitionIDsInLiteral(const ASTPtr & partition, const Context & context);
+ 
+     MergeTreeDataFormatVersion format_version;
  

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeData.cpp b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
-index a66fc19016b1..d25e2d61dccb 100644
+index a66fc19016b1..7b866486b5c4 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeData.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
 @@ -306,8 +306,8 @@ void MergeTreeData::MergingParams::check(const NamesAndTypesList & columns) cons
@@ -21,3 +21,48 @@ index a66fc19016b1..d25e2d61dccb 100644
          case Graphite:      return "Graphite";
          case VersionedCollapsing:  return "VersionedCollapsing";
  
+@@ -2031,6 +2032,44 @@ String MergeTreeData::getPartitionIDFromQuery(const ASTPtr & ast, const Context
+     return partition_id;
+ }
+ 
++NameSet MergeTreeData::getPartitionIDsInLiteral(const ASTPtr &ast, const Context &)
++{
++    const auto & partition_ast = typeid_cast<const ASTPartition &>(*ast);
++
++    if (!partition_ast.value)
++        return {partition_ast.id};
++
++    const auto * partition_lit = typeid_cast<const ASTLiteral *>(partition_ast.value.get());
++    if (partition_lit && partition_lit->value.getType() == Field::Types::String)
++    {
++        return {partition_lit->value.get<String>()};
++    }
++
++    const auto * partition_function = typeid_cast<const ASTFunction *>(partition_ast.value.get());
++    if (partition_function && partition_function->name == "tuple")
++    {
++        NameSet ids;
++        bool ok = true;
++        for (const auto & item : partition_function->arguments->children)
++        {
++            const auto * partition_lit = typeid_cast<const ASTLiteral *>(item.get());
++            if (partition_lit && partition_lit->value.getType() == Field::Types::String)
++            {
++                ids.emplace(partition_lit->value.get<String>());
++            }
++            else
++            {
++                ok = false;
++                break;
++            }
++        }
++        if (ok)
++            return ids;
++    }
++
++    throw Exception("Unable to parse partition values in literal form: `" + partition_ast.fields_str.toString() + "`");
++}
++
+ MergeTreeData::DataPartsVector MergeTreeData::getDataPartsVector(const DataPartStates & affordable_states, DataPartStateVector * out_states) const
+ {
+     DataPartsVector res;

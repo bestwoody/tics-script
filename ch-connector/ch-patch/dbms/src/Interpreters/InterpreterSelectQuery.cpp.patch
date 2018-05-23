@@ -1,0 +1,21 @@
+diff --git a/dbms/src/Interpreters/InterpreterSelectQuery.cpp b/dbms/src/Interpreters/InterpreterSelectQuery.cpp
+index 5481f1de3b8f..8803741eb24d 100644
+--- a/dbms/src/Interpreters/InterpreterSelectQuery.cpp
++++ b/dbms/src/Interpreters/InterpreterSelectQuery.cpp
+@@ -676,6 +676,16 @@ QueryProcessingStage::Enum InterpreterSelectQuery::executeFetchColumns(Pipeline
+                 optimize_prewhere(*merge_tree);
+         }
+ 
++        /// PARTITION SELECT only supports MergeTree family now.
++        if (const ASTSelectQuery * select_query = typeid_cast<const ASTSelectQuery *>(query_info.query.get()))
++        {
++            const StorageMergeTree * merge_tree = dynamic_cast<const StorageMergeTree *>(storage.get());
++            if (select_query->partition_expression_list && !merge_tree)
++            {
++                throw Exception("PARTITION SELECT only supports MergeTree family.");
++            }
++        }
++
+         if (!dry_run)
+             pipeline.streams = storage->read(required_columns, query_info, context, from_stage, max_block_size, max_streams);
+ 

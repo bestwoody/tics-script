@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Parsers/ASTSelectQuery.h b/dbms/src/Parsers/ASTSelectQuery.h
-index c31e91f31949..580d248d4559 100644
+index c31e91f31949..5d3662d24d0a 100644
 --- a/dbms/src/Parsers/ASTSelectQuery.h
 +++ b/dbms/src/Parsers/ASTSelectQuery.h
-@@ -20,6 +20,7 @@ public:
+@@ -20,10 +20,12 @@ public:
  
      ASTPtr clone() const override;
  
@@ -10,3 +10,8 @@ index c31e91f31949..580d248d4559 100644
      bool distinct = false;
      ASTPtr with_expression_list;
      ASTPtr select_expression_list;
+     ASTPtr tables;
++    ASTPtr partition_expression_list;
+     ASTPtr prewhere_expression;
+     ASTPtr where_expression;
+     ASTPtr group_expression_list;
