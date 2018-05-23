@@ -16,6 +16,8 @@ echo "=> packing publish package $name"
 
 if [ "$build" == "true" ]; then
 	cd "../ch-connector"
+	echo "=> building arrow:"
+	./arrow-build-linux.sh
 	echo "=> building theflash:"
 	./build.sh
 	cd "../publish"
@@ -35,22 +37,48 @@ ldd ../ch-connector/build/dbms/src/Server/theflash | grep '/' | grep '=>' | awk 
 done
 
 echo "=> copying scripts"
-cp -f "../benchmark/_env.sh" "./$name/inventory"
-cp -f "../benchmark/_helper.sh" "./$name/inventory"
+mkdir -p "$name/inventory/scripts"
+cp -f ./scripts/spark-*.sh "./$name/inventory/scripts"
+cp -f ./scripts/storage-*.sh "./$name/inventory/scripts"
+cp -f ./scripts/_*.sh "./$name/inventory/scripts"
 
 if [ "$build" == "true" ]; then
 	cd "../spark-connector"
+	cd "spark"
+	echo "=> building spark:"
+	mvn -DskipTests clean package
+	cd ".."
 	echo "=> building chspark:"
 	./build-all.sh
 	cd "../publish"
 fi
 
-echo "=> copying chspark"
-cp -f "../spark-connector/chspark/target/chspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" "./$name/inventory"
+echo "=> copying spark (with chspark)"
+mkdir -p "$name/spark"
+cp -rf "../spark-connector/spark/sbin" "./$name/spark/"
+cp -rf "../spark-connector/spark/bin" "./$name/spark/"
+cp -rf "../spark-connector/spark/conf" "./$name/spark/"
+cp -rf "../spark-connector/spark/assembly" "./$name/spark/"
+cp -rf "../spark-connector/conf/spark-defaults.conf" "./$name/spark/conf/"
 
-cp "./unpack-dev-linux.sh" "./$name/unpack.sh"
+echo "=> copying tpch dbgen"
+if [ "$build" == "true" ]; then
+	cd "../benchmark/tpch-dbgen"
+	make
+	cd "../../publish"
+fi
+mkdir -p "$name/tpch"
+cp -f "../benchmark/tpch-dbgen/dbgen" "./$name/tpch/"
+cp -f "../benchmark/tpch-dbgen/dists.dss" "./$name/tpch/"
 
-echo "=> packing to ./${name}.tar.gz"
-tar -cvzf "./${name}.tar.gz" "$name"
+echo "=> copying tpch data loader and env"
+cp -rf "../benchmark/sql-spark" "./$name/tpch/sql"
+cp -rf "../benchmark/loading" "./$name/tpch/"
+cp -f ./scripts/tpch-env.sh "./$name/tpch/loading/_env.sh"
+
+cp "./unpack-dev-linux.sh" "./$name/unpack-inventory.sh"
+
+echo "=> packing to ./${name}.tar.gz (may take some time)"
+#tar -cvzf "./${name}.tar.gz" "$name"
 
 echo "=> done"
