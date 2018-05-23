@@ -12,7 +12,6 @@ An OLAP project of TiDB
 * Build
     * `theflash> git submodule update --init --recursive`: fetch all submodule
     * Build patched CH:
-        * `theflash/ch-connector> ./arrow-build-<your-os>.sh`: build Arrow, run it again if script fail
         * `theflash/ch-connector> ./patch-apply.sh`: apply patch to CH
         * `theflash/ch-connector> ./build.sh`: build patched CH
     * Build Spark and CHSpark

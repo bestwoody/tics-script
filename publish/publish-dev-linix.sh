@@ -16,8 +16,6 @@ echo "=> packing publish package $name"
 
 if [ "$build" == "true" ]; then
 	cd "../ch-connector"
-	echo "=> building arrow:"
-	./arrow-build-linux.sh
 	echo "=> building theflash:"
 	./build.sh
 	cd "../publish"
