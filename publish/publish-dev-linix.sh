@@ -4,20 +4,18 @@ name="$2"
 set -eu
 
 if [ -z "$build" ]; then
-	echo "usage: <bin> build-before-publish(true|false) [output-name]" >&2
-	exit 1
+    build="false"
 fi
 
 if [ -z "$name" ]; then
-	name="theflash-`date +%s`"
+    name=`git log HEAD -1 | head -n 1 | awk '{print $2}'`
+    name="theflash-${name:0-6:6}"
 fi
 
 echo "=> packing publish package $name"
 
 if [ "$build" == "true" ]; then
 	cd "../ch-connector"
-	echo "=> building arrow:"
-	./arrow-build-linux.sh
 	echo "=> building theflash:"
 	./build.sh
 	cd "../publish"
@@ -79,6 +77,6 @@ cp -f ./scripts/tpch-env.sh "./$name/tpch/loading/_env.sh"
 cp "./unpack-dev-linux.sh" "./$name/unpack-inventory.sh"
 
 echo "=> packing to ./${name}.tar.gz (may take some time)"
-#tar -cvzf "./${name}.tar.gz" "$name"
+tar -cvzf "./${name}.tar.gz" "$name"
 
 echo "=> done"
