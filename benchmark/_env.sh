@@ -1,16 +1,11 @@
-source _helper.sh
-
-# *.dyso/*.a path for mac os
-export DYLD_LIBRARY_PATH=""
-# *.so/*.a path for linux
-export LD_LIBRARY_PATH="/usr/lib:/usr/local/lib:/usr/lib64:/usr/local/lib64"
+source ./_helper.sh
+source ./_vars.sh
 
 # Executable path
 export chbin="$repo_dir/ch-connector/build/dbms/src/Server/theflash"
 # Server address for scripts and Spark
 export chserver="127.0.0.1"
 # Default database when we run scripts or in Spark
-export chdb="mutable"
 export chdb="default"
 
 # Spark master to commit jobs
