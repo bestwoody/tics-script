@@ -9,5 +9,7 @@ fi
 
 source _reset.sh
 
+rm -rf "ch-cache"
+rm -rf "build"
 cd "ch"
 repo_reset

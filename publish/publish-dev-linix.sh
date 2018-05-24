@@ -38,6 +38,9 @@ done
 
 echo "=> copying scripts"
 mkdir -p "$name/inventory/scripts"
+cp -f "../spark-connector/spark-check-running.sh" "./$name/inventory/scripts"
+cp -f "../spark-connector/spark-stop-all.sh" "./$name/inventory/scripts"
+cp -f "../spark-connector/spark-start-all.sh" "./$name/inventory/scripts"
 cp -f ./scripts/spark-*.sh "./$name/inventory/scripts"
 cp -f ./scripts/storage-*.sh "./$name/inventory/scripts"
 cp -f ./scripts/_*.sh "./$name/inventory/scripts"
