@@ -4,12 +4,11 @@ source _helper.sh
 export LD_LIBRARY_PATH="/usr/lib:/usr/local/lib:/usr/lib64:/usr/local/lib64"
 
 # Executable path
-export chbin="$repo_dir/ch-connector/build/dbms/src/Server/theflash"
+export chbin="storage/theflash"
 # Server address for scripts and Spark
 export chserver="127.0.0.1"
 # Default database when we run scripts or in Spark
 export chdb="default"
-export chdb="mutable"
 
 # Spark master to commit jobs
 export spark_master="127.0.0.1"

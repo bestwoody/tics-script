@@ -50,7 +50,7 @@ if [ "$build" == "true" ]; then
 	mvn -DskipTests clean package
 	cd ".."
 	echo "=> building chspark:"
-	./build-all.sh
+	./build.sh
 	cd "../publish"
 fi
 
