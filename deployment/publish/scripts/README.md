@@ -19,7 +19,7 @@
 ## Data and log path. IMPORTANT: data in these paths may lost on system reboot!
 * `/tmp/theflash/db`: default database path
 * `/tmp/theflash/server.log`: default storage log
-* `/tmp/spark/`: default Spark data path
+* `/tmp/theflash/spark`: default Spark data path
 
 ## TPCH benchmark
 * Load data
