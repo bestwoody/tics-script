@@ -1,12 +1,11 @@
 source ./_helper.sh
-source ./_vars.sh
 
 # Executable path
-export chbin="$repo_dir/ch-connector/build/dbms/src/Server/theflash"
+export storage_bin="$repo_dir/ch-connector/build/dbms/src/Server/theflash"
 # Server address for scripts and Spark
-export chserver="127.0.0.1"
+export storage_server="127.0.0.1"
 # Default database when we run scripts or in Spark
-export chdb="default"
+export storage_db="default"
 
 # Spark master to commit jobs
 export spark_master="127.0.0.1"
@@ -35,3 +34,7 @@ export selraw_tableinfo="false"
 
 # The executor-memory parameter of spark-shell.
 export spark_executor_memory=12G
+
+# Setup running env vars
+source ./_vars.sh
+setup_dylib_path

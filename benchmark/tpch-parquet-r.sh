@@ -13,4 +13,4 @@ if [ -z $log ]; then
 fi
 
 ./tpch-parquet-q.sh "$n" >> "$log"
-./gen-tpch-report.sh "$log" > "$log.md"
+./tpch-gen-report.sh "$log" > "$log.md"

@@ -1,8 +1,12 @@
-<?xml version="1.0"?>
+<!-- This file was generated automatically.
+     Do not edit it: it is likely to be discarded and generated again before it's read next time.
+     Files used to generate this file:
+       ch-server/config/users.xml      -->
+
 <yandex>
     <profiles>
         <default>
-            <max_memory_usage>4000000000</max_memory_usage>
+            <max_memory_usage>2000000000</max_memory_usage>
             <use_uncompressed_cache>0</use_uncompressed_cache>
             <load_balancing>random</load_balancing>
         </default>
@@ -12,7 +16,7 @@
     </profiles>
     <users>
         <default>
-            <password></password>
+            <password/>
             <networks incl="networks" replace="replace">
                 <ip>::/0</ip>
             </networks>
@@ -20,7 +24,7 @@
             <quota>default</quota>
         </default>
         <readonly>
-            <password></password>
+            <password/>
             <networks incl="networks" replace="replace">
                 <ip>::1</ip>
                 <ip>127.0.0.1</ip>

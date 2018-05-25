@@ -22,7 +22,7 @@ if [ -z "$encoders" ]; then
 	encoders="$default_encoders"
 fi
 
-file="./sql-spark/q"$n".sql"
+file="./tpch-sql/q"$n".sql"
 sql=`cat $file | tr '\n' ' '`
 
 echo "## Running tpch query #"$n", partitions=$partitions, decoders=$decoders, encoders=$encoders"

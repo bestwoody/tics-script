@@ -16,4 +16,4 @@ if [ -z $log ]; then
 fi
 
 ./tpch-spark-q.sh "$n" "$partitions" "$decoders" "$encoders" >> "$log"
-./gen-tpch-report.sh "$log" > "$log.md"
+./tpch-gen-report.sh "$log" > "$log.md"

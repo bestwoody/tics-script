@@ -23,7 +23,7 @@ done
 
 echo 'val startTime = new Date()' >> "$tmp"
 
-sql=`cat sql-spark/q"$n".sql | tr '\n' ' '`
+sql=`cat tpch-sql/q"$n".sql | tr '\n' ' '`
 echo "spark.sql(\"$sql\").show" >> "$tmp"
 
 echo 'val elapsed = (new Date().getTime - startTime.getTime) / 100 / 10.0' >> "$tmp"

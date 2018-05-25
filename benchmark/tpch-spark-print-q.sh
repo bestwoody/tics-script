@@ -7,6 +7,6 @@ if [ -z "$n" ]; then
 	exit 1
 fi
 
-file="./sql-spark/q"$n".sql"
+file="./tpch-sql/q"$n".sql"
 cat $file | tr '\n' ' ' | tr '\t' ' ' | tr '  ' ' '
 echo

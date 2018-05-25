@@ -7,7 +7,7 @@ if [ "$force" != "-f" ]; then
 	exit 1
 fi
 
-source _reset.sh
+source ./_reset.sh
 
 rm -rf "ch-cache"
 rm -rf "build"

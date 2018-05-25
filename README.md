@@ -16,21 +16,21 @@ An OLAP project of TiDB
         * `theflash/ch-connector> ./build.sh`: build patched CH
     * Build Spark and CHSpark
         * `theflash/spark-connector/spark> follow the build method of Spark`: build Spark
-        * `theflash/spark-connector> ./build-all.sh`: build CHSpark
+        * `theflash/spark-connector> ./build.sh`: build CHSpark
 * Play around
     * With Patched CH
-        * `theflash/benchmark> ./ch-server.sh`: run CH server
-        * `theflash/benchmark> ./ch-cli.sh`: play with CH in intereactive mode
-        * `theflash/benchmark> ./ch-q.sh <sql>`: play with CH in command mode
-        * `theflash/ch-connector> ./import.sh <name>`: import table data `ch-connector/running/data/<name>` to CH
+        * `theflash/benchmark> ./storage-server.sh`: run CH server
+        * `theflash/benchmark> ./storage-client.sh`: play with CH in intereactive mode
+        * `theflash/benchmark> ./storage-client.sh <sql>`: play with CH in command mode
+        * `theflash/ch-connector> ./storage-import-data.sh <name>`: import table data `ch-connector/running/data/<name>` to CH
         * Look around
-            * `theflash/ch-connector> vim _env.sh`: check the config, IMPORTANT: `chdb`
+            * `theflash/ch-connector> vim _env.sh`: check the config, IMPORTANT: `storage_db`
             * `theflash/benchmark> vim _env.sh`: each `_env.sh` ONLY affect the current dir
-            * `theflash/benchmark> vim /data/ch-server/server.log`: check server log
-            * `theflash/benchmark> ls /data/ch-server/db`: check database files
-            * `theflash/benchmark> vim ch-server/config/*.xml`: check server configs
+            * `theflash/benchmark> vim /data/theflash/server.log`: check server log
+            * `theflash/benchmark> ls /data/theflash/db`: check database files
+            * `theflash/benchmark> vim storage-server/config/*.xml`: check server configs
     * With Spark
-        * `theflash/spark-connector> ./start-all.sh 127.0.0.1`: run Spark master and workers
+        * `theflash/spark-connector> ./spark-start-all.sh 127.0.0.1`: run Spark master and workers
         * `theflash/spark-connector> ./spark-shell.sh`: play with Spark
         * `theflash/benchmark> ./spark-shell.sh`: play with Spark
     * With Spark connecting to CH
@@ -39,8 +39,8 @@ An OLAP project of TiDB
         * Intereactive mode
             * `theflash/benchmark> ./spark-shell.sh`: start Spark as usual
             * `scala> val ch = new org.apache.spark.sql.CHContext(spark)`: create CH context
-            * `scala> ch.mapCHClusterTable(database=<>, table=<>)`: map a CH table to Spark
-            * `scala> ch.sql("select count(*) from <>")`: use the mapped table in Spark
+            * `scala> ch.mapCHClusterTable(database=<database>, table=<table>)`: map a CH table to Spark
+            * `scala> ch.sql("select count(*) from <table>")`: use the mapped table in Spark
 * TPCH benchmark
     * Load data
         * `theflash/benchmark/tpch-dbgen> make`: build TPCH dbgen

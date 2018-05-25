@@ -33,15 +33,15 @@ echo 'spark.conf.set("spark.ch.plan.single.node.opt", "'$single_node_opt'")' >> 
 echo 'spark.conf.set("spark.ch.storage.selraw", "'$selraw'")' >> "$tmp"
 echo 'spark.conf.set("spark.ch.storage.tableinfo.selraw", "'$selraw_tableinfo'")' >> "$tmp"
 
-echo 'val ch = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
+echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
-./ch-q.sh "show tables" | while read table; do
-	echo "ch.mapCHClusterTable(database=\"$chdb\", table=\"$table\", partitions=$partitions, decoders=$decoders, encoders=$encoders)" >> "$tmp"
+./storage-client.sh "show tables" | while read table; do
+	echo "storage.mapCHClusterTable(database=\"$storage_db\", table=\"$table\", partitions=$partitions, decoders=$decoders, encoders=$encoders)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"
 
-echo "ch.sql(\"$sql\").show(false)" >> "$tmp"
+echo "storage.sql(\"$sql\").show(false)" >> "$tmp"
 
 echo 'val elapsed = (new Date().getTime - startTime.getTime) / 100 / 10.0' >> "$tmp"
 

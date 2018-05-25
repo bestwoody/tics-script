@@ -12,7 +12,7 @@ function run_file()
 		python mutable-test.py "$dbc" "$path" "$fuzz"
 	else
 		if [ "$ext" == "visual" ]; then
-			python gen-test-from-visual.py "$path" "$skip_raw_test"
+			python mutable-test-gen-from-visual.py "$path" "$skip_raw_test"
 			if [ $? != 0 ]; then
 				echo "Generate test files failed: $file" >&2
 				exit 1
@@ -41,7 +41,7 @@ function run_dir()
 
 	find "$path" -maxdepth 1 -name "*.visual" -type f | sort | while read file; do
 		if [ -f "$file" ]; then
-			python gen-test-from-visual.py "$file" "$skip_raw_test"
+			python mutable-test-gen-from-visual.py "$file" "$skip_raw_test"
 		fi
 		if [ $? != 0 ]; then
 			echo "Generate test files failed: $file" >&2
@@ -102,7 +102,7 @@ debug="$4"
 continue_on_error="$5"
 dbc="$6"
 
-source _env.sh
+source ./_env.sh
 
 if [ -z "$target" ]; then
 	target="mutable-test"
@@ -124,16 +124,16 @@ if [ -z "$dbc" ]; then
 	if [ "$debug" != "false" ] && [ "$debug" != "0" ]; then
 		debug="--stacktrace"
 	fi
-	dbc="$chbin client --host $chserver -d $chdb  $debug -f PrettyCompactNoEscapes --query"
+	dbc="$storage_bin client --host $storage_server -d $storage_db  $debug -f PrettyCompactNoEscapes --query"
 fi
 
 if [ -z "$continue_on_error" ]; then
 	continue_on_error="false"
 fi
 
-"$chbin" client --host="$chserver" --query="create database if not exists $chdb"
+"$storage_bin" client --host="$storage_server" --query="create database if not exists $storage_db"
 if [ $? != 0 ]; then
-	echo "create database '"$chdb"' failed" >&2
+	echo "create database '"$storage_db"' failed" >&2
 	exit 1
 fi
 

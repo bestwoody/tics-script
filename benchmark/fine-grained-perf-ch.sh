@@ -23,7 +23,7 @@ function log()
 function time_ch_q()
 {
   log "$1 query: $2"
-  tm=$(./ch-q.sh "$2" --time 2>&1 1>/dev/null)
+  tm=$(./storage-client.sh "$2" --time 2>&1 1>/dev/null)
   if [ $? != 0 ]; then
     echo "Timing CH query \"$1\" error."
   fi
@@ -32,7 +32,7 @@ function time_ch_q()
 
 function result_ch_q()
 {
-  ./ch-q.sh "$1" --time 1>/tmp/result 2>/tmp/time
+  ./storage-client.sh "$1" --time 1>/tmp/result 2>/tmp/time
   if [ $? != 0 ]; then
     echo "Getting result for CH query \"$1\" error."
   fi
@@ -47,7 +47,7 @@ else
 fi
 log "# Fine grained perf report for table $table"
 log "* Time unit: sec."
-col_types=($(./ch-q.sh "desc $table"))
+col_types=($(./storage-client.sh "desc $table"))
 if [ $? != 0 ]; then
   echo "Getting schema of table $table error, exiting."
   exit 1
