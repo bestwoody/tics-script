@@ -48,6 +48,9 @@ benchmark/sql-spark/*.running
 benchmark/parquet/*
 benchmark/tpch.log*
 
+# deployment generated files
+deployment/publish/theflash*
+
 # spark-connector running data dir
 spark-connector/spark-warehouse
 

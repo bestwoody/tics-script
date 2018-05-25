@@ -1,8 +1,3 @@
-source _helper.sh
-
-# *.so/*.a path for linux
-export LD_LIBRARY_PATH="/usr/lib:/usr/local/lib:/usr/lib64:/usr/local/lib64"
-
 # Executable path
 export storage_bin="storage/theflash"
 

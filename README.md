@@ -53,3 +53,6 @@ An OLAP project of TiDB
             * `theflash/benchmark> ./stable-test-ch-stable.sh`: loop running TPCH Q1-Q22
             * `theflash/benchmark> vim tpch.log`: check log
             * `theflash/benchmark> vim tpch.log.md`: check report
+* Deployment
+    * Binary packing for development
+        * `theflash/deployment/publish> ./publish.sh`: packing binary in a compiling server
