@@ -14,7 +14,7 @@ fi
 
 repo_git_hash=`git log HEAD -1 | head -n 1 | awk '{print $2}'`
 if [ -z "$name" ]; then
-    name="theflash-${repo_git_hash:0-6:6}"
+    name="theflash-${repo_git_hash:0:6}"
 fi
 
 publish_dir="`pwd`"
