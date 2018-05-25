@@ -93,7 +93,7 @@ cp -f "$benchmark_dir/tpch-spark-r.sh" "$scripts_pack"
 cp -f "$benchmark_dir/tpch-gen-report.sh" "$scripts_pack"
 cp -f "$benchmark_dir/tpch-gen-report.py" "$scripts_pack"
 cp -f "$benchmark_dir/stable-test-ch-stable.sh" "$scripts_pack/stable-test.sh"
-cp -f "$publish_dir/README.md" "$scripts_pack"
+cp -f "$publish_dir/scripts/README.md" "$scripts_pack"
 cp -f $publish_dir/scripts/*.sh "$scripts_pack"
 cp -f $publish_dir/scripts/tpch/load/*.sh "$tpch_pack/load"
 
