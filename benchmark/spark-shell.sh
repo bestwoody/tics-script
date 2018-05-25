@@ -20,8 +20,6 @@ if [ -z "$ip" ]; then
 	ip="127.0.0.1"
 fi
 
-echo "local ip: $ip"
+echo "master ip: $ip"
 
-$repo_dir/spark-connector/spark/bin/spark-shell --master spark://$ip:7077 --executor-memory $spark_executor_memory $@ 2>&1 | \
-	grep --line-buffered -v '\[Stage' | \
-	grep --line-buffered -v "^$"
+$repo_dir/spark-connector/spark/bin/spark-shell --master spark://$ip:7077 --executor-memory $spark_executor_memory $@ 2>&1

@@ -14,6 +14,6 @@ if [ -z "$ip" ]; then
 	ip="127.0.0.1"
 fi
 
-echo "local ip: $ip"
+echo "master ip: $ip"
 
 spark/bin/spark-shell --master spark://$ip:7077 --executor-memory $spark_executor_memory $@ 2>&1

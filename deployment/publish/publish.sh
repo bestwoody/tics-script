@@ -48,15 +48,6 @@ ldd "$storage_dir/build/dbms/src/Server/theflash" | grep '/' | grep '=>' | \
 	cp -f "$libfile" "$storage_pack"
 done
 
-echo "=> copying scripts"
-scripts_pack="$publish_dir/$name"
-cp -f "$computing_dir/spark-check-running.sh" "$scripts_pack"
-cp -f "$computing_dir/spark-stop-all.sh" "$scripts_pack"
-cp -f "$computing_dir/spark-start-all.sh" "$scripts_pack"
-cp -f $publish_dir/scripts/spark-*.sh "$scripts_pack"
-cp -f $publish_dir/scripts/storage-*.sh "$scripts_pack"
-cp -f $publish_dir/scripts/_*.sh "$scripts_pack"
-
 if [ "$build" == "true" ]; then
 	echo "=> building spark:"
 	cd "$computing_dir/spark" && build/mvn -DskipTests package && cd "$publish_dir"
@@ -86,9 +77,24 @@ cp -f "$benchmark_dir/tpch-dbgen/dbgen" "$tpch_pack"
 cp -f "$benchmark_dir/tpch-dbgen/dists.dss" "$tpch_pack"
 
 echo "=> copying tpch data loader and env"
-cp -rf "$benchmark_dir/sql-spark" "$tpch_pack/sql"
-cp -rf "$benchmark_dir/loading" "$tpch_pack"
-cp -f ./scripts/tpch-env.sh "$tpch_pack/loading/_env.sh"
+cp -rf "$benchmark_dir/tpch-sql" "$tpch_pack/sql"
+cp -rf "$benchmark_dir/tpch-load" "$tpch_pack/load"
+
+echo "=> copying scripts"
+scripts_pack="$publish_dir/$name"
+cp -f "$computing_dir/spark-check-running.sh" "$scripts_pack"
+cp -f "$computing_dir/spark-stop-all.sh" "$scripts_pack"
+cp -f "$computing_dir/spark-start-all.sh" "$scripts_pack"
+cp -f "$benchmark_dir/storage-server.sh" "$scripts_pack"
+cp -f "$benchmark_dir/storage-client.sh" "$scripts_pack"
+cp -f "$benchmark_dir/storage-list-running-query.sh" "$scripts_pack"
+cp -f "$benchmark_dir/spark-q.sh" "$scripts_pack"
+cp -f "$benchmark_dir/tpch-spark-r.sh" "$scripts_pack"
+cp -f "$benchmark_dir/tpch-gen-report.sh" "$scripts_pack"
+cp -f "$benchmark_dir/tpch-gen-report.py" "$scripts_pack"
+cp -f "$benchmark_dir/stable-test-ch-stable.sh" "$scripts_pack"
+cp -f $publish_dir/scripts/*.sh "$scripts_pack"
+cp -f $publish_dir/scripts/tpch/load/*.sh "$tpch_pack/load"
 
 echo "=> packing to ./${name}.tar.gz (may take some time)"
 tar -cvzf "./${name}.tar.gz" "$name"

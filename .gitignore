@@ -35,18 +35,15 @@ dependency-reduced-pom.xml
 # C++ compile result
 build
 
-# JNI compile result
-protocol/c-jni
-
 # ch-connector compile result and running data dir
 ch-connector/build
 ch-connector/ch-cache
 ch-connector/running
 
 # tpch generated data
-benchmark/loading/tpch-*
-benchmark/loading/backup
-benchmark/ch-server/config/*-preprocessed.xml
+benchmark/tpch-load/tpch-*
+benchmark/tpch-load/backup
+benchmark/storage-server-config/*-preprocessed.xml
 benchmark/sql-spark/*.running
 benchmark/parquet/*
 benchmark/tpch.log*

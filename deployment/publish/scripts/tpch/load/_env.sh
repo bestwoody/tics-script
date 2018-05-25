@@ -1,12 +1,11 @@
-source _helper.sh
-source _vars.sh
+source ./_helper.sh
 
 # Client executable path
-export chbin="../../storage/theflash"
+export storage_bin="../../storage/theflash"
 # Server address to receive data
-export chserver="127.0.0.1"
+export storage_server="127.0.0.1"
 # Database to receive data
-export chdb="default"
+export storage_db="default"
 
 # Dbgen executable path
 export dbgen_dir="`readlink -f ..`"
@@ -26,7 +25,5 @@ export database="$db_prefix$tpch_scale"
 export dbgen_result_dir_prefix="$this_dir"/"$db_prefix"-"$tpch_scale"-c
 
 # Setup storage bin env
-old_dir=`pwd`
-cd `dirname $chbin`
-export LD_LIBRARY_PATH=`readlink -f .`:$LD_LIBRARY_PATH
-cd $old_dir
+source ./_vars.sh
+setup_dylib_path
