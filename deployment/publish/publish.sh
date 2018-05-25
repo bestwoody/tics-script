@@ -63,7 +63,7 @@ cp -rf "$spark_dir/sbin" "$spark_pack"
 cp -rf "$spark_dir/bin" "$spark_pack"
 cp -rf "$spark_dir/conf" "$spark_pack"
 cp -rf "$spark_dir/assembly" "$spark_pack"
-cp -rf "$publish_dir/scrpits/spark/spark-defaults.conf" "$spark_pack/conf/"
+cp -rf "$publish_dir/scripts/spark/spark-defaults.conf" "$spark_pack/conf/"
 
 if [ "$build" == "true" ]; then
 	echo "=> building tpch dbgen"
@@ -93,6 +93,7 @@ cp -f "$benchmark_dir/tpch-spark-r.sh" "$scripts_pack"
 cp -f "$benchmark_dir/tpch-gen-report.sh" "$scripts_pack"
 cp -f "$benchmark_dir/tpch-gen-report.py" "$scripts_pack"
 cp -f "$benchmark_dir/stable-test-ch-stable.sh" "$scripts_pack/stable-test.sh"
+cp -f "$publish_dir/README.md" "$scripts_pack"
 cp -f $publish_dir/scripts/*.sh "$scripts_pack"
 cp -f $publish_dir/scripts/tpch/load/*.sh "$tpch_pack/load"
 
