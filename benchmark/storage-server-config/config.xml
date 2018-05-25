@@ -5,8 +5,8 @@
     </application>
     <logger>
         <level>trace</level>
-        <log>/data/ch-server/server.log</log>
-        <errorlog>/data/ch-server/error.log</errorlog>
+        <log>/data/theflash/server.log</log>
+        <errorlog>/data/theflash/error.log</errorlog>
         <size>4000M</size>
         <count>10</count>
     </logger>
@@ -22,8 +22,8 @@
     <max_concurrent_queries>100</max_concurrent_queries>
     <uncompressed_cache_size>8589934592</uncompressed_cache_size>
     <mark_cache_size>5368709120</mark_cache_size>
-    <path>/data/ch-server/db</path>
-    <tmp_path>/data/ch-server/tmp</tmp_path>
+    <path>/data/theflash/db</path>
+    <tmp_path>/data/theflash/tmp</tmp_path>
     <users_config>users.xml</users_config>
     <default_profile>default</default_profile>
     <default_database>default</default_database>

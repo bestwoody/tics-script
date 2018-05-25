@@ -4,7 +4,7 @@ setup_dylib_path()
 		# *.dyso/*.a path for mac os
 		local gcc_name="gcc-7"
 		local gcc_path="`which $gcc_name`"
-		gcc_path="`readlink -f $gcc_path`"
+		gcc_path="`readlink $gcc_path`"
 		gcc_path="`dirname $gcc_path`"
 		gcc_path="`dirname $gcc_path`"
 		export DYLD_LIBRARY_PATH="$gcc_path/lib/gcc/7"
