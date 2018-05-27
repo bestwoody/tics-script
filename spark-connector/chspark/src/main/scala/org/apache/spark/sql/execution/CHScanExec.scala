@@ -35,8 +35,7 @@ case class CHScanExec(
     val tableQueryPairs = chRelation.tables.map(table => {
       (table, CHSql.query(table, chLogicalPlan, useSelraw))
     })
-    new CHScanRDD(sparkSession, output, tableQueryPairs,
-      chRelation.partitions, chRelation.decoders, chRelation.encoders) :: Nil
+    new CHScanRDD(sparkSession, output, tableQueryPairs, chRelation.partitions) :: Nil
   }
 
   override protected def doExecute(): RDD[InternalRow] = WholeStageCodegenExec(this).execute()

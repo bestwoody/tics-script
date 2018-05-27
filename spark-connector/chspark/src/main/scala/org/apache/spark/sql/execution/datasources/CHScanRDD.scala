@@ -31,9 +31,7 @@ class CHScanRDD(
   @transient private val sparkSession: SparkSession,
   @transient val output: Seq[Attribute],
   val tableQueryPairs: Seq[(CHTableRef, String)],
-  private val partitionCount: Int,
-  private val decoderCount: Int,
-  private val encoderCount: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
+  private val partitionCount: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     if (context.attemptNumber > 0){

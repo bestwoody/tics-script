@@ -63,7 +63,7 @@ Block ReplacingDeletingSortedBlockInputStream::readImpl()
 
     if (is_optimized)
     {
-        merge_opt(merged_columns, queue);
+        merge_optimized(merged_columns, queue);
     }
     else
     {
@@ -145,7 +145,7 @@ void ReplacingDeletingSortedBlockInputStream::merge(MutableColumns & merged_colu
     finished = true;
 }
 
-void ReplacingDeletingSortedBlockInputStream::merge_opt(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue)
+void ReplacingDeletingSortedBlockInputStream::merge_optimized(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue)
 {
     size_t merged_rows = 0;
 

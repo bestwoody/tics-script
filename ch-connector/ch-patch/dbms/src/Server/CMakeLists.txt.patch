@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Server/CMakeLists.txt b/dbms/src/Server/CMakeLists.txt
-index b2d72fb3c8b1..4f8b4cd1f644 100644
+index b2d72fb3c8b1..be452e85d654 100644
 --- a/dbms/src/Server/CMakeLists.txt
 +++ b/dbms/src/Server/CMakeLists.txt
-@@ -24,10 +24,9 @@ add_library (clickhouse-server-lib
+@@ -24,8 +24,7 @@ add_library (clickhouse-server-lib
      RootRequestHandler.cpp
      Server.cpp
      StatusFile.cpp
@@ -10,11 +10,8 @@ index b2d72fb3c8b1..4f8b4cd1f644 100644
 -    )
 +    TCPHandler.cpp)
  
--target_link_libraries (clickhouse-server-lib clickhouse_common_io daemon clickhouse_storages_system clickhouse_functions clickhouse_aggregate_functions clickhouse_table_functions)
-+target_link_libraries (clickhouse-server-lib clickhouse_common_io daemon clickhouse_storages_system clickhouse_functions clickhouse_aggregate_functions clickhouse_table_functions arrow)
+ target_link_libraries (clickhouse-server-lib clickhouse_common_io daemon clickhouse_storages_system clickhouse_functions clickhouse_aggregate_functions clickhouse_table_functions)
  target_include_directories (clickhouse-server-lib PUBLIC ${ClickHouse_SOURCE_DIR}/libs/libdaemon/include)
- 
- add_library (clickhouse-local-lib LocalServer.cpp)
 @@ -92,102 +91,102 @@ if (CLICKHOUSE_SPLIT_BINARY)
          target_link_libraries (clickhouse-clang clickhouse-compiler-lib)
          add_executable (clickhouse-lld clickhouse-lld.cpp)

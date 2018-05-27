@@ -13,12 +13,6 @@ export storage_db="default"
 # RDD partition number of any query launch by CHSpark
 export default_partitions="16"
 
-# Arrow decoding thread number of each RDD partition
-export default_decoders="1"
-
-# Total Arrow encoding thread number of a query launch by CHSpark
-export default_encoders="16"
-
 # Use SELRAW for any query launch by CHSpark (except fetch table info)
 # DON'T set to 'true' for Non-Mutable table
 # Should be always true on Mutable table, unless for tracing MutableMergeTree bugs

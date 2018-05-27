@@ -1,8 +1,6 @@
 count="$1"
 partitions="$2"
-decoders="$3"
-encoders="$4"
-log="$5"
+log="$3"
 
 set -eu
 
@@ -15,6 +13,6 @@ for (( i = 0; i < $count; i++ )); do
 		if [ $j -eq 15 ]; then
 			continue
 		fi
-		./tpch-spark-r.sh "$j" "$partitions" "$decoders" "$encoders" "$log"
+		./tpch-spark-r.sh "$j" "$partitions" "$log"
 	done
 done

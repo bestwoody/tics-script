@@ -65,7 +65,7 @@ private:
 
     void merge(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue);
 
-    void merge_opt(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue);
+    void merge_optimized(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue);
 
     /// Output into result the rows for current primary key.
     void insertRow(MutableColumns & merged_columns, size_t & merged_rows);

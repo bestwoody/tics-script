@@ -25,7 +25,7 @@ def run():
             return 'Parquet'
         elif cls.lower().find('parquet') >= 0:
             return 'PQ-%04d' % n
-        elif cls.find('encoders') >= 0 or cls.find('decoders') >= 0:
+        else:
             return 'CH-%04d' % n
 
     def getClassTitle(cls, n):

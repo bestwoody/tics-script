@@ -41,13 +41,11 @@ class CHContext (val sparkSession: SparkSession)
     port: Int = 9000,
     database: String = null,
     table: String,
-    partitions: Int = 16,
-    decoders: Int = 1,
-    encoders: Int = 0): Unit = {
+    partitions: Int = 16): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
     val tableRef = new CHTableRef(host, port, database, table)
-    val rel = new CHRelation(Seq(tableRef), partitions, decoders, encoders)(sqlContext, conf)
+    val rel = new CHRelation(Seq(tableRef), partitions)(sqlContext, conf)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRef.mappedName)
   }
 
@@ -55,14 +53,12 @@ class CHContext (val sparkSession: SparkSession)
     addresses: Seq[(String, Int)] = Seq(("127.0.0.1", 9000)),
     database: String = null,
     table: String,
-    partitions: Int = 16,
-    decoders: Int = 1,
-    encoders: Int = 0): Unit = {
+    partitions: Int = 16): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
     val tableRefList: Seq[CHTableRef] =
       addresses.map(addr => new CHTableRef(addr._1, addr._2, database, table))
-    val rel = new CHRelation(tableRefList, partitions, decoders, encoders)(sqlContext, conf)
+    val rel = new CHRelation(tableRefList, partitions)(sqlContext, conf)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList(0).mappedName)
   }
 
@@ -71,14 +67,12 @@ class CHContext (val sparkSession: SparkSession)
     port: Int = 9000,
     database: String = null,
     table: String,
-    partitions: Int = 16,
-    decoders: Int = 1,
-    encoders: Int = 0): Unit = {
+    partitions: Int = 16): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
     val tableRefList: Seq[CHTableRef] =
       hosts.split(",").map(host => new CHTableRef(host, port, database, table))
-    val rel = new CHRelation(tableRefList, partitions, decoders, encoders)(sqlContext, conf)
+    val rel = new CHRelation(tableRefList, partitions)(sqlContext, conf)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList(0).mappedName)
   }
 

@@ -34,7 +34,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   val enableAggPushdown: Boolean =
     sqlConf.getConfString(CHConfigConst.ENABLE_PUSHDOWN_AGG, "true").toBoolean
   val enableSingleNodeOpt: Boolean =
-    sqlConf.getConfString(CHConfigConst.ENABLE_SINGLE_NODE_OPT, "true").toBoolean
+    sqlConf.getConfString(CHConfigConst.ENABLE_SINGLE_NODE_OPTIMIZATION, "true").toBoolean
 
   // -------------------- Physical plan generation --------------------
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {

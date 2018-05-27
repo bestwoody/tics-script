@@ -24,8 +24,8 @@ import org.apache.spark.sql.types.StructType
 
 class CHStrategySuite extends SharedSQLContext {
   class TestCHRelation(name: String, singleNode: Boolean, output: Attribute*) extends CHRelation(
-    if (singleNode) { Seq(null) } else { Seq.empty },
-    0, 0, 0)(sqlContext, null) {
+    if (singleNode) { Seq(null) } else { Seq.empty }, 0)(sqlContext, null) {
+
     val localRelation = LocalRelation(output)
     override lazy val schema: StructType = localRelation.schema
 
