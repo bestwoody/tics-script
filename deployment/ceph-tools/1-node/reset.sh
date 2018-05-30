@@ -1,16 +1,14 @@
-host="$1"
-
 set -eu
 
-source ./_env.sh
-
 if [ -z "$host" ]; then
-	host="h0"
+	echo "host not defined in '_env.sh', exiting" >&2
+	exit 1
 fi
 
-cd single-deploy
+source ./_env.sh
 
 ceph-deploy --username "$user" purge "$host"
 ceph-deploy --username "$user" purgedata "$host"
 ceph-deploy --username "$user" forgetkeys
-rm ceph.*
+
+rm -rf ceph.*
