@@ -668,6 +668,8 @@ inline Block dedupInBlock(Block block, const SortDescription & description, size
 {
     if (!block)
         return block;
+    if (!block.rows())
+        return {};
 
     DedupingBlockPtr deduping_block = std::make_shared<DedupingBlock>(block, stream_position, false);
     SortCursorImpl cursor_impl(*deduping_block, description);

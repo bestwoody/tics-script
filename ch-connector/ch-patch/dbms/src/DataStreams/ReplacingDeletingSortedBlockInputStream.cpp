@@ -155,6 +155,9 @@ void ReplacingDeletingSortedBlockInputStream::merge_optimized(MutableColumns & m
         SortCursor current = queue.top();
         queue.pop();
 
+        if (current.impl->empty())
+            continue;
+
         bool is_complete_top = queue.empty() || current.totallyLessOrEquals(queue.top());
         bool is_clean_top = is_complete_top && current->isFirst() && (queue.empty() || current.totallyLessIgnOrder(queue.top()));
         if (is_clean_top && merged_rows == 0 && current_key.empty())
@@ -193,7 +196,8 @@ void ReplacingDeletingSortedBlockInputStream::merge_optimized(MutableColumns & m
                         row_source.setSkipFlag(reverse_filter[i]);
                         current_row_sources[i] = row_source.data;
                     }
-                    out_row_sources_buf->write(reinterpret_cast<const char *>(current_row_sources.data()),
+                    if (out_row_sources_buf)
+                        out_row_sources_buf->write(reinterpret_cast<const char *>(current_row_sources.data()),
                                                current_row_sources.size());
                     current_row_sources.resize(0);
                 }
