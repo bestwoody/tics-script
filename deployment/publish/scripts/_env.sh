@@ -10,8 +10,8 @@ export storage_server_config="storage/config.xml"
 # Default database when we run scripts or in Spark
 export storage_db="default"
 
-# RDD partition number of any query launch by CHSpark
-export default_partitions="16"
+# The number of partitions in CH that one RDD of Spark handle.
+export default_partitionsPerSplit="16"
 
 # Use SELRAW for any query launch by CHSpark (except fetch table info)
 # DON'T set to 'true' for Non-Mutable table

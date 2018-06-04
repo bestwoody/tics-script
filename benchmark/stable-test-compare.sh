@@ -1,5 +1,5 @@
 count="$1"
-partitions="$2"
+partitionsPerSplit="$2"
 log="$3"
 
 set -eu
@@ -16,6 +16,6 @@ for (( i = 0; i < $count; i++ )); do
 		if [ $j -eq 17 ] || [ $j -eq 18 ] || [ $j -eq 20 ] || [ $j -eq 21 ]; then
 			continue
 		fi
-		./tpch-compare-r.sh "$j" "$partitions" "$log"
+		./tpch-compare-r.sh "$j" "$partitionsPerSplit" "$log"
 	done
 done

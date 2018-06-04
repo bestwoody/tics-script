@@ -1,16 +1,16 @@
 sql="$1"
-partitions="$2"
+partitionsPerSplit="$2"
 
 set -eu
 
 source ./_env.sh
 
-if [ -z "$partitions" ]; then
-	partitions="$default_partitions"
+if [ -z "$partitionsPerSplit" ]; then
+	partitionsPerSplit="$default_partitionsPerSplit"
 fi
 
 if [ -z "$sql" ]; then
-	echo "<bin> usage: <bin> query-sql [partitions]" >&2
+	echo "<bin> usage: <bin> query-sql [partitionsPerSplit]" >&2
 	exit 1
 fi
 
@@ -28,7 +28,7 @@ echo 'spark.conf.set("spark.ch.storage.tableinfo.selraw", "'$selraw_tableinfo'")
 echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./storage-client.sh "show tables" | while read table; do
-	echo "storage.mapCHClusterTable(database=\"$storage_db\", table=\"$table\", partitions=$partitions)" >> "$tmp"
+	echo "storage.mapCHClusterTable(database=\"$storage_db\", table=\"$table\", partitionsPerSplit=$partitionsPerSplit)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"

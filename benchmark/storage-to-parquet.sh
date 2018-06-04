@@ -2,7 +2,7 @@ set -eu
 
 source ./_env.sh
 
-partitions="8"
+partitionsPerSplit="4"
 
 mkdir -p "/tmp/spark-q/"
 tmp="/tmp/spark-q/`date +%s`"
@@ -17,7 +17,7 @@ echo 'spark.conf.set("spark.ch.plan.single.node.opt", "true")' >> "$tmp"
 echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 ./storage-client.sh "show tables" | while read table; do
-	echo "storage.mapCHClusterTable(database=\"$storage_db\", table=\"$table\", partitions=$partitions)" >> "$tmp"
+	echo "storage.mapCHClusterTable(database=\"$storage_db\", table=\"$table\", partitionsPerSplit=$partitionsPerSplit)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"

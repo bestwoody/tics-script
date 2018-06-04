@@ -25,67 +25,48 @@ import scala.util.Random
 
 object CHRawScala {
   def main(args: Array[String]) {
-    if (args.size < 2) {
-      println("usage: <bin> query-sql partitions [verb=0|1|2] [host] [port]")
+    if (args.length < 1) {
+      println("usage: <bin> query-sql [verb=0|1] [host] [port]")
       return
     }
 
     val query: String = args(0)
-    val partitions: Int = args(1).toInt
+    val verb: Int = if (args.length >= 2) args(1).toInt else 2
 
-    val verb: Int = if (args.size >= 3) args(2).toInt else 2
-
-    val host: String = if (args.size >= 4) args(3) else "127.0.0.1"
-    val port: Int = if (args.size >= 5) args(4).toInt else 9000
+    val host: String = if (args.length >= 3) args(2) else "127.0.0.1"
+    val port: Int = if (args.length >= 4) args(3).toInt else 9000
 
     val rid = Random.nextInt
     val qid = "chraw-" + (if (rid < 0) -rid else rid)
 
-    val workers = new Array[Thread](partitions);
-
-    var totalRows: AtomicLong = new AtomicLong(0)
-    var totalBlocks: AtomicLong = new AtomicLong(0)
-    var totalBytes: AtomicLong = new AtomicLong(0)
+    var totalRows: Long = 0
+    var totalBlocks: Long = 0
+    var totalBytes: Long = 0
 
     def addRows(n: Long, cb: Long): Unit = {
-      totalRows.addAndGet(n)
-      totalBlocks.incrementAndGet()
-      totalBytes.addAndGet(cb)
+      totalRows += n
+      totalBlocks += 1
+      totalBytes += cb
     }
 
     if (verb >= 0) {
-      println("Starting, partitions: " + partitions)
+      println("Starting.")
     }
     val startTime = new Date()
 
-    for (i <- 0 until partitions) {
-      workers(i) = new Thread {
-        override def run {
-          val client = new SparkCHClientSelect(qid, query, host, port, partitions, i)
-          if (verb >= 1) {
-            println("#" + i + " start")
-          }
-          var n: Int = 0
-          while (client.hasNext) {
-            if (verb >= 2) {
-              println("#" + i + "@" + n + " block")
-            }
-            val block = client.next
-            val rows = block.chBlock().rowCount()
-            addRows(rows, block.chBlock().byteCount())
-            block.chBlock().free()
-            n += 1
-          }
-          client.close()
-          if (verb >= 1) {
-            println("#" + i + " finish")
-          }
-        }
+    val client = new SparkCHClientSelect(qid, query, host, port)
+    var n: Int = 0
+    while (client.hasNext) {
+      if (verb >= 1) {
+        println(s"$n block")
       }
-      workers(i).start
+      val block = client.next
+      val rows = block.chBlock().rowCount()
+      addRows(rows, block.chBlock().byteCount())
+      block.chBlock().free()
+      n += 1
     }
-
-    workers.foreach(_.join)
+    client.close()
 
     val endTime = new Date()
     val elapsed = endTime.getTime - startTime.getTime
@@ -93,7 +74,7 @@ object CHRawScala {
 
     if (verb >= 0) {
       println("All finish, total rows: " + totalRows + ", blocks: " + totalBlocks + ", bytes: " + totalBytes)
-      println("Elapsed: " + dateFormat.format(elapsed) + ", mb/s: " + (totalBytes.get().toDouble / 1000 / elapsed))
+      println("Elapsed: " + dateFormat.format(elapsed) + ", mb/s: " + (totalBytes.toDouble / 1000 / elapsed))
     }
   }
 }
