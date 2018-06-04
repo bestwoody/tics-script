@@ -191,7 +191,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     val chLogicalPlan = CHLogicalPlan(projectList, filterPredicates,
       groupingExpressions, aggregatesToPushdown, Seq.empty, Option.empty)
 
-    val chPlan = new CHScanExec(output, sparkSession, relation, chLogicalPlan)
+    val chPlan = new CHScanExec(output, sparkSession, relation, chLogicalPlan, optimizeForSingleNode(relation))
 
     if (!optimizeForSingleNode(relation)) {
       AggUtils.planAggregateWithoutDistinct(
@@ -229,7 +229,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     val chLogicalPlan = CHLogicalPlan(output, pushdownFilters,
       Seq.empty, Seq.empty, sortOrders, limit)
 
-    val chExec = CHScanExec(output, sparkSession, chRelation, chLogicalPlan)
+    val chExec = CHScanExec(output, sparkSession, chRelation, chLogicalPlan, optimizeForSingleNode(chRelation))
 
     if (AttributeSet(projectList.map(_.toAttribute)) == projectSet &&
       filterSet.subsetOf(projectSet)) {

@@ -9,17 +9,27 @@ import java.util.List;
 
 public class CHColumnBatch {
     private final StructType schema;
-    private int numRows;
+    private final CHBlock chBlock;
+    private final int numRows;
     private final CHColumnVector[] columns;
 
     public CHColumnBatch(CHBlock chBlock, StructType schema) {
         this.schema = schema;
+        this.chBlock = chBlock;
         this.numRows = chBlock.rowCount();
         List<CHColumnWithTypeAndName> chCols = chBlock.columns();
         this.columns = new CHColumnVector[chCols.size()];
         for (int i = 0; i < columns.length; i++) {
             columns[i] = new CHColumnVector(chCols.get(i));
         }
+    }
+
+    public CHBlock chBlock() {
+        return chBlock;
+    }
+
+    public CHColumnVector[] columns() {
+        return columns;
     }
 
     /**

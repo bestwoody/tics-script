@@ -1,6 +1,7 @@
 package com.pingcap.ch.columns;
 
-import com.pingcap.ch.datatypes.CHType;
+import com.google.common.base.Preconditions;
+
 import com.pingcap.ch.datatypes.CHTypeString;
 import com.pingcap.common.MemoryUtil;
 
@@ -8,8 +9,9 @@ import org.apache.spark.unsafe.types.UTF8String;
 
 import java.nio.ByteBuffer;
 
-public class CHColumnString implements CHColumn {
-    private int size;
+public class CHColumnString extends CHColumn {
+    // For insert.
+    private UTF8String[] strs;
 
     /// Maps i'th position to offset to i+1'th element. Last offset maps to the end of all chars (is the size of all chars).
     private ByteBuffer offsets; // UInt64
@@ -21,7 +23,7 @@ public class CHColumnString implements CHColumn {
     private long charsAddr;
 
     public CHColumnString(int size, ByteBuffer offsets, ByteBuffer chars) {
-        this.size = size;
+        super(CHTypeString.instance, size);
 
         this.offsets = offsets;
         this.chars = chars;
@@ -30,14 +32,17 @@ public class CHColumnString implements CHColumn {
         this.charsAddr = MemoryUtil.getAddress(chars);
     }
 
-    @Override
-    public CHType dataType() {
-        return CHTypeString.instance;
+    public CHColumnString(int maxSize) {
+        super(CHTypeString.instance, 0);
+        strs = new UTF8String[maxSize];
     }
 
-    @Override
-    public int size() {
-        return size;
+    public ByteBuffer offsets() {
+        return offsets;
+    }
+
+    public ByteBuffer chars() {
+        return chars;
     }
 
     @Override
@@ -56,11 +61,11 @@ public class CHColumnString implements CHColumn {
         charsAddr = 0;
     }
 
-    private long offsetAt(int i) {
+    public long offsetAt(int i) {
         return i == 0 ? 0 : MemoryUtil.getLong(offsetsAddr + ((i - 1) << 3));
     }
 
-    private int sizeAt(int i) {
+    public int sizeAt(int i) {
         return (int) (i == 0
                 ? MemoryUtil.getLong(offsetsAddr)
                 : MemoryUtil.getLong(offsetsAddr + (i << 3)) - MemoryUtil.getLong(offsetsAddr + ((i - 1) << 3)));
@@ -75,5 +80,53 @@ public class CHColumnString implements CHColumn {
 
         // Check carefully about the life cycle of this object and the returned string.
         return UTF8String.fromAddress(null, charsAddr + offsetAt(rowId), sizeAt(rowId) - 1);
+    }
+
+    @Override
+    public void insertDefault() {
+        strs[size] = UTF8String.EMPTY_UTF8;
+        size++;
+    }
+
+    @Override
+    public void insertUTF8String(UTF8String v) {
+        // The passed in string could be a pointer.
+        strs[size] = v.clone();
+        size++;
+    }
+
+    @Override
+    public CHColumn seal() {
+        long totalLen = 0;
+        for (int i = 0; i < size; i++) {
+            totalLen += strs[i].numBytes() + 1;
+        }
+        if (totalLen >= Integer.MAX_VALUE) {
+            throw new IllegalStateException("String total length overflow!");
+        }
+        ByteBuffer offsets = MemoryUtil.allocateDirect(size << 3);
+        ByteBuffer chars = MemoryUtil.allocateDirect((int) totalLen);
+        long charsAddr = MemoryUtil.getAddress(chars);
+
+        long curOffset = 0;
+        for (int i = 0; i < size; i++) {
+            UTF8String s = strs[i];
+            offsets.putLong(curOffset + s.numBytes() + 1);
+            MemoryUtil.copyMemory(s.getBaseObject(), s.getBaseOffset(), null, charsAddr + curOffset, s.numBytes());
+            curOffset += s.numBytes() + 1;
+        }
+
+        Preconditions.checkState(curOffset == chars.capacity());
+
+        offsets.clear();
+        chars.clear();
+
+        this.strs = null;
+        this.offsets = offsets;
+        this.chars = chars;
+        this.offsetsAddr = MemoryUtil.getAddress(offsets);
+        this.charsAddr = charsAddr;
+
+        return this;
     }
 }

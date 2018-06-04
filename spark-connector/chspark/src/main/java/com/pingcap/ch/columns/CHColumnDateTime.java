@@ -1,30 +1,26 @@
 package com.pingcap.ch.columns;
 
-import com.pingcap.ch.datatypes.CHType;
 import com.pingcap.ch.datatypes.CHTypeDateTime;
 import com.pingcap.common.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
-public class CHColumnDateTime implements CHColumn {
-    private int size;
+public class CHColumnDateTime extends CHColumn {
     private ByteBuffer data; // Keep a reference here to prevent the memory from gc.
     private long dataAddr;
 
     public CHColumnDateTime(int size, ByteBuffer data) {
-        this.size = size;
+        super(CHTypeDateTime.instance, size);
         this.data = data;
         dataAddr = MemoryUtil.getAddress(data);
     }
 
-    @Override
-    public CHType dataType() {
-        return CHTypeDateTime.instance;
+    public CHColumnDateTime(int maxSize) {
+        this(0, ByteBuffer.allocateDirect(maxSize << 2));
     }
 
-    @Override
-    public int size() {
-        return size;
+    public ByteBuffer data() {
+        return data;
     }
 
     @Override
@@ -35,6 +31,19 @@ public class CHColumnDateTime implements CHColumn {
     @Override
     public int getInt(int rowId) {
         return MemoryUtil.getInt(dataAddr + (rowId << 2));
+    }
+
+    @Override
+    public void insertInt(int v) {
+        data.putInt(v);
+        size++;
+    }
+
+    @Override
+    public CHColumn seal() {
+        data.clear();
+        data.limit(size << 2);
+        return this;
     }
 
     @Override

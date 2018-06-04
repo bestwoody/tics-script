@@ -19,12 +19,11 @@ public class CHEndecoder {
             return null;
         }
 
-        ByteBuffer strBuf = MemoryUtil.allocateDirect(1024);
-
         int colCount = (int) reader.readVarUInt64();
         int rowCount = (int) reader.readVarUInt64();
 
         ArrayList<CHColumnWithTypeAndName> columns = new ArrayList<>(colCount);
+        ByteBuffer strBuf = MemoryUtil.allocateDirect(1024);
         for (int columnId = 0; columnId < colCount; columnId++) {
             String name = reader.readUTF8StrWithVarLen(strBuf);
             String typeName = reader.readUTF8StrWithVarLen(strBuf);
@@ -36,6 +35,22 @@ public class CHEndecoder {
         MemoryUtil.free(strBuf);
 
         return new CHBlock(info, columns);
+    }
+
+    public static void encode(WriteBuffer writer, CHBlock block) throws IOException {
+        block.info().write(writer);
+
+        writer.writeVarUInt64(block.colCount());
+        writer.writeVarUInt64(block.rowCount());
+
+        ByteBuffer strBuf = MemoryUtil.allocateDirect(1024);
+        for (CHColumnWithTypeAndName column : block.columns()) {
+            writer.writeUTF8StrWithVarLen(column.name(), strBuf);
+            writer.writeUTF8StrWithVarLen(column.dataType().name(), strBuf);
+            column.dataType().serialize(writer, column.column());
+            writer.flush();
+        }
+        MemoryUtil.free(strBuf);
     }
 
     public static void encodeEmptyBlock(WriteBuffer writer) throws IOException {

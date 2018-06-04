@@ -25,7 +25,7 @@ public class CHColumnVector extends ColumnVector {
     private CHType type;
 
     public CHColumnVector(CHColumnWithTypeAndName column) {
-        super(TypeMappingJava.chTypetoSparkType(column.dataType()));
+        super(TypeMappingJava.chTypetoSparkType(column.dataType()).dataType);
         CHType originalType = column.dataType();
         if (originalType instanceof CHTypeNullable) {
             this.type = ((CHTypeNullable) originalType).nested_data_type;
@@ -35,6 +35,10 @@ public class CHColumnVector extends ColumnVector {
             this.column = column.column();
             this.type = column.dataType();
         }
+    }
+
+    public int size() {
+        return column.size();
     }
 
     @Override
@@ -52,7 +56,7 @@ public class CHColumnVector extends ColumnVector {
 
     @Override
     public boolean getBoolean(int rowId) {
-        return column.getBoolean(rowId);
+        throw new UnsupportedOperationException();
     }
 
     @Override

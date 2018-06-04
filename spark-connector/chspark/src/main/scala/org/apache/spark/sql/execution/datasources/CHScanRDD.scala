@@ -15,7 +15,8 @@
 
 package org.apache.spark.sql.execution.datasources
 
-import com.pingcap.theflash.CHSparkClient
+
+import com.pingcap.theflash.SparkCHClientSelect
 
 import scala.collection.mutable.ListBuffer
 import org.apache.spark.{Partition, TaskContext}
@@ -24,34 +25,40 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch._
-import org.apache.spark.internal.Logging
 import com.pingcap.theflash.codegene.CHColumnBatch
+import org.apache.spark.sql.ch.CHSql.Query
+import org.apache.spark.util.{TaskCompletionListener, TaskFailureListener}
 
 class CHScanRDD(
   @transient private val sparkSession: SparkSession,
   @transient val output: Seq[Attribute],
-  val tableQueryPairs: Seq[(CHTableRef, String)],
-  private val partitionCount: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
+  val tableQueryPairs: Seq[(CHTableRef, Query)],
+  private val partitionPerSplit: Int,
+  private val singleNode: Boolean) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     if (context.attemptNumber > 0){
       throw new IllegalStateException("We don't support partition retry right now! partition: " + split.index + ", attemptNumber: " + context.attemptNumber())
     }
+
+    val part = split.asInstanceOf[CHPartition]
+    val table = part.table
+    val query = part.query
+
+    logInfo(s"Query sent to CH: $query")
+
+    val client = new SparkCHClientSelect(query, table.host, table.port)
+
+    context.addTaskFailureListener(new TaskFailureListener {
+      override def onTaskFailure(context: TaskContext, error: Throwable) = client.close()
+    })
+    context.addTaskCompletionListener(new TaskCompletionListener {
+      override def onTaskCompletion(context: TaskContext) = client.close()
+    })
+
     new Iterator[CHColumnBatch] {
-
-      private val part = split.asInstanceOf[CHPartition]
-      private val table = part.table
-      private val qid = part.qid
-      private val query = part.query
-
-      logInfo("#" + part.clientIndex + "/" + partitionCount + ", query_id: " + qid + ", query: " + query)
-
-      private val client = new CHSparkClient(qid, query, table.host, table.port, partitionCount, part.clientIndex)
-
       override def hasNext: Boolean = client.hasNext
-
-      override def next(): CHColumnBatch = new CHColumnBatch(client.next(), client.sparkSchema())
-
+      override def next(): CHColumnBatch = client.next()
     }.asInstanceOf[Iterator[InternalRow]]
   }
 
@@ -59,15 +66,38 @@ class CHScanRDD(
     split.asInstanceOf[CHPartition].table.host :: Nil
 
   override protected def getPartitions: Array[Partition] = {
-    val qid = CHUtil.genQueryId("G")
     val result = new ListBuffer[CHPartition]
     var index = 0
-    tableQueryPairs.foreach(p => {
-      for (i <- 0 until partitionCount) {
-        result.append(new CHPartition(index, p._1, p._2, qid, i))
-        index += 1
+
+    if (singleNode) {
+      if (tableQueryPairs.length != 1) {
+        throw new Exception("more than one node encountered in single node mode");
       }
-    })
+      val table = tableQueryPairs.head._1
+      val query = tableQueryPairs.head._2
+      result.append(new CHPartition(index, table, query.buildQuery()))
+    } else {
+      val curParts = ListBuffer.empty[String]
+      var table: CHTableRef = null
+      for (p <- tableQueryPairs) {
+        table = p._1
+        val partitionList = CHUtil.getPartitionList(table).map(part => s"'$part'")
+        for (part <- partitionList) {
+          curParts += part
+          if (curParts.length >= partitionPerSplit) {
+            result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
+            curParts.clear()
+            index += 1
+          }
+        }
+        if (curParts.length != 0) {
+          result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
+          curParts.clear()
+          index += 1
+        }
+      }
+    }
+
     result.toArray
   }
 }

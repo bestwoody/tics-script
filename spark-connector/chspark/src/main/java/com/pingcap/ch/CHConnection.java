@@ -57,10 +57,12 @@ public class CHConnection implements Closeable {
     public static class Packet {
         public int type;
 
-        // Only one of those two below could be set. The other will be null.
+        // Only one of those below could be set. The other will be null.
 
         public CHBlock block;
         public String exceptionMsg;
+        public CHProgress progress;
+        public CHBlockStreamProfileInfo profileInfo;
 
         public boolean isEndOfStream() {
             return type == CHProtocol.Server.EndOfStream;
@@ -132,19 +134,10 @@ public class CHConnection implements Closeable {
      * For normal query, we should complete {@link #receivePacket()} method.
      */
     public void sendQuery(String query, String query_id, List<CHSetting> settings) throws IOException {
-        Preconditions.checkArgument(query != null && !query.isEmpty() && query_id != null && !query_id.isEmpty());
-
-        boolean isSharedQuery = false;
-        for (CHSetting setting : settings) {
-            if (!isSharedQuery) {
-                if (setting instanceof CHSetting.SettingUInt) {
-                    CHSetting.SettingUInt intSetting = (CHSetting.SettingUInt) setting;
-                    isSharedQuery = "shared_query_clients".equals(intSetting.name) && intSetting.value > 0;
-                }
-            }
+        Preconditions.checkArgument(query != null && !query.isEmpty());
+        if (query_id == null) {
+            query_id = "";
         }
-        Preconditions.checkArgument(isSharedQuery, "We only support shared query for now.");
-
 
         if (channel == null) {
             connect();
@@ -162,15 +155,22 @@ public class CHConnection implements Closeable {
         // WithMergeableState  = 1,    /// Until the stage where the results of processing on different servers can be combined.
         // Complete            = 2,    /// Completely.
         writer.writeVarUInt64(2);
-        writer.writeVarUInt64(0); // compression
+        writer.writeVarUInt64(0); // uncompress
 
         writer.writeUTF8StrWithVarLen(query);
 
         // Send an empty block.
         writer.writeVarUInt64(CHProtocol.Client.Data);
         writer.writeUTF8StrWithVarLen("");
-        CHEndecoder.encodeEmptyBlock(writer);
+        CHEndecoder.encode(writer, new CHBlock());
 
+        writer.flush();
+    }
+
+    public void sendData(CHBlock block, String name) throws IOException {
+        writer.writeVarUInt64(CHProtocol.Client.Data);
+        writer.writeUTF8StrWithVarLen(name);
+        CHEndecoder.encode(writer, block);
         writer.flush();
     }
 
@@ -186,15 +186,47 @@ public class CHConnection implements Closeable {
                 return res;
             case CHProtocol.Server.EndOfStream:
                 return res;
-
-            // TODO Implement those packet types to support normal query.
             case CHProtocol.Server.Progress:
+                res.progress = CHProgress.read(reader);
+                return res;
             case CHProtocol.Server.ProfileInfo:
+                res.profileInfo = CHBlockStreamProfileInfo.read(reader);
+                return res;
+
+            // Block with total or extreme values is passed in same form as ordinary block. The only difference is packed id.
             case CHProtocol.Server.Totals:
             case CHProtocol.Server.Extremes:
+                res.block = receiveData();
+                return res;
             default:
                 disconnect();
                 throw new IOException("Unknown packet " + res.type + " from server(" + host + ":" + port + ")");
+        }
+    }
+
+    /**
+     * Only return Data, Exception or EndOfStream packets, other packets are ignore.
+     */
+    public Packet receiveDataPacket() throws IOException {
+        while (true) {
+            CHConnection.Packet p = receivePacket();
+            switch (p.type) {
+                case CHProtocol.Server.Data:
+                case CHProtocol.Server.Exception:
+                    return p;
+                case CHProtocol.Server.EndOfStream:
+                    // We are done.
+                    close();
+                    return p;
+                case CHProtocol.Server.Progress:
+                case CHProtocol.Server.ProfileInfo:
+                case CHProtocol.Server.Totals:
+                case CHProtocol.Server.Extremes:
+                    // Ignore those messages and wait for next block.
+                    continue;
+                default:
+                    throw new IllegalStateException("Should not reach here!");
+            }
         }
     }
 

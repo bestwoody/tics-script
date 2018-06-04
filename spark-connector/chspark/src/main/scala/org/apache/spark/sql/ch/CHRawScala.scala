@@ -19,7 +19,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
 
-import com.pingcap.theflash.CHSparkClient
+import com.pingcap.theflash.SparkCHClientSelect
 
 import scala.util.Random
 
@@ -61,7 +61,7 @@ object CHRawScala {
     for (i <- 0 until partitions) {
       workers(i) = new Thread {
         override def run {
-          val client = new CHSparkClient(qid, query, host, port, partitions, i)
+          val client = new SparkCHClientSelect(qid, query, host, port, partitions, i)
           if (verb >= 1) {
             println("#" + i + " start")
           }
@@ -71,9 +71,9 @@ object CHRawScala {
               println("#" + i + "@" + n + " block")
             }
             val block = client.next
-            val rows = block.rowCount()
-            addRows(rows, block.byteCount())
-            block.free()
+            val rows = block.chBlock().rowCount()
+            addRows(rows, block.chBlock().byteCount())
+            block.chBlock().free()
             n += 1
           }
           client.close()

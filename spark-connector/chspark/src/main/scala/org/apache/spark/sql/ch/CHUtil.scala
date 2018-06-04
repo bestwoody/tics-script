@@ -17,51 +17,30 @@ package org.apache.spark.sql.ch
 
 import java.util.UUID
 
-import com.pingcap.ch.columns.{CHColumnNumber, CHColumnString}
-import com.pingcap.theflash.{CHSparkClient, TypeMappingJava}
+import com.pingcap.theflash.{SparkCHClientSelect, TypeMappingJava}
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.types._
 
 object CHUtil {
-  def getFields(table: CHTableRef): Array[StructField] = {
-    val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
 
-    var fields = new Array[StructField](0)
-
-    var names = new Array[String](0)
-    var types = new Array[String](0)
-
-    val client = new CHSparkClient(CHUtil.genQueryId("D"), CHSql.desc(table), table.host, table.port, 1, 1)
+  def getPartitionList(table: CHTableRef): Array[String] = {
+    val client = new SparkCHClientSelect(CHUtil.genQueryId("C"), CHSql.partitionList(table), table.host, table.port, 1, 1)
     try {
-      while (client.hasNext) {
-        val block = client.next()
-
-        if (block.columns().size() < 2) {
-          throw new Exception("Send desc table to get schema failed: small column size")
-        }
-
-        val fieldCol = block.columns().get(0).column().asInstanceOf[CHColumnString]
-        for (i <- 0 until fieldCol.size()) {
-          names :+= fieldCol.getUTF8String(i).toString
-        }
-
-        val typeCol = block.columns().get(1).column().asInstanceOf[CHColumnString]
-        for (i <- 0 until typeCol.size()) {
-          types :+= typeCol.getUTF8String(i).toString
-        }
+      if (!client.hasNext) {
+        throw new Exception("Send table partition list request, not response")
+      }
+      val block = client.next()
+      if (block.numCols != 1) {
+        throw new Exception("Send table partition list request, wrong response")
       }
 
-      if (names.length == 0) {
-        throw new Exception("Send desc table to get schema failed: table desc not found")
+      var partitions = new Array[String](0)
+      val fieldCol = block.column(0)
+      for (i <- 0 until fieldCol.size()) {
+        partitions :+= fieldCol.getUTF8String(i).toString
       }
-      for (i <- names.indices) {
-        // TODO: Get nullable info (from where?)
-        val field = StructField(names(i), TypeMappingJava.stringToSparkType(types(i)), nullable = true, metadata)
-        fields :+= field
-      }
-
-      fields
+      partitions
     } finally {
       // Consume all packets before close.
       while (client.hasNext) {
@@ -71,23 +50,72 @@ object CHUtil {
     }
   }
 
+  def getFields(table: CHTableRef): Array[StructField] = {
+    val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
+
+    var fields = new Array[StructField](0)
+
+    var names = new Array[String](0)
+    var types = new Array[String](0)
+
+    val client = new SparkCHClientSelect(CHUtil.genQueryId("D"), CHSql.desc(table), table.host, table.port, 1, 1)
+    try {
+      while (client.hasNext) {
+        val block = client.next()
+
+        if (block.numCols() < 2) {
+          throw new Exception("Send desc table to get schema failed: small column size")
+        }
+
+        val fieldCol = block.column(0)
+        for (i <- 0 until fieldCol.size()) {
+          names :+= fieldCol.getUTF8String(i).toString
+        }
+
+        val typeCol = block.column(1)
+        for (i <- 0 until typeCol.size()) {
+          types :+= typeCol.getUTF8String(i).toString
+        }
+      }
+
+      if (names.length == 0) {
+        throw new Exception("Send desc table to get schema failed: table desc not found")
+      }
+      for (i <- names.indices) {
+        val t = TypeMappingJava.stringToSparkType(types(i))
+        val field = StructField(names(i), t.dataType, t.nullable, metadata)
+        fields :+= field
+      }
+
+      // Consume all packets before close.
+      while (client.hasNext) {
+        client.next()
+      }
+
+      fields
+    } finally {
+      client.close()
+    }
+  }
+
   def getRowCount(table: CHTableRef, useSelraw: Boolean = false): Long = {
-    val client = new CHSparkClient(CHUtil.genQueryId("C"), CHSql.count(table, useSelraw), table.host, table.port, 1, 1)
+    val client = new SparkCHClientSelect(CHUtil.genQueryId("C"), CHSql.count(table, useSelraw), table.host, table.port, 1, 1)
     try {
       if (!client.hasNext) {
         throw new Exception("Send table row count request, not response")
       }
       val block = client.next()
-      if (block.columns().size() != 1) {
+      if (block.numCols() != 1) {
         throw new Exception("Send table row count request, wrong response")
       }
 
-      block.columns().get(0).column().asInstanceOf[CHColumnNumber].getLong(0)
-    } finally {
       // Consume all packets before close.
       while (client.hasNext) {
         client.next()
       }
+
+      block.column(0).getLong(0)
+    } finally {
       client.close()
     }
   }

@@ -1,6 +1,5 @@
 package com.pingcap.ch.columns;
 
-import com.pingcap.ch.datatypes.CHType;
 import com.pingcap.ch.datatypes.CHTypeFixedString;
 import com.pingcap.common.MemoryUtil;
 
@@ -8,30 +7,25 @@ import org.apache.spark.unsafe.types.UTF8String;
 
 import java.nio.ByteBuffer;
 
-public class CHColumnFixedString implements CHColumn {
-    private CHTypeFixedString dataType;
-    private int size;
+public class CHColumnFixedString extends CHColumn {
     private int valLen;
 
     private ByteBuffer data;
     private long dataAddr;
 
     public CHColumnFixedString(int size, int valLen, ByteBuffer data) {
-        this.dataType = new CHTypeFixedString(valLen);
-        this.size = size;
+        super(new CHTypeFixedString(valLen), size);
         this.valLen = valLen;
         this.data = data;
         this.dataAddr = MemoryUtil.getAddress(data);
     }
 
-    @Override
-    public CHType dataType() {
-        return dataType;
+    public CHColumnFixedString(int valLen, int maxSize) {
+        this(0, valLen, ByteBuffer.allocateDirect(valLen * maxSize));
     }
 
-    @Override
-    public int size() {
-        return size;
+    public ByteBuffer data() {
+        return data;
     }
 
     @Override
@@ -46,6 +40,21 @@ public class CHColumnFixedString implements CHColumn {
         //return UTF8String.fromBytes(bytes);
 
         return UTF8String.fromAddress(null, dataAddr + valLen * rowId, valLen);
+    }
+
+    @Override
+    public void insertUTF8String(UTF8String v) {
+        MemoryUtil.copyMemory(v.getBaseObject(), v.getBaseOffset(),
+                null, dataAddr + (size * valLen),
+                Math.min(v.numBytes(), valLen));
+        size++;
+    }
+
+    @Override
+    public CHColumn seal() {
+        data.clear();
+        data.limit(size * valLen);
+        return this;
     }
 
     @Override

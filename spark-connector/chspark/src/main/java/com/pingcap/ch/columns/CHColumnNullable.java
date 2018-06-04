@@ -1,31 +1,22 @@
 package com.pingcap.ch.columns;
 
-import com.pingcap.ch.datatypes.CHType;
 import com.pingcap.ch.datatypes.CHTypeNullable;
+import com.pingcap.ch.datatypes.CHTypeNumber;
 
 import org.apache.spark.unsafe.types.UTF8String;
 
-public class CHColumnNullable implements CHColumn {
-    public final CHTypeNullable type;
-    public final int size;
+public class CHColumnNullable extends CHColumn {
     public final CHColumnNumber null_map;
     public final CHColumn nested_column;
 
-    public CHColumnNullable(CHTypeNullable type, int size, CHColumnNumber null_map, CHColumn nested_column) {
-        this.type = type;
-        this.size = size;
+    public CHColumnNullable(CHTypeNullable type, CHColumnNumber null_map, CHColumn nested_column) {
+        super(type, null_map.size());
         this.null_map = null_map;
         this.nested_column = nested_column;
     }
 
-    @Override
-    public CHType dataType() {
-        return type;
-    }
-
-    @Override
-    public int size() {
-        return size;
+    public CHColumnNullable(CHTypeNullable type, int maxSize) {
+        this(type, new CHColumnNumber(CHTypeNumber.CHTypeUInt8.instance, maxSize), type.nested_data_type.allocate(maxSize));
     }
 
     @Override
@@ -42,11 +33,6 @@ public class CHColumnNullable implements CHColumn {
     @Override
     public boolean isNullAt(int rowId) {
         return null_map.getByte(rowId) != 0;
-    }
-
-    @Override
-    public boolean getBoolean(int rowId) {
-        return nested_column.getBoolean(rowId);
     }
 
     @Override
@@ -82,5 +68,67 @@ public class CHColumnNullable implements CHColumn {
     @Override
     public UTF8String getUTF8String(int rowId) {
         return nested_column.getUTF8String(rowId);
+    }
+
+    @Override
+    public void insertDefault() {
+        null_map.insertDefault();
+        nested_column.insertDefault();
+    }
+
+    @Override
+    public void insertNull() {
+        null_map.insertByte((byte) 1);
+        nested_column.insertDefault();
+    }
+
+    @Override
+    public void insertByte(byte v) {
+        null_map.insertByte((byte) 0);
+        nested_column.insertByte(v);
+    }
+
+    @Override
+    public void insertShort(short v) {
+        null_map.insertByte((byte) 0);
+        nested_column.insertShort((short) v);
+    }
+
+    @Override
+    public void insertInt(int v) {
+        null_map.insertByte((byte) 0);
+        nested_column.insertInt(v);
+    }
+
+    @Override
+    public void insertLong(long v) {
+        null_map.insertByte((byte) 0);
+        nested_column.insertLong(v);
+    }
+
+    @Override
+    public void insertFloat(float v) {
+        null_map.insertByte((byte) 0);
+        nested_column.insertFloat(v);
+    }
+
+    @Override
+    public void insertDouble(double v) {
+        null_map.insertByte((byte) 0);
+        nested_column.insertDouble(v);
+    }
+
+    @Override
+    public void insertUTF8String(UTF8String v) {
+        null_map.insertByte((byte) 0);
+        nested_column.insertUTF8String(v);
+    }
+
+    @Override
+    public CHColumn seal() {
+        null_map.seal();
+        nested_column.seal();
+        size = null_map.size();
+        return this;
     }
 }

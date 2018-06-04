@@ -35,7 +35,7 @@ class CHSqlSuite extends SparkFunSuite {
     assert(CHSql.compileExpression(e) == expected)
 
   def testQuery(table: CHTableRef, chLogicalPlan: CHLogicalPlan, expected: String) : Unit =
-    assert(CHSql.query(table, chLogicalPlan) == expected)
+    assert(CHSql.query(table, chLogicalPlan).buildQuery() == expected)
 
   test("null check expressions") {
     testCompileExpression(a.isNull, "a IS NULL")

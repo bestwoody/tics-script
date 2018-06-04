@@ -23,6 +23,27 @@ import org.apache.spark.sql.types.StringType
  * Compiler that compiles CHLogicalPlan/CHTableRef to CH SQL string.
  */
 object CHSql {
+
+  case class Query(private val projection: String,
+                   private val table: CHTableRef,
+                   private val filter: String,
+                   private val aggregation: String,
+                   private val topN: String) {
+    def buildQuery(partition: String): String = {
+      buildQueryInternal(CHSql.compileTable(table, partition))
+    }
+
+    def buildQuery(): String = {
+      buildQueryInternal(CHSql.compileTable(table))
+    }
+
+    private def buildQueryInternal(from: String): String = {
+      s"${projection}${from}${filter}${aggregation}${topN}"
+    }
+
+    override def toString: String = buildQuery
+  }
+
   /**
     * Compose a query string based on given input table and CH logical plan.
     * @param table
@@ -30,12 +51,21 @@ object CHSql {
     * @param useSelraw
     * @return
     */
-  def query(table: CHTableRef, chLogicalPlan: CHLogicalPlan, useSelraw: Boolean = false): String = {
-    compileProject(chLogicalPlan.chProject, useSelraw) +
-    compileTable(table) +
-    compileFilter(chLogicalPlan.chFilter) +
-    compileAggregate(chLogicalPlan.chAggregate) +
-    compileTopN(chLogicalPlan.chTopN)
+  def query(table: CHTableRef, chLogicalPlan: CHLogicalPlan, useSelraw: Boolean = false): Query = {
+    Query(compileProject(chLogicalPlan.chProject, useSelraw),
+      table,
+      compileFilter(chLogicalPlan.chFilter),
+      compileAggregate(chLogicalPlan.chAggregate),
+      compileTopN(chLogicalPlan.chTopN))
+  }
+
+  /**
+    * Query partition list of a table
+    * @param table
+    * @return
+    */
+  def partitionList(table: CHTableRef): String = {
+    s"SELECT DISTINCT(partition) FROM system.parts WHERE database = '${table.database}' AND table = '${table.table}' AND active = 1"
   }
 
   /**
@@ -62,8 +92,12 @@ object CHSql {
       .mkString(", ")
   }
 
-  private def compileTable(table: CHTableRef): String = {
-    " FROM " + table.absName
+  private def compileTable(table: CHTableRef, partitions: String = null): String = {
+    if (partitions == null || partitions.isEmpty) {
+      s" FROM ${table.absName}"
+    } else {
+      s" FROM ${table.absName} PARTITION $partitions"
+    }
   }
 
   private def compileFilter(chFilter: CHFilter): String = {

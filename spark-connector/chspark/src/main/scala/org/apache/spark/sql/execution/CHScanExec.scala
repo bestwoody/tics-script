@@ -26,7 +26,8 @@ case class CHScanExec(
   output: Seq[Attribute],
   @transient sparkSession: SparkSession,
   @transient chRelation: CHRelation,
-  @transient chLogicalPlan: CHLogicalPlan)
+  @transient chLogicalPlan: CHLogicalPlan,
+  @transient singleNode: Boolean)
   extends LeafExecNode with CHBatchScan {
 
   val useSelraw = sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW_TABLE_INFO, "false").toBoolean
@@ -35,7 +36,8 @@ case class CHScanExec(
     val tableQueryPairs = chRelation.tables.map(table => {
       (table, CHSql.query(table, chLogicalPlan, useSelraw))
     })
-    new CHScanRDD(sparkSession, output, tableQueryPairs, chRelation.partitions) :: Nil
+    new CHScanRDD(sparkSession, output, tableQueryPairs,
+      chRelation.partitionsPerSplit, singleNode) :: Nil
   }
 
   override protected def doExecute(): RDD[InternalRow] = WholeStageCodegenExec(this).execute()

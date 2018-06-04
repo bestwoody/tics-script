@@ -4,6 +4,7 @@ import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnNumber;
 import com.pingcap.common.MemoryUtil;
 import com.pingcap.common.ReadBuffer;
+import com.pingcap.common.WriteBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -15,6 +16,11 @@ public abstract class CHTypeNumber implements CHType {
     public abstract int shift();
 
     @Override
+    public CHColumn allocate(int maxSize) {
+        return new CHColumnNumber(this, maxSize);
+    }
+
+    @Override
     public CHColumn deserialize(ReadBuffer reader, int size) throws IOException {
         if (size == 0) {
             return new CHColumnNumber(this, 0, MemoryUtil.EMPTY_BYTE_BUFFER_DIRECT);
@@ -23,6 +29,14 @@ public abstract class CHTypeNumber implements CHType {
         reader.read(buffer);
         buffer.clear();
         return new CHColumnNumber(this, size, buffer);
+    }
+
+    @Override
+    public void serialize(WriteBuffer writer, CHColumn column) throws IOException {
+        CHColumnNumber numberCol = (CHColumnNumber) column;
+        ByteBuffer data = MemoryUtil.duplicateDirectByteBuffer(numberCol.data());
+        data.clear().limit(column.size() << shift());
+        writer.write(data);
     }
 
     public static class CHTypeUInt8 extends CHTypeNumber {

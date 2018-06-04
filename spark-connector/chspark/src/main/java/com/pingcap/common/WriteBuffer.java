@@ -34,10 +34,11 @@ public class WriteBuffer implements Closeable {
     }
 
     public void flush() throws IOException {
+        buf.flip();
         if (!buf.hasRemaining()) {
+            buf.clear();
             return;
         }
-        buf.flip();
         IOUtil.writeFully(channel, buf);
         buf.clear();
     }

@@ -4,36 +4,72 @@ import com.pingcap.ch.datatypes.CHType;
 
 import org.apache.spark.unsafe.types.UTF8String;
 
-public interface CHColumn {
+public abstract class CHColumn {
+    protected CHType dataType;
+    protected int size;
 
-    CHType dataType();
+    public CHColumn(CHType dataType, int size) {
+        this.dataType = dataType;
+        this.size = size;
+    }
 
-    default String typeName() {return dataType().name();}
+    public final CHType dataType() {
+        return dataType;
+    }
 
-    int size();
+    public final String typeName() {
+        return dataType().name();
+    }
 
-    long byteCount();
+    public final int size() {
+        return size;
+    }
 
-    void free();
+    public abstract long byteCount();
 
-    default boolean empty() {return size() == 0;}
+    public abstract void free();
 
-    default boolean isNullAt(int rowId) {return false;}
+    public boolean empty() {return size() == 0;}
 
-    default boolean getBoolean(int rowId) {throw new UnsupportedOperationException();}
+    public boolean isNullAt(int rowId) {return false;}
 
-    default byte getByte(int rowId) {throw new UnsupportedOperationException();}
+    public byte getByte(int rowId) {throw new UnsupportedOperationException();}
 
-    default short getShort(int rowId) {throw new UnsupportedOperationException();}
+    public short getShort(int rowId) {throw new UnsupportedOperationException();}
 
-    default int getInt(int rowId) {throw new UnsupportedOperationException();}
+    public int getInt(int rowId) {throw new UnsupportedOperationException();}
 
-    default long getLong(int rowId) {throw new UnsupportedOperationException();}
+    public long getLong(int rowId) {throw new UnsupportedOperationException();}
 
-    default float getFloat(int rowId) {throw new UnsupportedOperationException();}
+    public float getFloat(int rowId) {throw new UnsupportedOperationException();}
 
-    default double getDouble(int rowId) {throw new UnsupportedOperationException();}
+    public double getDouble(int rowId) {throw new UnsupportedOperationException();}
 
-    default UTF8String getUTF8String(int rowId) {throw new UnsupportedOperationException();}
+    public UTF8String getUTF8String(int rowId) {throw new UnsupportedOperationException();}
 
+    public void insertDefault() {
+        size++;
+    }
+
+    public void insertNull() {throw new UnsupportedOperationException();}
+
+    public void insertByte(byte v) {throw new UnsupportedOperationException();}
+
+    public void insertShort(short v) {throw new UnsupportedOperationException();}
+
+    public void insertInt(int v) {throw new UnsupportedOperationException();}
+
+    public void insertLong(long v) {throw new UnsupportedOperationException();}
+
+    public void insertFloat(float v) {throw new UnsupportedOperationException();}
+
+    public void insertDouble(double v) {throw new UnsupportedOperationException();}
+
+    public void insertUTF8String(UTF8String v) {throw new UnsupportedOperationException();}
+
+    /**
+     * After done with insertion, you should call this method to make the inserted data readable.
+     * Mainly used to avoid frequently reallocating memory.
+     */
+    public abstract CHColumn seal();
 }

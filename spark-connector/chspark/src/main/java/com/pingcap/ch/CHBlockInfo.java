@@ -14,8 +14,6 @@ public class CHBlockInfo {
     // Not part of this info.
     public boolean isEOF = false;
 
-    private static final int cap = 1 + 1 + 1 + 4 + 1;
-
     public CHBlockInfo(boolean is_overflows, int bucket_num) {
         this.is_overflows = is_overflows;
         this.bucket_num = bucket_num;

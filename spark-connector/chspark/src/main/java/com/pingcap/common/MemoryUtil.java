@@ -271,6 +271,10 @@ public class MemoryUtil {
         return hollowBuffer;
     }
 
+    public static ByteBuffer duplicateDirectByteBuffer(ByteBuffer source) {
+        return duplicateDirectByteBuffer(source, getHollowDirectByteBuffer());
+    }
+
     public static long getLongByByte(long address) {
         if (BIG_ENDIAN) {
             return (((long) unsafe.getByte(address)) << 56) |
