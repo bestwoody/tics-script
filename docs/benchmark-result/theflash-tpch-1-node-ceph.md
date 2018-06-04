@@ -1,4 +1,4 @@
-# Theflash TPCH100 benchmark on one NVME server
+# Theflash TPCH-100 benchmark on Ceph file system
 
 ## Result columns
 * MergeTree:
@@ -109,8 +109,8 @@ Q22, avg:  58.1, detail: [57.6, 62.4, 56.0, 58.5, 55.6, 57.4, 61.0, 56.2, 58.0]
 ## Environment
 
 ### Hardware
-* Intel(R) Xeon(R) CPU E5-2630 v4 @ 2.20GHz
-* 128G Memory 2133MHz .
+* 40 Cores, Intel(R) Xeon(R) CPU E5-2630 v4 @ 2.20GHz
+* 128G Memory 2133MHz
 * One NVME SSD 2.8GB+/s, 3.6T
 
 ### Software
