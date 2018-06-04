@@ -42,10 +42,6 @@ object CHUtil {
       }
       partitions
     } finally {
-      // Consume all packets before close.
-      while (client.hasNext) {
-        client.next()
-      }
       client.close()
     }
   }
@@ -87,11 +83,6 @@ object CHUtil {
         fields :+= field
       }
 
-      // Consume all packets before close.
-      while (client.hasNext) {
-        client.next()
-      }
-
       fields
     } finally {
       client.close()
@@ -107,11 +98,6 @@ object CHUtil {
       val block = client.next()
       if (block.numCols() != 1) {
         throw new Exception("Send table row count request, wrong response")
-      }
-
-      // Consume all packets before close.
-      while (client.hasNext) {
-        client.next()
       }
 
       block.column(0).getLong(0)
