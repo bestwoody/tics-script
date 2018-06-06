@@ -77,11 +77,6 @@
       <artifactId>scala-actors</artifactId>
       <version>2.11.12</version>
     </dependency>
-    <dependency>
-      <groupId>pingcap.com</groupId>
-      <artifactId>CHSDK</artifactId>
-      <version>1.0</version>
-    </dependency>
 
     <!-- for test -->
     <dependency>
