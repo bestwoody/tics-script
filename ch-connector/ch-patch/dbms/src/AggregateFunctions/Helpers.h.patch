@@ -1,0 +1,22 @@
+diff --git a/dbms/src/AggregateFunctions/Helpers.h b/dbms/src/AggregateFunctions/Helpers.h
+index 93c444ce46a1..d4d029318dda 100644
+--- a/dbms/src/AggregateFunctions/Helpers.h
++++ b/dbms/src/AggregateFunctions/Helpers.h
+@@ -2,6 +2,7 @@
+ 
+ #include <Common/typeid_cast.h>
+ #include <DataTypes/DataTypesNumber.h>
++#include <DataTypes/DataTypeDecimal.h>
+ #include <DataTypes/DataTypeEnum.h>
+ #include <AggregateFunctions/IAggregateFunction.h>
+ 
+@@ -36,7 +37,8 @@
+     M(Float32, DataTypeFloat32) \
+     M(Float64, DataTypeFloat64) \
+     M(UInt8, DataTypeEnum8) \
+-    M(UInt16, DataTypeEnum16)
++    M(UInt16, DataTypeEnum16) \
++    M(DecimalValue, DataTypeDecimal)
+ 
+ namespace DB
+ {

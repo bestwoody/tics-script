@@ -1,0 +1,13 @@
+diff --git a/dbms/src/AggregateFunctions/AggregateFunctionUniqUpTo.h b/dbms/src/AggregateFunctions/AggregateFunctionUniqUpTo.h
+index bb206bfa77ec..82dbb48697bb 100644
+--- a/dbms/src/AggregateFunctions/AggregateFunctionUniqUpTo.h
++++ b/dbms/src/AggregateFunctions/AggregateFunctionUniqUpTo.h
+@@ -32,7 +32,7 @@ struct __attribute__((__packed__)) AggregateFunctionUniqUpToData
+   */
+     UInt8 count = 0;
+ 
+-    T data[0];
++    T *data;
+ 
+ 
+     size_t size() const

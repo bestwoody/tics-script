@@ -1,0 +1,127 @@
+diff --git a/dbms/src/IO/ReadHelpers.h b/dbms/src/IO/ReadHelpers.h
+index 2d3b405675f5..568c4d7fb719 100644
+--- a/dbms/src/IO/ReadHelpers.h
++++ b/dbms/src/IO/ReadHelpers.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <cassert>
+ #include <cmath>
+ #include <cstring>
+ #include <limits>
+@@ -19,6 +20,7 @@
+ #include <Common/StringUtils/StringUtils.h>
+ #include <Common/Arena.h>
+ #include <Common/UInt128.h>
++#include <Common/Decimal.h>
+ 
+ #include <IO/ReadBuffer.h>
+ #include <IO/ReadBufferFromMemory.h>
+@@ -200,7 +202,6 @@ inline bool checkStringByFirstCharacterAndAssertTheRestCaseInsensitive(const Str
+     return checkStringByFirstCharacterAndAssertTheRestCaseInsensitive(s.c_str(), buf);
+ }
+ 
+-
+ inline void readBoolText(bool & x, ReadBuffer & buf)
+ {
+     char tmp = '0';
+@@ -225,6 +226,75 @@ inline void readBoolTextWord(bool & x, ReadBuffer & buf)
+     }
+ }
+ 
++inline void readDecimalText(DecimalValue& x, ReadBuffer & buf)
++{
++    size_t scale = x.scale;
++    bool negative = false; 
++    bool fractional = false;
++    x.value = 0;
++    if (buf.eof())
++    {
++        throwReadAfterEOF();
++    }
++    size_t cur_prec = 0; 
++    size_t cur_scale = 0;
++    while (!buf.eof())
++    {
++        switch (*buf.position())
++        {
++            case '+':
++                break;
++            case '-':
++                assert(!negative);
++                negative = true;
++                break;
++            case '.':
++                assert(!fractional);
++                assert(cur_prec-cur_scale>0);
++                fractional = true;
++                break;
++            case '0': [[fallthrough]];
++            case '1': [[fallthrough]];
++            case '2': [[fallthrough]];
++            case '3': [[fallthrough]];
++            case '4': [[fallthrough]];
++            case '5': [[fallthrough]];
++            case '6': [[fallthrough]];
++            case '7': [[fallthrough]];
++            case '8': [[fallthrough]];
++            case '9':
++                x.value *= 10;
++                x.value += *buf.position() - '0';
++                cur_prec ++;
++                if (fractional) {
++                    cur_scale++;
++                    if (scale == cur_scale) {
++                        // should return
++                        if (negative)
++                            x.value = -x.value;
++                        ++buf.position();
++                        return;
++                    }
++                } 
++                break;
++            default:
++                for(;cur_scale < scale; cur_scale++) {
++                    x.value *= 10;
++                }
++                if (negative)
++                    x.value = -x.value;
++                return;
++        }
++        ++buf.position();
++    }
++    for(;cur_scale < scale; cur_scale++) {
++        x.value *= 10;
++    }
++    if (negative)
++        x.value = -x.value;
++    return;
++}
++
+ template <typename T, typename ReturnType = void>
+ ReturnType readIntTextImpl(T & x, ReadBuffer & buf)
+ {
+@@ -587,6 +657,7 @@ inline void readBinary(UInt128 & x, ReadBuffer & buf) { readPODBinary(x, buf); }
+ inline void readBinary(UInt256 & x, ReadBuffer & buf) { readPODBinary(x, buf); }
+ inline void readBinary(LocalDate & x, ReadBuffer & buf) { readPODBinary(x, buf); }
+ inline void readBinary(LocalDateTime & x, ReadBuffer & buf) { readPODBinary(x, buf); }
++inline void readBinary(DecimalValue & x, ReadBuffer & buf) { readPODBinary(x, buf); }
+ 
+ 
+ /// Generic methods to read value in text tab-separated format.
+@@ -598,6 +669,7 @@ template <typename T>
+ inline std::enable_if_t<std::is_floating_point_v<T>, void>
+ readText(T & x, ReadBuffer & buf) { readFloatText(x, buf); }
+ 
++inline void readText(DecimalValue & x, ReadBuffer & buf) { readDecimalText(x, buf); }
+ inline void readText(bool & x, ReadBuffer & buf) { readBoolText(x, buf); }
+ inline void readText(String & x, ReadBuffer & buf) { readEscapedString(x, buf); }
+ inline void readText(LocalDate & x, ReadBuffer & buf) { readDateText(x, buf); }
+@@ -698,6 +770,7 @@ inline void readCSV(String & x, ReadBuffer & buf, const char delimiter = ',') {
+ inline void readCSV(LocalDate & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
+ inline void readCSV(LocalDateTime & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
+ inline void readCSV(UUID & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
++inline void readCSV(DecimalValue & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
+ inline void readCSV(UInt128 &, ReadBuffer &)
+ {
+     /** Because UInt128 isn't a natural type, without arithmetic operator and only use as an intermediary type -for UUID-

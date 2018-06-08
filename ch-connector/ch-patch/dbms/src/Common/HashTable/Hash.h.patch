@@ -1,0 +1,48 @@
+diff --git a/dbms/src/Common/HashTable/Hash.h b/dbms/src/Common/HashTable/Hash.h
+index e3b900d85cf0..482dc76d42e8 100644
+--- a/dbms/src/Common/HashTable/Hash.h
++++ b/dbms/src/Common/HashTable/Hash.h
+@@ -1,7 +1,12 @@
+ #pragma once
+ 
++#include <functional>
++//#include <city.h>
++#include <functional>
++#include <citycrc.h>
+ #include <Core/Types.h>
+ #include <Common/UInt128.h>
++#include <Common/Decimal.h>
+ 
+ 
+ /** Hash functions that are better than the trivial function std::hash.
+@@ -87,6 +92,14 @@ DEFINE_HASH(DB::Float64)
+ 
+ #undef DEFINE_HASH
+ 
++template <> struct DefaultHash<DB::DecimalValue>
++{
++    size_t operator() (DB::DecimalValue v) const {
++        //return CityHash_v1_0_2::CityHash64(reinterpret_cast<char*>(&v), sizeof(v));
++        return std::hash<std::string>{}(v.toString());
++    }
++};
++
+ 
+ template <typename T> struct HashCRC32;
+ 
+@@ -112,6 +125,15 @@ template <> struct HashCRC32<T>\
+     }\
+ };
+ 
++template <> struct HashCRC32<DB::DecimalValue>
++{
++    size_t operator() (DB::DecimalValue v) const
++    {
++//        return CityHash_v1_0_2::Hash128to64(CityHash_v1_0_2::CityHashCrc128(reinterpret_cast<char*>(&v), sizeof(DB::DecimalValue)));
++        return std::hash<std::string>{}(v.toString());
++    }
++};
++
+ DEFINE_HASH(DB::UInt8)
+ DEFINE_HASH(DB::UInt16)
+ DEFINE_HASH(DB::UInt32)
