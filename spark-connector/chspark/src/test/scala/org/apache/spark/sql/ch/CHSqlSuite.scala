@@ -26,10 +26,10 @@ class CHSqlSuite extends SparkFunSuite {
   val oneEMINUS4 = 0.0001
   val oneE8 = 100000000.0
   val abc = "abc"
-  val a = 'a.int
+  val a = 'A.int
   val b = 'b.int
-  val c = 'c.string
-  val t = new CHTableRef(null, 0, "d", "t")
+  val c = 'C.string
+  val t = new CHTableRef(null, 0, "D", "T")
 
   def testCompileExpression(e: Expression, expected: String) : Unit =
     assert(CHSql.compileExpression(e) == expected)
@@ -38,9 +38,9 @@ class CHSqlSuite extends SparkFunSuite {
     assert(CHSql.query(table, chLogicalPlan).buildQuery() == expected)
 
   test("null check expressions") {
-    testCompileExpression(a.isNull, "a IS NULL")
-    testCompileExpression(b.isNotNull, "b IS NOT NULL")
-    testCompileExpression(!b.isNotNull, "NOT b IS NOT NULL")
+    testCompileExpression(a.isNull, "`a` IS NULL")
+    testCompileExpression(b.isNotNull, "`b` IS NOT NULL")
+    testCompileExpression(!b.isNotNull, "NOT `b` IS NOT NULL")
   }
 
   test("literal expressions") {
@@ -55,54 +55,54 @@ class CHSqlSuite extends SparkFunSuite {
   }
 
   test("arithmetic expressions") {
-    testCompileExpression(a + b, "(a + b)")
-    testCompileExpression(-(a + b), "(-(a + b))")
-    testCompileExpression(a + b * -a, "(a + (b * (-a)))")
-    testCompileExpression(a / b * a, "((a / b) * a)")
-    testCompileExpression(a / b * (a - abs(b)), "((a / b) * (a - ABS(b)))")
-    testCompileExpression(a - b * (a / abs(b + a % 100)), "(a - (b * (a / ABS((b + (a % 100))))))")
+    testCompileExpression(a + b, "(`a` + `b`)")
+    testCompileExpression(-(a + b), "(-(`a` + `b`))")
+    testCompileExpression(a + b * -a, "(`a` + (`b` * (-`a`)))")
+    testCompileExpression(a / b * a, "((`a` / `b`) * `a`)")
+    testCompileExpression(a / b * (a - abs(b)), "((`a` / `b`) * (`a` - ABS(`b`)))")
+    testCompileExpression(a - b * (a / abs(b + a % 100)), "(`a` - (`b` * (`a` / ABS((`b` + (`a` % 100))))))")
   }
 
   test("comparison expressions") {
-    testCompileExpression(a === b, "(a = b)")
-    testCompileExpression(a > b, "(a > b)")
-    testCompileExpression(a >= b, "(a >= b)")
-    testCompileExpression(a < b, "(a < b)")
-    testCompileExpression(a <= b, "(a <= b)")
-    testCompileExpression(a in (b, c), "a IN (b, c)")
+    testCompileExpression(a === b, "(`a` = `b`)")
+    testCompileExpression(a > b, "(`a` > `b`)")
+    testCompileExpression(a >= b, "(`a` >= `b`)")
+    testCompileExpression(a < b, "(`a` < `b`)")
+    testCompileExpression(a <= b, "(`a` <= `b`)")
+    testCompileExpression(a in (b, c), "`a` IN (`b`, `c`)")
   }
 
   test("logical expressions") {
-    testCompileExpression(!(a + b <= b), "NOT ((a + b) <= b)")
-    testCompileExpression(a + b <= b && a > b, "(((a + b) <= b) AND (a > b))")
-    testCompileExpression(a <= b || a + b > b, "((a <= b) OR ((a + b) > b))")
-    testCompileExpression(a || a && !b || c, "((a OR (a AND NOT b)) OR c)")
-    testCompileExpression((a || b) && !(b || c), "((a OR b) AND NOT (b OR c))")
+    testCompileExpression(!(a + b <= b), "NOT ((`a` + `b`) <= `b`)")
+    testCompileExpression(a + b <= b && a > b, "(((`a` + `b`) <= `b`) AND (`a` > `b`))")
+    testCompileExpression(a <= b || a + b > b, "((`a` <= `b`) OR ((`a` + `b`) > `b`))")
+    testCompileExpression(a || a && !b || c, "((`a` OR (`a` AND NOT `b`)) OR `c`)")
+    testCompileExpression((a || b) && !(b || c), "((`a` OR `b`) AND NOT (`b` OR `c`))")
   }
 
   test("aggregate expressions") {
-    testCompileExpression(avg(a), "AVG(a)")
-    testCompileExpression(count(a), "COUNT(a)")
-    testCompileExpression(max(a), "MAX(a)")
-    testCompileExpression(min(a), "MIN(a)")
-    testCompileExpression(sum(a), "SUM(a)")
+    testCompileExpression(avg(a), "AVG(`a`)")
+    testCompileExpression(count(a), "COUNT(`a`)")
+    testCompileExpression(max(a), "MAX(`a`)")
+    testCompileExpression(min(a), "MIN(`a`)")
+    testCompileExpression(sum(a), "SUM(`a`)")
   }
 
   test("cast expressions") {
-    testCompileExpression(a.cast(DoubleType), "a")
+    testCompileExpression(a.cast(DoubleType), "`a`")
   }
 
   test("empty queries") {
     testQuery(t, CHLogicalPlan(
       Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None
-    ), "SELECT  FROM d.t")
+    ), "SELECT  FROM `d`.`t`")
   }
 
   test("project queries") {
     testQuery(t, CHLogicalPlan(
       Seq(a, b, c),
       Seq.empty, Seq.empty, Seq.empty, Seq.empty, None
-    ), "SELECT a, b, c FROM d.t")
+    ), "SELECT `a`, `b`, `c` FROM `d`.`t`")
   }
 
   test("filter queries") {
@@ -110,7 +110,7 @@ class CHSqlSuite extends SparkFunSuite {
       Seq.empty,
       Seq(a, b, nullLiteral.isNotNull),
       Seq.empty, Seq.empty, Seq.empty, None
-    ), "SELECT  FROM d.t WHERE ((a AND b) AND NULL IS NOT NULL)")
+    ), "SELECT  FROM `d`.`t` WHERE ((`a` AND `b`) AND NULL IS NOT NULL)")
   }
 
   test("aggregate queries") {
@@ -119,7 +119,7 @@ class CHSqlSuite extends SparkFunSuite {
       Seq.empty,
       Seq(a, b),
       Seq.empty, Seq.empty, None
-    ), "SELECT a, b, SUM(c) FROM d.t GROUP BY a, b")
+    ), "SELECT `a`, `b`, SUM(`c`) FROM `d`.`t` GROUP BY `a`, `b`")
   }
 
   test("top-n queries") {
@@ -127,20 +127,20 @@ class CHSqlSuite extends SparkFunSuite {
       Seq.empty, Seq.empty, Seq.empty, Seq.empty,
       Seq(a desc, b asc),
       None
-    ), "SELECT  FROM d.t ORDER BY a DESC, b ASC")
+    ), "SELECT  FROM `d`.`t` ORDER BY `a` DESC, `b` ASC")
     testQuery(t, CHLogicalPlan(
       Seq.empty, Seq.empty, Seq.empty, Seq.empty,
       Seq(a asc, CreateNamedStruct(Seq(b.name, b, "col1", a + b, "col2", b + c)) desc, c asc),
       None
-    ), "SELECT  FROM d.t ORDER BY a ASC, (b, (a + b), (b + c)) DESC, c ASC")
+    ), "SELECT  FROM `d`.`t` ORDER BY `a` ASC, (`b`, (`a` + `b`), (`b` + `c`)) DESC, `c` ASC")
     testQuery(t, CHLogicalPlan(
       Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty,
       Option(1)
-    ), "SELECT  FROM d.t LIMIT 1")
+    ), "SELECT  FROM `d`.`t` LIMIT 1")
     testQuery(t, CHLogicalPlan(
       Seq.empty, Seq.empty, Seq.empty, Seq.empty,
       Seq(a desc, b asc),
       Option(1)
-    ), "SELECT  FROM d.t ORDER BY a DESC, b ASC LIMIT 1")
+    ), "SELECT  FROM `d`.`t` ORDER BY `a` DESC, `b` ASC LIMIT 1")
   }
 }

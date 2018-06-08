@@ -15,16 +15,12 @@
 
 package org.apache.spark.sql.ch
 
-class CHTableRef(val host: String, val port: Int, val database: String, val table: String) extends Serializable {
-  val mappedName = table
+class CHTableRef(val host: String, val port: Int, _database: String, _table: String) extends Serializable {
+  // CH database name and table name are all in lower-case so normalize them immediately.
+  val database = Option(_database).getOrElse("").toLowerCase()
+  val table = _table.toLowerCase()
 
-  val absName = {
-    if (database == null || database.isEmpty) {
-      table
-    } else {
-      database + "." + table
-    }
-  }
+  val mappedName = table
 
   override def toString: String = {
     s"{host=$host, port=$port, db=$database, table=$table}"

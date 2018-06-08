@@ -21,6 +21,8 @@ import org.apache.spark.sql.types.StringType
 
 /**
  * Compiler that compiles CHLogicalPlan/CHTableRef to CH SQL string.
+ * Note that every identifier, i.e. db name, table name, and column name appearing in the query
+ * will be lower-cased and back-quoted.
  */
 object CHSql {
 
@@ -74,7 +76,7 @@ object CHSql {
     * @return
     */
   def desc(table: CHTableRef): String = {
-    "DESC " + table.absName
+    "DESC " + getBackQuotedAbsTabName(table)
   }
 
   /**
@@ -84,7 +86,7 @@ object CHSql {
     * @return
     */
   def count(table: CHTableRef, useSelraw: Boolean = false): String = {
-    (if (useSelraw) "SELRAW" else "SELECT") + " COUNT(*) FROM " + table.absName
+    (if (useSelraw) "SELRAW" else "SELECT") + " COUNT(*) FROM " + getBackQuotedAbsTabName(table)
   }
 
   private def compileProject(chProject: CHProject, useSelraw: Boolean): String = {
@@ -94,9 +96,9 @@ object CHSql {
 
   private def compileTable(table: CHTableRef, partitions: String = null): String = {
     if (partitions == null || partitions.isEmpty) {
-      s" FROM ${table.absName}"
+      s" FROM ${getBackQuotedAbsTabName(table)}"
     } else {
-      s" FROM ${table.absName} PARTITION $partitions"
+      s" FROM ${getBackQuotedAbsTabName(table)} PARTITION $partitions"
     }
   }
 
@@ -133,7 +135,7 @@ object CHSql {
             case _ => value.toString
           }
         }
-      case attr: AttributeReference => attr.name
+      case attr: AttributeReference => s"`${attr.name.toLowerCase()}`"
       case Cast(child, dataType) =>
         // TODO: Handle cast
         s"${compileExpression(child)}"
@@ -184,4 +186,12 @@ object CHSql {
       case '\0' => "\\0"
       case c => s"$c"
     }
+
+  /**
+    * Get the back-quoted absolute name of a table.
+    * @param table
+    * @return
+    */
+  private def getBackQuotedAbsTabName(table: CHTableRef): String =
+    if (table.database.isEmpty) s"`${table.table}`" else s"`${table.database}`.`${table.table}`"
 }
