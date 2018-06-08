@@ -37,10 +37,6 @@ class CHScanRDD(
   private val singleNode: Boolean) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
-    if (context.attemptNumber > 0){
-      throw new IllegalStateException("We don't support partition retry right now! partition: " + split.index + ", attemptNumber: " + context.attemptNumber())
-    }
-
     val part = split.asInstanceOf[CHPartition]
     val table = part.table
     val query = part.query

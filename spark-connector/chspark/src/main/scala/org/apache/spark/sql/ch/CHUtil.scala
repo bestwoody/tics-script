@@ -25,7 +25,7 @@ import org.apache.spark.sql.types._
 object CHUtil {
 
   def getPartitionList(table: CHTableRef): Array[String] = {
-    val client = new SparkCHClientSelect(CHUtil.genQueryId("C"), CHSql.partitionList(table), table.host, table.port, 1, 1)
+    val client = new SparkCHClientSelect(CHUtil.genQueryId("C"), CHSql.partitionList(table), table.host, table.port)
     try {
       if (!client.hasNext) {
         throw new Exception("Send table partition list request, not response")
@@ -60,7 +60,7 @@ object CHUtil {
     var names = new Array[String](0)
     var types = new Array[String](0)
 
-    val client = new SparkCHClientSelect(CHUtil.genQueryId("D"), CHSql.desc(table), table.host, table.port, 1, 1)
+    val client = new SparkCHClientSelect(CHUtil.genQueryId("D"), CHSql.desc(table), table.host, table.port)
     try {
       while (client.hasNext) {
         val block = client.next()
@@ -101,7 +101,7 @@ object CHUtil {
   }
 
   def getRowCount(table: CHTableRef, useSelraw: Boolean = false): Long = {
-    val client = new SparkCHClientSelect(CHUtil.genQueryId("C"), CHSql.count(table, useSelraw), table.host, table.port, 1, 1)
+    val client = new SparkCHClientSelect(CHUtil.genQueryId("C"), CHSql.count(table, useSelraw), table.host, table.port)
     try {
       if (!client.hasNext) {
         throw new Exception("Send table row count request, not response")
