@@ -1,7 +1,7 @@
 source ./_helper.sh
 
 # Executable path
-export storage_bin="$repo_dir/ch-connector/build/dbms/src/Server/theflash"
+export storage_bin="$repo_dir/storage/build/dbms/src/Server/theflash"
 
 # Storage serve config for launching
 export storage_server_config="storage-server-config/config.xml"

@@ -35,10 +35,10 @@ dependency-reduced-pom.xml
 # C++ compile result
 build
 
-# ch-connector compile result and running data dir
-ch-connector/build
-ch-connector/ch-cache
-ch-connector/running
+# storage compile result and running data dir
+storage/build
+storage/ch-cache
+storage/running
 
 # tpch generated data
 benchmark/tpch-load/tpch-*

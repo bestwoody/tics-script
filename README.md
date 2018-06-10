@@ -12,8 +12,8 @@ An OLAP project of TiDB
 * Build
     * `theflash> git submodule update --init --recursive`: fetch all submodule
     * Build patched CH:
-        * `theflash/ch-connector> ./patch-apply.sh`: apply patch to CH
-        * `theflash/ch-connector> ./build.sh`: build patched CH
+        * `theflash/storage> ./patch-apply.sh`: apply patch to CH
+        * `theflash/storage> ./build.sh`: build patched CH
     * Build Spark and CHSpark
         * `theflash/spark-connector/spark> follow the build method of Spark`: build Spark
         * `theflash/spark-connector> ./build.sh`: build CHSpark
@@ -22,9 +22,9 @@ An OLAP project of TiDB
         * `theflash/benchmark> ./storage-server.sh`: run CH server
         * `theflash/benchmark> ./storage-client.sh`: play with CH in intereactive mode
         * `theflash/benchmark> ./storage-client.sh <sql>`: play with CH in command mode
-        * `theflash/ch-connector> ./storage-import-data.sh <name>`: import table data `ch-connector/running/data/<name>` to CH
+        * `theflash/storage> ./storage-import-data.sh <name>`: import table data `storage/running/data/<name>` to CH
         * Look around
-            * `theflash/ch-connector> vim _env.sh`: check the config, IMPORTANT: `storage_db`
+            * `theflash/storage> vim _env.sh`: check the config, IMPORTANT: `storage_db`
             * `theflash/benchmark> vim _env.sh`: each `_env.sh` ONLY affect the current dir
             * `theflash/benchmark> vim /data/theflash/server.log`: check server log
             * `theflash/benchmark> ls /data/theflash/db`: check database files

@@ -1,7 +1,7 @@
 source ./_helper.sh
 
 # Client executable path
-export storage_bin="$repo_dir/ch-connector/build/dbms/src/Server/theflash"
+export storage_bin="$repo_dir/storage/build/dbms/src/Server/theflash"
 # Server address to receive data
 export storage_server="127.0.0.1"
 # Database to receive data
