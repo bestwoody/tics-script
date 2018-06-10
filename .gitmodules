@@ -6,12 +6,7 @@
 	path = spark-connector/spark
 	url = http://github.com/apache/spark
 	ignore = dirty
-[submodule "ch-connector/arrow"]
-	path = ch-connector/arrow
-	url = http://github.com/apache/arrow
-	ignore = dirty
-[submodule "ch-connector/ch"]
-	path = ch-connector/ch
-	url = http://github.com/yandex/ClickHouse
-	branch = v1.1.54370-stable
+[submodule "storage/ch"]
+	path = storage/ch
+	url = https://github.com/yandex/clickhouse
 	ignore = dirty
