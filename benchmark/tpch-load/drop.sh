@@ -9,4 +9,7 @@ fi
 
 source _env.sh
 
-"$storage_bin" client --host="$storage_server" -d "$storage_db" --query="drop table $table"
+for server in ${storage_server[*]}; do
+	"$storage_bin" client --host=`get_host $server` --port=`get_port $server` \
+		-d "$storage_db" --query="drop table if exists $table"
+done

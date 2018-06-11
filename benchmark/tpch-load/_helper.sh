@@ -41,3 +41,20 @@ wait_sub_procs()
 	wait
 }
 export -f wait_sub_procs
+
+get_host()
+{
+	echo "$1" | awk -F ':' '{print $1}'
+}
+export -f get_host
+
+get_port()
+{
+	local port=`echo "$1" | awk -F ':' '{print $2}'`
+	if [ -z "$port" ]; then
+		echo "9000"
+	else
+		echo "$port"
+	fi
+}
+export -f get_port

@@ -2,7 +2,7 @@ source _meta.sh
 
 dbgen_bin()
 {
-	$dbgen_dir/dbgen -f -b $dbgen_dir/dists.dss $@  2>/dev/null
+	$dbgen_dir/dbgen -f -b $dbgen_dir/dists.dss $@ 2>/dev/null
 }
 export -f dbgen_bin
 
@@ -101,6 +101,11 @@ dbgen()
 {
 	local blocks="$1"
 	local table="$2"
+
+	if [ ! -f $dbgen_dir/dbgen ]; then
+		echo "dbgen not found, exiting" >&2
+		return 1
+	fi
 
 	if [ "$blocks" == "1" ]; then
 		if [ -z "$table" ]; then

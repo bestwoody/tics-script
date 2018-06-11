@@ -2,8 +2,8 @@ source ./_helper.sh
 
 # Client executable path
 export storage_bin="$repo_dir/storage/build/dbms/src/Server/theflash"
-# Server address to receive data
-export storage_server="127.0.0.1"
+# Storage server list, eg: ("127.0.0.1"), or: ("127.0.0.1:9000" "127.0.0.1:9006")
+export storage_server=("127.0.0.1")
 # Database to receive data
 export storage_db="default"
 

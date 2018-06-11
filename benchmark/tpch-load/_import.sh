@@ -1,18 +1,60 @@
 source _env.sh
 
+ensure_table_created()
+{
+	local host="$1"
+	local port="$2"
+	local table="$3"
+
+	"$storage_bin" client --host="$host" --port="$port" --query="create database if not exists $storage_db"
+
+	local schema="$meta_dir/schema/$table.schema"
+	if [ ! -f "$schema" ]; then
+		echo "$schema schema file not found" >&2
+		return 1
+	fi
+
+	"$storage_bin" client --host="$host" --port="$port" -d "$storage_db" --query="`cat $schema`"
+}
+export -f ensure_table_created
+
+ensure_tables_created()
+{
+	local table="$1"
+
+	for server in ${storage_server[*]}; do
+		ensure_table_created "`get_host $server`" "`get_port $server`" "$table"
+	done
+}
+export -f ensure_tables_created
+
 import_blocks()
 {
 	local blocks="$1"
 	local table="$2"
 
+	if [ $(( $tpch_blocks % ${#storage_server[@]} )) -ne 0 ]; then
+		echo "servers % blocks != 0, exiting" >&2
+		return 1
+	fi
+	local blocks_per_server=$(( $tpch_blocks / ${#storage_server[@]} ))
+
 	for ((i = 0; i < $blocks; i++)); do
-		let "n = $i + 1"
+		local n=$(( $i + 1 ))
 		local data="$dbgen_result_dir_prefix"$blocks"/$table.data.$n"
 		if [ ! -f "$data" ]; then
 			echo "$data: not found" >&2
 			return 1
 		fi
-		cat "$data" | "$storage_bin" client --host="$storage_server" -d "$storage_db" --query="INSERT INTO $table FORMAT CSV" &
+
+		local server_index=$(( $i / $blocks_per_server ))
+		local server=${storage_server[$server_index]}
+		local host="`get_host $server`"
+		local port="`get_port $server`"
+
+		ensure_table_created "$host" "$port" "$table"
+		cat "$data" | "$storage_bin" client --host="$host" --port="$port" \
+			-d "$storage_db" --query="INSERT INTO $table FORMAT CSV" &
 	done
 
 	wait_sub_procs
@@ -27,7 +69,10 @@ import_block()
 		echo "$data: not found" >&2
 		return 1
 	fi
-	cat "$data" | "$storage_bin" client --host="$storage_server" -d "$storage_db" --query="INSERT INTO $table FORMAT CSV"
+	ensure_tables_created "$table"
+	local server=${storage_server[0]}
+	cat "$data" | "$storage_bin" client --host="`get_host $server`" --port="`get_port $server`" \
+		-d "$storage_db" --query="INSERT INTO $table FORMAT CSV"
 }
 
 import_table()
