@@ -56,7 +56,7 @@ public class CHColumnVector extends ColumnVector {
 
     @Override
     public boolean getBoolean(int rowId) {
-        throw new UnsupportedOperationException();
+        return column.getByte(rowId) != 0;
     }
 
     @Override

@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
-import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.types.{BooleanType, StringType}
 
 /**
  * Compiler that compiles CHLogicalPlan/CHTableRef to CH SQL string.
@@ -132,6 +132,9 @@ object CHSql {
         } else {
           dataType match {
             case StringType => "'" + escapeString(value.toString) + "'"
+            case BooleanType =>
+              val isTrue = if (value.toString.equalsIgnoreCase("TRUE")) 1 else 0
+              s"CAST($isTrue AS UInt8)"
             case _ => value.toString
           }
         }

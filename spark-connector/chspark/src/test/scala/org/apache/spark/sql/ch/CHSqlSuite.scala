@@ -18,9 +18,11 @@ package org.apache.spark.sql.ch
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.{CreateNamedStruct, Expression, Literal}
-import org.apache.spark.sql.types.DoubleType
+import org.apache.spark.sql.types.{BooleanType, DoubleType}
 
 class CHSqlSuite extends SparkFunSuite {
+  val booleanLiteral = Literal(true, BooleanType)
+  val falseValue = false
   val nullLiteral = Literal(null, null)
   val one = 1.0
   val oneEMINUS4 = 0.0001
@@ -44,6 +46,8 @@ class CHSqlSuite extends SparkFunSuite {
   }
 
   test("literal expressions") {
+    testCompileExpression(booleanLiteral, "CAST(1 AS UInt8)")
+    testCompileExpression(falseValue, "CAST(0 AS UInt8)")
     testCompileExpression(nullLiteral, "NULL")
     testCompileExpression(one, "1.0")
     testCompileExpression(oneEMINUS4, "1.0E-4")
