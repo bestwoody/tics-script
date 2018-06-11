@@ -2,10 +2,6 @@
 	path = benchmark/tpch-dbgen
 	url = http://github.com/electrum/tpch-dbgen
 	ignore = dirty
-[submodule "spark-connector/spark"]
-	path = spark-connector/spark
-	url = http://github.com/apache/spark
-	ignore = dirty
 [submodule "storage/ch"]
 	path = storage/ch
 	url = https://github.com/yandex/clickhouse

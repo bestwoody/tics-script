@@ -14,7 +14,7 @@ if [ -z "$verb" ]; then
 fi
 
 java -XX:MaxDirectMemorySize=5g \
-    -cp chspark/target/*:chspark/target/lib/*:spark/assembly/target/scala-2.11/jars/* \
+    -cp chspark/target/*:chspark/target/lib/*:spark/jars/* \
     org.apache.spark.sql.ch/CHRawScala \
     "$query" "$verb" "$host" "$port" \
     2>&1 | grep -v 'SLF4J' | grep -v 'log4j'

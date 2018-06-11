@@ -49,36 +49,19 @@ ldd "$storage_dir/build/dbms/src/Server/theflash" | grep '/' | grep '=>' | \
 done
 
 if [ "$build" == "true" ]; then
-	echo "=> building spark:"
-	cd "$computing_dir/spark" && build/mvn -DskipTests package && cd "$publish_dir"
-fi
-
-echo "=> copying spark"
-spark_dir="$computing_dir/spark"
-spark_pack="$publish_dir/$name/spark"
-mkdir -p "$spark_pack"
-cp -rf "$spark_dir/sbin" "$spark_pack"
-cp -rf "$spark_dir/bin" "$spark_pack"
-cp -rf "$spark_dir/conf" "$spark_pack"
-cp -rf "$spark_dir/assembly" "$spark_pack"
-cp -rf "$publish_dir/scripts/spark/spark-defaults.conf" "$spark_pack/conf/"
-
-if [ "$build" == "true" ]; then
 	echo "=> building chspark:"
 	cd "$computing_dir" && ./build.sh && cd "$publish_dir"
 fi
 
 echo "=> copying chspark"
-spark_jars_path=""
-for jp in $spark_dir/assembly/target/scala-*/jars; do
-	spark_jars_path="$jp"
-	break
-done
-if [ ! -d "$spark_jars_path" ]; then
-	echo "spark jars path not found" >&2
-	exit 1
-fi
-cp "$computing_dir/chspark/target/chspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" "$spark_jars_path/"
+cp "$computing_dir/chspark/target/chspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" "$computing_dir/spark/jars/"
+
+echo "=> copying spark"
+spark_dir="$computing_dir/spark"
+spark_pack="$publish_dir/$name/spark"
+mkdir -p "$spark_pack"
+cp -rf "$spark_dir/*" "$spark_pack/"
+cp -rf "$publish_dir/scripts/spark/spark-defaults.conf" "$spark_pack/conf/"
 
 if [ "$build" == "true" ]; then
 	echo "=> building tpch dbgen"

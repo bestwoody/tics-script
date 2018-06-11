@@ -53,6 +53,8 @@ deployment/publish/theflash*
 
 # spark-connector running data dir
 spark-connector/spark-warehouse
+spark-connector/metastore_db
+spark-connector/spark
 
 # IDE or editor files
 .idea
