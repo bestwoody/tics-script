@@ -25,6 +25,7 @@ class TableInfo(var schema: StructType, var rowWidth: Int, var rowCount: Long) e
 
 class CHTableInfo(val table: CHTableRef, val useSelraw: Boolean) extends Serializable {
   private var info: TableInfo = new TableInfo(null, -1, -1)
+  private val TIDB_ROWID = "_tidb_rowid"
 
   def getSchema(): StructType = {
     info.schema
@@ -43,7 +44,15 @@ class CHTableInfo(val table: CHTableRef, val useSelraw: Boolean) extends Seriali
   }
 
   def fetchSchema(): Unit = {
-    info.schema = new StructType(CHUtil.getFields(table))
+    val fields = CHUtil.getFields(table)
+    info.schema = new StructType(
+      if (useSelraw) {
+        fields
+      } else {
+        // Exclude implicit TIDB_ROWID column if not using selRaw.
+        fields.filterNot(_.name == TIDB_ROWID)
+      }
+    )
     // TODO: Calculate row width
   }
 
