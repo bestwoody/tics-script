@@ -59,8 +59,8 @@ cp "$computing_dir/chspark/target/chspark-0.1.0-SNAPSHOT-jar-with-dependencies.j
 echo "=> copying spark"
 spark_dir="$computing_dir/spark"
 spark_pack="$publish_dir/$name/spark"
-mkdir -p "$spark_pack"
-cp -rf "$spark_dir/*" "$spark_pack/"
+rm -rf "$spark_pack"
+cp -rf "$spark_dir" "$spark_pack"
 cp -rf "$publish_dir/scripts/spark/spark-defaults.conf" "$spark_pack/conf/"
 
 if [ "$build" == "true" ]; then
