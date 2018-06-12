@@ -1,6 +1,6 @@
 function run()
 {
-    cd ../spark-connector && ./storage-chraw.sh "select * from lineitem" "$1" "$2" "$3"
+    cd ../computing && ./storage-chraw.sh "select * from lineitem" "$1" "$2" "$3"
 }
 
 run 1 4 1

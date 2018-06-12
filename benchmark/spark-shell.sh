@@ -1,6 +1,6 @@
 source _env.sh
 
-cp "$repo_dir/spark-connector/conf/spark-defaults.conf" "$repo_dir/spark-connector/spark/conf/"
+cp "$repo_dir/computing/conf/spark-defaults.conf" "$repo_dir/computing/spark/conf/"
 if [ "$?" != "0" ]; then
 	echo "Copy config file to spark failed." >&2
 	exit 1
@@ -22,4 +22,4 @@ fi
 
 echo "master ip: $ip"
 
-$repo_dir/spark-connector/spark/bin/spark-shell --master spark://$ip:7077 --executor-memory $spark_executor_memory $@ 2>&1
+$repo_dir/computing/spark/bin/spark-shell --master spark://$ip:7077 --executor-memory $spark_executor_memory $@ 2>&1

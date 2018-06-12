@@ -15,8 +15,8 @@ An OLAP project of TiDB
         * `theflash/storage> ./patch-apply.sh`: apply patch to CH
         * `theflash/storage> ./build.sh`: build patched CH
     * Build Spark and CHSpark
-        * `theflash/spark-connector/spark> follow the build method of Spark`: build Spark
-        * `theflash/spark-connector> ./build.sh`: build CHSpark
+        * `theflash/computing/spark> follow the build method of Spark`: build Spark
+        * `theflash/computing> ./build.sh`: build CHSpark
 * Play around
     * With Patched CH
         * `theflash/benchmark> ./storage-server.sh`: run CH server
@@ -30,8 +30,8 @@ An OLAP project of TiDB
             * `theflash/benchmark> ls /data/theflash/db`: check database files
             * `theflash/benchmark> vim storage-server/config/*.xml`: check server configs
     * With Spark
-        * `theflash/spark-connector> ./spark-start-all.sh 127.0.0.1`: run Spark master and workers
-        * `theflash/spark-connector> ./spark-shell.sh`: play with Spark
+        * `theflash/computing> ./spark-start-all.sh 127.0.0.1`: run Spark master and workers
+        * `theflash/computing> ./spark-shell.sh`: play with Spark
         * `theflash/benchmark> ./spark-shell.sh`: play with Spark
     * With Spark connecting to CH
         * Command mode

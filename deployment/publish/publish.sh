@@ -20,7 +20,7 @@ fi
 publish_dir="`pwd`"
 benchmark_dir="$publish_dir/../../benchmark"
 storage_dir="$publish_dir/../../storage"
-computing_dir="$publish_dir/../../spark-connector"
+computing_dir="$publish_dir/../../computing"
 
 echo "=> creating package info of $name"
 info_file="$publish_dir/$name/package-info"
