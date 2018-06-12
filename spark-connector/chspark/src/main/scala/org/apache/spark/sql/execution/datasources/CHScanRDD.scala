@@ -63,6 +63,7 @@ class CHScanRDD(
 
   override protected def getPartitions: Array[Partition] = {
     val result = new ListBuffer[CHPartition]
+
     var index = 0
 
     if (singleNode) {

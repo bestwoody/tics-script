@@ -56,6 +56,13 @@ spark-connector/spark-warehouse
 spark-connector/metastore_db
 spark-connector/spark
 
+# spark-connector test config
+spark-connector/chspark/src/test/resources/clickhouse_config.properties
+
+# spark metastore
+spark-connector/metastore_db
+benchmark/metastore_db
+
 # IDE or editor files
 .idea
 *.iml
