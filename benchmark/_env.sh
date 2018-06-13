@@ -6,8 +6,8 @@ export storage_bin="$repo_dir/storage/build/dbms/src/Server/theflash"
 # Storage serve config for launching
 export storage_server_config="storage-server-config/config.xml"
 
-# Storage server address for scripts and Spark to connect
-export storage_server=("127.0.0.1" "127.0.0.1")
+# Storage server list for scripts and Spark to connect, eg: ("127.0.0.1"), or: ("127.0.0.1:9000" "127.0.0.1:9006")
+export storage_server=("127.0.0.1")
 
 # Default database when we run scripts or in Spark
 export storage_db="default"
