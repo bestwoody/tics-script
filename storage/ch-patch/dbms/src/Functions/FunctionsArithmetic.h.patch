@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Functions/FunctionsArithmetic.h b/dbms/src/Functions/FunctionsArithmetic.h
-index b015e2039869..0ba434ac0ea3 100644
+index b015e2039869..cf54d86d11b1 100644
 --- a/dbms/src/Functions/FunctionsArithmetic.h
 +++ b/dbms/src/Functions/FunctionsArithmetic.h
 @@ -1,6 +1,7 @@
@@ -578,7 +578,7 @@ index b015e2039869..0ba434ac0ea3 100644
  template <typename DataType> constexpr bool IsIntegral = false;
  template <> constexpr bool IsIntegral<DataTypeUInt8> = true;
  template <> constexpr bool IsIntegral<DataTypeUInt16> = true;
-@@ -600,15 +911,51 @@ private:
+@@ -600,15 +911,54 @@ private:
          }
      }
  
@@ -618,8 +618,11 @@ index b015e2039869..0ba434ac0ea3 100644
      {
 -        using ResultDataType = typename BinaryOperationTraits<Op, LeftDataType, RightDataType>::ResultDataType;
 +        if constexpr (std::is_same_v<LeftDataType, DataTypeDecimal> || std::is_same_v<RightDataType, DataTypeDecimal>) {
-+            type_res = getDecimalReturnType<LeftDataType, RightDataType>(arguments);
-+            return true;
++            if (typeid_cast<const RightDataType *>(arguments[1].get())){
++                type_res = getDecimalReturnType<LeftDataType, RightDataType>(arguments);
++                return true;
++            }
++            return false;
 +        } else {
 +            using ResultDataType = typename BinaryOperationTraits<Op, LeftDataType, RightDataType>::ResultDataType;
  
@@ -634,7 +637,7 @@ index b015e2039869..0ba434ac0ea3 100644
      }
  
      template <typename T0>
-@@ -627,6 +974,7 @@ private:
+@@ -627,6 +977,7 @@ private:
                  || checkRightType<T0, DataTypeInt32>(arguments, type_res)
                  || checkRightType<T0, DataTypeInt64>(arguments, type_res)
                  || checkRightType<T0, DataTypeFloat32>(arguments, type_res)
@@ -642,7 +645,7 @@ index b015e2039869..0ba434ac0ea3 100644
                  || checkRightType<T0, DataTypeFloat64>(arguments, type_res))
                  return true;
          }
-@@ -712,9 +1060,9 @@ private:
+@@ -712,9 +1063,9 @@ private:
          }
          else if (auto col_right = checkAndGetColumnConst<ColumnVector<T1>>(block.getByPosition(arguments[1]).column.get()))
          {
@@ -654,7 +657,7 @@ index b015e2039869..0ba434ac0ea3 100644
  
              return true;
          }
-@@ -738,6 +1086,7 @@ private:
+@@ -738,6 +1089,7 @@ private:
          {
              if (   executeRightType<LeftDataType, DataTypeDate>(block, arguments, result, col_left)
                  || executeRightType<LeftDataType, DataTypeDateTime>(block, arguments, result, col_left)
@@ -662,7 +665,7 @@ index b015e2039869..0ba434ac0ea3 100644
                  || executeRightType<LeftDataType, DataTypeUInt8>(block, arguments, result, col_left)
                  || executeRightType<LeftDataType, DataTypeUInt16>(block, arguments, result, col_left)
                  || executeRightType<LeftDataType, DataTypeUInt32>(block, arguments, result, col_left)
-@@ -758,6 +1107,7 @@ private:
+@@ -758,6 +1110,7 @@ private:
          {
              if (   executeRightType<LeftDataType, DataTypeDate>(block, arguments, result, col_left)
                  || executeRightType<LeftDataType, DataTypeDateTime>(block, arguments, result, col_left)
@@ -670,7 +673,7 @@ index b015e2039869..0ba434ac0ea3 100644
                  || executeRightType<LeftDataType, DataTypeUInt8>(block, arguments, result, col_left)
                  || executeRightType<LeftDataType, DataTypeUInt16>(block, arguments, result, col_left)
                  || executeRightType<LeftDataType, DataTypeUInt32>(block, arguments, result, col_left)
-@@ -842,7 +1192,7 @@ public:
+@@ -842,7 +1195,7 @@ public:
                  std::swap(new_arguments[0], new_arguments[1]);
  
              /// Change interval argument to its representation
@@ -679,7 +682,7 @@ index b015e2039869..0ba434ac0ea3 100644
  
              auto function = function_builder->build(new_arguments);
              return function->getReturnType();
-@@ -860,6 +1210,7 @@ public:
+@@ -860,6 +1213,7 @@ public:
              || checkLeftType<DataTypeInt16>(arguments, type_res)
              || checkLeftType<DataTypeInt32>(arguments, type_res)
              || checkLeftType<DataTypeInt64>(arguments, type_res)
@@ -687,7 +690,7 @@ index b015e2039869..0ba434ac0ea3 100644
              || checkLeftType<DataTypeFloat32>(arguments, type_res)
              || checkLeftType<DataTypeFloat64>(arguments, type_res)))
              throw Exception("Illegal types " + arguments[0]->getName() + " and " + arguments[1]->getName() + " of arguments of function " + getName(),
-@@ -881,7 +1232,7 @@ public:
+@@ -881,7 +1235,7 @@ public:
  
              /// Change interval argument type to its representation
              Block new_block = block;
@@ -696,7 +699,7 @@ index b015e2039869..0ba434ac0ea3 100644
  
              ColumnsWithTypeAndName new_arguments_with_type_and_name =
                      {new_block.getByPosition(new_arguments[0]), new_block.getByPosition(new_arguments[1])};
-@@ -895,6 +1246,7 @@ public:
+@@ -895,6 +1249,7 @@ public:
  
          if (!( executeLeftType<DataTypeDate>(block, arguments, result)
              || executeLeftType<DataTypeDateTime>(block, arguments, result)
@@ -704,7 +707,7 @@ index b015e2039869..0ba434ac0ea3 100644
              || executeLeftType<DataTypeUInt8>(block, arguments, result)
              || executeLeftType<DataTypeUInt16>(block, arguments, result)
              || executeLeftType<DataTypeUInt32>(block, arguments, result)
-@@ -929,7 +1281,12 @@ private:
+@@ -929,7 +1284,12 @@ private:
      {
          if (typeid_cast<const T0 *>(arguments[0].get()))
          {
@@ -718,7 +721,7 @@ index b015e2039869..0ba434ac0ea3 100644
              return true;
          }
          return false;
-@@ -979,6 +1336,7 @@ public:
+@@ -979,6 +1339,7 @@ public:
              || checkType<DataTypeInt32>(arguments, result)
              || checkType<DataTypeInt64>(arguments, result)
              || checkType<DataTypeFloat32>(arguments, result)
@@ -726,7 +729,7 @@ index b015e2039869..0ba434ac0ea3 100644
              || checkType<DataTypeFloat64>(arguments, result)))
              throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
                  ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
-@@ -996,6 +1354,7 @@ public:
+@@ -996,6 +1357,7 @@ public:
              || executeType<Int16>(block, arguments, result)
              || executeType<Int32>(block, arguments, result)
              || executeType<Int64>(block, arguments, result)
