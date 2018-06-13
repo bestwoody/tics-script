@@ -1,6 +1,5 @@
 sql="$1"
 partitionsPerSplit="$2"
-
 set -eu
 
 source ./_env.sh
@@ -27,8 +26,10 @@ echo 'spark.conf.set("spark.ch.storage.tableinfo.selraw", "'$selraw_tableinfo'")
 
 echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
-./storage-client.sh "show tables" | while read table; do
-	echo "storage.mapCHClusterTable(database=\"$storage_db\", table=\"$table\", partitionsPerSplit=$partitionsPerSplit)" >> "$tmp"
+server=${storage_server[0]}
+"$storage_bin" client --host="`get_host $server`" --port="`get_port $server`" -d "$storage_db" --query="show tables" | \
+	while read table; do
+	echo "storage.mapCHClusterTable(addresses=`get_tables_mapping_string`, database=\"$storage_db\", table=\"$table\", partitionsPerSplit=$partitionsPerSplit)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"

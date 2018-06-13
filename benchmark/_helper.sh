@@ -18,3 +18,31 @@ if [ -z "$this_dir" ]; then
 	exit 1
 fi
 export repo_dir=`dirname $this_dir`
+
+get_host()
+{
+	echo "$1" | awk -F ':' '{print $1}'
+}
+export -f get_host
+
+get_port()
+{
+	local port=`echo "$1" | awk -F ':' '{print $2}'`
+	if [ -z "$port" ]; then
+		echo "9000"
+	else
+		echo "$port"
+	fi
+}
+export -f get_port
+
+get_tables_mapping_string()
+{
+	local str="Seq("
+	for server in ${storage_server[@]}; do
+		str="${str}(\"`get_host $server`\", `get_port $server`), "
+	done
+	str="${str:0:${#str}-2})"
+	echo "$str"
+}
+export -f get_tables_mapping_string

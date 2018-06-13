@@ -1,8 +1,10 @@
+source ./_helper.sh
+
 # Executable path
 export storage_bin="storage/theflash"
 
-# Storage server address for scripts and Spark
-export storage_server="127.0.0.1"
+# Storage server list for scripts and Spark, eg: ("127.0.0.1"), or: ("127.0.0.1:9000" "127.0.0.1:9006")
+export storage_server=("127.0.0.1")
 
 # Storage server config file path
 export storage_server_config="storage/config.xml"
@@ -11,15 +13,15 @@ export storage_server_config="storage/config.xml"
 export storage_db="default"
 
 # The number of partitions in CH that one RDD of Spark handle.
-export default_partitionsPerSplit="16"
+export default_partitionsPerSplit="2"
 
 # Use SELRAW for any query launch by CHSpark (except fetch table info)
 # DON'T set to 'true' for Non-Mutable table
 # Should be always true on Mutable table, unless for tracing MutableMergeTree bugs
-export selraw="true"
+export selraw="false"
 
 # Use SELRAW to fetch table info, can faster than SELECT on MutableMergeTree. DON'T set to 'true' for Non-Mutable table
-export selraw_tableinfo="false"
+export selraw_tableinfo="true"
 
 # Spark master to commit jobs
 export spark_master="127.0.0.1"

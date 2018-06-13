@@ -7,13 +7,13 @@ export storage_bin="$repo_dir/storage/build/dbms/src/Server/theflash"
 export storage_server_config="storage-server-config/config.xml"
 
 # Storage server address for scripts and Spark to connect
-export storage_server="127.0.0.1"
+export storage_server=("127.0.0.1" "127.0.0.1")
 
 # Default database when we run scripts or in Spark
 export storage_db="default"
 
 # The number of partitions in CH that one RDD of Spark handle.
-export default_partitionsPerSplit="4"
+export default_partitionsPerSplit="2"
 
 # Use SELRAW for any query launch by CHSpark (except fetch table info)
 # DON'T set to 'true' for Non-Mutable table

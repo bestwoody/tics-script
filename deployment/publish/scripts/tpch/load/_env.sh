@@ -10,8 +10,8 @@ export storage_db="default"
 # Dbgen executable path
 export dbgen_dir="`readlink -f ..`"
 # Meta data path, 'mmt-meta' is for MutableMergeTree, and 'meta' is for the other engines
-export meta_dir="$this_dir/mmt-meta"
 export meta_dir="$this_dir/meta"
+export meta_dir="$this_dir/mmt-meta"
 
 # Prefix of dir name for dbgen output files.
 export db_prefix="tpch"

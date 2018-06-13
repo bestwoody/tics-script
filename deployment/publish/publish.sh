@@ -18,6 +18,7 @@ if [ -z "$name" ]; then
 fi
 
 publish_dir="`pwd`"
+deployment_dir="$publish_dir/../deployment"
 benchmark_dir="$publish_dir/../../benchmark"
 storage_dir="$publish_dir/../../storage"
 computing_dir="$publish_dir/../../computing"
@@ -80,9 +81,12 @@ cp -rf "$benchmark_dir/tpch-load" "$tpch_pack/load"
 
 echo "=> copying scripts"
 scripts_pack="$publish_dir/$name"
+cp -rf "$deployment_dir/ceph-tools" "$scripts_pack/"
+cp -f "$computing_dir/hw-report.sh" "$scripts_pack"
 cp -f "$computing_dir/spark-check-running.sh" "$scripts_pack"
 cp -f "$computing_dir/spark-stop-all.sh" "$scripts_pack"
 cp -f "$computing_dir/spark-start-all.sh" "$scripts_pack"
+cp -f "$benchmark_dir/_helper.sh" "$scripts_pack"
 cp -f "$benchmark_dir/storage-server.sh" "$scripts_pack"
 cp -f "$benchmark_dir/storage-client.sh" "$scripts_pack"
 cp -f "$benchmark_dir/storage-list-running-query.sh" "$scripts_pack"
