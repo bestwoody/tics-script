@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.dsl.expressions._
-import org.apache.spark.sql.catalyst.expressions.{CreateNamedStruct, Expression, Literal}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, CreateNamedStruct, Expression, Literal}
 import org.apache.spark.sql.types.{BooleanType, DoubleType}
 
 class CHSqlSuite extends SparkFunSuite {
@@ -28,9 +28,9 @@ class CHSqlSuite extends SparkFunSuite {
   val oneEMINUS4 = 0.0001
   val oneE8 = 100000000.0
   val abc = "abc"
-  val a = 'A.int
-  val b = 'b.int
-  val c = 'C.string
+  val a: AttributeReference = 'A.int
+  val b: AttributeReference = 'b.int
+  val c: AttributeReference = 'C.string
   val t = new CHTableRef(null, 0, "D", "T")
 
   def testCompileExpression(e: Expression, expected: String) : Unit =
@@ -87,6 +87,7 @@ class CHSqlSuite extends SparkFunSuite {
   test("aggregate expressions") {
     testCompileExpression(avg(a), "AVG(`a`)")
     testCompileExpression(count(a), "COUNT(`a`)")
+    testCompileExpression(countDistinct(a), "COUNT(distinct `a`)")
     testCompileExpression(max(a), "MAX(`a`)")
     testCompileExpression(min(a), "MIN(`a`)")
     testCompileExpression(sum(a), "SUM(`a`)")

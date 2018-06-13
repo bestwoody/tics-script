@@ -51,16 +51,15 @@ benchmark/tpch.log*
 # deployment generated files
 deployment/publish/theflash*
 
-# spark-connector running data dir
-spark-connector/spark-warehouse
-spark-connector/metastore_db
-spark-connector/spark
+# computing running data dir
+computing/spark-warehouse
+computing/spark
 
-# spark-connector test config
-spark-connector/chspark/src/test/resources/clickhouse_config.properties
+# computing test config
+computing/chspark/src/test/resources/clickhouse_config.properties
 
 # spark metastore
-spark-connector/metastore_db
+computing/metastore_db
 benchmark/metastore_db
 
 # IDE or editor files

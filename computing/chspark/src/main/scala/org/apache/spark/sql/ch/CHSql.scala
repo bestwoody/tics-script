@@ -40,10 +40,10 @@ object CHSql {
     }
 
     private def buildQueryInternal(from: String): String = {
-      s"${projection}${from}${filter}${aggregation}${topN}"
+      s"$projection$from$filter$aggregation$topN"
     }
 
-    override def toString: String = buildQuery
+    override def toString: String = buildQuery()
   }
 
   /**
@@ -90,7 +90,7 @@ object CHSql {
   }
 
   private def compileProject(chProject: CHProject, useSelraw: Boolean): String = {
-    (if (useSelraw) "SELRAW " else "SELECT ") + chProject.projectList.map(compileExpression)
+    (if (useSelraw) "SELRAW " else "SELECT ") + chProject.projectList.map(e => compileExpression(e))
       .mkString(", ")
   }
 
@@ -104,12 +104,12 @@ object CHSql {
 
   private def compileFilter(chFilter: CHFilter): String = {
     if (chFilter.predicates.isEmpty) ""
-    else " WHERE " + chFilter.predicates.reduceLeftOption(And).map(compileExpression).get
+    else " WHERE " + chFilter.predicates.reduceLeftOption(And).map(e => compileExpression(e)).get
   }
 
   private def compileAggregate(chAggregate: CHAggregate): String = {
     if (chAggregate.groupingExpressions.isEmpty) ""
-    else " GROUP BY " + chAggregate.groupingExpressions.map(compileExpression).mkString(", ")
+    else " GROUP BY " + chAggregate.groupingExpressions.map(e => compileExpression(e)).mkString(", ")
   }
 
   private def compileTopN(chTopN: CHTopN): String = {
@@ -119,12 +119,12 @@ object CHSql {
           // Spark will compile order by expression `(a + b, a)` to
           // `named_struct("col1", a + b, "a", a)`.
           // Need to emit the expression list enclosed by ().
-          ns.valExprs.map(compileExpression).mkString("(", ", ", ") ") + so.direction.sql
+          ns.valExprs.map(e => compileExpression(e)).mkString("(", ", ", ") ") + so.direction.sql
         case _ => compileExpression(so.child) + " " + so.direction.sql
       }}).mkString(", ")) + chTopN.n.map(" LIMIT " + _).getOrElse("")
   }
 
-  def compileExpression(expression: Expression): String = {
+  def compileExpression(expression: Expression, isDistinct: Boolean = false): String = {
     expression match {
       case Literal(value, dataType) =>
         if (dataType == null || value == null) {
@@ -159,15 +159,15 @@ object CHSql {
       case EqualTo(left, right) => s"(${compileExpression(left)} = ${compileExpression(right)})"
       case And(left, right) => s"(${compileExpression(left)} AND ${compileExpression(right)})"
       case Or(left, right) => s"(${compileExpression(left)} OR ${compileExpression(right)})"
-      case In(value, list) => s"${compileExpression(value)} IN (${list.map(compileExpression).mkString(", ")})"
-      case AggregateExpression(aggregateFunction, _, _, _) => compileExpression(aggregateFunction)
+      case In(value, list) => s"${compileExpression(value)} IN (${list.map(e => compileExpression(e)).mkString(", ")})"
+      case AggregateExpression(aggregateFunction, _, _isDistinct, _) => compileExpression(aggregateFunction, _isDistinct)
       case Average(child) => s"AVG(${compileExpression(child)})"
-      case Count(children) => s"COUNT(${children.map(compileExpression).mkString(", ")})"
+      case Count(children) => s"COUNT(${if(isDistinct) "distinct " else ""}${children.map(e => compileExpression(e)).mkString(", ")})"
       case Max(child) => s"MAX(${compileExpression(child)})"
       case Min(child) => s"MIN(${compileExpression(child)})"
       case Sum(child) => s"SUM(${compileExpression(child)})"
       // TODO: Support more expression types.
-      case _ => throw new UnsupportedOperationException(s"Expression ${expression} is not supported by CHSql.")
+      case _ => throw new UnsupportedOperationException(s"Expression $expression is not supported by CHSql.")
     }
   }
 

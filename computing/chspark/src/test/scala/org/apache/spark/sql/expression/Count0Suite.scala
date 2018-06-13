@@ -35,7 +35,8 @@ class Count0Suite extends BaseClickHouseSuite {
     "select count(tp_int16) from full_data_type_table",
     "select count(tp_int32) from full_data_type_table",
     "select count(tp_int64) from full_data_type_table",
-    "select count(tp_string) from full_data_type_table"
+    "select count(tp_string) from full_data_type_table",
+    "select count(tp_int8, tp_uint8) from full_data_type_table"
   )
 
   // count(distinct_*) cases
