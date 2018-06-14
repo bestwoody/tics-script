@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS nation (
-	N_NATIONKEY  Int32,
-	N_NAME       String,
-	N_REGIONKEY  Int32,
-	N_COMMENT    String
-) ENGINE = MutableMergeTree((N_NATIONKEY), 8192);
+	n_nationkey  Int32,
+	n_name       String,
+	n_regionkey  Int32,
+	n_comment    String
+) ENGINE = MutableMergeTree((n_nationkey), 8192);

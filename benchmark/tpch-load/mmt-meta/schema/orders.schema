@@ -1,11 +1,11 @@
 CREATE TABLE IF NOT EXISTS orders (
-	O_ORDERKEY       Int32,
-	O_CUSTKEY        Int32,
-	O_ORDERSTATUS    FixedString(1),
-	O_TOTALPRICE     Float64,
-	O_ORDERDATE      Date,
-	O_ORDERPRIORITY  String,
-	O_CLERK          String,
-	O_SHIPPRIORITY   Int32,
-	O_COMMENT        String
-) ENGINE = MutableMergeTree((O_ORDERKEY), 8192);
+	o_orderkey       Int32,
+	o_custkey        Int32,
+	o_orderstatus    FixedString(1),
+	o_totalprice     Float64,
+	o_orderdate      Date,
+	o_orderpriority  String,
+	o_clerk          String,
+	o_shippriority   Int32,
+	o_comment        String
+) ENGINE = MutableMergeTree((o_orderkey), 8192);

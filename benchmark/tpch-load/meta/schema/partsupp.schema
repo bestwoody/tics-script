@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS partsupp (
-	PS_PARTKEY     Int32,
-	PS_SUPPKEY     Int32,
-	PS_AVAILQTY    Int32,
-	PS_SUPPLYCOST  Float64,
-	PS_COMMENT     String
+	ps_partkey     Int32,
+	ps_suppkey     Int32,
+	ps_availqty    Int32,
+	ps_supplycost  Float64,
+	ps_comment     String
 ) ENGINE = Log;
 

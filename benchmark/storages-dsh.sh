@@ -10,6 +10,7 @@ if [ -z "$cmd" ]; then
 	echo "usage: <bin> cmd [async=false] [user=whoami]" >&2
 	exit 1
 fi
+cmd="cd `pwd`; $cmd"
 
 if [ -z "$async" ]; then
 	async="false"
@@ -29,7 +30,7 @@ get_hosts()
 execute_cmd()
 {
 	local host="$1"
-	ssh ${user}${host} $cmd | while read line; do
+	ssh ${user}${host} $cmd < /dev/null | while read line; do
 		echo [$host] $line
 	done
 }

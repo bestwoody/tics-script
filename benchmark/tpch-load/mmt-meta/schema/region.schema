@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS region (
-	R_REGIONKEY  Int32,
-	R_NAME       String,
-	R_COMMENT    String
-) ENGINE = MutableMergeTree((R_REGIONKEY), 8192);
+	r_regionkey  Int32,
+	r_name       String,
+	r_comment    String
+) ENGINE = MutableMergeTree((r_regionkey), 8192);

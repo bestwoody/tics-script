@@ -17,11 +17,8 @@ fi
 path=`readlink -f $path`
 
 echo "=> target: $path"
-echo
-
 for server in ${storage_server[@]}; do
 	echo "=> copying to [$server]"
 	scp $path ${user}${server}:${path}
-	echo
 done
 
