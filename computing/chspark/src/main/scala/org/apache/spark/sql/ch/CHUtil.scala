@@ -27,23 +27,23 @@ object CHUtil {
   def getPartitionList(table: CHTableRef): Array[String] = {
     val client = new SparkCHClientSelect(CHUtil.genQueryId("C"), CHSql.partitionList(table), table.host, table.port)
     try {
-      if (!client.hasNext) {
-        throw new Exception("Send table partition list request, not response")
-      }
-      val block = client.next()
-      if (block.numCols != 1) {
-        throw new Exception("Send table partition list request, wrong response")
-      }
-
       var partitions = new Array[String](0)
-      val fieldCol = block.column(0)
-      for (i <- 0 until fieldCol.size()) {
-        partitions :+= fieldCol.getUTF8String(i).toString
-      }
 
-      // Consume all packets before close.
-      while (client.hasNext) {
-        client.next()
+      if (client.hasNext) {
+        val block = client.next()
+        if (block.numCols != 1) {
+          throw new Exception("Send table partition list request, wrong response")
+        }
+
+        val fieldCol = block.column(0)
+        for (i <- 0 until fieldCol.size()) {
+          partitions :+= fieldCol.getUTF8String(i).toString
+        }
+
+        // Consume all packets before close.
+        while (client.hasNext) {
+          client.next()
+        }
       }
 
       partitions

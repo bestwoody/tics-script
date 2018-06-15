@@ -79,18 +79,23 @@ class CHScanRDD(
       for (p <- tableQueryPairs) {
         table = p._1
         val partitionList = CHUtil.getPartitionList(table).map(part => s"'$part'")
-        for (part <- partitionList) {
-          curParts += part
-          if (curParts.length >= partitionPerSplit) {
+        if (partitionList.isEmpty) {
+          result.append(new CHPartition(index, p._1, p._2.buildQuery()))
+          index += 1
+        } else {
+          for (part <- partitionList) {
+            curParts += part
+            if (curParts.length >= partitionPerSplit) {
+              result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
+              curParts.clear()
+              index += 1
+            }
+          }
+          if (curParts.length != 0) {
             result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
             curParts.clear()
             index += 1
           }
-        }
-        if (curParts.length != 0) {
-          result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
-          curParts.clear()
-          index += 1
         }
       }
     }
