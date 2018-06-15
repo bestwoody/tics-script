@@ -4,6 +4,9 @@ def run():
     def isTitle(line):
         return line.find('## Running tpch query #') == 0;
 
+    def isStart(line):
+        return line == 'Spark session available as \'spark\'.'
+
     def isScore(line):
         return line.find('elapsed: Double = ') == 0
 
@@ -39,6 +42,7 @@ def run():
     classes = []
     cls = None
     q = -1
+    started = False
 
     while True:
         line = sys.stdin.readline()
@@ -49,15 +53,21 @@ def run():
 
         line = line[:-1]
         titleLine = isTitle(line)
+        startLine = isStart(line)
         scoreLine = isScore(line)
-        exceptionLine = isException(line)
+        exceptionLine = (started and isException(line))
 
-        if not titleLine and not scoreLine and not exceptionLine:
+        if not titleLine and not startLine and not scoreLine and not exceptionLine:
             continue
 
         if titleLine:
             title = line[len('## Running tpch query #'):]
             q, cls = getQueryAndClass(line)
+            started = False
+            continue
+
+        if startLine:
+            started = True
             continue
 
         if exceptionLine:
