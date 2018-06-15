@@ -133,7 +133,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
             // We need to close the connection after bad things happened from here.
             // As spark won't do it.
             IOUtils.closeQuietly(this);
-            throw new RuntimeException("Exception when fetching next block", e);
+            throw new RuntimeException("Exception when fetching next block. SQL: " + query, e);
         }
         if (exception != null) {
             IOUtils.closeQuietly(this);
