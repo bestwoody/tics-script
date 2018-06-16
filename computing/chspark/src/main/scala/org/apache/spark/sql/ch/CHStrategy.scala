@@ -215,8 +215,8 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
 
     val projectSet = AttributeSet(projectList.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
-    val nameSet = (projectSet ++ filterSet).map(_.name).toSet
-    var output = relation.output.filter(attr => nameSet(attr.name))
+    val nameSet = (projectSet ++ filterSet).map(_.name.toLowerCase()).toSet
+    var output = relation.output.filter(attr => nameSet(attr.name.toLowerCase()))
     // TODO: Choose the smallest column (in prime keys, or the timestamp key of MergeTree) as dummy output
     if (output.isEmpty) {
       output = Seq(relation.output.head)

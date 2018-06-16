@@ -73,6 +73,12 @@ class CHStrategySuite extends SharedSQLContext {
       multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [(mt_a IN (1, 2, mt_b))], Aggregate [], TopN []]")))
   }
 
+  test("filter plans") {
+    // Predicate LIKE not pushing down, checking if column mt_b is correctly pushed.
+    testQuery("select mt_a from mt where MT_B like '%WHATEVER'", Map((
+      multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [], Aggregate [], TopN []]")))
+  }
+
   test("multi-node aggregate plans") {
     testQuery("select sum(mt_a) from mt", Map((
       multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT))]], TopN []]")))
