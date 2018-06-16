@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Core/AccurateComparison.h b/dbms/src/Core/AccurateComparison.h
-index c84405e2dd4e..cbbb6e0bc522 100644
+index c84405e2dd4e..dd5b221ffe76 100644
 --- a/dbms/src/Core/AccurateComparison.h
 +++ b/dbms/src/Core/AccurateComparison.h
 @@ -3,6 +3,7 @@
@@ -22,7 +22,7 @@ index c84405e2dd4e..cbbb6e0bc522 100644
  template <typename A, typename B>
  constexpr bool is_safe_conversion = (std::is_floating_point_v<A> && std::is_floating_point_v<B>)
 -    || (std::is_integral_v<A> && std::is_integral_v<B> && !(std::is_signed_v<A> ^ std::is_signed_v<B>));
-+    || (std::is_integral_v<A> && std::is_integral_v<B> && !(std::is_signed_v<A> ^ std::is_signed_v<B>) || (DB::IsDecimalValue<A> && DB::IsDecimalValue<B>));
++    || ((std::is_integral_v<A> && std::is_integral_v<B> && !(std::is_signed_v<A> ^ std::is_signed_v<B>)) || (DB::IsDecimalValue<A> && DB::IsDecimalValue<B>));
  template <typename A, typename B>
  using bool_if_safe_conversion = std::enable_if_t<is_safe_conversion<A, B>, bool>;
  template <typename A, typename B>

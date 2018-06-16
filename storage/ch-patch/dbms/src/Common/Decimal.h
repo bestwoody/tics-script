@@ -128,10 +128,26 @@ struct DecimalValue {
     DecimalValue operator / (const DecimalValue& v) const ;
 
     template <typename T, std::enable_if_t<std::is_floating_point<T>{}>* = nullptr>
-    operator T () const ;
+    operator T() const {
+        T result = static_cast<T> (value);
+        for (uint8_t i = 0; i < scale; i++) {
+            result /= 10;
+        }
+        return result;
+    }
 
     template <typename T, std::enable_if_t<std::is_integral<T>{}>* = nullptr>
-    operator T () const ;
+    operator T() const {
+        int256_t v = value;
+        for (uint8_t i = 0; i < scale; i++) {
+            v = v / 10 + (i + 1 == scale && v % 10 >= 5);
+        }
+        if (value > std::numeric_limits<T>::max() || value < std::numeric_limits<T>::min()) {
+            throw Exception("overflow!");
+        }
+        T result = static_cast<T>(v);
+        return result;
+    }
 
     bool operator < (const DecimalValue& v) const;
 
@@ -148,27 +164,6 @@ struct DecimalValue {
     std::string toString() const;
 };
 
-template <typename T, std::enable_if_t<std::is_floating_point<T>{}>* = nullptr>
-DecimalValue::operator T() const {
-    T result = static_cast<T> (value);
-    for (uint8_t i = 0; i < scale; i++) {
-        result /= 10;
-    }
-    return result;
-}
-
-template <typename T, std::enable_if_t<std::is_integral<T>{}>* = nullptr>
-DecimalValue::operator T() const {
-    int256_t v = value;
-    for (uint8_t i = 0; i < scale; i++) {
-        v = v / 10 + (i + 1 == scale && v % 10 >= 5);
-    }
-    if (value > std::numeric_limits<T>::max() || value < std::numeric_limits<T>::min()) {
-        throw Exception("overflow!");
-    }
-    T result = static_cast<T>(v);
-    return result;
-}
 
 template <typename DataType> constexpr bool IsDecimalValue = false;
 template <> constexpr bool IsDecimalValue<DecimalValue> = true;

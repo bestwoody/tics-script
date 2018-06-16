@@ -80,7 +80,7 @@ public:
         return DecimalValue();
     }
 
-    bool equals(const IDataType & rhs) const {
+    bool equals(const IDataType & rhs) const override {
         return getName() == rhs.getName();
     }
 
