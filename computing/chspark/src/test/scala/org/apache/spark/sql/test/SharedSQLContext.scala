@@ -198,7 +198,7 @@ object SharedSQLContext extends Logging {
         var queryStringList = Array.empty[String]
         // Load expression test data
         queryStringList = resourceToString(
-          s"CHSpark-test/CHSparkTest.sql",
+          s"chspark-test/chspark-test.sql",
           classLoader = Thread.currentThread().getContextClassLoader
         ).split("\n")
         queryStringList.foreach {
