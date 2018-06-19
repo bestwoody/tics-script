@@ -20,6 +20,7 @@ import java.util.UUID
 import com.pingcap.theflash.{SparkCHClientSelect, TypeMappingJava}
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.ch.hack.{CHAttributeReference, Hack}
 import org.apache.spark.sql.types._
 
 object CHUtil {
@@ -85,7 +86,7 @@ object CHUtil {
       }
       for (i <- names.indices) {
         val t = TypeMappingJava.stringToSparkType(types(i))
-        val field = StructField(names(i), t.dataType, t.nullable, metadata)
+        val field = Hack.hackStructField(names(i), t, metadata)
         fields :+= field
       }
 
@@ -130,7 +131,8 @@ object CHUtil {
     exp match {
       case _: Literal => true
       case _: AttributeReference => true
-      case _: Cast => true
+      case cast @ Cast(_, _) =>
+        Hack.hackSupportCast(cast)
       // TODO: Don't pushdown IsNotNull maybe better
       case IsNotNull(child) =>
         isSupportedExpression(child)

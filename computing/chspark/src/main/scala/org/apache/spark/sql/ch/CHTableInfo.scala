@@ -15,8 +15,9 @@
 
 package org.apache.spark.sql.ch
 
-import scala.collection.mutable.Map
+import org.apache.spark.sql.ch.hack.CHStructType
 
+import scala.collection.mutable.Map
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
 
@@ -45,7 +46,7 @@ class CHTableInfo(val table: CHTableRef, val useSelraw: Boolean) extends Seriali
 
   def fetchSchema(): Unit = {
     val fields = CHUtil.getFields(table)
-    info.schema = new StructType(
+    info.schema = new CHStructType(
       if (useSelraw) {
         fields
       } else {

@@ -20,6 +20,7 @@ import com.pingcap.ch.datatypes.CHTypeNumber._
 import com.pingcap.theflash.TypeMappingJava
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
 
 /**
@@ -141,8 +142,11 @@ object CHSql {
             case _ => value.toString
           }
         }
-      case attr: AttributeReference => s"`${attr.name.toLowerCase()}`"
-      case Cast(child, dataType) =>
+      case attr: AttributeReference => s"`${Hack.hackAttributeReference(attr).toLowerCase()}`"
+      case cast @ Cast(child, dataType) =>
+        if (!Hack.hackSupportCast(cast)) {
+          throw new UnsupportedOperationException(s"Shouldn't be casting expression $expression to type $dataType.")
+        }
         try {
           val dataTypeName = TypeMappingJava.sparkTypeToCHType(dataType, child.nullable).name()
           s"CAST(${compileExpression(child)} AS $dataTypeName)"

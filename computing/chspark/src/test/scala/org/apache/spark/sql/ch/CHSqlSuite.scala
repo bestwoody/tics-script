@@ -18,6 +18,7 @@ package org.apache.spark.sql.ch
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, CreateNamedStruct, Expression, Literal}
+import org.apache.spark.sql.ch.hack.CHAttributeReference
 import org.apache.spark.sql.types._
 
 class CHSqlSuite extends SparkFunSuite {
@@ -31,6 +32,7 @@ class CHSqlSuite extends SparkFunSuite {
   val a: AttributeReference = 'A.int
   val b: AttributeReference = 'b.int
   val c: AttributeReference = 'C.string
+  val hackD: CHAttributeReference = new CHAttributeReference("d", DateType, false, Metadata.empty)
   val t = new CHTableRef(null, 0, "D", "T")
 
   def testCompileExpression(e: Expression, expected: String) : Unit =
@@ -98,7 +100,8 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression(booleanLiteral.cast(LongType), "CAST(CAST(1 AS UInt8) AS Int64)")
     testCompileExpression(booleanLiteral.cast(LongType), "CAST(CAST(1 AS UInt8) AS Int64)")
 
-    testCompileExpression(a.cast(DateType), "CAST(`a` AS Nullable(Date))")
+    // Comment it for hack. Will add it back after we support true date type in CH.
+    // testCompileExpression(a.cast(DateType), "CAST(`a` AS Nullable(Date))")
     testCompileExpression(b.withNullability(false).cast(TimestampType), "CAST(`b` AS DateTime)")
 
     testCompileExpression((a + b).cast(FloatType), "CAST((`a` + `b`) AS Nullable(Float32))")
@@ -107,6 +110,11 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression((a.withNullability(false) + b.withNullability(false)).cast(ShortType), "CAST((`a` + `b`) AS Int16)")
 
     testCompileExpression((a.withNullability(false) + b.withNullability(false)).cast(DecimalType.FloatDecimal), "(`a` + `b`)")
+  }
+
+  test("hack expressions") {
+    testCompileExpression(hackD, "`_tidb_date_d`")
+    testCompileExpression(hackD > "1990-01-01", "(`_tidb_date_d` > '1990-01-01')")
   }
 
   test("empty queries") {
