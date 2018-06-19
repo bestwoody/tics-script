@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
-index 333f9c7cc602..66e6fca3920a 100644
+index 333f9c7cc602..8320d0170fbf 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataSelectExecutor.cpp
 @@ -1,16 +1,6 @@
@@ -19,7 +19,7 @@ index 333f9c7cc602..66e6fca3920a 100644
  /// Allow to use __uint128_t as a template parameter for boost::rational.
  // https://stackoverflow.com/questions/41198673/uint128-t-not-working-with-clang-and-libstdc
  #if !defined(__GLIBCXX_BITSIZE_INT_N_0) && defined(__SIZEOF_INT128__)
-@@ -25,10 +15,27 @@ namespace std
+@@ -25,10 +15,28 @@ namespace std
          static constexpr int radix = 2;
          static constexpr int digits = 128;
          static constexpr __uint128_t min () { return 0; } // used in boost 1.65.1+
@@ -29,6 +29,7 @@ index 333f9c7cc602..66e6fca3920a 100644
  #endif
  
 +#include <Common/FieldVisitors.h>
++#include <Common/getNumberOfPhysicalCPUCores.h>
 +#include <Storages/MergeTree/MergeTreeDataSelectExecutor.h>
 +#include <Storages/MergeTree/MergeTreeBlockInputStream.h>
 +#include <Storages/MergeTree/MergeTreeReadPool.h>
@@ -47,7 +48,21 @@ index 333f9c7cc602..66e6fca3920a 100644
  #include <DataStreams/ExpressionBlockInputStream.h>
  #include <DataStreams/FilterBlockInputStream.h>
  #include <DataStreams/CollapsingFinalBlockInputStream.h>
-@@ -140,7 +147,6 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+@@ -39,12 +47,12 @@ namespace std
+ #include <DataStreams/ReplacingSortedBlockInputStream.h>
+ #include <DataStreams/AggregatingSortedBlockInputStream.h>
+ #include <DataStreams/VersionedCollapsingSortedBlockInputStream.h>
++#include <DataStreams/ConcatBlockInputStream.h>
+ #include <DataTypes/DataTypesNumber.h>
+ #include <DataTypes/DataTypeDate.h>
+ #include <DataTypes/DataTypeEnum.h>
+ #include <Storages/VirtualColumnUtils.h>
+ 
+-
+ namespace ProfileEvents
+ {
+     extern const Event SelectedParts;
+@@ -140,7 +148,6 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
      Int64 max_block_number_to_read) const
  {
      size_t part_index = 0;
@@ -55,7 +70,7 @@ index 333f9c7cc602..66e6fca3920a 100644
      MergeTreeData::DataPartsVector parts = data.getDataPartsVector();
  
      /// If query contains restrictions on the virtual column `_part` or `_part_index`, select only parts suitable for it.
-@@ -512,6 +518,15 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+@@ -512,6 +519,15 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
                  SizeLimits(settings.max_rows_to_transfer, settings.max_bytes_to_transfer, settings.transfer_overflow_mode)).read();
      }
  
@@ -71,7 +86,7 @@ index 333f9c7cc602..66e6fca3920a 100644
      RangesInDataParts parts_with_ranges;
  
      /// Let's find what range to read from each part.
-@@ -526,7 +541,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+@@ -526,7 +542,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
          else
              ranges.ranges = MarkRanges{MarkRange{0, part->marks_count}};
  
@@ -82,7 +97,7 @@ index 333f9c7cc602..66e6fca3920a 100644
          {
              parts_with_ranges.push_back(ranges);
  
-@@ -546,9 +563,35 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
+@@ -546,9 +564,35 @@ BlockInputStreams MergeTreeDataSelectExecutor::read(
      ProfileEvents::increment(ProfileEvents::SelectedRanges, sum_ranges);
      ProfileEvents::increment(ProfileEvents::SelectedMarks, sum_marks);
  
@@ -119,7 +134,7 @@ index 333f9c7cc602..66e6fca3920a 100644
      {
          /// Add columns needed to calculate primary key and the sign.
          std::vector<String> add_columns = data.getPrimaryExpression()->getRequiredColumns();
-@@ -814,6 +857,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
+@@ -814,6 +858,9 @@ BlockInputStreams MergeTreeDataSelectExecutor::spreadMarkRangesAmongStreamsFinal
  
          case MergeTreeData::MergingParams::Graphite:
              throw Exception("GraphiteMergeTree doesn't support FINAL", ErrorCodes::LOGICAL_ERROR);
@@ -129,7 +144,7 @@ index 333f9c7cc602..66e6fca3920a 100644
      }
  
      return {merged};
-@@ -926,4 +972,161 @@ MarkRanges MergeTreeDataSelectExecutor::markRangesFromPKRange(
+@@ -926,4 +973,182 @@ MarkRanges MergeTreeDataSelectExecutor::markRangesFromPKRange(
      return res;
  }
  
@@ -228,6 +243,7 @@ index 333f9c7cc602..66e6fca3920a 100644
 +    }
 +    else if (type == MutableSupport::DeduperReplacingPartitioning || type == MutableSupport::DeduperReplacingPartitioningOpt)
 +    {
++        BlockInputStreams partitionStreams;
 +        for (auto it = partitions.begin(); it != partitions.end(); ++it)
 +        {
 +            RangesInDataParts & parts = it->second;
@@ -245,7 +261,7 @@ index 333f9c7cc602..66e6fca3920a 100644
 +                // source_stream = std::make_shared<DebugPrintBlockInputStream>(source_stream,
 +                //     "partition-" + part.data_part->partition.getID(data) + ".part-" + part.data_part->name);
 +                source_stream = std::make_shared<ExpressionBlockInputStream>(source_stream, data.getPrimaryExpression());
-+                source_stream = std::make_shared<AsynchronousBlockInputStream>(source_stream);
++                // source_stream = std::make_shared<AsynchronousBlockInputStream>(source_stream);
 +                merging.emplace_back(source_stream);
 +            }
 +
@@ -256,7 +272,27 @@ index 333f9c7cc602..66e6fca3920a 100644
 +
 +            // merged = std::make_shared<DebugPrintBlockInputStream>(merged, "partition-" + parts[0].data_part->partition.getID(data));
 +            // merged = std::make_shared<AsynchronousBlockInputStream>(merged);
-+            res.emplace_back(merged);
++            partitionStreams.emplace_back(merged);
++        }
++
++        size_t streams = partitionStreams.size();
++        size_t cpu = getNumberOfPhysicalCPUCores();
++        if (streams <= cpu)
++        {
++            res = partitionStreams;
++        }
++        else
++        {
++            size_t n = streams / cpu;
++            size_t r = streams % cpu;
++            size_t offset = 0;
++            for (size_t i = 0; i < cpu; i ++)
++            {
++                int count = (r != 0 && i <= (r - 1)) ? n + 1 : n;
++                BlockInputStreams sub(partitionStreams.begin() + offset, partitionStreams.begin() + offset + count);
++                res.emplace_back(std::make_shared<ConcatBlockInputStream>(sub));
++                offset += count;
++            }
 +        }
 +    }
 +    else if (type == MutableSupport::DeduperDedupPartitioning)
