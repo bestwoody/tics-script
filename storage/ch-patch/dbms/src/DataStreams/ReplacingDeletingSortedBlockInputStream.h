@@ -63,9 +63,39 @@ private:
     size_t by_column = 0;
     size_t by_row = 0;
 
+    SortCursor cur_block_cursor;
+    SortCursorImpl cur_block_cursor_impl;
+    SharedBlockPtr cur_block;
+
+    template <typename TSortCursor>
+    void setRowRefOptimized(RowRef & row_ref, TSortCursor & cursor)
+    {
+      if (cursor == cur_block_cursor)
+          row_ref.shared_block = cur_block;
+      else
+          row_ref.shared_block = source_blocks[cursor.impl->order];
+
+      row_ref.row_num = cursor.impl->pos;
+      row_ref.columns = &row_ref.shared_block->all_columns;
+    }
+
+    template <typename TSortCursor>
+    void setPrimaryKeyRefOptimized(RowRef & row_ref, TSortCursor & cursor)
+    {
+      if (cursor == cur_block_cursor)
+          row_ref.shared_block = cur_block;
+      else
+          row_ref.shared_block = source_blocks[cursor.impl->order];
+
+      row_ref.row_num = cursor.impl->pos;
+      row_ref.columns = &row_ref.shared_block->sort_columns;
+    }
+
     void merge(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue);
 
     void merge_optimized(MutableColumns & merged_columns, std::priority_queue<SortCursor> & queue);
+
+    bool insertByColumn(SortCursor current, size_t & merged_rows, MutableColumns & merged_columns);
 
     /// Output into result the rows for current primary key.
     void insertRow(MutableColumns & merged_columns, size_t & merged_rows);

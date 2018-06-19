@@ -150,84 +150,59 @@ void ReplacingDeletingSortedBlockInputStream::merge_optimized(MutableColumns & m
     size_t merged_rows = 0;
 
     /// Take the rows in needed order and put them into `merged_columns` until rows no more than `max_block_size`
-    while (!queue.empty())
+    while (!cur_block_cursor.none() || !queue.empty())
     {
-        SortCursor current = queue.top();
-        queue.pop();
+        SortCursor current;
+        bool is_complete_top;
 
-        if (current.impl->empty())
-            continue;
+        if (cur_block_cursor.none())
+        {
+            const SortCursor top = queue.top();
+            queue.pop();
 
-        bool is_complete_top = queue.empty() || current.totallyLessOrEquals(queue.top());
+            if (top.impl->empty())
+            {
+                fetchNextBlock(top, queue);
+                continue;
+            }
+
+            is_complete_top = queue.empty() || top.totallyLessOrEquals(queue.top());
+            if (is_complete_top)
+            {
+                /// If all rows of this top block are smaller than others, we cache top block here.
+                /// Then pull next block of the same stream slot and put it into queue, so that we can compare (in insertByColumn)
+                /// this top block with all others, including the one pulled from the same stream.
+
+                cur_block_cursor_impl = *(top.impl);
+                cur_block = source_blocks[top.impl->order];
+
+                fetchNextBlock(top, queue);
+
+                current = SortCursor(&cur_block_cursor_impl);
+                cur_block_cursor = current;
+            }
+            else
+            {
+                current = top;
+            }
+        }
+        else
+        {
+            current = cur_block_cursor;
+            is_complete_top = true;
+        }
+
         bool is_clean_top = is_complete_top && current->isFirst() && (queue.empty() || current.totallyLessIgnOrder(queue.top()));
         if (is_clean_top && merged_rows == 0 && current_key.empty())
         {
-            size_t source_num = current.impl->order;
-
-            bool direct_move = true;
-            if (version_column_number != -1)
+            bool by_column_ok = insertByColumn(current, merged_rows, merged_columns);
+            if (by_column_ok)
             {
-                const auto del_column =  typeid_cast<const ColumnUInt8 *>(current->all_columns[delmark_column_number]);
-
-                // reverse_filter - 1: delete, 0: remain.
-                // filter         - 0: delete, 1: remain.
-                const IColumn::Filter & reverse_filter = del_column->getData();
-                IColumn::Filter filter(reverse_filter.size());
-                bool no_delete = true;
-                for (size_t i = 0; i < reverse_filter.size(); i ++)
-                {
-                    no_delete &= !reverse_filter[i];
-                    filter[i] = reverse_filter[i] ^ (UInt8)1;
-                }
-
-                direct_move = no_delete;
-                if (!direct_move)
-                {
-                    for (size_t i = 0; i < num_columns; ++i)
-                    {
-                        ColumnPtr column = source_blocks[source_num]->getByPosition(i).column->filter(filter, -1);
-                        merged_columns[i] = (*std::move(column)).mutate();
-                    }
-
-                    RowSourcePart row_source(source_num);
-                    current_row_sources.resize(filter.size());
-                    for (size_t i = 0; i < filter.size(); ++i)
-                    {
-                        row_source.setSkipFlag(reverse_filter[i]);
-                        current_row_sources[i] = row_source.data;
-                    }
-                    if (out_row_sources_buf)
-                        out_row_sources_buf->write(reinterpret_cast<const char *>(current_row_sources.data()),
-                                               current_row_sources.size());
-                    current_row_sources.resize(0);
-                }
+                cur_block_cursor = SortCursor();
+                cur_block_cursor_impl = SortCursorImpl();
+                cur_block.reset();
+                continue;
             }
-
-            if (direct_move)
-            {
-                for (size_t i = 0; i < num_columns; ++i)
-                {
-                    ColumnPtr column = source_blocks[source_num]->getByPosition(i).column;
-                    merged_columns[i] = (*std::move(column)).mutate();
-                }
-
-                if (out_row_sources_buf)
-                {
-                    for (size_t i = 0; i < merged_rows; ++i)
-                    {
-                        RowSourcePart row_source(source_num);
-                        out_row_sources_buf->write(row_source.data);
-                    }
-                }
-            }
-
-            merged_rows = merged_columns[0]->size();
-
-            fetchNextBlock(current, queue);
-
-            by_column += merged_rows;
-
-            continue;
         }
 
         while (true)
@@ -235,14 +210,15 @@ void ReplacingDeletingSortedBlockInputStream::merge_optimized(MutableColumns & m
             /// If there are enough rows and the last one is calculated completely.
             if (merged_rows >= max_block_size)
             {
-                queue.push(current);
+                if (current != cur_block_cursor)
+                    queue.push(current);
                 return;
             }
 
             if (current_key.empty())
-                setPrimaryKeyRef(current_key, current);
+                setPrimaryKeyRefOptimized(current_key, current);
 
-            setPrimaryKeyRef(next_key, current);
+            setPrimaryKeyRefOptimized(next_key, current);
 
             if (next_key != current_key)
             {
@@ -254,13 +230,15 @@ void ReplacingDeletingSortedBlockInputStream::merge_optimized(MutableColumns & m
                     insertRow(merged_columns, merged_rows);
 
                 if(is_clean_top){
-                    // Delete current cache and return.
-                    // We will come back later and use current block's data directly.
+                    /// Delete current cache and return.
+                    /// We will come back later and use current block's data directly.
                     max_delmark = 1;
                     current_key.reset();
                     selected_row.reset();
                     current_row_sources.resize(0);
-                    queue.push(current);
+
+                    if (current != cur_block_cursor)
+                        queue.push(current);
                     return;
                 }else{
                     max_delmark = 0;
@@ -284,24 +262,38 @@ void ReplacingDeletingSortedBlockInputStream::merge_optimized(MutableColumns & m
             {
                 max_version = version;
                 max_delmark = delmark;
-                setRowRef(selected_row, current);
+                setRowRefOptimized(selected_row, current);
             }
 
             if (current->isLast())
             {
                 /// We get the next block from the corresponding source, if there is one.
-                fetchNextBlock(current, queue);
-                break; // Break current block loop.
+                if (current != cur_block_cursor)
+                {
+                    fetchNextBlock(current, queue);
+                }
+                else
+                {
+                    cur_block_cursor = SortCursor();
+                    // cur_block_cursor_impl = SortCursorImpl();
+                    // cur_block.reset();
+
+                    /// No need to fetchNextBlock here as we already do it before.
+                }
+                break; /// Break current block loop.
             }
             else
             {
                 current->next();
                 if(is_complete_top || queue.empty() || !(current.greater(queue.top())))
                 {
-                    continue; // Continue current block loop.
+                    continue; /// Continue current block loop.
                 }else{
-                    queue.push(current);
-                    break; // Break current block loop.
+                    if (current != cur_block_cursor)
+                        queue.push(current);
+                    else
+                        throw Exception("Impossible!");
+                    break; /// Break current block loop.
                 }
             }
         }
@@ -311,7 +303,117 @@ void ReplacingDeletingSortedBlockInputStream::merge_optimized(MutableColumns & m
     if (!max_delmark && !current_key.empty())
         insertRow(merged_columns, merged_rows);
 
+    if (cur_block)
+    {
+        /// Clear cache.
+        cur_block_cursor_impl = SortCursorImpl();
+        cur_block.reset();
+    }
+
     finished = true;
+}
+
+bool ReplacingDeletingSortedBlockInputStream::insertByColumn(SortCursor current,
+                                                             size_t & merged_rows,
+                                                             MutableColumns & merged_columns)
+{
+    if (current != cur_block_cursor)
+        throw Exception("Logical error!");
+
+    bool give_up = false;
+    RowRef cur_key;
+    for (size_t i = 0; i < current->all_columns[0]->size(); i ++)
+    {
+        /// If we find any continually equal keys, give up by_column optimization.
+        if (cur_key.empty())
+        {
+            setPrimaryKeyRefOptimized(cur_key, current);
+        }
+        else
+        {
+            RowRef key;
+            setPrimaryKeyRefOptimized(key, current);
+            if (cur_key == key)
+            {
+                give_up = true;
+                break;
+            }
+            cur_key.swap(key);
+        }
+        current->next();
+    }
+    // Reset to zero, as other code may use it later.
+    current.impl->pos = 0;
+
+    if (give_up)
+    {
+        return false;
+    }
+
+    size_t source_num = current.impl->order;
+
+    bool direct_move = true;
+    if (version_column_number != -1)
+    {
+        const auto del_column =  typeid_cast<const ColumnUInt8 *>(current->all_columns[delmark_column_number]);
+
+        // reverse_filter - 1: delete, 0: remain.
+        // filter         - 0: delete, 1: remain.
+        const IColumn::Filter & reverse_filter = del_column->getData();
+        IColumn::Filter filter(reverse_filter.size());
+        bool no_delete = true;
+
+        for (size_t i = 0; i < reverse_filter.size(); i ++)
+        {
+            no_delete &= !reverse_filter[i];
+            filter[i] = reverse_filter[i] ^ (UInt8)1;
+        }
+
+        direct_move = no_delete;
+        if (!direct_move)
+        {
+            for (size_t i = 0; i < num_columns; ++i)
+            {
+                ColumnPtr column = cur_block->getByPosition(i).column->filter(filter, -1);
+                merged_columns[i] = (*std::move(column)).mutate();
+            }
+
+            RowSourcePart row_source(source_num);
+            current_row_sources.resize(filter.size());
+            for (size_t i = 0; i < filter.size(); ++i)
+            {
+                row_source.setSkipFlag(reverse_filter[i]);
+                current_row_sources[i] = row_source.data;
+            }
+            if (out_row_sources_buf)
+                out_row_sources_buf->write(reinterpret_cast<const char *>(current_row_sources.data()),
+                                           current_row_sources.size());
+            current_row_sources.resize(0);
+        }
+    }
+
+    if (direct_move)
+    {
+        for (size_t i = 0; i < num_columns; ++i)
+        {
+            ColumnPtr column = cur_block->getByPosition(i).column;
+            merged_columns[i] = (*std::move(column)).mutate();
+        }
+
+        if (out_row_sources_buf)
+        {
+            for (size_t i = 0; i < merged_rows; ++i)
+            {
+                RowSourcePart row_source(source_num);
+                out_row_sources_buf->write(row_source.data);
+            }
+        }
+    }
+
+    merged_rows = merged_columns[0]->size();
+    by_column += merged_rows;
+
+    return true;
 }
 
 }
