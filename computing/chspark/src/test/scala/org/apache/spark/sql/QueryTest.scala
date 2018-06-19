@@ -123,12 +123,20 @@ abstract class QueryTest extends PlanTest {
             rhs.sortWith((_1, _2) => _1.mkString("").compare(_2.mkString("")) < 0)
           )
         } else {
-          comp(lhs, rhs)
+          implicit object NullableListOrdering extends Ordering[List[Any]] {
+            override def compare(p1: List[Any], p2: List[Any]): Int = {
+              p1.contains(null).compareTo(p2.contains(null))
+            }
+          }
+          comp(
+            lhs.sortBy[List[Any]](x => x),
+            rhs.sortBy[List[Any]](x => x)
+          )
         }
       } catch {
         // TODO:Remove this temporary exception handling
         //      case _:RuntimeException => false
-        case _: Throwable => false
+        case e: Throwable => false
       }
     } else {
       false

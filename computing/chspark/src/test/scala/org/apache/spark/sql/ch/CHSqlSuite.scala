@@ -18,7 +18,7 @@ package org.apache.spark.sql.ch
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, CreateNamedStruct, Expression, Literal}
-import org.apache.spark.sql.types.{BooleanType, DoubleType}
+import org.apache.spark.sql.types._
 
 class CHSqlSuite extends SparkFunSuite {
   val booleanLiteral = Literal(true, BooleanType)
@@ -94,7 +94,19 @@ class CHSqlSuite extends SparkFunSuite {
   }
 
   test("cast expressions") {
-    testCompileExpression(a.cast(DoubleType), "`a`")
+    testCompileExpression(nullLiteral.cast(IntegerType), "CAST(NULL AS Nullable(Int32))")
+    testCompileExpression(booleanLiteral.cast(LongType), "CAST(CAST(1 AS UInt8) AS Int64)")
+    testCompileExpression(booleanLiteral.cast(LongType), "CAST(CAST(1 AS UInt8) AS Int64)")
+
+    testCompileExpression(a.cast(DateType), "CAST(`a` AS Nullable(Date))")
+    testCompileExpression(b.withNullability(false).cast(TimestampType), "CAST(`b` AS DateTime)")
+
+    testCompileExpression((a + b).cast(FloatType), "CAST((`a` + `b`) AS Nullable(Float32))")
+    testCompileExpression((a.withNullability(false) + b).cast(DoubleType), "CAST((`a` + `b`) AS Nullable(Float64))")
+    testCompileExpression((a + b.withNullability(false)).cast(StringType), "CAST((`a` + `b`) AS Nullable(String))")
+    testCompileExpression((a.withNullability(false) + b.withNullability(false)).cast(ShortType), "CAST((`a` + `b`) AS Int16)")
+
+    testCompileExpression((a.withNullability(false) + b.withNullability(false)).cast(DecimalType.FloatDecimal), "(`a` + `b`)")
   }
 
   test("empty queries") {

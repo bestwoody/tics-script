@@ -13,6 +13,7 @@ import static com.pingcap.common.MemoryUtil.allocateDirect;
 
 public class CHTypeDate implements CHType {
     public static final CHTypeDate instance = new CHTypeDate();
+    public static final CHTypeNullable nullableInstance = new CHTypeNullable(instance);
 
     private CHTypeDate() {}
 

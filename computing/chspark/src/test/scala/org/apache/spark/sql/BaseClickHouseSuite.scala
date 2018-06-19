@@ -118,16 +118,20 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     qJDBC
   }
 
-  def judge(str: String, skipped: Boolean = false): Unit =
-    assert(execDBTSAndJudge(str, skipped))
+  def judge(qSpark: String, skipped: Boolean = false): Unit =
+    assert(execDBTSAndJudge(qSpark, skipped))
 
-  def execDBTSAndJudge(str: String, skipped: Boolean = false): Boolean =
+  def convertSparkSQLToCHSQL(qSpark: String): String =
+    qSpark.replace(" date(", " toDate(").replace(" date)", " Date)")
+
+  def execDBTSAndJudge(qSpark: String, skipped: Boolean = false): Boolean =
     try {
       if (skipped) {
-        logger.warn(s"Test is skipped. [With Spark SQL: $str]")
+        logger.warn(s"Test is skipped. [With Spark SQL: $qSpark]")
         true
       } else {
-        compResult(querySpark(str), queryClickHouse(str), str.contains(" order by "))
+        val qClickHouse: String = convertSparkSQLToCHSQL(qSpark)
+        compResult(querySpark(qSpark), queryClickHouse(qClickHouse), qSpark.contains(" order by "))
       }
     } catch {
       case e: Throwable => fail(e)
@@ -284,14 +288,16 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
 
     val comp12 = compResult(r1, r2, isOrdered)
 
+    val qClickHouse: String = convertSparkSQLToCHSQL(qSpark)
+
     if (skipJDBC || !comp12) {
       if (!skipClickHouse && r3 == null) {
         try {
-          r3 = queryClickHouse(qSpark)
+          r3 = queryClickHouse(qClickHouse)
         } catch {
           case e: Throwable =>
             println(e.getMessage)
-            logger.warn(s"ClickHouse failed when executing:$qSpark", e) // ClickHouse failed
+            logger.warn(s"ClickHouse failed when executing:$qClickHouse", e) // ClickHouse failed
         }
       }
       val comp13 = compResult(r1, r3, isOrdered)

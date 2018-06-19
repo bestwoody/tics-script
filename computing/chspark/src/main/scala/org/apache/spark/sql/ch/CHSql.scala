@@ -15,9 +15,12 @@
 
 package org.apache.spark.sql.ch
 
+import com.pingcap.ch.datatypes.{CHType, CHTypeDate, CHTypeDateTime, CHTypeString}
+import com.pingcap.ch.datatypes.CHTypeNumber._
+import com.pingcap.theflash.TypeMappingJava
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
-import org.apache.spark.sql.types.{BooleanType, StringType}
+import org.apache.spark.sql.types._
 
 /**
  * Compiler that compiles CHLogicalPlan/CHTableRef to CH SQL string.
@@ -140,8 +143,13 @@ object CHSql {
         }
       case attr: AttributeReference => s"`${attr.name.toLowerCase()}`"
       case Cast(child, dataType) =>
-        // TODO: Handle cast
-        s"${compileExpression(child)}"
+        try {
+          val dataTypeName = TypeMappingJava.sparkTypeToCHType(dataType, child.nullable).name()
+          s"CAST(${compileExpression(child)} AS $dataTypeName)"
+        } catch {
+          // Unsupported target type, downgrading to not casting.
+          case _: UnsupportedOperationException => s"${compileExpression(child)}"
+        }
       case IsNotNull(child) => s"${compileExpression(child)} IS NOT NULL"
       case IsNull(child) => s"${compileExpression(child)} IS NULL"
       case UnaryMinus(child) => s"(-${compileExpression(child)})"
@@ -177,7 +185,7 @@ object CHSql {
     * @param value
     * @return
     */
-  private def escapeString(value: String): String =
+  private def escapeString(value: String) =
     value.flatMap {
       case '\\' => "\\\\"
       case '\'' => "\\'"

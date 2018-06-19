@@ -18,7 +18,10 @@ import com.pingcap.ch.datatypes.CHTypeNumber.CHTypeUInt8;
 import com.pingcap.ch.datatypes.CHTypeString;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class TypeMappingJava {
     public static DataTypeAndNullable chTypetoSparkType(CHType chType) {
@@ -98,5 +101,48 @@ public class TypeMappingJava {
                     throw new Exception("stringToFieldType unhandled type name: " + name);
             }
         }
+    }
+
+    static private Map<Class<? extends DataType>, CHType> sparkTypeToCHTypeMap = new HashMap<>();
+    static private Map<Class<? extends DataType>, CHTypeNullable> sparkTypeToCHTypeNullableMap = new HashMap<>();
+    static {
+        sparkTypeToCHTypeMap.put(IntegerType$.class, CHTypeInt32.instance);
+        sparkTypeToCHTypeNullableMap.put(IntegerType$.class, CHTypeInt32.nullableInstance);
+        sparkTypeToCHTypeMap.put(LongType$.class, CHTypeInt64.instance);
+        sparkTypeToCHTypeNullableMap.put(LongType$.class, CHTypeInt64.nullableInstance);
+        sparkTypeToCHTypeMap.put(DateType$.class, CHTypeDate.instance);
+        sparkTypeToCHTypeNullableMap.put(DateType$.class, CHTypeDate.nullableInstance);
+        sparkTypeToCHTypeMap.put(TimestampType$.class, CHTypeDateTime.instance);
+        sparkTypeToCHTypeNullableMap.put(TimestampType$.class, CHTypeDateTime.nullableInstance);
+        sparkTypeToCHTypeMap.put(FloatType$.class, CHTypeFloat32.instance);
+        sparkTypeToCHTypeNullableMap.put(FloatType$.class, CHTypeFloat32.nullableInstance);
+        sparkTypeToCHTypeMap.put(DoubleType$.class, CHTypeFloat64.instance);
+        sparkTypeToCHTypeNullableMap.put(DoubleType$.class, CHTypeFloat64.nullableInstance);
+        sparkTypeToCHTypeMap.put(StringType$.class, CHTypeString.instance);
+        sparkTypeToCHTypeNullableMap.put(StringType$.class, CHTypeString.nullableInstance);
+        sparkTypeToCHTypeMap.put(BooleanType$.class, CHTypeUInt8.instance);
+        sparkTypeToCHTypeNullableMap.put(BooleanType$.class, CHTypeUInt8.nullableInstance);
+        sparkTypeToCHTypeMap.put(ShortType$.class, CHTypeInt16.instance);
+        sparkTypeToCHTypeNullableMap.put(ShortType$.class, CHTypeInt16.nullableInstance);
+        // TODO: Add Decimal Type
+    }
+
+    /**
+     * Converts a Spark DataType into CH Type
+     *
+     * @param dataType spark data type
+     * @return corresponding CHType
+     */
+    public static CHType sparkTypeToCHType(DataType dataType, boolean nullable) {
+        if (nullable) {
+            if (sparkTypeToCHTypeNullableMap.containsKey(dataType.getClass())) {
+              return sparkTypeToCHTypeNullableMap.get(dataType.getClass());
+            }
+        } else {
+            if (sparkTypeToCHTypeMap.containsKey(dataType.getClass())) {
+                return sparkTypeToCHTypeMap.get(dataType.getClass());
+            }
+        }
+        throw new UnsupportedOperationException("Target dataType for Cast is not supported.");
     }
 }
