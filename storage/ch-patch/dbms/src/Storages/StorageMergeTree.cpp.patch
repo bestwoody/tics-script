@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.cpp b/dbms/src/Storages/StorageMergeTree.cpp
-index da205e9a2930..1f94b9e0a34e 100644
+index da205e9a2930..08fe7c676d4e 100644
 --- a/dbms/src/Storages/StorageMergeTree.cpp
 +++ b/dbms/src/Storages/StorageMergeTree.cpp
 @@ -14,6 +14,16 @@
@@ -128,3 +128,22 @@ index da205e9a2930..1f94b9e0a34e 100644
  void StorageMergeTree::drop()
  {
      shutdown();
+@@ -490,6 +586,18 @@ void StorageMergeTree::dropPartition(const ASTPtr & /*query*/, const ASTPtr & pa
+     LOG_INFO(log, (detach ? "Detached " : "Removed ") << removed_parts << " parts inside partition ID " << partition_id << ".");
+ }
+ 
++void StorageMergeTree::truncate(const ASTPtr & /*query*/, const Context & /*context*/)
++{
++    auto lock = lockForAlter(__PRETTY_FUNCTION__);
++    
++    MergeTreeData::DataParts parts = data.getDataParts();
++
++    for (const auto & part : parts)
++    {
++        LOG_DEBUG(log, "Removing part " << part->name);
++        data.removePartsFromWorkingSet({part}, true);
++    }
++}
+ 
+ void StorageMergeTree::attachPartition(const ASTPtr & partition, bool part, const Context & context)
+ {

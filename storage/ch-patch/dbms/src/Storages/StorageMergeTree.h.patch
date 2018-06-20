@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/StorageMergeTree.h b/dbms/src/Storages/StorageMergeTree.h
-index a2787a8bb304..9bb8ec5aeca1 100644
+index a2787a8bb304..8a23da5d0c55 100644
 --- a/dbms/src/Storages/StorageMergeTree.h
 +++ b/dbms/src/Storages/StorageMergeTree.h
 @@ -62,6 +62,8 @@ public:
@@ -11,7 +11,16 @@ index a2787a8bb304..9bb8ec5aeca1 100644
      /** Perform the next step in combining the parts.
        */
      bool optimize(const ASTPtr & query, const ASTPtr & partition, bool final, bool deduplicate, const Context & context) override;
-@@ -113,6 +115,8 @@ private:
+@@ -73,6 +75,8 @@ public:
+ 
+     void drop() override;
+ 
++    void truncate(const ASTPtr & /*query*/, const Context & /*context*/) override;
++
+     void rename(const String & new_path_to_db, const String & new_database_name, const String & new_table_name) override;
+ 
+     void alter(const AlterCommands & params, const String & database_name, const String & table_name, const Context & context) override;
+@@ -113,6 +117,8 @@ private:
  
      BackgroundProcessingPool::TaskHandle merge_task_handle;
  
