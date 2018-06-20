@@ -9,6 +9,17 @@ print_target_commit_hash()
 	echo "$hash"
 }
 
+reset_target_file()
+{
+	local target="$1"
+	local file="$2"
+
+	local old=`pwd`
+	cd "$target"
+	git checkout "$file"
+	cd "$old"
+}
+
 update_target_unpatched_cache()
 {
 	local target="$1"
@@ -16,28 +27,38 @@ update_target_unpatched_cache()
 	mkdir -p "$target-cache"
 	local hash_file="$target-cache/_git_hash"
 	if [ ! -f "$hash_file" ] || [ "`print_target_commit_hash $target`" != "`cat $hash_file`" ]; then
+		echo "target repo updated, removing all cache files in $target-path" >&2
 		rm -rf "$target-cache/*"
-		find "$target-patch" -type f | while read patch_file; do
-			local raw_file="${patch_file#*patch}"
-			local patch_ext="${patch_file##*.}"
-			if [ "$patch_ext" == "patch" ]; then
-				raw_file="${raw_file%.patch}"
-			fi
-			local origin_file="$target""$raw_file"
-
-			local cache_file="$target-cache""$raw_file"
-			local cache_path=`dirname "$cache_file"`
-			mkdir -p "$cache_path"
-			if [ "$patch_ext" == "patch" ]; then
-				if [ ! -f "$origin_file" ]; then
-					echo "origin file $origin_file missed, aborted" >&2
-				fi
-				cp "$origin_file" "$cache_file"
-			else
-				cp "$patch_file" "$cache_file"
-			fi
-		done
 	fi
+
+	find "$target-patch" -type f | while read patch_file; do
+		local raw_file="${patch_file#*patch}"
+		local patch_ext="${patch_file##*.}"
+		if [ "$patch_ext" == "patch" ]; then
+			raw_file="${raw_file%.patch}"
+		fi
+		local origin_file="$target""$raw_file"
+
+		local cache_file="$target-cache""$raw_file"
+		local cache_path=`dirname "$cache_file"`
+		mkdir -p "$cache_path"
+
+		if [ -f "$cache_file" ]; then
+			continue
+		fi
+
+		if [ "$patch_ext" == "patch" ]; then
+			if [ ! -f "$origin_file" ]; then
+				echo "origin file $origin_file missed, aborted" >&2
+			fi
+			reset_target_file "$target" ".${raw_file}"
+			echo cp "$origin_file" "$cache_file"
+			cp "$origin_file" "$cache_file"
+		else
+			echo cp "$patch_file" "$cache_file"
+			cp "$patch_file" "$cache_file"
+		fi
+	done
 
 	print_target_commit_hash $target > $hash_file
 }
@@ -47,6 +68,7 @@ patch_apply()
 	local target="$1"
 
 	update_target_unpatched_cache "$target"
+	echo "cache updated"
 
 	find "$target-patch" -type f | while read patch_file; do
 		local raw_file="${patch_file#*patch}"
