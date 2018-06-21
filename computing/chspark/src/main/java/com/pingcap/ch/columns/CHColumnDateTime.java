@@ -16,7 +16,7 @@ public class CHColumnDateTime extends CHColumn {
     }
 
     public CHColumnDateTime(int maxSize) {
-        this(0, ByteBuffer.allocateDirect(maxSize << 2));
+        this(0, MemoryUtil.allocateDirect(maxSize << 2));
     }
 
     public ByteBuffer data() {
@@ -35,7 +35,7 @@ public class CHColumnDateTime extends CHColumn {
 
     @Override
     public void insertInt(int v) {
-        data.putInt(v);
+        MemoryUtil.setInt(dataAddr + (size << 2), v);
         size++;
     }
 

@@ -21,7 +21,7 @@ public class CHColumnFixedString extends CHColumn {
     }
 
     public CHColumnFixedString(int valLen, int maxSize) {
-        this(0, valLen, ByteBuffer.allocateDirect(valLen * maxSize));
+        this(0, valLen, MemoryUtil.allocateDirect(valLen * maxSize));
     }
 
     public ByteBuffer data() {
