@@ -1,0 +1,29 @@
+>> drop table if exists test
+>> create table test (
+	i Int32,
+	s String
+	) engine = MutableMergeTree((i, s), 8192)
+
+>> import into test (i, s, _INTERNAL_VERSION, _INTERNAL_DELMARK) values (1, 'a', 400942237781590023, 0)
+
+>> select * from test
+┌─i─┬─s─┐
+│ 1 │ a │
+└───┴───┘
+
+>> selraw * from test
+┌─i─┬─s─┬───_INTERNAL_VERSION┬─_INTERNAL_DELMARK─┐
+│ 1 │ a │ 400942237781590023 │                 0 │
+└───┴───┴────────────────────┴───────────────────┘
+
+>> delete from test where 1
+
+>> selraw * from test
+┌─i─┬─s─┬──_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐
+│ 1 │ a │ 400942237781590023 │                 0 │
+└───┴───┴────────────────────┴───────────────────┘
+┌─i─┬─s─┬──_INTERNAL_VERSION─┬─_INTERNAL_DELMARK─┐
+│ 1 │ a │ 400942237781590023 │                 1 │
+└───┴───┴────────────────────┴───────────────────┘
+
+>> select * from test

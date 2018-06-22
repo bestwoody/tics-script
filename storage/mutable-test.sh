@@ -124,7 +124,7 @@ if [ -z "$dbc" ]; then
 	if [ "$debug" != "false" ] && [ "$debug" != "0" ]; then
 		debug="--stacktrace"
 	fi
-	dbc="$storage_bin client --host $storage_server -d $storage_db  $debug -f PrettyCompactNoEscapes --query"
+	dbc="DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH $storage_bin client --host $storage_server -d $storage_db  $debug -f PrettyCompactNoEscapes --query"
 fi
 
 if [ -z "$continue_on_error" ]; then
