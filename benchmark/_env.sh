@@ -26,10 +26,6 @@ export selraw_tableinfo="false"
 # Spark master to commit jobs
 export spark_master="127.0.0.1"
 
-# Aggressive optimization for single-node table, i.e. pushdown more aggregates.
-# Should be always true unless for debug purpose.
-export single_node_optimization="true"
-
 # Pushdown aggregation ops, should be always true unless for tracing debugs
 export pushdown="true"
 

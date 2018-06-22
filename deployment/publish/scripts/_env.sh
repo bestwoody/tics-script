@@ -29,10 +29,6 @@ export spark_master="127.0.0.1"
 # Pushdown aggregation ops, should be always true unless for tracing debugs
 export pushdown="true"
 
-# Aggressive optimization for single-node table, i.e. pushdown more aggregates.
-# Should be always true unless for debug purpose.
-export single_node_optimization="true"
-
 # The executor-memory parameter of spark-shell.
 export spark_executor_memory=12G
 
