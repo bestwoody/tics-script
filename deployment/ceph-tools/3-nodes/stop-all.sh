@@ -1,5 +1,7 @@
 set -eu
 
+source ./_env.sh
+
 ssh "$h0" "sudo systemctl stop ceph-mds@$h0"
 ssh "$h1" "sudo systemctl stop ceph-mds@$h1"
 ssh "$h2" "sudo systemctl stop ceph-mds@$h2"

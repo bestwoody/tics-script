@@ -1,3 +1,7 @@
+set -eu
+
+source ./_env.sh
+
 echo "$h0:"
 ssh "$h0" "ps -ef | grep ceph | grep -v grep"
 echo "$h1:"

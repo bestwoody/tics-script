@@ -1,5 +1,7 @@
 set -eu
 
+source ./_env.sh
+
 ssh "$h0" "sudo systemctl start ceph-osd@0"
 ssh "$h1" "sudo systemctl start ceph-osd@1"
 ssh "$h2" "sudo systemctl start ceph-osd@2"

@@ -1,13 +1,17 @@
-cho ceph-deploy purge ip-172-16-30-2 ip-172-16-30-3 ip-172-16-30-4
-ceph-deploy --username "pingcap" purge ip-172-16-30-2 ip-172-16-30-3 ip-172-16-30-4
+set -eu
+
+source ./_env.sh
+
+cho ceph-deploy purge "$h0" "$h1" "$h2"
+ceph-deploy --username "$user" purge "$h0" "$h1" "$h2"
 echo
 
-echo ceph-deploy purgedata ip-172-16-30-2 ip-172-16-30-3 ip-172-16-30-4
-ceph-deploy --username "pingcap" purgedata ip-172-16-30-2 ip-172-16-30-3 ip-172-16-30-4
+echo ceph-deploy purgedata "$h0" "$h1" "$h2"
+ceph-deploy --username "$user" purgedata "$h0" "$h1" "$h2"
 echo
 
 echo ceph-deploy forgetkeys
-ceph-deploy --username "pingcap" forgetkeys
+ceph-deploy --username "$user" forgetkeys
 
 echo rm -rf ceph.*
 rm -rf ceph.*
