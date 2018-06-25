@@ -1,4 +1,5 @@
 set -eu
+source ./_env.sh
 
 source ./_env.sh
 

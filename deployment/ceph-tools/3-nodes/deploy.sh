@@ -1,6 +1,5 @@
 et -eu
-
-source ./env.sh
+source ./_env.sh
 
 echo "=> ../common-scripts/lo-prepare.sh $h0"
 ../common-scripts/lo-prepare.sh "$h0"
