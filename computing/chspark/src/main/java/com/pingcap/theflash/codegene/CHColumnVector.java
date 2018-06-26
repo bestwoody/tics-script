@@ -7,6 +7,7 @@ import com.pingcap.ch.columns.CHColumnWithTypeAndName;
 import com.pingcap.ch.datatypes.CHType;
 import com.pingcap.ch.datatypes.CHTypeDate;
 import com.pingcap.ch.datatypes.CHTypeDateTime;
+import com.pingcap.ch.datatypes.CHTypeDecimal;
 import com.pingcap.ch.datatypes.CHTypeNullable;
 import com.pingcap.ch.datatypes.CHTypeNumber;
 import com.pingcap.theflash.TypeMappingJava;
@@ -181,6 +182,8 @@ public class CHColumnVector extends ColumnVector {
             }
         } else if (type == CHTypeNumber.CHTypeFloat64.instance) {
             return Decimal.apply(column.getDouble(rowId));
+        } else if (type instanceof CHTypeDecimal) {
+            return column.getDecimal(rowId);
         }
 
         throw new UnsupportedOperationException();

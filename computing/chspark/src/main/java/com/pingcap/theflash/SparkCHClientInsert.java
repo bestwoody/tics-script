@@ -8,6 +8,7 @@ import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnWithTypeAndName;
 import com.pingcap.ch.datatypes.CHType;
 import com.pingcap.ch.datatypes.CHTypeDate;
+import com.pingcap.ch.datatypes.CHTypeDecimal;
 import com.pingcap.ch.datatypes.CHTypeDateTime;
 import com.pingcap.ch.datatypes.CHTypeFixedString;
 import com.pingcap.ch.datatypes.CHTypeNullable;
@@ -171,6 +172,9 @@ public class SparkCHClientInsert implements Closeable {
                 col.insertFloat(row.getFloat(i));
             } else if (chType == CHTypeNumber.CHTypeFloat64.instance) {
                 col.insertDouble(row.getDouble(i));
+            } else if (chType instanceof CHTypeDecimal) {
+                CHTypeDecimal decType = (CHTypeDecimal) chType;
+                col.insertDecimal(row.getDecimal(i, decType.precision, decType.scale));
             } else {
                 throw new UnsupportedOperationException("Unsupported data type: " + chType.name());
             }

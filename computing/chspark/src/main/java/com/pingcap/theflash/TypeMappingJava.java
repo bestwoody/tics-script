@@ -1,6 +1,7 @@
 package com.pingcap.theflash;
 
 import com.pingcap.ch.datatypes.CHType;
+import com.pingcap.ch.datatypes.CHTypeDecimal;
 import com.pingcap.ch.datatypes.CHTypeDate;
 import com.pingcap.ch.datatypes.CHTypeDateTime;
 import com.pingcap.ch.datatypes.CHTypeFixedString;
@@ -23,6 +24,8 @@ import org.apache.spark.sql.types.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.lang.Integer;
+
 public class TypeMappingJava {
     public static DataTypeAndNullable chTypetoSparkType(CHType chType) {
         if (chType instanceof CHTypeNullable) {
@@ -31,6 +34,8 @@ public class TypeMappingJava {
         }
         if (chType == CHTypeString.instance || chType instanceof CHTypeFixedString) {
             return new DataTypeAndNullable(DataTypes.StringType);
+        } else if (chType instanceof CHTypeDecimal) {
+            return new DataTypeAndNullable(DataTypes.createDecimalType(((CHTypeDecimal)chType).precision, ((CHTypeDecimal)chType).scale));
         } else if (chType == CHTypeDate.instance) {
             return new DataTypeAndNullable(DataTypes.DateType);
         } else if (chType == CHTypeDateTime.instance) {
@@ -69,6 +74,13 @@ public class TypeMappingJava {
         }
         if (name.startsWith("FixedString")) {
             return new DataTypeAndNullable(DataTypes.StringType);
+        } else if (name.startsWith("Decimal")) {
+            String remain = StringUtils.removeStart(name, "Decimal");
+            remain = StringUtils.removeEnd(StringUtils.removeStart(remain, "("), ")");
+            String[] parts = remain.split(",");
+            int prec = Integer.parseInt(parts[0]);
+            int scale = Integer.parseInt(parts[1]);
+            return new DataTypeAndNullable(DataTypes.createDecimalType(prec, scale));
         } else {
             switch (name) {
                 case "String":

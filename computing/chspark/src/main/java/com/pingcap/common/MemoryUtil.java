@@ -16,6 +16,10 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.math.BigInteger;
+import java.math.BigDecimal;
+
+import org.apache.spark.sql.types.Decimal;
 
 // Copied from io.indexr.util.MemoryUtil.java with some modifications.
 public class MemoryUtil {
@@ -188,6 +192,24 @@ public class MemoryUtil {
 
     public static int getInt(long address) {
         return unsafe.getInt(address);
+    }
+
+    public static Decimal getDecimal(long address) {
+        short limbs = getShort(address+32);
+        BigInteger dec = BigInteger.ZERO;
+        for(short i = 0; i < limbs; i++) {
+            long d = unsafe.getLong(address + i * 8);
+            dec.shiftLeft(64);
+            dec = dec.add(BigInteger.valueOf(d));
+        }
+        int sign = unsafe.getByte(address+34);
+        int precision = (int)unsafe.getByte(address+48);
+        int scale = (int)unsafe.getByte(address+49);
+        BigDecimal result = new BigDecimal(dec, scale);
+        if (sign > 0) {
+            return Decimal.apply(result.negate(), precision, scale);
+        }
+        return Decimal.apply(result, precision, scale);
     }
 
     public static long getLong(long address) {

@@ -3,6 +3,7 @@ package com.pingcap.ch.columns;
 import com.pingcap.ch.datatypes.CHType;
 
 import org.apache.spark.unsafe.types.UTF8String;
+import org.apache.spark.sql.types.Decimal;
 
 public abstract class CHColumn {
     protected CHType dataType;
@@ -45,6 +46,8 @@ public abstract class CHColumn {
 
     public double getDouble(int rowId) {throw new UnsupportedOperationException();}
 
+    public Decimal getDecimal(int rowId) {throw new UnsupportedOperationException();}
+
     public UTF8String getUTF8String(int rowId) {throw new UnsupportedOperationException();}
 
     public void insertDefault() {
@@ -64,6 +67,8 @@ public abstract class CHColumn {
     public void insertFloat(float v) {throw new UnsupportedOperationException();}
 
     public void insertDouble(double v) {throw new UnsupportedOperationException();}
+
+    public void insertDecimal(Decimal v) {throw new UnsupportedOperationException();}
 
     public void insertUTF8String(UTF8String v) {throw new UnsupportedOperationException();}
 

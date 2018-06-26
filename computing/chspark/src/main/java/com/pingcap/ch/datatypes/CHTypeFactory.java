@@ -50,6 +50,18 @@ public class CHTypeFactory {
                 throw new IOException("Illegal CH type: " + typeName);
             }
         }
+        if (typeName.startsWith("Decimal")) {
+            String remain = StringUtils.removeStart(typeName, "Decimal");
+            remain = StringUtils.removeEnd(StringUtils.removeStart(remain, "("), ")");
+            try {
+                String[] args = remain.split(",");
+                int precision = Integer.parseInt(args[0]);
+                int scale = Integer.parseInt(args[1]);
+                return new CHTypeDecimal(precision, scale);
+            } catch (Exception e) {
+                throw new IOException("Illegal CH type: " + typeName);
+            }
+        }
         if (typeName.startsWith("Nullable")) {
             String remain = StringUtils.removeStart(typeName, "Nullable");
             remain = StringUtils.removeEnd(StringUtils.removeStart(remain, "("), ")");
