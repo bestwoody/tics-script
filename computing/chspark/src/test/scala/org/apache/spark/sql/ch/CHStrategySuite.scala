@@ -25,8 +25,7 @@ import org.apache.spark.sql.test.SharedSQLContext
 import org.apache.spark.sql.types.StructType
 
 class CHStrategySuite extends SharedSQLContext {
-  class TestCHRelation(name: String, singleNode: Boolean, output: Attribute*) extends CHRelation(
-    if (singleNode) { Seq(null) } else { Seq.empty }, 0)(sqlContext, null) {
+  class TestCHRelation(name: String, output: Attribute*) extends CHRelation({ Seq.empty }, 0)(sqlContext, null) {
     val localRelation = LocalRelation(output)
     override lazy val schema: StructType = new CHStructType(localRelation.schema.map(f =>
       Hack.hackStructField(f.name, new DataTypeAndNullable(f.dataType, f.nullable), f.metadata)
@@ -48,15 +47,13 @@ class CHStrategySuite extends SharedSQLContext {
   }
 
   var multiNodeT: TestCHRelation = _
-  var singleNodeT: TestCHRelation = _
   var hackT: TestCHRelation = _
 
   protected override def beforeAll(): Unit = {
     super.beforeAll()
     spark.experimental.extraStrategies = new CHStrategy(spark) :: Nil
-    multiNodeT = new TestCHRelation("mt", false, 'mt_a.int, 'mt_b.int, 'mt_c.string)
-    singleNodeT = new TestCHRelation("st", true, 'st_a.int, 'st_b.int, 'st_c.string)
-    hackT = new TestCHRelation("ht", false, 'ht_a.int, '_tidb_date_ht_b.int, '_tidb_date_ht_c.date)
+    multiNodeT = new TestCHRelation("mt", 'mt_a.int, 'mt_b.int, 'mt_c.string)
+    hackT = new TestCHRelation("ht", 'ht_a.int, '_tidb_date_ht_b.int, '_tidb_date_ht_c.date)
   }
 
   protected override def afterAll(): Unit = {
@@ -98,21 +95,6 @@ class CHStrategySuite extends SharedSQLContext {
       multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))]], TopN []]")))
     testQuery("select avg(mt_a) + avg(mt_b) from mt", Map((
       multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))]], TopN []]")))
-  }
-
-  test("single-node aggregate plans") {
-    testQuery("select sum(st_a) from st", Map((
-      singleNodeT, "CH plan [Project [sum(CAST(st_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(st_a AS BIGINT))]], TopN []]")))
-    testQuery("select sum(st_a) AS sum_st_a from st", Map((
-      singleNodeT, "CH plan [Project [sum(CAST(st_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(st_a AS BIGINT))]], TopN []]")))
-    testQuery("select sum(st_a) + sum(st_b) from st", Map((
-      singleNodeT, "CH plan [Project [(sum(CAST(st_a AS BIGINT)) + sum(CAST(st_b AS BIGINT)))], Filter [], Aggregate [[sum(CAST(st_a AS BIGINT)), sum(CAST(st_b AS BIGINT))]], TopN []]")))
-    testQuery("select sum(st_a) + sum(st_b) AS sum_mt_a_mt_b from st", Map((
-      singleNodeT, "CH plan [Project [(sum(CAST(st_a AS BIGINT)) + sum(CAST(st_b AS BIGINT)))], Filter [], Aggregate [[sum(CAST(st_a AS BIGINT)), sum(CAST(st_b AS BIGINT))]], TopN []]")))
-    testQuery("select avg(st_a) AS avg_st_a from st", Map((
-      singleNodeT, "CH plan [Project [avg(CAST(st_a AS BIGINT))], Filter [], Aggregate [[avg(CAST(st_a AS BIGINT))]], TopN []]")))
-    testQuery("select avg(st_a) + avg(st_b) from st", Map((
-      singleNodeT, "CH plan [Project [(avg(CAST(st_a AS BIGINT)) + avg(CAST(st_b AS BIGINT)))], Filter [], Aggregate [[avg(CAST(st_a AS BIGINT)), avg(CAST(st_b AS BIGINT))]], TopN []]")))
   }
 
   test("top-n plans") {

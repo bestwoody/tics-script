@@ -34,10 +34,6 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
   val enableAggPushdown: Boolean =
     sqlConf.getConfString(CHConfigConst.ENABLE_PUSHDOWN_AGG, "true").toBoolean
 
-  // TODO: this optimization is outdated, set to false for now and will be clean up in further work
-  val enableSingleNodeOpt: Boolean =
-    sqlConf.getConfString(CHConfigConst.ENABLE_SINGLE_NODE_OPTIMIZATION, "false").toBoolean
-
   // -------------------- Physical plan generation --------------------
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     try {
@@ -66,11 +62,9 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
             CHAggregationProjection(filters, _, _, _)) if enableAggPushdown =>
               var aggExp = aggregateExpressions
               var resultExp = resultExpressions
-              if (!optimizeForSingleNode(relation)) {
-                val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
-                aggExp = rewriteResult._1
-                resultExp = rewriteResult._2
-              }
+              val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
+              aggExp = rewriteResult._1
+              resultExp = rewriteResult._2
               // Add group / aggregate to CHPlan
               createAggregatePlan(groupingExpressions, aggExp, resultExp, relation, filters)
 
@@ -83,9 +77,6 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         Nil
     }
   }
-
-  def optimizeForSingleNode(relation: CHRelation): Boolean =
-    enableSingleNodeOpt && relation.tables.length == 1
 
   private def pruneTopNFilterProject(
     relation: LogicalRelation,
@@ -145,66 +136,32 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         case e: Min   => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
         case e: Sum   => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
         case e: First => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
-        case e: Count => if (!optimizeForSingleNode(relation)) aggExpr.copy(aggregateFunction = Sum(partialResultRef))
-                         else aggExpr.copy(aggregateFunction = e.copy(children = partialResultRef::Nil))
+        case e: Count => aggExpr.copy(aggregateFunction = Sum(partialResultRef))
         case _ => aggExpr
       }
     }
 
-    val output = if (!optimizeForSingleNode(relation)) {
-      (aggregateExpressions.map(aliasPushedPartialResult) ++ groupingExpressions).map {
-        _.toAttribute
-      }
-    } else {
-      resultExpressions.map(_.toAttribute)
+    val output = (aggregateExpressions.map(aliasPushedPartialResult) ++ groupingExpressions).map {
+      _.toAttribute
     }
 
     val aggregatesToPushdown = aggregateExpressions.filter(ae =>
       CHUtil.isSupportedAggregate(ae.aggregateFunction))
 
-    /**
-      * Backtrack the original expression for the given expression `e`
-      * which might have been rewritten by [[PhysicalAggregation]]
-      * (i.e. [[AggregateExpression]] SUM(a) => [[AttributeReference]] SUM(a#22))
-      * or assigned with an [[Alias]].
-      * @param e
-      * @return
-      */
-    def backtrackOriginalExpression(e: Expression): Expression = e transform {
-      // De-alias.
-      case Alias(child, _) => backtrackOriginalExpression(child)
-      // Find original aggregate expression referenced by an attribute reference
-      case ar: AttributeReference =>
-        aggregateExpressions.collectFirst {
-          case ae if ae.aggregateFunction.toString == ar.name => ae
-        }.getOrElse(ar)
-    }
-
-    // As for project list:
-    // 1. For non-single-node, we emit all aggregate functions followed by group by columns.
-    // 2. For single-node, we emit the entire result expression list. You may consider we push
-    // everything down.
-    val projectList = if (!optimizeForSingleNode(relation)) {
-      aggregatesToPushdown.map(_.asInstanceOf[Expression]) ++ groupingExpressions
-    } else {
-      resultExpressions.map(backtrackOriginalExpression)
-    }
+    // As for project list, we emit all aggregate functions followed by group by columns.
+    val projectList = aggregatesToPushdown.map(_.asInstanceOf[Expression]) ++ groupingExpressions
 
     val chLogicalPlan = CHLogicalPlan(projectList, filterPredicates,
       groupingExpressions, aggregatesToPushdown, Seq.empty, Option.empty)
 
-    val chPlan = new CHScanExec(output, sparkSession, relation, chLogicalPlan, optimizeForSingleNode(relation))
+    val chPlan = new CHScanExec(output, sparkSession, relation, chLogicalPlan)
 
-    if (!optimizeForSingleNode(relation)) {
-      AggUtils.planAggregateWithoutDistinct(
-        groupingExpressions,
-        residualAggregateExpressions,
-        resultExpressions,
-        chPlan
-      )
-    } else {
-      chPlan :: Nil
-    }
+    AggUtils.planAggregateWithoutDistinct(
+      groupingExpressions,
+      residualAggregateExpressions,
+      resultExpressions,
+      chPlan
+    )
   }
 
   private def createCHPlan(
@@ -231,7 +188,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     val chLogicalPlan = CHLogicalPlan(output, pushdownFilters,
       Seq.empty, Seq.empty, sortOrders, limit)
 
-    val chExec = CHScanExec(output, sparkSession, chRelation, chLogicalPlan, optimizeForSingleNode(chRelation))
+    val chExec = CHScanExec(output, sparkSession, chRelation, chLogicalPlan)
 
     if (AttributeSet(projectList.map(_.toAttribute)) == projectSet &&
       filterSet.subsetOf(projectSet)) {

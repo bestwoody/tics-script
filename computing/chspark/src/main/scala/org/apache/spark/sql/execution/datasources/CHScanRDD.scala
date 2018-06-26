@@ -33,8 +33,7 @@ class CHScanRDD(
   @transient private val sparkSession: SparkSession,
   @transient val output: Seq[Attribute],
   val tableQueryPairs: Seq[(CHTableRef, Query)],
-  private val partitionPerSplit: Int,
-  private val singleNode: Boolean) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
+  private val partitionPerSplit: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     val part = split.asInstanceOf[CHPartition]
@@ -66,36 +65,27 @@ class CHScanRDD(
 
     var index = 0
 
-    if (singleNode) {
-      if (tableQueryPairs.length != 1) {
-        throw new Exception("more than one node encountered in single node mode");
-      }
-      val table = tableQueryPairs.head._1
-      val query = tableQueryPairs.head._2
-      result.append(new CHPartition(index, table, query.buildQuery()))
-    } else {
-      val curParts = ListBuffer.empty[String]
-      var table: CHTableRef = null
-      for (p <- tableQueryPairs) {
-        table = p._1
-        val partitionList = CHUtil.getPartitionList(table).map(part => s"'$part'")
-        if (partitionList.isEmpty) {
-          result.append(new CHPartition(index, p._1, p._2.buildQuery()))
-          index += 1
-        } else {
-          for (part <- partitionList) {
-            curParts += part
-            if (curParts.length >= partitionPerSplit) {
-              result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
-              curParts.clear()
-              index += 1
-            }
-          }
-          if (curParts.length != 0) {
+    val curParts = ListBuffer.empty[String]
+    var table: CHTableRef = null
+    for (p <- tableQueryPairs) {
+      table = p._1
+      val partitionList = CHUtil.getPartitionList(table).map(part => s"'$part'")
+      if (partitionList.isEmpty) {
+        result.append(new CHPartition(index, p._1, p._2.buildQuery()))
+        index += 1
+      } else {
+        for (part <- partitionList) {
+          curParts += part
+          if (curParts.length >= partitionPerSplit) {
             result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
             curParts.clear()
             index += 1
           }
+        }
+        if (curParts.length != 0) {
+          result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
+          curParts.clear()
+          index += 1
         }
       }
     }
