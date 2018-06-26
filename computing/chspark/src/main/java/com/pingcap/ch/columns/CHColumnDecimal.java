@@ -65,8 +65,8 @@ public class CHColumnDecimal extends CHColumn {
         }
         data.putShort(index + 32, (short) limbs);
         data.putShort(index + 34, (short) sign);
-        data.putChar(index + 48, (char) prec);
-        data.putChar(index + 49, (char) scale);
+        data.putChar(index + 48, (short) prec);
+        data.putChar(index + 50, (char) scale);
 
         size++;
     }

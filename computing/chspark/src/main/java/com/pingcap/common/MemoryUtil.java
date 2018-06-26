@@ -203,8 +203,8 @@ public class MemoryUtil {
             dec = dec.add(BigInteger.valueOf(d));
         }
         int sign = unsafe.getByte(address+34);
-        int precision = (int)unsafe.getByte(address+48);
-        int scale = (int)unsafe.getByte(address+49);
+        int precision = (int)unsafe.getShort(address+48);
+        int scale = (int)unsafe.getByte(address+50);
         BigDecimal result = new BigDecimal(dec, scale);
         if (sign > 0) {
             return Decimal.apply(result.negate(), precision, scale);

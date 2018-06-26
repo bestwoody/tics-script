@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Functions/FunctionsArithmetic.h b/dbms/src/Functions/FunctionsArithmetic.h
-index b015e2039869..cf54d86d11b1 100644
+index b015e2039869..f497f35e7595 100644
 --- a/dbms/src/Functions/FunctionsArithmetic.h
 +++ b/dbms/src/Functions/FunctionsArithmetic.h
 @@ -1,6 +1,7 @@
@@ -592,15 +592,15 @@ index b015e2039869..cf54d86d11b1 100644
 +        } 
 +        else 
 +        {
-+            uint8_t result_prec;
-+            uint8_t result_scale;
++            PrecType result_prec;
++            ScaleType result_scale;
 +            if constexpr (std::is_integral_v<LeftFieldType>) {
-+                uint8_t leftPrec = IntPrec<LeftFieldType>::prec;
++                PrecType leftPrec = IntPrec<LeftFieldType>::prec;
 +                auto rightType = static_cast<const DataTypeDecimal *>(arguments[1].get());
 +                Op<LeftFieldType, RightFieldType>::ResultPrecInferer::infer(leftPrec, 0, rightType->getPrec(), rightType->getScale(), result_prec, result_scale);
 +                return std::make_shared<DataTypeDecimal>(result_prec, result_scale);
 +            } else if constexpr (std::is_integral_v<RightFieldType>) {
-+                uint8_t rightPrec = IntPrec<RightFieldType>::prec;
++                ScaleType rightPrec = IntPrec<RightFieldType>::prec;
 +                auto leftType = static_cast<const DataTypeDecimal *>(arguments[0].get());
 +                Op<LeftFieldType, RightFieldType>::ResultPrecInferer::infer(leftType->getPrec(), leftType->getScale(), rightPrec, 0, result_prec, result_scale);
 +                return std::make_shared<DataTypeDecimal>(result_prec, result_scale);

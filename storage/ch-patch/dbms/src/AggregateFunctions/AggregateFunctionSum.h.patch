@@ -1,0 +1,56 @@
+diff --git a/dbms/src/AggregateFunctions/AggregateFunctionSum.h b/dbms/src/AggregateFunctions/AggregateFunctionSum.h
+index 89f22c14a726..ef6f4c6a05aa 100644
+--- a/dbms/src/AggregateFunctions/AggregateFunctionSum.h
++++ b/dbms/src/AggregateFunctions/AggregateFunctionSum.h
+@@ -19,6 +19,13 @@ struct AggregateFunctionSumData
+ {
+     T sum{};
+ 
++    AggregateFunctionSumData(){}
++
++    template<std::enable_if_t<std::is_same<T, DecimalValue>{}>* = nullptr>
++    AggregateFunctionSumData(PrecType prec, ScaleType scale){
++        sum = DecimalValue(0, prec, scale);
++    }
++
+     void add(T value)
+     {
+         sum += value;
+@@ -97,9 +104,28 @@ class AggregateFunctionSum final : public IAggregateFunctionDataHelper<Data, Agg
+ public:
+     String getName() const override { return "sum"; }
+ 
+-    DataTypePtr getReturnType() const override
+-    {
+-        return std::make_shared<DataTypeNumber<TResult>>();
++    ScaleType result_scale;
++    PrecType result_prec;
++
++    AggregateFunctionSum(){}
++    
++    AggregateFunctionSum(PrecType prec, ScaleType scale) {
++        SumDecimalInferer::infer(prec, scale, result_prec, result_scale);
++    };
++
++    DataTypePtr getReturnType() const override {
++        if constexpr (IsDecimalValue<T> && IsDecimalValue<TResult>) {
++            return std::make_shared<DataTypeDecimal>(result_prec, result_scale);
++        } else {
++            return std::make_shared<DataTypeNumber<TResult>>();
++        }
++    }
++
++    void create(AggregateDataPtr place) const override {
++        if constexpr (IsDecimalValue<T> && IsDecimalValue<TResult>)
++            new (place) Data(result_prec, result_scale);
++        else
++            new (place) Data;
+     }
+ 
+     void add(AggregateDataPtr place, const IColumn ** columns, size_t row_num, Arena *) const override
+@@ -130,5 +156,4 @@ public:
+     const char * getHeaderFilePath() const override { return __FILE__; }
+ };
+ 
+-
+ }

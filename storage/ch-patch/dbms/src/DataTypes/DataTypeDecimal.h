@@ -19,20 +19,20 @@ namespace ErrorCodes
 class DataTypeDecimal : public IDataType
 {
 private:
-    int8_t precision;
-    int8_t scale;
+    PrecType precision;
+    ScaleType scale;
 
 public:
     using FieldType = DecimalValue;
 
     static constexpr bool is_parametric = true;
 
-    DataTypeDecimal(): precision(10), scale(5) {}
+    DataTypeDecimal() {}
 
     DataTypeDecimal(size_t precision_, size_t scale_) : precision(precision_), scale(scale_)
     {
-        if (precision > decimal_max_prec || scale > precision) {
-            throw Exception("overflow!");
+        if (precision > decimal_max_prec || scale > precision || scale > decimal_max_scale) {
+            throw Exception(getName() + "is out of bound", ErrorCodes::ARGUMENT_OUT_OF_BOUND);
         }
     }
 
@@ -40,12 +40,12 @@ public:
 
     const char * getFamilyName() const override { return "Decimal"; }
 
-    size_t getPrec() const
+    PrecType getPrec() const
     {
         return precision;
     }
 
-    size_t getScale() const
+    ScaleType getScale() const
     {
         return scale;
     }
@@ -80,7 +80,7 @@ public:
         return DecimalValue();
     }
 
-    bool equals(const IDataType & rhs) const override {
+    bool equals(const IDataType & rhs) const {
         return getName() == rhs.getName();
     }
 

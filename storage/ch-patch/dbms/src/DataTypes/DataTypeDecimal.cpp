@@ -124,10 +124,10 @@ static DataTypePtr create(const ASTPtr & arguments)
     }
     const ASTLiteral * arg0 = typeid_cast<const ASTLiteral *>(arguments->children[0].get());
     if (!arg0 || arg0->value.getType() != Field::Types::UInt64 || arg0->value.get<UInt64>() == 0)
-        throw Exception("Decimal data type family must have a number (positive integer) as its argument1");//, ErrorCodes::UNEXPECTED_AST_STRUCTURE);
+        throw Exception("Decimal data type family must have a number (positive integer) as its argument", ErrorCodes::ARGUMENT_OUT_OF_BOUND);
     const ASTLiteral * arg1 = typeid_cast<const ASTLiteral *>(arguments->children[1].get());
-    if (!arg1 || arg1->value.getType() != Field::Types::UInt64 || arg1->value.get<UInt64>() == 0)
-        throw Exception("Decimal data type family must have a number (positive integer) as its argument2");//, ErrorCodes::UNEXPECTED_AST_STRUCTURE);
+    if (!arg1 || arg1->value.getType() != Field::Types::UInt64)
+        throw Exception("Decimal data type family must have a number (positive integer) as its argument", ErrorCodes::ARGUMENT_OUT_OF_BOUND);
     return std::make_shared<DataTypeDecimal>(arg0->value.get<UInt64>(), arg1->value.get<UInt64>());
 }
 

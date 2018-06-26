@@ -17,30 +17,40 @@ public:
     }
 } decimalMaxValues;
 
+inline void checkOverFlow(int256_t v, PrecType prec) {
+    if (v > decimalMaxValues[prec] || v < -decimalMaxValues[prec]) {
+        throw Exception("Decimal value overflow", ErrorCodes::DECIMAL_OVERFLOW_ERROR);
+    }
+}
+
+void DecimalValue::checkOverflow() const {
+    checkOverFlow(value, precision);
+}
+
 DecimalValue DecimalValue::operator + (const DecimalValue & v) const {
-    uint8_t result_scale;
-    uint8_t result_prec;
+    ScaleType result_scale;
+    PrecType result_prec;
     PlusDecimalInferer::infer(precision, scale, v.precision, v.scale, result_prec, result_scale);
     int256_t value_a = value, value_b = v.value;
-    for (uint8_t s = scale; s < result_scale; s++){
+    for (ScaleType s = scale; s < result_scale; s++){
         value_a *= 10;
     }
-    for (uint8_t s = v.scale; s < result_scale; s++){
+    for (ScaleType s = v.scale; s < result_scale; s++){
         value_b *= 10;
     }
-    return DecimalValue(value_a + value_b, result_prec, result_scale);
+    int256_t result_value = value_a + value_b;
+    checkOverFlow(result_value, result_prec);
+    return DecimalValue(result_value, result_prec, result_scale);
 }
 
 void DecimalValue::operator += (const DecimalValue & v) {
     if (precision == 0) {
         *this = v;
     } 
-    else if (precision == v.precision && scale == v.scale)
+    else if (scale == v.scale)
     {
         value = value + v.value;
-        if(abs(value) > decimalMaxValues[precision]) {
-            throw Exception("overflow!");
-        }
+        checkOverFlow(value, precision);
     } else {
         *this = *this + v;
     }
@@ -61,22 +71,29 @@ DecimalValue DecimalValue::operator ~ () const {
 }
 
 DecimalValue DecimalValue::operator * (const DecimalValue & v) const {
-    uint8_t result_scale;
-    uint8_t result_prec;
+    ScaleType result_scale;
+    PrecType result_prec;
     MulDecimalInferer::infer(precision, scale, v.precision, v.scale, result_prec, result_scale);
     int256_t result_value = value * v.value;
+    ScaleType trunc = scale + v.scale - result_scale;
+    while (trunc > 0) {
+        trunc --;
+        result_value /= 10;
+    }
+    checkOverFlow(result_value, result_prec);
     return DecimalValue(result_value, result_prec, result_scale);
 }
 
 DecimalValue DecimalValue::operator / (const DecimalValue & v) const {
-    uint8_t result_scale;
-    uint8_t result_prec;
+    ScaleType result_scale;
+    PrecType result_prec;
     DivDecimalInferer::infer(precision, scale, v.precision, v.scale, result_prec, result_scale);
-    int256_t result_v = value;
-    for (uint8_t i = 0; i < v.scale + DivDecimalInferer::div_precincrement; i++)
-        result_v *= 10;
-    result_v /= v.value;
-    return DecimalValue(result_v, result_prec, result_scale);
+    int256_t result_value = value;
+    for (ScaleType i = 0; i < v.scale + (result_scale - scale); i++)
+        result_value *= 10;
+    result_value /= v.value;
+    checkOverFlow(result_value, result_prec);
+    return DecimalValue(result_value, result_prec, result_scale);
 }
 
 std::string DecimalValue::toString() const 
@@ -125,7 +142,7 @@ enum cmpResult {
 
 inline cmpResult scaleAndCompare(const DecimalValue & v1, const DecimalValue & v2) {
     int256_t nv = v1.value;
-    for (uint8_t i = v1.scale; i < v2.scale; i++) {
+    for (ScaleType i = v1.scale; i < v2.scale; i++) {
         nv = nv * 10;
         if (nv > v2.value) {
             return cmpResult::gt;

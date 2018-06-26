@@ -4,100 +4,112 @@
 
 namespace DB {
 
+namespace ErrorCodes
+{
+    extern const int DECIMAL_OVERFLOW_ERROR;
+}
+
 using int256_t = boost::multiprecision::int256_t;
 using int512_t = boost::multiprecision::int512_t;
 
 constexpr int decimal_max_prec = 65;
+constexpr int decimal_max_scale = 30;
 
-template<typename T>
-T getScaleMultiplier(uint8_t precision) {
-    T mx(1);
-    for(auto i = 0; i < precision; i++) {
-        mx *= 10;
-    }
-    return mx;
-}
-
-template<typename T>
-T max(T A, T B) {
-    return A > B ? A: B;
-}
-
-template<typename T>
-T min(T A, T B) {
-    return A < B ? A: B;
-}
+using PrecType = uint16_t;
+using ScaleType = uint8_t;
 
 template<typename T> struct IntPrec{};
 template<> struct IntPrec<int8_t>{
-    static const uint8_t prec = 3;
+    static const PrecType prec = 3;
 };
 template<> struct IntPrec<uint8_t>{
-    static const uint8_t prec = 3;
+    static const PrecType prec = 3;
 };
 template<> struct IntPrec<int16_t>{
-    static const uint8_t prec = 5;
+    static const PrecType prec = 5;
 };
 template<> struct IntPrec<uint16_t>{
-    static const uint8_t prec = 5;
+    static const PrecType prec = 5;
 };
 template<> struct IntPrec<int32_t>{
-    static const uint8_t prec = 10;
+    static const PrecType prec = 10;
 };
 template<> struct IntPrec<uint32_t>{
-    static const uint8_t prec = 10;
+    static const PrecType prec = 10;
 };
 template<> struct IntPrec<int64_t>{
-    static const uint8_t prec = 20;
+    static const PrecType prec = 20;
 };
 template<> struct IntPrec<uint64_t>{
-    static const uint8_t prec = 20;
+    static const PrecType prec = 20;
 };
 
-struct PlusDecimalInferer {
-    static inline void infer(uint8_t left_prec, uint8_t left_scale, uint8_t right_prec, uint8_t right_scale, uint8_t& result_prec, uint8_t& result_scale) {
-        result_scale = max(left_scale, right_scale);
-        uint8_t result_int = max(left_prec - left_scale, right_prec - right_scale);
-        result_prec = result_scale + result_int + 1;
+//  1) If the declared type of both operands of a dyadic arithmetic operator is exact numeric, then the declared
+//  type of the result is an implementation-defined exact numeric type, with precision and scale determined as
+//  follows:
+//    a) Let S1 and S2 be the scale of the first and second operands respectively.
+//    b) The precision of the result of addition and subtraction is implementation-defined, and the scale is the
+//       maximum of S1 and S2.
+//    c) The precision of the result of multiplication is implementation-defined, and the scale is S1 + S2.
+//    d) The precision and scale of the result of division are implementation-defined.
+
+struct InfererHelper {
+    template<typename T>
+    static T min(T A, T B) {
+        return A < B ? A: B;
+    }
+
+    template<typename T>
+    static T max(T A, T B) {
+        return A > B ? A: B;
     }
 };
 
-struct MulDecimalInferer {
-    static inline void infer(uint8_t left_prec, uint8_t left_scale, uint8_t right_prec, uint8_t right_scale, uint8_t& result_prec, uint8_t& result_scale) {
-         result_scale = left_scale + right_scale;
-        if (result_scale > decimal_max_prec) {
-            throw Exception("overflow!");
-        }
+struct PlusDecimalInferer : public InfererHelper {
+    static inline void infer(PrecType left_prec, ScaleType left_scale, PrecType right_prec, ScaleType right_scale, PrecType& result_prec, ScaleType& result_scale) {
+        result_scale = max(left_scale, right_scale);
+        PrecType result_int = max(left_prec - left_scale, right_prec - right_scale);
+        result_prec = min(result_scale + result_int + 1, decimal_max_prec);
+    }
+};
+
+struct MulDecimalInferer : public InfererHelper {
+    static inline void infer(PrecType left_prec, ScaleType left_scale, PrecType right_prec, ScaleType right_scale, PrecType& result_prec, ScaleType& result_scale) {
+        result_scale = min(left_scale + right_scale, decimal_max_scale);
         result_prec = min(left_prec + right_prec, decimal_max_prec);
     }
 };
 
-struct DivDecimalInferer {
+struct DivDecimalInferer : public InfererHelper {
     static const uint8_t div_precincrement = 4;
-    static inline void infer(uint8_t left_prec, uint8_t left_scale, uint8_t , uint8_t right_scale, uint8_t& result_prec, uint8_t& result_scale) {
-        result_prec = left_prec + right_scale + div_precincrement;
-        result_scale = left_scale + div_precincrement;
+    static inline void infer(PrecType left_prec, ScaleType left_scale, PrecType /* right_prec is not used */ , ScaleType right_scale, PrecType& result_prec, ScaleType& result_scale) {
+        result_prec = min(left_prec + right_scale + div_precincrement, decimal_max_prec);
+        result_scale = min(left_scale + div_precincrement, decimal_max_prec);
+    }
+};
+
+// TODO also need to implement other agg functions.
+struct SumDecimalInferer : public InfererHelper {
+    static constexpr uint8_t decimal_longlong_digits = 22;
+    static inline void infer(PrecType prec, ScaleType scale, PrecType &result_prec, ScaleType &result_scale) {
+        result_prec = min(prec + decimal_longlong_digits, decimal_max_prec);
+        result_scale = scale;
     }
 };
 
 struct OtherInferer {
-    static inline void infer(uint8_t, uint8_t , uint8_t , uint8_t, uint8_t&, uint8_t&) {}
+    static inline void infer(PrecType, ScaleType , PrecType , ScaleType, PrecType&, ScaleType&) {}
 };
 
 // TODO use template to make type of value arguable.
 struct DecimalValue {
     int256_t value;
-    uint8_t precision;
-    uint8_t scale;
+    PrecType precision;
+    ScaleType scale;
 
     DecimalValue(const DecimalValue& d): value(d.value), precision(d.precision), scale(d.scale) {}
     DecimalValue():value(0), precision(0), scale(0) {}
-    DecimalValue(int256_t v_, uint8_t prec_, uint8_t scale_): value(v_), precision(prec_), scale(scale_){}
-    DecimalValue(double v, uint8_t scale_) {
-        scale = scale_;
-        v *= getScaleMultiplier<double>(scale);
-        value = int256_t(v);
-    }
+    DecimalValue(int256_t v_, PrecType prec_, ScaleType scale_): value(v_), precision(prec_), scale(scale_){}
 
     template<typename T, std::enable_if_t<std::is_integral<T>{}>* = nullptr >
     DecimalValue(T v): value(v), precision(IntPrec<T>::prec), scale(0) {}
@@ -128,22 +140,22 @@ struct DecimalValue {
     DecimalValue operator / (const DecimalValue& v) const ;
 
     template <typename T, std::enable_if_t<std::is_floating_point<T>{}>* = nullptr>
-    operator T() const {
+    operator T () const {
         T result = static_cast<T> (value);
-        for (uint8_t i = 0; i < scale; i++) {
+        for (ScaleType i = 0; i < scale; i++) {
             result /= 10;
         }
         return result;
     }
 
     template <typename T, std::enable_if_t<std::is_integral<T>{}>* = nullptr>
-    operator T() const {
+    operator T () const {
         int256_t v = value;
-        for (uint8_t i = 0; i < scale; i++) {
+        for (ScaleType i = 0; i < scale; i++) {
             v = v / 10 + (i + 1 == scale && v % 10 >= 5);
         }
         if (value > std::numeric_limits<T>::max() || value < std::numeric_limits<T>::min()) {
-            throw Exception("overflow!");
+            throw Exception("Decimal value overflow", ErrorCodes::DECIMAL_OVERFLOW_ERROR);
         }
         T result = static_cast<T>(v);
         return result;
@@ -161,9 +173,10 @@ struct DecimalValue {
 
     bool operator != (const DecimalValue& v) const;
 
+    void checkOverflow() const;
+
     std::string toString() const;
 };
-
 
 template <typename DataType> constexpr bool IsDecimalValue = false;
 template <> constexpr bool IsDecimalValue<DecimalValue> = true;

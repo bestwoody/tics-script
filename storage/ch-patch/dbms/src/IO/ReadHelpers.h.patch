@@ -1,5 +1,5 @@
 diff --git a/dbms/src/IO/ReadHelpers.h b/dbms/src/IO/ReadHelpers.h
-index 2d3b405675f5..568c4d7fb719 100644
+index 2d3b405675f5..2c106f9ee4f1 100644
 --- a/dbms/src/IO/ReadHelpers.h
 +++ b/dbms/src/IO/ReadHelpers.h
 @@ -1,5 +1,6 @@
@@ -25,7 +25,7 @@ index 2d3b405675f5..568c4d7fb719 100644
  inline void readBoolText(bool & x, ReadBuffer & buf)
  {
      char tmp = '0';
-@@ -225,6 +226,75 @@ inline void readBoolTextWord(bool & x, ReadBuffer & buf)
+@@ -225,6 +226,81 @@ inline void readBoolTextWord(bool & x, ReadBuffer & buf)
      }
  }
  
@@ -39,7 +39,6 @@ index 2d3b405675f5..568c4d7fb719 100644
 +    {
 +        throwReadAfterEOF();
 +    }
-+    size_t cur_prec = 0; 
 +    size_t cur_scale = 0;
 +    while (!buf.eof())
 +    {
@@ -48,12 +47,12 @@ index 2d3b405675f5..568c4d7fb719 100644
 +            case '+':
 +                break;
 +            case '-':
-+                assert(!negative);
-+                negative = true;
++                negative = !negative;
 +                break;
 +            case '.':
-+                assert(!fractional);
-+                assert(cur_prec-cur_scale>0);
++                if (fractional) {
++                    throw Exception("invalid format!");
++                }
 +                fractional = true;
 +                break;
 +            case '0': [[fallthrough]];
@@ -68,7 +67,6 @@ index 2d3b405675f5..568c4d7fb719 100644
 +            case '9':
 +                x.value *= 10;
 +                x.value += *buf.position() - '0';
-+                cur_prec ++;
 +                if (fractional) {
 +                    cur_scale++;
 +                    if (scale == cur_scale) {
@@ -76,6 +74,13 @@ index 2d3b405675f5..568c4d7fb719 100644
 +                        if (negative)
 +                            x.value = -x.value;
 +                        ++buf.position();
++                        if (*buf.position() >= '5' && *buf.position() <= '9') {
++                            x.value ++;
++                        }
++                        x.checkOverflow();
++                        while(*buf.position() >= '0' && *buf.position() <= '9') {
++                            ++buf.position();
++                        }
 +                        return;
 +                    }
 +                } 
@@ -84,6 +89,7 @@ index 2d3b405675f5..568c4d7fb719 100644
 +                for(;cur_scale < scale; cur_scale++) {
 +                    x.value *= 10;
 +                }
++                x.checkOverflow();
 +                if (negative)
 +                    x.value = -x.value;
 +                return;
@@ -101,7 +107,7 @@ index 2d3b405675f5..568c4d7fb719 100644
  template <typename T, typename ReturnType = void>
  ReturnType readIntTextImpl(T & x, ReadBuffer & buf)
  {
-@@ -587,6 +657,7 @@ inline void readBinary(UInt128 & x, ReadBuffer & buf) { readPODBinary(x, buf); }
+@@ -587,6 +663,7 @@ inline void readBinary(UInt128 & x, ReadBuffer & buf) { readPODBinary(x, buf); }
  inline void readBinary(UInt256 & x, ReadBuffer & buf) { readPODBinary(x, buf); }
  inline void readBinary(LocalDate & x, ReadBuffer & buf) { readPODBinary(x, buf); }
  inline void readBinary(LocalDateTime & x, ReadBuffer & buf) { readPODBinary(x, buf); }
@@ -109,7 +115,7 @@ index 2d3b405675f5..568c4d7fb719 100644
  
  
  /// Generic methods to read value in text tab-separated format.
-@@ -598,6 +669,7 @@ template <typename T>
+@@ -598,6 +675,7 @@ template <typename T>
  inline std::enable_if_t<std::is_floating_point_v<T>, void>
  readText(T & x, ReadBuffer & buf) { readFloatText(x, buf); }
  
@@ -117,7 +123,7 @@ index 2d3b405675f5..568c4d7fb719 100644
  inline void readText(bool & x, ReadBuffer & buf) { readBoolText(x, buf); }
  inline void readText(String & x, ReadBuffer & buf) { readEscapedString(x, buf); }
  inline void readText(LocalDate & x, ReadBuffer & buf) { readDateText(x, buf); }
-@@ -698,6 +770,7 @@ inline void readCSV(String & x, ReadBuffer & buf, const char delimiter = ',') {
+@@ -698,6 +776,7 @@ inline void readCSV(String & x, ReadBuffer & buf, const char delimiter = ',') {
  inline void readCSV(LocalDate & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
  inline void readCSV(LocalDateTime & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
  inline void readCSV(UUID & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
