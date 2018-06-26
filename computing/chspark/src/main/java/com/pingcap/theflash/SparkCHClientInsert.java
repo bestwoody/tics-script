@@ -165,6 +165,7 @@ public class SparkCHClientInsert implements Closeable {
                 // CHTypeUInt32 -> Spark LongType
                 col.insertInt((int) (row.getLong(i) & 0x0FFFF_FFFFL));
             } else if (chType == CHTypeNumber.CHTypeUInt64.instance) {
+                // TODO We might have a bug here. Should use getDecimal instead of getLong.
                 col.insertLong(row.getLong(i));
             } else if (chType == CHTypeNumber.CHTypeFloat32.instance) {
                 col.insertFloat(row.getFloat(i));
