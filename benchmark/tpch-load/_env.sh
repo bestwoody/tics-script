@@ -1,5 +1,8 @@
 source ./_helper.sh
 
+# Compress data files and do anything to minimal ocuppied space
+export minimal_space="true"
+
 # Client executable path
 export storage_bin="$repo_dir/storage/build/dbms/src/Server/theflash"
 # Storage server list, eg: ("127.0.0.1"), or: ("127.0.0.1:9000" "127.0.0.1:9006")

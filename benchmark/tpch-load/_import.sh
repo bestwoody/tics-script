@@ -1,4 +1,15 @@
-source _env.sh
+source ./_env.sh
+
+print_cat_data()
+{
+	local data="$1"
+	local mycat="cat $data"
+	if [ ! -f "$data" ]; then
+		mycat="gzip -dc $data.gz"
+	fi
+	echo "$mycat"
+}
+export print_cat_data
 
 ensure_table_created()
 {
@@ -42,8 +53,8 @@ import_blocks()
 	for ((i = 0; i < $blocks; i++)); do
 		local n=$(( $i + 1 ))
 		local data="$dbgen_result_dir_prefix"$blocks"/$table.data.$n"
-		if [ ! -f "$data" ]; then
-			echo "$data: not found" >&2
+		if [ ! -f "$data" ] && [ ! -f "$data.gz" ]; then
+			echo "$data/$data.gz: not found" >&2
 			return 1
 		fi
 
@@ -51,9 +62,10 @@ import_blocks()
 		local server=${storage_server[$server_index]}
 		local host="`get_host $server`"
 		local port="`get_port $server`"
+		local cat_data="`print_cat_data $data`"
 
 		ensure_table_created "$host" "$port" "$table"
-		cat "$data" | "$storage_bin" client --host="$host" --port="$port" \
+		$cat_data | "$storage_bin" client --host="$host" --port="$port" \
 			-d "$storage_db" --query="INSERT INTO $table FORMAT CSV" &
 	done
 
@@ -65,13 +77,14 @@ import_block()
 	local table="$1"
 
 	local data="$dbgen_result_dir_prefix"$blocks"/$table.data"
-	if [ ! -f "$data" ]; then
-		echo "$data: not found" >&2
+	if [ ! -f "$data" ] && [ ! -f "$data.gz" ]; then
+		echo "$data[.gz]: not found" >&2
 		return 1
 	fi
 	ensure_tables_created "$table"
 	local server=${storage_server[0]}
-	cat "$data" | "$storage_bin" client --host="`get_host $server`" --port="`get_port $server`" \
+	local cat_data="`print_cat_data $data`"
+	$cat_data | "$storage_bin" client --host="`get_host $server`" --port="`get_port $server`" \
 		-d "$storage_db" --query="INSERT INTO $table FORMAT CSV"
 }
 
@@ -81,7 +94,7 @@ import_table()
 	local table="$2"
 
 	local file="$dbgen_result_dir_prefix"$blocks"/$table.data"
-	if [ -f "$file" ] || [ "$blocks" == "1" ]; then
+	if [ -f "$file" ] || [ -f "$file.gz" ] || [ "$blocks" == "1" ]; then
 		import_block "$table"
 	else
 		import_blocks "$blocks" "$table"

@@ -7,6 +7,5 @@ if [ -z "$table" ]; then
 	exit 1
 fi
 
-source _trans.sh
-
+source ./_trans.sh
 trans_table "$tpch_blocks" "$table"

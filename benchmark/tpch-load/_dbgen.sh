@@ -1,4 +1,4 @@
-source _meta.sh
+source ./_meta.sh
 
 dbgen_bin()
 {
@@ -40,6 +40,11 @@ dbgen_table_in_one()
 		echo "$dir/$table.tbl: exists, skipped dbgen" >&2
 		return 0
 	fi
+	if [ -f "$dir/$table.data" ] || [ -f "$dir/$table.data.gz" ]; then
+		echo "$dir/$table.data[.gz]: exists, skipped dbgen" >&2
+		return 0
+	fi
+
 	if [ -z "$flag" ]; then
 		echo "unknown table name: $table" >&2
 		return 1
@@ -63,8 +68,16 @@ dbgen_table_blocks()
 		echo "$dir/$table.tbl: exists, skipped dbgen" >&2
 		return 0
 	fi
+	if [ -f "$dir/$table.data" ] || [ -f "$dir/$table.data.gz" ]; then
+		echo "$dir/$table.data[.gz]: exists, skipped dbgen" >&2
+		return 0
+	fi
 	if [ -f "$dir/$table.tbl.1" ]; then
 		echo "$dir/$table.tbl.*: exists, skipped dbgen" >&2
+		return 0
+	fi
+	if [ -f "$dir/$table.data.1" ] || [ -f "$dir/$table.data.1.gz" ]; then
+		echo "$dir/$table.data.*[.gz]: exists, skipped dbgen" >&2
 		return 0
 	fi
 

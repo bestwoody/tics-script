@@ -1,4 +1,4 @@
-source _env.sh
+source ./_env.sh
 
 trans_blocks()
 {
@@ -9,15 +9,22 @@ trans_blocks()
 		let "n = $i + 1"
 		local file="$dbgen_result_dir_prefix"$blocks"/$table.tbl.$n"
 		local data="$dbgen_result_dir_prefix"$blocks"/$table.data.$n"
+		if [ -f "$data" ] || [ -f "$data.gz" ]; then
+			echo "$data[.gz]: exists, skipped transform" >&2
+			continue
+		fi
 		if [ ! -f "$file" ]; then
 			echo "$file: not found" >&2
 			return 1
 		fi
-		if [ -f "$data" ]; then
-			echo "$data: exists, skipped transform" >&2
-			continue
-		fi
-		cat "$file" | python "$meta_dir/trans/$table.py" > "$data" &
+
+		{
+			cat "$file" | python "$meta_dir/trans/$table.py" > "$data"
+			if [ "$minimal_space" == "true" ]; then
+				rm -f "$file"
+				gzip "$data"
+			fi
+		} &
 	done
 
 	wait_sub_procs
@@ -29,15 +36,19 @@ trans_block()
 
 	local file="$dbgen_result_dir_prefix"$blocks"/$table.tbl"
 	local data="$dbgen_result_dir_prefix"$blocks"/$table.data"
+	if [ -f "$data" ] || [ -f "$data.gz" ]; then
+		echo "$data[.gz]: exists, skipped transform" >&2
+		return 0
+	fi
 	if [ ! -f "$file" ]; then
 		echo "$file: not found" >&2
 		return 1
 	fi
-	if [ -f "$data" ]; then
-		echo "$data: exists, skipped transform" >&2
-		return 0
-	fi
 	cat "$file" | python "$meta_dir/trans/$table.py" > "$data"
+	if [ "$minimal_space" == "true" ]; then
+		rm -f "$file"
+		gzip "$data"
+	fi
 }
 
 trans_table()
@@ -46,7 +57,8 @@ trans_table()
 	local table="$2"
 
 	local file="$dbgen_result_dir_prefix"$blocks"/$table.tbl"
-	if [ -f "$file" ] || [ "$blocks" == "1" ]; then
+	local data="$dbgen_result_dir_prefix"$blocks"/$table.data"
+	if [ -f "$file" ] || [ -f "$data" ] || [ -f "$data.gz" ] || [ "$blocks" == "1" ]; then
 		trans_block "$table"
 	else
 		trans_blocks "$blocks" "$table"

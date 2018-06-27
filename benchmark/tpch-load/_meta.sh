@@ -1,4 +1,4 @@
-source _env.sh
+source ./_env.sh
 
 get_table_names()
 {

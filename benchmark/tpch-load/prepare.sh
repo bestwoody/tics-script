@@ -8,5 +8,7 @@ if [ -z "$table" ]; then
 fi
 
 source ./_dbgen.sh
+source ./_trans.sh
 
 dbgen "$tpch_blocks" "$table"
+trans_table "$tpch_blocks" "$table"

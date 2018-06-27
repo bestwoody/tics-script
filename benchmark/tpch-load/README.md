@@ -12,6 +12,7 @@
 * dbgen.sh: generate table rows
 * trans.sh: transform table rows to raw csv formart
 * import.sh: load data to storage
-* load.sh: dbgen - trans - import
+* prepare.sh: dbgen + trans, prepare to import
+* load.sh: dbgen + trans + import
 * count.sh: show table count
 * drop.sh: drop table

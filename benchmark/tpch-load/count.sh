@@ -13,7 +13,7 @@ if [ "$selraw" == "true" ]; then
 	select="selraw"
 fi
 
-source _env.sh
+source ./_env.sh
 
 if [ $(( $tpch_blocks % ${#storage_server[@]} )) -ne 0 ]; then
 	echo "servers % blocks != 0, exiting" >&2

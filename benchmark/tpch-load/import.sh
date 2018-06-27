@@ -7,5 +7,5 @@ if [ -z "$table" ]; then
 	exit 1
 fi
 
-source _import.sh
+source ./_import.sh
 import_table "$tpch_blocks" "$table"

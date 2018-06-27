@@ -7,7 +7,7 @@ if [ -z "$table" ]; then
 	exit 1
 fi
 
-source _env.sh
+source ./_env.sh
 
 for server in ${storage_server[*]}; do
 	"$storage_bin" client --host=`get_host $server` --port=`get_port $server` \
