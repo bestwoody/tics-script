@@ -19,6 +19,7 @@ package org.apache.spark.sql
 
 import java.sql.Statement
 
+import org.apache.commons.lang.StringUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.sql.test.SharedSQLContext
 
@@ -304,9 +305,9 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       if (skipClickHouse || !comp13) {
         fail(
           s"""Failed with
-             |CHSpark:\t\t${printList(r1)}
-             |Spark With JDBC:${printList(r2)}
-             |ClickHouse:\t\t${printList(r3)}""".stripMargin
+             |CHSpark:\t\t${StringUtils.substring(printList(r1), 0, 200)}
+             |Spark With JDBC:${StringUtils.substring(printList(r2), 0, 200)}
+             |ClickHouse:\t\t${StringUtils.substring(printList(r3), 0, 200)}""".stripMargin
         )
       }
     }
