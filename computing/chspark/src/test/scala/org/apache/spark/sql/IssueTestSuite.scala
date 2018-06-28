@@ -18,6 +18,12 @@
 package org.apache.spark.sql
 
 class IssueTestSuite extends BaseClickHouseSuite {
+  test("#413 Count distinct has an incorrect plan") {
+    runTest("select sum(distinct tp_int8) from full_data_type_table")
+    runTest("select count(distinct tp_int8) from full_data_type_table")
+    runTest("select avg(distinct tp_int8) from full_data_type_table")
+  }
+
   test("#235 Comparison incorrect when TimeStamp cast to Date in predicates") {
     runTest("SELECT cast(tp_datetime as date) cast_datetime, date(tp_datetime) date_datetime, tp_datetime FROM full_data_type_table WHERE date(tp_datetime) > date('2009-01-02')")
   }

@@ -19,8 +19,8 @@ import java.util.UUID
 
 import com.pingcap.theflash.{SparkCHClientSelect, TypeMappingJava}
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
-import org.apache.spark.sql.ch.hack.{CHAttributeReference, Hack}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
 
 object CHUtil {
@@ -131,6 +131,7 @@ object CHUtil {
     exp match {
       case _: Literal => true
       case _: AttributeReference => true
+      case _: CreateNamedStruct => true
       case cast @ Cast(_, _) =>
         Hack.hackSupportCast(cast)
       // TODO: Don't pushdown IsNotNull maybe better
@@ -170,19 +171,22 @@ object CHUtil {
         isSupportedExpression(lhs) && isSupportedExpression(rhs)
       case In(value, list) =>
         isSupportedExpression(value) && list.forall(isSupportedExpression)
-      case AggregateExpression(aggregateFunction, _, _, _) =>
-        isSupportedAggregate(aggregateFunction)
+      case ae @ AggregateExpression(_, _, _, _) =>
+        isSupportedAggregateExpression(ae)
       case _ => false
     }
   }
 
-  def isSupportedAggregate(aggregateFunction: AggregateFunction): Boolean = {
-    aggregateFunction match {
-      case Average(child) => isSupportedExpression(child)
-      case Count(children) => children.forall(isSupportedExpression)
-      case Min(child) => isSupportedExpression(child)
-      case Max(child) => isSupportedExpression(child)
-      case Sum(child) => isSupportedExpression(child)
+  def isSupportedAggregateExpression(ae: AggregateExpression): Boolean = {
+    // Should not support any AggregateExpression that has isDistinct = true,
+    // because we have to unify results on different partitions.
+    (ae.aggregateFunction, ae.isDistinct) match {
+      case (_, true) => false
+      case (Average(child), _) => isSupportedExpression(child)
+      case (Count(children), _) => children.forall(isSupportedExpression)
+      case (Min(child), _) => isSupportedExpression(child)
+      case (Max(child), _) => isSupportedExpression(child)
+      case (Sum(child), _) => isSupportedExpression(child)
       case _ => false
     }
   }

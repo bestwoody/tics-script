@@ -136,7 +136,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         case e: Min   => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
         case e: Sum   => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
         case e: First => aggExpr.copy(aggregateFunction = e.copy(child = partialResultRef))
-        case e: Count => aggExpr.copy(aggregateFunction = Sum(partialResultRef))
+        case _: Count => aggExpr.copy(aggregateFunction = Sum(partialResultRef))
         case _ => aggExpr
       }
     }
@@ -145,16 +145,13 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
       _.toAttribute
     }
 
-    val aggregatesToPushdown = aggregateExpressions.filter(ae =>
-      CHUtil.isSupportedAggregate(ae.aggregateFunction))
-
     // As for project list, we emit all aggregate functions followed by group by columns.
-    val projectList = aggregatesToPushdown.map(_.asInstanceOf[Expression]) ++ groupingExpressions
+    val projectList = aggregateExpressions ++ groupingExpressions
 
     val chLogicalPlan = CHLogicalPlan(projectList, filterPredicates,
-      groupingExpressions, aggregatesToPushdown, Seq.empty, Option.empty)
+      groupingExpressions, aggregateExpressions, Seq.empty, Option.empty)
 
-    val chPlan = new CHScanExec(output, sparkSession, relation, chLogicalPlan)
+    val chPlan = CHScanExec(output, sparkSession, relation, chLogicalPlan)
 
     AggUtils.planAggregateWithoutDistinct(
       groupingExpressions,

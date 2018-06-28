@@ -95,6 +95,10 @@ class CHStrategySuite extends SharedSQLContext {
       multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))]], TopN []]")))
     testQuery("select avg(mt_a) + avg(mt_b) from mt", Map((
       multiNodeT, "CH plan [Project [sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))]], TopN []]")))
+    testQuery("select count(mt_a) from mt where cos(mt_b) = 0", Map((
+      multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [], Aggregate [], TopN []]")))
+    testQuery("select sum(distinct mt_a) from mt", Map((
+      multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]")))
   }
 
   test("top-n plans") {

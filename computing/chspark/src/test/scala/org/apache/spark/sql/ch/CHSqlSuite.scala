@@ -89,7 +89,6 @@ class CHSqlSuite extends SparkFunSuite {
   test("aggregate expressions") {
     testCompileExpression(avg(a), "AVG(`a`)")
     testCompileExpression(count(a), "COUNT(`a`)")
-    testCompileExpression(countDistinct(a), "COUNT(distinct `a`)")
     testCompileExpression(max(a), "MAX(`a`)")
     testCompileExpression(min(a), "MIN(`a`)")
     testCompileExpression(sum(a), "SUM(`a`)")

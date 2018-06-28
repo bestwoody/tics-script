@@ -15,8 +15,6 @@
 
 package org.apache.spark.sql.ch
 
-import com.pingcap.ch.datatypes.{CHType, CHTypeDate, CHTypeDateTime, CHTypeString}
-import com.pingcap.ch.datatypes.CHTypeNumber._
 import com.pingcap.theflash.TypeMappingJava
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
@@ -94,7 +92,7 @@ object CHSql {
   }
 
   private def compileProject(chProject: CHProject, useSelraw: Boolean): String = {
-    (if (useSelraw) "SELRAW " else "SELECT ") + chProject.projectList.map(e => compileExpression(e))
+    (if (useSelraw) "SELRAW " else "SELECT ") + chProject.projectList.map(compileExpression)
       .mkString(", ")
   }
 
@@ -108,12 +106,12 @@ object CHSql {
 
   private def compileFilter(chFilter: CHFilter): String = {
     if (chFilter.predicates.isEmpty) ""
-    else " WHERE " + chFilter.predicates.reduceLeftOption(And).map(e => compileExpression(e)).get
+    else " WHERE " + chFilter.predicates.reduceLeftOption(And).map(compileExpression).get
   }
 
   private def compileAggregate(chAggregate: CHAggregate): String = {
     if (chAggregate.groupingExpressions.isEmpty) ""
-    else " GROUP BY " + chAggregate.groupingExpressions.map(e => compileExpression(e)).mkString(", ")
+    else " GROUP BY " + chAggregate.groupingExpressions.map(compileExpression).mkString(", ")
   }
 
   private def compileTopN(chTopN: CHTopN): String = {
@@ -123,12 +121,23 @@ object CHSql {
           // Spark will compile order by expression `(a + b, a)` to
           // `named_struct("col1", a + b, "a", a)`.
           // Need to emit the expression list enclosed by ().
-          ns.valExprs.map(e => compileExpression(e)).mkString("(", ", ", ") ") + so.direction.sql
+          ns.valExprs.map(compileExpression).mkString("(", ", ", ") ") + so.direction.sql
         case _ => compileExpression(so.child) + " " + so.direction.sql
       }}).mkString(", ")) + chTopN.n.map(" LIMIT " + _).getOrElse("")
   }
 
-  def compileExpression(expression: Expression, isDistinct: Boolean = false): String = {
+  private def compileAggregateExpression(ae: AggregateExpression): String = {
+    (ae.aggregateFunction, ae.isDistinct) match {
+      case (Average(child), false) => s"AVG(${compileExpression(child)})"
+      case (Count(children), false) => s"COUNT(${children.map(compileExpression).mkString(", ")})"
+      case (Min(child), false) => s"MIN(${compileExpression(child)})"
+      case (Max(child), false) => s"MAX(${compileExpression(child)})"
+      case (Sum(child), false) => s"SUM(${compileExpression(child)})"
+      case _ => throw new UnsupportedOperationException(s"Aggregate Function ${ae.toString} is not supported by CHSql.")
+    }
+  }
+
+  def compileExpression(expression: Expression): String = {
     expression match {
       case Literal(value, dataType) =>
         if (dataType == null || value == null) {
@@ -143,6 +152,7 @@ object CHSql {
           }
         }
       case attr: AttributeReference => s"`${Hack.hackAttributeReference(attr).toLowerCase()}`"
+      case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
       case cast @ Cast(child, dataType) =>
         if (!Hack.hackSupportCast(cast)) {
           throw new UnsupportedOperationException(s"Shouldn't be casting expression $expression to type $dataType.")
@@ -171,13 +181,8 @@ object CHSql {
       case EqualTo(left, right) => s"(${compileExpression(left)} = ${compileExpression(right)})"
       case And(left, right) => s"(${compileExpression(left)} AND ${compileExpression(right)})"
       case Or(left, right) => s"(${compileExpression(left)} OR ${compileExpression(right)})"
-      case In(value, list) => s"${compileExpression(value)} IN (${list.map(e => compileExpression(e)).mkString(", ")})"
-      case AggregateExpression(aggregateFunction, _, _isDistinct, _) => compileExpression(aggregateFunction, _isDistinct)
-      case Average(child) => s"AVG(${compileExpression(child)})"
-      case Count(children) => s"COUNT(${if(isDistinct) "distinct " else ""}${children.map(e => compileExpression(e)).mkString(", ")})"
-      case Max(child) => s"MAX(${compileExpression(child)})"
-      case Min(child) => s"MIN(${compileExpression(child)})"
-      case Sum(child) => s"SUM(${compileExpression(child)})"
+      case In(value, list) => s"${compileExpression(value)} IN (${list.map(compileExpression).mkString(", ")})"
+      case ae @ AggregateExpression(_, _, _, _) => compileAggregateExpression(ae)
       // TODO: Support more expression types.
       case _ => throw new UnsupportedOperationException(s"Expression $expression is not supported by CHSql.")
     }

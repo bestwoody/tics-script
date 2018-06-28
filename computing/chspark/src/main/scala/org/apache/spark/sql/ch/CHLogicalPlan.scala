@@ -43,7 +43,7 @@ object CHLogicalPlan {
     if (!projectList.forall(CHUtil.isSupportedExpression)
       || !filterPredicates.forall(CHUtil.isSupportedExpression)
       || !groupingExpressions.forall(CHUtil.isSupportedExpression)
-      || !aggregateExpressions.forall(ae => CHUtil.isSupportedAggregate(ae.aggregateFunction))) {
+      || !aggregateExpressions.forall(CHUtil.isSupportedAggregateExpression)) {
       throw new UnsupportedOperationException
     }
     new CHLogicalPlan(
