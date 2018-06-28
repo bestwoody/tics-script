@@ -8,8 +8,8 @@ import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnWithTypeAndName;
 import com.pingcap.ch.datatypes.CHType;
 import com.pingcap.ch.datatypes.CHTypeDate;
-import com.pingcap.ch.datatypes.CHTypeDecimal;
 import com.pingcap.ch.datatypes.CHTypeDateTime;
+import com.pingcap.ch.datatypes.CHTypeDecimal;
 import com.pingcap.ch.datatypes.CHTypeFixedString;
 import com.pingcap.ch.datatypes.CHTypeNullable;
 import com.pingcap.ch.datatypes.CHTypeNumber;
@@ -166,8 +166,7 @@ public class SparkCHClientInsert implements Closeable {
                 // CHTypeUInt32 -> Spark LongType
                 col.insertInt((int) (row.getLong(i) & 0x0FFFF_FFFFL));
             } else if (chType == CHTypeNumber.CHTypeUInt64.instance) {
-                // TODO We might have a bug here. Should use getDecimal instead of getLong.
-                col.insertLong(row.getLong(i));
+                col.insertLong(row.getDecimal(i, 20, 0).toLong());
             } else if (chType == CHTypeNumber.CHTypeFloat32.instance) {
                 col.insertFloat(row.getFloat(i));
             } else if (chType == CHTypeNumber.CHTypeFloat64.instance) {

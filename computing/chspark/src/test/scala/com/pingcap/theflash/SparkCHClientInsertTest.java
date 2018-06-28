@@ -2,6 +2,7 @@ package com.pingcap.theflash;
 
 import com.pingcap.theflash.codegene.CHColumnBatch;
 
+import org.apache.spark.sql.types.Decimal;
 import org.apache.spark.unsafe.types.UTF8String;
 import org.junit.Assert;
 import org.junit.Test;
@@ -74,7 +75,7 @@ public class SparkCHClientInsertTest {
                         new Integer(20),
                         new Integer(333),
                         new Long(123144),
-                        new Long((long) i),
+                        Decimal.apply((long) i),
                         new Byte((byte) -23),
                         new Short((short) -244),
                         new Integer(-9877323),
@@ -90,7 +91,7 @@ public class SparkCHClientInsertTest {
                         new Integer(20),
                         new Integer(333),
                         new Long(123144),
-                        new Long(7784564564L),
+                        Decimal.apply(7784564564L),
                         new Byte((byte) -23),
                         new Short((short) -244),
                         new Integer(-9877323),
@@ -137,13 +138,13 @@ public class SparkCHClientInsertTest {
         public void accept(CHColumnBatch b) {
             values[0] = (int) b.column(0).getShort(0);
             values[1] = (int) b.column(1).getShort(0);
-            values[2] = ((long) b.column(2).getInt(0)) * 1000 * 1000;
+            values[2] = b.column(2).getLong(0);
             values[3] = b.column(3).getFloat(0);
             values[4] = b.column(4).getDouble(0);
-            values[5] = (int) (b.column(5).getByte(0) & 0x0FF);
-            values[6] = (int) (b.column(6).getShort(0) & 0x0FFFF);
-            values[7] = (long) (b.column(7).getInt(0) & 0x0FFFF_FFFFL);
-            values[8] = b.column(8).getLong(0);
+            values[5] = b.column(5).getInt(0);
+            values[6] = b.column(6).getInt(0);
+            values[7] = b.column(7).getLong(0);
+            values[8] = b.column(8).getDecimal(0, 20, 0);
             values[9] = b.column(9).getByte(0);
             values[10] = b.column(10).getShort(0);
             values[11] = b.column(11).getInt(0);
@@ -182,7 +183,7 @@ public class SparkCHClientInsertTest {
                 new Integer(255),
                 new Integer(65535),
                 new Long(4294967295L),
-                new Long(1844674407370955165L),
+                Decimal.apply("18446744073709551615"),
                 new Byte((byte) -23),
                 new Short((short) -244),
                 new Integer(-9877323),
