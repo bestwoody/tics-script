@@ -131,9 +131,9 @@ object CHUtil {
     exp match {
       case _: Literal => true
       case _: AttributeReference => true
+      case cast @ Cast(child, _) =>
+        Hack.hackSupportCast(cast).getOrElse(isSupportedExpression(child))
       case _: CreateNamedStruct => true
-      case cast @ Cast(_, _) =>
-        Hack.hackSupportCast(cast)
       // TODO: Don't pushdown IsNotNull maybe better
       case IsNotNull(child) =>
         isSupportedExpression(child)

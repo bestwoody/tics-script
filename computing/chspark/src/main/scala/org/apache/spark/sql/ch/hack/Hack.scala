@@ -19,14 +19,14 @@ object Hack {
     case _ => attr.name
   }
 
-  def hackSupportCast(cast: Cast): Boolean = cast match {
+  def hackSupportCast(cast: Cast): Option[Boolean] = cast match {
     // Any casting to date is not supported as CH date is too narrow.
-    case Cast(_, DateType) => false
+    case Cast(_, DateType) => Some(false)
     // Any casting tidb date to string or timestamp is not supported as tidb date is represented as Int32.
     case Cast(CHAttributeReference(_, dataType, _, _, _, _, _), targetType) => (dataType, targetType) match {
-      case (DateType, StringType) => false
-      case (DateType, TimestampType) => false
+      case (DateType, StringType) => Some(false)
+      case (DateType, TimestampType) => Some(false)
     }
-    case _ => true
+    case _ => None
   }
 }

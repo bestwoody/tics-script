@@ -154,7 +154,7 @@ object CHSql {
       case attr: AttributeReference => s"`${Hack.hackAttributeReference(attr).toLowerCase()}`"
       case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
       case cast @ Cast(child, dataType) =>
-        if (!Hack.hackSupportCast(cast)) {
+        if (!Hack.hackSupportCast(cast).getOrElse(CHUtil.isSupportedExpression(child))) {
           throw new UnsupportedOperationException(s"Shouldn't be casting expression $expression to type $dataType.")
         }
         try {
