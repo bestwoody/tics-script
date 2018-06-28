@@ -54,24 +54,34 @@ def analyze(partitions, parts):
     level_0_count = 0
     total_size = 0
     levels = []
+    max_end = 0
+    io_size = 0
+
     for name, begin, end, level, size in parts:
         total_size += size
+        io_size += size * (level + 1)
         while len(levels) <= level:
             levels.append(0)
         levels[level] += 1
+        if end > max_end:
+            max_end = end
+
         if level != 0:
             continue
         level_0_size += size
         level_0_count += 1
 
     for i in range(0, len(levels)):
-        levels[i] = (i, levels[i])
+        levels[i] = 'L' + str(i) + '=' + str(levels[i])
 
     print "Partitions count:", len(partitions)
-    print "Avg parts per partition:", float(len(parts)) / len(partitions)
-    print "Parts avg size:", float(total_size) / len(parts), 'KB'
+    print "Parts count per partition:", float(len(parts)) / len(partitions)
+    print "Parts count of each level:", levels
+    print "Parts avg size(KB):", float(total_size) / len(parts)
     if level_0_count != 0:
-        print "Level-0 parts avg size:", float(level_0_size) / level_0_count, 'KB'
-    print "Each level parts count:", levels
+        print "Parts of level-0 avg size(KB):", float(level_0_size) / level_0_count
+        print "Approximate write batch size(KB):", len(partitions) * float(level_0_size) / level_0_count
+    print "Approximate finished write batchs count:", float(max_end) / len(partitions)
+    print "Approximate write amplification:", float(io_size) / total_size
 
 analyze(*parse())
