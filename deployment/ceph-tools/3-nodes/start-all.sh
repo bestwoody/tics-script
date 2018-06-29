@@ -1,23 +1,23 @@
 set -eu
-source ./_env.sh
 
 source ./_env.sh
 
-ssh "$h0" "sudo systemctl start ceph-osd@0"
-ssh "$h1" "sudo systemctl start ceph-osd@1"
-ssh "$h2" "sudo systemctl start ceph-osd@2"
+for i in ${#nodes[@]}; do
+	i=$(( $i - 1 ))
+	ssh "${nodes[$i]}" "sudo systemctl start ceph-osd@$i"
+done
 
-ssh "$h0" "sudo systemctl start ceph-mon@$h0"
-ssh "$h1" "sudo systemctl start ceph-mon@$h1"
-ssh "$h2" "sudo systemctl start ceph-mon@$h2"
+for node in ${nodes[@]}; do
+	ssh "$node" "sudo systemctl start ceph-mon@$node"
+done
 
-ssh "$h0" "sudo systemctl start ceph-mgr@$h0"
-ssh "$h1" "sudo systemctl start ceph-mgr@$h1"
-ssh "$h2" "sudo systemctl start ceph-mgr@$h2"
+for node in ${nodes[@]}; do
+	ssh "$node" "sudo systemctl start ceph-mgr@$node"
+done
 
-ssh "$h0" "sudo systemctl start ceph-mds@$h0"
-ssh "$h1" "sudo systemctl start ceph-mds@$h1"
-ssh "$h2" "sudo systemctl start ceph-mds@$h2"
+for node in ${nodes[@]}; do
+	ssh "$node" "sudo systemctl start ceph-mds@$node"
+done
 
 sleep 1
 

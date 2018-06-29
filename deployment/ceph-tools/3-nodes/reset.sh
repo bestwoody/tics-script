@@ -2,12 +2,12 @@ set -eu
 
 source ./_env.sh
 
-cho ceph-deploy purge "$h0" "$h1" "$h2"
-ceph-deploy --username "$user" purge "$h0" "$h1" "$h2"
+cho ceph-deploy purge ${nodes[@]}
+ceph-deploy --username "$user" purge ${nodes[@]}
 echo
 
-echo ceph-deploy purgedata "$h0" "$h1" "$h2"
-ceph-deploy --username "$user" purgedata "$h0" "$h1" "$h2"
+echo ceph-deploy purgedata ${nodes[@]}
+ceph-deploy --username "$user" purgedata ${nodes[@]}
 echo
 
 echo ceph-deploy forgetkeys

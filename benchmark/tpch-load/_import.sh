@@ -33,7 +33,7 @@ ensure_tables_created()
 {
 	local table="$1"
 
-	for server in ${storage_server[*]}; do
+	for server in ${storage_server[@]}; do
 		ensure_table_created "`get_host $server`" "`get_port $server`" "$table"
 	done
 }

@@ -1,7 +1,5 @@
-export h0="ip-172-16-30-2"
-export h1="ip-172-16-30-3"
-export h2="ip-172-16-30-4"
-export public_network="172.16.30.0/24"
+export nodes=("127.0.0.1")
+export public_network="127.0.0.0/8"
 
 export osd_img="/data/ceph-osd.img"
 export mount_to="/data/cephfs"
