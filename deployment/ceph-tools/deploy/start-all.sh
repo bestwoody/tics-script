@@ -2,20 +2,31 @@ set -eu
 
 source ./_env.sh
 
-for i in ${#nodes[@]}; do
-	i=$(( $i - 1 ))
+for i in ${!nodes[@]}; do
 	ssh "${nodes[$i]}" "sudo systemctl start ceph-osd@$i"
 done
 
-for node in ${nodes[@]}; do
+for i in ${!nodes[@]}; do
+	if [ $i -gt 2 ]; then
+		continue
+	fi
+	node=${nodes[$i]}
 	ssh "$node" "sudo systemctl start ceph-mon@$node"
 done
 
-for node in ${nodes[@]}; do
+for i in ${!nodes[@]}; do
+	if [ $i -gt 2 ]; then
+		continue
+	fi
+	node=${nodes[$i]}
 	ssh "$node" "sudo systemctl start ceph-mgr@$node"
 done
 
-for node in ${nodes[@]}; do
+for i in ${!nodes[@]}; do
+	if [ $i -gt 2 ]; then
+		continue
+	fi
+	node=${nodes[$i]}
 	ssh "$node" "sudo systemctl start ceph-mds@$node"
 done
 

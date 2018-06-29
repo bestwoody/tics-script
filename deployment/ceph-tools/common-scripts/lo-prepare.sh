@@ -1,5 +1,8 @@
 host="$1"
-if [ -z "$host" ]; then
+osd_img="$2"
+osd_mb="$3"
+dev_name="$4"
+if [ -z "$dev_name" ]; then
 	echo "usage: <bin> host"
 	exit 1
 fi
@@ -15,4 +18,4 @@ fi
 ssh $host "dd if=/dev/zero of=$osd_img count=$osd_mb bs=1M"
 ssh $host "mkfs.ext4 $osd_img"
 ssh $host "sudo chown ceph:ceph $osd_img"
-ssh $host "sudo losetup $lo_name $osd_img"
+ssh $host "sudo losetup $dev_name $osd_img"
