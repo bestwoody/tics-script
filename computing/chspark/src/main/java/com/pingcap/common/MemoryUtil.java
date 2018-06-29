@@ -1,5 +1,6 @@
 package com.pingcap.common;
 
+import com.google.common.primitives.UnsignedLong;
 import com.sun.management.OperatingSystemMXBean;
 
 import org.apache.hadoop.hdfs.BlockReader;
@@ -195,16 +196,15 @@ public class MemoryUtil {
     }
 
     public static Decimal getDecimal(long address) {
-        short limbs = getShort(address+32);
+        int limbs = (int)getShort(address + 32);
         BigInteger dec = BigInteger.ZERO;
-        for(short i = 0; i < limbs; i++) {
-            long d = unsafe.getLong(address + i * 8);
-            dec.shiftLeft(64);
-            dec = dec.add(BigInteger.valueOf(d));
+        for(int i = limbs - 1; i >= 0; i --) {
+            UnsignedLong d = UnsignedLong.fromLongBits(unsafe.getLong(address + i * 8));
+            dec = dec.shiftLeft(64).add(d.bigIntegerValue());
         }
-        int sign = unsafe.getByte(address+34);
-        int precision = (int)unsafe.getShort(address+48);
-        int scale = (int)unsafe.getByte(address+50);
+        int sign = unsafe.getByte(address + 34);
+        int precision = (int)unsafe.getShort(address + 48);
+        int scale = (int)unsafe.getByte(address + 50);
         BigDecimal result = new BigDecimal(dec, scale);
         if (sign > 0) {
             return Decimal.apply(result.negate(), precision, scale);
