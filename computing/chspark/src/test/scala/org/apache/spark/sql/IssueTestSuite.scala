@@ -18,6 +18,11 @@
 package org.apache.spark.sql
 
 class IssueTestSuite extends BaseClickHouseSuite {
+  test("test decimals") {
+    // will delete this test after decimal tests are finished.
+    runTest("select tp_decimal from full_data_type_table")
+  }
+
   test("#413 Count distinct has an incorrect plan") {
     runTest("select sum(distinct tp_int8) from full_data_type_table")
     runTest("select count(distinct tp_int8) from full_data_type_table")
