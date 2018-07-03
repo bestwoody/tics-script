@@ -23,6 +23,12 @@ def parse():
             continue
 
         part_info = fields[1].split('_')
+
+        # Is MergeTree engine partitions
+        if len(part_info) == 5:
+            part_info = [part_info[0] + '_' + part_info[1]] + part_info[2:]
+
+        # Is MutableMergeTree engine partitions
         if len(part_info) != 4:
             continue
 
@@ -75,13 +81,16 @@ def analyze(partitions, parts):
         levels[i] = 'L' + str(i) + '=' + str(levels[i])
 
     print "Partitions count:", len(partitions)
-    print "Parts count per partition:", float(len(parts)) / len(partitions)
-    print "Parts count of each level:", levels
-    print "Parts avg size(KB):", float(total_size) / len(parts)
+    if len(partitions) > 0:
+        print "Parts count per partition:", float(len(parts)) / len(partitions)
+        print "Parts count of each level:", levels
+    if len(parts) > 0:
+        print "Parts avg size(KB):", float(total_size) / len(parts)
     if level_0_count != 0:
         print "Parts of level-0 avg size(KB):", float(level_0_size) / level_0_count
         print "Approximate write batch size(KB):", len(partitions) * float(level_0_size) / level_0_count
-    print "Approximate finished write batchs count:", float(max_end) / len(partitions)
-    print "Approximate write amplification:", float(io_size) / total_size
+    if len(partitions) > 0:
+        print "Approximate finished write batchs count:", float(max_end) / len(partitions)
+        print "Approximate write amplification:", float(io_size) / total_size
 
 analyze(*parse())
