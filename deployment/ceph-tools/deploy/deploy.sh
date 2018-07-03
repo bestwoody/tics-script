@@ -1,4 +1,4 @@
-et -eu
+set -eu
 source ./_env.sh
 
 if [ ! -z "$osd_img" ]; then
@@ -20,8 +20,8 @@ echo "=> ceph-deploy --username $user new --public-network $public_network ${mai
 ceph-deploy --username "$user" new --public-network "$public_network" ${mains[@]}
 
 for node in ${nodes[@]}; do
-	echo "=> ceph-deploy --username $user install --repo-url https://download.ceph.com/debian-luminous xenial $node"
-	ceph-deploy --username "$user" install --repo-url "https://download.ceph.com/debian-luminous xenial" "$node"
+	echo "=> ceph-deploy --username $user install $node"
+	ceph-deploy --username "$user" install "$node"
 done
 
 echo "=> ceph-deploy --username $user --overwrite-conf mon create-initial"
