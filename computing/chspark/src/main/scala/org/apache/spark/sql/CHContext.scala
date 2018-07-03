@@ -23,7 +23,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.ch.CHUtil.Partitioner
 import org.apache.spark.sql.ch.mock.TypesTestRelation
-import org.apache.spark.sql.ch.{CHRelation, CHStrategy, CHTableRef, CHUtil}
+import org.apache.spark.sql.ch._
 import org.apache.spark.sql.types._
 
 
@@ -35,7 +35,7 @@ class CHContext (val sparkSession: SparkSession)
   sparkSession.experimental.extraStrategies ++= Seq(new CHStrategy(sparkSession))
 
   val cluster: Cluster = {
-    val clusterStr = sparkSession.conf.get("spark.flash.addresses", "")
+    val clusterStr = sparkSession.conf.get(CHConfigConst.CLUSTER_ADDRESSES, "")
     if (clusterStr.isEmpty) {
       Cluster.getDefault()
     } else {
