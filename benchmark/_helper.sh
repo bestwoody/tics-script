@@ -35,14 +35,3 @@ get_port()
 	fi
 }
 export -f get_port
-
-get_tables_mapping_string()
-{
-	local str="Seq("
-	for server in ${storage_server[@]}; do
-		str="${str}(\"`get_host $server`\", `get_port $server`), "
-	done
-	str="${str:0:${#str}-2})"
-	echo "$str"
-}
-export -f get_tables_mapping_string
