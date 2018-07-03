@@ -14,17 +14,24 @@ import com.pingcap.ch.datatypes.CHTypeFixedString;
 import com.pingcap.ch.datatypes.CHTypeNullable;
 import com.pingcap.ch.datatypes.CHTypeNumber;
 import com.pingcap.ch.datatypes.CHTypeString;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.spark.sql.catalyst.InternalRow;
-import org.apache.spark.sql.types.StructType;
-import org.apache.spark.sql.util.TypeMapping;
-
 import java.io.Closeable;
 import java.io.IOException;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.io.IOUtils;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.catalyst.util.DateTimeUtils;
+import org.apache.spark.sql.ch.CHUtil;
+import org.apache.spark.sql.ch.hack.Hack;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.Decimal;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
+import org.apache.spark.sql.util.TypeMapping;
+import org.apache.spark.unsafe.types.UTF8String;
 
 /**
  * Insert API for spark to send insert query to CH.
@@ -48,6 +55,10 @@ public class SparkCHClientInsert implements Closeable {
         this.conn = new CHConnection(host, port, "", "default", "", "CHSpark");
         this.queryId = queryId;
         this.query = query;
+    }
+
+    public SparkCHClientInsert(String query, String host, int port) {
+        this(CHUtil.genQueryId("I"), query, host, port);
     }
 
     public void setBatch(int batch) {
@@ -120,8 +131,9 @@ public class SparkCHClientInsert implements Closeable {
         initCacheColumns();
     }
 
-    public void insert(InternalRow row) throws IOException {
+    public void insertFromTiDB(Row row) throws IOException {
         for (int i = 0; i < dataTypes.length; i++) {
+            StructField sparkField = sparkSchema.fields()[i];
             CHColumn col = curColumns[i];
             CHType chType = dataTypes[i];
 
@@ -134,20 +146,90 @@ public class SparkCHClientInsert implements Closeable {
                 }
             }
 
+            if (Hack.hackSparkColumnData(sparkField.name(), chType, row, i, col)) {
+                continue;
+            }
+
+            // TODO  In some case like min(tp_int8 + tpfloat32 * 2), CH cast the result as Float64 while Spark not.
+            if (chType == CHTypeString.instance || chType instanceof CHTypeFixedString) {
+                Object val = row.get(i);
+                if (val instanceof byte[]) {
+                    byte [] byteValue = ((byte[])val);
+                    col.insertUTF8String(UTF8String.fromBytes(byteValue));
+                } else {
+                    col.insertUTF8String(UTF8String.fromString(row.get(i).toString()));
+                }
+            } else if (chType == CHTypeDateTime.instance) {
+                // java.sql.Timestamp by long, as milliseconds, while ClickHouse use int32, i.e. int as seconds.
+                Timestamp ts = row.getTimestamp(i);
+                col.insertInt((int) (ts.getTime() / 1000));
+            } else if (chType == CHTypeNumber.CHTypeInt8.instance) {
+                col.insertByte((byte)row.getLong(i));
+            } else if (chType == CHTypeNumber.CHTypeInt16.instance) {
+                col.insertShort((short)row.getLong(i));
+            } else if (chType == CHTypeNumber.CHTypeInt32.instance) {
+                col.insertInt((int)row.getLong(i));
+            } else if (chType == CHTypeNumber.CHTypeInt64.instance) {
+                col.insertLong(row.getLong(i));
+            } else if (chType == CHTypeNumber.CHTypeUInt8.instance) {
+                // CHTypeUInt8 -> Spark IntegerType
+                col.insertByte((byte) (row.getLong(i) & 0x0FF));
+            } else if (chType == CHTypeNumber.CHTypeUInt16.instance) {
+                // CHTypeUInt16 -> Spark IntegerType
+                col.insertShort((short) (row.getLong(i) & 0x0FFFF));
+            } else if (chType == CHTypeNumber.CHTypeUInt32.instance) {
+                // CHTypeUInt32 -> Spark LongType
+                col.insertInt((int) (row.getLong(i) & 0x0FFFF_FFFFL));
+            } else if (chType == CHTypeNumber.CHTypeUInt64.instance) {
+                col.insertLong(row.getLong(i));
+            } else if (chType == CHTypeNumber.CHTypeFloat32.instance) {
+                col.insertFloat(row.getFloat(i));
+            } else if (chType == CHTypeNumber.CHTypeFloat64.instance) {
+                Number n = (Number)row.get(i);
+                col.insertDouble(n.doubleValue());
+            } else {
+                throw new UnsupportedOperationException("Unsupported data type: " + chType.name());
+            }
+        }
+
+        if (curColumns[0].size() >= batchCount) {
+            flushCache();
+        }
+    }
+
+    public void insert(Row row) throws IOException {
+        for (int i = 0; i < dataTypes.length; i++) {
+            String colName = sparkSchema.fields()[i].name();
+            DataType dataType = row.schema().fields()[i].dataType();
+            CHColumn col = curColumns[i];
+            CHType chType = dataTypes[i];
+
+            if (chType instanceof CHTypeNullable) {
+                if (row.isNullAt(i)) {
+                    col.insertNull();
+                    continue;
+                } else {
+                    chType = ((CHTypeNullable) chType).nested_data_type;
+                }
+            }
+
+            if (Hack.hackSparkColumnData(colName, chType, row, i, col)) {
+                continue;
+            }
+
             // TODO  In some case like min(tp_int8 + tpfloat32 * 2), CH cast the result as Float64 while Spark not.
 
             if (chType == CHTypeString.instance || chType instanceof CHTypeFixedString) {
-                col.insertUTF8String(row.getUTF8String(i));
+                col.insertUTF8String(UTF8String.fromString(row.getString(i)));
             } else if (chType == CHTypeDate.instance) {
                 // Spark store Date type by int, while ClickHosue use int16, i.e. short.
-                int v = row.getInt(i);
-                if (v < 0) {
-                    throw new IllegalStateException("Illegal date value: " + v);
-                }
-                col.insertShort((short) v);
+                // Note that hacked date should have already been handled in the if block above.
+                Date v = row.getDate(i);
+                col.insertShort((short) DateTimeUtils.fromJavaDate(v));
             } else if (chType == CHTypeDateTime.instance) {
-                // Spark store Timestamp by long, as microseconds, while ClickHosue use int32, i.e. int as seconds.
-                col.insertInt((int) (row.getLong(i) / 1000 / 1000));
+                // java.sql.Timestamp by long, as milliseconds, while ClickHouse use int32, i.e. int as seconds.
+                Timestamp ts = row.getTimestamp(i);
+                col.insertInt((int) (ts.getTime() / 1000));
             } else if (chType == CHTypeNumber.CHTypeInt8.instance) {
                 col.insertByte(row.getByte(i));
             } else if (chType == CHTypeNumber.CHTypeInt16.instance) {
@@ -166,22 +248,23 @@ public class SparkCHClientInsert implements Closeable {
                 // CHTypeUInt32 -> Spark LongType
                 col.insertInt((int) (row.getLong(i) & 0x0FFFF_FFFFL));
             } else if (chType == CHTypeNumber.CHTypeUInt64.instance) {
-                col.insertLong(row.getDecimal(i, 20, 0).toLong());
+                col.insertLong(row.getDecimal(i).longValue());
             } else if (chType == CHTypeNumber.CHTypeFloat32.instance) {
                 col.insertFloat(row.getFloat(i));
             } else if (chType == CHTypeNumber.CHTypeFloat64.instance) {
                 col.insertDouble(row.getDouble(i));
             } else if (chType instanceof CHTypeDecimal) {
-                CHTypeDecimal decType = (CHTypeDecimal) chType;
-                col.insertDecimal(row.getDecimal(i, decType.precision, decType.scale));
+                col.insertDecimal(Decimal.fromDecimal(row.getDecimal(i)));
             } else {
                 throw new UnsupportedOperationException("Unsupported data type: " + chType.name());
             }
         }
 
+
         if (curColumns[0].size() >= batchCount) {
             flushCache();
         }
+
     }
 
     public void insert(CHBlock block) throws IOException {

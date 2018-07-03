@@ -38,6 +38,9 @@ class CHSqlSuite extends SparkFunSuite {
   def testCompileExpression(e: Expression, expected: String) : Unit =
     assert(CHSql.compileExpression(e) == expected)
 
+  def testCreateTable(database: String, table: String, schema: StructType, pkList: Array[String], expected: String) : Unit =
+    assert(CHSql.createTableStmt(database, schema, pkList, table) == expected)
+
   def testQuery(table: CHTableRef, chLogicalPlan: CHLogicalPlan, expected: String) : Unit =
     assert(CHSql.query(table, chLogicalPlan).buildQuery() == expected)
 
@@ -108,12 +111,30 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression((a + b.withNullability(false)).cast(StringType), "CAST((`a` + `b`) AS Nullable(String))")
     testCompileExpression((a.withNullability(false) + b.withNullability(false)).cast(ShortType), "CAST((`a` + `b`) AS Int16)")
 
-    testCompileExpression((a.withNullability(false) + b.withNullability(false)).cast(DecimalType.FloatDecimal), "(`a` + `b`)")
+    testCompileExpression((a.withNullability(false) + b.withNullability(false)).cast(DecimalType.FloatDecimal), "CAST((`a` + `b`) AS Float64)")
   }
 
   test("hack expressions") {
     testCompileExpression(hackD, "`_tidb_date_d`")
     testCompileExpression(hackD > "1990-01-01", "(`_tidb_date_d` > '1990-01-01')")
+  }
+
+  test("create table statements") {
+    testCreateTable("Test", "tesT", new StructType(Array(
+      StructField("I", IntegerType, false),
+      StructField("D", DoubleType, true),
+      StructField("s", StringType, true),
+      StructField("dt", DateType, true),
+      StructField("dt_NN", DateType, false)
+    )), Array("I"),
+    "CREATE TABLE `test`.`test` (`i` Int32, `d` Nullable(Float64), `s` Nullable(String), `_tidb_date_dt` Nullable(Int32), `_tidb_date_dt_nn` Int32) ENGINE = MutableMergeTree((`i`), 8192)")
+    testCreateTable("Test", "tesT", new StructType(Array(
+      StructField("I", IntegerType, false),
+      StructField("Dd", DecimalType.bounded(20, 1), false),
+      StructField("dS", DecimalType.bounded(10, 0), true)
+    )), Array("I"),
+      "CREATE TABLE `test`.`test` (`i` Int32, `dd` Float64, `_tidb_decimal_ds` Nullable(String)) ENGINE = MutableMergeTree((`i`), 8192)")
+
   }
 
   test("empty queries") {

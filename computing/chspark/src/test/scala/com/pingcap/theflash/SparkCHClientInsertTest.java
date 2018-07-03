@@ -1,14 +1,13 @@
 package com.pingcap.theflash;
 
 import com.pingcap.theflash.codegene.CHColumnBatch;
-
+import java.util.Random;
+import java.util.function.Consumer;
+import org.apache.spark.sql.ch.SimpleRow;
 import org.apache.spark.sql.types.Decimal;
 import org.apache.spark.unsafe.types.UTF8String;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.Random;
-import java.util.function.Consumer;
 
 public class SparkCHClientInsertTest {
     @Test

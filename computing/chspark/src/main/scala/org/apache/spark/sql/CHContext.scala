@@ -15,10 +15,17 @@
 
 package org.apache.spark.sql
 
+import java.sql.PreparedStatement
+
+import com.pingcap.common.{Cluster, Node}
+import com.pingcap.theflash.SparkCHClientInsert
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.ch.{CHRelation, CHStrategy, CHTableRef}
+import org.apache.spark.sql.ch.CHUtil.Partitioner
 import org.apache.spark.sql.ch.mock.TypesTestRelation
+import org.apache.spark.sql.ch.{CHRelation, CHStrategy, CHTableRef, CHUtil}
+import org.apache.spark.sql.types._
+
 
 class CHContext (val sparkSession: SparkSession)
   extends Serializable with Logging {
@@ -27,52 +34,248 @@ class CHContext (val sparkSession: SparkSession)
 
   sparkSession.experimental.extraStrategies ++= Seq(new CHStrategy(sparkSession))
 
+  val cluster: Cluster = {
+    val clusterStr = sparkSession.conf.get("spark.flash.addresses", "")
+    if (clusterStr.isEmpty) {
+      Cluster.getDefault()
+    } else {
+      val nodes = clusterStr.split(",").map(nodeStr => {
+        val nodeParts = nodeStr.split(":")
+        if (nodeParts.length != 2) {
+          throw new IllegalArgumentException(s"wrong format for cluster configuration $nodeStr")
+        }
+        val host = nodeParts(0)
+        val port = Integer.parseInt(nodeParts(1))
+        new Node(host, port)
+      })
+      new Cluster(nodes)
+    }
+  }
+
   def mapTypesTestTable(name: String = "types-test"): Unit = {
     val rel = new TypesTestRelation(name)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
+  def dropTable(database: String, table: String): Unit = {
+    CHUtil.dropTable(database, table, cluster)
+  }
+
+  def dropDatabase(database: String): Unit = {
+    CHUtil.dropDatabase(database, cluster)
+  }
+
+  def createDatabase(database: String): Unit = {
+    CHUtil.createDatabase(database, cluster)
+  }
+
+  def createTableFromTiDB(database: String,
+                          table: String,
+                          tiContext: TiContext,
+                          batchSize: Int = SparkCHClientInsert.BATCH_INSERT_COUNT,
+                          parallelism: Int = 8,
+                          partitionNum: Int = 128): Unit = {
+    val tableInfo = tiContext.meta.getTable(database, table)
+    if (tableInfo.isEmpty) {
+      throw new IllegalArgumentException(s"Table $table not exists")
+    }
+    val df = tiContext.getDataFrame(database, table)
+    val partitionLength = df.rdd.partitions.length
+    var finalParallelism = parallelism
+    if (parallelism <= 0) {
+      finalParallelism = Math.max(partitionLength / cluster.nodes.length, parallelism)
+    }
+    val (partitioner, pkOffset) = CHUtil.createTable(database, tableInfo.get, cluster, partitionNum)
+
+    try {
+      if (partitioner == Partitioner.Hash) {
+        CHUtil.insertDataHash(df, database, table, pkOffset, cluster, true, batchSize, finalParallelism)
+      } else {
+        CHUtil.insertDataRandom(df, database, table, cluster, true, batchSize)
+      }
+    } catch {
+      case e: Throwable => {
+        dropTable(database, table)
+        throw e
+      }
+    }
+  }
+
+  def createTableFromDataFrame(database: String,
+                               table: String,
+                               primaryKeys: Array[String],
+                               df: DataFrame,
+                               batchSize: Int = SparkCHClientInsert.BATCH_INSERT_COUNT): Unit = {
+    val (partitioner, pkOffset) = CHUtil.createTable(database, table, df.schema, primaryKeys, cluster)
+
+    if (partitioner == Partitioner.Hash) {
+      CHUtil.insertDataHash(df, database, table, pkOffset, cluster, false, batchSize)
+    } else {
+      CHUtil.insertDataRandom(df, database, table, cluster, false, batchSize)
+    }
+  }
+
   def mapCHTable(
-    host: String = "127.0.0.1",
-    port: Int = 9000,
     database: String = null,
     table: String,
     partitionsPerSplit: Int = 16): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
-    val tableRef = new CHTableRef(host, port, database, table)
+    val tableRef = new CHTableRef(cluster.nodes.head.host, cluster.nodes.head.port, database, table)
     val rel = new CHRelation(Seq(tableRef), partitionsPerSplit)(sqlContext, conf)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRef.mappedName)
   }
 
   def mapCHClusterTable(
-    addresses: Seq[(String, Int)] = Seq(("127.0.0.1", 9000)),
     database: String = null,
     table: String,
     partitionsPerSplit: Int = 16): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
     val tableRefList: Seq[CHTableRef] =
-      addresses.map(addr => new CHTableRef(addr._1, addr._2, database, table))
+      cluster.nodes.map(node => new CHTableRef(node.host, node.port, database, table))
     val rel = new CHRelation(tableRefList, partitionsPerSplit)(sqlContext, conf)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList(0).mappedName)
   }
 
   def mapCHClusterTableSimple(
-    hosts: String = "127.0.0.1",
-    port: Int = 9000,
     database: String = null,
     table: String,
     partitionsPerSplit: Int = 16): Unit = {
 
     val conf: SparkConf = sparkSession.sparkContext.conf
     val tableRefList: Seq[CHTableRef] =
-      hosts.split(",").map(host => new CHTableRef(host, port, database, table))
+      cluster.nodes.map(node => new CHTableRef(node.host, node.port, database, table))
     val rel = new CHRelation(tableRefList, partitionsPerSplit)(sqlContext, conf)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList(0).mappedName)
   }
 
   def sql(sqlText: String): DataFrame = {
     sqlContext.sql(sqlText)
+  }
+
+  import java.sql.DriverManager
+  import java.sql.Connection
+
+  def updateSample(df: DataFrame, table: String, primaryKeys: Array[String]) = {
+    val schema = df.schema
+    df.foreachPartition {
+      iterator => {
+        val driver = "com.mysql.jdbc.Driver"
+        val url = "jdbc:mysql://127.0.0.1:4000/test?rewriteBatchedStatements=true"
+        val username = "root"
+        val password = ""
+        var conn:Connection = null
+        try {
+          // make the connection
+          Class.forName(driver)
+          conn = DriverManager.getConnection(url, username, password)
+          val pkMap = primaryKeys.map(_.toLowerCase()).toSet
+
+          // create the statement, and run the select query
+          val sql = new StringBuilder
+          sql.append(s"UPDATE `$table` SET ")
+          val values = schema.fields.filter(f => !pkMap.contains(f.name))
+          val keys = schema.fields.filter(f => pkMap.contains(f.name))
+          val fieldOffsetMap = schema.fields.map(f => f.name).zipWithIndex.toMap
+          sql.append(values.map(f => s"`${f.name}` = ?" ).mkString(","))
+          sql.append(" WHERE ")
+          sql.append(keys.map(f => s"`${f.name}` = ?" ).mkString(" AND "))
+
+          val ps = conn.prepareStatement(sql.toString())
+          val setter = (row: Row,
+                        statementOffset: Int,
+                        rowOffset: Int,
+                        dataType: DataType) => {
+            dataType match {
+              case ShortType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.SMALLINT)
+              } else {
+                ps.setShort(statementOffset, row.getShort(rowOffset))
+              }
+              case IntegerType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.INTEGER)
+              } else {
+                ps.setInt(statementOffset, row.getInt(rowOffset))
+              }
+              case LongType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.BIGINT)
+              } else {
+                ps.setLong(statementOffset, row.getLong(rowOffset))
+              }
+              case FloatType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.FLOAT)
+              } else {
+                ps.setFloat(statementOffset, row.getFloat(rowOffset))
+              }
+              case DoubleType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.DOUBLE)
+              } else {
+                ps.setDouble(statementOffset, row.getDouble(rowOffset))
+              }
+              case StringType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.VARCHAR)
+              } else {
+                ps.setString(statementOffset, row.getString(rowOffset))
+              }
+              case ByteType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.TINYINT)
+              } else {
+                ps.setByte(statementOffset, row.getByte(rowOffset))
+              }
+              case BooleanType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.BOOLEAN)
+              } else {
+                ps.setBoolean(statementOffset, row.getBoolean(rowOffset))
+              }
+              case BinaryType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.BLOB)
+              } else {
+                ps.setBytes(statementOffset, row.getAs[Array[Byte]](rowOffset))
+              }
+              case DateType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.DATE)
+              } else {
+                ps.setDate(statementOffset, row.getDate(rowOffset))
+              }
+              case TimestampType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.TIMESTAMP)
+              } else {
+                ps.setTimestamp(statementOffset, row.getTimestamp(rowOffset))
+              }
+              case _: DecimalType => if (row.isNullAt(rowOffset)) {
+                ps.setNull(statementOffset, java.sql.Types.DECIMAL)
+              } else {
+                ps.setBigDecimal(statementOffset, row.getDecimal(rowOffset))
+              }
+              case _ => throw new IllegalArgumentException(s"error type ${dataType}")
+            }
+          }
+
+          var rowCount = 0
+          while (iterator.hasNext) {
+            val row = iterator.next()
+            var statementOffset = 1
+            (values ++ keys).foreach {
+              field => setter(row, statementOffset, fieldOffsetMap(field.name), field.dataType)
+              statementOffset += 1
+            }
+            rowCount += 1
+            ps.addBatch()
+            if (rowCount % 500 == 0) {
+              ps.executeBatch()
+              rowCount = 0
+            }
+          }
+          if (rowCount != 0) {
+            ps.executeBatch()
+          }
+        } finally {
+          if (conn != null) {
+            conn.close()
+          }
+        }
+      }
+    }
   }
 }

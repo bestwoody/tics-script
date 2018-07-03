@@ -1,15 +1,14 @@
 package com.pingcap.ch.datatypes;
 
+import static com.pingcap.common.MemoryUtil.allocateDirect;
+
 import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnNumber;
 import com.pingcap.common.MemoryUtil;
 import com.pingcap.common.ReadBuffer;
 import com.pingcap.common.WriteBuffer;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import static com.pingcap.common.MemoryUtil.allocateDirect;
 
 public abstract class CHTypeNumber implements CHType {
 

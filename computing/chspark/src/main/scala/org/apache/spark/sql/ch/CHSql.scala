@@ -15,11 +15,18 @@
 
 package org.apache.spark.sql.ch
 
+import com.pingcap.ch.datatypes.{CHTypeDateTime, CHTypeNullable, CHTypeString}
+import com.pingcap.ch.datatypes.CHTypeNumber.{CHTypeInt32, CHTypeUInt16, CHTypeUInt8, _}
 import com.pingcap.theflash.TypeMappingJava
+import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
+import com.pingcap.tikv.types.MySQLType
+import com.pingcap.tispark.TiUtils
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
+
+import scala.collection.JavaConversions._
 
 /**
  * Compiler that compiles CHLogicalPlan/CHTableRef to CH SQL string.
@@ -27,6 +34,39 @@ import org.apache.spark.sql.types._
  * will be lower-cased and back-quoted.
  */
 object CHSql {
+  type TiDBIntType = com.pingcap.tikv.types.IntegerType
+  type TiDBDecimalType = com.pingcap.tikv.types.DecimalType
+
+  def insertStmt(database: String, table: String) = s"INSERT INTO ${getBackQuotedAbsTabName(database, table)} VALUES"
+
+  def dropTableStmt(database: String, table: String) : String = {
+    s"DROP TABLE IF EXISTS ${getBackQuotedAbsTabName(database, table)}"
+  }
+
+  def createDatabaseStmt(database: String) : String = {
+    s"CREATE DATABASE `${database.toLowerCase()}`"
+  }
+
+  def dropDatabaseStmt(database: String) : String = {
+    s"DROP DATABASE IF EXISTS `${database.toLowerCase()}`"
+  }
+
+  def createTableStmt(database: String,
+                      schema: StructType,
+                      primaryKeys: Array[String],
+                      table: String): String = {
+    val schemaStr = compileSchema(schema)
+    val pkStr = compilePKList(schema, primaryKeys)
+    s"CREATE TABLE ${getBackQuotedAbsTabName(database, table)} ($schemaStr) ENGINE = MutableMergeTree(($pkStr), 8192)"
+  }
+
+  def createTableStmt(database: String,
+                      table: TiTableInfo,
+                      partitionNum: Int): String = {
+    val schemaStr = compileSchema(table)
+    val pkStr = compilePKList(table)
+    s"CREATE TABLE ${getBackQuotedAbsTabName(database, table.getName)} ($schemaStr) ENGINE = MutableMergeTree($partitionNum, ($pkStr), 8192)"
+  }
 
   case class Query(private val projection: String,
                    private val table: CHTableRef,
@@ -78,7 +118,7 @@ object CHSql {
     * @return
     */
   def desc(table: CHTableRef): String = {
-    "DESC " + getBackQuotedAbsTabName(table)
+    "DESC " + getBackQuotedAbsTabName(table.database, table.table)
   }
 
   /**
@@ -88,8 +128,86 @@ object CHSql {
     * @return
     */
   def count(table: CHTableRef, useSelraw: Boolean = false): String = {
-    (if (useSelraw) "SELRAW" else "SELECT") + " COUNT(*) FROM " + getBackQuotedAbsTabName(table)
+    (if (useSelraw) "SELRAW" else "SELECT") + " COUNT(*) FROM " + getBackQuotedAbsTabName(table.database, table.table)
   }
+
+  private def compileSchema(schema: StructType): String = {
+    val sb = new StringBuilder()
+    var first = true
+    schema.fields foreach { field =>
+      val colDef = Hack.hackColumnDef(field.name, field.dataType, field.nullable).getOrElse(
+        s"`${field.name.toLowerCase()}` ${TypeMappingJava.sparkTypeToCHType(field.dataType, field.nullable).name()}")
+      if (first) {
+        sb.append(colDef)
+      } else {
+        sb.append(s", $colDef")
+      }
+      first = false
+    }
+    sb.toString()
+  }
+
+  private def analyzeColumnDef(column: TiColumnInfo, table: TiTableInfo): String = {
+    val dataType = column.getType()
+    val tp = dataType.getType()
+
+    val isUnsigned = if (dataType.isInstanceOf[TiDBIntType]) {
+      dataType.asInstanceOf[TiDBIntType].isUnsigned
+    } else {
+      false
+    }
+
+    var chType = tp match {
+      case MySQLType.TypeBit => CHTypeUInt64.instance
+      case MySQLType.TypeTiny => if (isUnsigned) CHTypeUInt8.instance else CHTypeInt8.instance
+      case MySQLType.TypeShort => if (isUnsigned) CHTypeUInt16.instance else CHTypeInt16.instance
+      case MySQLType.TypeYear => CHTypeInt16.instance
+      case MySQLType.TypeLong | MySQLType.TypeInt24 => if (isUnsigned) CHTypeUInt32.instance else CHTypeInt32.instance
+      case MySQLType.TypeFloat => CHTypeFloat32.instance
+      case MySQLType.TypeDouble | MySQLType.TypeNewDecimal | MySQLType.TypeDecimal => {
+        // TODO: Remove Decimal Hack
+        if (dataType.isInstanceOf[TiDBDecimalType] &&
+            dataType.asInstanceOf[TiDBDecimalType].getDecimal() == 0) {
+          CHTypeString.instance
+        } else {
+          CHTypeFloat64.instance
+        }
+      }
+      case MySQLType.TypeTimestamp | MySQLType.TypeDatetime => CHTypeDateTime.instance
+      case MySQLType.TypeDuration => CHTypeInt64.instance
+      case MySQLType.TypeLonglong => if (isUnsigned) CHTypeUInt64.instance else CHTypeInt64.instance
+      case MySQLType.TypeDate | MySQLType.TypeNewDate => CHTypeInt32.instance
+      case MySQLType.TypeString | MySQLType.TypeVarchar | MySQLType.TypeTinyBlob
+           | MySQLType.TypeMediumBlob | MySQLType.TypeLongBlob
+           | MySQLType.TypeBlob | MySQLType.TypeVarString => CHTypeString.instance
+      case _ => throw new IllegalArgumentException(s"dataType not supported $dataType")
+    }
+
+    if (!column.isPrimaryKey() && !dataType.isNotNull) {
+      chType = new CHTypeNullable(chType)
+    }
+    val sparkType = TiUtils.toSparkDataType(dataType)
+    val columnName = Hack.hackColumnName(column.getName(), sparkType).getOrElse(column.getName.toLowerCase())
+    s"`$columnName` ${chType.name()}"
+  }
+
+  private def compileSchema(table: TiTableInfo): String = {
+    table.getColumns()
+      .map(column => analyzeColumnDef(column, table))
+      .mkString(",")
+  }
+
+  private def compilePKList(table: TiTableInfo): String = {
+    table.getColumns
+      .filter(c => c.isPrimaryKey)
+      .map(c => s"`${Hack.hackColumnName(c.getName, TiUtils.toSparkDataType(c.getType)).getOrElse(c.getName)}`")
+      .mkString(",")
+  }
+
+  private def compilePKList(schema: StructType, primaryKeys: Array[String]) =
+    primaryKeys.map(pk => schema.collectFirst {
+      case field if field.name.equalsIgnoreCase(pk) => s"`${Hack.hackColumnName(field.name, field.dataType).getOrElse(field.name.toLowerCase())}`"
+    }.getOrElse(throw new IllegalArgumentException(s"column $pk does not exists"))).mkString(", ")
 
   private def compileProject(chProject: CHProject, useSelraw: Boolean): String = {
     (if (useSelraw) "SELRAW " else "SELECT ") + chProject.projectList.map(compileExpression)
@@ -98,9 +216,9 @@ object CHSql {
 
   private def compileTable(table: CHTableRef, partitions: String = null): String = {
     if (partitions == null || partitions.isEmpty) {
-      s" FROM ${getBackQuotedAbsTabName(table)}"
+      s" FROM ${getBackQuotedAbsTabName(table.database, table.mappedName)}"
     } else {
-      s" FROM ${getBackQuotedAbsTabName(table)} PARTITION $partitions"
+      s" FROM ${getBackQuotedAbsTabName(table.database, table.mappedName)} PARTITION $partitions"
     }
   }
 
@@ -183,6 +301,7 @@ object CHSql {
       case Or(left, right) => s"(${compileExpression(left)} OR ${compileExpression(right)})"
       case In(value, list) => s"${compileExpression(value)} IN (${list.map(compileExpression).mkString(", ")})"
       case ae @ AggregateExpression(_, _, _, _) => compileAggregateExpression(ae)
+      case Sum(child) => s"SUM(${compileExpression(child)})"
       // TODO: Support more expression types.
       case _ => throw new UnsupportedOperationException(s"Expression $expression is not supported by CHSql.")
     }
@@ -212,6 +331,6 @@ object CHSql {
     * @param table
     * @return
     */
-  private def getBackQuotedAbsTabName(table: CHTableRef): String =
-    if (table.database.isEmpty) s"`${table.table}`" else s"`${table.database}`.`${table.table}`"
+  private def getBackQuotedAbsTabName(database: String, table: String): String =
+    if (database == null || database.isEmpty) s"`${table.toLowerCase()}`" else s"`${database.toLowerCase()}`.`${table.toLowerCase()}`"
 }

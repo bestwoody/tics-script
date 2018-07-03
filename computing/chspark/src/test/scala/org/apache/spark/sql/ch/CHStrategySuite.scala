@@ -27,9 +27,9 @@ import org.apache.spark.sql.types.StructType
 class CHStrategySuite extends SharedSQLContext {
   class TestCHRelation(name: String, output: Attribute*) extends CHRelation({ Seq.empty }, 0)(sqlContext, null) {
     val localRelation = LocalRelation(output)
-    override lazy val schema: StructType = new CHStructType(localRelation.schema.map(f =>
+    override lazy val schema: StructType = new CHStructType(localRelation.schema.map(f => {
       Hack.hackStructField(f.name, new DataTypeAndNullable(f.dataType, f.nullable), f.metadata)
-    ).toArray)
+    }).toArray)
 
     sqlContext.baseRelationToDataFrame(this).createTempView(name)
   }
