@@ -370,7 +370,7 @@ object CHUtil {
   }
 
   def getPartitionList(table: CHTableRef): Array[String] = {
-    val client = new SparkCHClientSelect(CHUtil.genQueryId("C"), CHSql.partitionList(table), table.host, table.port)
+    val client = new SparkCHClientSelect(CHUtil.genQueryId("P"), CHSql.partitionList(table), table.host, table.port)
     try {
       var partitions = new Array[String](0)
 
@@ -384,16 +384,66 @@ object CHUtil {
         for (i <- 0 until fieldCol.size()) {
           partitions :+= fieldCol.getUTF8String(i).toString
         }
-
-        // Consume all packets before close.
-        while (client.hasNext) {
-          client.next()
-        }
       }
 
       partitions
     } finally {
       client.close()
+    }
+  }
+
+
+  // TODO: Port to metadata scan
+  // TODO: encapsulate scan operation
+  def listTables(database: String, node: Node): Array[String] = {
+    val client = new SparkCHClientSelect(CHUtil.genQueryId("LT"), CHSql.showTables(database), node.host, node.port)
+    try {
+      var tables = new Array[String](0)
+
+      if (client.hasNext) {
+        val block = client.next()
+        if (block.numCols != 1) {
+          throw new Exception("Send show table request, wrong response")
+        }
+
+        val fieldCol = block.column(0)
+        for (i <- 0 until fieldCol.size()) {
+          tables :+= fieldCol.getUTF8String(i).toString
+        }
+      }
+
+      tables
+    } finally {
+      if (client != null) {
+        client.close()
+      }
+    }
+  }
+
+  // TODO: Port to metadata scan
+  // TODO: encapsulate scan operation
+  def listDatabases(node: Node): Array[String] = {
+    val client = new SparkCHClientSelect(CHUtil.genQueryId("LD"), CHSql.showDatabases(), node.host, node.port)
+    try {
+      var databases = new Array[String](0)
+
+      if (client.hasNext) {
+        val block = client.next()
+        if (block.numCols != 1) {
+          throw new Exception("Send show databases request, wrong response")
+        }
+
+        val fieldCol = block.column(0)
+        for (i <- 0 until fieldCol.size()) {
+          databases :+= fieldCol.getUTF8String(i).toString
+        }
+      }
+
+      databases
+    } finally {
+      if (client != null) {
+        client.close()
+      }
     }
   }
 
@@ -434,14 +484,11 @@ object CHUtil {
         fields :+= field
       }
 
-      // Consume all packets before close.
-      while (client.hasNext) {
-        client.next()
-      }
-
       fields
     } finally {
-      client.close()
+      if (client != null) {
+        client.close()
+      }
     }
   }
 
@@ -458,14 +505,11 @@ object CHUtil {
 
       val count = block.column(0).getLong(0)
 
-      // Consume all packets before close.
-      while (client.hasNext) {
-        client.next()
-      }
-
       count
     } finally {
-      client.close()
+      if (client != null) {
+        client.close()
+      }
     }
   }
 

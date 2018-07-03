@@ -122,6 +122,23 @@ object CHSql {
   }
 
   /**
+    * Show tables
+    * @param database to perform show table
+    * @return
+    */
+  def showTables(database: String): String = {
+    s"SHOW TABLES FROM `${database.toLowerCase()}`"
+  }
+
+  /**
+    * Show databases
+    * @return
+    */
+  def showDatabases(): String = {
+    s"SHOW DATABASES"
+  }
+
+  /**
     * Compose a count(*) SQL string.
     * @param table
     * @param useSelraw

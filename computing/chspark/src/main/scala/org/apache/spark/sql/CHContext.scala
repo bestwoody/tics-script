@@ -57,6 +57,16 @@ class CHContext (val sparkSession: SparkSession)
     sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
+  // TODO: Needs to hook in catalog after 2.3 port
+  def listDatabases(): Array[String] = {
+    CHUtil.listDatabases(cluster.nodes.head)
+  }
+
+  // TODO: Needs to hook in catalog after 2.3 port
+  def listTables(database: String): Array[String] = {
+    CHUtil.listTables(database, cluster.nodes.head)
+  }
+
   def dropTable(database: String, table: String): Unit = {
     CHUtil.dropTable(database, table, cluster)
   }
