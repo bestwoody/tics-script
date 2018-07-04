@@ -15,16 +15,16 @@
  *
  */
 
-package org.apache.spark.sql.test
+package org.apache.spark.sql
 
 import java.sql.{Connection, Statement}
 import java.util.{Locale, Properties, TimeZone}
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.catalyst.util.resourceToString
 import org.apache.spark.sql.test.TestConstants._
 import org.apache.spark.sql.test.Utils._
-import org.apache.spark.sql.{CHContext, CHTestContext, SQLContext, SparkSession}
-import org.apache.spark.sql.catalyst.util.resourceToString
+import org.apache.spark.sql.test.{TestSQLContext, TestSparkSession}
 import org.apache.spark.{SparkConf, SparkFunSuite}
 import org.joda.time.DateTimeZone
 import org.scalatest.BeforeAndAfterAll

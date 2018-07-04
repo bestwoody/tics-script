@@ -16,12 +16,12 @@
 package org.apache.spark.sql.ch
 
 import com.pingcap.theflash.DataTypeAndNullable
+import org.apache.spark.sql.SharedSQLContext
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
 import org.apache.spark.sql.ch.hack.{CHStructType, Hack}
 import org.apache.spark.sql.execution.CHScanExec
-import org.apache.spark.sql.test.SharedSQLContext
 import org.apache.spark.sql.types.StructType
 
 class CHStrategySuite extends SharedSQLContext {

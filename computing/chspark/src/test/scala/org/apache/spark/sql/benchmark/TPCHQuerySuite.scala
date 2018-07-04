@@ -19,8 +19,6 @@ package org.apache.spark.sql.benchmark
 
 import org.apache.spark.sql.BaseClickHouseSuite
 import org.apache.spark.sql.catalyst.util.resourceToString
-import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation
-import org.apache.spark.sql.execution.DataSourceScanExec
 
 import scala.collection.mutable
 

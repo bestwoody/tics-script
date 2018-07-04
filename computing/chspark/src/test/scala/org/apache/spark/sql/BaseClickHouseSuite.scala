@@ -21,7 +21,6 @@ import java.sql.Statement
 
 import org.apache.commons.lang.StringUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
-import org.apache.spark.sql.test.SharedSQLContext
 
 import scala.collection.mutable.ArrayBuffer
 
