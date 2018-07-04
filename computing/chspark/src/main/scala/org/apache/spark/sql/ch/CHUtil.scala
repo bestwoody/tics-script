@@ -497,7 +497,11 @@ object CHUtil {
       }
       for (i <- names.indices) {
         val t = TypeMappingJava.stringToSparkType(types(i))
-        val field = Hack.hackStructField(names(i), t, metadata)
+        val field = Hack
+          .hackStructField(names(i), t, metadata)
+          .getOrElse(
+            StructField(names(i), t.dataType, t.nullable, metadata)
+          )
         fields :+= field
       }
 

@@ -15,7 +15,7 @@
 
 package org.apache.spark.sql.ch
 
-import com.pingcap.ch.datatypes.{CHTypeDateTime, CHTypeNullable, CHTypeString}
+import com.pingcap.ch.datatypes.{CHTypeDateTime, CHTypeDecimal, CHTypeNullable, CHTypeString}
 import com.pingcap.ch.datatypes.CHTypeNumber.{CHTypeInt32, CHTypeUInt16, CHTypeUInt8, _}
 import com.pingcap.theflash.TypeMappingJava
 import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
@@ -187,13 +187,12 @@ object CHSql {
       case MySQLType.TypeYear  => CHTypeInt16.instance
       case MySQLType.TypeLong | MySQLType.TypeInt24 =>
         if (isUnsigned) CHTypeUInt32.instance else CHTypeInt32.instance
-      case MySQLType.TypeFloat                                                     => CHTypeFloat32.instance
-      case MySQLType.TypeDouble | MySQLType.TypeNewDecimal | MySQLType.TypeDecimal =>
-        // TODO: Remove Decimal Hack
-        dataType match {
-          case d: TiDBDecimalType if d.getDecimal == 0 => CHTypeString.instance
-          case _                                       => CHTypeFloat64.instance
-        }
+      case MySQLType.TypeFloat  => CHTypeFloat32.instance
+      case MySQLType.TypeDouble => CHTypeFloat64.instance
+      case MySQLType.TypeNewDecimal | MySQLType.TypeDecimal => {
+        val tidbDecimalType = dataType.asInstanceOf[TiDBDecimalType]
+        new CHTypeDecimal((tidbDecimalType.getLength).toInt, tidbDecimalType.getDecimal)
+      }
       case MySQLType.TypeTimestamp | MySQLType.TypeDatetime => CHTypeDateTime.instance
       case MySQLType.TypeDuration                           => CHTypeInt64.instance
       case MySQLType.TypeLonglong                           => if (isUnsigned) CHTypeUInt64.instance else CHTypeInt64.instance
@@ -312,7 +311,8 @@ object CHSql {
             case _ => value.toString
           }
         }
-      case attr: AttributeReference  => s"`${Hack.hackAttributeReference(attr).toLowerCase()}`"
+      case attr: AttributeReference =>
+        s"`${Hack.hackAttributeReference(attr).getOrElse(attr.name).toLowerCase()}`"
       case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
       case cast @ Cast(child, dataType) =>
         if (!Hack.hackSupportCast(cast).getOrElse(CHUtil.isSupportedExpression(child))) {

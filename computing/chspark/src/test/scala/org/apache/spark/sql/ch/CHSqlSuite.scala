@@ -129,7 +129,7 @@ class CHSqlSuite extends SparkFunSuite {
 
     testCompileExpression(
       (a.withNullability(false) + b.withNullability(false)).cast(DecimalType.FloatDecimal),
-      "CAST((`a` + `b`) AS Float64)"
+      "CAST((`a` + `b`) AS Decimal(14, 7))"
     )
   }
 
@@ -165,9 +165,8 @@ class CHSqlSuite extends SparkFunSuite {
         )
       ),
       Array("I"),
-      "CREATE TABLE `test`.`test` (`i` Int32, `dd` Float64, `_tidb_decimal_ds` Nullable(String)) ENGINE = MutableMergeTree((`i`), 8192)"
+      "CREATE TABLE `test`.`test` (`i` Int32, `dd` Decimal(20, 1), `ds` Nullable(Decimal(10, 0))) ENGINE = MutableMergeTree((`i`), 8192)"
     )
-
   }
 
   test("empty queries") {

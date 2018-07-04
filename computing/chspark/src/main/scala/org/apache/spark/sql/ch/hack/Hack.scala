@@ -45,30 +45,30 @@ object Hack {
       val dt = row.getDate(index)
       col.insertInt((dt.getTime / MILLIS_PER_DAY).asInstanceOf[Int])
       true
-    } else if (chType == CHTypeString.nullableInstance) {
-      val dec = row.getDecimal(index)
-      col.insertUTF8String(UTF8String.fromString(dec.toPlainString()))
-      true
     } else {
       false
     }
   }
 
-  def hackStructField(name: String, chType: DataTypeAndNullable, metadata: Metadata): StructField = {
+  def hackStructField(name: String,
+                      chType: DataTypeAndNullable,
+                      metadata: Metadata): Option[StructField] = {
     if (name.startsWith(TIDB_DATE_PREFIX) && (chType.dataType == IntegerType)) {
-      return new CHStructField(
-        name.replaceFirst(TIDB_DATE_PREFIX, ""),
-        DateType,
-        chType.nullable,
-        metadata
+      return Some(
+        new CHStructField(
+          name.replaceFirst(TIDB_DATE_PREFIX, ""),
+          DateType,
+          chType.nullable,
+          metadata
+        )
       )
     }
-    StructField(name, chType.dataType, chType.nullable, metadata)
+    Option.empty
   }
 
-  def hackAttributeReference(attr: AttributeReference): String = attr match {
-    case CHAttributeReference(name, _, _, _, _, _, _) => TIDB_DATE_PREFIX + name
-    case _                                            => attr.name
+  def hackAttributeReference(attr: AttributeReference): Option[String] = attr match {
+    case CHAttributeReference(name, _, _, _, _, _, _) => Some(TIDB_DATE_PREFIX + name)
+    case _                                            => Option.empty
   }
 
   def hackSupportCast(cast: Cast): Option[Boolean] = cast match {

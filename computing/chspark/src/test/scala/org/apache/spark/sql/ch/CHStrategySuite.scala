@@ -31,7 +31,9 @@ class CHStrategySuite extends SharedSQLContext {
     override lazy val schema: StructType = new CHStructType(
       localRelation.schema
         .map(f => {
-          Hack.hackStructField(f.name, new DataTypeAndNullable(f.dataType, f.nullable), f.metadata)
+          Hack
+            .hackStructField(f.name, new DataTypeAndNullable(f.dataType, f.nullable), f.metadata)
+            .getOrElse(f)
         })
         .toArray
     )

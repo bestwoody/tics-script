@@ -136,9 +136,6 @@ public class TypeMappingJava {
         sparkTypeToCHTypeNullableMap.put(BooleanType$.class, CHTypeUInt8.nullableInstance);
         sparkTypeToCHTypeMap.put(ShortType$.class, CHTypeInt16.instance);
         sparkTypeToCHTypeNullableMap.put(ShortType$.class, CHTypeInt16.nullableInstance);
-        // TODO: map decimal to CH decimal
-        sparkTypeToCHTypeMap.put(DecimalType.class, CHTypeFloat64.instance);
-        sparkTypeToCHTypeNullableMap.put(DecimalType.class, CHTypeFloat64.nullableInstance);
     }
 
     /**
@@ -148,6 +145,14 @@ public class TypeMappingJava {
      * @return corresponding CHType
      */
     public static CHType sparkTypeToCHType(DataType dataType, boolean nullable) {
+        if (dataType instanceof DecimalType) {
+            DecimalType decimalType = (DecimalType) dataType;
+            CHTypeDecimal chTypeDecimal = new CHTypeDecimal(decimalType.precision(), decimalType.scale());
+            if (nullable) {
+                return new CHTypeNullable(chTypeDecimal);
+            }
+            return chTypeDecimal;
+        }
         if (nullable) {
             if (sparkTypeToCHTypeNullableMap.containsKey(dataType.getClass())) {
               return sparkTypeToCHTypeNullableMap.get(dataType.getClass());

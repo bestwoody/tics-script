@@ -3,6 +3,7 @@ package com.pingcap.ch.columns;
 import com.pingcap.ch.datatypes.CHTypeNullable;
 import com.pingcap.ch.datatypes.CHTypeNumber;
 
+import org.apache.spark.sql.types.Decimal;
 import org.apache.spark.unsafe.types.UTF8String;
 
 public class CHColumnNullable extends CHColumn {
@@ -71,6 +72,11 @@ public class CHColumnNullable extends CHColumn {
     }
 
     @Override
+    public Decimal getDecimal(int rowId) {
+        return nested_column.getDecimal(rowId);
+    }
+
+    @Override
     public void insertDefault() {
         null_map.insertDefault();
         nested_column.insertDefault();
@@ -122,6 +128,12 @@ public class CHColumnNullable extends CHColumn {
     public void insertUTF8String(UTF8String v) {
         null_map.insertByte((byte) 0);
         nested_column.insertUTF8String(v);
+    }
+
+    @Override
+    public void insertDecimal(Decimal v) {
+        null_map.insertByte((byte) 0);
+        nested_column.insertDecimal(v);
     }
 
     @Override

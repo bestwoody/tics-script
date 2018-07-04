@@ -187,6 +187,8 @@ public class SparkCHClientInsert implements Closeable {
             } else if (chType == CHTypeNumber.CHTypeFloat64.instance) {
                 Number n = (Number)row.get(i);
                 col.insertDouble(n.doubleValue());
+            } else if (chType instanceof CHTypeDecimal) {
+                col.insertDecimal(Decimal.fromDecimal(row.getDecimal(i)));
             } else {
                 throw new UnsupportedOperationException("Unsupported data type: " + chType.name());
             }
@@ -200,7 +202,6 @@ public class SparkCHClientInsert implements Closeable {
     public void insert(Row row) throws IOException {
         for (int i = 0; i < dataTypes.length; i++) {
             String colName = sparkSchema.fields()[i].name();
-            DataType dataType = row.schema().fields()[i].dataType();
             CHColumn col = curColumns[i];
             CHType chType = dataTypes[i];
 
