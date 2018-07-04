@@ -1,0 +1,13 @@
+diff --git a/dbms/src/DataTypes/DataTypeDateTime.h b/dbms/src/DataTypes/DataTypeDateTime.h
+index d8a883f318c4..97b4962f39e8 100644
+--- a/dbms/src/DataTypes/DataTypeDateTime.h
++++ b/dbms/src/DataTypes/DataTypeDateTime.h
+@@ -28,7 +28,7 @@ namespace DB
+   * Server time zone is the time zone specified in 'timezone' parameter in configuration file,
+   *  or system time zone at the moment of server startup.
+   */
+-class DataTypeDateTime final : public DataTypeNumberBase<UInt32>
++class DataTypeDateTime final : public DataTypeNumberBase<UInt64>
+ {
+ public:
+     DataTypeDateTime(const std::string & time_zone_name = "");
