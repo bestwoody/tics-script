@@ -22,21 +22,21 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch.{CHConfigConst, CHLogicalPlan, CHRelation, CHSql}
 import org.apache.spark.sql.execution.datasources.CHScanRDD
 
-case class CHScanExec(
-  output: Seq[Attribute],
-  @transient sparkSession: SparkSession,
-  @transient chRelation: CHRelation,
-  @transient chLogicalPlan: CHLogicalPlan)
-  extends LeafExecNode with CHBatchScan {
+case class CHScanExec(output: Seq[Attribute],
+                      @transient sparkSession: SparkSession,
+                      @transient chRelation: CHRelation,
+                      @transient chLogicalPlan: CHLogicalPlan)
+    extends LeafExecNode
+    with CHBatchScan {
 
-  val useSelraw = sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW_TABLE_INFO, "false").toBoolean
+  private val useSelraw =
+    sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW_TABLE_INFO, "false").toBoolean
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     val tableQueryPairs = chRelation.tables.map(table => {
       (table, CHSql.query(table, chLogicalPlan, useSelraw))
     })
-    new CHScanRDD(sparkSession, output, tableQueryPairs,
-      chRelation.partitionsPerSplit) :: Nil
+    new CHScanRDD(sparkSession, output, tableQueryPairs, chRelation.partitionsPerSplit) :: Nil
   }
 
   override protected def doExecute(): RDD[InternalRow] = WholeStageCodegenExec(this).execute()

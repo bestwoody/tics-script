@@ -17,30 +17,30 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.sql.ch.hack.CHStructType
 
-import scala.collection.mutable.Map
-import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
 
-class TableInfo(var schema: StructType, var rowWidth: Int, var rowCount: Long) extends Serializable {
-}
+import scala.collection.mutable
+
+class TableInfo(var schema: StructType, var rowWidth: Int, var rowCount: Long)
+    extends Serializable {}
 
 class CHTableInfo(val table: CHTableRef, val useSelraw: Boolean) extends Serializable {
   private var info: TableInfo = new TableInfo(null, -1, -1)
   private val TIDB_ROWID = "_tidb_rowid"
 
-  def getSchema(): StructType = {
+  def getSchema: StructType = {
     info.schema
   }
 
-  def getRowWidth(): Long = {
+  def getRowWidth: Long = {
     info.rowWidth
   }
 
-  def getRowCount(): Long = {
+  def getRowCount: Long = {
     info.rowCount
   }
 
-  def getInfo(): TableInfo = {
+  def getInfo: TableInfo = {
     info
   }
 
@@ -63,16 +63,16 @@ class CHTableInfo(val table: CHTableRef, val useSelraw: Boolean) extends Seriali
 
   // TODO: Parallel fetch
   def fetchInfo(): Unit = {
-    fetchSchema
-    fetchRows
+    fetchSchema()
+    fetchRows()
   }
 
   // TODO: Async fetch
-  fetchInfo
+  fetchInfo()
 }
 
 object CHTableInfos {
-  val instances: Map[CHTableRef, CHTableInfo] = Map()
+  val instances: mutable.Map[CHTableRef, CHTableInfo] = mutable.Map()
 
   // TODO: Background refresh
   def getInfo(table: CHTableRef, useSelraw: Boolean): CHTableInfo = this.synchronized {
@@ -86,7 +86,7 @@ object CHTableInfos {
   // TODO: Data tiling in different tables should be considered
   def getInfo(clusterTable: Seq[CHTableRef], useSelraw: Boolean): TableInfo = {
     var info: TableInfo = null
-    clusterTable.map(table => {
+    clusterTable.foreach(table => {
       val curr = getInfo(table, useSelraw).getInfo
       if (info == null) {
         info = new TableInfo(curr.schema, curr.rowWidth, curr.rowCount)

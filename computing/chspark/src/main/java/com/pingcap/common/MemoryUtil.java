@@ -41,14 +41,14 @@ public class MemoryUtil {
     private static final Class<?> BYTE_BUFFER_CLASS;
     private static final long BYTE_BUFFER_OFFSET_OFFSET;
     private static final long BYTE_BUFFER_HB_OFFSET;
-    public static final long BYTE_ARRAY_BASE_OFFSET;
+    private static final long BYTE_ARRAY_BASE_OFFSET;
 
     private static final long STRING_VALUE_OFFSET;
 
     private static final boolean BIG_ENDIAN = ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN);
     private static int PAGE_SIZE = -1;
 
-    public static boolean HDFS_READ_HACK_ENABLE;
+    private static boolean HDFS_READ_HACK_ENABLE;
     private static long BlockReaderLocal_verifyChecksum;
     private static long BlockReaderLocal_dataIn;
     private static long DFSInputStream_verifyChecksum;

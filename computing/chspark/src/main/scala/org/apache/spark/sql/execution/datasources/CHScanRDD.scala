@@ -15,7 +15,6 @@
 
 package org.apache.spark.sql.execution.datasources
 
-
 import com.pingcap.theflash.SparkCHClientSelect
 
 import scala.collection.mutable.ListBuffer
@@ -29,11 +28,11 @@ import com.pingcap.theflash.codegene.CHColumnBatch
 import org.apache.spark.sql.ch.CHSql.Query
 import org.apache.spark.util.{TaskCompletionListener, TaskFailureListener}
 
-class CHScanRDD(
-  @transient private val sparkSession: SparkSession,
-  @transient val output: Seq[Attribute],
-  val tableQueryPairs: Seq[(CHTableRef, Query)],
-  private val partitionPerSplit: Int) extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
+class CHScanRDD(@transient private val sparkSession: SparkSession,
+                @transient val output: Seq[Attribute],
+                val tableQueryPairs: Seq[(CHTableRef, Query)],
+                private val partitionPerSplit: Int)
+    extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     val part = split.asInstanceOf[CHPartition]
@@ -45,10 +44,10 @@ class CHScanRDD(
     val client = new SparkCHClientSelect(query, table.host, table.port)
 
     context.addTaskFailureListener(new TaskFailureListener {
-      override def onTaskFailure(context: TaskContext, error: Throwable) = client.close()
+      override def onTaskFailure(context: TaskContext, error: Throwable): Unit = client.close()
     })
     context.addTaskCompletionListener(new TaskCompletionListener {
-      override def onTaskCompletion(context: TaskContext) = client.close()
+      override def onTaskCompletion(context: TaskContext): Unit = client.close()
     })
 
     new Iterator[CHColumnBatch] {
@@ -77,13 +76,17 @@ class CHScanRDD(
         for (part <- partitionList) {
           curParts += part
           if (curParts.length >= partitionPerSplit) {
-            result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
+            result.append(
+              new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})"))
+            )
             curParts.clear()
             index += 1
           }
         }
-        if (curParts.length != 0) {
-          result.append(new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})")))
+        if (curParts.nonEmpty) {
+          result.append(
+            new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})"))
+          )
           curParts.clear()
           index += 1
         }

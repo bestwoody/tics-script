@@ -20,10 +20,14 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 
-class CHRelation(val tables: Seq[CHTableRef], val partitionsPerSplit: Int)
-  (@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf) extends BaseRelation {
+class CHRelation(
+  val tables: Seq[CHTableRef],
+  val partitionsPerSplit: Int
+)(@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf)
+    extends BaseRelation {
 
-  val useSelraw = sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW_TABLE_INFO, "false").toBoolean
+  private val useSelraw =
+    sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW_TABLE_INFO, "false").toBoolean
 
   if (tables.size != tables.toSet.size)
     throw new Exception("Duplicated tables: " + tables.toString)

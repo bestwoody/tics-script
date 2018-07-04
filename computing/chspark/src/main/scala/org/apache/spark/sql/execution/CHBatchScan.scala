@@ -20,32 +20,31 @@ import com.pingcap.theflash.codegene
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.execution.vectorized.{ColumnVector, ColumnarBatch}
 import org.apache.spark.sql.types.DataType
 
 /**
-  * Helper trait for abstracting scan functionality using
-  * [[CHColumnBatch]]es.
-  */
+ * Helper trait for abstracting scan functionality using
+ * [[CHColumnBatch]]es.
+ */
 private[sql] trait CHBatchScan extends CodegenSupport {
   def vectorTypes: Option[Seq[String]] = None
 
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
-    "scanTime" -> SQLMetrics.createTimingMetric(sparkContext, "scan time"))
+    "scanTime" -> SQLMetrics.createTimingMetric(sparkContext, "scan time")
+  )
 
   /**
-    * Generate [[codegene.CHColumnVector]] expressions for
-    * our parent to consume as rows.
-    *
-    * This is called once per [[CHColumnBatch]].
-    */
-  private def genCodeColumnVector(
-    ctx: CodegenContext,
-    columnVar: String,
-    ordinal: String,
-    dataType: DataType,
-    nullable: Boolean): ExprCode = {
+   * Generate [[codegene.CHColumnVector]] expressions for
+   * our parent to consume as rows.
+   *
+   * This is called once per [[CHColumnBatch]].
+   */
+  private def genCodeColumnVector(ctx: CodegenContext,
+                                  columnVar: String,
+                                  ordinal: String,
+                                  dataType: DataType,
+                                  nullable: Boolean): ExprCode = {
 
     val javaType = ctx.javaType(dataType)
     val value = ctx.getValue(columnVar, dataType, ordinal)
@@ -53,20 +52,20 @@ private[sql] trait CHBatchScan extends CodegenSupport {
     val valueVar = ctx.freshName("value")
     val str = s"columnVector[$columnVar, $ordinal, ${dataType.simpleString}]"
     val code = s"${ctx.registerComment(str)}\n" + (if (nullable) {
-      s"""
+                                                     s"""
         boolean $isNullVar = $columnVar.isNullAt($ordinal);
         $javaType $valueVar = $isNullVar ? ${ctx.defaultValue(dataType)} : ($value);
       """
-    } else {
-      s"$javaType $valueVar = $value;"
-    }).trim
+                                                   } else {
+                                                     s"$javaType $valueVar = $value;"
+                                                   }).trim
     ExprCode(code, isNullVar, valueVar)
   }
 
   /**
-    * Produce code to process the input iterator as [[CHColumnBatch]]es.
-    * This produces an [[UnsafeRow]] for each row in each batch.
-    */
+   * Produce code to process the input iterator as [[CHColumnBatch]]es.
+   * This produces an [[UnsafeRow]] for each row in each batch.
+   */
   override protected def doProduce(ctx: CodegenContext): String = {
     // PhysicalRDD always just has one input
     val input = ctx.freshName("input")
@@ -88,13 +87,15 @@ private[sql] trait CHBatchScan extends CodegenSupport {
     val columnVectorClz = classOf[codegene.CHColumnVector].getName
 
     val colVars = output.indices.map(i => ctx.freshName("colInstance" + i))
-    val columnAssigns = colVars.zipWithIndex.map { case (name, i) =>
-      ctx.addMutableState(columnVectorClz, name, s"$name = null;")
-      s"$name = $batch.column($i);"
+    val columnAssigns = colVars.zipWithIndex.map {
+      case (name, i) =>
+        ctx.addMutableState(columnVectorClz, name, s"$name = null;")
+        s"$name = $batch.column($i);"
     }
 
     val nextBatch = ctx.freshName("nextBatch")
-    ctx.addNewFunction(nextBatch,
+    ctx.addNewFunction(
+      nextBatch,
       s"""
          |private void $nextBatch() throws java.io.IOException {
          |  long getBatchStart = System.nanoTime();
@@ -105,12 +106,14 @@ private[sql] trait CHBatchScan extends CodegenSupport {
          |    ${columnAssigns.mkString("", "\n", "\n")}
          |  }
          |  $scanTimeTotalNs += System.nanoTime() - getBatchStart;
-         |}""".stripMargin)
+         |}""".stripMargin
+    )
 
     ctx.currentVars = null
     val rowIdx = ctx.freshName("rowIdx")
-    val columnsBatchInput = (output zip colVars).map { case (attr, colVar) =>
-      genCodeColumnVector(ctx, colVar, rowIdx, attr.dataType, attr.nullable)
+    val columnsBatchInput = (output zip colVars).map {
+      case (attr, colVar) =>
+        genCodeColumnVector(ctx, colVar, rowIdx, attr.dataType, attr.nullable)
     }
     val numRows = ctx.freshName("numRows")
 

@@ -36,7 +36,11 @@ object Hack {
     Some(s"`${hackColumnName(name, dataType).get}` ${chType.name()}")
   }
 
-  def hackSparkColumnData(name: String, chType: CHType, row: Row, index: Int, col: CHColumn): Boolean = {
+  def hackSparkColumnData(name: String,
+                          chType: CHType,
+                          row: Row,
+                          index: Int,
+                          col: CHColumn): Boolean = {
     if (name.startsWith(TIDB_DATE_PREFIX) && (chType == CHTypeInt32.instance || chType == CHTypeInt32.nullableInstance)) {
       val dt = row.getDate(index)
       col.insertInt((dt.getTime / MILLIS_PER_DAY).asInstanceOf[Int])
@@ -52,24 +56,30 @@ object Hack {
 
   def hackStructField(name: String, chType: DataTypeAndNullable, metadata: Metadata): StructField = {
     if (name.startsWith(TIDB_DATE_PREFIX) && (chType.dataType == IntegerType)) {
-      return new CHStructField(name.replaceFirst(TIDB_DATE_PREFIX, ""), DateType, chType.nullable, metadata)
+      return new CHStructField(
+        name.replaceFirst(TIDB_DATE_PREFIX, ""),
+        DateType,
+        chType.nullable,
+        metadata
+      )
     }
     StructField(name, chType.dataType, chType.nullable, metadata)
   }
 
   def hackAttributeReference(attr: AttributeReference): String = attr match {
     case CHAttributeReference(name, _, _, _, _, _, _) => TIDB_DATE_PREFIX + name
-    case _ => attr.name
+    case _                                            => attr.name
   }
 
   def hackSupportCast(cast: Cast): Option[Boolean] = cast match {
     // Any casting to date is not supported as CH date is too narrow.
     case Cast(_, DateType) => Some(false)
     // Any casting tidb date to string or timestamp is not supported as tidb date is represented as Int32.
-    case Cast(CHAttributeReference(_, dataType, _, _, _, _, _), targetType) => (dataType, targetType) match {
-      case (DateType, StringType) => Some(false)
-      case (DateType, TimestampType) => Some(false)
-    }
+    case Cast(CHAttributeReference(_, dataType, _, _, _, _, _), targetType) =>
+      (dataType, targetType) match {
+        case (DateType, StringType)    => Some(false)
+        case (DateType, TimestampType) => Some(false)
+      }
     case _ => None
   }
 }

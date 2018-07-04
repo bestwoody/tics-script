@@ -73,8 +73,13 @@ object CHRawScala {
     val dateFormat: SimpleDateFormat = new SimpleDateFormat("mm:ss")
 
     if (verb >= 0) {
-      println("All finish, total rows: " + totalRows + ", blocks: " + totalBlocks + ", bytes: " + totalBytes)
-      println("Elapsed: " + dateFormat.format(elapsed) + ", mb/s: " + (totalBytes.toDouble / 1000 / elapsed))
+      println(
+        "All finish, total rows: " + totalRows + ", blocks: " + totalBlocks + ", bytes: " + totalBytes
+      )
+      println(
+        "Elapsed: " + dateFormat
+          .format(elapsed) + ", mb/s: " + (totalBytes.toDouble / 1000 / elapsed)
+      )
     }
   }
 }

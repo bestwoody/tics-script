@@ -17,9 +17,6 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.Partition
 
-class CHPartition(
-  val idx: Int,
-  val table: CHTableRef,
-  val query: String) extends Partition {
+class CHPartition(val idx: Int, val table: CHTableRef, val query: String) extends Partition {
   override def index: Int = idx
 }

@@ -36,12 +36,10 @@ class Aggregate0Suite extends BaseClickHouseSuite {
     "select tp_int32 from full_data_type_table group by (tp_int32) order by tp_int32",
     "select tp_int64 from full_data_type_table group by (tp_int64) order by tp_int64",
     "select tp_string from full_data_type_table group by (tp_string) order by tp_string",
-
     "[skip]select 999 + tp_int32 + sum(tp_int32 + 999) from full_data_type_table  group by tp_int32 + 999 order by 1",
     "[skip]select 999 + tp_int32 + sum(tp_int32) from full_data_type_table  group by tp_int32 + 999 order by 1",
     "[skip]select 999 + tp_int32+sum(tp_int32), tp_int32 + 999 + 1 from full_data_type_table  group by tp_int32 + 999 order by 1,2",
     "/*non-order*/select tp_int32 + 999 + 1 from full_data_type_table group by tp_int32 + 999 order by 1",
-
     "/*non-order*/select tp_int32 + 999, tp_int32 + 999 + sum(tp_int32 + 999) from full_data_type_table  group by tp_int32 + 999 order by 1",
     "/*non-order*/select tp_int32 + 999 + sum(tp_int32) from full_data_type_table  group by tp_int32 + 999 order by 1",
     "/*non-order*/select tp_int32 + 999 + sum(tp_int32), tp_int32 + 999 + 1 from full_data_type_table  group by tp_int32 + 999 order by 1,2"

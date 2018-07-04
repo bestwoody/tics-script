@@ -36,10 +36,11 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.MetadataBuilder
 import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, StringType, StructType}
 
-class TypesTestRelation(tableName: String)(@transient val sqlContext: SQLContext) extends BaseRelation {
+class TypesTestRelation(tableName: String)(@transient val sqlContext: SQLContext)
+    extends BaseRelation {
   override lazy val schema: StructType = {
     val fields = new Array[StructField](1)
-    val name="col1"
+    val name = "col1"
     val metadata = new MetadataBuilder().putString("name", name).build()
     // TODO: Make a schema with multi columns
     val ft = DoubleType
@@ -56,14 +57,16 @@ case class TypesTestPlan(output: Seq[Attribute], sparkSession: SparkSession) ext
     result.mapPartitionsWithIndexInternal { (partition, iter) =>
       val proj = UnsafeProjection.create(schema)
       proj.initialize(partition)
-      iter.map { r => proj(r) }
+      iter.map { r =>
+        proj(r)
+      }
     }
   }
   override def children: Seq[SparkPlan] = Nil
 }
 
 class TypesTestRDD(@transient private val sparkSession: SparkSession)
-  extends RDD[Row](sparkSession.sparkContext, Nil) {
+    extends RDD[Row](sparkSession.sparkContext, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = new Iterator[Row] {
     // TODO: Generate table data with multi columns

@@ -195,7 +195,8 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
               skipClickHouse: Boolean = false): Unit = {
     runTestWithoutReplaceTableName(
       qSpark,
-      if (qJDBC == null) replaceJDBCTableName(qSpark, skipJDBC) else replaceJDBCTableName(qJDBC, skipJDBC),
+      if (qJDBC == null) replaceJDBCTableName(qSpark, skipJDBC)
+      else replaceJDBCTableName(qJDBC, skipJDBC),
       qSpark.contains("[skip]"),
       rSpark,
       rJDBC,
@@ -314,7 +315,8 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
   }
 
   private def printList(result: List[List[Any]]): String =
-    if (result == null) s"[len: null] = null" else s"[len: ${result.length}] = ${result.map(mapStringList).mkString(",")}"
+    if (result == null) s"[len: null] = null"
+    else s"[len: ${result.length}] = ${result.map(mapStringList).mkString(",")}"
 
   private def mapStringList(result: List[Any]): String =
     if (result == null) "null" else "List(" + result.map(mapString).mkString(",") + ")"

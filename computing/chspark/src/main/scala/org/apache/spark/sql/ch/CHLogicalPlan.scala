@@ -24,31 +24,32 @@ import org.apache.spark.sql.catalyst.util
  * This IR is hopefully backend independent, thus can be further compiled into
  * various physical representations.
  */
-class CHLogicalPlan(
-  val chProject: CHProject,
-  val chFilter: CHFilter,
-  val chAggregate: CHAggregate,
-  val chTopN: CHTopN) {
+class CHLogicalPlan(val chProject: CHProject,
+                    val chFilter: CHFilter,
+                    val chAggregate: CHAggregate,
+                    val chTopN: CHTopN) {
   override def toString: String = s"CH plan [$chProject, $chFilter, $chAggregate, $chTopN]"
 }
 
 object CHLogicalPlan {
-  def apply(
-    projectList: Seq[Expression],
-    filterPredicates: Seq[Expression],
-    groupingExpressions: Seq[NamedExpression],
-    aggregateExpressions: Seq[AggregateExpression],
-    sortOrders: Seq[SortOrder],
-    limit: Option[Int]): CHLogicalPlan = {
+  def apply(projectList: Seq[Expression],
+            filterPredicates: Seq[Expression],
+            groupingExpressions: Seq[NamedExpression],
+            aggregateExpressions: Seq[AggregateExpression],
+            sortOrders: Seq[SortOrder],
+            limit: Option[Int]): CHLogicalPlan = {
     if (!projectList.forall(CHUtil.isSupportedExpression)
-      || !filterPredicates.forall(CHUtil.isSupportedExpression)
-      || !groupingExpressions.forall(CHUtil.isSupportedExpression)
-      || !aggregateExpressions.forall(CHUtil.isSupportedAggregateExpression)) {
+        || !filterPredicates.forall(CHUtil.isSupportedExpression)
+        || !groupingExpressions.forall(CHUtil.isSupportedExpression)
+        || !aggregateExpressions.forall(CHUtil.isSupportedAggregateExpression)) {
       throw new UnsupportedOperationException
     }
     new CHLogicalPlan(
-      new CHProject(projectList), new CHFilter(filterPredicates),
-      new CHAggregate(groupingExpressions, aggregateExpressions), new CHTopN(sortOrders, limit))
+      new CHProject(projectList),
+      new CHFilter(filterPredicates),
+      new CHAggregate(groupingExpressions, aggregateExpressions),
+      new CHTopN(sortOrders, limit)
+    )
   }
 }
 
@@ -61,20 +62,28 @@ class CHFilter(val predicates: Seq[Expression]) {
 }
 
 class CHAggregate(val groupingExpressions: Seq[NamedExpression],
-  val aggregateExpressions: Seq[AggregateExpression]) {
-  override def toString: String = Seq(
-    if (groupingExpressions.isEmpty) "" else groupingExpressions.map(util.toPrettySQL)
-      .mkString("[", ", ", "]"),
-    if (aggregateExpressions.isEmpty) "" else aggregateExpressions.map(util.toPrettySQL)
-      .mkString("[", ", ", "]"))
-    .filter(_.nonEmpty)
-    .mkString("Aggregate [", ", ", "]")
+                  val aggregateExpressions: Seq[AggregateExpression]) {
+  override def toString: String =
+    Seq(
+      if (groupingExpressions.isEmpty) ""
+      else
+        groupingExpressions
+          .map(util.toPrettySQL)
+          .mkString("[", ", ", "]"),
+      if (aggregateExpressions.isEmpty) ""
+      else
+        aggregateExpressions
+          .map(util.toPrettySQL)
+          .mkString("[", ", ", "]")
+    ).filter(_.nonEmpty)
+      .mkString("Aggregate [", ", ", "]")
 }
 
 class CHTopN(val sortOrders: Seq[SortOrder], val n: Option[Int]) {
-  override def toString: String = Seq(
-    if (sortOrders.isEmpty) "" else sortOrders.map(util.toPrettySQL).mkString("[", ", ", "]"),
-    n.getOrElse("").toString)
-    .filter(_.nonEmpty)
-    .mkString("TopN [", ", ", "]")
+  override def toString: String =
+    Seq(
+      if (sortOrders.isEmpty) "" else sortOrders.map(util.toPrettySQL).mkString("[", ", ", "]"),
+      n.getOrElse("").toString
+    ).filter(_.nonEmpty)
+      .mkString("TopN [", ", ", "]")
 }

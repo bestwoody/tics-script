@@ -13,15 +13,19 @@ class CHTestContext(sparkSession: SparkSession) extends CHContext(sparkSession) 
     val conf: SparkConf = sparkSession.sparkContext.conf
 
     val tableList = database match {
-      case "default" => List("full_data_type_table")
+      case "default"           => List("full_data_type_table")
       case _ if tables == null => throw new RuntimeException("Unable to identify tables")
-      case _ => tables
+      case _                   => tables
     }
     val tableRefList: List[Seq[CHTableRef]] =
-      tableList.map{ table => addresses.map(addr => new CHTableRef(addr._1, addr._2, database, table)) }
-    val rel = tableRefList.map{ new CHRelation(_, partitions)(sqlContext, conf) }
+      tableList.map { table =>
+        addresses.map(addr => new CHTableRef(addr._1, addr._2, database, table))
+      }
+    val rel = tableRefList.map { new CHRelation(_, partitions)(sqlContext, conf) }
     for (i <- rel.indices) {
-      sqlContext.baseRelationToDataFrame(rel(i)).createOrReplaceTempView(tableRefList(i).head.mappedName)
+      sqlContext
+        .baseRelationToDataFrame(rel(i))
+        .createOrReplaceTempView(tableRefList(i).head.mappedName)
     }
   }
 }

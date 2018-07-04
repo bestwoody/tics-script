@@ -35,13 +35,17 @@ class CHSqlSuite extends SparkFunSuite {
   val hackD: CHAttributeReference = new CHAttributeReference("d", DateType, false, Metadata.empty)
   val t = new CHTableRef(null, 0, "D", "T")
 
-  def testCompileExpression(e: Expression, expected: String) : Unit =
+  def testCompileExpression(e: Expression, expected: String): Unit =
     assert(CHSql.compileExpression(e) == expected)
 
-  def testCreateTable(database: String, table: String, schema: StructType, pkList: Array[String], expected: String) : Unit =
+  def testCreateTable(database: String,
+                      table: String,
+                      schema: StructType,
+                      pkList: Array[String],
+                      expected: String): Unit =
     assert(CHSql.createTableStmt(database, schema, pkList, table) == expected)
 
-  def testQuery(table: CHTableRef, chLogicalPlan: CHLogicalPlan, expected: String) : Unit =
+  def testQuery(table: CHTableRef, chLogicalPlan: CHLogicalPlan, expected: String): Unit =
     assert(CHSql.query(table, chLogicalPlan).buildQuery() == expected)
 
   test("null check expressions") {
@@ -69,7 +73,10 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression(a + b * -a, "(`a` + (`b` * (-`a`)))")
     testCompileExpression(a / b * a, "((`a` / `b`) * `a`)")
     testCompileExpression(a / b * (a - abs(b)), "((`a` / `b`) * (`a` - ABS(`b`)))")
-    testCompileExpression(a - b * (a / abs(b + a % 100)), "(`a` - (`b` * (`a` / ABS((`b` + (`a` % 100))))))")
+    testCompileExpression(
+      a - b * (a / abs(b + a % 100)),
+      "(`a` - (`b` * (`a` / ABS((`b` + (`a` % 100))))))"
+    )
   }
 
   test("comparison expressions") {
@@ -107,11 +114,23 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression(b.withNullability(false).cast(TimestampType), "CAST(`b` AS DateTime)")
 
     testCompileExpression((a + b).cast(FloatType), "CAST((`a` + `b`) AS Nullable(Float32))")
-    testCompileExpression((a.withNullability(false) + b).cast(DoubleType), "CAST((`a` + `b`) AS Nullable(Float64))")
-    testCompileExpression((a + b.withNullability(false)).cast(StringType), "CAST((`a` + `b`) AS Nullable(String))")
-    testCompileExpression((a.withNullability(false) + b.withNullability(false)).cast(ShortType), "CAST((`a` + `b`) AS Int16)")
+    testCompileExpression(
+      (a.withNullability(false) + b).cast(DoubleType),
+      "CAST((`a` + `b`) AS Nullable(Float64))"
+    )
+    testCompileExpression(
+      (a + b.withNullability(false)).cast(StringType),
+      "CAST((`a` + `b`) AS Nullable(String))"
+    )
+    testCompileExpression(
+      (a.withNullability(false) + b.withNullability(false)).cast(ShortType),
+      "CAST((`a` + `b`) AS Int16)"
+    )
 
-    testCompileExpression((a.withNullability(false) + b.withNullability(false)).cast(DecimalType.FloatDecimal), "CAST((`a` + `b`) AS Float64)")
+    testCompileExpression(
+      (a.withNullability(false) + b.withNullability(false)).cast(DecimalType.FloatDecimal),
+      "CAST((`a` + `b`) AS Float64)"
+    )
   }
 
   test("hack expressions") {
@@ -120,72 +139,145 @@ class CHSqlSuite extends SparkFunSuite {
   }
 
   test("create table statements") {
-    testCreateTable("Test", "tesT", new StructType(Array(
-      StructField("I", IntegerType, false),
-      StructField("D", DoubleType, true),
-      StructField("s", StringType, true),
-      StructField("dt", DateType, true),
-      StructField("dt_NN", DateType, false)
-    )), Array("I"),
-    "CREATE TABLE `test`.`test` (`i` Int32, `d` Nullable(Float64), `s` Nullable(String), `_tidb_date_dt` Nullable(Int32), `_tidb_date_dt_nn` Int32) ENGINE = MutableMergeTree((`i`), 8192)")
-    testCreateTable("Test", "tesT", new StructType(Array(
-      StructField("I", IntegerType, false),
-      StructField("Dd", DecimalType.bounded(20, 1), false),
-      StructField("dS", DecimalType.bounded(10, 0), true)
-    )), Array("I"),
-      "CREATE TABLE `test`.`test` (`i` Int32, `dd` Float64, `_tidb_decimal_ds` Nullable(String)) ENGINE = MutableMergeTree((`i`), 8192)")
+    testCreateTable(
+      "Test",
+      "tesT",
+      new StructType(
+        Array(
+          StructField("I", IntegerType, false),
+          StructField("D", DoubleType, true),
+          StructField("s", StringType, true),
+          StructField("dt", DateType, true),
+          StructField("dt_NN", DateType, false)
+        )
+      ),
+      Array("I"),
+      "CREATE TABLE `test`.`test` (`i` Int32, `d` Nullable(Float64), `s` Nullable(String), `_tidb_date_dt` Nullable(Int32), `_tidb_date_dt_nn` Int32) ENGINE = MutableMergeTree((`i`), 8192)"
+    )
+    testCreateTable(
+      "Test",
+      "tesT",
+      new StructType(
+        Array(
+          StructField("I", IntegerType, false),
+          StructField("Dd", DecimalType.bounded(20, 1), false),
+          StructField("dS", DecimalType.bounded(10, 0), true)
+        )
+      ),
+      Array("I"),
+      "CREATE TABLE `test`.`test` (`i` Int32, `dd` Float64, `_tidb_decimal_ds` Nullable(String)) ENGINE = MutableMergeTree((`i`), 8192)"
+    )
 
   }
 
   test("empty queries") {
-    testQuery(t, CHLogicalPlan(
-      Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None
-    ), "SELECT  FROM `d`.`t`")
+    testQuery(
+      t,
+      CHLogicalPlan(
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        None
+      ),
+      "SELECT  FROM `d`.`t`"
+    )
   }
 
   test("project queries") {
-    testQuery(t, CHLogicalPlan(
-      Seq(a, b, c),
-      Seq.empty, Seq.empty, Seq.empty, Seq.empty, None
-    ), "SELECT `a`, `b`, `c` FROM `d`.`t`")
+    testQuery(
+      t,
+      CHLogicalPlan(
+        Seq(a, b, c),
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        None
+      ),
+      "SELECT `a`, `b`, `c` FROM `d`.`t`"
+    )
   }
 
   test("filter queries") {
-    testQuery(t, CHLogicalPlan(
-      Seq.empty,
-      Seq(a, b, nullLiteral.isNotNull),
-      Seq.empty, Seq.empty, Seq.empty, None
-    ), "SELECT  FROM `d`.`t` WHERE ((`a` AND `b`) AND NULL IS NOT NULL)")
+    testQuery(
+      t,
+      CHLogicalPlan(
+        Seq.empty,
+        Seq(a, b, nullLiteral.isNotNull),
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        None
+      ),
+      "SELECT  FROM `d`.`t` WHERE ((`a` AND `b`) AND NULL IS NOT NULL)"
+    )
   }
 
   test("aggregate queries") {
-    testQuery(t, CHLogicalPlan(
-      Seq(a, b, sum(c)),
-      Seq.empty,
-      Seq(a, b),
-      Seq.empty, Seq.empty, None
-    ), "SELECT `a`, `b`, SUM(`c`) FROM `d`.`t` GROUP BY `a`, `b`")
+    testQuery(
+      t,
+      CHLogicalPlan(
+        Seq(a, b, sum(c)),
+        Seq.empty,
+        Seq(a, b),
+        Seq.empty,
+        Seq.empty,
+        None
+      ),
+      "SELECT `a`, `b`, SUM(`c`) FROM `d`.`t` GROUP BY `a`, `b`"
+    )
   }
 
   test("top-n queries") {
-    testQuery(t, CHLogicalPlan(
-      Seq.empty, Seq.empty, Seq.empty, Seq.empty,
-      Seq(a desc, b asc),
-      None
-    ), "SELECT  FROM `d`.`t` ORDER BY `a` DESC, `b` ASC")
-    testQuery(t, CHLogicalPlan(
-      Seq.empty, Seq.empty, Seq.empty, Seq.empty,
-      Seq(a asc, CreateNamedStruct(Seq(b.name, b, "col1", a + b, "col2", b + c)) desc, c asc),
-      None
-    ), "SELECT  FROM `d`.`t` ORDER BY `a` ASC, (`b`, (`a` + `b`), (`b` + `c`)) DESC, `c` ASC")
-    testQuery(t, CHLogicalPlan(
-      Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty,
-      Option(1)
-    ), "SELECT  FROM `d`.`t` LIMIT 1")
-    testQuery(t, CHLogicalPlan(
-      Seq.empty, Seq.empty, Seq.empty, Seq.empty,
-      Seq(a desc, b asc),
-      Option(1)
-    ), "SELECT  FROM `d`.`t` ORDER BY `a` DESC, `b` ASC LIMIT 1")
+    testQuery(
+      t,
+      CHLogicalPlan(
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq(a desc, b asc),
+        None
+      ),
+      "SELECT  FROM `d`.`t` ORDER BY `a` DESC, `b` ASC"
+    )
+    testQuery(
+      t,
+      CHLogicalPlan(
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq(a asc, CreateNamedStruct(Seq(b.name, b, "col1", a + b, "col2", b + c)) desc, c asc),
+        None
+      ),
+      "SELECT  FROM `d`.`t` ORDER BY `a` ASC, (`b`, (`a` + `b`), (`b` + `c`)) DESC, `c` ASC"
+    )
+    testQuery(
+      t,
+      CHLogicalPlan(
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Option(1)
+      ),
+      "SELECT  FROM `d`.`t` LIMIT 1"
+    )
+    testQuery(
+      t,
+      CHLogicalPlan(
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq.empty,
+        Seq(a desc, b asc),
+        Option(1)
+      ),
+      "SELECT  FROM `d`.`t` ORDER BY `a` DESC, `b` ASC LIMIT 1"
+    )
   }
 }

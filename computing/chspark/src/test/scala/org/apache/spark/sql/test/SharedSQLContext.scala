@@ -174,8 +174,7 @@ object SharedSQLContext extends Logging {
 
       val loadData = getOrElse(_clickHouseConf, SHOULD_LOAD_DATA, "true").toBoolean
 
-      jdbcUrl =
-        s"jdbc:clickhouse://$jdbcHostname:$jdbcPort"
+      jdbcUrl = s"jdbc:clickhouse://$jdbcHostname:$jdbcPort"
 
       val properties = new ClickHouseProperties()
 
@@ -201,19 +200,16 @@ object SharedSQLContext extends Logging {
           s"chspark-test/chspark-test.sql",
           classLoader = Thread.currentThread().getContextClassLoader
         ).split("\n")
-        queryStringList.foreach {
-          sql =>
-          while (
-            try {
-              _statement.executeUpdate(sql)
-              false
-            } catch {
-              case e: Throwable =>
-                println(e)
-                Thread.sleep(2000)
-                true
-            }
-          ) {}
+        queryStringList.foreach { sql =>
+          while (try {
+                   _statement.executeUpdate(sql)
+                   false
+                 } catch {
+                   case e: Throwable =>
+                     println(e)
+                     Thread.sleep(2000)
+                     true
+                 }) {}
         }
         logger.warn("Loading CHSparkTest.sql successfully.")
       }

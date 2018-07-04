@@ -29,7 +29,9 @@ class ComplexAggregateSuite extends BaseClickHouseSuite {
     "select max(tp_uint64) from full_data_type_table"
   )
 
-  allCases.map { _.replace(")", " / tp_int16)") } ++ allCases.map { _.replace(")", " / tp_float64)") } ++ allCases
+  allCases.map { _.replace(")", " / tp_int16)") } ++ allCases.map {
+    _.replace(")", " / tp_float64)")
+  } ++ allCases
     .map { _.replace(")", " + tp_float32 * 2)") } foreach { query =>
     test(query) {
       runTest(query)
