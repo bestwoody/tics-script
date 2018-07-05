@@ -40,17 +40,14 @@ object CHSql {
   def insertStmt(database: String, table: String) =
     s"INSERT INTO ${getBackQuotedAbsTabName(database, table)} VALUES"
 
-  def dropTableStmt(database: String, table: String): String = {
+  def dropTableStmt(database: String, table: String): String =
     s"DROP TABLE IF EXISTS ${getBackQuotedAbsTabName(database, table)}"
-  }
 
-  def createDatabaseStmt(database: String): String = {
+  def createDatabaseStmt(database: String): String =
     s"CREATE DATABASE `${database.toLowerCase()}`"
-  }
 
-  def dropDatabaseStmt(database: String): String = {
+  def dropDatabaseStmt(database: String): String =
     s"DROP DATABASE IF EXISTS `${database.toLowerCase()}`"
-  }
 
   def createTableStmt(database: String,
                       schema: StructType,
@@ -72,17 +69,14 @@ object CHSql {
                    private val filter: String,
                    private val aggregation: String,
                    private val topN: String) {
-    def buildQuery(partition: String): String = {
+    def buildQuery(partition: String): String =
       buildQueryInternal(CHSql.compileTable(table, partition))
-    }
 
-    def buildQuery(): String = {
+    def buildQuery(): String =
       buildQueryInternal(CHSql.compileTable(table))
-    }
 
-    private def buildQueryInternal(from: String): String = {
+    private def buildQueryInternal(from: String): String =
       s"$projection$from$filter$aggregation$topN"
-    }
 
     override def toString: String = buildQuery()
   }
@@ -94,7 +88,7 @@ object CHSql {
    * @param useSelraw
    * @return
    */
-  def query(table: CHTableRef, chLogicalPlan: CHLogicalPlan, useSelraw: Boolean = false): Query = {
+  def query(table: CHTableRef, chLogicalPlan: CHLogicalPlan, useSelraw: Boolean = false): Query =
     Query(
       compileProject(chLogicalPlan.chProject, useSelraw),
       table,
@@ -102,42 +96,37 @@ object CHSql {
       compileAggregate(chLogicalPlan.chAggregate),
       compileTopN(chLogicalPlan.chTopN)
     )
-  }
 
   /**
    * Query partition list of a table
    * @param table
    * @return
    */
-  def partitionList(table: CHTableRef): String = {
+  def partitionList(table: CHTableRef): String =
     s"SELECT DISTINCT(partition) FROM system.parts WHERE database = '${table.database}' AND table = '${table.table}' AND active = 1"
-  }
 
   /**
    * Compose a desc table string.
    * @param table
    * @return
    */
-  def desc(table: CHTableRef): String = {
+  def desc(table: CHTableRef): String =
     "DESC " + getBackQuotedAbsTabName(table.database, table.table)
-  }
 
   /**
    * Show tables
    * @param database to perform show table
    * @return
    */
-  def showTables(database: String): String = {
+  def showTables(database: String): String =
     s"SHOW TABLES FROM `${database.toLowerCase()}`"
-  }
 
   /**
    * Show databases
    * @return
    */
-  def showDatabases(): String = {
+  def showDatabases(): String =
     s"SHOW DATABASES"
-  }
 
   /**
    * Compose a count(*) SQL string.
@@ -145,12 +134,11 @@ object CHSql {
    * @param useSelraw
    * @return
    */
-  def count(table: CHTableRef, useSelraw: Boolean = false): String = {
+  def count(table: CHTableRef, useSelraw: Boolean = false): String =
     (if (useSelraw) "SELRAW" else "SELECT") + " COUNT(*) FROM " + getBackQuotedAbsTabName(
       table.database,
       table.table
     )
-  }
 
   private def compileSchema(schema: StructType): String = {
     val sb = new StringBuilder()
@@ -213,13 +201,12 @@ object CHSql {
     s"`$columnName` ${chType.name()}"
   }
 
-  private def compileSchema(table: TiTableInfo): String = {
+  private def compileSchema(table: TiTableInfo): String =
     table.getColumns
       .map(column => analyzeColumnDef(column, table))
       .mkString(",")
-  }
 
-  private def compilePKList(table: TiTableInfo): String = {
+  private def compilePKList(table: TiTableInfo): String =
     table.getColumns
       .filter(c => c.isPrimaryKey)
       .map(
@@ -227,7 +214,6 @@ object CHSql {
           s"`${Hack.hackColumnName(c.getName, TiUtils.toSparkDataType(c.getType)).getOrElse(c.getName)}`"
       )
       .mkString(",")
-  }
 
   private def compilePKList(schema: StructType, primaryKeys: Array[String]) =
     primaryKeys
@@ -242,31 +228,27 @@ object CHSql {
       )
       .mkString(", ")
 
-  private def compileProject(chProject: CHProject, useSelraw: Boolean): String = {
+  private def compileProject(chProject: CHProject, useSelraw: Boolean): String =
     (if (useSelraw) "SELRAW " else "SELECT ") + chProject.projectList
       .map(compileExpression)
       .mkString(", ")
-  }
 
-  private def compileTable(table: CHTableRef, partitions: String = null): String = {
+  private def compileTable(table: CHTableRef, partitions: String = null): String =
     if (partitions == null || partitions.isEmpty) {
       s" FROM ${getBackQuotedAbsTabName(table.database, table.mappedName)}"
     } else {
       s" FROM ${getBackQuotedAbsTabName(table.database, table.mappedName)} PARTITION $partitions"
     }
-  }
 
-  private def compileFilter(chFilter: CHFilter): String = {
+  private def compileFilter(chFilter: CHFilter): String =
     if (chFilter.predicates.isEmpty) ""
     else " WHERE " + chFilter.predicates.reduceLeftOption(And).map(compileExpression).get
-  }
 
-  private def compileAggregate(chAggregate: CHAggregate): String = {
+  private def compileAggregate(chAggregate: CHAggregate): String =
     if (chAggregate.groupingExpressions.isEmpty) ""
     else " GROUP BY " + chAggregate.groupingExpressions.map(compileExpression).mkString(", ")
-  }
 
-  private def compileTopN(chTopN: CHTopN): String = {
+  private def compileTopN(chTopN: CHTopN): String =
     (if (chTopN.sortOrders.isEmpty) ""
      else
        " ORDER BY " + chTopN.sortOrders
@@ -281,9 +263,8 @@ object CHSql {
            }
          })
          .mkString(", ")) + chTopN.n.map(" LIMIT " + _).getOrElse("")
-  }
 
-  private def compileAggregateExpression(ae: AggregateExpression): String = {
+  private def compileAggregateExpression(ae: AggregateExpression): String =
     (ae.aggregateFunction, ae.isDistinct) match {
       case (Average(child), false)  => s"AVG(${compileExpression(child)})"
       case (Count(children), false) => s"COUNT(${children.map(compileExpression).mkString(", ")})"
@@ -295,9 +276,8 @@ object CHSql {
           s"Aggregate Function ${ae.toString} is not supported by CHSql."
         )
     }
-  }
 
-  def compileExpression(expression: Expression): String = {
+  def compileExpression(expression: Expression): String =
     expression match {
       case Literal(value, dataType) =>
         if (dataType == null || value == null) {
@@ -356,7 +336,6 @@ object CHSql {
           s"Expression $expression is not supported by CHSql."
         )
     }
-  }
 
   /**
    * Escape a string to CH string literal.

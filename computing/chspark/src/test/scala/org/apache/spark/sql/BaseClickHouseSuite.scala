@@ -79,9 +79,8 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     initializeTimeZone()
   }
 
-  def initializeTimeZone(): Unit = {
+  def initializeTimeZone(): Unit =
     clickHouseStmt = clickHouseConn.createStatement()
-  }
 
   case class TestTables(dbName: String, tables: String*)
 
@@ -100,9 +99,8 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     initializeTimeZone()
   }
 
-  def setLogLevel(level: String): Unit = {
+  def setLogLevel(level: String): Unit =
     spark.sparkContext.setLogLevel(level)
-  }
 
   def replaceJDBCTableName(qSpark: String, skipJDBC: Boolean): String = {
     var qJDBC: String = null
@@ -162,8 +160,8 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
                         rSpark: List[List[Any]] = null,
                         rJDBC: List[List[Any]] = null,
                         rClickHouse: List[List[Any]] = null,
-                        skipJDBC: Boolean = false,
-                        skipClickHouse: Boolean = false): Unit = {
+                        skipJDBC: Boolean = true,
+                        skipClickHouse: Boolean = false): Unit =
     try {
       explainSpark(qSpark)
       if (qJDBC == null) {
@@ -183,15 +181,14 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     } catch {
       case e: Throwable => fail(e)
     }
-  }
 
   def runTest(qSpark: String,
               qJDBC: String = null,
               rSpark: List[List[Any]] = null,
               rJDBC: List[List[Any]] = null,
               rClickHouse: List[List[Any]] = null,
-              skipJDBC: Boolean = false,
-              skipClickHouse: Boolean = false): Unit = {
+              skipJDBC: Boolean = true,
+              skipClickHouse: Boolean = false): Unit =
     runTestWithoutReplaceTableName(
       qSpark,
       if (qJDBC == null) replaceJDBCTableName(qSpark, skipJDBC)
@@ -203,15 +200,14 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       skipJDBC,
       skipClickHouse
     )
-  }
 
   def runTestWithSkip(qSpark: String,
                       skipped: Boolean = false,
                       rSpark: List[List[Any]] = null,
                       rJDBC: List[List[Any]] = null,
                       rClickHouse: List[List[Any]] = null,
-                      skipJDBC: Boolean = false,
-                      skipClickHouse: Boolean = false): Unit = {
+                      skipJDBC: Boolean = true,
+                      skipClickHouse: Boolean = false): Unit =
     runTestWithoutReplaceTableName(
       qSpark,
       replaceJDBCTableName(qSpark, skipJDBC),
@@ -222,7 +218,6 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       skipJDBC,
       skipClickHouse
     )
-  }
 
   /** Run test with sql `qSpark` for CHSpark and ClickHouse, `qJDBC` for Spark-JDBC. Throw fail exception when
    *    - CHSpark query throws exception
@@ -247,7 +242,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
                                      rSpark: List[List[Any]] = null,
                                      rJDBC: List[List[Any]] = null,
                                      rClickHouse: List[List[Any]] = null,
-                                     skipJDBC: Boolean = false,
+                                     skipJDBC: Boolean = true,
                                      skipClickHouse: Boolean = false): Unit = {
     if (skipped) {
       logger.warn(s"Test is skipped. [With Spark SQL: $qSpark]")
@@ -320,7 +315,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
   private def mapStringList(result: List[Any]): String =
     if (result == null) "null" else "List(" + result.map(mapString).mkString(",") + ")"
 
-  private def mapString(result: Any): String = {
+  private def mapString(result: Any): String =
     if (result == null) "null"
     else
       result match {
@@ -334,5 +329,4 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
         case _ =>
           result.toString
       }
-  }
 }

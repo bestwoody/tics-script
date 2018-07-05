@@ -35,7 +35,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     sqlConf.getConfString(CHConfigConst.ENABLE_PUSHDOWN_AGG, "true").toBoolean
 
   // -------------------- Physical plan generation --------------------
-  override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
+  override def apply(plan: LogicalPlan): Seq[SparkPlan] =
     try {
       plan
         .collectFirst {
@@ -90,21 +90,19 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         logWarning("CHStrategy downgrading to Spark plan as strategy failed.", e)
         Nil
     }
-  }
 
   private def pruneTopNFilterProject(relation: LogicalRelation,
                                      source: CHRelation,
                                      projectList: Seq[NamedExpression],
                                      filterPredicates: Seq[Expression],
                                      sortOrder: Seq[SortOrder],
-                                     limit: Int): SparkPlan = {
+                                     limit: Int): SparkPlan =
     createCHPlan(relation, source, projectList, filterPredicates, sortOrder, Option(limit))
-  }
 
   private def createTopNPlan(limit: Int,
                              sortOrder: Seq[SortOrder],
                              project: Seq[NamedExpression],
-                             child: LogicalPlan): SparkPlan = {
+                             child: LogicalPlan): SparkPlan =
     child match {
       case PhysicalOperation(projectList, filters, rel @ LogicalRelation(source: CHRelation, _, _))
           if filters.forall(CHUtil.isSupportedExpression) =>
@@ -116,7 +114,6 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         )
       case _ => TakeOrderedAndProjectExec(limit, sortOrder, project, planLater(child))
     }
-  }
 
   private def createAggregatePlan(groupingExpressions: Seq[NamedExpression],
                                   aggregateExpressions: Seq[AggregateExpression],
@@ -127,9 +124,8 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
       case e if e.deterministic => e.canonicalized -> Alias(e, e.toString())()
     }.toMap
 
-    def aliasPushedPartialResult(e: AggregateExpression): Alias = {
+    def aliasPushedPartialResult(e: AggregateExpression): Alias =
       deterministicAggAliases.getOrElse(e.canonicalized, Alias(e, e.toString)())
-    }
 
     val residualAggregateExpressions = aggregateExpressions.map { aggExpr =>
       // As `aggExpr` is being pushing down to CH, we need to replace the original Catalyst

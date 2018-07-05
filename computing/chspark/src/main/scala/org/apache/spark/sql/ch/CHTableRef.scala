@@ -23,7 +23,6 @@ class CHTableRef(val host: String, val port: Int, _database: String, _table: Str
 
   val mappedName: String = table
 
-  override def toString: String = {
+  override def toString: String =
     s"{host=$host, port=$port, db=$database, table=$table}"
-  }
 }

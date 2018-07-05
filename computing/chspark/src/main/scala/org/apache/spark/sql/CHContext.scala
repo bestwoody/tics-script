@@ -56,26 +56,21 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
   }
 
   // TODO: Needs to hook in catalog after 2.3 port
-  def listDatabases(): Array[String] = {
+  def listDatabases(): Array[String] =
     CHUtil.listDatabases(cluster.nodes.head)
-  }
 
   // TODO: Needs to hook in catalog after 2.3 port
-  def listTables(database: String): Array[String] = {
+  def listTables(database: String): Array[String] =
     CHUtil.listTables(database, cluster.nodes.head)
-  }
 
-  def dropTable(database: String, table: String): Unit = {
+  def dropTable(database: String, table: String): Unit =
     CHUtil.dropTable(database, table, cluster)
-  }
 
-  def dropDatabase(database: String): Unit = {
+  def dropDatabase(database: String): Unit =
     CHUtil.dropDatabase(database, cluster)
-  }
 
-  def createDatabase(database: String): Unit = {
+  def createDatabase(database: String): Unit =
     CHUtil.createDatabase(database, cluster)
-  }
 
   def createTableFromTiDB(database: String,
                           table: String,
@@ -162,9 +157,8 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList.head.mappedName)
   }
 
-  def sql(sqlText: String): DataFrame = {
+  def sql(sqlText: String): DataFrame =
     sqlContext.sql(sqlText)
-  }
 
   import java.sql.DriverManager
   import java.sql.Connection

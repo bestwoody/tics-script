@@ -14,13 +14,12 @@ object Hack {
   private final val SECONDS_PER_DAY = 60 * 60 * 24L
   private final val MILLIS_PER_DAY = SECONDS_PER_DAY * 1000L
 
-  def hackColumnName(name: String, dataType: DataType): Option[String] = {
+  def hackColumnName(name: String, dataType: DataType): Option[String] =
     if (dataType == DateType) {
       Some(s"${(TIDB_DATE_PREFIX + name).toLowerCase()}")
     } else {
       Option.empty
     }
-  }
 
   def hackColumnDef(name: String, dataType: DataType, nullable: Boolean): Option[String] = {
     var chType: CHType = null
@@ -40,7 +39,7 @@ object Hack {
                           chType: CHType,
                           row: Row,
                           index: Int,
-                          col: CHColumn): Boolean = {
+                          col: CHColumn): Boolean =
     if (name.startsWith(TIDB_DATE_PREFIX) && (chType == CHTypeInt32.instance || chType == CHTypeInt32.nullableInstance)) {
       val dt = row.getDate(index)
       col.insertInt((dt.getTime / MILLIS_PER_DAY).asInstanceOf[Int])
@@ -48,7 +47,6 @@ object Hack {
     } else {
       false
     }
-  }
 
   def hackStructField(name: String,
                       chType: DataTypeAndNullable,

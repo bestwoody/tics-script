@@ -40,7 +40,7 @@ object CHUtil {
                   table: String,
                   schema: StructType,
                   primaryKeys: Array[String],
-                  cluster: Cluster): (Partitioner.Value, Int) = {
+                  cluster: Cluster): (Partitioner.Value, Int) =
     try {
       cluster.nodes.foreach(node => createTable(database, table, schema, primaryKeys, node))
       if (primaryKeys.length == 1) {
@@ -62,12 +62,11 @@ object CHUtil {
         cluster.nodes.foreach(node => tryDropTable(database, table, node))
         throw e
     }
-  }
 
   def createTable(database: String,
                   table: TiTableInfo,
                   cluster: Cluster,
-                  partitionNum: Int = 128): (Partitioner.Value, Int) = {
+                  partitionNum: Int = 128): (Partitioner.Value, Int) =
     try {
       cluster.nodes.foreach(node => createTable(database, table, node, partitionNum))
       if (table.isPkHandle) {
@@ -84,7 +83,6 @@ object CHUtil {
         cluster.nodes.foreach(node => tryDropTable(database, table.getName, node))
         throw e
     }
-  }
 
   private def createTable(database: String,
                           table: TiTableInfo,
@@ -123,7 +121,7 @@ object CHUtil {
     }
   }
 
-  def dropTable(database: String, table: String, cluster: Cluster): Unit = {
+  def dropTable(database: String, table: String, cluster: Cluster): Unit =
     try {
       cluster.nodes.foreach(node => dropTable(database, table, node))
     } catch {
@@ -133,9 +131,8 @@ object CHUtil {
         cluster.nodes.foreach(node => tryDropTable(database, table, node))
         throw e
     }
-  }
 
-  def createDatabase(database: String, cluster: Cluster): Unit = {
+  def createDatabase(database: String, cluster: Cluster): Unit =
     try {
       cluster.nodes.foreach(node => createDatabase(database, node))
     } catch {
@@ -145,31 +142,27 @@ object CHUtil {
         cluster.nodes.foreach(node => tryDropDatabase(database, node))
         throw e
     }
-  }
 
-  def dropDatabase(database: String, cluster: Cluster): Unit = {
+  def dropDatabase(database: String, cluster: Cluster): Unit =
     try {
       cluster.nodes.foreach(node => dropDatabase(database, node))
     } catch {
       case e: Throwable => throw e
     }
-  }
 
-  private def tryDropDatabase(database: String, node: Node) = {
+  private def tryDropDatabase(database: String, node: Node) =
     try {
       dropDatabase(database, node)
     } catch {
       case _: Throwable => // ignore
     }
-  }
 
-  private def tryDropTable(database: String, table: String, node: Node) = {
+  private def tryDropTable(database: String, table: String, node: Node) =
     try {
       dropTable(database, table, node)
     } catch {
       case _: Throwable => // ignore
     }
-  }
 
   private def dropTable(database: String, table: String, node: Node): Unit = {
     val queryString = CHSql.dropTableStmt(database, table)
@@ -545,7 +538,7 @@ object CHUtil {
   }
 
   // TODO: Pushdown more.
-  def isSupportedExpression(exp: Expression): Boolean = {
+  def isSupportedExpression(exp: Expression): Boolean =
     // println("PROBE isSupportedExpression:" + exp.getClass.getName + ", " + exp)
     exp match {
       case _: Literal            => true
@@ -594,9 +587,8 @@ object CHUtil {
         isSupportedAggregateExpression(ae)
       case _ => false
     }
-  }
 
-  def isSupportedAggregateExpression(ae: AggregateExpression): Boolean = {
+  def isSupportedAggregateExpression(ae: AggregateExpression): Boolean =
     // Should not support any AggregateExpression that has isDistinct = true,
     // because we have to unify results on different partitions.
     (ae.aggregateFunction, ae.isDistinct) match {
@@ -608,12 +600,10 @@ object CHUtil {
       case (Sum(child), _)      => isSupportedExpression(child)
       case _                    => false
     }
-  }
 
-  def genQueryId(prefix: String): String = {
+  def genQueryId(prefix: String): String =
     this.synchronized {
       prefix + UUID.randomUUID.toString
     }
-  }
 
 }

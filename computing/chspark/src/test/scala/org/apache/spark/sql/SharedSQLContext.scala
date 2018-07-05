@@ -147,25 +147,22 @@ object SharedSQLContext extends Logging {
    * 'initializeSession' between a 'describe' and an 'it' call than it does to
    * call 'beforeAll'.
    */
-  protected def initializeSession(): Unit = {
+  protected def initializeSession(): Unit =
     if (_spark == null) {
       _spark = _sparkSession
     }
-  }
 
-  private def initializeJDBC(): Unit = {
+  private def initializeJDBC(): Unit =
     if (_sparkJDBC == null) {
       _sparkJDBC = _sparkSession
     }
-  }
 
-  protected def initializeCHContext(): Unit = {
+  protected def initializeCHContext(): Unit =
     if (_spark != null && _ch == null) {
       _ch = new CHTestContext(_spark)
     }
-  }
 
-  private def initializeClickHouse(forceNotLoad: Boolean = false): Unit = {
+  private def initializeClickHouse(forceNotLoad: Boolean = false): Unit =
     if (_clickHouseConnection == null) {
 
       val jdbcHostname = getOrElse(_clickHouseConf, CLICKHOUSE_ADDRESS, "127.0.0.1")
@@ -214,9 +211,8 @@ object SharedSQLContext extends Logging {
         logger.warn("Loading CHSparkTest.sql successfully.")
       }
     }
-  }
 
-  private def initializeConf(): Unit = {
+  private def initializeConf(): Unit =
     if (_clickHouseConf == null) {
       val confStream = Thread
         .currentThread()
@@ -232,7 +228,6 @@ object SharedSQLContext extends Logging {
       _clickHouseConf = prop
       _sparkSession = new TestSparkSession(sparkConf)
     }
-  }
 
   /**
    * Make sure the [[TestSparkSession]] is initialized before any tests are run.

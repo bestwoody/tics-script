@@ -28,21 +28,17 @@ class CHTableInfo(val table: CHTableRef, val useSelraw: Boolean) extends Seriali
   private var info: TableInfo = new TableInfo(null, -1, -1)
   private val TIDB_ROWID = "_tidb_rowid"
 
-  def getSchema: StructType = {
+  def getSchema: StructType =
     info.schema
-  }
 
-  def getRowWidth: Long = {
+  def getRowWidth: Long =
     info.rowWidth
-  }
 
-  def getRowCount: Long = {
+  def getRowCount: Long =
     info.rowCount
-  }
 
-  def getInfo: TableInfo = {
+  def getInfo: TableInfo =
     info
-  }
 
   def fetchSchema(): Unit = {
     val fields = CHUtil.getFields(table)
@@ -57,9 +53,8 @@ class CHTableInfo(val table: CHTableRef, val useSelraw: Boolean) extends Seriali
     // TODO: Calculate row width
   }
 
-  def fetchRows(): Unit = {
+  def fetchRows(): Unit =
     info.rowCount = CHUtil.getRowCount(table, useSelraw)
-  }
 
   // TODO: Parallel fetch
   def fetchInfo(): Unit = {

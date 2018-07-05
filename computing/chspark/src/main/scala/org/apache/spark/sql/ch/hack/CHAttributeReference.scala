@@ -22,7 +22,7 @@ class CHAttributeReference(name: String,
       isGenerated = isGenerated
     )
 
-  override def withNullability(newNullability: Boolean): AttributeReference = {
+  override def withNullability(newNullability: Boolean): AttributeReference =
     if (nullable == newNullability) {
       this
     } else {
@@ -36,9 +36,8 @@ class CHAttributeReference(name: String,
         isGenerated
       )
     }
-  }
 
-  override def withName(newName: String): AttributeReference = {
+  override def withName(newName: String): AttributeReference =
     if (name == newName) {
       this
     } else {
@@ -52,9 +51,8 @@ class CHAttributeReference(name: String,
         isGenerated
       )
     }
-  }
 
-  override def withQualifier(newQualifier: Option[String]): AttributeReference = {
+  override def withQualifier(newQualifier: Option[String]): AttributeReference =
     if (newQualifier == qualifier) {
       this
     } else {
@@ -68,9 +66,8 @@ class CHAttributeReference(name: String,
         isGenerated
       )
     }
-  }
 
-  override def withExprId(newExprId: ExprId): AttributeReference = {
+  override def withExprId(newExprId: ExprId): AttributeReference =
     if (exprId == newExprId) {
       this
     } else {
@@ -84,11 +81,9 @@ class CHAttributeReference(name: String,
         isGenerated
       )
     }
-  }
 
-  override def withMetadata(newMetadata: Metadata): Attribute = {
+  override def withMetadata(newMetadata: Metadata): Attribute =
     new CHAttributeReference(name, dataType, nullable, newMetadata, exprId, qualifier, isGenerated)
-  }
 }
 
 object CHAttributeReference {

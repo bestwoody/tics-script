@@ -75,7 +75,6 @@ class TypesTestRDD(@transient private val sparkSession: SparkSession)
     override def next(): Row = Row.fromSeq(Seq(iterator.next))
   }
 
-  override protected def getPartitions: Array[Partition] = {
+  override protected def getPartitions: Array[Partition] =
     Array(new SimplePartition(0))
-  }
 }
