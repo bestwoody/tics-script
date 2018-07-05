@@ -255,6 +255,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     if (r1 == null) {
       try {
         r1 = querySpark(qSpark)
+        printR1(r1)
       } catch {
         case e: Throwable => fail(e)
       }
@@ -272,6 +273,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     if (!skipJDBC && r2 == null) {
       try {
         r2 = querySpark(qJDBC)
+        printR2(r2)
       } catch {
         case e: Throwable =>
 //          println(e.getMessage)
@@ -289,6 +291,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       if (!skipClickHouse && r3 == null) {
         try {
           r3 = queryClickHouse(qClickHouse)
+          printR3(r3)
         } catch {
           case e: Throwable =>
             println(e.getMessage)
@@ -297,17 +300,37 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       }
       val comp13 = compResult(r1, r3, isOrdered)
       if (skipClickHouse || !comp13) {
-        fail(
-          s"""Failed with
-             |CHSpark:\t\t${StringUtils.substring(printList(r1), 0, 200)}
-             |Spark With JDBC:${StringUtils.substring(printList(r2), 0, 200)}
-             |ClickHouse:\t\t${StringUtils.substring(printList(r3), 0, 200)}""".stripMargin
-        )
+        if (truncateOutput) {
+          fail(
+            s"""Failed with
+               |CHSpark:\t\t${StringUtils.substring(listToString(r1), 0, 200)}
+               |Spark With JDBC:${StringUtils.substring(listToString(r2), 0, 200)}
+               |ClickHouse:\t\t${StringUtils.substring(listToString(r3), 0, 200)}""".stripMargin
+          )
+        } else {
+          fail(
+            s"""Failed with
+               |CHSpark:\t\t${listToString(r1)}
+               |Spark With JDBC:${listToString(r2)}
+               |ClickHouse:\t\t${listToString(r3)}""".stripMargin
+          )
+        }
       }
     }
   }
 
-  private def printList(result: List[List[Any]]): String =
+  private def printR1(result: List[List[Any]]) = printList("r1: ", result)
+
+  private def printR2(result: List[List[Any]]) = printList("r2: ", result)
+
+  private def printR3(result: List[List[Any]]) = printList("r3: ", result)
+
+  private def printList(prefix: String, result: List[List[Any]]): Unit =
+    if (showTestOutput) {
+      println(prefix + " " + listToString(result))
+    }
+
+  private def listToString(result: List[List[Any]]): String =
     if (result == null) s"[len: null] = null"
     else s"[len: ${result.length}] = ${result.map(mapStringList).mkString(",")}"
 

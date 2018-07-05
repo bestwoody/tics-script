@@ -23,4 +23,6 @@ object TestConstants {
   val TPCH_DB_NAME = "tpch.db"
   val SHOULD_LOAD_DATA = "test.data.load"
   val SHOULD_SKIP_TEST = "test.skip"
+  val SHOW_TEST_OUTPUT = "test.output.show"
+  val TRUNCATE_TEST_OUTPUT = "test.output.truncate"
 }

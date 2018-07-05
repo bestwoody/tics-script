@@ -39,12 +39,16 @@ object Utils {
     }
   }
 
-  def getFlag(prop: Properties, key: String): Boolean = {
+  def getFlag(prop: Properties, key: String, defaultTrue: Boolean = false): Boolean = {
     val jvmProp = System.getProperty(key)
     if (jvmProp != null) {
       jvmProp.equalsIgnoreCase("true")
     } else {
-      Option(prop.getProperty(key)).getOrElse("false").equalsIgnoreCase("true")
+      if (defaultTrue) {
+        Option(prop.getProperty(key)).getOrElse("true").equalsIgnoreCase("true")
+      } else {
+        Option(prop.getProperty(key)).getOrElse("false").equalsIgnoreCase("true")
+      }
     }
   }
 

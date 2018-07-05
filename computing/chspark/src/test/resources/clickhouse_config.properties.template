@@ -6,3 +6,7 @@
 # tpch.db=tpch_test
 # Whether to load test data before running tests. If you haven't load CHSpark or TPCH data, set this to true. The next time you run tests, you can set this to false.
 # test.data.load=false
+# Whether to output test log
+# test.output.show=false
+# Whether to truncate long test failure output
+# test.output.truncate=true

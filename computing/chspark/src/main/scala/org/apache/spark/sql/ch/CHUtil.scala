@@ -597,8 +597,12 @@ object CHUtil {
       case (Count(children), _) => children.forall(isSupportedExpression)
       case (Min(child), _)      => isSupportedExpression(child)
       case (Max(child), _)      => isSupportedExpression(child)
-      case (Sum(child), _)      => isSupportedExpression(child)
-      case _                    => false
+      case (Sum(child), _) =>
+        child.dataType match {
+          case DecimalType() => false
+          case _             => isSupportedExpression(child)
+        }
+      case _ => false
     }
 
   def genQueryId(prefix: String): String =

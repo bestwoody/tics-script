@@ -270,7 +270,15 @@ object CHSql {
       case (Count(children), false) => s"COUNT(${children.map(compileExpression).mkString(", ")})"
       case (Min(child), false)      => s"MIN(${compileExpression(child)})"
       case (Max(child), false)      => s"MAX(${compileExpression(child)})"
-      case (Sum(child), false)      => s"SUM(${compileExpression(child)})"
+      case (Sum(child), false) =>
+        child.dataType match {
+          case DecimalType() =>
+            throw new UnsupportedOperationException(
+              s"Aggregate Function ${ae.toString} over decimal value is not supported by CHSql."
+            )
+          case _ =>
+        }
+        s"SUM(${compileExpression(child)})"
       case _ =>
         throw new UnsupportedOperationException(
           s"Aggregate Function ${ae.toString} is not supported by CHSql."

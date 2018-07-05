@@ -15,9 +15,25 @@ import static com.pingcap.common.MemoryUtil.allocateDirect;
 public class CHTypeDecimal implements CHType {
     public int precision, scale;
 
+    public static final int MAX_PRECISION = 38;
+    public static final int MAX_SCALE = 38;
+    public static final int SYSTEM_DEFAULT_PRECISION = 38;
+    public static final int SYSTEM_DEFAULT_SCALE = 18;
+
     public CHTypeDecimal(int precision, int scale) {
         this.precision = precision;
         this.scale = scale;
+    }
+
+    /**
+     * Checks if decimal's precision and scale is invalid in Spark
+     *
+     * @param precision precision
+     * @param scale scale
+     * @return whether invalid
+     */
+    public static boolean isInvalidDecimal(int precision, int scale) {
+        return precision > CHTypeDecimal.MAX_PRECISION || scale > CHTypeDecimal.MAX_SCALE;
     }
 
     @Override

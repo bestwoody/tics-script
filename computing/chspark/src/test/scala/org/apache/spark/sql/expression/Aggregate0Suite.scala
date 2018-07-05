@@ -27,6 +27,7 @@ class Aggregate0Suite extends BaseClickHouseSuite {
     "select tp_datetime from full_data_type_table group by (tp_datetime) order by tp_datetime",
     "select tp_float32 from full_data_type_table group by (tp_float32) order by tp_float32",
     "select tp_float64 from full_data_type_table group by (tp_float64) order by tp_float64",
+    "select tp_decimal from full_data_type_table group by (tp_decimal) order by tp_decimal",
     "select tp_uint8 from full_data_type_table group by (tp_uint8) order by tp_uint8",
     "select tp_uint16 from full_data_type_table group by (tp_uint16) order by tp_uint16",
     "select tp_uint32 from full_data_type_table group by (tp_uint32) order by tp_uint32",
@@ -39,16 +40,16 @@ class Aggregate0Suite extends BaseClickHouseSuite {
     "[skip]select 999 + tp_int32 + sum(tp_int32 + 999) from full_data_type_table  group by tp_int32 + 999 order by 1",
     "[skip]select 999 + tp_int32 + sum(tp_int32) from full_data_type_table  group by tp_int32 + 999 order by 1",
     "[skip]select 999 + tp_int32+sum(tp_int32), tp_int32 + 999 + 1 from full_data_type_table  group by tp_int32 + 999 order by 1,2",
-    "/*non-order*/select tp_int32 + 999 + 1 from full_data_type_table group by tp_int32 + 999 order by 1",
-    "/*non-order*/select tp_int32 + 999, tp_int32 + 999 + sum(tp_int32 + 999) from full_data_type_table  group by tp_int32 + 999 order by 1",
-    "/*non-order*/select tp_int32 + 999 + sum(tp_int32) from full_data_type_table  group by tp_int32 + 999 order by 1",
-    "/*non-order*/select tp_int32 + 999 + sum(tp_int32), tp_int32 + 999 + 1 from full_data_type_table  group by tp_int32 + 999 order by 1,2"
+    "[skip]/*non-order*/select tp_int32 + 999 + 1 from full_data_type_table group by tp_int32 + 999 order by 1",
+    "[skip]/*non-order*/select tp_int32 + 999, tp_int32 + 999 + sum(tp_int32 + 999) from full_data_type_table  group by tp_int32 + 999 order by 1",
+    "[skip]/*non-order*/select tp_int32 + 999 + sum(tp_int32) from full_data_type_table  group by tp_int32 + 999 order by 1",
+    "[skip]/*non-order*/select tp_int32 + 999 + sum(tp_int32), tp_int32 + 999 + 1 from full_data_type_table  group by tp_int32 + 999 order by 1,2"
   )
 
   allCases foreach { query =>
     {
       test(query) {
-        runTest(query, skipClickHouse = true)
+        runTest(query)
       }
     }
   }

@@ -60,6 +60,10 @@ trait SharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfter
 
   protected def refreshConnections(): Unit = SharedSQLContext.refreshConnections()
 
+  protected def truncateOutput: Boolean = SharedSQLContext.truncateOutput
+
+  protected def showTestOutput: Boolean = SharedSQLContext.showTestOutput
+
   /**
    * The [[TestSQLContext]] to use for all tests in this suite.
    */
@@ -113,6 +117,8 @@ object SharedSQLContext extends Logging {
   private var _sparkJDBC: SparkSession = _
   protected var jdbcUrl: String = _
   protected var tpchDBName: String = _
+  protected var truncateOutput: Boolean = _
+  protected var showTestOutput: Boolean = _
 
   protected lazy val sql: String => DataFrame = spark.sql _
 
@@ -225,6 +231,8 @@ object SharedSQLContext extends Logging {
       tpchDBName = getOrElse(prop, TPCH_DB_NAME, "default")
       _clickHouseConf = prop
       _sparkSession = new TestSparkSession(sparkConf)
+      truncateOutput = getFlag(prop, TRUNCATE_TEST_OUTPUT, defaultTrue = true)
+      showTestOutput = getFlag(prop, SHOW_TEST_OUTPUT)
     }
 
   /**

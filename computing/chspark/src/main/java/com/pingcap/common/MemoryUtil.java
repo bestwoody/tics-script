@@ -1,6 +1,7 @@
 package com.pingcap.common;
 
 import com.google.common.primitives.UnsignedLong;
+import com.pingcap.ch.datatypes.CHTypeDecimal;
 import com.sun.management.OperatingSystemMXBean;
 
 import org.apache.hadoop.hdfs.BlockReader;
@@ -229,6 +230,10 @@ public class MemoryUtil {
         int precision = (int)unsafe.getShort(address + 48);
         int scale = (int)unsafe.getByte(address + 50);
         BigDecimal result = new BigDecimal(dec, scale);
+        if (CHTypeDecimal.isInvalidDecimal(precision, scale)) {
+            scale = CHTypeDecimal.SYSTEM_DEFAULT_PRECISION - precision;
+            precision = CHTypeDecimal.SYSTEM_DEFAULT_PRECISION;
+        }
         if (sign > 0) {
             return Decimal.apply(result.negate(), precision, scale);
         }

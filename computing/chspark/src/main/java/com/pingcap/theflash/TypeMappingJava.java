@@ -35,7 +35,13 @@ public class TypeMappingJava {
         if (chType == CHTypeString.instance || chType instanceof CHTypeFixedString) {
             return new DataTypeAndNullable(DataTypes.StringType);
         } else if (chType instanceof CHTypeDecimal) {
-            return new DataTypeAndNullable(DataTypes.createDecimalType(((CHTypeDecimal)chType).precision, ((CHTypeDecimal)chType).scale));
+            int precision = ((CHTypeDecimal)chType).precision;
+            int scale = ((CHTypeDecimal)chType).scale;
+            if (CHTypeDecimal.isInvalidDecimal(precision, scale)) {
+                scale = CHTypeDecimal.SYSTEM_DEFAULT_PRECISION - precision;
+                precision = CHTypeDecimal.SYSTEM_DEFAULT_PRECISION;
+            }
+            return new DataTypeAndNullable(DataTypes.createDecimalType(precision, scale));
         } else if (chType == CHTypeDate.instance) {
             return new DataTypeAndNullable(DataTypes.DateType);
         } else if (chType == CHTypeDateTime.instance) {
