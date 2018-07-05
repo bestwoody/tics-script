@@ -84,16 +84,23 @@ struct DivDecimalInferer : public InfererHelper {
     static const uint8_t div_precincrement = 4;
     static inline void infer(PrecType left_prec, ScaleType left_scale, PrecType /* right_prec is not used */ , ScaleType right_scale, PrecType& result_prec, ScaleType& result_scale) {
         result_prec = min(left_prec + right_scale + div_precincrement, decimal_max_prec);
-        result_scale = min(left_scale + div_precincrement, decimal_max_prec);
+        result_scale = min(left_scale + div_precincrement, decimal_max_scale);
     }
 };
 
-// TODO also need to implement other agg functions.
 struct SumDecimalInferer : public InfererHelper {
     static constexpr uint8_t decimal_longlong_digits = 22;
     static inline void infer(PrecType prec, ScaleType scale, PrecType &result_prec, ScaleType &result_scale) {
         result_prec = min(prec + decimal_longlong_digits, decimal_max_prec);
         result_scale = scale;
+    }
+};
+
+struct AvgDecimalInferer : public InfererHelper {
+    static const uint8_t div_precincrement = 4;
+    static inline void infer(PrecType left_prec, ScaleType left_scale, PrecType& result_prec, ScaleType& result_scale) {
+        result_prec = min(left_prec + div_precincrement, decimal_max_prec);
+        result_scale = min(left_scale + div_precincrement, decimal_max_scale);
     }
 };
 
@@ -176,6 +183,19 @@ struct DecimalValue {
     void checkOverflow() const;
 
     std::string toString() const;
+
+    DecimalValue getAvg(uint64_t cnt, PrecType result_prec, ScaleType result_scale) const {
+        auto tmpValue = value;
+        if (result_scale > scale) {
+            for (ScaleType i = 0; i < result_scale - scale; i++) {
+                tmpValue *= 10;
+            }
+        }
+        tmpValue /= cnt;
+        DecimalValue dec(tmpValue, result_prec, result_scale);
+        dec.checkOverflow();
+        return dec;
+    }
 };
 
 template <typename DataType> constexpr bool IsDecimalValue = false;
