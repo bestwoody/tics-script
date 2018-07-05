@@ -13,13 +13,12 @@ export storage_db="default"
 # Dbgen executable path
 export dbgen_dir="`readlink -f ..`"
 # Meta data path, 'mmt-meta' is for MutableMergeTree, and 'meta' is for the other engines
-export meta_dir="$this_dir/meta"
 export meta_dir="$this_dir/mmt-meta"
 
 # Prefix of dir name for dbgen output files.
 export db_prefix="tpch"
 # TPCH scale, '2' means TPCH-2 (2G), '100' means 100G
-export tpch_scale="1"
+export tpch_scale="0.01"
 # Parallel loading threads, should < cpu.cores
 export tpch_blocks="4"
 

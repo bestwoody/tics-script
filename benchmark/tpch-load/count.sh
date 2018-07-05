@@ -20,7 +20,7 @@ if [ $(( $tpch_blocks % ${#storage_server[@]} )) -ne 0 ]; then
 	exit 1
 fi
 
-echo [$table]
+echo [${storage_db}.${table}]
 sum=0
 for server in ${storage_server[@]}; do
 	count=$("$storage_bin" client --host=`get_host $server` --port=`get_port $server` \
