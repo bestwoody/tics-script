@@ -66,9 +66,8 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
   def loadTestDataFromTestTables(testTables: TestTables = defaultTestTables): Unit = {
     val dbName = testTables.dbName
     clickHouseConn.setCatalog(dbName)
-    ch.mapCHDatabase(database = dbName)
     for (tableName <- testTables.tables) {
-      createOrReplaceTempView(dbName, tableName)
+      ch.mapCHClusterTable(dbName, tableName)
     }
   }
 

@@ -50,7 +50,7 @@ trait SharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfter
 
   protected def clickHouseConn: Connection = SharedSQLContext.clickHouseConn
 
-  protected def sql = spark.sql _
+  protected def sql: String => DataFrame = spark.sql _
 
   protected def jdbcUrl: String = SharedSQLContext.jdbcUrl
 
@@ -114,7 +114,7 @@ object SharedSQLContext extends Logging {
   protected var jdbcUrl: String = _
   protected var tpchDBName: String = _
 
-  protected lazy val sql = spark.sql _
+  protected lazy val sql: String => DataFrame = spark.sql _
 
   protected implicit def spark: SparkSession = _spark
 
@@ -184,8 +184,6 @@ object SharedSQLContext extends Logging {
         _statement = _clickHouseConnection.createStatement()
       } catch {
         case e: Throwable =>
-          _statement.close()
-          _clickHouseConnection.close()
           throw e
       }
 
