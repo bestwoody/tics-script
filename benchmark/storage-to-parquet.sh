@@ -10,9 +10,7 @@ tmp="/tmp/spark-q/`date +%s`"
 echo 'import java.util.Date' >> "$tmp"
 echo 'import spark.implicits._' >> "$tmp"
 
-echo 'spark.conf.set("spark.ch.plan.pushdown.agg", "true")' >> "$tmp"
-
-echo 'spark.conf.set("spark.ch.plan.single.node.opt", "true")' >> "$tmp"
+spart_settings "$tmp"
 
 echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 

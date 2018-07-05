@@ -14,3 +14,12 @@ setup_dylib_path()
 	fi
 }
 export setup_dylib_path
+
+spart_settings()
+{
+	tmp="$1"
+	echo 'spark.conf.set("spark.storage.plan.pushdown.agg", "'$pushdown'")' >> "$tmp"
+	echo 'spark.conf.set("spark.storage.selraw", "'$selraw'")' >> "$tmp"
+	echo 'spark.conf.set("spark.storage.tableinfo.selraw", "'$selraw_tableinfo'")' >> "$tmp"
+}
+export spart_settings

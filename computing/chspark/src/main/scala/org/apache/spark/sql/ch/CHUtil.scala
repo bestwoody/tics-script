@@ -121,9 +121,9 @@ object CHUtil {
     }
   }
 
-  def dropTable(database: String, table: String, cluster: Cluster): Unit =
+  def dropTable(database: String, table: String, cluster: Cluster, ifExists: Boolean = true): Unit =
     try {
-      cluster.nodes.foreach(node => dropTable(database, table, node))
+      cluster.nodes.foreach(node => dropTable(database, table, node, ifExists))
     } catch {
       case e: Throwable =>
         // try best to drop as many as possible
@@ -132,9 +132,9 @@ object CHUtil {
         throw e
     }
 
-  def createDatabase(database: String, cluster: Cluster): Unit =
+  def createDatabase(database: String, cluster: Cluster, ifNotExists: Boolean = true): Unit =
     try {
-      cluster.nodes.foreach(node => createDatabase(database, node))
+      cluster.nodes.foreach(node => createDatabase(database, node, ifNotExists))
     } catch {
       case e: Throwable =>
         // try best to drop as many as possible
@@ -143,29 +143,29 @@ object CHUtil {
         throw e
     }
 
-  def dropDatabase(database: String, cluster: Cluster): Unit =
+  def dropDatabase(database: String, cluster: Cluster, ifExists: Boolean = true): Unit =
     try {
-      cluster.nodes.foreach(node => dropDatabase(database, node))
+      cluster.nodes.foreach(node => dropDatabase(database, node, ifExists))
     } catch {
       case e: Throwable => throw e
     }
 
   private def tryDropDatabase(database: String, node: Node) =
     try {
-      dropDatabase(database, node)
+      dropDatabase(database, node, true)
     } catch {
       case _: Throwable => // ignore
     }
 
   private def tryDropTable(database: String, table: String, node: Node) =
     try {
-      dropTable(database, table, node)
+      dropTable(database, table, node, true)
     } catch {
       case _: Throwable => // ignore
     }
 
-  private def dropTable(database: String, table: String, node: Node): Unit = {
-    val queryString = CHSql.dropTableStmt(database, table)
+  private def dropTable(database: String, table: String, node: Node, ifExists: Boolean): Unit = {
+    val queryString = CHSql.dropTableStmt(database, table, ifExists)
     var client: SparkCHClientSelect = null
     try {
       client = new SparkCHClientSelect(queryString, node.host, node.port)
@@ -179,8 +179,8 @@ object CHUtil {
     }
   }
 
-  private def createDatabase(database: String, node: Node): Unit = {
-    val queryString = CHSql.createDatabaseStmt(database)
+  private def createDatabase(database: String, node: Node, ifNotExists: Boolean): Unit = {
+    val queryString = CHSql.createDatabaseStmt(database, ifNotExists)
     var client: SparkCHClientSelect = null
     try {
       client = new SparkCHClientSelect(queryString, node.host, node.port)
@@ -194,8 +194,8 @@ object CHUtil {
     }
   }
 
-  private def dropDatabase(database: String, node: Node): Unit = {
-    val queryString = CHSql.dropDatabaseStmt(database)
+  private def dropDatabase(database: String, node: Node, ifExists: Boolean): Unit = {
+    val queryString = CHSql.dropDatabaseStmt(database, ifExists)
     var client: SparkCHClientSelect = null
     try {
       client = new SparkCHClientSelect(queryString, node.host, node.port)
@@ -263,22 +263,23 @@ object CHUtil {
                        table: String,
                        cluster: Cluster,
                        fromTiDB: Boolean,
-                       batchSize: Int): Unit = {
-
+                       batchSize: Int,
+                       parallelism: Int): Unit = {
     val partitionMapper: mutable.HashMap[Int, Node] = mutable.HashMap()
     var i = 0
-    val repartitionedDF = df.repartition(cluster.nodes.length)
+    val partitionNum = if (parallelism > 0) parallelism else cluster.nodes.length
+    val repartitionedDF = df.repartition(partitionNum)
     for (partition <- repartitionedDF.rdd.partitions) {
       val node = cluster.nodes(i)
       partitionMapper.put(partition.index, Node(node.host, node.port))
-      i += 1
+      i = (i + 1) % cluster.nodes.length
     }
     val schema = repartitionedDF.schema
     val insertMethod: (SparkCHClientInsert, Row) => Unit =
       if (fromTiDB) { (client: SparkCHClientInsert, row: Row) =>
-        client.insert(row)
-      } else { (client: SparkCHClientInsert, row: Row) =>
         client.insertFromTiDB(row)
+      } else { (client: SparkCHClientInsert, row: Row) =>
+        client.insert(row)
       }
 
     repartitionedDF.rdd
@@ -378,7 +379,7 @@ object CHUtil {
     try {
       var partitions = new Array[String](0)
 
-      if (client.hasNext) {
+      while (client.hasNext) {
         val block = client.next()
         if (block.numCols != 1) {
           throw new Exception("Send table partition list request, wrong response")
@@ -408,7 +409,7 @@ object CHUtil {
     try {
       var tables = new Array[String](0)
 
-      if (client.hasNext) {
+      while (client.hasNext) {
         val block = client.next()
         if (block.numCols != 1) {
           throw new Exception("Send show table request, wrong response")
@@ -436,7 +437,7 @@ object CHUtil {
     try {
       var databases = new Array[String](0)
 
-      if (client.hasNext) {
+      while (client.hasNext) {
         val block = client.next()
         if (block.numCols != 1) {
           throw new Exception("Send show databases request, wrong response")

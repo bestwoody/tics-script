@@ -1,11 +1,16 @@
 sql="$1"
 partitionsPerSplit="$2"
+query_db="$3"
 set -eu
 
 source ./_env.sh
 
 if [ -z "$partitionsPerSplit" ]; then
 	partitionsPerSplit="$default_partitionsPerSplit"
+fi
+
+if [ -z "$query_db" ]; then
+	query_db="$storage_db"
 fi
 
 if [ -z "$sql" ]; then
@@ -19,16 +24,14 @@ tmp="/tmp/spark-q/`date +%s`"
 echo 'import java.text.SimpleDateFormat' > "$tmp"
 echo 'import java.util.Date' >> "$tmp"
 
-echo 'spark.conf.set("spark.ch.plan.pushdown.agg", "'$pushdown'")' >> "$tmp"
-echo 'spark.conf.set("spark.ch.storage.selraw", "'$selraw'")' >> "$tmp"
-echo 'spark.conf.set("spark.ch.storage.tableinfo.selraw", "'$selraw_tableinfo'")' >> "$tmp"
+spart_settings "$tmp"
 
 echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 
 server=${storage_server[0]}
-"$storage_bin" client --host="`get_host $server`" --port="`get_port $server`" -d "$storage_db" --query="show tables" | \
+"$storage_bin" client --host="`get_host $server`" --port="`get_port $server`" -d "$query_db" --query="show tables" | \
 	while read table; do
-	echo "storage.mapCHClusterTable(database=\"$storage_db\", table=\"$table\", partitionsPerSplit=$partitionsPerSplit)" >> "$tmp"
+	echo "storage.mapCHClusterTable(database=\"$query_db\", table=\"$table\", partitionsPerSplit=$partitionsPerSplit)" >> "$tmp"
 done
 
 echo 'val startTime = new Date()' >> "$tmp"

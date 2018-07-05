@@ -16,8 +16,8 @@
 package org.apache.spark.sql.ch
 
 object CHConfigConst {
-  val ENABLE_PUSHDOWN_AGG: String = "spark.ch.plan.pushdown.agg"
-  val ENABLE_SELRAW: String = "spark.ch.storage.selraw"
-  val ENABLE_SELRAW_TABLE_INFO: String = "spark.ch.storage.tableinfo.selraw"
+  val ENABLE_PUSHDOWN_AGG: String = "spark.storage.plan.pushdown.agg"
+  val ENABLE_SELRAW: String = "spark.storage.selraw"
+  val ENABLE_SELRAW_TABLE_INFO: String = "spark.storage.tableinfo.selraw"
   val CLUSTER_ADDRESSES: String = "spark.flash.addresses"
 }

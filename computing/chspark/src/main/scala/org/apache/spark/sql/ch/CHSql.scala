@@ -40,14 +40,26 @@ object CHSql {
   def insertStmt(database: String, table: String) =
     s"INSERT INTO ${getBackQuotedAbsTabName(database, table)} VALUES"
 
-  def dropTableStmt(database: String, table: String): String =
-    s"DROP TABLE IF EXISTS ${getBackQuotedAbsTabName(database, table)}"
+  def dropTableStmt(database: String, table: String, ifExists: Boolean = true): String =
+    if (ifExists) {
+      s"DROP TABLE IF EXISTS ${getBackQuotedAbsTabName(database, table)}"
+    } else {
+      s"DROP TABLE ${getBackQuotedAbsTabName(database, table)}"
+    }
 
-  def createDatabaseStmt(database: String): String =
-    s"CREATE DATABASE `${database.toLowerCase()}`"
+  def createDatabaseStmt(database: String, ifNotExists: Boolean = true): String =
+    if (ifNotExists) {
+      s"CREATE DATABASE IF NOT EXISTS `${database.toLowerCase()}`"
+    } else {
+      s"CREATE DATABASE `${database.toLowerCase()}`"
+    }
 
-  def dropDatabaseStmt(database: String): String =
-    s"DROP DATABASE IF EXISTS `${database.toLowerCase()}`"
+  def dropDatabaseStmt(database: String, ifExists: Boolean): String =
+    if (ifExists) {
+      s"DROP DATABASE IF EXISTS `${database.toLowerCase()}`"
+    } else {
+      s"DROP DATABASE `${database.toLowerCase()}`"
+    }
 
   def createTableStmt(database: String,
                       schema: StructType,

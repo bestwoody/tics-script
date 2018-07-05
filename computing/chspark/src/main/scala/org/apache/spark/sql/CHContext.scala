@@ -63,14 +63,14 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
   def listTables(database: String): Array[String] =
     CHUtil.listTables(database, cluster.nodes.head)
 
-  def dropTable(database: String, table: String): Unit =
-    CHUtil.dropTable(database, table, cluster)
+  def dropTable(database: String, table: String, ifExists: Boolean = true): Unit =
+    CHUtil.dropTable(database, table, cluster, ifExists)
 
-  def dropDatabase(database: String): Unit =
-    CHUtil.dropDatabase(database, cluster)
+  def dropDatabase(database: String, ifExists: Boolean = true): Unit =
+    CHUtil.dropDatabase(database, cluster, ifExists)
 
-  def createDatabase(database: String): Unit =
-    CHUtil.createDatabase(database, cluster)
+  def createDatabase(database: String, ifNotExists: Boolean = true): Unit =
+    CHUtil.createDatabase(database, cluster, ifNotExists)
 
   def createTableFromTiDB(database: String,
                           table: String,
@@ -103,7 +103,15 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
           finalParallelism
         )
       } else {
-        CHUtil.insertDataRandom(df, database, table, cluster, fromTiDB = true, batchSize)
+        CHUtil.insertDataRandom(
+          df,
+          database,
+          table,
+          cluster,
+          fromTiDB = true,
+          batchSize,
+          finalParallelism
+        )
       }
     } catch {
       case e: Throwable =>
@@ -116,14 +124,16 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
                                table: String,
                                primaryKeys: Array[String],
                                df: DataFrame,
-                               batchSize: Int = SparkCHClientInsert.BATCH_INSERT_COUNT): Unit = {
+                               batchSize: Int = SparkCHClientInsert.BATCH_INSERT_COUNT,
+                               parallelism: Int = 128): Unit = {
     val (partitioner, pkOffset) =
       CHUtil.createTable(database, table, df.schema, primaryKeys, cluster)
 
     if (partitioner == Partitioner.Hash) {
       CHUtil.insertDataHash(df, database, table, pkOffset, cluster, false, batchSize)
     } else {
-      CHUtil.insertDataRandom(df, database, table, cluster, fromTiDB = false, batchSize)
+      CHUtil
+        .insertDataRandom(df, database, table, cluster, fromTiDB = false, batchSize, parallelism)
     }
   }
 
