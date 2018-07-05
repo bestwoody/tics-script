@@ -171,6 +171,29 @@ public class MemoryUtil {
         unsafe.putInt(address, l);
     }
 
+    public static void setDecimal(long address, Decimal v, int precision, int scale) {
+        BigDecimal bigDec = v.toJavaBigDecimal();
+        BigInteger bigInt = bigDec.scaleByPowerOfTen(bigDec.scale()).toBigInteger();
+        int sign = 0;
+        if (bigInt.signum() < 0) {
+            sign = 1;
+            bigInt = bigInt.abs();
+        }
+        byte[] arr = bigInt.toByteArray();
+        int limbs = arr.length / 8;
+        if (arr.length % 8 > 0) {
+            limbs++;
+        }
+
+        for (int i = 0; i < arr.length; i++) {
+            unsafe.putByte(address + i, arr[arr.length - 1 -i]);
+        }
+        unsafe.putShort(address + 32, (short) limbs);
+        unsafe.putShort(address + 34, (short) sign);
+        unsafe.putShort(address + 48, (short) precision);
+        unsafe.putChar(address + 50, (char) scale);
+    }
+
     public static void setLong(long address, long l) {
         unsafe.putLong(address, l);
     }
