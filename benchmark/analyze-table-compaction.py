@@ -56,39 +56,43 @@ def parse():
     return partitions, total_parts
 
 def analyze(partitions, parts):
-    level_0_size = 0
-    level_0_count = 0
+    level_sizes = []
+    level_counts = []
     total_size = 0
-    levels = []
     max_end = 0
     io_size = 0
 
     for name, begin, end, level, size in parts:
         total_size += size
         io_size += size * (level + 1)
-        while len(levels) <= level:
-            levels.append(0)
-        levels[level] += 1
+        while len(level_counts) <= level:
+            level_counts.append(0)
+            level_sizes.append(0)
+        level_counts[level] += 1
+        level_sizes[level] += size
         if end > max_end:
             max_end = end
 
-        if level != 0:
-            continue
-        level_0_size += size
-        level_0_count += 1
+    level_0_size = 0
+    if len(level_counts) > 0 and level_counts[0] != 0:
+        level_0_size = float(level_sizes[0]) / level_counts[0]
 
-    for i in range(0, len(levels)):
-        levels[i] = 'L' + str(i) + '=' + str(levels[i])
+    for i in range(0, len(level_counts)):
+        avg_size = '?'
+        if level_counts[i] != 0:
+            avg_size = level_sizes[i] / float(level_counts[i])
+        level_sizes[i] = 'L' + str(i) + '=' + str(avg_size)
+        level_counts[i] = 'L' + str(i) + '=' + str(level_counts[i])
 
     print "Partitions count:", len(partitions)
-    if len(partitions) > 0:
-        print "Parts count per partition:", float(len(parts)) / len(partitions)
-        print "Parts count of each level:", levels
+    print "Parts count:", len(parts)
     if len(parts) > 0:
         print "Parts avg size(KB):", float(total_size) / len(parts)
-    if level_0_count != 0:
-        print "Parts of level-0 avg size(KB):", float(level_0_size) / level_0_count
-        print "Approximate write batch size(KB):", len(partitions) * float(level_0_size) / level_0_count
+    if len(partitions) > 0:
+        print "Parts count per partition:", float(len(parts)) / len(partitions)
+    print "Parts count of each level:", level_counts
+    print "Parts size(KB) of each level:", level_sizes
+    print "Approximate write batch size(KB):", len(partitions) * level_0_size
     if len(partitions) > 0:
         print "Approximate finished write batchs count:", float(max_end) / len(partitions)
         print "Approximate write amplification:", float(io_size) / total_size
