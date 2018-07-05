@@ -531,6 +531,11 @@ object CHUtil {
 
       val count = block.column(0).getLong(0)
 
+      // Consume all data.
+      while (client.hasNext) {
+        client.next()
+      }
+
       count
     } finally {
       if (client != null) {
