@@ -4,4 +4,4 @@ if [ -z "$path" ]; then
 	exit 1
 fi
 
-sudo fusermount -u "$path"
+umount "$path"
