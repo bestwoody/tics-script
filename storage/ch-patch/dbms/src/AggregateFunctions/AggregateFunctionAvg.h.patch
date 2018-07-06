@@ -1,5 +1,5 @@
 diff --git a/dbms/src/AggregateFunctions/AggregateFunctionAvg.h b/dbms/src/AggregateFunctions/AggregateFunctionAvg.h
-index 84288cecb86b..8e6db1962a05 100644
+index 84288cecb86b..e121b9d8d06d 100644
 --- a/dbms/src/AggregateFunctions/AggregateFunctionAvg.h
 +++ b/dbms/src/AggregateFunctions/AggregateFunctionAvg.h
 @@ -4,6 +4,7 @@
@@ -65,7 +65,7 @@ index 84288cecb86b..8e6db1962a05 100644
 +    }
 +
 +    void create(AggregateDataPtr place) const override {
-+        using Data = AggregateFunctionAvgData<T>;
++        using Data = AggregateFunctionAvgData<typename NearestFieldType<T>::Type>;
 +        if constexpr (IsDecimalValue<T>)
 +            new (place) Data(result_prec, result_scale);
 +        else
