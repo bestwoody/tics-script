@@ -1,13 +1,16 @@
 package com.pingcap.theflash;
 
 import com.pingcap.theflash.codegene.CHColumnBatch;
-import java.util.Random;
-import java.util.function.Consumer;
+
 import org.apache.spark.sql.ch.SimpleRow;
-import org.apache.spark.sql.types.Decimal;
-import org.apache.spark.unsafe.types.UTF8String;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.util.Random;
+import java.util.function.Consumer;
 
 public class SparkCHClientInsertTest {
     @Test
@@ -64,38 +67,37 @@ public class SparkCHClientInsertTest {
             insert.insertPrefix();
             for (int i = 0; i < insertCount; i++) {
                 Object[] fields = new Object[]{
-                        new Integer(3333),
+                        new Date(365 * 1000L * 60 * 60 * 24),
                         new Integer(1),
-                        new Integer(3333),
-
-                        new Long(3423424),
+                        new Date(365 * 1000L * 60 * 60 * 24),
+                        new Timestamp(31536001000L),
                         new Float(3.14159),
                         new Double(3.14159),
                         new Integer(20),
                         new Integer(333),
                         new Long(123144),
-                        Decimal.apply((long) i),
+                        new BigDecimal((long) i),
                         new Byte((byte) -23),
                         new Short((short) -244),
                         new Integer(-9877323),
                         new Long(-9998712323L),
-                        UTF8String.fromString("Hello!"),
+                        "Hello!",
 
-                        new Integer(3333),
+                        new Date(365 * 1000L * 60 * 60 * 24),
                         new Integer(1),
-                        new Integer(3333),
-                        new Long(3423424),
+                        new Date(365 * 1000L * 60 * 60 * 24),
+                        new Timestamp(31536001000L),
                         new Float(3.14159),
                         new Double(3.14159),
                         new Integer(20),
                         new Integer(333),
                         new Long(123144),
-                        Decimal.apply(7784564564L),
+                        new BigDecimal(7784564564L),
                         new Byte((byte) -23),
                         new Short((short) -244),
                         new Integer(-9877323),
                         new Long(-9998712323L),
-                        UTF8String.fromString("Hello!"),
+                        "Hello!",
                 };
                 insert.insert(new SimpleRow(fields));
             }
@@ -135,20 +137,20 @@ public class SparkCHClientInsertTest {
 
         @Override
         public void accept(CHColumnBatch b) {
-            values[0] = (int) b.column(0).getShort(0);
-            values[1] = (int) b.column(1).getShort(0);
-            values[2] = b.column(2).getLong(0);
+            values[0] = new Date(b.column(0).getShort(0) * 1000L * 60 * 60 * 24);
+            values[1] = new Date(b.column(1).getShort(0) * 1000L * 60 * 60 * 24);
+            values[2] = new Timestamp(b.column(2).getInt(0) * 1000L);
             values[3] = b.column(3).getFloat(0);
             values[4] = b.column(4).getDouble(0);
             values[5] = b.column(5).getInt(0);
             values[6] = b.column(6).getInt(0);
             values[7] = b.column(7).getLong(0);
-            values[8] = b.column(8).getDecimal(0, 20, 0);
+            values[8] = b.column(8).getDecimal(0, 20, 0).toJavaBigDecimal();
             values[9] = b.column(9).getByte(0);
             values[10] = b.column(10).getShort(0);
             values[11] = b.column(11).getInt(0);
             values[12] = b.column(12).getLong(0);
-            values[13] = b.column(13).getUTF8String(0).clone();
+            values[13] = b.column(13).getUTF8String(0).toString();
         }
     }
 
@@ -174,20 +176,20 @@ public class SparkCHClientInsertTest {
         selectSql(createSql);
 
         Object[] values = new Object[]{
-                new Integer(3333),
-                new Integer(3333),
-                new Long(1234000000),
+                new Date(365 * 1000L * 60 * 60 * 24),
+                new Date(365 * 1000L * 60 * 60 * 24),
+                new Timestamp(31536001000L),
                 new Float(3.14159),
                 new Double(3.14159),
                 new Integer(255),
                 new Integer(65535),
                 new Long(4294967295L),
-                Decimal.apply("18446744073709551615"),
+                new BigDecimal("18446744073709551615"),
                 new Byte((byte) -23),
                 new Short((short) -244),
                 new Integer(-9877323),
                 new Long(-9998712323L),
-                UTF8String.fromString("Hello!")};
+                "Hello!"};
 
         try (SparkCHClientInsert insert = new SparkCHClientInsert("", "insert into table default.spark_insert_test values", "127.0.0.1", 9000)) {
             insert.insertPrefix();
