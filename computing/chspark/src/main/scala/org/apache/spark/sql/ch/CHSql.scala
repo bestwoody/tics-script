@@ -189,10 +189,9 @@ object CHSql {
         if (isUnsigned) CHTypeUInt32.instance else CHTypeInt32.instance
       case MySQLType.TypeFloat  => CHTypeFloat32.instance
       case MySQLType.TypeDouble => CHTypeFloat64.instance
-      case MySQLType.TypeNewDecimal | MySQLType.TypeDecimal => {
+      case MySQLType.TypeNewDecimal | MySQLType.TypeDecimal =>
         val tidbDecimalType = dataType.asInstanceOf[TiDBDecimalType]
-        new CHTypeDecimal((tidbDecimalType.getLength).toInt, tidbDecimalType.getDecimal)
-      }
+        new CHTypeDecimal(tidbDecimalType.getLength.toInt, tidbDecimalType.getDecimal)
       case MySQLType.TypeTimestamp | MySQLType.TypeDatetime => CHTypeDateTime.instance
       case MySQLType.TypeDuration                           => CHTypeInt64.instance
       case MySQLType.TypeLonglong                           => if (isUnsigned) CHTypeUInt64.instance else CHTypeInt64.instance
@@ -278,11 +277,14 @@ object CHSql {
 
   private def compileAggregateExpression(ae: AggregateExpression): String =
     (ae.aggregateFunction, ae.isDistinct) match {
-      case (Average(child), false)  => s"AVG(${compileExpression(child)})"
-      case (Count(children), false) => s"COUNT(${children.map(compileExpression).mkString(", ")})"
-      case (Min(child), false)      => s"MIN(${compileExpression(child)})"
-      case (Max(child), false)      => s"MAX(${compileExpression(child)})"
-      case (Sum(child), false) =>
+      case (_, true) =>
+        throw new UnsupportedOperationException(
+          s"Aggregate Function ${ae.toString} push down is not supported by CHSql."
+        )
+      case (Count(children), _) => s"COUNT(${children.map(compileExpression).mkString(", ")})"
+      case (Min(child), _)      => s"MIN(${compileExpression(child)})"
+      case (Max(child), _)      => s"MAX(${compileExpression(child)})"
+      case (Sum(child), _) =>
         child.dataType match {
           case DecimalType() =>
             throw new UnsupportedOperationException(
@@ -291,9 +293,11 @@ object CHSql {
           case _ =>
         }
         s"SUM(${compileExpression(child)})"
+      case (Average(_), _) =>
+        throw new UnsupportedOperationException(s"Unexpected ${ae.toString} found when compiling.")
       case _ =>
         throw new UnsupportedOperationException(
-          s"Aggregate Function ${ae.toString} is not supported by CHSql."
+          s"Aggregate Function ${ae.toString} push down is not supported by CHSql."
         )
     }
 

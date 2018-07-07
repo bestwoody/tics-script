@@ -594,7 +594,6 @@ object CHUtil {
     // because we have to unify results on different partitions.
     (ae.aggregateFunction, ae.isDistinct) match {
       case (_, true)            => false
-      case (Average(child), _)  => isSupportedExpression(child)
       case (Count(children), _) => children.forall(isSupportedExpression)
       case (Min(child), _)      => isSupportedExpression(child)
       case (Max(child), _)      => isSupportedExpression(child)
@@ -603,6 +602,8 @@ object CHUtil {
           case DecimalType() => false
           case _             => isSupportedExpression(child)
         }
+      case (Average(_), _) =>
+        throw new UnsupportedOperationException(s"Unexpected ${ae.toString} found.")
       case _ => false
     }
 
