@@ -32,11 +32,20 @@
         * Spark slave
         * Ceph osd
         * Mount cephfs:/theflash-3
+    * Network between nodes
+        * Ping avg: 0.25ms
+        * Brandwidth: 19 Gbits/sec
+    * SSD on each node:
+        * Write: IOPS=5.5k, BW=800MB/s
+        * Read: IOPS=18k, BW=1.4GB/s
+    * Mounted cephfs on each node:
+        * Write: IOPS=2.5k, BW=315MB/s
+        * Read: IOPS=26k, BW=1.5GB/s
 * Config
     * TheFlash
-        * partitions per split: 1
-        * storage engine: MutableMergeTree
-        * storage partitions: 16
+        * Partitions per split: 1
+        * Storage engine: MutableMergeTree
+        * Storage partitions: 16
     * Ceph
         * cephfs pg: 64 + 64
 
