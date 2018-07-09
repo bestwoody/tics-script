@@ -1,18 +1,17 @@
 diff --git a/dbms/src/DataTypes/DataTypesNumber.h b/dbms/src/DataTypes/DataTypesNumber.h
-index 403e11c8b765..063b40178f83 100644
+index 403e11c8b765..961c393d2f17 100644
 --- a/dbms/src/DataTypes/DataTypesNumber.h
 +++ b/dbms/src/DataTypes/DataTypesNumber.h
-@@ -2,7 +2,8 @@
+@@ -2,7 +2,7 @@
  
  #include <type_traits>
  #include <DataTypes/DataTypeNumberBase.h>
 -
 +#include <DataTypes/DataTypeDecimal.h>
-+#include <Common/Decimal.h>
  
  namespace DB
  {
-@@ -22,6 +23,9 @@ class DataTypeNumber final : public DataTypeNumberBase<T>
+@@ -22,6 +22,9 @@ class DataTypeNumber final : public DataTypeNumberBase<T>
      bool canBeInsideNullable() const override { return true; }
  };
  

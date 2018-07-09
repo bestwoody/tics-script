@@ -2,29 +2,27 @@
 
 namespace DB {
 
-class DecimalMaxValue {
-    int256_t number[decimal_max_prec+1];
-
-public:
-    DecimalMaxValue() {
-        for (int i = 1; i <= decimal_max_prec; i++) {
-            number[i] = number[i-1] * 10 + 9;
-        }
-    }
-
-    int256_t operator [](uint8_t idx) const {
-        return number[idx];
-    }
-} decimalMaxValues;
-
 inline void checkOverFlow(int256_t v, PrecType prec) {
-    if (v > decimalMaxValues[prec] || v < -decimalMaxValues[prec]) {
+    auto maxValue = DecimalMaxValue::Get(prec);
+    if (v > maxValue || v < -maxValue) {
         throw Exception("Decimal value overflow", ErrorCodes::DECIMAL_OVERFLOW_ERROR);
     }
 }
 
 void DecimalValue::checkOverflow() const {
     checkOverFlow(value, precision);
+}
+
+PrecType DecimalValue::getRealPrec() const {
+    auto _v = value < 0 ? - value : value;
+    for (PrecType i = 1; i <= decimal_max_prec; i++) 
+    {
+        if (DecimalMaxValue::Get(i) >= _v)
+        {
+            return i;
+        }
+    }
+    throw Exception("Decimal value overflow", ErrorCodes::DECIMAL_OVERFLOW_ERROR);
 }
 
 DecimalValue DecimalValue::operator + (const DecimalValue & v) const {
@@ -189,6 +187,11 @@ bool DecimalValue::operator <= (const DecimalValue & v) const {
 
 bool DecimalValue::operator > (const DecimalValue & v) const {
     return v < *this;
+}
+
+DecimalValue ToDecimal(DecimalValue dec, PrecType prec, ScaleType scale) {
+    dec.ScaleTo(prec, scale);
+    return dec;
 }
 
 // end namespace

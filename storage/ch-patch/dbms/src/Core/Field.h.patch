@@ -1,16 +1,8 @@
 diff --git a/dbms/src/Core/Field.h b/dbms/src/Core/Field.h
-index 795bc4b70701..fc7f479a25da 100644
+index 795bc4b70701..a51aad1bbd71 100644
 --- a/dbms/src/Core/Field.h
 +++ b/dbms/src/Core/Field.h
-@@ -7,6 +7,7 @@
- 
- #include <Common/Exception.h>
- #include <Common/UInt128.h>
-+#include <Common/Decimal.h>
- #include <Core/Types.h>
- #include <Core/Defines.h>
- #include <common/strong_typedef.h>
-@@ -55,6 +56,7 @@ public:
+@@ -55,6 +55,7 @@ public:
              Int64   = 2,
              Float64 = 3,
              UInt128 = 4,
@@ -18,7 +10,7 @@ index 795bc4b70701..fc7f479a25da 100644
  
              /// Non-POD types.
  
-@@ -77,6 +79,7 @@ public:
+@@ -77,6 +78,7 @@ public:
                  case String:  return "String";
                  case Array:   return "Array";
                  case Tuple:   return "Tuple";
@@ -26,7 +18,7 @@ index 795bc4b70701..fc7f479a25da 100644
  
                  default:
                      throw Exception("Bad type of Field", ErrorCodes::BAD_TYPE_OF_FIELD);
-@@ -261,6 +264,7 @@ public:
+@@ -261,6 +263,7 @@ public:
              case Types::String:  return get<String>()  < rhs.get<String>();
              case Types::Array:   return get<Array>()   < rhs.get<Array>();
              case Types::Tuple:   return get<Tuple>()   < rhs.get<Tuple>();
@@ -34,7 +26,7 @@ index 795bc4b70701..fc7f479a25da 100644
  
              default:
                  throw Exception("Bad type of Field", ErrorCodes::BAD_TYPE_OF_FIELD);
-@@ -289,6 +293,7 @@ public:
+@@ -289,6 +292,7 @@ public:
              case Types::String:  return get<String>()  <= rhs.get<String>();
              case Types::Array:   return get<Array>()   <= rhs.get<Array>();
              case Types::Tuple:   return get<Tuple>()   <= rhs.get<Tuple>();
@@ -42,7 +34,7 @@ index 795bc4b70701..fc7f479a25da 100644
  
  
              default:
-@@ -316,6 +321,7 @@ public:
+@@ -316,6 +320,7 @@ public:
              case Types::Array:   return get<Array>()   == rhs.get<Array>();
              case Types::Tuple:   return get<Tuple>()   == rhs.get<Tuple>();
              case Types::UInt128: return get<UInt128>() == rhs.get<UInt128>();
@@ -50,7 +42,7 @@ index 795bc4b70701..fc7f479a25da 100644
  
              default:
                  throw Exception("Bad type of Field", ErrorCodes::BAD_TYPE_OF_FIELD);
-@@ -329,7 +335,7 @@ public:
+@@ -329,7 +334,7 @@ public:
  
  private:
      std::aligned_union_t<DBMS_MIN_FIELD_SIZE - sizeof(Types::Which),
@@ -59,7 +51,7 @@ index 795bc4b70701..fc7f479a25da 100644
          > storage;
  
      Types::Which which;
-@@ -368,6 +374,7 @@ private:
+@@ -368,6 +373,7 @@ private:
              case Types::String:  f(field.template get<String>());  return;
              case Types::Array:   f(field.template get<Array>());   return;
              case Types::Tuple:   f(field.template get<Tuple>());   return;
@@ -67,7 +59,7 @@ index 795bc4b70701..fc7f479a25da 100644
  
              default:
                  throw Exception("Bad type of Field", ErrorCodes::BAD_TYPE_OF_FIELD);
-@@ -450,6 +457,7 @@ template <> struct Field::TypeToEnum<Float64> { static const Types::Which value
+@@ -450,6 +456,7 @@ template <> struct Field::TypeToEnum<Float64> { static const Types::Which value
  template <> struct Field::TypeToEnum<String>  { static const Types::Which value = Types::String; };
  template <> struct Field::TypeToEnum<Array>   { static const Types::Which value = Types::Array; };
  template <> struct Field::TypeToEnum<Tuple>   { static const Types::Which value = Types::Tuple; };
@@ -75,7 +67,7 @@ index 795bc4b70701..fc7f479a25da 100644
  
  template <> struct Field::EnumToType<Field::Types::Null>    { using Type = Null; };
  template <> struct Field::EnumToType<Field::Types::UInt64>  { using Type = UInt64; };
-@@ -459,6 +467,7 @@ template <> struct Field::EnumToType<Field::Types::Float64> { using Type = Float
+@@ -459,6 +466,7 @@ template <> struct Field::EnumToType<Field::Types::Float64> { using Type = Float
  template <> struct Field::EnumToType<Field::Types::String>  { using Type = String; };
  template <> struct Field::EnumToType<Field::Types::Array>   { using Type = Array; };
  template <> struct Field::EnumToType<Field::Types::Tuple>   { using Type = Tuple; };
@@ -83,7 +75,7 @@ index 795bc4b70701..fc7f479a25da 100644
  
  
  template <typename T>
-@@ -508,6 +517,7 @@ template <> struct NearestFieldType<Array>   { using Type = Array; };
+@@ -508,6 +516,7 @@ template <> struct NearestFieldType<Array>   { using Type = Array; };
  template <> struct NearestFieldType<Tuple>   { using Type = Tuple; };
  template <> struct NearestFieldType<bool>    { using Type = UInt64; };
  template <> struct NearestFieldType<Null>    { using Type = Null; };

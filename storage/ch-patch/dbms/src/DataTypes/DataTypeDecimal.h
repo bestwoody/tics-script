@@ -3,7 +3,6 @@
 #include <DataTypes/IDataType.h>
 #include <DataTypes/FieldToDataType.h>
 #include <DataTypes/DataTypeFactory.h>
-#include <Common/Decimal.h>
 #include <Common/Exception.h>
 
 

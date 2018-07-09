@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Common/HashTable/Hash.h b/dbms/src/Common/HashTable/Hash.h
-index e3b900d85cf0..482dc76d42e8 100644
+index e3b900d85cf0..d411b6332715 100644
 --- a/dbms/src/Common/HashTable/Hash.h
 +++ b/dbms/src/Common/HashTable/Hash.h
-@@ -1,7 +1,12 @@
+@@ -1,5 +1,9 @@
  #pragma once
  
 +#include <functional>
@@ -11,11 +11,8 @@ index e3b900d85cf0..482dc76d42e8 100644
 +#include <citycrc.h>
  #include <Core/Types.h>
  #include <Common/UInt128.h>
-+#include <Common/Decimal.h>
  
- 
- /** Hash functions that are better than the trivial function std::hash.
-@@ -87,6 +92,14 @@ DEFINE_HASH(DB::Float64)
+@@ -87,6 +91,14 @@ DEFINE_HASH(DB::Float64)
  
  #undef DEFINE_HASH
  
@@ -30,7 +27,7 @@ index e3b900d85cf0..482dc76d42e8 100644
  
  template <typename T> struct HashCRC32;
  
-@@ -112,6 +125,15 @@ template <> struct HashCRC32<T>\
+@@ -112,6 +124,15 @@ template <> struct HashCRC32<T>\
      }\
  };
  

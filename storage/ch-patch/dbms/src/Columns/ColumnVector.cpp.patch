@@ -1,16 +1,8 @@
 diff --git a/dbms/src/Columns/ColumnVector.cpp b/dbms/src/Columns/ColumnVector.cpp
-index 3509c14c3aab..9ce067a6fec4 100644
+index 3509c14c3aab..5a0f706ab007 100644
 --- a/dbms/src/Columns/ColumnVector.cpp
 +++ b/dbms/src/Columns/ColumnVector.cpp
-@@ -5,6 +5,7 @@
- #include <Common/Arena.h>
- #include <Common/SipHash.h>
- #include <Common/NaNUtils.h>
-+#include <Common/Decimal.h>
- 
- #include <IO/WriteBuffer.h>
- #include <IO/WriteHelpers.h>
-@@ -122,12 +123,62 @@ MutableColumnPtr ColumnVector<T>::cloneResized(size_t size) const
+@@ -122,12 +122,62 @@ MutableColumnPtr ColumnVector<T>::cloneResized(size_t size) const
      return std::move(res);
  }
  
@@ -73,7 +65,7 @@ index 3509c14c3aab..9ce067a6fec4 100644
  template <typename T>
  void ColumnVector<T>::insertRangeFrom(const IColumn & src, size_t start, size_t length)
  {
-@@ -309,6 +360,45 @@ void ColumnVector<T>::getExtremes(Field & min, Field & max) const
+@@ -309,6 +359,45 @@ void ColumnVector<T>::getExtremes(Field & min, Field & max) const
      max = typename NearestFieldType<T>::Type(cur_max);
  }
  
@@ -119,7 +111,7 @@ index 3509c14c3aab..9ce067a6fec4 100644
  /// Explicit template instantiations - to avoid code bloat in headers.
  template class ColumnVector<UInt8>;
  template class ColumnVector<UInt16>;
-@@ -321,4 +411,5 @@ template class ColumnVector<Int32>;
+@@ -321,4 +410,5 @@ template class ColumnVector<Int32>;
  template class ColumnVector<Int64>;
  template class ColumnVector<Float32>;
  template class ColumnVector<Float64>;

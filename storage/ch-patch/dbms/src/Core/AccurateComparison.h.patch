@@ -1,16 +1,8 @@
 diff --git a/dbms/src/Core/AccurateComparison.h b/dbms/src/Core/AccurateComparison.h
-index c84405e2dd4e..dd5b221ffe76 100644
+index c84405e2dd4e..1ee2d60ea71a 100644
 --- a/dbms/src/Core/AccurateComparison.h
 +++ b/dbms/src/Core/AccurateComparison.h
-@@ -3,6 +3,7 @@
- #include <limits>
- #include <Core/Types.h>
- #include <Common/UInt128.h>
-+#include <Common/Decimal.h>
- 
- /** Preceptually-correct number comparisons.
-   * Example: Int8(-1) != UInt8(255)
-@@ -27,12 +28,14 @@ using DB::UInt64;
+@@ -27,12 +27,14 @@ using DB::UInt64;
              1) interval between adjacent floats less or equal 1
              2) interval between adjacent floats greater then 2
              3) float is outside [MIN_INT64; MAX_INT64]
@@ -26,7 +18,7 @@ index c84405e2dd4e..dd5b221ffe76 100644
  template <typename A, typename B>
  using bool_if_safe_conversion = std::enable_if_t<is_safe_conversion<A, B>, bool>;
  template <typename A, typename B>
-@@ -139,6 +142,51 @@ inline bool_if_double_can_be_used<TAInt, TAFloat> equalsOpTmpl(TAFloat a, TAInt
+@@ -139,6 +141,51 @@ inline bool_if_double_can_be_used<TAInt, TAFloat> equalsOpTmpl(TAFloat a, TAInt
      return static_cast<double>(a) == static_cast<double>(b);
  }
  
@@ -78,7 +70,7 @@ index c84405e2dd4e..dd5b221ffe76 100644
  
  /* Final realiztions */
  
-@@ -385,5 +433,4 @@ inline bool_if_safe_conversion<A, B> greaterOrEqualsOp(A a, B b)
+@@ -385,5 +432,4 @@ inline bool_if_safe_conversion<A, B> greaterOrEqualsOp(A a, B b)
      return a >= b;
  }
  

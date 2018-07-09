@@ -1,5 +1,6 @@
 #pragma once
-#include<boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
+#include <ext/singleton.h>
 #include <Common/Exception.h>
 
 namespace DB {
@@ -184,6 +185,25 @@ struct DecimalValue {
 
     std::string toString() const;
 
+    PrecType getRealPrec() const;
+
+    void ScaleTo(PrecType prec_, ScaleType scale_) {
+        if (scale_ > scale) {
+            for(ScaleType i = 0 ; i < scale_ - scale; i++) {
+                value *= 10;
+            }
+        } else {
+            for(ScaleType i = 0 ; i < scale - scale_; i++) {
+                value /= 10;
+            }
+        }
+        if (getRealPrec() > prec_) {
+            throw Exception("Decimal value overflow", ErrorCodes::DECIMAL_OVERFLOW_ERROR);
+        }
+        precision = prec_;
+        scale = scale_;
+    }
+
     DecimalValue getAvg(uint64_t cnt, PrecType result_prec, ScaleType result_scale) const {
         auto tmpValue = value;
         if (result_scale > scale) {
@@ -200,5 +220,53 @@ struct DecimalValue {
 
 template <typename DataType> constexpr bool IsDecimalValue = false;
 template <> constexpr bool IsDecimalValue<DecimalValue> = true;
+
+class DecimalMaxValue final : public ext::singleton<DecimalMaxValue> {
+    friend class ext::singleton<DecimalMaxValue>;
+
+    int256_t number[decimal_max_prec+1];
+
+public:
+    DecimalMaxValue() {
+        for (int i = 1; i <= decimal_max_prec; i++) {
+            number[i] = number[i-1] * 10 + 9;
+        }
+    }
+
+    int256_t get(PrecType idx) const {
+        return number[idx];
+    }
+    
+    static int256_t Get(PrecType idx) {
+        return instance().get(idx);
+    }
+} ;
+
+template<typename T>
+std::enable_if_t<std::is_integral_v<T>, DecimalValue> ToDecimal(T value, PrecType prec, ScaleType scale)
+{
+    DecimalValue dec(value);
+    dec.ScaleTo(prec, scale);
+    return dec;
+}
+
+template<typename T>
+std::enable_if_t<std::is_floating_point_v<T>, DecimalValue> ToDecimal(T value, PrecType prec, ScaleType scale)
+{
+    for (ScaleType i = 0; i < scale; i++)
+    {
+        value *= 10;
+    }
+    if (std::abs(value) > static_cast<T>(DecimalMaxValue::Get(decimal_max_prec)))
+    {
+        throw Exception("Decimal value overflow", ErrorCodes::DECIMAL_OVERFLOW_ERROR);
+    }
+    int256_t v(value);
+    DecimalValue dec(v, prec, scale);
+    dec.checkOverflow();
+    return dec;
+}
+
+DecimalValue ToDecimal(DecimalValue dec, PrecType prec, ScaleType scale);
 
 }
