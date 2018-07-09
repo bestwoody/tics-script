@@ -189,6 +189,31 @@ bool DecimalValue::operator > (const DecimalValue & v) const {
     return v < *this;
 }
 
+bool parseDecimal(const char* str, size_t len, DecimalValue &dec) {
+    PrecType &prec = dec.precision = 0;
+    ScaleType &scale = dec.scale = 0;
+    auto &value = dec.value = 0;
+    bool frac = false;
+    for (size_t i = 0; i < len; i++) {
+        char c = str[i];
+        if (c == '.') {
+            if (frac || i==0) {
+                return false;
+            }
+            frac = true; 
+        } else if (c <= '9' && c >= '0') {
+            value = value * 10 + int(c-'0');
+            if (frac) scale++;
+            if (frac || value > 0) prec ++;
+            if (prec > decimal_max_prec || scale > decimal_max_scale)
+                return false;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
 DecimalValue ToDecimal(DecimalValue dec, PrecType prec, ScaleType scale) {
     dec.ScaleTo(prec, scale);
     return dec;

@@ -122,6 +122,11 @@ struct DecimalValue {
     template<typename T, std::enable_if_t<std::is_integral<T>{}>* = nullptr >
     DecimalValue(T v): value(v), precision(IntPrec<T>::prec), scale(0) {}
 
+    template<typename T, std::enable_if_t<std::is_floating_point<T>{}>* = nullptr >
+    DecimalValue(T) {
+        throw Exception("please use cast function to convert float to decimal");
+    }
+
     // check if DecimalValue is inited without any change.
     bool isZero() const {
         return precision == 0 && scale == 0;
@@ -220,6 +225,8 @@ struct DecimalValue {
 
 template <typename DataType> constexpr bool IsDecimalValue = false;
 template <> constexpr bool IsDecimalValue<DecimalValue> = true;
+
+bool parseDecimal(const char *str, size_t len, DecimalValue& dec);
 
 class DecimalMaxValue final : public ext::singleton<DecimalMaxValue> {
     friend class ext::singleton<DecimalMaxValue>;

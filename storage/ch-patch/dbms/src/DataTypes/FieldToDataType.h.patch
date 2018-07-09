@@ -1,0 +1,12 @@
+diff --git a/dbms/src/DataTypes/FieldToDataType.h b/dbms/src/DataTypes/FieldToDataType.h
+index c6256a6f04b5..3d3f13dd2abf 100644
+--- a/dbms/src/DataTypes/FieldToDataType.h
++++ b/dbms/src/DataTypes/FieldToDataType.h
+@@ -24,6 +24,7 @@ public:
+     DataTypePtr operator() (const String & x) const;
+     DataTypePtr operator() (const Array & x) const;
+     DataTypePtr operator() (const Tuple & x) const;
++    DataTypePtr operator() (const DecimalValue & x) const;
+ };
+ 
+ }
