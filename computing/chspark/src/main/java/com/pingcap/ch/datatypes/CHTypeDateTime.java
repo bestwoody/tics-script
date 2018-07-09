@@ -32,7 +32,7 @@ public class CHTypeDateTime implements CHType {
         if (size == 0) {
             return new CHColumnDateTime(0, MemoryUtil.EMPTY_BYTE_BUFFER_DIRECT);
         }
-        ByteBuffer buffer = allocateDirect(size << 2);
+        ByteBuffer buffer = allocateDirect(size << 3);
         reader.read(buffer);
         buffer.clear();
         return new CHColumnDateTime(size, buffer);
@@ -41,7 +41,7 @@ public class CHTypeDateTime implements CHType {
     @Override
     public void serialize(WriteBuffer writer, CHColumn column) throws IOException {
         ByteBuffer data = MemoryUtil.duplicateDirectByteBuffer(((CHColumnDateTime) column).data());
-        data.clear().limit(column.size() << 2);
+        data.clear().limit(column.size() << 3);
         writer.write(data);
     }
 }

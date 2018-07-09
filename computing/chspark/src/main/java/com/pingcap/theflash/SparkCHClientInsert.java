@@ -159,10 +159,13 @@ public class SparkCHClientInsert implements Closeable {
                 } else {
                     col.insertUTF8String(UTF8String.fromString(row.get(i).toString()));
                 }
+            } else if (chType == CHTypeDate.instance) {
+                Date v = row.getDate(i);
+                col.insertInt(DateTimeUtils.fromJavaDate(v));
             } else if (chType == CHTypeDateTime.instance) {
-                // java.sql.Timestamp by long, as milliseconds, while ClickHouse use int32, i.e. int as seconds.
+                // java.sql.Timestamp as milliseconds, while ClickHouse as seconds.
                 Timestamp ts = row.getTimestamp(i);
-                col.insertInt((int) (ts.getTime() / 1000));
+                col.insertLong((ts.getTime() / 1000));
             } else if (chType == CHTypeNumber.CHTypeInt8.instance) {
                 col.insertByte((byte)row.getLong(i));
             } else if (chType == CHTypeNumber.CHTypeInt16.instance) {
@@ -223,14 +226,12 @@ public class SparkCHClientInsert implements Closeable {
             if (chType == CHTypeString.instance || chType instanceof CHTypeFixedString) {
                 col.insertUTF8String(UTF8String.fromString(row.getString(i)));
             } else if (chType == CHTypeDate.instance) {
-                // Spark store Date type by int, while ClickHosue use int16, i.e. short.
-                // Note that hacked date should have already been handled in the if block above.
                 Date v = row.getDate(i);
-                col.insertShort((short) DateTimeUtils.fromJavaDate(v));
+                col.insertInt(DateTimeUtils.fromJavaDate(v));
             } else if (chType == CHTypeDateTime.instance) {
-                // java.sql.Timestamp by long, as milliseconds, while ClickHouse use int32, i.e. int as seconds.
+                // java.sql.Timestamp as milliseconds, while ClickHouse as seconds.
                 Timestamp ts = row.getTimestamp(i);
-                col.insertInt((int) (ts.getTime() / 1000));
+                col.insertLong(ts.getTime() / 1000);
             } else if (chType == CHTypeNumber.CHTypeInt8.instance) {
                 col.insertByte(row.getByte(i));
             } else if (chType == CHTypeNumber.CHTypeInt16.instance) {

@@ -16,7 +16,7 @@ public class CHColumnDate extends CHColumn {
     }
 
     public CHColumnDate(int maxSize) {
-        this(0, MemoryUtil.allocateDirect(maxSize << 1));
+        this(0, MemoryUtil.allocateDirect(maxSize << 2));
     }
 
     public ByteBuffer data() {
@@ -25,24 +25,24 @@ public class CHColumnDate extends CHColumn {
 
     @Override
     public long byteCount() {
-        return size << 1;
+        return size << 2;
     }
 
     @Override
-    public short getShort(int rowId) {
-        return MemoryUtil.getShort(dataAddr + (rowId << 1));
+    public int getInt(int rowId) {
+        return MemoryUtil.getInt(dataAddr + (rowId << 2));
     }
 
     @Override
-    public void insertShort(short v) {
-        MemoryUtil.setShort(dataAddr + (size << 1), v);
+    public void insertInt(int v) {
+        MemoryUtil.setInt(dataAddr + (size << 2), v);
         size++;
     }
 
     @Override
     public CHColumn seal() {
         data.clear();
-        data.limit(size << 1);
+        data.limit(size << 2);
         return this;
     }
 

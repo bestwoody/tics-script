@@ -137,9 +137,9 @@ public class SparkCHClientInsertTest {
 
         @Override
         public void accept(CHColumnBatch b) {
-            values[0] = new Date(b.column(0).getShort(0) * 1000L * 60 * 60 * 24);
-            values[1] = new Date(b.column(1).getShort(0) * 1000L * 60 * 60 * 24);
-            values[2] = new Timestamp(b.column(2).getInt(0) * 1000L);
+            values[0] = new Date(b.column(0).getInt(0) * 1000L * 60 * 60 * 24);
+            values[1] = new Date(b.column(1).getInt(0) * 1000L * 60 * 60 * 24);
+            values[2] = new Timestamp(b.column(2).getLong(0) / 1000);
             values[3] = b.column(3).getFloat(0);
             values[4] = b.column(4).getDouble(0);
             values[5] = b.column(5).getInt(0);

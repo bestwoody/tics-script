@@ -87,10 +87,7 @@ public class CHColumnVector extends ColumnVector {
 
     @Override
     public int getInt(int rowId) {
-        if (type == CHTypeDate.instance) {
-            // Spark store Date type by int, while ClickHosue use int16, i.e. short.
-            return column.getShort(rowId);
-        } else if (type == CHTypeNumber.CHTypeUInt8.instance) {
+        if (type == CHTypeNumber.CHTypeUInt8.instance) {
             // CHTypeUInt8 -> Spark IntegerType
             return column.getByte(rowId) & 0x0FF;
             // CHTypeUInt16 -> Spark IntegerType
@@ -108,8 +105,8 @@ public class CHColumnVector extends ColumnVector {
     @Override
     public long getLong(int rowId) {
         if (type == CHTypeDateTime.instance) {
-            // Spark store Timestamp by long, as microseconds, while ClickHosue use int32, i.e. int as seconds.
-            return ((long) column.getInt(rowId)) * 1000 * 1000;
+            // Spark store Timestamp as microseconds, while ClickHosue as seconds.
+            return column.getLong(rowId) * 1000 * 1000;
         } else if (type == CHTypeNumber.CHTypeUInt32.instance) {
             // CHTypeUInt32 -> Spark LongType
             return column.getInt(rowId) & 0x0FFFF_FFFFL;

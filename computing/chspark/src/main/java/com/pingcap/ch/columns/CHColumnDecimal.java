@@ -26,7 +26,7 @@ public class CHColumnDecimal extends CHColumn {
     }
 
     public CHColumnDecimal(int prec, int scale, int maxSize) {
-        this(0, prec, scale, ByteBuffer.allocateDirect(DECIMAL_SIZE * maxSize));
+        this(0, prec, scale, MemoryUtil.allocateDirect(DECIMAL_SIZE * maxSize));
     }
 
     public ByteBuffer data() {

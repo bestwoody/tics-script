@@ -15,7 +15,7 @@
 
 package org.apache.spark.sql.ch
 
-import com.pingcap.ch.datatypes.{CHTypeDateTime, CHTypeDecimal, CHTypeNullable, CHTypeString}
+import com.pingcap.ch.datatypes._
 import com.pingcap.ch.datatypes.CHTypeNumber.{CHTypeInt32, CHTypeUInt16, CHTypeUInt8, _}
 import com.pingcap.theflash.TypeMappingJava
 import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
@@ -195,7 +195,7 @@ object CHSql {
       case MySQLType.TypeTimestamp | MySQLType.TypeDatetime => CHTypeDateTime.instance
       case MySQLType.TypeDuration                           => CHTypeInt64.instance
       case MySQLType.TypeLonglong                           => if (isUnsigned) CHTypeUInt64.instance else CHTypeInt64.instance
-      case MySQLType.TypeDate | MySQLType.TypeNewDate       => CHTypeInt32.instance
+      case MySQLType.TypeDate | MySQLType.TypeNewDate       => CHTypeDate.instance
       case MySQLType.TypeString | MySQLType.TypeVarchar | MySQLType.TypeTinyBlob |
           MySQLType.TypeMediumBlob | MySQLType.TypeLongBlob | MySQLType.TypeBlob |
           MySQLType.TypeVarString =>
