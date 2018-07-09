@@ -1,14 +1,16 @@
 diff --git a/libs/libcommon/include/common/DateLUTImpl.h b/libs/libcommon/include/common/DateLUTImpl.h
-index 535c863eeb3e..d701971c8ff0 100644
+index 535c863eeb3e..8ad8c29a050f 100644
 --- a/libs/libcommon/include/common/DateLUTImpl.h
 +++ b/libs/libcommon/include/common/DateLUTImpl.h
-@@ -7,15 +7,16 @@
+@@ -6,16 +6,17 @@
+ 
  #include <ctime>
  
- #define DATE_LUT_MAX (0xFFFFFFFFU - 86400)
+-#define DATE_LUT_MAX (0xFFFFFFFFU - 86400)
 -#define DATE_LUT_MAX_DAY_NUM (0xFFFFFFFFU / 86400)
++#define DATE_LUT_MAX (0xFFFFFFFFFFFFFFFLL - 86400)
 +#define DATE_LUT_MIN -30610224000LL
-+#define DATE_LUT_MAX_DAY_NUM 3287181
++#define DATE_LUT_MAX_DAY_NUM 36500000
  /// Table size is bigger than DATE_LUT_MAX_DAY_NUM to fill all indices within UInt16 range: this allows to remove extra check.
 -#define DATE_LUT_SIZE 0x10000
 -#define DATE_LUT_MIN_YEAR 1970
