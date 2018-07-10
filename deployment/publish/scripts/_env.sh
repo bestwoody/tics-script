@@ -33,4 +33,5 @@ export pushdown="true"
 export spark_executor_memory=12G
 
 # Setup running env vars
-export LD_LIBRARY_PATH="`dirname $storage_bin`:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib"
+source ./_vars.sh
+setup_dylib_path

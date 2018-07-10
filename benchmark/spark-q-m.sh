@@ -14,7 +14,7 @@ fi
 mkdir -p "/tmp/spark-q/"
 tmp="/tmp/spark-q/`date +%s`"
 
-spart_settings "$tmp"
+print_spark_settings > "$tmp"
 
 echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 

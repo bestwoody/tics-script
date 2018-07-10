@@ -10,7 +10,7 @@ tmp="/tmp/spark-q/`date +%s`"
 echo 'import java.util.Date' >> "$tmp"
 echo 'import spark.implicits._' >> "$tmp"
 
-spart_settings "$tmp"
+print_spark_settings >> "$tmp"
 
 echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
 

@@ -35,12 +35,12 @@
     * Network between nodes
         * Ping avg: 0.25ms
         * Brandwidth: 19 Gbits/sec
-    * SSD on each node:
-        * Write: IOPS=5.5k, BW=800MB/s
-        * Read: IOPS=18k, BW=1.4GB/s
+    * SSDs on each node:
+        * Max: RandWrite: IOPS=6.5k BW=980MiB/s, RandRead: IOPS=56k BW=2650MiB/s
+        * 64K: Write: IOPS=3.5k BW=230MiB/s, Read: IOPS=40k BW=2550MiB/s
     * Mounted cephfs on each node:
-        * Write: IOPS=2.5k, BW=315MB/s
-        * Read: IOPS=26k, BW=1.5GB/s
+        * Max: RandWrite: IOPS=3k BW=250MiB/s, RandRead: IOPS=25.8k BW=1150MiB/s
+        * 64K: Write: IOPS=160 BW=10MiB/s, Read: IOPS=14k BW=920MiB/s
 * Config
     * TheFlash
         * Partitions per split: 1
