@@ -15,12 +15,10 @@
 
 package org.apache.spark.sql.ch
 
-import com.pingcap.theflash.DataTypeAndNullable
 import org.apache.spark.sql.SharedSQLContext
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
-import org.apache.spark.sql.ch.hack.{CHStructType, Hack}
 import org.apache.spark.sql.execution.CHScanExec
 import org.apache.spark.sql.types.StructType
 
@@ -28,15 +26,7 @@ class CHStrategySuite extends SharedSQLContext {
   class TestCHRelation(name: String, output: Attribute*)
       extends CHRelation({ Seq.empty }, 0)(sqlContext, null) {
     val localRelation = LocalRelation(output)
-    override lazy val schema: StructType = new CHStructType(
-      localRelation.schema
-        .map(f => {
-          Hack
-            .hackStructField(f.name, new DataTypeAndNullable(f.dataType, f.nullable), f.metadata)
-            .getOrElse(f)
-        })
-        .toArray
-    )
+    override lazy val schema: StructType = localRelation.schema
 
     sqlContext.baseRelationToDataFrame(this).createTempView(name)
   }
@@ -61,13 +51,11 @@ class CHStrategySuite extends SharedSQLContext {
   }
 
   var multiNodeT: TestCHRelation = _
-  var hackT: TestCHRelation = _
 
   protected override def beforeAll(): Unit = {
     super.beforeAll()
     spark.experimental.extraStrategies = new CHStrategy(spark) :: Nil
     multiNodeT = new TestCHRelation("mt", 'mt_a.int, 'mt_b.int, 'mt_c.string)
-    hackT = new TestCHRelation("ht", 'ht_a.int, '_tidb_date_ht_b.int, '_tidb_date_ht_c.date)
   }
 
   protected override def afterAll(): Unit = {
@@ -233,62 +221,6 @@ class CHStrategySuite extends SharedSQLContext {
           multiNodeT,
           "CH plan [Project [mt_a, mt_b], Filter [], Aggregate [], TopN [[named_struct(mt_a, mt_a, mt_b, mt_b) DESC NULLS LAST], 1]]"
         )
-      )
-    )
-  }
-
-  test("hack plans") {
-    testQuery(
-      "select ht_a, ht_b, _tidb_date_ht_c from ht",
-      Map(
-        (hackT, "CH plan [Project [ht_a, ht_b, _tidb_date_ht_c], Filter [], Aggregate [], TopN []]")
-      )
-    )
-    // Check if date comparison is pushed down.
-    testQuery(
-      "select ht_a, ht_b, _tidb_date_ht_c from ht where ht_b > date '1990-01-01'",
-      Map(
-        (
-          hackT,
-          "CH plan [Project [ht_a, ht_b, _tidb_date_ht_c], Filter [(ht_b IS NOT NULL), (ht_b > DATE '1990-01-01')], Aggregate [], TopN []]"
-        )
-      )
-    )
-    // Check if date comparison with an folded constant is pushed down.
-    testQuery(
-      "select ht_a, ht_b, _tidb_date_ht_c from ht where ht_b > cast('1990-01-01' as date)",
-      Map(
-        (
-          hackT,
-          "CH plan [Project [ht_a, ht_b, _tidb_date_ht_c], Filter [(ht_b IS NOT NULL), (ht_b > DATE '1990-01-01')], Aggregate [], TopN []]"
-        )
-      )
-    )
-    // Check if cast date to string is NOT pushed down.
-    testQuery(
-      "select ht_a, ht_b, _tidb_date_ht_c from ht where ht_b > '1990-01-01'",
-      Map(
-        (
-          hackT,
-          "CH plan [Project [ht_a, ht_b, _tidb_date_ht_c], Filter [(ht_b IS NOT NULL)], Aggregate [], TopN []]"
-        )
-      )
-    )
-    // Check if cast date to timestamp is NOT pushed down.
-    testQuery(
-      "select ht_a, ht_b, _tidb_date_ht_c from ht where ht_b > current_timestamp",
-      Map(
-        (
-          hackT,
-          "CH plan [Project [ht_a, ht_b, _tidb_date_ht_c], Filter [(ht_b IS NOT NULL)], Aggregate [], TopN []]"
-        )
-      )
-    )
-    // Check if cast to date is NOT pushed down.
-    testQuery(
-      "select cast(cast(ht_a as string) as date), ht_b, _tidb_date_ht_c from ht",
-      Map(
-        (hackT, "CH plan [Project [ht_a, ht_b, _tidb_date_ht_c], Filter [], Aggregate [], TopN []]")
       )
     )
   }

@@ -32,7 +32,6 @@ class CHSqlSuite extends SparkFunSuite {
   val a: AttributeReference = 'A.int
   val b: AttributeReference = 'b.int
   val c: AttributeReference = 'C.string
-  val hackD: CHAttributeReference = new CHAttributeReference("d", DateType, false, Metadata.empty)
   val t = new CHTableRef(null, 0, "D", "T")
 
   def testCompileExpression(e: Expression, expected: String): Unit =
@@ -97,7 +96,6 @@ class CHSqlSuite extends SparkFunSuite {
   }
 
   test("aggregate expressions") {
-    testCompileExpression(avg(a), "AVG(`a`)")
     testCompileExpression(count(a), "COUNT(`a`)")
     testCompileExpression(max(a), "MAX(`a`)")
     testCompileExpression(min(a), "MIN(`a`)")
@@ -133,11 +131,6 @@ class CHSqlSuite extends SparkFunSuite {
     )
   }
 
-  test("hack expressions") {
-    testCompileExpression(hackD, "`_tidb_date_d`")
-    testCompileExpression(hackD > "1990-01-01", "(`_tidb_date_d` > '1990-01-01')")
-  }
-
   test("create table statements") {
     testCreateTable(
       "Test",
@@ -152,7 +145,7 @@ class CHSqlSuite extends SparkFunSuite {
         )
       ),
       Array("I"),
-      "CREATE TABLE `test`.`test` (`i` Int32, `d` Nullable(Float64), `s` Nullable(String), `_tidb_date_dt` Nullable(Int32), `_tidb_date_dt_nn` Int32) ENGINE = MutableMergeTree((`i`), 8192)"
+      "CREATE TABLE `test`.`test` (`i` Int32, `d` Nullable(Float64), `s` Nullable(String), `dt` Nullable(Date), `dt_nn` Date) ENGINE = MutableMergeTree((`i`), 8192)"
     )
     testCreateTable(
       "Test",
