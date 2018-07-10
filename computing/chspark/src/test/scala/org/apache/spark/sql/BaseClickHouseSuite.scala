@@ -66,8 +66,9 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
   def loadTestDataFromTestTables(testTables: TestTables = defaultTestTables): Unit = {
     val dbName = testTables.dbName
     clickHouseConn.setCatalog(dbName)
+    ch.mapCHDatabase(dbName)
     for (tableName <- testTables.tables) {
-      ch.mapCHClusterTable(dbName, tableName)
+      createOrReplaceTempView(dbName, tableName)
     }
   }
 
@@ -159,7 +160,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
                         rSpark: List[List[Any]] = null,
                         rJDBC: List[List[Any]] = null,
                         rClickHouse: List[List[Any]] = null,
-                        skipJDBC: Boolean = true,
+                        skipJDBC: Boolean = false,
                         skipClickHouse: Boolean = false): Unit =
     try {
       explainSpark(qSpark)
@@ -186,7 +187,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
               rSpark: List[List[Any]] = null,
               rJDBC: List[List[Any]] = null,
               rClickHouse: List[List[Any]] = null,
-              skipJDBC: Boolean = true,
+              skipJDBC: Boolean = false,
               skipClickHouse: Boolean = false): Unit =
     runTestWithoutReplaceTableName(
       qSpark,
@@ -205,7 +206,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
                       rSpark: List[List[Any]] = null,
                       rJDBC: List[List[Any]] = null,
                       rClickHouse: List[List[Any]] = null,
-                      skipJDBC: Boolean = true,
+                      skipJDBC: Boolean = false,
                       skipClickHouse: Boolean = false): Unit =
     runTestWithoutReplaceTableName(
       qSpark,
@@ -241,7 +242,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
                                      rSpark: List[List[Any]] = null,
                                      rJDBC: List[List[Any]] = null,
                                      rClickHouse: List[List[Any]] = null,
-                                     skipJDBC: Boolean = true,
+                                     skipJDBC: Boolean = false,
                                      skipClickHouse: Boolean = false): Unit = {
     if (skipped) {
       logger.warn(s"Test is skipped. [With Spark SQL: $qSpark]")
@@ -276,9 +277,14 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
         printR2(r2)
       } catch {
         case e: Throwable =>
-//          println(e.getMessage)
+          println(e.getMessage)
           logger.warn(s"Spark with JDBC failed when executing:$qJDBC", e) // JDBC failed
       }
+    } else {
+      if (r2 == null) {
+        r2 = List(List("skipped"))
+      }
+      printR2(r2)
     }
 
     val isOrdered = qSpark.contains(" order by ") && !qSpark.contains("/*non-order*/")
@@ -297,6 +303,11 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
             println(e.getMessage)
             logger.warn(s"ClickHouse failed when executing:$qClickHouse", e) // ClickHouse failed
         }
+      } else {
+        if (r3 == null) {
+          r3 = List(List("skipped"))
+        }
+        printR3(r3)
       }
       val comp13 = compResult(r1, r3, isOrdered)
       if (skipClickHouse || !comp13) {
