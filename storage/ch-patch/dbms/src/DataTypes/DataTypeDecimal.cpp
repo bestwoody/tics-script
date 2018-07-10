@@ -107,7 +107,7 @@ void DataTypeDecimal::serializeTextCSV(const IColumn& column, size_t row_num, Wr
 
 void DataTypeDecimal::deserializeTextCSV(IColumn & column, ReadBuffer & istr, const char /*delimiter*/) const
 {
-    DecimalValue x;
+    DecimalValue x(0, precision, scale);
     readCSV(x, istr);
     static_cast<ColumnDecimal &>(column).getData().push_back(x);
 }
