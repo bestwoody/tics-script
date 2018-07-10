@@ -4,6 +4,8 @@ def parse():
     partitions = {}
     total_parts = []
     detached = 0
+    is_mmt = False
+
     while True:
         line = sys.stdin.readline()
         if not line:
@@ -31,6 +33,7 @@ def parse():
         # Is MutableMergeTree engine partitions
         if len(part_info) != 4:
             continue
+        is_mmt = True
 
         part_name, part_begin, part_end, part_level = part_info
         part_begin = int(part_begin)
@@ -53,10 +56,10 @@ def parse():
         parts.append((part_name, part_begin, part_end, part_level))
         partitions[part_name] = parts
 
-    return partitions, total_parts
+    return partitions, total_parts, is_mmt
 
-def analyze(partitions, parts):
-    level_sizes = []
+def analyze(partitions, parts, is_mmt):
+    level_total_sizes = []
     level_counts = []
     total_size = 0
     max_end = 0
@@ -67,38 +70,48 @@ def analyze(partitions, parts):
         io_size += size * (level + 1)
         while len(level_counts) <= level:
             level_counts.append(0)
-            level_sizes.append(0)
+            level_total_sizes.append(0)
         level_counts[level] += 1
-        level_sizes[level] += size
+        level_total_sizes[level] += size
         if end > max_end:
             max_end = end
+    total_size = float(total_size) / 1024
+    io_size = float(io_size) / 1024
 
     level_0_size = 0
     if len(level_counts) > 0 and level_counts[0] != 0:
-        level_0_size = float(level_sizes[0]) / level_counts[0]
+        level_0_size = float(level_total_sizes[0]) / level_counts[0]
+    level_0_size /= 1024
 
+    level_avg_sizes = []
     for i in range(0, len(level_counts)):
+        level_avg_sizes.append(None)
         if level_counts[i] == 0:
-            level_sizes[i] = None
+            level_total_sizes[i] = None
+            level_avg_sizes[i] = None
             level_counts[i] = None
             continue
-        avg_size = level_sizes[i] / float(level_counts[i])
-        level_sizes[i] = 'L' + str(i) + '=' + str(avg_size)
+        avg_size = level_total_sizes[i] / float(level_counts[i])
+        level_total_sizes[i] = 'L' + str(i) + '=' + format(float(level_total_sizes[i]) / 1024, '.2f')
+        level_avg_sizes[i] = 'L' + str(i) + '=' + format(float(avg_size) / 1024, '.2f')
         level_counts[i] = 'L' + str(i) + '=' + str(level_counts[i])
-    level_sizes = filter(lambda x: x != None, level_sizes)
+    level_total_sizes = filter(lambda x: x != None, level_total_sizes)
+    level_avg_sizes = filter(lambda x: x != None, level_avg_sizes)
     level_counts = filter(lambda x: x != None, level_counts)
 
     print "Partitions count:", len(partitions)
-    print "Parts count:", len(parts)
+    print "Parts total count:", len(parts)
     if len(parts) > 0:
-        print "Parts avg size(KB):", float(total_size) / len(parts)
+        print "Parts avg size(MB): %.3f" % (float(total_size) / len(parts))
     if len(partitions) > 0:
-        print "Parts count per partition:", float(len(parts)) / len(partitions)
+        print "Parts count per partition: %.1f" % (float(len(parts)) / len(partitions))
     print "Parts count of each level:", level_counts
-    print "Parts size(KB) of each level:", level_sizes
-    print "Approximate write batch size(KB):", level_0_size == 0 and '?' or str(len(partitions) * level_0_size)
+    print "Parts level-total size(MB) of each level:", level_total_sizes
+    print "Parts avg size(MB) of each level:", level_avg_sizes
+    if is_mmt:
+        print "Approximate write batch size(MB):", level_0_size == 0 and '?' or format(len(partitions) * level_0_size, '.2f')
     if len(partitions) > 0:
         print "Approximate finished write batchs count:", float(max_end) / len(partitions)
-        print "Approximate write amplification:", float(io_size) / total_size
+        print "Approximate write amplification: %.1f" % (float(io_size) / total_size)
 
 analyze(*parse())
