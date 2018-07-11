@@ -1,0 +1,13 @@
+diff --git a/dbms/src/Interpreters/SetVariants.cpp b/dbms/src/Interpreters/SetVariants.cpp
+index f0d9bbb2af8c..06e659acdf5f 100644
+--- a/dbms/src/Interpreters/SetVariants.cpp
++++ b/dbms/src/Interpreters/SetVariants.cpp
+@@ -150,6 +150,8 @@ typename SetVariantsTemplate<Variant>::Type SetVariantsTemplate<Variant>::choose
+             return Type::key64;
+         if (size_of_field == 16)
+             return Type::keys128;
++        if (size_of_field == sizeof(DecimalValue))
++            return Type::key_decimal;
+         throw Exception("Logical error: numeric column has sizeOfField not in 1, 2, 4, 8, 16.", ErrorCodes::LOGICAL_ERROR);
+     }
+ 
