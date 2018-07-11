@@ -27,6 +27,7 @@ class SimpleSelect0Suite extends BaseClickHouseSuite {
     "select tp_datetime from full_data_type_table order by tp_datetime limit 20",
     "select tp_float32 from full_data_type_table order by tp_float32 limit 20",
     "select tp_float64 from full_data_type_table order by tp_float64 limit 20",
+    "select tp_decimal from full_data_type_table order by tp_decimal limit 20",
     "select tp_uint8 from full_data_type_table order by tp_uint8 limit 20",
     "select tp_uint16 from full_data_type_table order by tp_uint16 limit 20",
     "select tp_uint32 from full_data_type_table order by tp_uint32 limit 20",

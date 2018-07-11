@@ -9,7 +9,7 @@ public class CHColumnDate extends CHColumn {
     private ByteBuffer data; // We need to keep a reference here to prevent the memory from gc.
     private long dataAddr;
     // In storage the date starts from 1000-01-01.
-    private static final int DATE_EPOCH_OFFSET = -354285;
+    public static final int DATE_EPOCH_OFFSET = -354285;
 
     public CHColumnDate(int size, ByteBuffer data) {
         super(CHTypeDate.instance, size);

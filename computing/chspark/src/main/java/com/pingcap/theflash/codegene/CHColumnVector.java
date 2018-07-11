@@ -1,5 +1,6 @@
 package com.pingcap.theflash.codegene;
 
+import com.google.common.primitives.UnsignedLong;
 import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnNullable;
 import com.pingcap.ch.columns.CHColumnNumber;
@@ -158,12 +159,7 @@ public class CHColumnVector extends ColumnVector {
         if (i >= 0L)
             return BigInteger.valueOf(i);
         else {
-            int upper = (int) (i >>> 32);
-            int lower = (int) i;
-
-            // return (upper << 32) + lower
-            return (BigInteger.valueOf(Integer.toUnsignedLong(upper))).shiftLeft(32).
-                    add(BigInteger.valueOf(Integer.toUnsignedLong(lower)));
+            return UnsignedLong.fromLongBits(i).bigIntegerValue();
         }
     }
 

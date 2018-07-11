@@ -24,6 +24,7 @@ class ComplexAggregateSuite extends BaseClickHouseSuite {
     "select min(tp_int8) from full_data_type_table",
     "select sum(tp_uint8) from full_data_type_table",
     "select sum(tp_float64) from full_data_type_table",
+    "select sum(tp_decimal) from full_data_type_table",
     "select avg(tp_int32) from full_data_type_table",
     "select max(tp_int64) from full_data_type_table",
     "select max(tp_uint64) from full_data_type_table"

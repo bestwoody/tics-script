@@ -25,6 +25,7 @@ class Between0Suite extends BaseClickHouseSuite {
     "select tp_datetime from full_data_type_table where tp_datetime between '2007-01-01 00:00:00' and '2008-01-01 00:00:00'",
     "select tp_float32 from full_data_type_table where tp_float32 between -0.379347 and 0.660279",
     "select tp_float64 from full_data_type_table where tp_float64 between -3.9811620520 and 5.7086851260",
+    "select tp_decimal from full_data_type_table where tp_decimal between -38156439039890808686.0640483612 and 41693577077730693327.2727249575",
     "select tp_uint8 from full_data_type_table where tp_uint8 between 49 and 250",
     "select tp_uint16 from full_data_type_table where tp_uint16 between 27661 and 61318",
     "select tp_uint32 from full_data_type_table where tp_uint32 between 1519221222 and 3872657088",

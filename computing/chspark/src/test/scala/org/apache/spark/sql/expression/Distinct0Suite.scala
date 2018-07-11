@@ -27,6 +27,7 @@ class Distinct0Suite extends BaseClickHouseSuite {
     "select distinct(tp_datetime) from full_data_type_table order by tp_datetime",
     "select distinct(tp_float32) from full_data_type_table order by tp_float32",
     "select distinct(tp_float64) from full_data_type_table order by tp_float64",
+    "select distinct(tp_decimal) from full_data_type_table order by tp_decimal",
     "select distinct(tp_uint8) from full_data_type_table order by tp_uint8",
     "select distinct(tp_uint16) from full_data_type_table order by tp_uint16",
     "select distinct(tp_uint32) from full_data_type_table order by tp_uint32",

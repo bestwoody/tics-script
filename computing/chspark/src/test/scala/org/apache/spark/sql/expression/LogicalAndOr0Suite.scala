@@ -120,7 +120,10 @@ class LogicalAndOr0Suite extends BaseClickHouseSuite {
     "select tp_int64, tp_int8 from full_data_type_table where tp_int64 = tp_int8 and tp_int64 > 0",
     "select tp_int64, tp_int16 from full_data_type_table where tp_int64 = tp_int16 and tp_int64 > 0",
     "select tp_int64, tp_int32 from full_data_type_table where tp_int64 = tp_int32 and tp_int64 > 0",
-    "select tp_int64, tp_int64 from full_data_type_table where tp_int64 = tp_int64 and tp_int64 > 0"
+    "select tp_int64, tp_int64 from full_data_type_table where tp_int64 = tp_int64 and tp_int64 > 0",
+    "select tp_decimal, tp_int16 from full_data_type_table where tp_decimal = tp_int16 and tp_decimal > 0",
+    "select tp_decimal, tp_float32 from full_data_type_table where tp_decimal = tp_float32 and tp_decimal > 0",
+    "select tp_int32, tp_decimal from full_data_type_table where tp_int32 = tp_decimal and tp_int32 > 0"
   ).map(_.concat(" order by id_dt"))
 
   allCases foreach { query =>

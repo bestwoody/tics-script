@@ -23,6 +23,7 @@ class OtherTestSuite extends BaseClickHouseSuite {
   private val cases = Seq[String](
     "select id_dt from full_data_type_table where tp_date is null",
     "select id_dt from full_data_type_table where tp_date is not null",
+    "select id_dt from full_data_type_table where tp_decimal is not null",
     "select tp_string from full_data_type_table where tp_string like 'g%' order by id_dt",
     "select tp_string from full_data_type_table where tp_string like '%H%' order by id_dt"
   )

@@ -27,6 +27,7 @@ class Count0Suite extends BaseClickHouseSuite {
     "select count(tp_datetime) from full_data_type_table",
     "select count(tp_float32) from full_data_type_table",
     "select count(tp_float64) from full_data_type_table",
+    "select count(tp_decimal) from full_data_type_table",
     "select count(tp_uint8) from full_data_type_table",
     "select count(tp_uint16) from full_data_type_table",
     "select count(tp_uint32) from full_data_type_table",

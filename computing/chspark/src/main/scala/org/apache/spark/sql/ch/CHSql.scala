@@ -15,6 +15,7 @@
 
 package org.apache.spark.sql.ch
 
+import com.pingcap.ch.columns.CHColumnDate
 import com.pingcap.ch.datatypes._
 import com.pingcap.ch.datatypes.CHTypeNumber.{CHTypeInt32, CHTypeUInt16, CHTypeUInt8, _}
 import com.pingcap.theflash.TypeMappingJava
@@ -309,6 +310,12 @@ object CHSql {
         } else {
           dataType match {
             case StringType => "'" + escapeString(value.toString) + "'"
+            case DateType   =>
+              // Date in storage starts from 1000-01-01
+              (value.asInstanceOf[java.lang.Integer] - CHColumnDate.DATE_EPOCH_OFFSET).toString
+            case TimestampType =>
+              // DateTime in storage is stored as seconds rather than milliseconds
+              (value.asInstanceOf[java.lang.Long] / 1000000).toString
             case BooleanType =>
               val isTrue = if (value.toString.equalsIgnoreCase("TRUE")) 1 else 0
               s"CAST($isTrue AS UInt8)"

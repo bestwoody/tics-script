@@ -24,6 +24,7 @@ class InTest0Suite extends BaseClickHouseSuite {
     "select tp_int32 from full_data_type_table  where tp_int32 in (2333, 601508558, 4294967296, 4294967295)",
     "select tp_int64 from full_data_type_table  where tp_int64 in (122222, -2902580959275580308, 9223372036854775807, 9223372036854775808)",
     "select tp_string from full_data_type_table  where tp_string in ('nova', '2nIGRwH4cYCroORc958d')",
+    "select tp_decimal from full_data_type_table  where tp_decimal in (70394684189334124418.3210174888, 70394684189334124418.3210174889, 41693577077730693327.2727249575)",
     "select tp_float64 from full_data_type_table  where tp_float64 in (-3.0770481530,5.3030606820,-5.1807925690)",
     "select tp_float32 from full_data_type_table  where tp_float32 in (0.516204,-0.645650,0.477112)",
     "select tp_datetime from full_data_type_table  where tp_datetime in ('2007-12-18 17:38:22','2017-09-07 11:11:11','2002-10-21 07:18:29')",

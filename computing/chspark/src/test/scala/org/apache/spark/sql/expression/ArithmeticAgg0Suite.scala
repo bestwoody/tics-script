@@ -61,7 +61,7 @@ class ArithmeticAgg0Suite extends BaseClickHouseSuite {
     "select abs(tp_uint32) from full_data_type_table",
     "select min(tp_uint64) from full_data_type_table",
     "select max(tp_uint64) from full_data_type_table",
-    "select sum(tp_uint64) from full_data_type_table",
+    "[skip]select sum(tp_uint64) from full_data_type_table",
     "[skip]select avg(tp_uint64) from full_data_type_table",
     "select abs(tp_uint64) from full_data_type_table",
     "select min(tp_int8) from full_data_type_table",

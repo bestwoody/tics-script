@@ -60,6 +60,7 @@ computing/chspark/src/test/resources/clickhouse_config.properties
 
 # spark metastore
 computing/metastore_db
+computing/chspark/metastore_db
 benchmark/metastore_db
 
 # IDE or editor files

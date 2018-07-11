@@ -50,6 +50,7 @@ abstract class QueryTest extends PlanTest {
       case d: java.math.BigDecimal => d.doubleValue()
       case d: BigDecimal           => d.bigDecimal.doubleValue()
       case d: Number               => d.doubleValue()
+      case d: String               => BigDecimal(d).doubleValue()
       case _                       => 0.0
     }
 
