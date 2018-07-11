@@ -4,6 +4,6 @@ CREATE TABLE IF NOT EXISTS supplier (
 	s_address     String,
 	s_nationkey   Int32,
 	s_phone       String,
-	s_acctbal     Float64,
+	s_acctbal     Decimal(15, 2),
 	s_comment     String
 ) ENGINE = Log;
