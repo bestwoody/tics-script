@@ -104,7 +104,7 @@ std::string DecimalValue::toString() const
     if (scale > 0) { // for factional point
         len ++; 
     }
-    if (scale == len) { // for leading zero
+    if (scale == precision) { // for leading zero
         len ++;
     }
     size_t end_point = len;
