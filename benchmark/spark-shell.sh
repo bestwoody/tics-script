@@ -22,4 +22,4 @@ fi
 
 echo "master ip: $ip"
 
-$repo_dir/computing/spark/bin/spark-shell --master spark://$ip:7077 --executor-memory $spark_executor_memory $@ 2>&1
+$repo_dir/computing/spark/bin/spark-shell --master spark://$ip:7077 --executor-cores $spark_executor_cores --executor-memory $spark_executor_memory $@ 2>&1

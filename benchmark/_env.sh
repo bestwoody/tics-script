@@ -32,6 +32,9 @@ export pushdown="true"
 # The executor-memory parameter of spark-shell.
 export spark_executor_memory=12G
 
+# The executor-cores parameter of spark-shell.
+export spark_executor_cores=16
+
 # Setup running env vars
 source ./_vars.sh
 setup_dylib_path

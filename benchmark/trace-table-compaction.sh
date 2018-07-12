@@ -2,9 +2,7 @@ table="$1"
 sec="$2"
 log="$3"
 
-set -eu
-
-source ./_env.sh
+set -u
 
 if [ -z "$table" ]; then
 	echo "usage: <bin> table-to-be-trace [interval-sec(15)] [log-file(compaction-{db}-{table}.log)]" >&2
