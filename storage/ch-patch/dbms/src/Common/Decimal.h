@@ -1,5 +1,13 @@
 #pragma once
-#include <boost/multiprecision/cpp_int.hpp>
+
+/// Remove the population of thread_local from Poco
+#ifdef thread_local
+#   undef thread_local
+#endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+    #include <boost/multiprecision/cpp_int.hpp>
+#pragma GCC diagnostic pop
 #include <ext/singleton.h>
 #include <Common/Exception.h>
 

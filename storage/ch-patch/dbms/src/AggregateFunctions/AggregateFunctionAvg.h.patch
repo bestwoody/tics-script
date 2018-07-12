@@ -1,5 +1,5 @@
 diff --git a/dbms/src/AggregateFunctions/AggregateFunctionAvg.h b/dbms/src/AggregateFunctions/AggregateFunctionAvg.h
-index 84288cecb86b..e121b9d8d06d 100644
+index 84288cecb86b..7fed187772dd 100644
 --- a/dbms/src/AggregateFunctions/AggregateFunctionAvg.h
 +++ b/dbms/src/AggregateFunctions/AggregateFunctionAvg.h
 @@ -4,6 +4,7 @@
@@ -10,21 +10,20 @@ index 84288cecb86b..e121b9d8d06d 100644
  #include <Columns/ColumnsNumber.h>
  
  #include <AggregateFunctions/IAggregateFunction.h>
-@@ -18,6 +19,13 @@ struct AggregateFunctionAvgData
+@@ -18,6 +19,12 @@ struct AggregateFunctionAvgData
  {
      T sum = 0;
      UInt64 count = 0;
 +
 +    AggregateFunctionAvgData(){}
 +
-+    template<std::enable_if_t<std::is_same<T, DecimalValue>{}>* = nullptr>
 +    AggregateFunctionAvgData(PrecType prec, ScaleType scale){
 +        sum = DecimalValue(0, prec, scale);
 +    }
  };
  
  
-@@ -25,12 +33,24 @@ struct AggregateFunctionAvgData
+@@ -25,12 +32,24 @@ struct AggregateFunctionAvgData
  template <typename T>
  class AggregateFunctionAvg final : public IAggregateFunctionDataHelper<AggregateFunctionAvgData<typename NearestFieldType<T>::Type>, AggregateFunctionAvg<T>>
  {
@@ -50,7 +49,7 @@ index 84288cecb86b..e121b9d8d06d 100644
      }
  
      void add(AggregateDataPtr place, const IColumn ** columns, size_t row_num, Arena *) const override
-@@ -59,8 +79,20 @@ public:
+@@ -59,8 +78,20 @@ public:
  
      void insertResultInto(ConstAggregateDataPtr place, IColumn & to) const override
      {

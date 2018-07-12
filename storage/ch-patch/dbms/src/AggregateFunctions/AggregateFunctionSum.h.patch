@@ -1,14 +1,13 @@
 diff --git a/dbms/src/AggregateFunctions/AggregateFunctionSum.h b/dbms/src/AggregateFunctions/AggregateFunctionSum.h
-index 89f22c14a726..ef6f4c6a05aa 100644
+index 89f22c14a726..ef4be7b9a822 100644
 --- a/dbms/src/AggregateFunctions/AggregateFunctionSum.h
 +++ b/dbms/src/AggregateFunctions/AggregateFunctionSum.h
-@@ -19,6 +19,13 @@ struct AggregateFunctionSumData
+@@ -19,6 +19,12 @@ struct AggregateFunctionSumData
  {
      T sum{};
  
 +    AggregateFunctionSumData(){}
 +
-+    template<std::enable_if_t<std::is_same<T, DecimalValue>{}>* = nullptr>
 +    AggregateFunctionSumData(PrecType prec, ScaleType scale){
 +        sum = DecimalValue(0, prec, scale);
 +    }
@@ -16,7 +15,7 @@ index 89f22c14a726..ef6f4c6a05aa 100644
      void add(T value)
      {
          sum += value;
-@@ -97,9 +104,28 @@ class AggregateFunctionSum final : public IAggregateFunctionDataHelper<Data, Agg
+@@ -97,9 +103,28 @@ class AggregateFunctionSum final : public IAggregateFunctionDataHelper<Data, Agg
  public:
      String getName() const override { return "sum"; }
  
@@ -48,7 +47,7 @@ index 89f22c14a726..ef6f4c6a05aa 100644
      }
  
      void add(AggregateDataPtr place, const IColumn ** columns, size_t row_num, Arena *) const override
-@@ -130,5 +156,4 @@ public:
+@@ -130,5 +155,4 @@ public:
      const char * getHeaderFilePath() const override { return __FILE__; }
  };
  

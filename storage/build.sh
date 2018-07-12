@@ -7,4 +7,4 @@ if [ -z "$target" ]; then
 fi
 
 source ./_build.sh
-build_ch "ch" "$target"
+build_ch "ch" "$target" "false" "RELWITHDEBINFO"

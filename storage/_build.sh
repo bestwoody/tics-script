@@ -57,20 +57,79 @@ setup_gcc()
 }
 export -f setup_gcc
 
+
+setup_clang()
+{
+	if [ -z "${CC+x}" ]; then
+		if [ "`uname`" == "Darwin" ] && [ -f /usr/local/opt/llvm/bin/clang ]; then
+			export CC=/usr/local/opt/llvm/bin/clang
+		else
+			if [ "`uname`" == "Darwin" ]; then
+				echo "Warning: The default Apple LLVM is likely not going to work, at least for 9.0.0 or older. Consider install an official LLVM clang."
+			fi
+			export CC=`which clang`
+		fi
+	fi
+	if [ -z "${CXX+x}" ]; then
+		if [ "`uname`" == "Darwin" ] && [ -f /usr/local/opt/llvm/bin/clang++ ]; then
+			export CXX=/usr/local/opt/llvm/bin/clang++
+		else
+			if [ "`uname`" == "Darwin" ]; then
+				echo "Warning: The default Apple LLVM is likely not going to work, at least for 9.0.0 or older. Consider install an official LLVM clang."
+			fi
+			export CXX=`which clang++`
+		fi
+	fi
+
+	if [ -z "$CC" ]; then
+		echo "Please setup clang 5 or higher version."
+		if [ "`uname`" == "Darwin" ]; then
+			echo "For MacOSX, brew install --with-toolchain llvm && export PATH=\"/usr/local/opt/llvm/bin:$PATH\""
+		fi
+		exit 1
+	fi
+
+	if [ -z "$CXX" ]; then
+		echo "Please setup clang 5 or higher version."
+		if [ "`uname`" == "Darwin" ]; then
+			echo "For MacOSX, brew install --with-toolchain llvm && export PATH=\"/usr/local/opt/llvm/bin:$PATH\""
+		fi
+		exit 1
+	fi
+}
+
 make_ch()
 {
 	local build_dir="$1"
 	local source_related_dir="$2"
 	local build_target="$3"
+	local is_clang="$4"
+	local build_type="$5"
 
-	setup_gcc
+	if [ "$is_clang" = "true" ]; then
+		setup_clang
+	else
+		setup_gcc
+	fi
 
 	mkdir -p "$build_dir"
 	local old=`pwd`
 	cd "$build_dir"
 
-	cmake "$source_related_dir" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC -Wno-dev
-	make -j 4 "$build_target"
+	# https://stackoverflow.com/a/23378780
+	physical_cpu_count=$([ $(uname) = 'Darwin' ] && sysctl -n hw.physicalcpu_max || lscpu -p | egrep -v '^#' | sort -u -t, -k 2,4 | wc -l)
+
+	if [ "$is_clang" = "true" ]; then
+		if [ "$build_type" = "ASan" ]; then
+			cmake "$source_related_dir" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC -DCMAKE_BUILD_TYPE=ASan -DENABLE_TCMALLOC=0
+		else
+			cmake "$source_related_dir" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC -DCMAKE_BUILD_TYPE=$build_type
+		fi
+	else
+		cmake "$source_related_dir" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC -DCMAKE_BUILD_TYPE=$build_type -Wno-dev
+	fi
+
+	make -j $physical_cpu_count "$build_target"
 	cd "$old"
 }
 export -f make_ch
@@ -79,8 +138,16 @@ build_ch()
 {
 	local target_dir="$1"
 	local build_target="$2"
+	local is_clang="$3"
+	local build_type="$4"
 
-	mkdir -p "build"
-	make_ch "build" "../$target_dir" "$build_target"
+	if [ "$is_clang" = "true" ]; then
+		build_dir="build_clang"
+	else
+		build_dir="build"
+	fi
+
+	mkdir -p "$build_dir"
+	make_ch "$build_dir" "../$target_dir" "$build_target" "$is_clang" "$build_type"
 }
 export -f build_ch

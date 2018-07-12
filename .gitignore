@@ -37,6 +37,7 @@ build
 
 # storage compile result and running data dir
 storage/build
+storage/build_clang
 storage/ch-cache
 storage/running
 
