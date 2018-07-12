@@ -206,8 +206,16 @@ struct DecimalValue {
                 value *= 10;
             }
         } else {
+            bool need2Round = false;
             for(ScaleType i = 0 ; i < scale - scale_; i++) {
+                need2Round = (value < 0 ? - value : value) % 10 >= 5;
                 value /= 10;
+            }
+            if (need2Round) {
+                if (value < 0)
+                    value --;
+                else 
+                    value ++;
             }
         }
         if (getRealPrec() > prec_) {
@@ -268,6 +276,11 @@ std::enable_if_t<std::is_integral_v<T>, DecimalValue> ToDecimal(T value, PrecTyp
 template<typename T>
 std::enable_if_t<std::is_floating_point_v<T>, DecimalValue> ToDecimal(T value, PrecType prec, ScaleType scale)
 {
+    bool neg = false;
+    if (value < 0) {
+        neg = true;
+        value = -value;
+    }
     for (ScaleType i = 0; i < scale; i++)
     {
         value *= 10;
@@ -276,7 +289,15 @@ std::enable_if_t<std::is_floating_point_v<T>, DecimalValue> ToDecimal(T value, P
     {
         throw Exception("Decimal value overflow", ErrorCodes::DECIMAL_OVERFLOW_ERROR);
     }
+    // rounding
+    T tenTimesValue = value * 10;
     int256_t v(value);
+    if (int256_t(tenTimesValue) % 10 >= 5) {
+        v++;
+    }
+    if (neg) {
+        v = -v;
+    }
     DecimalValue dec(v, prec, scale);
     dec.checkOverflow();
     return dec;
