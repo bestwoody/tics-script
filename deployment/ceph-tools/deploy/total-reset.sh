@@ -2,7 +2,7 @@ set -eu
 
 source ./_env.sh
 
-cho ceph-deploy purge ${nodes[@]}
+echo ceph-deploy purge ${nodes[@]}
 ceph-deploy --username "$user" purge ${nodes[@]}
 echo
 

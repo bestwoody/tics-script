@@ -4,7 +4,8 @@ pg="$2"
 set -eu
 
 if [ -z "$name" ]; then
-	name="cephfs"
+	echo "usage: <bin> fs-name(eg: cephfs) [pg(default: 64+64)]" >&2
+	exit 1
 fi
 
 if [ -z "$pg" ]; then

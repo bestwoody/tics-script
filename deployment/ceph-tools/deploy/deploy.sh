@@ -3,8 +3,8 @@ source ./_env.sh
 
 if [ ! -z "$osd_img" ]; then
 	for node in ${nodes[@]}; do
-		echo "=> ../common-scripts/lo-prepare.sh $node $osd_img $osd_mb $dev_name"
-		../common-scripts/lo-prepare.sh "$node" "$osd_img" "$osd_mb" "$dev_name"
+		echo "=> ./_lo-prepare.sh $node $osd_img $osd_mb $dev_name"
+		./_lo-prepare.sh "$node" "$osd_img" "$osd_mb" "$dev_name"
 	done
 fi
 

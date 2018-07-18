@@ -28,7 +28,7 @@
 * Run TPCH benchmark
     * `[here]> ./tpch-spark-q.sh 1`: run TPCH Q1
     * Loop running
-        * `[here]> ./stable-test.sh`: loop running TPCH Q1-Q22
+        * `[here]> ./tpch-stable-test.sh`: loop running TPCH Q1-Q22
         * `[here]> vim tpch.log`: check Spark shell log
         * `[here]> vim tpch.log.md`: check report: elapsed time, etc
 

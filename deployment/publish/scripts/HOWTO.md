@@ -60,12 +60,12 @@ H2 IP2
         * `theflash-{git-hash-short}/ceph-toos/deploy> ./create-fs.sh`: create ceph file system
         * Backup files, it's important for ceph ops: `theflash-{git-hash-short}>ceph-toos/deploy/ceph-*`
     * Create storage paths on ceph file system: (TODO: create dirs without mounting)
-        * `theflash-{git-hash-short}/ceph-toos/common-scripts> sudo ./mount-cephfs.sh {some-dir} /`: mount root ceph file system
+        * `theflash-{git-hash-short}/ceph-toos/deploy> sudo ./cephfs-mount.sh {some-dir} /`: mount root ceph file system
         * `mkdir {some-dir}/storage-0 && mkdir {some-dir}/storage-1 && ...`: create storage paths for each storage node
-        * `theflash-{git-hash-short}/ceph-toos/common-scripts> sudo ./umount-cephfs.sh {some-dir}`: unmount ceph file system
+        * `theflash-{git-hash-short}/ceph-toos/deploy> sudo ./cephfs-umount.sh {some-dir}`: unmount ceph file system
     * Mount cephfs for storage, on each node:
         * `mkdir {some-storage-dir}`: create mount point dir, if `sudo mkdir` is used, don't forget `sudo chown`
-        * `theflash-{git-hash-short}/ceph-toos/common-scripts> sudo ./mount-cephfs.sh {some-storage-dir} /storage-n`:
+        * `theflash-{git-hash-short}/ceph-toos/deploy> sudo ./cephfs-mount.sh {some-storage-dir} /storage-n`:
             * Mount ceph file system
             * Note that we mount different ceph file paths to the corresponding nodes
         * `theflash-{git-hash-short}> ./io-report.sh {some-storage-dir}/fio-test`: checkout mounted disk IO performance

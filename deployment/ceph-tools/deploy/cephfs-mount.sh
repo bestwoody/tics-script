@@ -3,7 +3,12 @@ path="$2"
 ceph_path="$3"
 
 if [ -z "$ceph_path" ]; then
-	echo "usage: <bin> ceph-mon-host mount-to-path cephfs-path"
+	echo "usage: <bin> ceph-mon-host mount-to-path cephfs-path" >&2
+	exit 1
+fi
+
+if [ `whoami` != "root" ]
+	echo "need 'sudo' to run mount, exiting" >&2
 	exit 1
 fi
 

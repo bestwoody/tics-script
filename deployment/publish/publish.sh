@@ -106,6 +106,7 @@ cp -f "$benchmark_dir/stable-test-ch-stable.sh" "$scripts_pack/tpch-stable-test.
 cp -f "$benchmark_dir/analyze-table-compaction.sh" "$scripts_pack/analyze-table-compaction.sh"
 cp -f "$benchmark_dir/analyze-table-compaction.py" "$scripts_pack/analyze-table-compaction.py"
 cp -f "$publish_dir/scripts/README.md" "$scripts_pack"
+cp -f "$publish_dir/scripts/HOWTO.md" "$scripts_pack"
 cp -f $publish_dir/scripts/*.sh "$scripts_pack"
 cp -f $publish_dir/scripts/tpch/load/*.sh "$tpch_pack/load"
 
