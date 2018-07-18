@@ -277,7 +277,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
         printR2(r2)
       } catch {
         case e: Throwable =>
-          println(e.getMessage)
+          printMsg(e.getMessage)
           logger.warn(s"Spark with JDBC failed when executing:$qJDBC", e) // JDBC failed
       }
     } else {
@@ -300,7 +300,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
           printR3(r3)
         } catch {
           case e: Throwable =>
-            println(e.getMessage)
+            printMsg(e.getMessage)
             logger.warn(s"ClickHouse failed when executing:$qClickHouse", e) // ClickHouse failed
         }
       } else {
@@ -335,6 +335,11 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
   private def printR2(result: List[List[Any]]) = printList("r2: ", result)
 
   private def printR3(result: List[List[Any]]) = printList("r3: ", result)
+
+  private def printMsg(result: String): Unit =
+    if (showTestOutput) {
+      println(result)
+    }
 
   private def printList(prefix: String, result: List[List[Any]]): Unit =
     if (showTestOutput) {
