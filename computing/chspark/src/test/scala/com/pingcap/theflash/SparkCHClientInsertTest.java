@@ -54,7 +54,7 @@ public class SparkCHClientInsertTest {
                 "null_tp_int64     Nullable(Int64),\n" +
                 "null_tp_string    Nullable(String)\n" +
                 "\n" +
-                ") ENGINE = MergeTree(id_dt, id_dt, 8192);";
+                ") ENGINE = MutableMergeTree(id_dt, 8192);";
         try (SparkCHClientSelect select = new SparkCHClientSelect("inserqid" + 1, createSql, "127.0.0.1", 9000)) {
             while (select.hasNext())
                 select.next();
@@ -172,7 +172,7 @@ public class SparkCHClientInsertTest {
                 "tp_int32    Int32,\n" +
                 "tp_int64    Int64,\n" +
                 "tp_string   String\n" +
-                ") ENGINE = MergeTree(id_dt, id_dt, 8192);";
+                ") ENGINE = MutableMergeTree(id_dt, 8192);";
         selectSql(createSql);
 
         Object[] values = new Object[]{
@@ -199,6 +199,41 @@ public class SparkCHClientInsertTest {
 
         Object[] new_values = new Object[14];
         ValueFetcher f = new ValueFetcher();
+        f.values = new_values;
+        selectSql("select * from default.spark_insert_test", f);
+        selectSql("drop table if exists default.spark_insert_test");
+
+        Assert.assertArrayEquals(values, new_values);
+    }
+
+    private static class ValueFetcher2 implements Consumer<CHColumnBatch> {
+        Object[] values;
+
+        @Override
+        public void accept(CHColumnBatch b) {
+            values[0] = b.column(0).getDecimal(0, 65, 30).toJavaBigDecimal();
+        }
+    }
+
+    @Test
+    public void insert3() throws Exception {
+        selectSql("drop table if exists default.spark_insert_test");
+        String createSql = "create table default.spark_insert_test (\n" +
+            "tp_decimal  Decimal(65, 30)\n" +
+            ") ENGINE = MutableMergeTree(tp_decimal, 8192);";
+        selectSql(createSql);
+
+        Object[] values = new Object[]{
+            new BigDecimal("255000000001000000002000000003.000000004000000050000000000000")};
+
+        try (SparkCHClientInsert insert = new SparkCHClientInsert("", "insert into table default.spark_insert_test values", "127.0.0.1", 9000)) {
+            insert.insertPrefix();
+            insert.insert(new SimpleRow(values));
+            insert.insertSuffix();
+        }
+
+        Object[] new_values = new Object[1];
+        ValueFetcher2 f = new ValueFetcher2();
         f.values = new_values;
         selectSql("select * from default.spark_insert_test", f);
         selectSql("drop table if exists default.spark_insert_test");

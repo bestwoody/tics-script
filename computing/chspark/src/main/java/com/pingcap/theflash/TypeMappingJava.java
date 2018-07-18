@@ -27,6 +27,23 @@ import java.util.Map;
 import java.lang.Integer;
 
 public class TypeMappingJava {
+    private static class PrecisionAndScale {
+        private int precision;
+        private int scale;
+        
+        private PrecisionAndScale(int precision, int scale) {
+            this.precision = precision;
+            this.scale = scale;
+        }
+
+        // Recalculate CH Decimal precision and scale to fit into Spark Decimal range
+        // e.g., Decimal(65,20) will be transformed into Decimal(38, -7), and values
+        // within 1.0E+7 will be truncated to zero
+        private static PrecisionAndScale fromCHToSpark(int precision, int scale) {
+            return new PrecisionAndScale(Math.min(precision, CHTypeDecimal.MAX_PRECISION), scale - Math.max(0, precision - CHTypeDecimal.MAX_PRECISION));
+        }
+    }
+
     public static DataTypeAndNullable chTypetoSparkType(CHType chType) {
         if (chType instanceof CHTypeNullable) {
             DataTypeAndNullable t = chTypetoSparkType(((CHTypeNullable) chType).nested_data_type);
@@ -35,13 +52,8 @@ public class TypeMappingJava {
         if (chType == CHTypeString.instance || chType instanceof CHTypeFixedString) {
             return new DataTypeAndNullable(DataTypes.StringType);
         } else if (chType instanceof CHTypeDecimal) {
-            int precision = ((CHTypeDecimal)chType).precision;
-            int scale = ((CHTypeDecimal)chType).scale;
-            if (CHTypeDecimal.isInvalidDecimal(precision, scale)) {
-                scale = CHTypeDecimal.SYSTEM_DEFAULT_PRECISION - precision;
-                precision = CHTypeDecimal.SYSTEM_DEFAULT_PRECISION;
-            }
-            return new DataTypeAndNullable(DataTypes.createDecimalType(precision, scale));
+            PrecisionAndScale p = PrecisionAndScale.fromCHToSpark(((CHTypeDecimal)chType).precision, ((CHTypeDecimal)chType).scale);
+            return new DataTypeAndNullable(DataTypes.createDecimalType(p.precision, p.scale));
         } else if (chType == CHTypeDate.instance) {
             return new DataTypeAndNullable(DataTypes.DateType);
         } else if (chType == CHTypeDateTime.instance) {
@@ -84,9 +96,8 @@ public class TypeMappingJava {
             String remain = StringUtils.removeStart(name, "Decimal");
             remain = StringUtils.removeEnd(StringUtils.removeStart(remain, "("), ")");
             String[] parts = remain.split(",");
-            int prec = Integer.parseInt(parts[0]);
-            int scale = Integer.parseInt(parts[1]);
-            return new DataTypeAndNullable(DataTypes.createDecimalType(prec, scale));
+            PrecisionAndScale p = PrecisionAndScale.fromCHToSpark(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+            return new DataTypeAndNullable(DataTypes.createDecimalType(p.precision, p.scale));
         } else {
             switch (name) {
                 case "String":

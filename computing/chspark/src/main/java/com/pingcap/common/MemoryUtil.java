@@ -174,7 +174,7 @@ public class MemoryUtil {
 
     public static void setDecimal(long address, Decimal v, int precision, int scale) {
         BigDecimal bigDec = v.toJavaBigDecimal();
-        BigInteger bigInt = bigDec.scaleByPowerOfTen(bigDec.scale()).toBigInteger();
+        BigInteger bigInt = bigDec.scaleByPowerOfTen(scale).toBigInteger();
         int sign = 0;
         if (bigInt.signum() < 0) {
             sign = 1;
@@ -227,17 +227,12 @@ public class MemoryUtil {
             dec = dec.shiftLeft(64).add(d.bigIntegerValue());
         }
         int sign = unsafe.getByte(address + 34);
-        int precision = (int)unsafe.getShort(address + 48);
         int scale = (int)unsafe.getByte(address + 50);
         BigDecimal result = new BigDecimal(dec, scale);
-        if (CHTypeDecimal.isInvalidDecimal(precision, scale)) {
-            scale = CHTypeDecimal.SYSTEM_DEFAULT_PRECISION - precision;
-            precision = CHTypeDecimal.SYSTEM_DEFAULT_PRECISION;
-        }
         if (sign > 0) {
-            return Decimal.apply(result.negate(), precision, scale);
+            return Decimal.apply(result.negate());
         }
-        return Decimal.apply(result, precision, scale);
+        return Decimal.apply(result);
     }
 
     public static long getLong(long address) {

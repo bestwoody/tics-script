@@ -18,9 +18,26 @@
 package org.apache.spark.sql
 
 class IssueTestSuite extends BaseClickHouseSuite {
-  test("test decimals") {
-    // will delete this test after decimal tests are finished.
-    runTest("select tp_decimal from full_data_type_table")
+  test("$438 NPE when decimal is NOT NULL") {
+    clickHouseStmt.execute("DROP TABLE IF EXISTS test")
+    clickHouseStmt.execute(
+      """CREATE TABLE test ( d Decimal(65, 20), nd Nullable(Decimal(65, 20)), md Nullable(Decimal(65, 30)), bd Nullable(Decimal(37, 10))) ENGINE = MutableMergeTree(d, 8192)"""
+    )
+    clickHouseStmt.execute(
+      """INSERT INTO TABLE test VALUES (355000000001000000002000000003000000004.000000050000000000030, null, null, 500000000000000000000000000.0000000005)"""
+    )
+    clickHouseStmt.execute(
+      """INSERT INTO TABLE test VALUES (255000000001000000002000000003000000004.00000005, 255000000001000000002000000003000000004.00000005, 255000000001000000002000000003.00000000400000005, 700000000000000000000000000.0000000005)"""
+    )
+    clickHouseStmt.execute("INSERT INTO TABLE test VALUES (100, 100, 100, null)")
+    refreshConnections()
+
+    runTest("select * from test")
+    runTest("select sum(d), sum(nd), sum(bd) from test")
+    spark.sql("select * from test").show(false)
+    val df = spark.sql("select sum(d), sum(nd), sum(md), sum(bd) from test")
+    df.show(false)
+    df.printSchema
   }
 
   test("#413 Count distinct has an incorrect plan") {
@@ -34,4 +51,11 @@ class IssueTestSuite extends BaseClickHouseSuite {
       "SELECT cast(tp_datetime as date) cast_datetime, date(tp_datetime) date_datetime, tp_datetime FROM full_data_type_table WHERE date(tp_datetime) > date('2009-01-02')"
     )
   }
+
+  override def afterAll(): Unit =
+    try {
+      clickHouseStmt.execute("DROP TABLE IF EXISTS test")
+    } finally {
+      super.afterAll()
+    }
 }
