@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 print_target_commit_hash()
 {
 	local target="$1"
@@ -104,5 +106,37 @@ patch_apply()
 	done
 }
 
+patch_apply_contrib()
+{
+	local contrib="$1"
+
+	rm -rf "$this_dir/ch/contrib/${contrib}-patch"
+	rm -rf "$this_dir/ch/contrib/${contrib}-cache"
+
+	cd "$this_dir/ch/contrib/"
+
+	cp -r "$this_dir/${contrib}-patch" "$this_dir/ch/contrib/"
+	if [ -d "$this_dir/${contrib}-cache" ]; then
+		cp -r "$this_dir/${contrib}-cache" "$this_dir/ch/contrib/"
+	fi
+
+	patch_apply "${contrib}"
+
+	rm -rf "$this_dir/${contrib}-cache"
+	mv "$this_dir/ch/contrib/${contrib}-cache" "$this_dir/"
+
+	rm -rf "$this_dir/ch/contrib/${contrib}-patch"
+	rm -rf "$this_dir/ch/contrib/${contrib}-cache"
+
+	cd "$this_dir"
+}
+
+this_dir=$(cd $(dirname $0); echo $PWD)
+
 set -eu
+
 patch_apply "ch"
+patch_apply_contrib "poco"
+patch_apply_contrib "capnproto"
+
+

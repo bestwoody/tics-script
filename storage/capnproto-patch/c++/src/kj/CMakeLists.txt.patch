@@ -1,0 +1,13 @@
+diff --git a/c++/src/kj/CMakeLists.txt b/c++/src/kj/CMakeLists.txt
+index 2b7da310ef50..a12851df8267 100644
+--- a/c++/src/kj/CMakeLists.txt
++++ b/c++/src/kj/CMakeLists.txt
+@@ -59,7 +59,7 @@ set(kj-std_headers
+ )
+ add_library(kj ${kj_sources})
+ add_library(CapnProto::kj ALIAS kj)
+-target_compile_features(kj PUBLIC cxx_constexpr)
++# target_compile_features(kj PUBLIC cxx_constexpr)
+ # Requiring the cxx_std_11 metafeature would be preferable, but that doesn't exist until CMake 3.8.
+ 
+ if(UNIX AND NOT ANDROID)

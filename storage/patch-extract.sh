@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 patch_ensure_not_changed()
 {
 	local target="$1"
@@ -62,7 +64,8 @@ patch_extract_repo()
 	local target="$1"
 
 	cd "$target"
-	git status --porcelain | grep '^ M ' | while read modified; do
+	# We track contrib elsewhere.
+	git status --porcelain | grep '^ M ' | grep -v 'contrib/' | while read modified; do
 		local modified="${modified:2}"
 		patch_diff "$target" "$modified"
 	done
@@ -84,22 +87,42 @@ patch_extract()
 {
 	local target="$1"
 	local force="$2"
-	local path="$3"
+	local extract_file="$3"
 
-	if [ -z "$path" ]; then
+	if [ -z "$extract_file" ]; then
 		if [ "$force" != "true" ]; then
 			patch_ensure_not_changed "$target"
 		fi
 		patch_extract_repo "$target"
 	else
-		patch_extract_one "$target" "$path"
+		patch_extract_one "$target" "$extract_file"
 	fi
 }
 
+patch_extract_contrib()
+{
+	local force="$1"
+	local contrib="$2"
+
+	rm -rf "$this_dir/ch/contrib/${contrib}-patch"
+	rm -rf "$this_dir/ch/contrib/${contrib}-cache"
+
+	cd "$this_dir/ch/contrib/"
+
+	patch_extract "${contrib}" "$force" ""
+	rm -rf "$this_dir/${contrib}-patch"
+	mv "$this_dir/ch/contrib/${contrib}-patch" "$this_dir/"
+
+	cd "$this_dir/"
+}
+
+
+this_dir=$(cd $(dirname $0); echo $PWD)
 force="$1"
-extract_file="$2"
-target="ch"
 
 set -eu
 
-patch_extract "$target" "$force" "$extract_file"
+patch_extract "ch" "$force" ""
+patch_extract_contrib "$force" "poco"
+patch_extract_contrib "$force" "capnproto"
+
