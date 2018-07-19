@@ -46,26 +46,32 @@ H2 IP2
             * Install iperf (or iperf3) on node-a, run comand `iperf -s`
             * Install iperf on node-b, run comand `iperf -c node-a`
 * Deploy ceph if it's needed
-    * Config ceph nodes
-        * In `theflash-{git-hash-short}>ceph-toos/deploy/_env.sh`: nodes=("H0" "H1" "H2" ...)
-        * Ceph nodes should be a subset of all nodes
+    * Spare a raw disk for ceph osd(s)
+        * NOTICE: all data on it will be lost
+    * Config ceph deploy args
+        * In `theflash-{git-hash-short}>ceph-tools/deploy/_env.sh`:
+            * `nodes=("H0" "H1" "H2" ...)`: ceph nodes should be a subset of all nodes
+            * `public_network={network/mask}`
+            * `user="{deploy user witch has sudo privilege}"`
+            * `osd_img=""`
+            * `dev_name="{the disk path (/dev/...) we spare for ceph osd}"`: the disk path on each node should be the same
     * Deploy ceph
         * Install `ceph-deploy`
-            * Run all install scripts: `theflash-{git-hash-short}/ceph-toos/install-*/*.sh`
+            * Run all install scripts: `theflash-{git-hash-short}/ceph-tools/install/install-{os-type}.sh`
             * Run `ceph-deploy`, make sure it works
-        * `theflash-{git-hash-short}/ceph-toos/deploy> ./deploy.sh`: deploy step by step with comfirmation
-        * `theflash-{git-hash-short}/ceph-toos/deploy> ./status.sh`:
+        * `theflash-{git-hash-short}/ceph-tools/deploy> ./deploy.sh`: deploy step by step with comfirmation
+        * `theflash-{git-hash-short}/ceph-tools/deploy> ./status.sh`:
             * The first 3 nodes should have `mon + admin + mds + ods` running
             * The other nodes should have `ods` running
-        * `theflash-{git-hash-short}/ceph-toos/deploy> ./create-fs.sh`: create ceph file system
-        * Backup files, it's important for ceph ops: `theflash-{git-hash-short}>ceph-toos/deploy/ceph-*`
+        * `theflash-{git-hash-short}/ceph-tools/deploy> ./create-fs.sh`: create ceph file system
+        * Backup files, it's important for ceph ops: `theflash-{git-hash-short}>ceph-tools/deploy/ceph-*`
     * Create storage paths on ceph file system: (TODO: create dirs without mounting)
-        * `theflash-{git-hash-short}/ceph-toos/deploy> sudo ./cephfs-mount.sh {some-dir} /`: mount root ceph file system
+        * `theflash-{git-hash-short}/ceph-tools/deploy> sudo ./cephfs-mount.sh {some-dir} /`: mount root ceph file system
         * `mkdir {some-dir}/storage-0 && mkdir {some-dir}/storage-1 && ...`: create storage paths for each storage node
-        * `theflash-{git-hash-short}/ceph-toos/deploy> sudo ./cephfs-umount.sh {some-dir}`: unmount ceph file system
+        * `theflash-{git-hash-short}/ceph-tools/deploy> sudo ./cephfs-umount.sh {some-dir}`: unmount ceph file system
     * Mount cephfs for storage, on each node:
         * `mkdir {some-storage-dir}`: create mount point dir, if `sudo mkdir` is used, don't forget `sudo chown`
-        * `theflash-{git-hash-short}/ceph-toos/deploy> sudo ./cephfs-mount.sh {some-storage-dir} /storage-n`:
+        * `theflash-{git-hash-short}/ceph-tools/deploy> sudo ./cephfs-mount.sh {some-storage-dir} /storage-n`:
             * Mount ceph file system
             * Note that we mount different ceph file paths to the corresponding nodes
         * `theflash-{git-hash-short}> ./io-report.sh {some-storage-dir}/fio-test`: checkout mounted disk IO performance

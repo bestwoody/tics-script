@@ -4,7 +4,7 @@ if [ -z "$path" ]; then
 	exit 1
 fi
 
-if [ `whoami` != "root" ]
+if [ `whoami` != "root" ]; then
 	echo "need 'sudo' to run umount, exiting" >&2
 	exit 1
 fi

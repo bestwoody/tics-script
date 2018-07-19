@@ -4,6 +4,7 @@ source ./_env.sh
 if [ ! -z "$osd_img" ]; then
 	for node in ${nodes[@]}; do
 		echo "=> ./_lo-prepare.sh $node $osd_img $osd_mb $dev_name"
+		confirm
 		./_lo-prepare.sh "$node" "$osd_img" "$osd_mb" "$dev_name"
 	done
 fi
@@ -17,14 +18,35 @@ for i in ${!nodes[@]}; do
 done
 
 echo "=> ceph-deploy --username $user new --public-network $public_network ${mains[@]}"
+confirm
 ceph-deploy --username "$user" new --public-network "$public_network" ${mains[@]}
 
 for node in ${nodes[@]}; do
+	echo "=> ssh $user@$node \"sudo yum update -y\""
+	confirm
+	ssh $user@$node "sudo yum update -y"
+
+	ntp_not_installed=`ssh $user@$node "yum list installed" | grep ntp | grep "No matching"`
+	if [ ! -z "$ntp_not_installed" ]; then
+		echo "=> ssh $user@$node \"sudo yum install ntp ntpdate ntp-doc -y\""
+		confirm
+		ssh $user@$node "sudo yum install ntp ntpdate ntp-doc -y"
+	fi
+
+	epel_not_installed=`ssh $user@$node "yum list installed" | grep epel | grep "No matching"`
+	if [ ! -z "$epel_not_installed" ]; then
+		echo "ssh $user@$node \"sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm\""
+		confirm
+		ssh $user@$node "sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+	fi
+
 	echo "=> ceph-deploy --username $user install $node"
+	confirm
 	ceph-deploy --username "$user" install "$node"
 done
 
 echo "=> ceph-deploy --username $user --overwrite-conf mon create-initial"
+confirm
 ceph-deploy --username "$user" --overwrite-conf mon create-initial
 
 for i in ${!nodes[@]}; do
@@ -33,6 +55,7 @@ for i in ${!nodes[@]}; do
 	fi
 	node=${nodes[$i]}
 	echo "=> ceph-deploy --username $user --overwrite-conf admin $node"
+	confirm
 	ceph-deploy --username "$user" --overwrite-conf admin "$node"
 done
 
@@ -42,10 +65,15 @@ for i in ${!nodes[@]}; do
 	fi
 	node=${nodes[$i]}
 	echo "=> ceph-deploy --username $user --overwrite-conf mgr create $node"
+	confirm
 	ceph-deploy --username "$user" --overwrite-conf mgr create "$node"
 done
 
+# If things not going well, use `sudo dmsetup ls` and `sudo dmsetup remove_all` to fix it
 for node in ${nodes[@]}; do
+	echo "=> ssh ${user}@${node} \"sudo df -l | grep $dev_name | awk '{print \$1}' | xargs -I {} sudo umount -f {}\""
+	ssh ${user}@${node} "sudo df -l | grep $dev_name | awk '{print \$1}' | xargs -I {} sudo umount -f {}"
+
 	echo "=> ceph-deploy --username $user --overwrite-conf osd create --data $dev_name $node"
 	ceph-deploy --username "$user" --overwrite-conf osd create --data $dev_name "$node"
 done
@@ -56,5 +84,6 @@ for i in ${!nodes[@]}; do
 	fi
 	node=${nodes[$i]}
 	echo "=> ceph-deploy --username $user --overwrite-conf mds create $node"
+	confirm
 	ceph-deploy --username "$user" --overwrite-conf mds create "$node"
 done
