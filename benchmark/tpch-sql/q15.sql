@@ -5,8 +5,8 @@ with revenue0 as
   from
   lineitem
   where
-  L_SHIPDATE >= date '1996-01-01'
-  and L_SHIPDATE < date '1996-01-01' + INTERVAL '3' MONTH
+  L_SHIPDATE >= date DATE '1996-01-01'
+  and L_SHIPDATE < date DATE '1996-01-01' + INTERVAL '3' MONTH
   group by
   L_SUPPKEY)
 select
