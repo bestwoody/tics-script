@@ -18,7 +18,7 @@
 package org.apache.spark.sql
 
 import java.sql.{Connection, Statement}
-import java.util.{Locale, Properties, TimeZone}
+import java.util.Properties
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.util.resourceToString
@@ -26,7 +26,6 @@ import org.apache.spark.sql.test.TestConstants._
 import org.apache.spark.sql.test.Utils._
 import org.apache.spark.sql.test.{TestSQLContext, TestSparkSession}
 import org.apache.spark.{SparkConf, SparkFunSuite}
-import org.joda.time.DateTimeZone
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.slf4j.Logger
@@ -174,6 +173,11 @@ object SharedSQLContext extends Logging {
 
       properties.setConnectionTimeout(100)
 
+      // create database
+      new ClickHouseDataSource(jdbcUrl, properties).getConnection
+        .createStatement()
+        .execute(s"CREATE DATABASE IF NOT EXISTS $testDBName")
+
       val dataSource = new ClickHouseDataSource(jdbcUrl + s"/$testDBName", properties)
 
       try {
@@ -192,7 +196,7 @@ object SharedSQLContext extends Logging {
           s"chspark-test/chspark-test.sql",
           classLoader = Thread.currentThread().getContextClassLoader
         ).split("\n")
-        queryStringList.+:(s"create database if not exists $testDBName").foreach { sql =>
+        queryStringList.foreach { sql =>
           while (try {
                    _statement.executeUpdate(sql)
                    false
