@@ -54,6 +54,8 @@ trait SharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfter
 
   protected def jdbcUrl: String = SharedSQLContext.jdbcUrl
 
+  protected def testDBName: String = SharedSQLContext.testDBName
+
   protected def tpchDBName: String = SharedSQLContext.tpchDBName
 
   protected def refreshConnections(): Unit = SharedSQLContext.refreshConnections()
@@ -104,6 +106,7 @@ object SharedSQLContext extends Logging {
   private var _statement: Statement = _
   private var _sparkJDBC: SparkSession = _
   protected var jdbcUrl: String = _
+  protected var testDBName: String = _
   protected var tpchDBName: String = _
   protected var truncateOutput: Boolean = _
   protected var showTestOutput: Boolean = _
@@ -171,7 +174,7 @@ object SharedSQLContext extends Logging {
 
       properties.setConnectionTimeout(100)
 
-      val dataSource = new ClickHouseDataSource(jdbcUrl, properties)
+      val dataSource = new ClickHouseDataSource(jdbcUrl + s"/$testDBName", properties)
 
       try {
         _clickHouseConnection = dataSource.getConnection()
@@ -189,7 +192,7 @@ object SharedSQLContext extends Logging {
           s"chspark-test/chspark-test.sql",
           classLoader = Thread.currentThread().getContextClassLoader
         ).split("\n")
-        queryStringList.foreach { sql =>
+        queryStringList.+:(s"create database if not exists $testDBName").foreach { sql =>
           while (try {
                    _statement.executeUpdate(sql)
                    false
@@ -216,6 +219,7 @@ object SharedSQLContext extends Logging {
         prop.load(confStream)
       }
 
+      testDBName = getOrElse(prop, TEST_DB_NAME, "chspark_test")
       tpchDBName = getOrElse(prop, TPCH_DB_NAME, "default")
       _clickHouseConf = prop
       _sparkSession = new TestSparkSession(sparkConf)

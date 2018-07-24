@@ -2,6 +2,8 @@
 # ch.addr=127.0.0.1
 # ClickHouse port
 # ch.port=9000
+# test database name, if you already have a test database in ClickHouse, specify the db name so that integration tests will run on this database
+# test.db=chspark_test
 # TPCH database name, if you already have a tpch database in ClickHouse, specify the db name so that TPCH tests will run on this database
 # tpch.db=tpch_test
 # Whether to load test data before running tests. If you haven't load CHSpark or TPCH data, set this to true. The next time you run tests, you can set this to false.

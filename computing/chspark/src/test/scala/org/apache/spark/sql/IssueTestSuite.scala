@@ -32,12 +32,33 @@ class IssueTestSuite extends BaseClickHouseSuite {
     clickHouseStmt.execute("INSERT INTO TABLE test VALUES (100, 100, 100, null)")
     refreshConnections()
 
-    runTest("select * from test")
-    runTest("select sum(d), sum(nd), sum(bd) from test")
     spark.sql("select * from test").show(false)
     val df = spark.sql("select sum(d), sum(nd), sum(md), sum(bd) from test")
     df.show(false)
     df.printSchema
+    runTest("select sum(d), sum(nd), sum(bd) from test", skipJDBC = true)
+    // 100.000 under Decimal(65,20) will be converted into
+    // Spark Decimal(38,-7), thus it will be truncated into 0E+7.
+    // This is now considered a normal behavior.
+    runTest(
+      "select * from test",
+      skipJDBC = true,
+      rClickHouse = List(
+        List(0E+7, 0E+7, 100.000, null),
+        List(
+          2.5500000000100000000200000000300E+38,
+          2.5500000000100000000200000000300E+38,
+          255000000001000000002000000003.000,
+          700000000000000000000000000.0000000005
+        ),
+        List(
+          3.5500000000100000000200000000300E+38,
+          null,
+          null,
+          500000000000000000000000000.0000000005
+        )
+      )
+    )
   }
 
   test("#413 Count distinct has an incorrect plan") {

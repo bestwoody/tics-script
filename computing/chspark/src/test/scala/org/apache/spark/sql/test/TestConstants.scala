@@ -20,6 +20,7 @@ package org.apache.spark.sql.test
 object TestConstants {
   val CLICKHOUSE_ADDRESS = "ch.addr"
   val CLICKHOUSE_PORT = "ch.port"
+  val TEST_DB_NAME = "test.db"
   val TPCH_DB_NAME = "tpch.db"
   val SHOULD_LOAD_DATA = "test.data.load"
   val SHOULD_SKIP_TEST = "test.skip"

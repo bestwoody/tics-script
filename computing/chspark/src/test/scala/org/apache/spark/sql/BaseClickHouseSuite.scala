@@ -28,6 +28,8 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
 
   protected var clickHouseStmt: Statement = _
 
+  protected var tableNames: Seq[String] = _
+
   protected def querySpark(query: String): List[List[Any]] = {
     val df = sql(query)
     val schema = df.schema.fields
@@ -57,13 +59,42 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
   def createOrReplaceTempView(dbName: String, viewName: String, postfix: String = "_j"): Unit =
     spark.read
       .format("jdbc")
-      .option(JDBCOptions.JDBC_URL, jdbcUrl)
-      .option(JDBCOptions.JDBC_TABLE_NAME, s"`$dbName`.`$viewName`")
+      .option(JDBCOptions.JDBC_URL, jdbcUrl + s"/$dbName")
+      .option(JDBCOptions.JDBC_TABLE_NAME, s"`$viewName`")
       .option(JDBCOptions.JDBC_DRIVER_CLASS, "ru.yandex.clickhouse.ClickHouseDriver")
       .load()
       .createOrReplaceTempView(s"`$viewName$postfix`")
 
-  def loadTestDataFromTestTables(testTables: TestTables = defaultTestTables): Unit = {
+  protected def loadTestData(databases: Seq[String] = Seq(testDBName)): Unit =
+    try {
+      tableNames = Seq.empty[String]
+      for (dbName <- databases) {
+        clickHouseConn.setCatalog(dbName)
+        ch.mapCHDatabase(dbName)
+        val tableDF = spark.read
+          .format("jdbc")
+          .option(JDBCOptions.JDBC_URL, jdbcUrl + "/system")
+          .option(JDBCOptions.JDBC_TABLE_NAME, "tables")
+          .option(JDBCOptions.JDBC_DRIVER_CLASS, "ru.yandex.clickhouse.ClickHouseDriver")
+          .load()
+          .filter(s"database = '$dbName'")
+          .select("name")
+        val tables = tableDF.collect().map((row: Row) => row.get(0).toString)
+        tables.foreach(createOrReplaceTempView(dbName, _))
+        tableNames ++= tables
+      }
+      logger.info("reload test data complete")
+    } catch {
+      case e: Exception =>
+        println(e.getStackTrace.mkString(","))
+        logger.warn("reload test data failed", e)
+    } finally {
+      tableNames = tableNames.sorted.reverse
+    }
+
+  protected case class TestTables(dbName: String, tables: String*)
+
+  def loadTestDataFromTestTables(testTables: TestTables): Unit = {
     val dbName = testTables.dbName
     clickHouseConn.setCatalog(dbName)
     ch.mapCHDatabase(dbName)
@@ -75,17 +106,14 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
   override def beforeAll(): Unit = {
     super.beforeAll()
     setLogLevel("WARN")
-    loadTestDataFromTestTables()
+    loadTestData()
     initializeTimeZone()
   }
 
-  def initializeTimeZone(): Unit =
+  def initializeTimeZone(): Unit = {
+    clickHouseConn.setCatalog(testDBName)
     clickHouseStmt = clickHouseConn.createStatement()
-
-  case class TestTables(dbName: String, tables: String*)
-
-  private val defaultTestTables: TestTables =
-    TestTables(dbName = "default", "full_data_type_table")
+  }
 
   def refreshConnections(testTables: TestTables): Unit = {
     super.refreshConnections()
@@ -95,22 +123,24 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
 
   override def refreshConnections(): Unit = {
     super.refreshConnections()
-    loadTestDataFromTestTables()
+    loadTestData()
     initializeTimeZone()
   }
 
   def setLogLevel(level: String): Unit =
     spark.sparkContext.setLogLevel(level)
 
-  def replaceJDBCTableName(qSpark: String, skipJDBC: Boolean): String = {
+  private def replaceJDBCTableName(qSpark: String, skipJDBC: Boolean): String = {
     var qJDBC: String = null
     if (!skipJDBC) {
-      if (qSpark.contains("full_data_type_table_idx")) {
-        qJDBC = qSpark.replace("full_data_type_table_idx", "full_data_type_table_idx_j")
-      } else if (qSpark.contains("full_data_type_table")) {
-        qJDBC = qSpark.replace("full_data_type_table", "full_data_type_table_j")
-      } else {
-        qJDBC = qSpark
+      qJDBC = qSpark + " "
+      for (tableName <- tableNames) {
+        // tableNames is guaranteed to be in reverse order, so Seq[t, t2, lt]
+        // will never be possible, and the following operation holds correct.
+        // e.g., for input Seq[t2, t, lt]
+        // e.g., select * from t, t2, lt -> select * from t_j, t2_j, lt_j
+        qJDBC = qJDBC.replaceAllLiterally(" " + tableName + " ", " " + tableName + "_j ")
+        qJDBC = qJDBC.replaceAllLiterally(" " + tableName + ",", " " + tableName + "_j,")
       }
     }
     qJDBC
