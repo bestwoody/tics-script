@@ -54,7 +54,7 @@ public class SparkCHClientInsertTest {
                 "null_tp_int64     Nullable(Int64),\n" +
                 "null_tp_string    Nullable(String)\n" +
                 "\n" +
-                ") ENGINE = MutableMergeTree(id_dt, 8192);";
+                ") ENGINE = MergeTree(id_dt, id_dt, 8192);";
         try (SparkCHClientSelect select = new SparkCHClientSelect("inserqid" + 1, createSql, "127.0.0.1", 9000)) {
             while (select.hasNext())
                 select.next();
