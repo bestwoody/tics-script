@@ -283,6 +283,14 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     var r2: List[List[Any]] = rJDBC
     var r3: List[List[Any]] = rClickHouse
 
+    val isOrdered = qSpark.toLowerCase.contains(" order by ") && !qSpark.contains("/*non-order*/")
+    val isLimited = qSpark.toLowerCase.contains(" limit ")
+    val hasNullOrder = qSpark.toLowerCase.contains(" nulls first") || qSpark.toLowerCase.contains(" nulls last")
+
+    if (isOrdered && isLimited && !hasNullOrder) {
+      fail(new IllegalArgumentException("Test sql does not contain nulls order when using limit"))
+    }
+
     if (r1 == null) {
       try {
         r1 = querySpark(qSpark)
@@ -316,8 +324,6 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       }
       printR2(r2)
     }
-
-    val isOrdered = qSpark.contains(" order by ") && !qSpark.contains("/*non-order*/")
 
     val comp12 = compResult(r1, r2, isOrdered)
 

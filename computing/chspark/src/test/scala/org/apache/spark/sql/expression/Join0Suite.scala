@@ -23,8 +23,8 @@ class Join0Suite extends BaseClickHouseSuite {
   // seems clickhouse cannot handle cross join correctly?
 
   private val allCases = Seq[String](
-    "select a.id_dt, tp_int32, tp_int64 from (select id_dt, tp_int32 from full_data_type_table order by tp_int32 limit 20) a cross join (select id_dt, tp_int64 from full_data_type_table order by tp_int64 limit 20) b order by (id_dt, tp_int32, tp_int64)",
-    "select * from (select id_dt, tp_int32 from full_data_type_table order by tp_int32 limit 20) a cross join (select id_dt, tp_int64 from full_data_type_table order by tp_int64 limit 20) b order by (tp_int32, tp_int64)"
+    "select a.id_dt, tp_int32, tp_int64 from (select id_dt, tp_int32 from full_data_type_table order by tp_int32 nulls last limit 20) a cross join (select id_dt, tp_int64 from full_data_type_table order by tp_int64 nulls last limit 20) b order by (id_dt, tp_int32, tp_int64)",
+    "select a.id_dt, tp_int32, tp_int64 from (select id_dt, tp_int32 from full_data_type_table order by tp_int32 nulls last limit 20) a cross join (select id_dt, tp_int64 from full_data_type_table order by tp_int64 nulls last limit 20) b order by (tp_int32, tp_int64)"
   )
 
   allCases foreach { query =>
