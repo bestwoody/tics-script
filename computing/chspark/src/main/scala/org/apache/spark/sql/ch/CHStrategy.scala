@@ -87,7 +87,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         .flatten
     } catch {
       case e: UnsupportedOperationException =>
-        logWarning("CHStrategy downgrading to Spark plan as strategy failed.", e)
+        logDebug("CHStrategy downgrading to Spark plan as strategy failed.")
         Nil
     }
 
