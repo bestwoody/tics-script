@@ -26,15 +26,15 @@ for node in ${nodes[@]}; do
 	confirm
 	ssh $user@$node "sudo yum update -y"
 
-	ntp_not_installed=`ssh $user@$node "yum list installed" | grep ntp | grep "No matching"`
-	if [ ! -z "$ntp_not_installed" ]; then
+	ntp_installed=`ssh $user@$node "yum list installed" | grep ntp`
+	if [ -z "$ntp_installed" ]; then
 		echo "=> ssh $user@$node \"sudo yum install ntp ntpdate ntp-doc -y\""
 		confirm
 		ssh $user@$node "sudo yum install ntp ntpdate ntp-doc -y"
 	fi
 
-	epel_not_installed=`ssh $user@$node "yum list installed" | grep epel | grep "No matching"`
-	if [ ! -z "$epel_not_installed" ]; then
+	epel_installed=`ssh $user@$node "yum list installed" | grep epel`
+	if [ ! -z "$epel_installed" ]; then
 		echo "ssh $user@$node \"sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm\""
 		confirm
 		ssh $user@$node "sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"

@@ -13,4 +13,4 @@ if [ `whoami` != "root" ]; then
 fi
 
 key=`cat /etc/ceph/ceph.client.admin.keyring | grep key | awk -F '= ' '{print $2}'`
-mount -t ceph $host:6789:ceph_path "$path" -o name=admin,secret=$key
+mount -t ceph $host:6789:$ceph_path "$path" -o name=admin,secret=$key
