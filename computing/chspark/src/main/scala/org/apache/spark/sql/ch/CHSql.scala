@@ -270,8 +270,8 @@ object CHSql {
                // Spark will compile order by expression `(a + b, a)` to
                // `named_struct("col1", a + b, "a", a)`.
                // Need to emit the expression list enclosed by ().
-               ns.valExprs.map(compileExpression).mkString("(", ", ", ") ") + so.direction.sql
-             case _ => compileExpression(so.child) + " " + so.direction.sql
+               s"(${ns.valExprs.map(compileExpression).mkString(", ")}) ${so.direction.sql} ${so.nullOrdering.sql}"
+             case _ => s"${compileExpression(so.child)} ${so.direction.sql} ${so.nullOrdering.sql}"
            }
          })
          .mkString(", ")) + chTopN.n.map(" LIMIT " + _).getOrElse("")

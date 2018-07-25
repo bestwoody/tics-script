@@ -233,7 +233,7 @@ class CHSqlSuite extends SparkFunSuite {
         Seq(a desc, b asc),
         None
       ),
-      "SELECT  FROM `d`.`t` ORDER BY `a` DESC, `b` ASC"
+      "SELECT  FROM `d`.`t` ORDER BY `a` DESC NULLS LAST, `b` ASC NULLS FIRST"
     )
     testQuery(
       t,
@@ -245,7 +245,7 @@ class CHSqlSuite extends SparkFunSuite {
         Seq(a asc, CreateNamedStruct(Seq(b.name, b, "col1", a + b, "col2", b + c)) desc, c asc),
         None
       ),
-      "SELECT  FROM `d`.`t` ORDER BY `a` ASC, (`b`, (`a` + `b`), (`b` + `c`)) DESC, `c` ASC"
+      "SELECT  FROM `d`.`t` ORDER BY `a` ASC NULLS FIRST, (`b`, (`a` + `b`), (`b` + `c`)) DESC NULLS LAST, `c` ASC NULLS FIRST"
     )
     testQuery(
       t,
@@ -269,7 +269,7 @@ class CHSqlSuite extends SparkFunSuite {
         Seq(a desc, b asc),
         Option(1)
       ),
-      "SELECT  FROM `d`.`t` ORDER BY `a` DESC, `b` ASC LIMIT 1"
+      "SELECT  FROM `d`.`t` ORDER BY `a` DESC NULLS LAST, `b` ASC NULLS FIRST LIMIT 1"
     )
   }
 }
