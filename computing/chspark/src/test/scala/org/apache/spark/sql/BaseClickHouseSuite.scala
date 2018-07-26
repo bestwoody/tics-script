@@ -285,7 +285,9 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
 
     val isOrdered = qSpark.toLowerCase.contains(" order by ") && !qSpark.contains("/*non-order*/")
     val isLimited = qSpark.toLowerCase.contains(" limit ")
-    val hasNullOrder = qSpark.toLowerCase.contains(" nulls first") || qSpark.toLowerCase.contains(" nulls last")
+    val hasNullOrder = qSpark.toLowerCase.contains(" nulls first") || qSpark.toLowerCase.contains(
+      " nulls last"
+    )
 
     if (isOrdered && isLimited && !hasNullOrder) {
       fail(new IllegalArgumentException("Test sql does not contain nulls order when using limit"))
