@@ -54,7 +54,7 @@ class CHTableInfo(val table: CHTableRef, val useSelraw: Boolean) extends Seriali
   }
 
   def fetchRows(): Unit =
-    info.rowCount = CHUtil.getRowCount(table, true)
+    info.rowCount = CHUtil.getRowCount(table, useSelraw)
 
   // TODO: Parallel fetch
   def fetchInfo(): Unit = {
