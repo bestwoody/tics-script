@@ -19,7 +19,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.ch.{CHConfigConst, CHLogicalPlan, CHRelation, CHSql}
+import org.apache.spark.sql.ch.{CHLogicalPlan, CHRelation, CHSql}
 import org.apache.spark.sql.execution.datasources.CHScanRDD
 
 case class CHScanExec(output: Seq[Attribute],
@@ -29,12 +29,9 @@ case class CHScanExec(output: Seq[Attribute],
     extends LeafExecNode
     with CHBatchScan {
 
-  private val useSelraw =
-    sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW_TABLE_INFO, "false").toBoolean
-
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     val tableQueryPairs = chRelation.tables.map(table => {
-      (table, CHSql.query(table, chLogicalPlan, useSelraw))
+      (table, CHSql.query(table, chLogicalPlan, chRelation.useSelraw))
     })
     new CHScanRDD(sparkSession, output, tableQueryPairs, chRelation.partitionsPerSplit) :: Nil
   }

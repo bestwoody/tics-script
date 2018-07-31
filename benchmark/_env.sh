@@ -20,9 +20,6 @@ export default_partitionsPerSplit="2"
 # Should be always true on Mutable table, unless for tracing MutableMergeTree bugs
 export selraw="false"
 
-# Use SELRAW to fetch table info, can faster than SELECT on MutableMergeTree. DON'T set to 'true' for Non-Mutable table
-export selraw_tableinfo="false"
-
 # Spark master to commit jobs
 export spark_master="127.0.0.1"
 

@@ -84,21 +84,25 @@ public class CHConnection implements Closeable {
     }
 
     private void connect() throws IOException {
-        channel = SocketChannel.open();
-        channel.connect(new InetSocketAddress(host, port));
-        reader = new ReadBuffer(channel, READ_BUFFER_SIZE);
-        writer = new WriteBuffer(channel, WRITE_BUFFER_SIZE);
+        try {
+            channel = SocketChannel.open();
+            channel.connect(new InetSocketAddress(host, port));
+            reader = new ReadBuffer(channel, READ_BUFFER_SIZE);
+            writer = new WriteBuffer(channel, WRITE_BUFFER_SIZE);
 
-        sendHello();
-        receiveHello();
+            sendHello();
+            receiveHello();
 
-        logger.debug("Connected to " + serverName +
+            logger.debug("Connected to " + serverName +
                 " server version" + serverVersionMajor +
                 "." + serverVersionMinor +
                 "." + serverRevision + ".");
+        } catch (IOException ex) {
+            throw new IOException(genErrorMessage(), ex);
+        }
     }
 
-    public void disconnect() throws IOException {
+    public void disconnect() {
         if (channel != null) {
             IOUtils.closeQuietly(channel);
             IOUtils.closeQuietly(reader);
@@ -121,8 +125,12 @@ public class CHConnection implements Closeable {
     }
 
     public void sendCancel() throws IOException {
-        writer.writeVarUInt64(CHProtocol.Client.Query);
-        writer.flush();
+        try {
+            writer.writeVarUInt64(CHProtocol.Client.Query);
+            writer.flush();
+        } catch (IOException ex) {
+            throw new IOException(genErrorMessage(), ex);
+        }
     }
 
     public void sendSharedQuery(String query, String query_id, int clients) throws IOException {
@@ -143,65 +151,77 @@ public class CHConnection implements Closeable {
             connect();
         }
 
-        writer.writeVarUInt64(CHProtocol.Client.Query);
-        writer.writeUTF8StrWithVarLen(query_id);
+        try {
+            writer.writeVarUInt64(CHProtocol.Client.Query);
+            writer.writeUTF8StrWithVarLen(query_id);
 
-        // We don't send ClientInfo
-        writer.writeByte((byte) 0);
+            // We don't send ClientInfo
+            writer.writeByte((byte) 0);
 
-        CHSetting.serialize(settings, writer);
+            CHSetting.serialize(settings, writer);
 
-        // FetchColumns        = 0,    /// Only read/have been read the columns specified in the query.
-        // WithMergeableState  = 1,    /// Until the stage where the results of processing on different servers can be combined.
-        // Complete            = 2,    /// Completely.
-        writer.writeVarUInt64(2);
-        writer.writeVarUInt64(0); // uncompress
+            // FetchColumns        = 0,    /// Only read/have been read the columns specified in the query.
+            // WithMergeableState  = 1,    /// Until the stage where the results of processing on different servers can be combined.
+            // Complete            = 2,    /// Completely.
+            writer.writeVarUInt64(2);
+            writer.writeVarUInt64(0); // uncompress
 
-        writer.writeUTF8StrWithVarLen(query);
+            writer.writeUTF8StrWithVarLen(query);
 
-        // Send an empty block.
-        writer.writeVarUInt64(CHProtocol.Client.Data);
-        writer.writeUTF8StrWithVarLen("");
-        CHEndecoder.encode(writer, new CHBlock());
+            // Send an empty block.
+            writer.writeVarUInt64(CHProtocol.Client.Data);
+            writer.writeUTF8StrWithVarLen("");
+            CHEndecoder.encode(writer, new CHBlock());
 
-        writer.flush();
+            writer.flush();
+        } catch (IOException ex) {
+            throw new IOException(genErrorMessage(), ex);
+        }
     }
 
     public void sendData(CHBlock block, String name) throws IOException {
-        writer.writeVarUInt64(CHProtocol.Client.Data);
-        writer.writeUTF8StrWithVarLen(name);
-        CHEndecoder.encode(writer, block);
-        writer.flush();
+        try {
+            writer.writeVarUInt64(CHProtocol.Client.Data);
+            writer.writeUTF8StrWithVarLen(name);
+            CHEndecoder.encode(writer, block);
+            writer.flush();
+        } catch (IOException ex) {
+            throw new IOException(genErrorMessage(), ex);
+        }
     }
 
     public Packet receivePacket() throws IOException {
         Packet res = new Packet();
-        res.type = (int) reader.readVarUInt64();
-        switch (res.type) {
-            case CHProtocol.Server.Data:
-                res.block = receiveData();
-                return res;
-            case CHProtocol.Server.Exception:
-                res.exceptionMsg = receiveException();
-                return res;
-            case CHProtocol.Server.EndOfStream:
-                return res;
-            case CHProtocol.Server.Progress:
-                res.progress = CHProgress.read(reader);
-                return res;
-            case CHProtocol.Server.ProfileInfo:
-                res.profileInfo = CHBlockStreamProfileInfo.read(reader);
-                return res;
+        try {
+            res.type = (int) reader.readVarUInt64();
+            switch (res.type) {
+                case CHProtocol.Server.Data:
+                    res.block = receiveData();
+                    return res;
+                case CHProtocol.Server.Exception:
+                    res.exceptionMsg = receiveException();
+                    return res;
+                case CHProtocol.Server.EndOfStream:
+                    return res;
+                case CHProtocol.Server.Progress:
+                    res.progress = CHProgress.read(reader);
+                    return res;
+                case CHProtocol.Server.ProfileInfo:
+                    res.profileInfo = CHBlockStreamProfileInfo.read(reader);
+                    return res;
 
-            // Block with total or extreme values is passed in same form as ordinary block. The only difference is packed id.
-            case CHProtocol.Server.Totals:
-            case CHProtocol.Server.Extremes:
-                res.block = receiveData();
-                return res;
-            default:
-                disconnect();
-                throw new IOException("Unknown packet " + res.type + " from server(" + host + ":" + port + ")");
+                // Block with total or extreme values is passed in same form as ordinary block. The only difference is packed id.
+                case CHProtocol.Server.Totals:
+                case CHProtocol.Server.Extremes:
+                    res.block = receiveData();
+                    return res;
+                default:
+                    disconnect();
+            }
+        } catch (IOException ex) {
+            throw new IOException(genErrorMessage(), ex);
         }
+        throw new IOException("Unknown packet " + res.type + " from server(" + host + ":" + port + ")");
     }
 
     /**
@@ -264,7 +284,7 @@ public class CHConnection implements Closeable {
                 break;
             case CHProtocol.Server.Exception:
                 String msg = receiveException();
-                // Close the socket afte received an exception. Simple strategy to remove the risk of
+                // Close the socket after received an exception. Simple strategy to remove the risk of
                 // using current socket channel with possible dirty data in input stream.
                 disconnect();
                 throw new IOException(msg);
@@ -278,12 +298,12 @@ public class CHConnection implements Closeable {
         return readException("Exception read from CH server (" + host + ":" + port + ")");
     }
 
-    private String readException(String additionalMsg) throws IOException {
+    private String readException(String additionalMsg) {
         long code = 0;
         String name = "";
         String message = "";
         String stackTrace = "";
-        boolean hasNested = false;
+        boolean hasNested;
         try {
             code = reader.readInt();
             name = reader.readUTF8StrWithVarLen(strBuff);
@@ -301,5 +321,9 @@ public class CHConnection implements Closeable {
             msg += "\n" + nestedMsg;
         }
         return msg;
+    }
+
+    private String genErrorMessage() {
+        return String.format("Error in connection: host=[%s] port=[%d]", host, port);
     }
 }

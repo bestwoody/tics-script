@@ -26,18 +26,27 @@ class CHRelation(
 )(@transient val sqlContext: SQLContext, @transient val sparkConf: SparkConf)
     extends BaseRelation {
 
-  private val useSelraw =
-    sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW_TABLE_INFO, "false").toBoolean
+  private lazy val tableInfo: TableInfo = {
+    val useSelraw =
+      sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW, "false").toBoolean
+    CHTableInfos.getInfo(tables, useSelraw)
+  }
+
+  def useSelraw: Boolean =
+    if (tableInfo.engine == Engine.MutableMergeTree) {
+      sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW, "false").toBoolean
+    } else {
+      false
+    }
 
   if (tables.size != tables.toSet.size)
     throw new Exception("Duplicated tables: " + tables.toString)
 
   override lazy val schema: StructType = {
-    CHTableInfos.getInfo(tables, useSelraw).schema
+    tableInfo.schema
   }
 
   override def sizeInBytes: Long = {
-    val tableInfo = CHTableInfos.getInfo(tables, useSelraw)
     // TODO consider rowWidth
     val size = tableInfo.rowCount * 64 // Assuming each row is 64 bytes in width
     size

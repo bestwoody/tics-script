@@ -19,6 +19,5 @@ print_spark_settings()
 {
 	echo 'spark.conf.set("spark.storage.plan.pushdown.agg", "'$pushdown'")'
 	echo 'spark.conf.set("spark.storage.selraw", "'$selraw'")'
-	echo 'spark.conf.set("spark.storage.tableinfo.selraw", "'$selraw_tableinfo'")'
 }
 export print_spark_settings

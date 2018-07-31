@@ -94,6 +94,9 @@ object CHSql {
     override def toString: String = buildQuery()
   }
 
+  def tableEngine(table: CHTableRef): String =
+    s"SELECT engine FROM system.tables WHERE database = '${table.database}' AND name = '${table.table}'"
+
   /**
    * Compose a query string based on given input table and CH logical plan.
    * @param table

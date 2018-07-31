@@ -384,6 +384,40 @@ object CHUtil {
     }
   }
 
+  def getTableEngine(table: CHTableRef): String = {
+    val client = new SparkCHClientSelect(
+      CHUtil.genQueryId("E"),
+      CHSql.tableEngine(table),
+      table.host,
+      table.port
+    )
+    try {
+      if (!client.hasNext) {
+        throw new Exception("Send table engine request, no response")
+      }
+      val block = client.next()
+      if (block.numCols() != 1) {
+        throw new Exception("Send table engine request, wrong response")
+      }
+
+      val engineUTFStr = block.column(0).getUTF8String(0)
+
+      if (engineUTFStr == null) {
+        throw new Exception("engine is null")
+      }
+      val engine = engineUTFStr.toString
+
+      // Consume all data.
+      while (client.hasNext) {
+        client.next()
+      }
+
+      engine
+    } finally {
+      IOUtil.closeQuietly(client)
+    }
+  }
+
   // TODO: Port to metadata scan
   // TODO: encapsulate scan operation
   def listTables(database: String, node: Node): Array[String] = {
@@ -497,7 +531,7 @@ object CHUtil {
     )
     try {
       if (!client.hasNext) {
-        throw new Exception("Send table row count request, not response")
+        throw new Exception("Send table row count request, no response")
       }
       val block = client.next()
       if (block.numCols() != 1) {
