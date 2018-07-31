@@ -14,13 +14,7 @@ import com.pingcap.ch.datatypes.CHTypeFixedString;
 import com.pingcap.ch.datatypes.CHTypeNullable;
 import com.pingcap.ch.datatypes.CHTypeNumber;
 import com.pingcap.ch.datatypes.CHTypeString;
-import java.io.Closeable;
-import java.io.IOException;
-import java.sql.Date;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.catalyst.util.DateTimeUtils;
@@ -31,6 +25,14 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.sql.util.TypeMapping;
 import org.apache.spark.unsafe.types.UTF8String;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Insert API for spark to send insert query to CH.
@@ -76,7 +78,8 @@ public class SparkCHClientInsert implements Closeable {
         if (curColumns == null)
             return;
         for (CHColumn c : curColumns) {
-            c.free();
+            if (c != null)
+                c.free();
         }
         curColumns = null;
     }
@@ -153,7 +156,7 @@ public class SparkCHClientInsert implements Closeable {
             if (chType == CHTypeString.instance || chType instanceof CHTypeFixedString) {
                 Object val = row.get(i);
                 if (val instanceof byte[]) {
-                    byte [] byteValue = ((byte[])val);
+                    byte[] byteValue = ((byte[]) val);
                     col.insertUTF8String(UTF8String.fromBytes(byteValue));
                 } else {
                     col.insertUTF8String(UTF8String.fromString(row.get(i).toString()));
@@ -166,11 +169,11 @@ public class SparkCHClientInsert implements Closeable {
                 Timestamp ts = row.getTimestamp(i);
                 col.insertLong((ts.getTime() / 1000));
             } else if (chType == CHTypeNumber.CHTypeInt8.instance) {
-                col.insertByte((byte)row.getLong(i));
+                col.insertByte((byte) row.getLong(i));
             } else if (chType == CHTypeNumber.CHTypeInt16.instance) {
-                col.insertShort((short)row.getLong(i));
+                col.insertShort((short) row.getLong(i));
             } else if (chType == CHTypeNumber.CHTypeInt32.instance) {
-                col.insertInt((int)row.getLong(i));
+                col.insertInt((int) row.getLong(i));
             } else if (chType == CHTypeNumber.CHTypeInt64.instance) {
                 col.insertLong(row.getLong(i));
             } else if (chType == CHTypeNumber.CHTypeUInt8.instance) {
@@ -187,7 +190,7 @@ public class SparkCHClientInsert implements Closeable {
             } else if (chType == CHTypeNumber.CHTypeFloat32.instance) {
                 col.insertFloat(row.getFloat(i));
             } else if (chType == CHTypeNumber.CHTypeFloat64.instance) {
-                Number n = (Number)row.get(i);
+                Number n = (Number) row.get(i);
                 col.insertDouble(n.doubleValue());
             } else if (chType instanceof CHTypeDecimal) {
                 col.insertDecimal(Decimal.fromDecimal(row.getDecimal(i)));

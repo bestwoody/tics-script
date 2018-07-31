@@ -1,7 +1,10 @@
 package com.pingcap.common;
 
 import org.apache.spark.unsafe.types.UTF8String;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -10,6 +13,7 @@ import java.nio.channels.WritableByteChannel;
 
 public class IOUtil {
     public static long DEFAULT_MAX_STRING_SIZE = 0x00FFFFFFL;
+    private static final Logger logger = LoggerFactory.getLogger(IOUtil.class);
 
     public static void readFully(ReadableByteChannel src, ByteBuffer buffer) throws IOException {
         while (buffer.hasRemaining()) {
@@ -192,5 +196,15 @@ public class IOUtil {
         readFully(in, oneByteBuf);
         oneByteBuf.clear();
         return oneByteBuf.get() != 0;
+    }
+
+    public static void closeQuietly(Closeable closeable) {
+        try {
+            if (closeable != null) {
+                closeable.close();
+            }
+        } catch (IOException e) {
+            logger.warn("Quietly close exception.", e);
+        }
     }
 }

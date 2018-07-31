@@ -20,6 +20,7 @@ import java.util.{SplittableRandom, UUID}
 import com.pingcap.common.{Cluster, Node}
 import com.pingcap.theflash.{SparkCHClientInsert, SparkCHClientSelect, TypeMappingJava}
 import com.pingcap.tikv.meta.TiTableInfo
+import com.pingcap.common.IOUtil
 import org.apache.spark.Partitioner
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
@@ -96,9 +97,7 @@ object CHUtil {
         client.next()
       }
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -115,9 +114,7 @@ object CHUtil {
         client.next()
       }
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -173,9 +170,7 @@ object CHUtil {
         client.next()
       }
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -188,9 +183,7 @@ object CHUtil {
         client.next()
       }
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -203,9 +196,7 @@ object CHUtil {
         client.next()
       }
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -334,9 +325,7 @@ object CHUtil {
       }
       totalCount
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -363,9 +352,7 @@ object CHUtil {
       client.insertSuffix()
       totalCount
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -393,7 +380,7 @@ object CHUtil {
 
       partitions
     } finally {
-      client.close()
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -423,9 +410,7 @@ object CHUtil {
 
       tables
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -451,9 +436,7 @@ object CHUtil {
 
       databases
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -501,9 +484,7 @@ object CHUtil {
 
       fields
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
@@ -532,9 +513,7 @@ object CHUtil {
 
       count
     } finally {
-      if (client != null) {
-        client.close()
-      }
+      IOUtil.closeQuietly(client)
     }
   }
 
