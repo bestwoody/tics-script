@@ -1,3 +1,5 @@
+#!/bin/bash
+
 count="$1"
 log="$2"
 

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 file="$1"
 
 default="./tpch.log"

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 query="$1"
 format="$2"
 

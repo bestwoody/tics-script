@@ -1,3 +1,5 @@
+#!/bin/bash
+
 _untracked_reset()
 {
 	local untracked="$1"

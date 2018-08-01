@@ -1,4 +1,8 @@
+#!/bin/bash
+
 set -eu
+
+# TODO: remove all ceph dirs and files
 
 source ./_env.sh
 

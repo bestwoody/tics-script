@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -eu
 source ./_env.sh
 
@@ -30,4 +32,4 @@ for i in ${!nodes[@]}; do
 done
 
 echo "status: (should be nothing)"
-./status.sh
+./daemon-status.sh

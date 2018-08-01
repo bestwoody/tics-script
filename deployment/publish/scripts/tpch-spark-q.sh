@@ -1,3 +1,5 @@
+#!/bin/bash
+
 n="$1"
 partitionsPerSplit="$2"
 

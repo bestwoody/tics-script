@@ -1,3 +1,5 @@
+#!/bin/bash
+
 function run_file()
 {
 	local dbc="$1"

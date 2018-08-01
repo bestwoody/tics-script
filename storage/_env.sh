@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Executable path
 export storage_bin="build/dbms/src/Server/theflash"
 

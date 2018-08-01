@@ -1,3 +1,5 @@
+#!/bin/bash
+
 source ./_env.sh
 
 print_cat_data()

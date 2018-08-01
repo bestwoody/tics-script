@@ -1,3 +1,5 @@
+#!/bin/bash
+
 sql="$1"
 partitionsPerSplit="$2"
 query_db="$3"

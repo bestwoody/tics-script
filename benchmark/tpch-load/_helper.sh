@@ -1,3 +1,5 @@
+#!/bin/bash
+
 _get_is_mac() {
 	local mac="no"
 	if [ "`uname`" == "Darwin" ]; then

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -eu
 
 if [ `whoami` != "root" ]; then

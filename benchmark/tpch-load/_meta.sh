@@ -1,3 +1,5 @@
+#!/bin/bash
+
 source ./_env.sh
 
 get_table_names()

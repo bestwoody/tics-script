@@ -1,3 +1,5 @@
+#!/bin/bash
+
 force="$1"
 
 set -eu

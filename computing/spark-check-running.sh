@@ -1,3 +1,5 @@
+#!/bin/bash
+
 master_check=`ps -ef | grep org.apache.spark.deploy.master.Master | grep -v grep | wc -l | awk '{print $1}'`
 echo "$master_check master(s) is running"
 

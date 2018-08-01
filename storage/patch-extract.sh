@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 patch_ensure_not_changed()
 {

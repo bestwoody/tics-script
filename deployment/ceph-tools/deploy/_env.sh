@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Sever list, should be hostname instead of ip address.
 # The first 3 nodes will deploy "mon + admin + mds + ods", others will only deploy "ods"
 export nodes=("localhost")

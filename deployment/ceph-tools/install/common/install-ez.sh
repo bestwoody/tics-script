@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -eu
 
 # TODO: what if version changed?

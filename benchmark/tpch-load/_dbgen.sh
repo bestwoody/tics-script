@@ -1,3 +1,5 @@
+#!/bin/bash
+
 source ./_meta.sh
 
 dbgen_bin()

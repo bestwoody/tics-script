@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -eu
 
 top_cmd="top -p"

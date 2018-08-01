@@ -1,3 +1,5 @@
+#!/bin/bash
+
 count="$1"
 partitionsPerSplit="$2"
 log="$3"

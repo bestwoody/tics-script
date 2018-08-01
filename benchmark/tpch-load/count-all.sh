@@ -1,3 +1,5 @@
+#!/bin/bash
+
 selraw="$1"
 
 source ./_meta.sh

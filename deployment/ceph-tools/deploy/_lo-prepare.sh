@@ -1,3 +1,5 @@
+#!/bin/bash
+
 host="$1"
 osd_img="$2"
 osd_mb="$3"

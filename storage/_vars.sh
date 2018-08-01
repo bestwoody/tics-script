@@ -1,3 +1,5 @@
+#!/bin/bash
+
 setup_dylib_path()
 {
 	if [ `uname` == "Darwin" ]; then

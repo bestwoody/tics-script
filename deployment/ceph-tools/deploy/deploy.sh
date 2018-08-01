@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -eu
 source ./_env.sh
 

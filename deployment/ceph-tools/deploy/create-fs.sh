@@ -1,7 +1,14 @@
+#!/bin/bash
+
 name="$1"
 pg="$2"
 
 set -eu
+
+if [ `whoami` != "root" ]; then
+	echo "need 'sudo' to run mount, exiting" >&2
+	exit 1
+fi
 
 if [ -z "$name" ]; then
 	echo "usage: <bin> fs-name(eg: cephfs) [pg(default: 64+64)]" >&2

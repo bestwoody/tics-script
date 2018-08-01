@@ -1,3 +1,5 @@
+#!/bin/bash
+
 _get_this_dir() {
 	if [ "$0" == "bash" ] || [ "$0" == "sh" ]; then
 		return

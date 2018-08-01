@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -eu
 
 old=`pwd`

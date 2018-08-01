@@ -64,11 +64,11 @@ IP2 H2
             * Run all install scripts: `theflash-{git-hash-short}/ceph-tools/install/install-{os-type}.sh`
             * Run `ceph-deploy`, make sure it works
         * `theflash-{git-hash-short}/ceph-tools/deploy> ./deploy.sh`: deploy step by step with comfirmation
-        * `theflash-{git-hash-short}/ceph-tools/deploy> ./status.sh`:
+        * `theflash-{git-hash-short}/ceph-tools/deploy> ./daemon-status.sh`:
             * The first 3 nodes should have `mon + admin + mds + ods` running
             * The other nodes should have `ods` running
         * `theflash-{git-hash-short}/ceph-tools/deploy> ./create-fs.sh`: create ceph file system
-        * Backup files, it's important for ceph ops: `theflash-{git-hash-short}>ceph-tools/deploy/ceph-*`
+        * Backup these files, it's important for ceph ops: `theflash-{git-hash-short}> ceph-tools/deploy/ceph.*`
     * Create storage paths on ceph file system: (TODO: create dirs without mounting)
         * `theflash-{git-hash-short}/ceph-tools/deploy> sudo ./cephfs-mount.sh {some-dir} /`: mount root ceph file system
         * `mkdir {some-dir}/storage-0 && mkdir {some-dir}/storage-1 && ...`: create storage paths for each storage node

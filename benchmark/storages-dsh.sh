@@ -1,3 +1,5 @@
+#!/bin/bash
+
 cmd="$1"
 async="$2"
 user="$3"

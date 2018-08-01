@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Ceph repo url for ceph-deploy
 #export repo_url="http://mirrors.163.com/ceph/rpm-mimic/el7"
 #export repo_url="http://download.ceph.com/ceph/rpm-mimic/el7"

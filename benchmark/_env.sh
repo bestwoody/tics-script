@@ -1,3 +1,5 @@
+#!/bin/bash
+
 source ./_helper.sh
 
 # Executable path

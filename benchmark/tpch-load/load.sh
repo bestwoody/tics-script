@@ -1,3 +1,5 @@
+#!/bin/bash
+
 table="$1"
 
 set -eu

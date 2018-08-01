@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -eu
 
 name="spark-2.1.3-bin-hadoop2.7"

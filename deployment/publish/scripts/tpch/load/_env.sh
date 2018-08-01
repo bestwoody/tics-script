@@ -1,3 +1,5 @@
+#!/bin/bash
+
 source ./_helper.sh
 
 # Compress data files and do anything to minimal ocuppied space

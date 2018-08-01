@@ -1,4 +1,6 @@
-set -eu
+#!/bin/bash
+
+set -u
 
 source ./_env.sh
 

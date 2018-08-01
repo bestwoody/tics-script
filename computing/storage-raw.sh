@@ -1,3 +1,5 @@
+#!/bin/bash
+
 query="$1"
 verb="$3"
 host="127.0.0.1"

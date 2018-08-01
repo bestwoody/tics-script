@@ -1,3 +1,5 @@
+#!/bin/bash
+
 function run()
 {
     cd ../computing && ./storage-chraw.sh "select * from lineitem" "$1" "$2" "$3"

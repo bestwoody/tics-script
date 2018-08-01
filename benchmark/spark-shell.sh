@@ -1,3 +1,5 @@
+#!/bin/bash
+
 source _env.sh
 
 cp "$repo_dir/computing/conf/spark-defaults.conf" "$repo_dir/computing/spark/conf/"

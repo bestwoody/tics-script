@@ -1,3 +1,5 @@
+#!/bin/bash
+
 setup_gcc_on_mac()
 {
 	export CC=`which gcc-7`

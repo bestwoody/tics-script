@@ -1,3 +1,5 @@
+#!/bin/bash
+
 path="$1"
 user="$2"
 
