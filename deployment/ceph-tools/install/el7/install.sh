@@ -17,5 +17,8 @@ cp ./ceph.repo /etc/yum.repos.d
 echo "=> yum --skip-broken install ntp ntpdate ntp-doc ceph-deploy -y"
 yum --skip-broken install ntp ntpdate ntp-doc ceph-deploy -y
 
-echo "=> yum --skip-broken install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm -y"
-yum --skip-broken install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm -y
+epel_installed=`rpm -qa | grep epel`
+if [ -z "$epel_intalled" ]; then
+	echo "=> yum --skip-broken install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm -y"
+	yum --skip-broken install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm -y
+fi

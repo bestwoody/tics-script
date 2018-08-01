@@ -27,9 +27,9 @@
     * Setup hosts file on every node, it's for ceph-deploy:
 ```
 /etc/hosts: add these lines before the "127.0.0.1" line
-H0 IP0
-H1 IP1
-H2 IP2
+IP0 H0
+IP1 H1
+IP2 H2
 ...
 ```
 * Checkout cluster hardware envonment
@@ -37,16 +37,20 @@ H2 IP2
     * Checkout disk IO, on each node:
         * `df -lh`: list mounted disk
         * `sudo fdisk -l`: list all disk (include unmounted) if necessary
+        * `sudo yum install fio -y`: make sure fio installed
         * `theflash-{git-hash-short}> ./io-report.sh test-file-on-target-disk`:
             * Checkout disk IOPS and brandwidth
             * If the node has n diskes, run script n times to checkout each disk
     * Checkout network, on each nodes pair node-a and node-b:
         * Checkout network RTT: on node-a run command `ping node-b`
         * Checkout network brandwidth:
-            * Install iperf (or iperf3) on node-a, run comand `iperf -s`
-            * Install iperf on node-b, run comand `iperf -c node-a`
+            * `sudo yum install iperf -y`: make sure iperf installed on all nodes
+            * If iperf not found on repo source, install iperf3 instead
+            * On node-a, run comand `iperf -s`
+            * On node-b, run comand `iperf -c node-a`
 * Deploy ceph if it's needed
     * Spare a raw disk for ceph osd(s)
+        * Run `sudo umount disk-mounted-path` on all ceph nodes: umount the disk from filesystem
         * NOTICE: all data on it will be lost
     * Config ceph deploy args
         * In `theflash-{git-hash-short}>ceph-tools/deploy/_env.sh`:
