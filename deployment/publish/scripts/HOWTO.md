@@ -72,44 +72,87 @@ IP2 H2
     * Create storage paths on ceph file system: (TODO: create dirs without mounting)
         * `theflash-{git-hash-short}/ceph-tools/deploy> sudo ./cephfs-mount.sh {some-dir} /`: mount root ceph file system
         * `mkdir {some-dir}/storage-0 && mkdir {some-dir}/storage-1 && ...`: create storage paths for each storage node
+        * `touch {some-dir}/storage-0/storage-0 && touch {some-dir}/storage-1/storage-1 && ...`: create storage flag files
         * `theflash-{git-hash-short}/ceph-tools/deploy> sudo ./cephfs-umount.sh {some-dir}`: unmount ceph file system
+        * TODO: auto mount setup
     * Mount cephfs for storage, on each node:
         * `mkdir {some-storage-dir}`: create mount point dir, if `sudo mkdir` is used, don't forget `sudo chown`
-        * `theflash-{git-hash-short}/ceph-tools/deploy> sudo ./cephfs-mount.sh {some-storage-dir} /storage-n`:
+        * `theflash-{git-hash-short}/ceph-tools/deploy> sudo ./cephfs-mount.sh {some-storage-dir} /storage-{n}`:
             * Mount ceph file system
             * Note that we mount different ceph file paths to the corresponding nodes
         * `theflash-{git-hash-short}> ./io-report.sh {some-storage-dir}/fio-test`: checkout mounted disk IO performance
     * Checkout ceph cluster status:
         * `sudo ceph -s` (TODO: remove `sudo` privilege)
-* Deploy storage on nodes. On one node:
-    * `theflash-{git-hash-short}> vim _env.sh`:
-        * Config storage nodes: `export storage_server=("H0" "H1" ...)`
-        * storage nodes should be a subset of all nodes
-    * `theflash-{git-hash-short}> ./storages-spread-file.sh ./_env.sh`:
-        * Spread (copy) `_env.sh` to all storage nodes
-    * `theflash-{git-hash-short}> vim storage/config.xml`:
-        * Modify data path (`<data> element`) to `{some-storage-dir}` (mounted as above)
-        * Modify other paths to the correct ones, note that: do NOT set to a path located on system disk
-    * `theflash-{git-hash-short}> ./storages-spread-file.sh storage/config.xml`:
-        * Sync config to all storage nodes
-        * Each time we make some changes, sync config juse like this
-    * `theflash-{git-hash-short}> ./storages-dsh.sh "./storage-server.sh &"`:
-        * Bring all storages online
-        * Manually run `storage-server.sh` on each node if we like
-    * `theflash-{git-hash-short}> ./storages-pid.sh`: checkout storage pid(s)
-    * `theflash-{git-hash-short}> ./storage-client.sh "show database"`: checkout storage cluster status
-* Run Spark. On Spark master node (can be any one of all nodes):
-    * `theflash-{git-hash-short}> vim _env.sh`:
-        * Config Spark master: `export spark_master=""`
-        * Sync `_env.sh` to all storage nodes as above
-            * TODO: support `Spark nodes` != `storage nodes`, now they should the same
-    * `theflash-{git-hash-short}> ./spark-start-master.sh`: bring master online
-    * `theflash-{git-hash-short}> ./storages-dsk.sh "./spark-start-slave.sh"`: bring slaves online
-    * `theflash-{git-hash-short}> ./spark-check-running.sh`: checkout Spark cluster status
-* TCP-H test. On one node:
-    * `theflash-{git-hash-short}> ./load-all.sh`: generate and load data
-    * `theflash-{git-hash-short}/tcph/load> vim _env.sh`:
-        * Config storage nodes: `export nodes=("H0" "H1" ...)`
-        * Config data scale and other options
-    * `theflash-{git-hash-short}/tcph/load> ./load-all.sh`: generate and load data to storage cluster
-    * `theflash-{git-hash-short}/tcph/load> ./count-all.sh true`: show tables row count on cluster
+* Deploy storage on nodes
+    * On one node:
+        * `theflash-{git-hash-short}> vim _env.sh`:
+            * Config storage nodes: `export storage_server=("H0" "H1" ...)`
+            * storage nodes should be a subset of all nodes
+        * `theflash-{git-hash-short}> ./storages-spread-file.sh ./_env.sh`:
+            * Spread (copy) `_env.sh` to all storage nodes
+        * `theflash-{git-hash-short}> vim storage/config.xml`:
+            * Modify data path (`<data> element`) to `{some-storage-dir}` (mounted as above)
+            * Modify other paths to the correct ones, note that: do NOT set to a path located on system disk
+        * `theflash-{git-hash-short}> ./storages-spread-file.sh storage/config.xml`:
+            * Sync config to all storage nodes
+            * Each time we make some changes, sync config juse like this
+        * `theflash-{git-hash-short}> ./storages-dsh.sh "./storage-server.sh &"`:
+            * Bring all storages online
+            * Manually run `storage-server.sh` on each node if you like
+        * `theflash-{git-hash-short}> ./storages-pid.sh`: checkout storage pid(s)
+        * `theflash-{git-hash-short}> ./storage-client.sh "show database"`: checkout storage cluster status
+* Run Spark
+    * On Spark master node (can be any one of all nodes):
+        * `theflash-{git-hash-short}> vim _env.sh`:
+            * Config Spark master: `export spark_master=""`
+            * Sync `_env.sh` to all storage nodes as above
+                * TODO: support `Spark nodes` != `storage nodes`, now they should the same
+        * `theflash-{git-hash-short}> ./spark-start-master.sh`: bring master online
+        * `theflash-{git-hash-short}> ./storages-dsk.sh "./spark-start-slave.sh"`: bring slaves online
+        * `theflash-{git-hash-short}> ./spark-check-running.sh`: checkout Spark cluster status
+* TCP-H test
+    * On one node:
+        * `theflash-{git-hash-short}> ./load-all.sh`: generate and load data
+        * `theflash-{git-hash-short}/tcph/load> vim _env.sh`:
+            * Config storage nodes: `export nodes=("H0" "H1" ...)`
+            * Config data scale and other options
+        * `theflash-{git-hash-short}/tcph/load> ./load-all.sh`: generate and load data to storage cluster
+        * `theflash-{git-hash-short}/tcph/load> ./count-all.sh true`: show tables row count on cluster
+* Quick Cluster health checking
+    * Ceph checking
+        * `theflash-{git-hash-short}/ceph-tools/deploy> ./daemon-status.sh`: check ceph services
+            * The first 3 nodes should have `mon + admin + mds + ods` running
+            * The other nodes should have `ods` running
+        * `sudo ceph -s`: check ceph status, it should say `health` and `OK`
+    * Storage checking
+        * `theflash-{git-hash-short}> ./storages-pid.sh`: check storage services by print their pid(s)
+        * `theflash-{git-hash-short}> ./storage-client.sh "show databases"`: check storage services response
+    * Spark checking
+        * `theflash-{git-hash-short}> ./spark-check-running.sh`: show running master and slaves
+* Health checking and fixing after reboot
+    * Ceph cheking
+        * Run the `quick checking` above
+        * If some ceph services are not running, manually restart them:
+            * `theflash-{git-hash-short}/ceph-tools/deploy> ./daemon-stop-all.sh`:
+                * Stop all ceph services
+                * If some services still running after we run the stop script, rerun the script, make sure all services are stopped
+            * `theflash-{git-hash-short}/ceph-tools/deploy> ./daemon-start-all.sh`:
+                * Start all `mon` services and show ceph status, then start `mgr`, then start `osd`, and then start `mds`
+                * If ceph status is not as we expected on any step, press `ctrl-c` to stop the script, then check what happen:
+                    * For example, only 2 `mon` services are up after start all `mon` services, the `mon` service on H1 can't get up
+                        * On node H1
+                            * `sudo ls -l /var/log/ceph`: show all ceph service logs
+                            * `sudo vim /cat/log/ceph/ceph-mon.{H1}.log`: find the reason in mon log
+        * If all ceph services are up, but ceph status shows downgraded warning, wait for it to become `health` and `OK`
+    * Storage restarting
+        * On each storage node:
+            * `theflash-{git-hash-short}/ceph-tools/deploy> sudo ./cephfs-mount.sh {storage-dir} /storage-{n}`: mount ceph file system
+            * `theflash-{git-hash-short}> ./storage-servece.sh &`: start storage service
+            * `theflash-{git-hash-short}> ./storage-pid.sh`: check storage service pid
+    * Spark restarting
+        * On master node:
+            * `theflash-{git-hash-short}> ./spark-start-master.sh`: start Spark master
+        * On each slave node:
+            * `theflash-{git-hash-short}> ./spark-start-slave.sh`: start Spark slaves
+        * On any node:
+            * `theflash-{git-hash-short}> ./spark-check-running.sh`: check all services are running

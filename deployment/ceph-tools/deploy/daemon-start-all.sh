@@ -2,36 +2,25 @@
 
 set -u
 
-source ./_env.sh
+echo "=> ./daemon-start-mon.sh"
+./daemon-start-mon.sh
+sleep 5
+sudo ceph -s
+sleep 2
 
-for i in ${!nodes[@]}; do
-	ssh "${nodes[$i]}" "sudo systemctl start ceph-osd@$i"
-done
+echo "=> ./daemon-start-mgr.sh"
+./daemon-start-mgr.sh
+sleep 5
+sudo ceph -s
+sleep 2
 
-for i in ${!nodes[@]}; do
-	if [ $i -gt 2 ]; then
-		continue
-	fi
-	node=${nodes[$i]}
-	ssh "$node" "sudo systemctl start ceph-mon@$node"
-done
+echo "=> ./daemon-start-osd.sh"
+./daemon-start-osd.sh
+sleep 5
+sudo ceph -s
+sleep 2
 
-for i in ${!nodes[@]}; do
-	if [ $i -gt 2 ]; then
-		continue
-	fi
-	node=${nodes[$i]}
-	ssh "$node" "sudo systemctl start ceph-mgr@$node"
-done
-
-for i in ${!nodes[@]}; do
-	if [ $i -gt 2 ]; then
-		continue
-	fi
-	node=${nodes[$i]}
-	ssh "$node" "sudo systemctl start ceph-mds@$node"
-done
-
-sleep 1
-
+echo "=> ./daemon-start-mds.sh"
+./daemon-start-mds.sh
+sleep 5
 sudo ceph -s

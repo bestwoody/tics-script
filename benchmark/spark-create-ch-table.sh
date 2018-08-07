@@ -15,17 +15,23 @@ storage_db=$3
 storage_table=$4
 primary_keys=$5
 
+full_table_name="${spark_local_db}.${spark_local_table}"
+if [ -z "$spark_local_db" ]; then
+	full_table_name="$spark_local_table"
+fi
+
 mkdir -p "/tmp/spark-q/"
 tmp="/tmp/spark-q/`date +%s`"
 
 echo 'import org.apache.spark.sql.SparkUtil' >> "$tmp"
 
-spart_settings "$tmp"
+print_spark_settings "$tmp"
 
 echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
+
 echo "storage.createDatabase(\"$storage_db\")" >> "$tmp"
 echo "storage.dropTable(\"$storage_db\", \"$storage_table\")" >> "$tmp"
-echo "var df = storage.sql(\"select * from ${spark_local_db}.${spark_local_table}\")" >> "$tmp"
+echo "var df = storage.sql(\"select * from $full_table_name\")" >> "$tmp"
 echo "df = SparkUtil.setNullableStateOfColumns(df, false, Array(${primary_keys}))" >> "$tmp"
 echo "storage.createTableFromDataFrame(\"$storage_db\", \"$storage_table\", Array(${primary_keys}), df)" >> "$tmp"
 cat $tmp
