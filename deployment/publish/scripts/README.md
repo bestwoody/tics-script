@@ -3,7 +3,7 @@
 ## IMPORTANT: this package is built for developing test, dot NOT use in producting environment
 
 ## Run storage
-* `here> ./storage-server.sh`: run storage server
+* `here> ./storage-server-start.sh`: run storage server
 * `here> ./storage-client.sh`: connect to storage in intereactive mode
 * `here> ./storage-client.sh <sql>`: connect to storage in command mode
 

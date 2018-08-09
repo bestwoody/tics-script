@@ -19,7 +19,7 @@ An OLAP project of TiDB
         * `theflash/computing> ./build.sh`: build CHSpark
 * Play around
     * With Patched CH
-        * `theflash/benchmark> ./storage-server.sh`: run CH server
+        * `theflash/benchmark> ./storage-server-start.sh`: run CH server
         * `theflash/benchmark> ./storage-client.sh`: play with CH in intereactive mode
         * `theflash/benchmark> ./storage-client.sh <sql>`: play with CH in command mode
         * `theflash/storage> ./storage-import-data.sh <name>`: import table data `storage/running/data/<name>` to CH
