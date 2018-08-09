@@ -1,17 +1,12 @@
 package com.pingcap.ch.columns;
 
-import com.google.common.base.Preconditions;
-
+import com.pingcap.ch.columns.UTF8ChunkBuilder.SealedChunk;
 import com.pingcap.ch.datatypes.CHTypeString;
 import com.pingcap.common.MemoryUtil;
-
+import java.nio.ByteBuffer;
 import org.apache.spark.unsafe.types.UTF8String;
 
-import java.nio.ByteBuffer;
-
 public class CHColumnString extends CHColumn {
-    // For insert.
-    private UTF8String[] strs;
 
     /// Maps i'th position to offset to i+1'th element. Last offset maps to the end of all chars (is the size of all chars).
     private ByteBuffer offsets; // UInt64
@@ -19,8 +14,12 @@ public class CHColumnString extends CHColumn {
     /// For convenience, every string ends with terminating zero byte. Note that strings could contain zero bytes in the middle.
     private ByteBuffer chars;
 
+    private SealedChunk chunk;
+
     private long offsetsAddr;
     private long charsAddr;
+    private PagedChunkBuilder builder;
+    public static final int MIN_PAGE_SIZE = 1000;
 
     public CHColumnString(int size, ByteBuffer offsets, ByteBuffer chars) {
         super(CHTypeString.instance, size);
@@ -34,11 +33,13 @@ public class CHColumnString extends CHColumn {
 
     public CHColumnString(int maxSize) {
         super(CHTypeString.instance, 0);
-        strs = new UTF8String[maxSize];
-    }
-
-    public ByteBuffer offsets() {
-        return offsets;
+        int pageCapacity;
+        if (maxSize <= MIN_PAGE_SIZE) {
+            pageCapacity = maxSize;
+        } else {
+            pageCapacity = (int) Math.sqrt(maxSize);
+        }
+        builder = new PagedChunkBuilder(pageCapacity);
     }
 
     public ByteBuffer chars() {
@@ -52,11 +53,9 @@ public class CHColumnString extends CHColumn {
 
     @Override
     public void free() {
-        if (offsetsAddr == 0) {
-            return;
+        if (chunk != null) {
+            chunk.free();
         }
-        MemoryUtil.free(offsets);
-        MemoryUtil.free(chars);
         offsetsAddr = 0;
         charsAddr = 0;
     }
@@ -67,66 +66,41 @@ public class CHColumnString extends CHColumn {
 
     public int sizeAt(int i) {
         return (int) (i == 0
-                ? MemoryUtil.getLong(offsetsAddr)
-                : MemoryUtil.getLong(offsetsAddr + (i << 3)) - MemoryUtil.getLong(offsetsAddr + ((i - 1) << 3)));
+            ? MemoryUtil.getLong(offsetsAddr)
+            : MemoryUtil.getLong(offsetsAddr + (i << 3)) - MemoryUtil
+                .getLong(offsetsAddr + ((i - 1) << 3)));
     }
 
     @Override
     public UTF8String getUTF8String(int rowId) {
-        //int size = sizeAt(rowId);
-        //byte[] bytes = new byte[size];
-        //MemoryUtil.getBytes(offsetAt(rowId), bytes, 0, size);
-        //return UTF8String.fromBytes(bytes);
-
         // Check carefully about the life cycle of this object and the returned string.
         return UTF8String.fromAddress(null, charsAddr + offsetAt(rowId), sizeAt(rowId) - 1);
     }
 
     @Override
     public void insertDefault() {
-        strs[size] = UTF8String.EMPTY_UTF8;
-        size++;
+        insertUTF8String(UTF8String.EMPTY_UTF8);
     }
 
     @Override
     public void insertUTF8String(UTF8String v) {
         // The passed in string could be a pointer.
-        strs[size] = v.clone();
-        size++;
+        builder.insertUTF8String(v);
     }
 
     @Override
     public CHColumn seal() {
-        long totalLen = 0;
-        for (int i = 0; i < size; i++) {
-            totalLen += strs[i].numBytes() + 1;
-        }
-        if (totalLen >= Integer.MAX_VALUE) {
-            throw new IllegalStateException("String total length overflow!");
-        }
-        ByteBuffer offsets = MemoryUtil.allocateDirect(size << 3);
-        ByteBuffer chars = MemoryUtil.allocateDirect((int) totalLen);
-        long charsAddr = MemoryUtil.getAddress(chars);
+        this.chunk = builder.seal();
+        builder = null;
 
-        long curOffset = 0;
-        for (int i = 0; i < size; i++) {
-            UTF8String s = strs[i];
-            offsets.putLong(curOffset + s.numBytes() + 1);
-            MemoryUtil.copyMemory(s.getBaseObject(), s.getBaseOffset(), null, charsAddr + curOffset, s.numBytes());
-            curOffset += s.numBytes() + 1;
-        }
-
-        Preconditions.checkState(curOffset == chars.capacity());
-
+        offsets = chunk.getOffsetBuf();
+        chars = chunk.getCharBuf();
         offsets.clear();
         chars.clear();
+        offsetsAddr = MemoryUtil.getAddress(offsets);
+        charsAddr = MemoryUtil.getAddress(chars);
 
-        this.strs = null;
-        this.offsets = offsets;
-        this.chars = chars;
-        this.offsetsAddr = MemoryUtil.getAddress(offsets);
-        this.charsAddr = charsAddr;
-
+        size = chunk.size();
         return this;
     }
 }
