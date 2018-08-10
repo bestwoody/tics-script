@@ -12,3 +12,5 @@
 # test.output.show=false
 # Whether to truncate long test failure output
 # test.output.truncate=true
+# Define JDBC Timezone
+# test.jdbc.timezone=Asia/Shanghai

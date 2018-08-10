@@ -19,7 +19,7 @@ package org.apache.spark.sql
 
 import java.sql.{Date, Timestamp}
 import java.text.SimpleDateFormat
-import java.util.TimeZone
+import java.util.{Locale, TimeZone}
 
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.util._
@@ -60,7 +60,7 @@ abstract class QueryTest extends PlanTest {
     }
 
     def toString(value: Any): String =
-      new SimpleDateFormat("yy-MM-dd HH:mm:ss").format(value)
+      new SimpleDateFormat("yy-MM-dd HH:mm:ss", Locale.CHINA).format(value)
 
     def compValue(lhs: Any, rhs: Any): Boolean =
       if (lhs == rhs || lhs.toString == rhs.toString) {

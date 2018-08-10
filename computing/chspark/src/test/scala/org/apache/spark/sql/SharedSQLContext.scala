@@ -172,6 +172,8 @@ object SharedSQLContext extends Logging {
       val properties = new ClickHouseProperties()
 
       properties.setConnectionTimeout(100)
+      properties.setUseTimeZone(getOrElse(_clickHouseConf, JDBC_USE_TIMEZONE, "Asia/Shanghai"))
+      properties.setUseServerTimeZone(false)
 
       // create database
       new ClickHouseDataSource(jdbcUrl, properties).getConnection

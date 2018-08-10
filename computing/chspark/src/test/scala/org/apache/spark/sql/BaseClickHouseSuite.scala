@@ -150,7 +150,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     assert(execDBTSAndJudge(qSpark, skipped))
 
   def convertSparkSQLToCHSQL(qSpark: String): String =
-    qSpark.replace(" date(", " toDate(").replace(" date)", " Date)")
+    qSpark.replace(" date(", " toDate(").replace(" date)", " Nullable(Date))")
 
   def execDBTSAndJudge(qSpark: String, skipped: Boolean = false): Boolean =
     try {

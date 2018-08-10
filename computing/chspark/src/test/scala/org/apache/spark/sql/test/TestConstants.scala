@@ -26,4 +26,5 @@ object TestConstants {
   val SHOULD_SKIP_TEST = "test.skip"
   val SHOW_TEST_OUTPUT = "test.output.show"
   val TRUNCATE_TEST_OUTPUT = "test.output.truncate"
+  val JDBC_USE_TIMEZONE = "test.jdbc.timezone"
 }
