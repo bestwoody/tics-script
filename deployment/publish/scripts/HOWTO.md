@@ -101,6 +101,12 @@ IP2 H2
             * Manually run `storage-server.sh` on each node if you like
         * `theflash-{git-hash-short}> ./storages-pid.sh`: checkout storage pid(s)
         * `theflash-{git-hash-short}> ./storage-client.sh "show database"`: checkout storage cluster status
+* Config Spark on nodes
+    * On each Spark node:
+        * `theflash-{git-hash-short}> vim spark/conf/spark-defaults.conf`:
+            * Config TiSpark PD addresses: `spark.tispark.pd.addresses <PD0>:<PORT0>,<PD1>:<PORT1>...`
+            * Config TiSpark show rowid: `spark.tispark.show_rowid true`
+            * Config Flash addresses: `spark.flash.addresses <H0>:<PORT0>,<H1>:<PORT1>...`
 * Run Spark
     * On Spark master node (can be any one of all nodes):
         * `theflash-{git-hash-short}> vim _env.sh`:
