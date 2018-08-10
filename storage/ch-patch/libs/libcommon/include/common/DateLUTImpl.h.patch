@@ -1,5 +1,5 @@
 diff --git a/libs/libcommon/include/common/DateLUTImpl.h b/libs/libcommon/include/common/DateLUTImpl.h
-index 535c863eeb3e..daa1e6db9d7c 100644
+index 535c863eeb3e..4145dafd4983 100644
 --- a/libs/libcommon/include/common/DateLUTImpl.h
 +++ b/libs/libcommon/include/common/DateLUTImpl.h
 @@ -1,21 +1,28 @@
@@ -526,7 +526,7 @@ index 535c863eeb3e..daa1e6db9d7c 100644
 +    inline DayNum_t toDayNum(time_t t) const { 
 +        ptime tm = boost::posix_time::from_time_t(t);
 +        ltime lm (tm, zone);
-+        DateType dt = lm.date();
++        DateType dt = lm.local_time().date();
 +        return DayNum_t(dt.day_count().as_number()-start_day_num);
 +    }
 +    inline time_t fromDayNum(DayNum_t d) const { 
