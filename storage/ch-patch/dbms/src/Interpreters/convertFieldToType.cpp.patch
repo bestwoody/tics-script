@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/convertFieldToType.cpp b/dbms/src/Interpreters/convertFieldToType.cpp
-index 361351b659bf..a8f0360a17f0 100644
+index 361351b659bf..f38aa4c95b7d 100644
 --- a/dbms/src/Interpreters/convertFieldToType.cpp
 +++ b/dbms/src/Interpreters/convertFieldToType.cpp
 @@ -66,6 +66,8 @@ static Field convertNumericType(const Field & from, const IDataType & type)
@@ -19,3 +19,12 @@ index 361351b659bf..a8f0360a17f0 100644
  
          const bool is_date = typeid_cast<const DataTypeDate *>(&type);
          bool is_datetime = false;
+@@ -136,6 +139,8 @@ Field convertFieldToTypeImpl(const Field & src, const IDataType & type)
+                         throw Exception{"Logical error: unknown numeric type " + type.getName(), ErrorCodes::LOGICAL_ERROR};
+ 
+         /// Numeric values for Enums should not be used directly in IN section
++        if (src.getType() == Field::Types::Int64 && !is_enum)
++            return src;
+         if (src.getType() == Field::Types::UInt64 && !is_enum)
+             return src;
+ 

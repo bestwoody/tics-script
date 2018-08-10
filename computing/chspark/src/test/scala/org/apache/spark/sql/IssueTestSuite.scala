@@ -68,8 +68,14 @@ class IssueTestSuite extends BaseClickHouseSuite {
   }
 
   test("#235 Comparison incorrect when TimeStamp cast to Date in predicates") {
-    runTest(
+    explainAndRunTest(
       "SELECT cast(tp_datetime as date) cast_datetime, date(tp_datetime) date_datetime, tp_datetime FROM full_data_type_table WHERE date(tp_datetime) > date('2009-01-02')"
+    )
+  }
+
+  test("#544 New Date/DateTime does not deal with TimeZone") {
+    explainAndRunTest(
+      "SELECT cast(tp_datetime as date) cast_datetime, date(tp_datetime) date_datetime, tp_datetime FROM full_data_type_table"
     )
   }
 

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/DataTypes/DataTypeDateTime.cpp b/dbms/src/DataTypes/DataTypeDateTime.cpp
-index 3be6b61e408f..0d93f524a7f2 100644
+index 3be6b61e408f..806ad43de384 100644
 --- a/dbms/src/DataTypes/DataTypeDateTime.cpp
 +++ b/dbms/src/DataTypes/DataTypeDateTime.cpp
 @@ -34,7 +34,7 @@ std::string DataTypeDateTime::getName() const
@@ -7,7 +7,7 @@ index 3be6b61e408f..0d93f524a7f2 100644
  void DataTypeDateTime::serializeText(const IColumn & column, size_t row_num, WriteBuffer & ostr) const
  {
 -    writeDateTimeText(static_cast<const ColumnUInt32 &>(column).getData()[row_num], ostr, time_zone);
-+    writeDateTimeText(static_cast<const ColumnUInt64 &>(column).getData()[row_num], ostr, time_zone);
++    writeDateTimeText(static_cast<const ColumnInt64 &>(column).getData()[row_num], ostr, time_zone);
  }
  
  void DataTypeDateTime::serializeTextEscaped(const IColumn & column, size_t row_num, WriteBuffer & ostr) const
@@ -16,7 +16,7 @@ index 3be6b61e408f..0d93f524a7f2 100644
      time_t x;
      readDateTimeText(x, istr, time_zone);
 -    static_cast<ColumnUInt32 &>(column).getData().push_back(x);
-+    static_cast<ColumnUInt64 &>(column).getData().push_back(x);
++    static_cast<ColumnInt64 &>(column).getData().push_back(x);
  }
  
  void DataTypeDateTime::serializeTextQuoted(const IColumn & column, size_t row_num, WriteBuffer & ostr) const
@@ -25,7 +25,7 @@ index 3be6b61e408f..0d93f524a7f2 100644
          readIntText(x, istr);
      }
 -    static_cast<ColumnUInt32 &>(column).getData().push_back(x);    /// It's important to do this at the end - for exception safety.
-+    static_cast<ColumnUInt64 &>(column).getData().push_back(x);    /// It's important to do this at the end - for exception safety.
++    static_cast<ColumnInt64 &>(column).getData().push_back(x);    /// It's important to do this at the end - for exception safety.
  }
  
  void DataTypeDateTime::serializeTextJSON(const IColumn & column, size_t row_num, WriteBuffer & ostr, const FormatSettingsJSON &) const
@@ -34,7 +34,7 @@ index 3be6b61e408f..0d93f524a7f2 100644
          readIntText(x, istr);
      }
 -    static_cast<ColumnUInt32 &>(column).getData().push_back(x);
-+    static_cast<ColumnUInt64 &>(column).getData().push_back(x);
++    static_cast<ColumnInt64 &>(column).getData().push_back(x);
  }
  
  void DataTypeDateTime::serializeTextCSV(const IColumn & column, size_t row_num, WriteBuffer & ostr) const
@@ -43,7 +43,7 @@ index 3be6b61e408f..0d93f524a7f2 100644
      time_t x;
      readDateTimeCSV(x, istr, time_zone);
 -    static_cast<ColumnUInt32 &>(column).getData().push_back(x);
-+    static_cast<ColumnUInt64 &>(column).getData().push_back(x);
++    static_cast<ColumnInt64 &>(column).getData().push_back(x);
  }
  
  bool DataTypeDateTime::equals(const IDataType & rhs) const

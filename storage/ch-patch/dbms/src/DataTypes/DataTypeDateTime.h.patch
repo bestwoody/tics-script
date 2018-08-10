@@ -1,5 +1,5 @@
 diff --git a/dbms/src/DataTypes/DataTypeDateTime.h b/dbms/src/DataTypes/DataTypeDateTime.h
-index d8a883f318c4..97b4962f39e8 100644
+index d8a883f318c4..c19ca00c201d 100644
 --- a/dbms/src/DataTypes/DataTypeDateTime.h
 +++ b/dbms/src/DataTypes/DataTypeDateTime.h
 @@ -28,7 +28,7 @@ namespace DB
@@ -7,7 +7,7 @@ index d8a883f318c4..97b4962f39e8 100644
    *  or system time zone at the moment of server startup.
    */
 -class DataTypeDateTime final : public DataTypeNumberBase<UInt32>
-+class DataTypeDateTime final : public DataTypeNumberBase<UInt64>
++class DataTypeDateTime final : public DataTypeNumberBase<Int64>
  {
  public:
      DataTypeDateTime(const std::string & time_zone_name = "");

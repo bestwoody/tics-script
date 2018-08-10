@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Functions/FunctionsExternalDictionaries.h b/dbms/src/Functions/FunctionsExternalDictionaries.h
-index bbf9b1b5c603..4cf242be6dc0 100644
+index bbf9b1b5c603..ee59a71d2e65 100644
 --- a/dbms/src/Functions/FunctionsExternalDictionaries.h
 +++ b/dbms/src/Functions/FunctionsExternalDictionaries.h
 @@ -694,8 +694,8 @@ DECLARE_DICT_GET_TRAITS(Int32, DataTypeInt32)
@@ -9,7 +9,7 @@ index bbf9b1b5c603..4cf242be6dc0 100644
 -DECLARE_DICT_GET_TRAITS(UInt16, DataTypeDate)
 -DECLARE_DICT_GET_TRAITS(UInt32, DataTypeDateTime)
 +DECLARE_DICT_GET_TRAITS(UInt32, DataTypeDate)
-+DECLARE_DICT_GET_TRAITS(UInt64, DataTypeDateTime)
++DECLARE_DICT_GET_TRAITS(Int64, DataTypeDateTime)
  DECLARE_DICT_GET_TRAITS(UInt128, DataTypeUUID)
  #undef DECLARE_DICT_GET_TRAITS
  
