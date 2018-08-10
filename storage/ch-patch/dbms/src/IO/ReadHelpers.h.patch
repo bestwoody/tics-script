@@ -1,5 +1,5 @@
 diff --git a/dbms/src/IO/ReadHelpers.h b/dbms/src/IO/ReadHelpers.h
-index 2d3b405675f5..54510bb7eb8a 100644
+index 2d3b405675f5..9f584361f83b 100644
 --- a/dbms/src/IO/ReadHelpers.h
 +++ b/dbms/src/IO/ReadHelpers.h
 @@ -1,5 +1,6 @@
@@ -17,18 +17,21 @@ index 2d3b405675f5..54510bb7eb8a 100644
  inline void readBoolText(bool & x, ReadBuffer & buf)
  {
      char tmp = '0';
-@@ -225,6 +225,91 @@ inline void readBoolTextWord(bool & x, ReadBuffer & buf)
+@@ -225,6 +225,94 @@ inline void readBoolTextWord(bool & x, ReadBuffer & buf)
      }
  }
  
 +inline void decimalRound(DecimalValue& x, ReadBuffer & buf)
 +{
 +    ++buf.position();
++    if (buf.eof()) {
++        return;
++    }
 +    if (*buf.position() >= '5' && *buf.position() <= '9') {
 +        x.value ++;
 +    }
 +    x.checkOverflow();
-+    while(*buf.position() >= '0' && *buf.position() <= '9') {
++    while(!buf.eof() && *buf.position() >= '0' && *buf.position() <= '9') {
 +        ++buf.position();
 +    }
 +}
@@ -109,7 +112,7 @@ index 2d3b405675f5..54510bb7eb8a 100644
  template <typename T, typename ReturnType = void>
  ReturnType readIntTextImpl(T & x, ReadBuffer & buf)
  {
-@@ -587,6 +672,7 @@ inline void readBinary(UInt128 & x, ReadBuffer & buf) { readPODBinary(x, buf); }
+@@ -587,6 +675,7 @@ inline void readBinary(UInt128 & x, ReadBuffer & buf) { readPODBinary(x, buf); }
  inline void readBinary(UInt256 & x, ReadBuffer & buf) { readPODBinary(x, buf); }
  inline void readBinary(LocalDate & x, ReadBuffer & buf) { readPODBinary(x, buf); }
  inline void readBinary(LocalDateTime & x, ReadBuffer & buf) { readPODBinary(x, buf); }
@@ -117,7 +120,7 @@ index 2d3b405675f5..54510bb7eb8a 100644
  
  
  /// Generic methods to read value in text tab-separated format.
-@@ -598,6 +684,7 @@ template <typename T>
+@@ -598,6 +687,7 @@ template <typename T>
  inline std::enable_if_t<std::is_floating_point_v<T>, void>
  readText(T & x, ReadBuffer & buf) { readFloatText(x, buf); }
  
@@ -125,7 +128,7 @@ index 2d3b405675f5..54510bb7eb8a 100644
  inline void readText(bool & x, ReadBuffer & buf) { readBoolText(x, buf); }
  inline void readText(String & x, ReadBuffer & buf) { readEscapedString(x, buf); }
  inline void readText(LocalDate & x, ReadBuffer & buf) { readDateText(x, buf); }
-@@ -698,6 +785,7 @@ inline void readCSV(String & x, ReadBuffer & buf, const char delimiter = ',') {
+@@ -698,6 +788,7 @@ inline void readCSV(String & x, ReadBuffer & buf, const char delimiter = ',') {
  inline void readCSV(LocalDate & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
  inline void readCSV(LocalDateTime & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
  inline void readCSV(UUID & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
