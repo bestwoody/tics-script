@@ -2,7 +2,7 @@ package com.pingcap.theflash;
 
 import com.pingcap.theflash.codegene.CHColumnBatch;
 
-import org.apache.spark.sql.ch.SimpleRow;
+import com.pingcap.common.SimpleRow;
 import org.junit.Assert;
 import org.junit.Test;
 

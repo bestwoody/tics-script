@@ -23,10 +23,10 @@ import com.pingcap.theflash.SparkCHClientSelect
 
 import scala.util.Random
 
-object CHRawScala {
+object CHRawReader {
   def main(args: Array[String]) {
     if (args.length < 1) {
-      println("usage: <bin> query-sql [verb=0|1] [host] [port]")
+      println("usage: <bin> query-sql [verb=0|1|2] [host] [port]")
       return
     }
 
@@ -37,7 +37,7 @@ object CHRawScala {
     val port: Int = if (args.length >= 4) args(3).toInt else 9000
 
     val rid = Random.nextInt
-    val qid = "chraw-" + (if (rid < 0) -rid else rid)
+    val qid = "chraw-r-" + (if (rid < 0) -rid else rid)
 
     var totalRows: Long = 0
     var totalBlocks: Long = 0
@@ -49,7 +49,7 @@ object CHRawScala {
       totalBytes += cb
     }
 
-    if (verb >= 0) {
+    if (verb > 0) {
       println("Starting.")
     }
     val startTime = new Date()
@@ -57,7 +57,7 @@ object CHRawScala {
     val client = new SparkCHClientSelect(qid, query, host, port)
     var n: Int = 0
     while (client.hasNext) {
-      if (verb >= 1) {
+      if (verb > 1) {
         println(s"$n block")
       }
       val block = client.next
@@ -72,13 +72,13 @@ object CHRawScala {
     val elapsed = endTime.getTime - startTime.getTime
     val dateFormat: SimpleDateFormat = new SimpleDateFormat("mm:ss")
 
-    if (verb >= 0) {
+    if (verb > 0) {
       println(
         "All finish, total rows: " + totalRows + ", blocks: " + totalBlocks + ", bytes: " + totalBytes
       )
       println(
         "Elapsed: " + dateFormat
-          .format(elapsed) + ", mb/s: " + (totalBytes.toDouble / 1000 / elapsed)
+          .format(elapsed) + ", MB/s: " + (totalBytes.toDouble / 1000 / elapsed)
       )
     }
   }

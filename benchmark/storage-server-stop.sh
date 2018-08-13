@@ -19,10 +19,14 @@ heaviest_kill="false"
 echo "$pids" | while read pid; do
 	for ((i=0; i<600; i++)); do
 		if [ "$heaviest_kill" == "true" ]; then
-			echo "#$i pid $pid closing, heaviest=$heaviest_kill ..."
+			echo "#$i pid $pid closing, using 'kill -9'..."
 			kill -9 $pid
 		else
-			echo "#$i pid $pid closing, heavy=$heavy_kill ..."
+			if [ "$heavy_kill" == "true" ]; then
+				echo "#$i pid $pid closing, using double kill..."
+			else
+				echo "#$i pid $pid closing..."
+			fi
 			kill $pid
 			if [ "$heavy_kill" == "true" ]; then
 				kill $pid

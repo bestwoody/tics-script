@@ -314,7 +314,7 @@ object CHUtil {
         if (client == null) {
           val node = cluster.nodes(idx)
           client = new SparkCHClientInsert(CHSql.insertStmt(database, table), node.host, node.port)
-          client.setBatch(batchSize)
+          client.setStorageBatch(batchSize)
           client.insertPrefix()
         }
         insertMethod(client, row)
@@ -341,7 +341,7 @@ object CHUtil {
     var client: SparkCHClientInsert = null
     try {
       client = new SparkCHClientInsert(CHSql.insertStmt(database, table), host, port)
-      client.setBatch(batchSize)
+      client.setStorageBatch(batchSize)
       client.insertPrefix()
       var totalCount = 0
       while (iterator.hasNext) {

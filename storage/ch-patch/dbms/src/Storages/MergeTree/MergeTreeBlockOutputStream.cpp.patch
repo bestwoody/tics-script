@@ -1,0 +1,15 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreeBlockOutputStream.cpp b/dbms/src/Storages/MergeTree/MergeTreeBlockOutputStream.cpp
+index af0a207bafce..6b7a25c02f45 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreeBlockOutputStream.cpp
++++ b/dbms/src/Storages/MergeTree/MergeTreeBlockOutputStream.cpp
+@@ -17,6 +17,10 @@ void MergeTreeBlockOutputStream::write(const Block & block)
+     storage.data.delayInsertIfNeeded();
+ 
+     auto part_blocks = storage.writer.splitBlockIntoParts(block);
++    if (part_blocks.size() > 0) {
++        LOG_TRACE(log, "Writing block, origin rows: " << block.rows() << ", splited into " << part_blocks.size() << " parts");
++    }
++
+     for (auto & current_block : part_blocks)
+     {
+         Stopwatch watch;

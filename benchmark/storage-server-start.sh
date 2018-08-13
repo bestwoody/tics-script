@@ -1,5 +1,7 @@
 #!/bin/bash
 
+daemon_mode="$1"
+
 set -eu
 source ./_env.sh
 
@@ -9,8 +11,10 @@ if [ ! -z "$pid" ]; then
 	exit 1
 fi
 
-$storage_bin server --config-file "$storage_server_config" 2>/dev/null &
-
-sleep 2
-
-./storage-pid.sh
+if [ "$daemon_mode" != "false" ]; then
+	$storage_bin server --config-file "$storage_server_config" 2>/dev/null &
+	sleep 2
+	./storage-pid.sh
+else
+	$storage_bin server --config-file "$storage_server_config"
+fi

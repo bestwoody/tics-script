@@ -4,6 +4,7 @@ import com.pingcap.ch.CHBlock;
 import com.pingcap.ch.CHBlockInfo;
 import com.pingcap.ch.CHConnection;
 import com.pingcap.ch.CHProtocol;
+import com.pingcap.ch.CHSetting;
 import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnWithTypeAndName;
 import com.pingcap.ch.datatypes.CHType;
@@ -40,7 +41,7 @@ import java.util.List;
  * Not multi-thread safe.
  */
 public class SparkCHClientInsert implements Closeable {
-    public static final int BATCH_INSERT_COUNT = 655360;
+    public static final int BATCH_INSERT_COUNT = 1024 * 1024 / 2;
 
     private String queryId;
     private String query;
@@ -50,7 +51,8 @@ public class SparkCHClientInsert implements Closeable {
     private StructType sparkSchema;
 
     private CHColumn[] curColumns;
-    private int batchCount = BATCH_INSERT_COUNT;
+    private int clientBatchCount = BATCH_INSERT_COUNT;
+    private int storageBatchCount = BATCH_INSERT_COUNT * 20;
 
     public SparkCHClientInsert(String queryId, String query, String host, int port) {
         this.conn = new CHConnection(host, port, "", "default", "", "CHSpark");
@@ -62,8 +64,12 @@ public class SparkCHClientInsert implements Closeable {
         this(CHUtil.genQueryId("I"), query, host, port);
     }
 
-    public void setBatch(int batch) {
-        this.batchCount = batch;
+    public void setClientBatch(int batch) {
+        this.clientBatchCount = batch;
+    }
+
+    public void setStorageBatch(int batch) {
+        this.storageBatchCount = batch;
     }
 
     public CHBlock sampleBlock() {
@@ -72,6 +78,10 @@ public class SparkCHClientInsert implements Closeable {
 
     public StructType sparkSchema() {
         return sparkSchema;
+    }
+
+    public CHType[] dataTypes() {
+        return dataTypes;
     }
 
     private void freeCacheColumns() {
@@ -89,12 +99,12 @@ public class SparkCHClientInsert implements Closeable {
 
         curColumns = new CHColumn[dataTypes.length];
         for (int i = 0; i < dataTypes.length; i++) {
-            curColumns[i] = dataTypes[i].allocate(batchCount);
+            curColumns[i] = dataTypes[i].allocate(clientBatchCount);
         }
     }
 
     public void insertPrefix() throws IOException {
-        conn.sendQuery(query, queryId, Collections.emptyList());
+        conn.sendQuery(query, queryId, Collections.singletonList(new CHSetting.SettingUInt("min_insert_block_size_rows", storageBatchCount)));
         receiveSampleBlock();
         sparkSchema = TypeMapping.chSchemaToSparkSchema(sampleBlock);
 
@@ -199,7 +209,7 @@ public class SparkCHClientInsert implements Closeable {
             }
         }
 
-        if (curColumns[0].size() >= batchCount) {
+        if (curColumns[0].size() >= clientBatchCount) {
             flushCache();
         }
     }
@@ -265,7 +275,7 @@ public class SparkCHClientInsert implements Closeable {
         }
 
 
-        if (curColumns[0].size() >= batchCount) {
+        if (curColumns[0].size() >= clientBatchCount) {
             flushCache();
         }
 

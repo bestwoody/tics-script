@@ -30,7 +30,7 @@ public class TypeMappingJava {
     private static class PrecisionAndScale {
         private int precision;
         private int scale;
-        
+
         private PrecisionAndScale(int precision, int scale) {
             this.precision = precision;
             this.scale = scale;

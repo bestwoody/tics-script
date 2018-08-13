@@ -1,4 +1,4 @@
-package org.apache.spark.sql.ch;
+package com.pingcap.common;
 
 import java.math.BigDecimal;
 import java.sql.Date;
