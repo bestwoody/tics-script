@@ -32,7 +32,7 @@ get_hosts()
 execute_cmd()
 {
 	local host="$1"
-	ssh ${user}${host} $cmd < /dev/null | while read line; do
+	ssh ${user}${host} $cmd < /dev/null 2 >&1 | while read line; do
 		echo [$host] $line
 	done
 }

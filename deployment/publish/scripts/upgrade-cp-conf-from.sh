@@ -38,17 +38,22 @@ cat ./upgrade-cp-conf-from.files | while read file; do
 	fi
 done
 
-echo "=> stopting all storage services:"
+echo "=> copying config files to all storage nodes:"
 ./storages-dsh.sh ./storage-server-stop.sh
+cat ./upgrade-cp-conf-from.files | while read file; do
+	if [ -f "./$file" ]; then
+		./storages-spread-file.sh "./$file"
+	fi
+done
+
+echo "=> stopting all storage services:"
+./storages-server-stop.sh
 
 echo "=> starting all storage services:"
-./storages-dsh.sh ./storage-server-start.sh
+./storages-server-start.sh
 
-echo "=> stopping all spark workers:"
-./storages-dsh.sh ./spark-stop-slave.sh
-
-echo "=> stopping spark master:"
-./spark-stop-master.sh
+echo "=> stopping spark master and workers:"
+./storages-dsh.sh ./spark-stop-all.sh
 
 echo "=> starting spark master:"
 ./spark-start-master.sh
