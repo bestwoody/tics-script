@@ -1,0 +1,14 @@
+_env.sh
+tpch/load/_env.sh
+storage/config.xml
+storage/user.xml
+spark/conf/spark-defaults.conf
+spark/conf/spark-env.sh
+ceph-tools/deploy/_env.sh
+ceph-tools/deploy/ceph.bootstrap-mds.keyring
+ceph-tools/deploy/ceph.bootstrap-mgr.keyring
+ceph-tools/deploy/ceph.bootstrap-osd.keyring
+ceph-tools/deploy/ceph.bootstrap-rgw.keyring
+ceph-tools/deploy/ceph.client.admin.keyring
+ceph-tools/deploy/ceph.conf
+ceph-tools/deploy/ceph.mon.keyring
