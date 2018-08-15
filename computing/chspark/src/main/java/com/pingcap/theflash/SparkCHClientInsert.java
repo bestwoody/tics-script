@@ -41,7 +41,8 @@ import java.util.List;
  * Not multi-thread safe.
  */
 public class SparkCHClientInsert implements Closeable {
-    public static final int BATCH_INSERT_COUNT = 1024 * 1024 / 2;
+    public static final int CLIENT_BATCH_INSERT_COUNT = 1024 * 32;
+    public static final int STORAGE_BATCH_INSERT_COUNT = 1024 * 1024 * 16;
 
     private String queryId;
     private String query;
@@ -51,8 +52,8 @@ public class SparkCHClientInsert implements Closeable {
     private StructType sparkSchema;
 
     private CHColumn[] curColumns;
-    private int clientBatchCount = BATCH_INSERT_COUNT;
-    private int storageBatchCount = BATCH_INSERT_COUNT * 20;
+    private int clientBatchCount = CLIENT_BATCH_INSERT_COUNT;
+    private int storageBatchCount = STORAGE_BATCH_INSERT_COUNT;
 
     public SparkCHClientInsert(String queryId, String query, String host, int port) {
         this.conn = new CHConnection(host, port, "", "default", "", "CHSpark");

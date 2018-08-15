@@ -61,7 +61,7 @@ public class SparkCHClientInsertTest {
         }
 
         Random random = new Random();
-        long insertCount = random.nextInt(SparkCHClientInsert.BATCH_INSERT_COUNT * 3 + 1000) + SparkCHClientInsert.BATCH_INSERT_COUNT * 3;
+        long insertCount = random.nextInt(SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT * 3 + 1000) + SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT * 3;
         String insertSql = "insert into default.spark_insert_test values";
         try (SparkCHClientInsert insert = new SparkCHClientInsert("inserqid" + 2, insertSql, "127.0.0.1", 9000)) {
             insert.insertPrefix();

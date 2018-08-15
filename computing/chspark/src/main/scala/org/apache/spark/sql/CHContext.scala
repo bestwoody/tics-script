@@ -75,7 +75,7 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
   def createTableFromTiDB(database: String,
                           table: String,
                           tiContext: TiContext,
-                          batchSize: Int = SparkCHClientInsert.BATCH_INSERT_COUNT,
+                          batchSize: Int = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT,
                           parallelism: Int = 8,
                           partitionNum: Int = 128): Unit = {
     val tableInfo = tiContext.meta.getTable(database, table)
@@ -124,7 +124,7 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
                                table: String,
                                primaryKeys: Array[String],
                                df: DataFrame,
-                               batchSize: Int = SparkCHClientInsert.BATCH_INSERT_COUNT,
+                               batchSize: Int = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT,
                                parallelism: Int = 128): Unit = {
     val (partitioner, pkOffset) =
       CHUtil.createTable(database, table, df.schema, primaryKeys, cluster)
