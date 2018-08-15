@@ -3,7 +3,6 @@ tpch/load/_env.sh
 storage/config.xml
 storage/user.xml
 spark/conf/spark-defaults.conf
-spark/conf/spark-env.sh
 ceph-tools/deploy/_env.sh
 ceph-tools/deploy/ceph.bootstrap-mds.keyring
 ceph-tools/deploy/ceph.bootstrap-mgr.keyring

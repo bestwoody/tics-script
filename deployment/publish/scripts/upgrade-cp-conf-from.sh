@@ -31,34 +31,54 @@ echo "=> to current dir:"
 echo "$new_info"
 confirm
 
-cat ./upgrade-cp-conf-from.files | while read file; do
+echo "=> copying unified files from master:$from_path:"
+confirm
+cat ./upgrade-cp-conf-from.unified | while read file; do
 	if [ -f "$from_path/$file" ]; then
 		echo cp -f "$from_path/$file" "./$file"
 		cp -f "$from_path/$file" "./$file"
-	fi
-done
-
-echo "=> copying config files to all storage nodes:"
-./storages-dsh.sh ./storage-server-stop.sh
-cat ./upgrade-cp-conf-from.files | while read file; do
-	if [ -f "./$file" ]; then
 		./storages-spread-file.sh "./$file"
 	fi
 done
 
+echo "=> copying pernode files from master:$from_path:"
+confirm
+source ./_env.sh
+cat ./upgrade-cp-conf-from.pernode | while read file; do
+	abs_from="`realpath $from_path/$file`"
+	abs_file="`realpath ./$file`"
+	for server in ${storage_server[@]}; do
+		host="`get_host $server`"
+		if ssh "$host" "test -e $abs_from"; then
+			echo scp "$host:$abs_from" "${abs_file}.${host}"
+			scp "$host:$abs_from" "${abs_file}.${host}"
+			echo scp "${abs_file}.${host}" "${host}:$abs_file"
+			scp "${abs_file}.${host}" "${host}:$abs_file"
+			rm -f "${abs_file}.${host}"
+		fi
+	done
+done
+
 echo "=> stopting all storage services:"
+confirm
 ./storages-server-stop.sh
 
 echo "=> starting all storage services:"
+confirm
 ./storages-server-start.sh
 
 echo "=> stopping spark master and workers:"
+confirm
 ./storages-dsh.sh ./spark-stop-all.sh
 
 echo "=> starting spark master:"
+confirm
 ./spark-start-master.sh
 
 echo "=> starting all spark workers:"
+confirm
 ./storages-dsh.sh ./spark-start-slave.sh
+sleep 2
+./spark-check-running.sh
 
 echo "=> done"
