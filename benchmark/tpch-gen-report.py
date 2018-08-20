@@ -11,7 +11,7 @@ def run():
         return line.find('elapsed: Double = ') == 0
 
     def isException(line):
-        return line.find('Exception') >= 0
+        return line.find('Exception') >= 0 and not line.find('WARN')
 
     def getScore(line):
         return float(line[len('elapsed: Double = '):])
