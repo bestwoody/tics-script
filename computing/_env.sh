@@ -1,3 +1,3 @@
 #!/bin/bash
 
-spark_master=""
+spark_master="127.0.0.1"

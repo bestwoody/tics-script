@@ -1,8 +1,16 @@
 diff --git a/dbms/src/Interpreters/Context.h b/dbms/src/Interpreters/Context.h
-index a8bfc5975de6..72370e80b2d2 100644
+index a8bfc5975de6..17fb91258efb 100644
 --- a/dbms/src/Interpreters/Context.h
 +++ b/dbms/src/Interpreters/Context.h
-@@ -69,7 +69,8 @@ using BlockOutputStreamPtr = std::shared_ptr<IBlockOutputStream>;
+@@ -45,6 +45,7 @@ class Cluster;
+ class Compiler;
+ class MarkCache;
+ class UncompressedCache;
++class PersistedCache;
+ class ProcessList;
+ class ProcessListElement;
+ class Macros;
+@@ -69,7 +70,8 @@ using BlockOutputStreamPtr = std::shared_ptr<IBlockOutputStream>;
  class Block;
  struct SystemLogs;
  using SystemLogsPtr = std::shared_ptr<SystemLogs>;
@@ -12,7 +20,18 @@ index a8bfc5975de6..72370e80b2d2 100644
  
  /// (database name, table name)
  using DatabaseAndTableName = std::pair<String, String>;
-@@ -388,6 +389,8 @@ public:
+@@ -313,6 +315,10 @@ public:
+     std::shared_ptr<UncompressedCache> getUncompressedCache() const;
+     void dropUncompressedCache() const;
+ 
++    /// Create a persisted cache written in fast(er) disk device.
++    void setPersistedCache(size_t max_size_in_bytes, const std::string & persisted_path);
++    std::shared_ptr<PersistedCache> getPersistedCache() const;
++
+     /// Create a cache of marks of specified size. This can be done only once.
+     void setMarkCache(size_t cache_size_in_bytes);
+     std::shared_ptr<MarkCache> getMarkCache() const;
+@@ -388,6 +394,8 @@ public:
      String getFormatSchemaPath() const;
      void setFormatSchemaPath(const String & path);
  

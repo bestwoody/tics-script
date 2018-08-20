@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
-index f2d6e773be18..8a5eff392f5e 100644
+index f2d6e773be18..d0fb4abbf391 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
 @@ -343,7 +343,8 @@ static void extractMergingAndGatheringColumns(const NamesAndTypesList & all_colu
@@ -12,6 +12,15 @@ index f2d6e773be18..8a5eff392f5e 100644
          key_columns.emplace(merging_params.version_column);
  
      /// Force sign column for VersionedCollapsing mode. Version is already in primary key.
+@@ -592,7 +593,7 @@ MergeTreeData::MutableDataPartPtr MergeTreeDataMerger::mergePartsToTemporaryPart
+     {
+         auto input = std::make_unique<MergeTreeBlockInputStream>(
+             data, part, DEFAULT_MERGE_BLOCK_SIZE, 0, 0, merging_column_names, MarkRanges(1, MarkRange(0, part->marks_count)),
+-            false, nullptr, "", true, aio_threshold, DBMS_DEFAULT_BUFFER_SIZE, false);
++            false, nullptr, "", true, aio_threshold, DBMS_DEFAULT_BUFFER_SIZE, false, false);
+ 
+         input->setProgressCallback(MergeProgressCallback(
+                 merge_entry, sum_input_rows_upper_bound, column_sizes, watch_prev_elapsed, merge_alg));
 @@ -636,6 +637,12 @@ MergeTreeData::MutableDataPartPtr MergeTreeDataMerger::mergePartsToTemporaryPart
                  src_streams, sort_desc, data.merging_params.version_column, DEFAULT_MERGE_BLOCK_SIZE, rows_sources_write_buf.get());
              break;
@@ -25,6 +34,15 @@ index f2d6e773be18..8a5eff392f5e 100644
          case MergeTreeData::MergingParams::Graphite:
              merged_stream = std::make_unique<GraphiteRollupSortedBlockInputStream>(
                  src_streams, sort_desc, DEFAULT_MERGE_BLOCK_SIZE,
+@@ -727,7 +734,7 @@ MergeTreeData::MutableDataPartPtr MergeTreeDataMerger::mergePartsToTemporaryPart
+             {
+                 auto column_part_stream = std::make_shared<MergeTreeBlockInputStream>(
+                     data, parts[part_num], DEFAULT_MERGE_BLOCK_SIZE, 0, 0, column_name_, MarkRanges{MarkRange(0, parts[part_num]->marks_count)},
+-                    false, nullptr, "", true, aio_threshold, DBMS_DEFAULT_BUFFER_SIZE, false, Names{}, 0, true);
++                    false, nullptr, "", true, aio_threshold, DBMS_DEFAULT_BUFFER_SIZE, false, false, Names{}, 0, true);
+ 
+                 column_part_stream->setProgressCallback(MergeProgressCallbackVerticalStep(
+                         merge_entry, sum_input_rows_exact, column_sizes, column_name, watch_prev_elapsed));
 @@ -812,6 +819,7 @@ MergeTreeDataMerger::MergeAlgorithm MergeTreeDataMerger::chooseMergeAlgorithm(
          data.merging_params.mode == MergeTreeData::MergingParams::Ordinary ||
          data.merging_params.mode == MergeTreeData::MergingParams::Collapsing ||

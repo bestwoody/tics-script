@@ -1,17 +1,38 @@
 diff --git a/dbms/src/Server/TCPHandler.cpp b/dbms/src/Server/TCPHandler.cpp
-index 53ca6c8699f8..79ae4a8d7ab4 100644
+index 53ca6c8699f8..1ee4923ac34c 100644
 --- a/dbms/src/Server/TCPHandler.cpp
 +++ b/dbms/src/Server/TCPHandler.cpp
-@@ -33,6 +33,8 @@
+@@ -5,6 +5,7 @@
+ #include <Common/ClickHouseRevision.h>
+ 
+ #include <Common/Stopwatch.h>
++#include <Common/ProfileEvents.h>
+ 
+ #include <IO/Progress.h>
+ 
+@@ -33,6 +34,21 @@
  #include <Common/NetException.h>
  #include <ext/scope_guard.h>
  
 +#include <Interpreters/SharedQueries.h>
 +
++
++namespace ProfileEvents
++{
++    extern const Event PersistedMarksFileHits;
++    extern const Event PersistedMarksFileMisses;
++    extern const Event PersistedMarksFileBusy;
++    extern const Event PersistedMarksFileUpdate;
++    extern const Event PersistedCacheHits;
++    extern const Event PersistedCacheMisses;
++    extern const Event PersistedCacheBusy;
++    extern const Event PersistedCacheUpdate;
++}
++
  
  namespace DB
  {
-@@ -136,6 +138,8 @@ void TCPHandler::runImpl()
+@@ -136,6 +152,8 @@ void TCPHandler::runImpl()
          std::unique_ptr<Exception> exception;
          bool network_error = false;
  
@@ -20,7 +41,7 @@ index 53ca6c8699f8..79ae4a8d7ab4 100644
          try
          {
              /// Restore context of request.
-@@ -159,7 +163,29 @@ void TCPHandler::runImpl()
+@@ -159,7 +177,29 @@ void TCPHandler::runImpl()
              state.maybe_compressed_in.reset();  /// For more accurate accounting by MemoryTracker.
  
              /// Processing Query
@@ -51,7 +72,7 @@ index 53ca6c8699f8..79ae4a8d7ab4 100644
  
              if (state.io.out)
                  state.need_receive_data_for_insert = true;
-@@ -170,6 +196,8 @@ void TCPHandler::runImpl()
+@@ -170,6 +210,8 @@ void TCPHandler::runImpl()
              /// Does the request require receive data from client?
              if (state.need_receive_data_for_insert)
                  processInsertQuery(global_settings);
@@ -60,7 +81,7 @@ index 53ca6c8699f8..79ae4a8d7ab4 100644
              else
                  processOrdinaryQuery();
  
-@@ -216,6 +244,11 @@ void TCPHandler::runImpl()
+@@ -216,6 +258,11 @@ void TCPHandler::runImpl()
              exception = std::make_unique<Exception>("Unknown exception", ErrorCodes::UNKNOWN_EXCEPTION);
          }
  
@@ -72,7 +93,7 @@ index 53ca6c8699f8..79ae4a8d7ab4 100644
          try
          {
              if (exception)
-@@ -230,6 +263,13 @@ void TCPHandler::runImpl()
+@@ -230,6 +277,13 @@ void TCPHandler::runImpl()
  
          try
          {
@@ -86,7 +107,34 @@ index 53ca6c8699f8..79ae4a8d7ab4 100644
              state.reset();
          }
          catch (...)
-@@ -814,4 +854,38 @@ void TCPHandler::run()
+@@ -244,7 +298,16 @@ void TCPHandler::runImpl()
+         watch.stop();
+ 
+         LOG_INFO(log, std::fixed << std::setprecision(3)
+-            << "Processed in " << watch.elapsedSeconds() << " sec.");
++            << "Processed in " << watch.elapsedSeconds() << " sec. "
++            << "Global persisted cache hit|miss|busy|update: mark index files = "
++            << ProfileEvents::counters[ProfileEvents::PersistedMarksFileHits].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedMarksFileMisses].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedMarksFileBusy].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedMarksFileUpdate].load()
++            << ", mark ranges = " << ProfileEvents::counters[ProfileEvents::PersistedCacheHits].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheMisses].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheBusy].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheUpdate].load());
+ 
+         if (network_error)
+             break;
+@@ -798,8 +861,6 @@ void TCPHandler::run()
+     try
+     {
+         runImpl();
+-
+-        LOG_INFO(log, "Done processing connection.");
+     }
+     catch (Poco::Exception & e)
+     {
+@@ -814,4 +875,38 @@ void TCPHandler::run()
      }
  }
  

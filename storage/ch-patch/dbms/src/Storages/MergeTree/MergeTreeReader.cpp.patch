@@ -1,0 +1,129 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreeReader.cpp b/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
+index ef802fc633c6..bd5c264e916f 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
++++ b/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
+@@ -4,6 +4,7 @@
+ #include <Common/MemoryTracker.h>
+ #include <IO/CachedCompressedReadBuffer.h>
+ #include <IO/CompressedReadBufferFromFile.h>
++#include <IO/PersistedCache.h>
+ #include <Columns/ColumnArray.h>
+ #include <Interpreters/evaluateMissingDefaults.h>
+ #include <Storages/MergeTree/MergeTreeReader.h>
+@@ -35,12 +36,14 @@ MergeTreeReader::~MergeTreeReader() = default;
+ 
+ MergeTreeReader::MergeTreeReader(const String & path,
+     const MergeTreeData::DataPartPtr & data_part, const NamesAndTypesList & columns,
++    PersistedCache * persisted_cache, bool update_persisted_cache,
+     UncompressedCache * uncompressed_cache, MarkCache * mark_cache, bool save_marks_in_cache,
+     MergeTreeData & storage, const MarkRanges & all_mark_ranges,
+     size_t aio_threshold, size_t max_read_buffer_size, const ValueSizeMap & avg_value_size_hints,
+     const ReadBufferFromFileBase::ProfileCallback & profile_callback,
+     clockid_t clock_type)
+     : avg_value_size_hints(avg_value_size_hints), path(path), data_part(data_part), columns(columns)
++    , persisted_cache(persisted_cache), update_persisted_cache(update_persisted_cache)
+     , uncompressed_cache(uncompressed_cache), mark_cache(mark_cache), save_marks_in_cache(save_marks_in_cache), storage(storage)
+     , all_mark_ranges(all_mark_ranges), aio_threshold(aio_threshold), max_read_buffer_size(max_read_buffer_size)
+ {
+@@ -159,11 +162,13 @@ size_t MergeTreeReader::readRows(size_t from_mark, bool continue_reading, size_t
+ MergeTreeReader::Stream::Stream(
+     const String & path_prefix_, const String & extension_, size_t marks_count_,
+     const MarkRanges & all_mark_ranges,
++    PersistedCache * persisted_cache_, bool update_persisted_cache_,
+     MarkCache * mark_cache_, bool save_marks_in_cache_,
+     UncompressedCache * uncompressed_cache,
+     size_t aio_threshold, size_t max_read_buffer_size,
+     const ReadBufferFromFileBase::ProfileCallback & profile_callback, clockid_t clock_type)
+     : path_prefix(path_prefix_), extension(extension_), marks_count(marks_count_)
++    , persisted_cache(persisted_cache_), update_persisted_cache(update_persisted_cache_)
+     , mark_cache(mark_cache_), save_marks_in_cache(save_marks_in_cache_)
+ {
+     /// Compute the size of the buffer.
+@@ -202,6 +207,23 @@ MergeTreeReader::Stream::Stream(
+ 
+     size_t buffer_size = std::min(max_read_buffer_size, max_mark_range);
+ 
++    String path = path_prefix + extension;
++    if (persisted_cache)
++    {
++        // TODO: Can be improved
++        //
++        // Now:    (read)origin data -> (write)cache data -> (read)cache -> (use data)
++        //
++        // Better: (read)origin data -> (write)cache data
++        //                           -> (use data)
++        if (!marks)
++            loadMarks();
++        if (update_persisted_cache)
++            persisted_cache->cacheMarkRangesInDataFile(path, all_mark_ranges, *marks, marks_count, buffer_size);
++        // May fail, but we can ignore it and read from origin file
++        persisted_cache->redirectDataFile(path, all_mark_ranges, *marks, marks_count, update_persisted_cache);
++    }
++
+     /// Estimate size of the data to be read.
+     size_t estimated_size = 0;
+     if (aio_threshold > 0)
+@@ -214,7 +236,7 @@ MergeTreeReader::Stream::Stream(
+ 
+             size_t offset_end = (mark_range.end < marks_count)
+                 ? getMark(mark_range.end).offset_in_compressed_file
+-                : Poco::File(path_prefix + extension).getSize();
++                : Poco::File(path).getSize();
+ 
+             if (offset_end > offset_begin)
+                 estimated_size += offset_end - offset_begin;
+@@ -225,7 +247,7 @@ MergeTreeReader::Stream::Stream(
+     if (uncompressed_cache)
+     {
+         auto buffer = std::make_unique<CachedCompressedReadBuffer>(
+-            path_prefix + extension, uncompressed_cache, estimated_size, aio_threshold, buffer_size);
++            path, uncompressed_cache, estimated_size, aio_threshold, buffer_size);
+ 
+         if (profile_callback)
+             buffer->setProfileCallback(profile_callback, clock_type);
+@@ -236,7 +258,7 @@ MergeTreeReader::Stream::Stream(
+     else
+     {
+         auto buffer = std::make_unique<CompressedReadBufferFromFile>(
+-            path_prefix + extension, estimated_size, aio_threshold, buffer_size);
++            path, estimated_size, aio_threshold, buffer_size);
+ 
+         if (profile_callback)
+             buffer->setProfileCallback(profile_callback, clock_type);
+@@ -259,6 +281,10 @@ void MergeTreeReader::Stream::loadMarks()
+ {
+     std::string path = path_prefix + ".mrk";
+ 
++    bool using_cached_marks_file = false;
++    if (persisted_cache)
++        using_cached_marks_file = persisted_cache->redirectMarksFile(path, marks_count);
++
+     auto load = [&]() -> MarkCache::MappedPtr
+     {
+         /// Memory for marks must not be accounted as memory usage for query, because they are stored in shared cache.
+@@ -266,6 +292,7 @@ void MergeTreeReader::Stream::loadMarks()
+ 
+         size_t file_size = Poco::File(path).getSize();
+         size_t expected_file_size = sizeof(MarkInCompressedFile) * marks_count;
++        // TODO: If is a broken cache file, just clear it and read from origin path
+         if (expected_file_size != file_size)
+             throw Exception(
+                 "bad size of marks file `" + path + "':" + std::to_string(file_size) + ", must be: "  + std::to_string(expected_file_size),
+@@ -275,6 +302,8 @@ void MergeTreeReader::Stream::loadMarks()
+ 
+         /// Read directly to marks.
+         ReadBufferFromFile buffer(path, file_size, -1, reinterpret_cast<char *>(res->data()));
++        if (persisted_cache && update_persisted_cache && !using_cached_marks_file)
++            persisted_cache->cacheMarksFile(path, marks_count);
+ 
+         if (buffer.eof() || buffer.buffer().size() != file_size)
+             throw Exception("Cannot read all marks from file " + path, ErrorCodes::CANNOT_READ_ALL_DATA);
+@@ -349,7 +378,7 @@ void MergeTreeReader::addStreams(const String & name, const IDataType & type, co
+ 
+         streams.emplace(stream_name, std::make_unique<Stream>(
+             path + stream_name, DATA_FILE_EXTENSION, data_part->marks_count,
+-            all_mark_ranges, mark_cache, save_marks_in_cache,
++            all_mark_ranges, persisted_cache, update_persisted_cache, mark_cache, save_marks_in_cache,
+             uncompressed_cache, aio_threshold, max_read_buffer_size, profile_callback, clock_type));
+     };
+ 

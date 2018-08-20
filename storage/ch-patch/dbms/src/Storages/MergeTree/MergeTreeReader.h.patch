@@ -1,0 +1,40 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreeReader.h b/dbms/src/Storages/MergeTree/MergeTreeReader.h
+index a4a6b4dc0f76..beabf6bf9759 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreeReader.h
++++ b/dbms/src/Storages/MergeTree/MergeTreeReader.h
+@@ -25,6 +25,8 @@ public:
+ 
+     MergeTreeReader(const String & path, /// Path to the directory containing the part
+         const MergeTreeData::DataPartPtr & data_part, const NamesAndTypesList & columns,
++        PersistedCache * persisted_cache,
++        bool update_persisted_cache,
+         UncompressedCache * uncompressed_cache,
+         MarkCache * mark_cache,
+         bool save_marks_in_cache,
+@@ -56,6 +58,7 @@ private:
+         Stream(
+             const String & path_prefix_, const String & extension_, size_t marks_count_,
+             const MarkRanges & all_mark_ranges,
++            PersistedCache * persisted_cache, bool update_persisted_cache,
+             MarkCache * mark_cache, bool save_marks_in_cache,
+             UncompressedCache * uncompressed_cache,
+             size_t aio_threshold, size_t max_read_buffer_size,
+@@ -78,6 +81,8 @@ private:
+ 
+         size_t marks_count;
+ 
++        PersistedCache * persisted_cache;
++        bool update_persisted_cache;
+         MarkCache * mark_cache;
+         bool save_marks_in_cache;
+         MarkCache::MappedPtr marks;
+@@ -98,6 +103,9 @@ private:
+     /// Columns that are read.
+     NamesAndTypesList columns;
+ 
++    PersistedCache * persisted_cache;
++    bool update_persisted_cache;
++
+     UncompressedCache * uncompressed_cache;
+     MarkCache * mark_cache;
+     /// If save_marks_in_cache is false, then, if marks are not in cache, we will load them but won't save in the cache, to avoid evicting other data.

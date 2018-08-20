@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Interpreters/Context.cpp b/dbms/src/Interpreters/Context.cpp
-index e95e4193cf8a..9f87958f034e 100644
+index e95e4193cf8a..8460b08f2c10 100644
 --- a/dbms/src/Interpreters/Context.cpp
 +++ b/dbms/src/Interpreters/Context.cpp
-@@ -38,6 +38,7 @@
+@@ -38,10 +38,12 @@
  #include <Interpreters/SystemLog.h>
  #include <Interpreters/QueryLog.h>
  #include <Interpreters/PartLog.h>
@@ -10,7 +10,20 @@ index e95e4193cf8a..9f87958f034e 100644
  #include <Interpreters/Context.h>
  #include <Common/DNSCache.h>
  #include <IO/ReadBufferFromFile.h>
-@@ -140,6 +141,7 @@ struct ContextShared
+ #include <IO/UncompressedCache.h>
++#include <IO/PersistedCache.h>
+ #include <Parsers/ASTCreateQuery.h>
+ #include <Parsers/ParserCreateQuery.h>
+ #include <Parsers/parseQuery.h>
+@@ -124,6 +126,7 @@ struct ContextShared
+     std::shared_ptr<ISecurityManager> security_manager;     /// Known users.
+     Quotas quotas;                                          /// Known quotas for resource use.
+     mutable UncompressedCachePtr uncompressed_cache;        /// The cache of decompressed blocks.
++    mutable PersistedCachePtr persisted_cache;              /// The persisted cache of compressed blocks written in fast(er) disk device.
+     mutable MarkCachePtr mark_cache;                        /// Cache of marks in compressed files.
+     ProcessList process_list;                               /// Executing queries at the moment.
+     MergeList merge_list;                                   /// The list of executable merge (for (Replicated)?MergeTree)
+@@ -140,6 +143,7 @@ struct ContextShared
      size_t max_table_size_to_drop = 50000000000lu;          /// Protects MergeTree tables from accidental DROP (50GB by default)
      String format_schema_path;                              /// Path to a directory that contains schema files used by input formats.
  
@@ -18,7 +31,32 @@ index e95e4193cf8a..9f87958f034e 100644
  
      /// Named sessions. The user could specify session identifier to reuse settings and temporary tables in subsequent requests.
  
-@@ -1703,6 +1705,14 @@ void Context::setFormatSchemaPath(const String & path)
+@@ -1283,6 +1287,24 @@ void Context::dropUncompressedCache() const
+ }
+ 
+ 
++void Context::setPersistedCache(size_t max_size_in_bytes, const std::string & persisted_path)
++{
++    auto lock = getLock();
++
++    if (shared->persisted_cache)
++        throw Exception("Persisted cache has been already created.", ErrorCodes::LOGICAL_ERROR);
++
++    shared->persisted_cache = std::make_shared<PersistedCache>(max_size_in_bytes, shared->path, persisted_path);
++}
++
++
++PersistedCachePtr Context::getPersistedCache() const
++{
++    auto lock = getLock();
++    return shared->persisted_cache;
++}
++
++
+ void Context::setMarkCache(size_t cache_size_in_bytes)
+ {
+     auto lock = getLock();
+@@ -1703,6 +1725,14 @@ void Context::setFormatSchemaPath(const String & path)
      shared->format_schema_path = path;
  }
  

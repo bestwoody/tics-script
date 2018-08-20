@@ -52,6 +52,10 @@
       -->
     <mark_cache_size>5368709120</mark_cache_size>
 
+    <!-- Path of persisted mapping cache in fast(er) disk device. Empty means disabled. -->
+    <persisted_mapping_cache_path></persisted_mapping_cache_path>
+    <!-- Quota size in bytes of persisted mapping cache. 0 means disabled. -->
+    <persisted_mapping_cache_size>800000000000</persisted_mapping_cache_size>
 
     <!-- Path to data directory, with trailing slash. -->
     <path>/data/theflash/db</path>

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Common/ProfileEvents.cpp b/dbms/src/Common/ProfileEvents.cpp
-index 027f52b2f371..0c5bbb76a331 100644
+index 027f52b2f371..af46c3c7fd30 100644
 --- a/dbms/src/Common/ProfileEvents.cpp
 +++ b/dbms/src/Common/ProfileEvents.cpp
 @@ -6,6 +6,7 @@
@@ -10,3 +10,18 @@ index 027f52b2f371..0c5bbb76a331 100644
      M(FileOpen) \
      M(FileOpenFailed) \
      M(Seek) \
+@@ -25,6 +26,14 @@
+     M(UncompressedCacheHits) \
+     M(UncompressedCacheMisses) \
+     M(UncompressedCacheWeightLost) \
++    M(PersistedMarksFileHits) \
++    M(PersistedMarksFileMisses) \
++    M(PersistedMarksFileBusy) \
++    M(PersistedMarksFileUpdate) \
++    M(PersistedCacheHits) \
++    M(PersistedCacheMisses) \
++    M(PersistedCacheBusy) \
++    M(PersistedCacheUpdate) \
+     M(IOBufferAllocs) \
+     M(IOBufferAllocBytes) \
+     M(ArenaAllocChunks) \

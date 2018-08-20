@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeData.cpp b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
-index a66fc19016b1..7b866486b5c4 100644
+index a66fc19016b1..edb275233d66 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeData.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeData.cpp
 @@ -306,8 +306,8 @@ void MergeTreeData::MergingParams::check(const NamesAndTypesList & columns) cons
@@ -21,6 +21,15 @@ index a66fc19016b1..7b866486b5c4 100644
          case Graphite:      return "Graphite";
          case VersionedCollapsing:  return "VersionedCollapsing";
  
+@@ -1211,7 +1212,7 @@ MergeTreeData::AlterDataPartTransactionPtr MergeTreeData::alterDataPart(
+         MarkRanges ranges{MarkRange(0, part->marks_count)};
+         BlockInputStreamPtr part_in = std::make_shared<MergeTreeBlockInputStream>(
+             *this, part, DEFAULT_MERGE_BLOCK_SIZE, 0, 0, expression->getRequiredColumns(), ranges,
+-            false, nullptr, "", false, 0, DBMS_DEFAULT_BUFFER_SIZE, false);
++            false, nullptr, "", false, 0, DBMS_DEFAULT_BUFFER_SIZE, false, false);
+ 
+         auto compression_settings = this->context.chooseCompressionSettings(
+             part->bytes_on_disk,
 @@ -2031,6 +2032,44 @@ String MergeTreeData::getPartitionIDFromQuery(const ASTPtr & ast, const Context
      return partition_id;
  }
