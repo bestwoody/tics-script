@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <thread>
 #include <common/logger_useful.h>
 #include <DataStreams/MarkInCompressedFile.h>
 #include <Storages/MergeTree/MarkRange.h>
