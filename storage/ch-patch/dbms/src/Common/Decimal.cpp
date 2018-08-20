@@ -142,11 +142,8 @@ inline cmpResult scaleAndCompare(const DecimalValue & v1, const DecimalValue & v
     int256_t nv = v1.value;
     for (ScaleType i = v1.scale; i < v2.scale; i++) {
         nv = nv * 10;
-        if (nv > v2.value) {
-            return cmpResult::gt;
-        }
     }
-    return nv < v2.value ? cmpResult::ls : cmpResult::eq ;
+    return nv < v2.value ? cmpResult::ls : ( nv == v2.value? cmpResult::eq : cmpResult::gt );
 }
 
 bool DecimalValue::operator == (const DecimalValue & v) const {
