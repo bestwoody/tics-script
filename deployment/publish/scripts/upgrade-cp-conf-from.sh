@@ -59,7 +59,7 @@ cat ./upgrade-cp-conf-from.pernode | while read file; do
 	done
 done
 
-echo "=> stopting all storage services:"
+echo "=> stoping all storage services:"
 confirm
 ./storages-server-stop.sh
 

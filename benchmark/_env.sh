@@ -5,7 +5,7 @@ source ./_helper.sh
 # Executable path
 export storage_bin="$repo_dir/storage/build/dbms/src/Server/theflash"
 
-# Storage serve config for launching
+# Storage config for launching server
 export storage_server_config="storage-server-config/config.xml"
 
 # Storage server list for scripts and Spark to connect, eg: ("127.0.0.1"), or: ("127.0.0.1:9000" "127.0.0.1:9006")
