@@ -464,6 +464,7 @@ bool PersistedCache::copyFileRange(const std::string & origin_path, const std::s
         }
 
         size -= n;
+        pos += n;
     }
 
     return true;
