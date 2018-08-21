@@ -259,6 +259,7 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
     bool res = isFileMarksAllCached(marks_status, mark_ranges, marks, file_marks_count);
     if (res)
     {
+        origin_path = cache_path;
         ProfileEvents::increment(ProfileEvents::PersistedCacheHits);
     }
     else

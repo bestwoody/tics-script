@@ -120,7 +120,8 @@ cp -f "$benchmark_dir/analyze-table-compaction.sh" "$scripts_pack/analyze-table-
 cp -f "$benchmark_dir/analyze-table-compaction.py" "$scripts_pack/analyze-table-compaction.py"
 cp -f "$publish_dir/scripts/README.md" "$scripts_pack"
 cp -f "$publish_dir/scripts/HOWTO.md" "$scripts_pack"
-cp -f "$publish_dir/scripts/upgrade-cp-conf-from.files" "$scripts_pack"
+cp -f "$publish_dir/scripts/upgrade-cp-conf-from.unified" "$scripts_pack"
+cp -f "$publish_dir/scripts/upgrade-cp-conf-from.pernode" "$scripts_pack"
 cp -f $publish_dir/scripts/*.sh "$scripts_pack"
 cp -f $publish_dir/scripts/tpch/load/*.sh "$tpch_pack/load"
 
