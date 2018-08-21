@@ -34,7 +34,10 @@
         * Mount cephfs:/theflash-3
     * Network between nodes
         * Ping avg: 0.25ms
-        * Brandwidth: 19 Gbits/sec
+        * Brandwidth:
+            * Node 0 ~ Node 1: 2GB/s
+            * Node 2 ~ Node 3: 2GB/s
+            * (Node 0 or Node 1) ~ (Node 2 or Node 3): 300MB/s - 1GB/s unstable speed
     * SSDs on each node:
         * Max: RandWrite: IOPS=6.5k BW=980MiB/s, RandRead: IOPS=56k BW=2650MiB/s
         * 64K: Write: IOPS=3.5k BW=230MiB/s, Read: IOPS=40k BW=2550MiB/s

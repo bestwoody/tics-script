@@ -151,7 +151,7 @@ object CHRawWriter {
     val storageBatch: Int = args(3).toInt
     val rows: Long = args(4).toLong
     val threads: Int = args(5).toInt
-    val createSql: String = if (args.length >= 7) args(6) else ""
+    val createSql: String = if (args.length >= 7) args(6).split("\\s+").mkString(" ") else ""
 
     val sameValue: Boolean = if (args.length >= 8) args(7).toBoolean else false
     val verb: Int = if (args.length >= 9) args(8).toInt else 2
@@ -180,11 +180,12 @@ object CHRawWriter {
             + "Writing batch size: " + storageBatch + "\n"
             + "Total insert rows: " + rows + "\n"
             + "Threads: " + threads + "\n"
+            + "---\n"
             + "Use same value: " + sameValue + "\n"
-            + "Create table sql: " + createSql + "\n"
             + "Verb: " + verb + "\n"
             + "Host: " + host + "\n"
             + "Port: " + port + "\n"
+            + "---\nSchema:\n" + createSql + "\n"
         )
       }
       println("=> Starting...")
@@ -242,6 +243,7 @@ object CHRawWriter {
           + "Total rows: " + rows + "\n"
           + "One row bytes: " + rowBytes + "\n"
           + "Total bytes: " + totalBytes + "\n"
+          + "---\n"
           + "Rows/s: " + (rows * 1000 / elapsed).toLong + "\n"
           + "MB/s: " + totalBytes.toDouble / 1000 / elapsed
       )

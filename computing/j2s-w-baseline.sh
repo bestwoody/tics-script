@@ -32,7 +32,7 @@ if [ -z "$rows" ]; then
 	rows="20480000"
 fi
 if [ -z "$threads" ]; then
-	threads="4"
+	threads="8"
 fi
 if [ -z "$host" ]; then
 	host="127.0.0.1"

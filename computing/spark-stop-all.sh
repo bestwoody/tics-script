@@ -3,7 +3,7 @@
 spark/sbin/stop-master.sh
 spark/sbin/stop-slave.sh
 
-sleep 2
+sleep 1
 
 set -eu
 
@@ -25,20 +25,23 @@ kill_daemon()
 	local trait="$2"
 
 	local n="`pid_count $trait`"
-	if [ "$n" != "0" ]; then
-		echo "stop $name failed, using kill" >&2
+	if [ "$n" == "0" ]; then
+		return
 	fi
 
-	print_pid "$trait" | xargs kill
+	local pid=`print_pid "$trait"`
+	echo "stop $name(pid: $pid) failed, using kill" >&2
+	kill "$pid"
 
 	sleep 1
 
 	n="`pid_count $trait`"
-	if [ "$n" != "0" ]; then
-		echo "stop $name failed, using kill -9" >&2
+	if [ "$n" == "0" ]; then
+		return
 	fi
 
-	print_pid "$trait"  | xargs kill -9
+	echo "stop $name failed, using kill -9" >&2
+	kill -9 "$pid"
 
 	sleep 1
 

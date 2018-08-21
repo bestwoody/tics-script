@@ -41,7 +41,6 @@ PersistedCache::PersistedCache(size_t max_size_in_bytes, const std::string & bas
         while (true)
         {
             std::this_thread::sleep_for(std::chrono::seconds(69));
-            LOG_TRACE(log, "Clean up start: remove deleted parts");
             try
             {
                 size_t n = removeDeletedParts();
@@ -50,7 +49,7 @@ PersistedCache::PersistedCache(size_t max_size_in_bytes, const std::string & bas
             }
             catch (...)
             {
-                LOG_ERROR(log, "Exception when perform GC: " << getCurrentExceptionMessage(true));
+                LOG_ERROR(log, "Exception when clean up deleted parts: " << getCurrentExceptionMessage(true));
             }
         }
     });
@@ -65,8 +64,6 @@ PersistedCache::PersistedCache(size_t max_size_in_bytes, const std::string & bas
             if (n < 119)
                 continue;
             n = 0;
-
-            LOG_TRACE(log, "Start GC");
             performGC();
         }
     });
