@@ -15,6 +15,7 @@ namespace ProfileEvents
     extern const Event PersistedMarksFileUpdate;
     extern const Event PersistedCacheHits;
     extern const Event PersistedCacheMisses;
+    extern const Event PersistedCacheExpectedMisses;
     extern const Event PersistedCacheBusy;
     extern const Event PersistedCacheUpdate;
 }
@@ -210,8 +211,14 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
     if (!Poco::File(cache_path).exists())
     {
         if (expected_exists)
+        {
             LOG_TRACE(log, "PersistedCacheMisses, cache file not found, origin: " << origin_path);
-        ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+        }
+        else
+        {
+            ProfileEvents::increment(ProfileEvents::PersistedCacheExpectedMisses);
+        }
         return false;
     }
 
@@ -223,8 +230,14 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
     if (file_status_it == part_status->files_marks_cached.end())
     {
         if (expected_exists)
+        {
             LOG_TRACE(log, "PersistedCacheMisses, origin file status not found: " << origin_path);
-        ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+        }
+        else
+        {
+            ProfileEvents::increment(ProfileEvents::PersistedCacheExpectedMisses);
+        }
         return false;
     }
 
@@ -234,7 +247,10 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
     {
         LOG_WARNING(log, "Marks count of persisted cache bin file not matched: " << origin_path
             << ", marks count: " << marks_status.status.size() << ", expected: " << file_marks_count);
-        ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+        if (expected_exists)
+            ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+        else
+            ProfileEvents::increment(ProfileEvents::PersistedCacheExpectedMisses);
         return false;
     }
     if (marks_status.operating_bin)
@@ -251,10 +267,16 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
     else
     {
         if (expected_exists)
+        {
             LOG_TRACE(log, "PersistedCacheMisses, not all marks cached: " << origin_path
                 << ", required ranges: " << markRangesToString(mark_ranges, marks, file_marks_count)
                 << ", aligned ranges: " << markRangesToString(mark_ranges, marks, file_marks_count, true));
-        ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+        }
+        else
+        {
+            ProfileEvents::increment(ProfileEvents::PersistedCacheExpectedMisses);
+        }
     }
     return res;
 }
