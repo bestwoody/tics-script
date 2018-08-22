@@ -1,19 +1,25 @@
 #!/bin/bash
 
-query="$1"
-verb="$2"
-host="$3"
-port="$4"
+database="$1"
+table="$2"
+threads="$3"
+query="$4"
+verb="$5"
+host="$6"
+port="$7"
 
 set -eu
 
-if [ -z "$query" ]; then
-	echo "usage: <bin> query [verb=0|1|2] [host] [port]" >&2
+if [ -z "$table" ]; then
+	echo "usage: <bin> database table [threads=8] [query=\"select \* from database.table\"] [verb=1] [host] [port]" >&2
 	exit 1
 fi
 
+if [ -z "$threads" ]; then
+	threads="8"
+fi
 if [ -z "$verb" ]; then
-	verb="2"
+	verb="1"
 fi
 if [ -z "$host" ]; then
 	host="127.0.0.1"
@@ -25,5 +31,5 @@ fi
 java -XX:MaxDirectMemorySize=5g \
 	-cp chspark/target/*:chspark/target/lib/*:spark/jars/* \
 	org.apache.spark.sql.ch/CHRawReader \
-	"$query" "$verb" "$host" "$port" \
-	2>&1 | grep -v 'SLF4J' | grep -v 'log4j'
+	"$database" "$table" "$threads" "$query" "$verb" "$host" "$port" \
+	2>&1 | grep -v 'SLF4J' --line-buffered | grep -v 'log4j' --line-buffered

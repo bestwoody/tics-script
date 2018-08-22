@@ -36,4 +36,4 @@ java -XX:MaxDirectMemorySize=5g \
 	-cp chspark/target/*:chspark/target/lib/*:spark/jars/* \
 	org.apache.spark.sql.ch/CHRawWriter \
 	"$database" "$table" "$client_batch" "$storage_batch" "$rows" "$threads" "$query" "$same_value" "$verb" "$host" "$port" \
-	2>&1 | grep -v 'SLF4J' | grep -v 'log4j'
+	2>&1 | grep -v 'SLF4J' --line-buffered | grep -v 'log4j' --line-buffered

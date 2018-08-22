@@ -151,12 +151,13 @@ object CHRawWriter {
     val storageBatch: Int = args(3).toInt
     val rows: Long = args(4).toLong
     val threads: Int = args(5).toInt
-    val createSql: String = if (args.length >= 7) args(6).split("\\s+").mkString(" ") else ""
+    val createSql: String =
+      if (args.length >= 7 && !args(6).isEmpty) args(6).split("\\s+").mkString(" ") else ""
 
-    val sameValue: Boolean = if (args.length >= 8) args(7).toBoolean else false
-    val verb: Int = if (args.length >= 9) args(8).toInt else 2
-    val host: String = if (args.length >= 10) args(9) else "127.0.0.1"
-    val port: Int = if (args.length >= 11) args(10).toInt else 9000
+    val sameValue: Boolean = if (args.length >= 8 && !args(7).isEmpty) args(7).toBoolean else false
+    val verb: Int = if (args.length >= 9 && !args(8).isEmpty) args(8).toInt else 2
+    val host: String = if (args.length >= 10 && !args(9).isEmpty) args(9) else "127.0.0.1"
+    val port: Int = if (args.length >= 11 && !args(10).isEmpty) args(10).toInt else 9000
 
     if (createSql.length != 0) {
       val clientSelect = new SparkCHClientSelect(createSql, host, port)
@@ -173,7 +174,7 @@ object CHRawWriter {
     if (verb > 0) {
       if (verb > 1) {
         println(
-          "=> Config args:\n"
+          "=> Config\n"
             + "Database: " + database + "\n"
             + "Table: " + table + "\n"
             + "Sending batch size: " + clientBatch + "\n"
@@ -188,7 +189,7 @@ object CHRawWriter {
             + "---\nSchema:\n" + createSql + "\n"
         )
       }
-      println("=> Starting...")
+      println("=> Starting")
     }
 
     var inserters = new Array[CHRowsInserter](threads)
@@ -238,7 +239,7 @@ object CHRawWriter {
 
     if (verb > 0) {
       println(
-        "\n=> All finish\n"
+        "\n=> Finished\n"
           + "Elapsed: " + dateFormat.format(elapsed) + "\n"
           + "Total rows: " + rows + "\n"
           + "One row bytes: " + rowBytes + "\n"
