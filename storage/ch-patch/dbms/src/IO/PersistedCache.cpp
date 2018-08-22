@@ -405,7 +405,7 @@ bool PersistedCache::copyFileRanges(const std::string & origin_path, const std::
         LOG_ERROR(log, "Origin file can't be open while copying to persisted cache: " << origin_path << ", errno: " << errno);
         return false;
     }
-    int fd_w = ::open(cache_path.c_str(), O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    int fd_w = ::open(cache_path.c_str(), O_WRONLY | O_CREAT, 0644);
     if (0 > fd_w)
     {
         LOG_ERROR(log, "Cache file can't be open while copying to persisted cache: " << cache_path << ", errno: " << errno);
@@ -434,6 +434,7 @@ bool PersistedCache::copyFileRanges(const std::string & origin_path, const std::
     }
 
     ::close(fd_r);
+    // TODO: use fdatasync
     ::fsync(fd_w);
     ::close(fd_w);
 
