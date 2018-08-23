@@ -15,21 +15,23 @@
 
 package org.apache.spark.sql.ch
 
-import java.util.{SplittableRandom, UUID}
+import java.util.{Objects, UUID}
+import java.util.concurrent.ConcurrentHashMap
 
 import com.pingcap.common.{Cluster, Node}
 import com.pingcap.theflash.{SparkCHClientInsert, SparkCHClientSelect, TypeMappingJava}
 import com.pingcap.tikv.meta.TiTableInfo
 import com.pingcap.common.IOUtil
-import org.apache.spark.Partitioner
+import org.apache.spark.TaskContext
+import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.ch.CHUtil.SharedSparkCHClientInsert.Identity
 import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable
 
 object CHUtil {
 
@@ -41,9 +43,12 @@ object CHUtil {
                   table: String,
                   schema: StructType,
                   primaryKeys: Array[String],
+                  partitionNum: Option[Int],
                   cluster: Cluster): (Partitioner.Value, Int) =
     try {
-      cluster.nodes.foreach(node => createTable(database, table, schema, primaryKeys, node))
+      cluster.nodes.foreach(
+        node => createTable(database, table, schema, primaryKeys, partitionNum, node)
+      )
       if (primaryKeys.length == 1) {
         val primaryKey = primaryKeys.head.toLowerCase()
         val (col, index) = schema.fields.zipWithIndex.filter {
@@ -66,10 +71,10 @@ object CHUtil {
 
   def createTable(database: String,
                   table: TiTableInfo,
-                  cluster: Cluster,
-                  partitionNum: Int = 128): (Partitioner.Value, Int) =
+                  partitionNum: Option[Int],
+                  cluster: Cluster): (Partitioner.Value, Int) =
     try {
-      cluster.nodes.foreach(node => createTable(database, table, node, partitionNum))
+      cluster.nodes.foreach(node => createTable(database, table, partitionNum, node))
       if (table.isPkHandle) {
         val (_, index) = table.getColumns.zipWithIndex.filter {
           case (c, _) => c.isPrimaryKey
@@ -87,8 +92,8 @@ object CHUtil {
 
   private def createTable(database: String,
                           table: TiTableInfo,
-                          node: Node,
-                          partitionNum: Int): Unit = {
+                          partitionNum: Option[Int],
+                          node: Node): Unit = {
     var client: SparkCHClientSelect = null
     try {
       val queryString = CHSql.createTableStmt(database, table, partitionNum)
@@ -105,10 +110,11 @@ object CHUtil {
                           table: String,
                           schema: StructType,
                           primaryKeys: Array[String],
+                          partitionNum: Option[Int],
                           node: Node): Unit = {
     var client: SparkCHClientSelect = null
     try {
-      val queryString = CHSql.createTableStmt(database, schema, primaryKeys, table)
+      val queryString = CHSql.createTableStmt(database, schema, primaryKeys, table, partitionNum)
       client = new SparkCHClientSelect(queryString, node.host, node.port)
       while (client.hasNext) {
         client.next()
@@ -200,72 +206,45 @@ object CHUtil {
     }
   }
 
-  class ConsistentPartitioner(val numNodes: Int, val multiplier: Int) extends Partitioner {
-    def numPartitions: Int = numNodes * multiplier
-    def rng = new SplittableRandom
-    private val mappingTable = scala.util.Random.shuffle((0 until numPartitions).toList)
-
-    def getPartition(key: Any): Int = {
-      val intKey = key.asInstanceOf[Int]
-      val seed = intKey * multiplier + rng.nextInt(0, multiplier)
-      // further randomize bucket for better parallelism
-      mappingTable(seed)
-    }
-
-    override def equals(other: Any): Boolean = other match {
-      case h: ConsistentPartitioner =>
-        h.numNodes == numNodes && h.multiplier == multiplier
-      case _ =>
-        false
-    }
-
-    override def hashCode: Int = numPartitions
-  }
-
   def insertDataHash(df: DataFrame,
                      database: String,
                      table: String,
-                     offset: Int,
-                     cluster: Cluster,
+                     keyOffset: Int,
                      fromTiDB: Boolean,
-                     batchSize: Int,
-                     parallelism: Int = 4): Unit = {
+                     clientBatchSize: Int,
+                     storageBatchRows: Long,
+                     storageBatchBytes: Long,
+                     cluster: Cluster): Unit = {
     val nodeNum = cluster.nodes.length
     val hash = (row: Row) =>
-      (row.get(offset).asInstanceOf[Number].longValue() % nodeNum).asInstanceOf[Int]
-    val shuffledRDD =
-      df.rdd.keyBy(hash).partitionBy(new ConsistentPartitioner(nodeNum, parallelism))
+      (row.get(keyOffset).asInstanceOf[Number].longValue() % nodeNum).asInstanceOf[Int]
+    val rddWithKey = df.rdd.keyBy(hash)
     val schema = df.schema
 
-    val insertMethod: (SparkCHClientInsert, Row) => Unit =
-      if (fromTiDB) { (client: SparkCHClientInsert, row: Row) =>
-        client.insertFromTiDB(row)
-      } else { (client: SparkCHClientInsert, row: Row) =>
-        client.insert(row)
-      }
-
-    shuffledRDD.foreachPartition { iter =>
-      savePartition(database, table, cluster, iter, parallelism, schema, batchSize, insertMethod)
+    rddWithKey.foreachPartition { iter =>
+      savePartition(
+        database,
+        table,
+        iter,
+        schema,
+        fromTiDB,
+        clientBatchSize,
+        storageBatchRows,
+        storageBatchBytes,
+        cluster
+      )
     }
   }
 
   def insertDataRandom(df: DataFrame,
                        database: String,
                        table: String,
-                       cluster: Cluster,
                        fromTiDB: Boolean,
-                       batchSize: Int,
-                       parallelism: Int): Unit = {
-    val partitionMapper: mutable.HashMap[Int, Node] = mutable.HashMap()
-    var i = 0
-    val partitionNum = if (parallelism > 0) parallelism else cluster.nodes.length
-    val repartitionedDF = df.repartition(partitionNum)
-    for (partition <- repartitionedDF.rdd.partitions) {
-      val node = cluster.nodes(i)
-      partitionMapper.put(partition.index, Node(node.host, node.port))
-      i = (i + 1) % cluster.nodes.length
-    }
-    val schema = repartitionedDF.schema
+                       clientBatchSize: Int,
+                       storageBatchRows: Long,
+                       storageBatchBytes: Long,
+                       cluster: Cluster): Unit = {
+    val schema = df.schema
     val insertMethod: (SparkCHClientInsert, Row) => Unit =
       if (fromTiDB) { (client: SparkCHClientInsert, row: Row) =>
         client.insertFromTiDB(row)
@@ -273,20 +252,22 @@ object CHUtil {
         client.insert(row)
       }
 
-    repartitionedDF.rdd
+    df.rdd
       .mapPartitionsWithIndex { (index, iterator) =>
         {
-          val node = partitionMapper(index)
+          val node = cluster.nodes(index % cluster.nodes.length)
           List(
             savePartition(
               database,
               table,
-              node.host,
-              node.port,
               iterator,
               schema,
-              batchSize,
-              insertMethod
+              insertMethod,
+              clientBatchSize,
+              storageBatchRows,
+              storageBatchBytes,
+              node.host,
+              node.port
             )
           ).iterator
         }
@@ -294,54 +275,257 @@ object CHUtil {
       .collect()
   }
 
-  // Do a one to one partition insertion
-  def savePartition(database: String,
-                    table: String,
-                    cluster: Cluster,
-                    iterator: Iterator[(Int, Row)],
-                    multiplier: Int,
-                    schema: StructType,
-                    batchSize: Int,
-                    insertMethod: (SparkCHClientInsert, Row) => Unit): Int = {
+  /**
+   * An intra-JVM per-CH-node shared CH insert client whose life-cycle is managed by an internal reference count.
+   * One should ALWAYS create/destroy an instance through methods of its companion object.
+   * @param identity
+   */
+  case class SharedSparkCHClientInsert(private val identity: Identity) extends Logging {
+    private var client: SparkCHClientInsert = _
+    private var refCount = 0
+    // Our shared CH insert client doesn't support retry (consider a successful task's data may be still in client's cache,
+    // this task won't be retried once this client's following insertion fails).
+    // Using this flag to prevent any task retrying.
+    // Note that there is a side-effect that, as it doesn't exist an accountable point inside a task's life-cycle to clear this flag
+    // (i.e. the task doesn't know if it is the first nor last one within this JVM), once it is invalid, it will be forever,
+    // until the executor is restarted. That saying one should restart the application (i.e. Spark Shell) once this flag is invalid.
+    // TODO: consider using a timer to clear this flag after a while since last touch.
+    private var valid = true
 
-    var client: SparkCHClientInsert = null
-    try {
-      var totalCount = 0
-      while (iterator.hasNext) {
-        val res = iterator.next()
-        val idx = res._1
-        val row = res._2
-        if (client == null) {
-          val node = cluster.nodes(idx)
-          client = new SparkCHClientInsert(CHSql.insertStmt(database, table), node.host, node.port)
-          client.setStorageBatch(batchSize)
+    /**
+     * Acquire this shared client by increasing the ref count.
+     * Create and prepare the internal client on first acquirement.
+     * Set invalid on any exception.
+     */
+    private def acquire(): Unit = this.synchronized {
+      assertValid()
+      if (refCount == 0) {
+        try {
+          client =
+            new SparkCHClientInsert(identity.insertStmt, identity.node.host, identity.node.port)
+          client.setClientBatch(identity.clientBatchSize)
+          client.setStorageBatchRows(identity.storageBatchRows)
+          client.setStorageBatchBytes(identity.storageBatchBytes)
           client.insertPrefix()
+        } catch {
+          case t: Throwable => invalidate(t)
         }
-        insertMethod(client, row)
-        totalCount += 1
       }
-      if (client != null) {
-        client.insertSuffix()
-      }
-      totalCount
-    } finally {
-      IOUtil.closeQuietly(client)
+      refCount += 1
     }
+
+    /**
+     * Release this shared client by decreasing the ref count.
+     * Send EOF and close the internal client on last releasing.
+     * Set invalid on any exception.
+     * @return whether this client should be freed
+     */
+    private def release(): Boolean = this.synchronized {
+      assertValid()
+      refCount -= 1
+      if (refCount == 0) {
+        try {
+          client.insertSuffix()
+          close()
+        } catch {
+          case t: Throwable => invalidate(t)
+        }
+      }
+      refCount == 0
+    }
+
+    /**
+     * Fully synchronized insertion as the internal client is not thread-safe.
+     * Set invalid on any exception.
+     * @param row
+     */
+    private def insert(row: Row): Unit = this.synchronized {
+      assertValid()
+      try {
+        if (identity.fromTiDB) {
+          client.insertFromTiDB(row)
+        } else {
+          client.insert(row)
+        }
+      } catch {
+        case t: Throwable => invalidate(t)
+      }
+    }
+
+    private def assertValid(): Unit = if (!valid) {
+      throw new RuntimeException(
+        s"$this is invalid due to error in other task. Check log for previous error detail."
+      )
+    }
+
+    private def invalidate(t: Throwable): Unit = {
+      valid = false
+      logError(s"$this hit error: ", t)
+      close()
+      throw t
+    }
+
+    private def close(): Unit =
+      IOUtil.closeQuietly(client)
+
+    override def toString: String =
+      s"SharedSparkCHClientInsert(identity = $identity, refCount = $refCount, valid = $valid)"
+  }
+
+  /**
+   * Entry point of using shared CH insert clients.
+   */
+  object SharedSparkCHClientInsert extends Logging {
+
+    /**
+     * Signature of a shared CH insert client.
+     * @param insertStmt
+     * @param fromTiDB
+     * @param clientBatchSize
+     * @param storageBatchRows
+     * @param storageBatchBytes
+     * @param node
+     */
+    case class Identity(insertStmt: String,
+                        fromTiDB: Boolean,
+                        clientBatchSize: Int,
+                        storageBatchRows: Long,
+                        storageBatchBytes: Long,
+                        node: Node) {
+      override def hashCode(): Int =
+        Objects
+          .hash(insertStmt, node) + fromTiDB.hashCode() + clientBatchSize
+          .hashCode() + storageBatchRows.hashCode() + storageBatchBytes.hashCode()
+
+      override def equals(obj: scala.Any): Boolean = obj match {
+        case other: Identity =>
+          Objects.equals(other.insertStmt, this.insertStmt) &&
+            other.fromTiDB == this.fromTiDB &&
+            other.clientBatchSize == this.clientBatchSize &&
+            other.storageBatchRows == this.storageBatchRows &&
+            other.storageBatchBytes == this.storageBatchBytes &&
+            Objects.equals(other.node, this.node)
+        case _ =>
+          false
+      }
+
+      override def toString: String =
+        s"Identity(insertStmt = $insertStmt, fromTiDB = $fromTiDB, clientBatchSize = $clientBatchSize, storageBatchRows = $storageBatchRows, storageBatchBytes = $storageBatchBytes, node = $node)"
+    }
+
+    // For a new job, this value equals to the last job's stage id (or -1), as Spark increments stage id for every job.
+    // It will be then set to the new job's stage id by the very first task (in this executor/JVM) of this job.
+    // We use this chance to do an only-once (of all tasks of this job in this executor/JVM)
+    // reset on the clients to clear previous errors so they won't block next run.
+    // The reset tasks (in this executor/JVM) of this job will see this value as the new job's stage id and do nothing.
+    private var currentStageId = -1
+
+    // Global client registry, using concurrent map to allow inter-client level concurrent insertion.
+    private val clients = new ConcurrentHashMap[Identity, SharedSparkCHClientInsert]()
+
+    /**
+     * Only-once (of all tasks of this job in this executor/JVM) reset on the clients
+     * to clear previous errors so they won't block next run, by comparing and setting currentStageId.
+     * @param stageId
+     */
+    def reset(stageId: Int): Unit = synchronized {
+      if (currentStageId == stageId) {
+        logDebug(
+          s"No need to reset SharedSparkCHClientInsert: last stage id = $currentStageId, current stage id = $stageId"
+        )
+      } else {
+        logDebug(
+          s"Resetting SharedSparkCHClientInsert: last stage id = $currentStageId, current stage id = $stageId"
+        )
+        clients.foreach(_._2.close())
+        clients.clear()
+        currentStageId = stageId
+      }
+    }
+
+    /**
+     * Acquire a shared CH insert client, create one if none.
+     * And increase the ref count.
+     * No concurrency.
+     * @param identity
+     */
+    def acquire(identity: Identity): Unit = this.synchronized {
+      clients.putIfAbsent(identity, SharedSparkCHClientInsert(identity))
+      clients(identity).acquire()
+      logDebug(s"Acquired SharedSparkCHClientInsert: ${clients.get(identity)}")
+    }
+
+    /**
+     * Release a shared CH insert client, remove it if ref count is zero.
+     * No concurrency.
+     * @param identity
+     */
+    def release(identity: Identity): Unit = this.synchronized {
+      logDebug(s"Releasing SharedSparkCHClientInsert: ${clients.get(identity)}")
+      if (clients(identity).release()) {
+        clients.remove(identity)
+      }
+    }
+
+    /**
+     * Insertion allowing inter-client level concurrency while intra-client insertion is still synchronized.
+     * @param identity
+     * @param row
+     */
+    def insert(identity: Identity, row: Row): Unit =
+      clients(identity).insert(row)
   }
 
   // Do a one to one partition insertion
   def savePartition(database: String,
                     table: String,
-                    host: String,
-                    port: Int,
+                    iterator: Iterator[(Int, Row)],
+                    schema: StructType,
+                    fromTiDB: Boolean,
+                    clientBatchSize: Int,
+                    storageBatchRows: Long,
+                    storageBatchBytes: Long,
+                    cluster: Cluster): Int = {
+    val stageId = TaskContext.get().stageId()
+    SharedSparkCHClientInsert.reset(stageId)
+
+    val insertStmt = CHSql.insertStmt(database, table)
+    // TODO: could do sampling here to estimate a proper clientBatchSize/storageBatchRows/storageBatchBytes.
+    val identities =
+      cluster.nodes.map(
+        Identity(insertStmt, true, clientBatchSize, storageBatchRows, storageBatchBytes, _)
+      )
+    var totalCount = 0
+    identities.foreach(SharedSparkCHClientInsert.acquire)
+    while (iterator.hasNext) {
+      val res = iterator.next()
+      val idx = res._1
+      val row = res._2
+      SharedSparkCHClientInsert.insert(identities(idx), row)
+      totalCount += 1
+    }
+    identities.foreach(SharedSparkCHClientInsert.release)
+    totalCount
+  }
+
+  // Do a one to one partition insertion
+  def savePartition(database: String,
+                    table: String,
                     iterator: Iterator[Row],
                     schema: StructType,
-                    batchSize: Int,
-                    insertMethod: (SparkCHClientInsert, Row) => Unit): Int = {
+                    insertMethod: (SparkCHClientInsert, Row) => Unit,
+                    clientBatchSize: Int,
+                    storageBatchRows: Long,
+                    storageBatchBytes: Long,
+                    host: String,
+                    port: Int): Int = {
     var client: SparkCHClientInsert = null
     try {
+      // TODO: could do sampling here to estimate a proper clientBatchSize/storageBatchRows/storageBatchBytes.
       client = new SparkCHClientInsert(CHSql.insertStmt(database, table), host, port)
-      client.setStorageBatch(batchSize)
+      client.setClientBatch(clientBatchSize)
+      client.setStorageBatchRows(storageBatchRows)
+      client.setStorageBatchBytes(storageBatchBytes)
       client.insertPrefix()
       var totalCount = 0
       while (iterator.hasNext) {

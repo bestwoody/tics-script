@@ -65,16 +65,21 @@ object CHSql {
   def createTableStmt(database: String,
                       schema: StructType,
                       primaryKeys: Array[String],
-                      table: String): String = {
+                      table: String,
+                      partitionNum: Option[Int] = None): String = {
     val schemaStr = compileSchema(schema)
     val pkStr = compilePKList(schema, primaryKeys)
-    s"CREATE TABLE ${getBackQuotedAbsTabName(database, table)} ($schemaStr) ENGINE = MutableMergeTree(($pkStr), 8192)"
+    s"CREATE TABLE ${getBackQuotedAbsTabName(database, table)} ($schemaStr) ENGINE = MutableMergeTree(${partitionNum
+      .map(_.toString + ", ")
+      .getOrElse("")}($pkStr), 8192)"
   }
 
-  def createTableStmt(database: String, table: TiTableInfo, partitionNum: Int): String = {
+  def createTableStmt(database: String, table: TiTableInfo, partitionNum: Option[Int]): String = {
     val schemaStr = compileSchema(table)
     val pkStr = compilePKList(table)
-    s"CREATE TABLE ${getBackQuotedAbsTabName(database, table.getName)} ($schemaStr) ENGINE = MutableMergeTree($partitionNum, ($pkStr), 8192)"
+    s"CREATE TABLE ${getBackQuotedAbsTabName(database, table.getName)} ($schemaStr) ENGINE = MutableMergeTree(${partitionNum
+      .map(_.toString + ", ")
+      .getOrElse("")}($pkStr), 8192)"
   }
 
   case class Query(private val projection: String,

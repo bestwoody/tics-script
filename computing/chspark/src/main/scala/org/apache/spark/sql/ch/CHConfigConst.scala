@@ -19,4 +19,5 @@ object CHConfigConst {
   val ENABLE_PUSHDOWN_AGG: String = "spark.storage.plan.pushdown.agg"
   val ENABLE_SELRAW: String = "spark.storage.selraw"
   val CLUSTER_ADDRESSES: String = "spark.flash.addresses"
+  val CLIENT_BATCH_SIZE: String = "spark.flash.client.batch.size"
 }

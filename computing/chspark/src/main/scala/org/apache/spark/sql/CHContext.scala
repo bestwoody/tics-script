@@ -72,23 +72,20 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
   def createDatabase(database: String, ifNotExists: Boolean = true): Unit =
     CHUtil.createDatabase(database, cluster, ifNotExists)
 
-  def createTableFromTiDB(database: String,
-                          table: String,
-                          tiContext: TiContext,
-                          batchSize: Int = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT,
-                          parallelism: Int = 8,
-                          partitionNum: Int = 128): Unit = {
+  def createTableFromTiDB(
+    database: String,
+    table: String,
+    tiContext: TiContext,
+    partitionNum: Option[Int] = Some(128),
+    batchRows: Long = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_ROWS,
+    batchBytes: Long = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_BYTES
+  ): Unit = {
     val tableInfo = tiContext.meta.getTable(database, table)
     if (tableInfo.isEmpty) {
       throw new IllegalArgumentException(s"Table $table not exists")
     }
     val df = tiContext.getDataFrame(database, table)
-    val partitionLength = df.rdd.partitions.length
-    var finalParallelism = parallelism
-    if (parallelism <= 0) {
-      finalParallelism = Math.max(partitionLength / cluster.nodes.length, parallelism)
-    }
-    val (partitioner, pkOffset) = CHUtil.createTable(database, tableInfo.get, cluster, partitionNum)
+    val (partitioner, pkOffset) = CHUtil.createTable(database, tableInfo.get, partitionNum, cluster)
 
     try {
       if (partitioner == Partitioner.Hash) {
@@ -97,20 +94,32 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
           database,
           table,
           pkOffset,
-          cluster,
           fromTiDB = true,
-          batchSize,
-          finalParallelism
+          sqlContext.conf
+            .getConfString(
+              CHConfigConst.CLIENT_BATCH_SIZE,
+              SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
+            )
+            .toInt,
+          batchRows,
+          batchBytes,
+          cluster
         )
       } else {
         CHUtil.insertDataRandom(
           df,
           database,
           table,
-          cluster,
           fromTiDB = true,
-          batchSize,
-          finalParallelism
+          sqlContext.conf
+            .getConfString(
+              CHConfigConst.CLIENT_BATCH_SIZE,
+              SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
+            )
+            .toInt,
+          batchRows,
+          batchBytes,
+          cluster
         )
       }
     } catch {
@@ -120,20 +129,52 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
     }
   }
 
-  def createTableFromDataFrame(database: String,
-                               table: String,
-                               primaryKeys: Array[String],
-                               df: DataFrame,
-                               batchSize: Int = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT,
-                               parallelism: Int = 128): Unit = {
+  def createTableFromDataFrame(
+    database: String,
+    table: String,
+    primaryKeys: Array[String],
+    df: DataFrame,
+    partitionNum: Option[Int] = Some(128),
+    batchRows: Long = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_ROWS,
+    batchBytes: Long = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_BYTES
+  ): Unit = {
     val (partitioner, pkOffset) =
-      CHUtil.createTable(database, table, df.schema, primaryKeys, cluster)
+      CHUtil.createTable(database, table, df.schema, primaryKeys, partitionNum, cluster)
 
     if (partitioner == Partitioner.Hash) {
-      CHUtil.insertDataHash(df, database, table, pkOffset, cluster, false, batchSize)
+      CHUtil.insertDataHash(
+        df,
+        database,
+        table,
+        pkOffset,
+        fromTiDB = false,
+        sqlContext.conf
+          .getConfString(
+            CHConfigConst.CLIENT_BATCH_SIZE,
+            SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
+          )
+          .toInt,
+        batchRows,
+        batchBytes,
+        cluster
+      )
     } else {
       CHUtil
-        .insertDataRandom(df, database, table, cluster, fromTiDB = false, batchSize, parallelism)
+        .insertDataRandom(
+          df,
+          database,
+          table,
+          fromTiDB = false,
+          sqlContext.conf
+            .getConfString(
+              CHConfigConst.CLIENT_BATCH_SIZE,
+              SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
+            )
+            .toInt,
+          batchRows,
+          batchBytes,
+          cluster
+        )
     }
   }
 

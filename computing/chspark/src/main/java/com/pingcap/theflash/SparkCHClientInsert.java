@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -42,7 +42,8 @@ import java.util.List;
  */
 public class SparkCHClientInsert implements Closeable {
     public static final int CLIENT_BATCH_INSERT_COUNT = 1024 * 32;
-    public static final int STORAGE_BATCH_INSERT_COUNT = 1024 * 1024 * 16;
+    public static final long STORAGE_BATCH_INSERT_COUNT_ROWS = 1024L * 1024L * 256L;
+    public static final long STORAGE_BATCH_INSERT_COUNT_BYTES = 1024L * 1024L * 1024L * 4L;
 
     private String queryId;
     private String query;
@@ -53,7 +54,8 @@ public class SparkCHClientInsert implements Closeable {
 
     private CHColumn[] curColumns;
     private int clientBatchCount = CLIENT_BATCH_INSERT_COUNT;
-    private int storageBatchCount = STORAGE_BATCH_INSERT_COUNT;
+    private long storageBatchCountRows = STORAGE_BATCH_INSERT_COUNT_ROWS;
+    private long storageBatchCountBytes = STORAGE_BATCH_INSERT_COUNT_BYTES;
 
     public SparkCHClientInsert(String queryId, String query, String host, int port) {
         this.conn = new CHConnection(host, port, "", "default", "", "CHSpark");
@@ -69,8 +71,12 @@ public class SparkCHClientInsert implements Closeable {
         this.clientBatchCount = batch;
     }
 
-    public void setStorageBatch(int batch) {
-        this.storageBatchCount = batch;
+    public void setStorageBatchRows(long rows) {
+        this.storageBatchCountRows = rows;
+    }
+
+    public void setStorageBatchBytes(long bytes) {
+        this.storageBatchCountBytes = bytes;
     }
 
     public CHBlock sampleBlock() {
@@ -105,7 +111,9 @@ public class SparkCHClientInsert implements Closeable {
     }
 
     public void insertPrefix() throws IOException {
-        conn.sendQuery(query, queryId, Collections.singletonList(new CHSetting.SettingUInt("min_insert_block_size_rows", storageBatchCount)));
+        conn.sendQuery(query, queryId, Arrays.asList(
+            new CHSetting.SettingUInt("min_insert_block_size_rows", storageBatchCountRows),
+            new CHSetting.SettingUInt("min_insert_block_size_bytes", storageBatchCountBytes)));
         receiveSampleBlock();
         sparkSchema = TypeMapping.chSchemaToSparkSchema(sampleBlock);
 

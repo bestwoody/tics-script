@@ -3,19 +3,20 @@
 database="$1"
 table="$2"
 client_batch="$3"
-storage_batch="$4"
-rows="$5"
-threads="$6"
-query="$7"
-same_value="$8"
-verb="$9"
-host="${10}"
-port="${11}"
+storage_batch_rows="$4"
+storage_batch_bytes="$5"
+rows="$6"
+threads="$7"
+query="$8"
+same_value="$9"
+verb="${10}"
+host="${11}"
+port="${12}"
 
 set -eu
 
 if [ -z "$rows" ]; then
-	echo "usage: <bin> database table sending-batch-rows-count writing-batch-rows-count insert-rows-count threads [pre-create-table-sql=''] [use-same-value=false] [verb=2] [host] [port]" >&2
+	echo "usage: <bin> database table sending-batch-rows-count writing-batch-rows writing-batch-bytes insert-rows-count threads [pre-create-table-sql=''] [use-same-value=false] [verb=2] [host] [port]" >&2
 	exit 1
 fi
 
@@ -35,5 +36,5 @@ fi
 java -XX:MaxDirectMemorySize=5g \
 	-cp chspark/target/*:chspark/target/lib/*:spark/jars/* \
 	org.apache.spark.sql.ch/CHRawWriter \
-	"$database" "$table" "$client_batch" "$storage_batch" "$rows" "$threads" "$query" "$same_value" "$verb" "$host" "$port" \
+	"$database" "$table" "$client_batch" "$storage_batch_rows" "$storage_batch_bytes" "$rows" "$threads" "$query" "$same_value" "$verb" "$host" "$port" \
 	2>&1 | grep -v 'SLF4J' --line-buffered | grep -v 'log4j' --line-buffered

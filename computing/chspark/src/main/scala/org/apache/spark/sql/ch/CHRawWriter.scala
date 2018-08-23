@@ -17,12 +17,10 @@ package org.apache.spark.sql.ch
 
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.concurrent.atomic.AtomicLong
 
 import com.pingcap.theflash.SparkCHClientSelect
 import com.pingcap.theflash.SparkCHClientInsert
 
-import com.pingcap.common.IOUtil
 import com.pingcap.common.SimpleRow
 import com.pingcap.ch.datatypes.CHType
 import com.pingcap.ch.datatypes.CHTypeNumber
@@ -99,13 +97,15 @@ private class CHRowsInserter(val database: String,
                              val port: Int,
                              val rows: Long,
                              val clientBatch: Int,
-                             val storageBatch: Int,
+                             val storageBatchRows: Int,
+                             val storageBatchBytes: Int,
                              val sameValue: Boolean,
                              val threadIndex: Int,
                              val verb: Int) {
   var client = new SparkCHClientInsert(CHSql.insertStmt(database, table), host, port)
   client.setClientBatch(clientBatch)
-  client.setStorageBatch(storageBatch)
+  client.setStorageBatchRows(storageBatchRows)
+  client.setStorageBatchBytes(storageBatchBytes)
   client.insertPrefix()
 
   var dataTypes = client.dataTypes()
@@ -140,7 +140,7 @@ object CHRawWriter {
   def main(args: Array[String]) {
     if (args.length < 3) {
       println(
-        "usage: <bin> database table sending-batch-rows-count writing-batch-rows-count insert-rows-count threads [pre-create-table-sql=''] [use-same-value=false] [verb=0|1|2] [host] [port]"
+        "usage: <bin> database table sending-batch-rows-count writing-batch-rows writing-batch-bytes insert-rows-count threads [pre-create-table-sql=''] [use-same-value=false] [verb=0|1|2] [host] [port]"
       )
       return
     }
@@ -148,16 +148,17 @@ object CHRawWriter {
     val database: String = args(0)
     val table: String = args(1)
     val clientBatch: Int = args(2).toInt
-    val storageBatch: Int = args(3).toInt
-    val rows: Long = args(4).toLong
-    val threads: Int = args(5).toInt
+    val storageBatchRows: Int = args(3).toInt
+    val storageBatchBytes: Int = args(4).toInt
+    val rows: Long = args(5).toLong
+    val threads: Int = args(6).toInt
     val createSql: String =
-      if (args.length >= 7 && !args(6).isEmpty) args(6).split("\\s+").mkString(" ") else ""
+      if (args.length >= 8 && !args(7).isEmpty) args(7).split("\\s+").mkString(" ") else ""
 
-    val sameValue: Boolean = if (args.length >= 8 && !args(7).isEmpty) args(7).toBoolean else false
-    val verb: Int = if (args.length >= 9 && !args(8).isEmpty) args(8).toInt else 2
-    val host: String = if (args.length >= 10 && !args(9).isEmpty) args(9) else "127.0.0.1"
-    val port: Int = if (args.length >= 11 && !args(10).isEmpty) args(10).toInt else 9000
+    val sameValue: Boolean = if (args.length >= 9 && !args(8).isEmpty) args(8).toBoolean else false
+    val verb: Int = if (args.length >= 10 && !args(9).isEmpty) args(9).toInt else 2
+    val host: String = if (args.length >= 11 && !args(10).isEmpty) args(10) else "127.0.0.1"
+    val port: Int = if (args.length >= 12 && !args(11).isEmpty) args(11).toInt else 9000
 
     if (createSql.length != 0) {
       val clientSelect = new SparkCHClientSelect(createSql, host, port)
@@ -178,7 +179,8 @@ object CHRawWriter {
             + "Database: " + database + "\n"
             + "Table: " + table + "\n"
             + "Sending batch size: " + clientBatch + "\n"
-            + "Writing batch size: " + storageBatch + "\n"
+            + "Writing batch rows: " + storageBatchRows + "\n"
+            + "Writing batch bytes: " + storageBatchBytes + "\n"
             + "Total insert rows: " + rows + "\n"
             + "Threads: " + threads + "\n"
             + "---\n"
@@ -209,7 +211,8 @@ object CHRawWriter {
           port,
           threadRows,
           clientBatch,
-          storageBatch,
+          storageBatchRows,
+          storageBatchBytes,
           sameValue,
           i,
           verb
