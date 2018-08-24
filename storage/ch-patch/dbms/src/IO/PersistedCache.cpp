@@ -13,11 +13,12 @@ namespace ProfileEvents
     extern const Event PersistedMarksFileMisses;
     extern const Event PersistedMarksFileBusy;
     extern const Event PersistedMarksFileUpdate;
-    extern const Event PersistedCacheHits;
-    extern const Event PersistedCacheMisses;
-    extern const Event PersistedCacheExpectedMisses;
-    extern const Event PersistedCacheBusy;
-    extern const Event PersistedCacheUpdate;
+    extern const Event PersistedCacheFileHits;
+    extern const Event PersistedCacheFileMisses;
+    extern const Event PersistedCacheFileExpectedMisses;
+    extern const Event PersistedCacheFileBusy;
+    extern const Event PersistedCacheFileUpdate;
+    extern const Event PersistedCachePartBusy;
 }
 
 namespace DB
@@ -40,7 +41,7 @@ PersistedCache::PersistedCache(size_t max_size_in_bytes, const std::string & bas
     {
         while (true)
         {
-            std::this_thread::sleep_for(std::chrono::seconds(69));
+            std::this_thread::sleep_for(std::chrono::seconds(57));
             try
             {
                 size_t n = removeDeletedParts();
@@ -61,7 +62,7 @@ PersistedCache::PersistedCache(size_t max_size_in_bytes, const std::string & bas
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             n += 1;
-            if (n < 119)
+            if (n < 89)
                 continue;
             n = 0;
             performGC();
@@ -91,6 +92,12 @@ bool PersistedCache::redirectMarksFile(std::string & origin_path, size_t file_ma
 
     {
         std::lock_guard<std::mutex> lock(part_status->part_lock);
+
+        if (part_status->operating)
+        {
+            ProfileEvents::increment(ProfileEvents::PersistedCachePartBusy);
+            return false;
+        }
 
         FilesMarksCached::iterator file_status_it = part_status->files_marks_cached.find(origin_path);
         if (file_status_it == part_status->files_marks_cached.end())
@@ -131,6 +138,12 @@ bool PersistedCache::cacheMarksFile(const std::string & origin_path, size_t file
     FilesMarksCached::iterator file_status_it;
     {
         std::lock_guard<std::mutex> lock(part_status->part_lock);
+
+        if (part_status->operating)
+        {
+            ProfileEvents::increment(ProfileEvents::PersistedCachePartBusy);
+            return false;
+        }
 
         file_status_it = part_status->files_marks_cached.find(origin_path);
         if (file_status_it == part_status->files_marks_cached.end())
@@ -210,11 +223,11 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
         if (expected_exists)
         {
             LOG_TRACE(log, "PersistedCacheMisses, cache file not found, origin: " << origin_path);
-            ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileMisses);
         }
         else
         {
-            ProfileEvents::increment(ProfileEvents::PersistedCacheExpectedMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileExpectedMisses);
         }
         return false;
     }
@@ -223,17 +236,23 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
 
     std::lock_guard<std::mutex> lock(part_status->part_lock);
 
+    if (part_status->operating)
+    {
+        ProfileEvents::increment(ProfileEvents::PersistedCachePartBusy);
+        return false;
+    }
+
     FilesMarksCached::iterator file_status_it = part_status->files_marks_cached.find(origin_path);
     if (file_status_it == part_status->files_marks_cached.end())
     {
         if (expected_exists)
         {
             LOG_TRACE(log, "PersistedCacheMisses, origin file status not found: " << origin_path);
-            ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileMisses);
         }
         else
         {
-            ProfileEvents::increment(ProfileEvents::PersistedCacheExpectedMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileExpectedMisses);
         }
         return false;
     }
@@ -245,14 +264,14 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
         LOG_WARNING(log, "Marks count of persisted cache bin file not matched: " << origin_path
             << ", marks count: " << marks_status.status.size() << ", expected: " << file_marks_count);
         if (expected_exists)
-            ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileMisses);
         else
-            ProfileEvents::increment(ProfileEvents::PersistedCacheExpectedMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileExpectedMisses);
         return false;
     }
     if (marks_status.operating_bin)
     {
-        ProfileEvents::increment(ProfileEvents::PersistedCacheBusy);
+        ProfileEvents::increment(ProfileEvents::PersistedCacheFileBusy);
         return false;
     }
 
@@ -260,7 +279,7 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
     if (res)
     {
         origin_path = cache_path;
-        ProfileEvents::increment(ProfileEvents::PersistedCacheHits);
+        ProfileEvents::increment(ProfileEvents::PersistedCacheFileHits);
     }
     else
     {
@@ -269,11 +288,11 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
             LOG_TRACE(log, "PersistedCacheMisses, not all marks cached: " << origin_path
                 << ", required ranges: " << markRangesToString(mark_ranges, marks, file_marks_count)
                 << ", aligned ranges: " << markRangesToString(mark_ranges, marks, file_marks_count, true));
-            ProfileEvents::increment(ProfileEvents::PersistedCacheMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileMisses);
         }
         else
         {
-            ProfileEvents::increment(ProfileEvents::PersistedCacheExpectedMisses);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileExpectedMisses);
         }
     }
     return res;
@@ -293,6 +312,12 @@ bool PersistedCache::cacheMarkRangesInDataFile(const std::string & origin_path, 
 
     PartCacheStatusPtr part_status = getPartCacheStatus(origin_path);
 
+    if (part_status->operating)
+    {
+        ProfileEvents::increment(ProfileEvents::PersistedCachePartBusy);
+        return false;
+    }
+
     FilesMarksCached::iterator file_status_it;
     {
         std::lock_guard<std::mutex> lock(part_status->part_lock);
@@ -310,9 +335,10 @@ bool PersistedCache::cacheMarkRangesInDataFile(const std::string & origin_path, 
     }
     FileMarksCached & marks_status = file_status_it->second;
 
+    size_t written_size = 0;
     try
     {
-        if (!copyFileRanges(origin_path, cache_path, mark_ranges, marks, file_marks_count, max_buffer_size))
+        if (!copyFileRanges(origin_path, cache_path, mark_ranges, marks, file_marks_count, max_buffer_size, written_size))
             return false;
     }
     catch (...)
@@ -340,9 +366,11 @@ bool PersistedCache::cacheMarkRangesInDataFile(const std::string & origin_path, 
         }
 
         marks_status.operating_bin = false;
+        part_status->occuppiedBytes += written_size;
     }
 
-    ProfileEvents::increment(ProfileEvents::PersistedCacheUpdate);
+    ProfileEvents::increment(ProfileEvents::PersistedCacheFileUpdate);
+    occuppiedBytes += written_size;
     return true;
 }
 
@@ -395,7 +423,7 @@ bool PersistedCache::isFileMarksAllCached(const FileMarksCached & marks_status, 
 
 
 bool PersistedCache::copyFileRanges(const std::string & origin_path, const std::string & cache_path,
-    const MarkRanges & mark_ranges, const MarksInCompressedFile & marks, size_t file_marks_count, size_t max_buffer_size)
+    const MarkRanges & mark_ranges, const MarksInCompressedFile & marks, size_t file_marks_count, size_t max_buffer_size, size_t & written_size)
 {
     Memory memory(max_buffer_size);
 
@@ -431,6 +459,8 @@ bool PersistedCache::copyFileRanges(const std::string & origin_path, const std::
             res = false;
             break;
         }
+
+        written_size += size;
     }
 
     ::close(fd_r);
@@ -493,7 +523,13 @@ void PersistedCache::deletePart(const std::string & cache_path)
     std::string name = path.getBaseName();
     std::string new_path = dir + DeletedDirPrefix + name;
 
-    LOG_TRACE(log, "Deleting file: " << cache_path << " => " << new_path);
+    size_t cached_parts = 0;
+    {
+        std::lock_guard<std::mutex> lock(cache_lock);
+        cached_parts = cache_status.size();
+    }
+
+    LOG_TRACE(log, "Deleting(rename) part: " << cache_path << ", recorded total used bytes: " << occuppiedBytes << ", cached parts: " << cached_parts);
     Poco::File(cache_path).renameTo(new_path);
 }
 
@@ -564,11 +600,46 @@ void PersistedCache::scanExpiredParts()
             for (auto part: parts)
             {
                 std::string origin_path = base_path + table_path + "/" + part;
-                if (!Poco::File(origin_path).exists() &&
-                    strncmp(part.c_str(), DeletedDirPrefix.c_str(), DeletedDirPrefix.size()) != 0)
+
+                std::string cache_path = persisted_path + table_path + "/" + part;
+
+                if (strncmp(part.c_str(), DeletedDirPrefix.c_str(), DeletedDirPrefix.size()) == 0)
+                    continue;
+
+                PartCacheStatusPtr part_status;
                 {
-                    std::string cache_path = persisted_path + table_path + "/" + part;
-                    deletePart(cache_path);
+                    std::lock_guard<std::mutex> lock(cache_lock);
+
+                    // Finding path must strictly the same path as cache_status.emplace(...)
+                    CacheStatus::iterator part_status_it = cache_status.find(origin_path + "/");
+                    if (part_status_it != cache_status.end())
+                        continue;
+                    part_status_it = cache_status.emplace(origin_path, std::make_shared<PartCacheStatus>(origin_path)).first;
+                    part_status = part_status_it->second;
+                }
+
+                {
+                    std::lock_guard<std::mutex> lock(part_status->part_lock);
+
+                    // Unlikely happen, but we still check the operating flag
+                    if (part_status->operating)
+                        continue;
+
+                    part_status->operating = true;
+
+                    if (!Poco::File(origin_path).exists())
+                        LOG_TRACE(log, "Origin part not exists and part cache unloaded, deleting part cache: " << origin_path);
+                    else
+                        LOG_TRACE(log, "Part cache exists but unloaded, deleting it, origin path: " << origin_path);
+                }
+
+                deletePart(cache_path);
+
+                {
+                    std::lock_guard<std::mutex> part_lock(part_status->part_lock);
+                    part_status->operating = false;
+                    std::lock_guard<std::mutex> lock(cache_lock);
+                    cache_status.erase(origin_path);
                 }
             }
         }

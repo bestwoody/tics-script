@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeReader.cpp b/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
-index ef802fc633c6..bd5c264e916f 100644
+index ef802fc633c6..862b7d1a49d5 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
 @@ -4,6 +4,7 @@
@@ -90,19 +90,14 @@ index ef802fc633c6..bd5c264e916f 100644
  
          if (profile_callback)
              buffer->setProfileCallback(profile_callback, clock_type);
-@@ -259,6 +281,10 @@ void MergeTreeReader::Stream::loadMarks()
- {
-     std::string path = path_prefix + ".mrk";
- 
-+    bool using_cached_marks_file = false;
-+    if (persisted_cache)
-+        using_cached_marks_file = persisted_cache->redirectMarksFile(path, marks_count);
-+
-     auto load = [&]() -> MarkCache::MappedPtr
-     {
+@@ -264,8 +286,13 @@ void MergeTreeReader::Stream::loadMarks()
          /// Memory for marks must not be accounted as memory usage for query, because they are stored in shared cache.
-@@ -266,6 +292,7 @@ void MergeTreeReader::Stream::loadMarks()
+         TemporarilyDisableMemoryTracker temporarily_disable_memory_tracker;
  
++        bool using_cached_marks_file = false;
++        if (persisted_cache)
++            using_cached_marks_file = persisted_cache->redirectMarksFile(path, marks_count);
++
          size_t file_size = Poco::File(path).getSize();
          size_t expected_file_size = sizeof(MarkInCompressedFile) * marks_count;
 +        // TODO: If is a broken cache file, just clear it and read from origin path

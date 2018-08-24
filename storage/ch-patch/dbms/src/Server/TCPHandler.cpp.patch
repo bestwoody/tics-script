@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Server/TCPHandler.cpp b/dbms/src/Server/TCPHandler.cpp
-index 53ca6c8699f8..500ff7a19ec6 100644
+index 53ca6c8699f8..cfa73d97a477 100644
 --- a/dbms/src/Server/TCPHandler.cpp
 +++ b/dbms/src/Server/TCPHandler.cpp
 @@ -5,6 +5,7 @@
@@ -10,7 +10,7 @@ index 53ca6c8699f8..500ff7a19ec6 100644
  
  #include <IO/Progress.h>
  
-@@ -33,6 +34,22 @@
+@@ -33,6 +34,23 @@
  #include <Common/NetException.h>
  #include <ext/scope_guard.h>
  
@@ -23,17 +23,18 @@ index 53ca6c8699f8..500ff7a19ec6 100644
 +    extern const Event PersistedMarksFileMisses;
 +    extern const Event PersistedMarksFileBusy;
 +    extern const Event PersistedMarksFileUpdate;
-+    extern const Event PersistedCacheHits;
-+    extern const Event PersistedCacheMisses;
-+    extern const Event PersistedCacheExpectedMisses;
-+    extern const Event PersistedCacheBusy;
-+    extern const Event PersistedCacheUpdate;
++    extern const Event PersistedCacheFileHits;
++    extern const Event PersistedCacheFileMisses;
++    extern const Event PersistedCacheFileExpectedMisses;
++    extern const Event PersistedCacheFileBusy;
++    extern const Event PersistedCacheFileUpdate;
++    extern const Event PersistedCachePartBusy;
 +}
 +
  
  namespace DB
  {
-@@ -136,6 +153,8 @@ void TCPHandler::runImpl()
+@@ -136,6 +154,8 @@ void TCPHandler::runImpl()
          std::unique_ptr<Exception> exception;
          bool network_error = false;
  
@@ -42,7 +43,7 @@ index 53ca6c8699f8..500ff7a19ec6 100644
          try
          {
              /// Restore context of request.
-@@ -159,7 +178,29 @@ void TCPHandler::runImpl()
+@@ -159,7 +179,29 @@ void TCPHandler::runImpl()
              state.maybe_compressed_in.reset();  /// For more accurate accounting by MemoryTracker.
  
              /// Processing Query
@@ -73,7 +74,7 @@ index 53ca6c8699f8..500ff7a19ec6 100644
  
              if (state.io.out)
                  state.need_receive_data_for_insert = true;
-@@ -170,6 +211,8 @@ void TCPHandler::runImpl()
+@@ -170,6 +212,8 @@ void TCPHandler::runImpl()
              /// Does the request require receive data from client?
              if (state.need_receive_data_for_insert)
                  processInsertQuery(global_settings);
@@ -82,7 +83,7 @@ index 53ca6c8699f8..500ff7a19ec6 100644
              else
                  processOrdinaryQuery();
  
-@@ -216,6 +259,11 @@ void TCPHandler::runImpl()
+@@ -216,6 +260,11 @@ void TCPHandler::runImpl()
              exception = std::make_unique<Exception>("Unknown exception", ErrorCodes::UNKNOWN_EXCEPTION);
          }
  
@@ -94,7 +95,7 @@ index 53ca6c8699f8..500ff7a19ec6 100644
          try
          {
              if (exception)
-@@ -230,6 +278,13 @@ void TCPHandler::runImpl()
+@@ -230,6 +279,13 @@ void TCPHandler::runImpl()
  
          try
          {
@@ -108,7 +109,7 @@ index 53ca6c8699f8..500ff7a19ec6 100644
              state.reset();
          }
          catch (...)
-@@ -244,7 +299,17 @@ void TCPHandler::runImpl()
+@@ -244,7 +300,19 @@ void TCPHandler::runImpl()
          watch.stop();
  
          LOG_INFO(log, std::fixed << std::setprecision(3)
@@ -117,17 +118,19 @@ index 53ca6c8699f8..500ff7a19ec6 100644
 +            << "Global persisted cache hit|miss|busy|update|miss(ok): mark index files = "
 +            << ProfileEvents::counters[ProfileEvents::PersistedMarksFileHits].load()
 +            << "|" << ProfileEvents::counters[ProfileEvents::PersistedMarksFileMisses].load()
-+            << "|" << ProfileEvents::counters[ProfileEvents::PersistedMarksFileBusy].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCachePartBusy].load()
++            << "+" << ProfileEvents::counters[ProfileEvents::PersistedMarksFileBusy].load()
 +            << "|" << ProfileEvents::counters[ProfileEvents::PersistedMarksFileUpdate].load()
-+            << ", mark ranges = " << ProfileEvents::counters[ProfileEvents::PersistedCacheHits].load()
-+            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheMisses].load()
-+            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheBusy].load()
-+            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheUpdate].load()
-+            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheExpectedMisses].load());
++            << ", mark ranges = " << ProfileEvents::counters[ProfileEvents::PersistedCacheFileHits].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheFileMisses].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCachePartBusy].load()
++            << "+" << ProfileEvents::counters[ProfileEvents::PersistedCacheFileBusy].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheFileUpdate].load()
++            << "|" << ProfileEvents::counters[ProfileEvents::PersistedCacheFileExpectedMisses].load());
  
          if (network_error)
              break;
-@@ -798,8 +863,6 @@ void TCPHandler::run()
+@@ -798,8 +866,6 @@ void TCPHandler::run()
      try
      {
          runImpl();
@@ -136,7 +139,7 @@ index 53ca6c8699f8..500ff7a19ec6 100644
      }
      catch (Poco::Exception & e)
      {
-@@ -814,4 +877,38 @@ void TCPHandler::run()
+@@ -814,4 +880,38 @@ void TCPHandler::run()
      }
  }
  

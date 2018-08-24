@@ -61,13 +61,14 @@ private:
 
         // Occuppied bytes are total written bytes, not sum(all file size of this part),
         //  because there is lots of holes in files.
-        size_t occuppiedBytes;
+        std::atomic<size_t> occuppiedBytes{0};
         Timestamp lastUsedTime;
+        bool operating;
 
         std::mutex part_lock;
 
         PartCacheStatus(const PartOriginPath & part_path) :
-            part_path(part_path), occuppiedBytes(0), lastUsedTime(Clock::now()) {}
+            part_path(part_path), lastUsedTime(Clock::now()), operating(false) {}
     };
 
     using PartCacheStatusPtr = std::shared_ptr<PartCacheStatus>;
@@ -106,7 +107,7 @@ private:
     // Copy all mark_ranges from origin file to cache file,
     //  the cache file will be a hollow file since not the whole file are written
     bool copyFileRanges(const std::string & origin_path, const std::string & cache_path,
-        const MarkRanges & mark_ranges, const MarksInCompressedFile & marks, size_t file_marks_count, size_t max_buffer_size);
+        const MarkRanges & mark_ranges, const MarksInCompressedFile & marks, size_t file_marks_count, size_t max_buffer_size, size_t & written_size);
 
     // Copy a mark range from origin file to cache file,
     //  the cache file will be a hollow file since not the whole file are written
@@ -121,6 +122,7 @@ private:
 
     CacheStatus cache_status;
     std::mutex cache_lock;
+    std::atomic<size_t> occuppiedBytes{0};
 
     std::unique_ptr<std::thread> gc_thread;
     std::unique_ptr<std::thread> cleanup_thread;

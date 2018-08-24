@@ -44,10 +44,10 @@ echo "$pids" | while read pid; do
 		if [ $i -ge 29 ]; then
 			heavy_kill="true"
 		fi
-		if [ $i -ge 179 ]; then
+		if [ $i -ge 59 ]; then
 			heaviest_kill="true"
 		fi
-		if [ $i -ge 599 ]; then
+		if [ $i -ge 119 ]; then
 			echo "pid $pid close failed" >&2
 			exit 1
 		fi
