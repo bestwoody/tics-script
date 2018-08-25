@@ -1,11 +1,12 @@
 #include <IO/PersistedCache.h>
 
 #include <fcntl.h>
+#include <queue>
+
 #include <Poco/File.h>
 #include <Poco/Path.h>
 #include <Common/ProfileEvents.h>
 #include <IO/BufferWithOwnMemory.h>
-
 
 namespace ProfileEvents
 {
@@ -24,10 +25,12 @@ namespace ProfileEvents
 namespace DB
 {
 
-PersistedCache::PersistedCache(size_t max_size_in_bytes, const std::string & base_path, const std::string & persisted_path)
-    : disabled(false), max_size_in_bytes(max_size_in_bytes), base_path(base_path), persisted_path(persisted_path)
+PersistedCache::PersistedCache(size_t max_size_in_bytes, const std::string & base_path,
+    const std::string & persisted_path, size_t min_seconds_to_evit)
+    : max_size_in_bytes(max_size_in_bytes), min_seconds_to_evit(min_seconds_to_evit), base_path(base_path), persisted_path(persisted_path)
 {
     log = &Logger::get("PersistedCache");
+
     if (base_path.at(base_path.size() - 1) != '/')
     {
         LOG_ERROR(log, "DB path should ends with '/': " << base_path << ". Cache disabled");
@@ -41,12 +44,12 @@ PersistedCache::PersistedCache(size_t max_size_in_bytes, const std::string & bas
     {
         while (true)
         {
-            std::this_thread::sleep_for(std::chrono::seconds(57));
+            std::this_thread::sleep_for(std::chrono::seconds(51));
             try
             {
                 size_t n = removeDeletedParts();
                 if (n > 0)
-                    LOG_TRACE(log, "Cleaned up finish: removed parts count: " << n);
+                    LOG_INFO(log, "Cleaned up finish: removed parts count: " << n);
             }
             catch (...)
             {
@@ -62,12 +65,14 @@ PersistedCache::PersistedCache(size_t max_size_in_bytes, const std::string & bas
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             n += 1;
-            if (n < 89)
+            if (n < 119)
                 continue;
             n = 0;
             performGC();
         }
     });
+
+    LOG_INFO(log, "Persisted cache started");
 }
 
 
@@ -218,20 +223,6 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
     if (!getCachePath(origin_path, cache_path))
         return false;
 
-    if (!Poco::File(cache_path).exists())
-    {
-        if (expected_exists)
-        {
-            LOG_TRACE(log, "PersistedCacheMisses, cache file not found, origin: " << origin_path);
-            ProfileEvents::increment(ProfileEvents::PersistedCacheFileMisses);
-        }
-        else
-        {
-            ProfileEvents::increment(ProfileEvents::PersistedCacheFileExpectedMisses);
-        }
-        return false;
-    }
-
     PartCacheStatusPtr part_status = getPartCacheStatus(origin_path);
 
     std::lock_guard<std::mutex> lock(part_status->part_lock);
@@ -242,12 +233,26 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
         return false;
     }
 
+    if (!Poco::File(cache_path).exists())
+    {
+        if (expected_exists)
+        {
+            LOG_INFO(log, "PersistedCacheMisses, cache file not found, origin: " << origin_path);
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileMisses);
+        }
+        else
+        {
+            ProfileEvents::increment(ProfileEvents::PersistedCacheFileExpectedMisses);
+        }
+        return false;
+    }
+
     FilesMarksCached::iterator file_status_it = part_status->files_marks_cached.find(origin_path);
     if (file_status_it == part_status->files_marks_cached.end())
     {
         if (expected_exists)
         {
-            LOG_TRACE(log, "PersistedCacheMisses, origin file status not found: " << origin_path);
+            LOG_INFO(log, "Persisted cache misses, origin file status not found: " << origin_path);
             ProfileEvents::increment(ProfileEvents::PersistedCacheFileMisses);
         }
         else
@@ -285,7 +290,7 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
     {
         if (expected_exists)
         {
-            LOG_TRACE(log, "PersistedCacheMisses, not all marks cached: " << origin_path
+            LOG_INFO(log, "PersistedCacheMisses, not all marks cached: " << origin_path
                 << ", required ranges: " << markRangesToString(mark_ranges, marks, file_marks_count)
                 << ", aligned ranges: " << markRangesToString(mark_ranges, marks, file_marks_count, true));
             ProfileEvents::increment(ProfileEvents::PersistedCacheFileMisses);
@@ -338,6 +343,11 @@ bool PersistedCache::cacheMarkRangesInDataFile(const std::string & origin_path, 
     size_t written_size = 0;
     try
     {
+        Poco::File origin(origin_path);
+        Poco::File part_dir(Poco::Path(cache_path).parent());
+        if (!part_dir.exists())
+            part_dir.createDirectories();
+
         if (!copyFileRanges(origin_path, cache_path, mark_ranges, marks, file_marks_count, max_buffer_size, written_size))
             return false;
     }
@@ -366,11 +376,11 @@ bool PersistedCache::cacheMarkRangesInDataFile(const std::string & origin_path, 
         }
 
         marks_status.operating_bin = false;
-        part_status->occuppiedBytes += written_size;
+        part_status->occuppied_bytes += written_size;
     }
 
     ProfileEvents::increment(ProfileEvents::PersistedCacheFileUpdate);
-    occuppiedBytes += written_size;
+    occuppied_bytes += written_size;
     return true;
 }
 
@@ -383,6 +393,8 @@ PersistedCache::PartCacheStatusPtr PersistedCache::getPartCacheStatus(const std:
     CacheStatus::iterator part_status_it = cache_status.find(part_path);
     if (part_status_it == cache_status.end())
         part_status_it = cache_status.emplace(part_path, std::make_shared<PartCacheStatus>(part_path)).first;
+    else
+        part_status_it->second->last_used_time = Clock::now();
 
     return part_status_it->second;
 }
@@ -516,8 +528,12 @@ void PersistedCache::performGC()
 }
 
 
-void PersistedCache::deletePart(const std::string & cache_path)
+void PersistedCache::deletePart(const std::string & deleting_cache_path)
 {
+    std::string cache_path = deleting_cache_path;
+    if (cache_path.at(cache_path.size() - 1) == '/')
+        cache_path = cache_path.substr(0, cache_path.size() - 1);
+
     Poco::Path path(cache_path);
     std::string dir = path.parent().toString();
     std::string name = path.getBaseName();
@@ -529,7 +545,7 @@ void PersistedCache::deletePart(const std::string & cache_path)
         cached_parts = cache_status.size();
     }
 
-    LOG_TRACE(log, "Deleting(rename) part: " << cache_path << ", recorded total used bytes: " << occuppiedBytes << ", cached parts: " << cached_parts);
+    LOG_INFO(log, "Deleting part: " << cache_path << ", recorded total used bytes: " << occuppied_bytes << ", cached parts: " << cached_parts);
     Poco::File(cache_path).renameTo(new_path);
 }
 
@@ -564,7 +580,7 @@ size_t PersistedCache::removeDeletedParts()
                 {
                     removed_count += 1;
                     std::string cache_path = table_path + "/" + part;
-                    LOG_TRACE(log, "Removing deleted part: " << cache_path);
+                    LOG_INFO(log, "Removing deleted part: " << cache_path);
                     Poco::File(cache_path).remove(true);
                 }
             }
@@ -628,9 +644,9 @@ void PersistedCache::scanExpiredParts()
                     part_status->operating = true;
 
                     if (!Poco::File(origin_path).exists())
-                        LOG_TRACE(log, "Origin part not exists and part cache unloaded, deleting part cache: " << origin_path);
+                        LOG_INFO(log, "Origin part not exists and part cache unloaded, deleting part cache: " << origin_path);
                     else
-                        LOG_TRACE(log, "Part cache exists but unloaded, deleting it, origin path: " << origin_path);
+                        LOG_INFO(log, "Part cache exists but unloaded, deleting it, origin path: " << origin_path);
                 }
 
                 deletePart(cache_path);
@@ -649,7 +665,73 @@ void PersistedCache::scanExpiredParts()
 
 void PersistedCache::evictMostUnusedParts()
 {
-    // TODO: impl
+    if (max_size_in_bytes == 0 || max_size_in_bytes > occuppied_bytes)
+        return;
+
+    struct Part
+    {
+        std::string path;
+        Timestamp ts;
+
+        bool operator < (const Part & rhs) const
+        {
+            return rhs.ts < this->ts;
+        }
+    };
+
+    std::priority_queue<Part> parts;
+    {
+        std::lock_guard<std::mutex> lock(cache_lock);
+        for (auto it: cache_status)
+            parts.push({it.first, it.second->last_used_time});
+    }
+
+    Timestamp now(Clock::now());
+
+    while (!parts.empty() && max_size_in_bytes <= occuppied_bytes)
+    {
+        Part part = parts.top();
+        parts.pop();
+        const std::string & origin_path = part.path;
+
+        std::string cache_path;
+        if (!getCachePath(origin_path, cache_path))
+            continue;
+
+        PartCacheStatusPtr part_status;
+        size_t live_sec = 0;
+        {
+            std::lock_guard<std::mutex> lock(cache_lock);
+
+            CacheStatus::iterator part_status_it = cache_status.find(origin_path);
+            if (part_status_it == cache_status.end())
+                continue;
+            part_status = part_status_it->second;
+            std::lock_guard<std::mutex> part_lock(part_status->part_lock);
+            if (part_status->operating)
+                continue;
+            live_sec = std::chrono::duration_cast<std::chrono::seconds>(now - part.ts).count();
+
+            // TODO: if cache files be evicted too soon and too frequently, we should disable persisted cache
+            if (live_sec < min_seconds_to_evit)
+                continue;
+
+            part_status->operating = true;
+        }
+
+        LOG_DEBUG(log, "Delete cache to make space, origin path: " << origin_path << ", bytes: "
+            << part_status->occuppied_bytes << ", lives: " << live_sec << "s");
+
+        deletePart(cache_path);
+
+        {
+            std::lock_guard<std::mutex> part_lock(part_status->part_lock);
+            part_status->operating = false;
+            std::lock_guard<std::mutex> lock(cache_lock);
+            occuppied_bytes -= part_status->occuppied_bytes;
+            cache_status.erase(origin_path);
+        }
+    }
 }
 
 }

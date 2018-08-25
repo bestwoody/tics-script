@@ -15,7 +15,8 @@ namespace DB
 class PersistedCache
 {
 public:
-    PersistedCache(size_t max_size_in_bytes, const std::string & base_path, const std::string & persisted_path);
+    PersistedCache(size_t max_size_in_bytes, const std::string & base_path,
+        const std::string & persisted_path, size_t min_seconds_to_evit = 120);
 
     ~PersistedCache();
 
@@ -61,14 +62,14 @@ private:
 
         // Occuppied bytes are total written bytes, not sum(all file size of this part),
         //  because there is lots of holes in files.
-        std::atomic<size_t> occuppiedBytes{0};
-        Timestamp lastUsedTime;
+        std::atomic<size_t> occuppied_bytes{0};
+        Timestamp last_used_time;
         bool operating;
 
         std::mutex part_lock;
 
         PartCacheStatus(const PartOriginPath & part_path) :
-            part_path(part_path), lastUsedTime(Clock::now()), operating(false) {}
+            part_path(part_path), last_used_time(Clock::now()), operating(false) {}
     };
 
     using PartCacheStatusPtr = std::shared_ptr<PartCacheStatus>;
@@ -115,14 +116,16 @@ private:
         int fd_r, int fd_w, size_t pos, size_t size, char * buffer, size_t buffer_size);
 
 private:
-    bool disabled;
-    size_t max_size_in_bytes;
+    std::atomic<bool> disabled{false};
+    const size_t max_size_in_bytes;
+    const size_t min_seconds_to_evit;
+
     std::string base_path;
     std::string persisted_path;
 
     CacheStatus cache_status;
     std::mutex cache_lock;
-    std::atomic<size_t> occuppiedBytes{0};
+    std::atomic<size_t> occuppied_bytes{0};
 
     std::unique_ptr<std::thread> gc_thread;
     std::unique_ptr<std::thread> cleanup_thread;
