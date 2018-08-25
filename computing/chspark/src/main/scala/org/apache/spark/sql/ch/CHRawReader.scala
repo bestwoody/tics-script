@@ -85,6 +85,10 @@ object CHRawReader {
 
     val tableRef: CHTableRef = new CHTableRef(host, port, database, table)
     val partitions = CHUtil.getPartitionList(tableRef).map("'" + _ + "'")
+    if (partitions.isEmpty) {
+      throw new Exception("Unable to get partition list of " + database + "." + table)
+    }
+
     var queries = getPartitionsSql(partitions, threads).map(query._1 + " PARTITION " + _ + query._2)
 
     var totalRows: Long = 0

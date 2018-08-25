@@ -9,6 +9,7 @@ threads="$6"
 host="$7"
 port="$8"
 
+storage_batch_bytes="100000000000"
 same_value="false"
 verb="2"
 
@@ -43,4 +44,4 @@ fi
 
 query=`cat j2s-cases/${table}.sql | tr '\n' ' '`
 
-./j2s-w.sh "$database" "$table" "$client_batch" "$storage_batch" "$rows" "$threads" "$query" "$same_value" "$verb" "$host" "$port"
+./j2s-w.sh "$database" "$table" "$client_batch" "$storage_batch" "$storage_batch_bytes" "$rows" "$threads" "$query" "$same_value" "$verb" "$host" "$port"

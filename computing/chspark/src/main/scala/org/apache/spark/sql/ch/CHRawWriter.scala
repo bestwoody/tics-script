@@ -97,8 +97,8 @@ private class CHRowsInserter(val database: String,
                              val port: Int,
                              val rows: Long,
                              val clientBatch: Int,
-                             val storageBatchRows: Int,
-                             val storageBatchBytes: Int,
+                             val storageBatchRows: Long,
+                             val storageBatchBytes: Long,
                              val sameValue: Boolean,
                              val threadIndex: Int,
                              val verb: Int) {
@@ -148,8 +148,8 @@ object CHRawWriter {
     val database: String = args(0)
     val table: String = args(1)
     val clientBatch: Int = args(2).toInt
-    val storageBatchRows: Int = args(3).toInt
-    val storageBatchBytes: Int = args(4).toInt
+    val storageBatchRows: Long = args(3).toLong
+    val storageBatchBytes: Long = args(4).toLong
     val rows: Long = args(5).toLong
     val threads: Int = args(6).toInt
     val createSql: String =
