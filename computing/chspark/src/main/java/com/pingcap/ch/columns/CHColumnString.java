@@ -86,6 +86,7 @@ public class CHColumnString extends CHColumn {
     public void insertUTF8String(UTF8String v) {
         // The passed in string could be a pointer.
         builder.insertUTF8String(v);
+        size++;
     }
 
     @Override
