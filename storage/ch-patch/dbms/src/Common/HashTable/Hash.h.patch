@@ -1,8 +1,8 @@
 diff --git a/dbms/src/Common/HashTable/Hash.h b/dbms/src/Common/HashTable/Hash.h
-index e3b900d85cf0..d411b6332715 100644
+index e3b900d85cf0..95489cf09390 100644
 --- a/dbms/src/Common/HashTable/Hash.h
 +++ b/dbms/src/Common/HashTable/Hash.h
-@@ -1,5 +1,9 @@
+@@ -1,7 +1,12 @@
  #pragma once
  
 +#include <functional>
@@ -11,8 +11,11 @@ index e3b900d85cf0..d411b6332715 100644
 +#include <citycrc.h>
  #include <Core/Types.h>
  #include <Common/UInt128.h>
++#include <boost/functional/hash/hash.hpp>
  
-@@ -87,6 +91,14 @@ DEFINE_HASH(DB::Float64)
+ 
+ /** Hash functions that are better than the trivial function std::hash.
+@@ -87,6 +92,14 @@ DEFINE_HASH(DB::Float64)
  
  #undef DEFINE_HASH
  
@@ -27,7 +30,7 @@ index e3b900d85cf0..d411b6332715 100644
  
  template <typename T> struct HashCRC32;
  
-@@ -112,6 +124,15 @@ template <> struct HashCRC32<T>\
+@@ -112,6 +125,16 @@ template <> struct HashCRC32<T>\
      }\
  };
  
@@ -36,7 +39,8 @@ index e3b900d85cf0..d411b6332715 100644
 +    size_t operator() (DB::DecimalValue v) const
 +    {
 +//        return CityHash_v1_0_2::Hash128to64(CityHash_v1_0_2::CityHashCrc128(reinterpret_cast<char*>(&v), sizeof(DB::DecimalValue)));
-+        return std::hash<std::string>{}(v.toString());
++//        return std::hash<std::string>{}(v.toString());
++          return boost::multiprecision::hash_value(v.value);
 +    }
 +};
 +
