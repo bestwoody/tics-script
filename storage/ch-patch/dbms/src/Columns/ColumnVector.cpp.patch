@@ -2,7 +2,7 @@ diff --git a/dbms/src/Columns/ColumnVector.cpp b/dbms/src/Columns/ColumnVector.c
 index 3509c14c3aab..5a0f706ab007 100644
 --- a/dbms/src/Columns/ColumnVector.cpp
 +++ b/dbms/src/Columns/ColumnVector.cpp
-@@ -122,12 +122,62 @@ MutableColumnPtr ColumnVector<T>::cloneResized(size_t size) const
+@@ -122,6 +122,26 @@ MutableColumnPtr ColumnVector<T>::cloneResized(size_t size) const
      return std::move(res);
  }
  
@@ -29,10 +29,10 @@ index 3509c14c3aab..5a0f706ab007 100644
  template <typename T>
  UInt64 ColumnVector<T>::get64(size_t n) const
  {
-     return ext::bit_cast<UInt64>(data[n]);
+@@ -129,6 +149,36 @@ UInt64 ColumnVector<T>::get64(size_t n) const
  }
  
-+template <typename T>
+ template <typename T>
 +UInt64 ColumnVector<T>::getUInt(size_t n) const
 +{
 +    return UInt64(data[n]);
@@ -62,9 +62,10 @@ index 3509c14c3aab..5a0f706ab007 100644
 +    return IColumn::getInt(n);
 +}
 +
- template <typename T>
++template <typename T>
  void ColumnVector<T>::insertRangeFrom(const IColumn & src, size_t start, size_t length)
  {
+     const ColumnVector & src_vec = static_cast<const ColumnVector &>(src);
 @@ -309,6 +359,45 @@ void ColumnVector<T>::getExtremes(Field & min, Field & max) const
      max = typename NearestFieldType<T>::Type(cur_max);
  }

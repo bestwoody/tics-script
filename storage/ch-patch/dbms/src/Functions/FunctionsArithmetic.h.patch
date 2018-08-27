@@ -578,11 +578,10 @@ index b015e2039869..59384cd162d7 100644
  template <typename DataType> constexpr bool IsIntegral = false;
  template <> constexpr bool IsIntegral<DataTypeUInt8> = true;
  template <> constexpr bool IsIntegral<DataTypeUInt16> = true;
-@@ -600,15 +911,54 @@ private:
-         }
+@@ -601,14 +912,53 @@ private:
      }
  
-+    template <typename LeftDataType, typename RightDataType>
+     template <typename LeftDataType, typename RightDataType>
 +    DataTypePtr getDecimalReturnType(const DataTypes & arguments) const {
 +        using LeftFieldType = typename LeftDataType::FieldType;
 +        using RightFieldType = typename RightDataType::FieldType;
@@ -613,7 +612,7 @@ index b015e2039869..59384cd162d7 100644
 +        }
 +    }
 +
-     template <typename LeftDataType, typename RightDataType>
++    template <typename LeftDataType, typename RightDataType>
      bool checkRightType(const DataTypes & arguments, DataTypePtr & type_res) const
      {
 -        using ResultDataType = typename BinaryOperationTraits<Op, LeftDataType, RightDataType>::ResultDataType;
