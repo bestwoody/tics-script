@@ -18,6 +18,7 @@
 package org.apache.spark.sql
 
 import java.sql.Statement
+import java.util.Locale
 
 import org.apache.commons.lang.StringUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
@@ -150,7 +151,11 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     assert(execDBTSAndJudge(qSpark, skipped))
 
   def convertSparkSQLToCHSQL(qSpark: String): String =
-    qSpark.replace(" date(", " toDate(").replace(" date)", " Nullable(Date))")
+    qSpark
+      .toLowerCase(Locale.ENGLISH)
+      .replace(" date(", " toDate(")
+      .replace(" date)", " Nullable(Date))")
+      .replace(" first(", " any(")
 
   def execDBTSAndJudge(qSpark: String, skipped: Boolean = false): Boolean =
     try {

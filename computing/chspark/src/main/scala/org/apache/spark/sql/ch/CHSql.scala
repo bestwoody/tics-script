@@ -23,7 +23,7 @@ import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
 import com.pingcap.tikv.types.MySQLType
 import com.pingcap.tispark.TiUtils
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
 
@@ -278,7 +278,8 @@ object CHSql {
                // Spark will compile order by expression `(a + b, a)` to
                // `named_struct("col1", a + b, "a", a)`.
                // Need to emit the expression list enclosed by ().
-               s"(${ns.valExprs.map(compileExpression).mkString(", ")}) ${so.direction.sql} ${so.nullOrdering.sql}"
+               throw new UnsupportedOperationException("NamedStruct currently unsupported")
+//               s"${ns.valExprs.map(compileExpression).mkString("(", ", ", ")")} ${so.direction.sql} ${so.nullOrdering.sql}"
              case _ => s"${compileExpression(so.child)} ${so.direction.sql} ${so.nullOrdering.sql}"
            }
          })
@@ -310,6 +311,54 @@ object CHSql {
         )
     }
 
+  def compileType(dataType: DataType, nullable: Boolean): String =
+    TypeMappingJava.sparkTypeToCHType(dataType, nullable).name()
+
+  /**
+   *  For cases like (a + b), due to inconsistent type promotion between Spark
+   *  and CH, we might need to wrap as `Cast` explicitly to ensure correctness.
+   *
+   *  Suppose a is Int8 and b is Int32,
+   *  Spark consider a + b as InterType(Int32) while CH consider it as Int64(LongType).
+   *  To ensure correctness, results will be forced to cast to Spark's promoted type.
+   *  Discussions are present in https://github.com/pingcap/theflash/pull/545#discussion_r211110397
+   *
+   *  e.g., Spark -> CH expressions would be compiled in following rules.
+   *  (a + b)                    -> Cast((`a` + `b`) as Int32)
+   *  (a + b) * (a - b)          -> Cast((Cast((`a` + `b`) as Int32) * Cast((`a` - `b`) as Int32)) as Int32)
+   *  (a + b) as a               -> Cast((`a` + `b`) as Int32) as `a`
+   *  Cast(a + b + c as String)  -> Cast((Cast((Cast((`a` + `b`) as Int32) + `c`) as Int32) as String) as `Cast(a + b + c as String)`
+   *  (a + b * (a + b))          -> Cast((`a` + Cast((`b` * Cast((`a` + `b`) as Int32)) as Int32)) as Int32)) as `(a + b * (a + b))`
+   *
+   * @param arithmetic Binary Arithmetic
+   * @return compiled CH Expression
+   */
+  def compileBinaryArithmetic(arithmetic: BinaryArithmetic): String = {
+    val compileArithmetic = arithmetic match {
+      case Add(left, right) =>
+        s"(${compileExpression(left)} + ${compileExpression(right)})"
+      case Subtract(left, right) =>
+        s"(${compileExpression(left)} - ${compileExpression(right)})"
+      case Multiply(left, right) =>
+        s"(${compileExpression(left)} * ${compileExpression(right)})"
+      case Divide(left, right) =>
+        s"(${compileExpression(left)} / ${compileExpression(right)})"
+      case Remainder(left, right) if !right.canonicalized.equals(Literal(0)) =>
+        s"(${compileExpression(left)} % ${compileExpression(right)})"
+      case _ =>
+        throw new UnsupportedOperationException(
+          s"Binary Arithmetic Function ${arithmetic.toString} push down is not supported by CHSql."
+        )
+    }
+    s"CAST($compileArithmetic AS ${compileType(arithmetic.dataType, nullable = arithmetic.nullable)})"
+  }
+
+  /**
+   * Compile Spark Expressions into CH Expressions
+   *
+   * @param expression Spark expressions to be compiled
+   * @return compiled CH expressions
+   */
   def compileExpression(expression: Expression): String =
     expression match {
       case Literal(value, dataType) =>
@@ -332,7 +381,7 @@ object CHSql {
         }
       case attr: AttributeReference =>
         s"`${Hack.hackAttributeReference(attr).getOrElse(attr.name).toLowerCase()}`"
-      case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
+      //      case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
       case cast @ Cast(child, dataType) =>
         if (!Hack.hackSupportCast(cast).getOrElse(CHUtil.isSupportedExpression(child))) {
           throw new UnsupportedOperationException(
@@ -340,22 +389,19 @@ object CHSql {
           )
         }
         try {
-          val dataTypeName = TypeMappingJava.sparkTypeToCHType(dataType, child.nullable).name()
-          s"CAST(${compileExpression(child)} AS $dataTypeName)"
+          s"CAST(${compileExpression(child)} AS ${compileType(dataType, nullable = child.nullable)})"
         } catch {
           // Unsupported target type, downgrading to not casting.
           case _: UnsupportedOperationException => s"${compileExpression(child)}"
         }
-      case IsNotNull(child)         => s"${compileExpression(child)} IS NOT NULL"
-      case IsNull(child)            => s"${compileExpression(child)} IS NULL"
-      case UnaryMinus(child)        => s"(-${compileExpression(child)})"
-      case Not(child)               => s"NOT ${compileExpression(child)}"
-      case Abs(child)               => s"ABS(${compileExpression(child)})"
-      case Add(left, right)         => s"(${compileExpression(left)} + ${compileExpression(right)})"
-      case Subtract(left, right)    => s"(${compileExpression(left)} - ${compileExpression(right)})"
-      case Multiply(left, right)    => s"(${compileExpression(left)} * ${compileExpression(right)})"
-      case Divide(left, right)      => s"(${compileExpression(left)} / ${compileExpression(right)})"
-      case Remainder(left, right)   => s"(${compileExpression(left)} % ${compileExpression(right)})"
+      case Alias(child, name) => s"${compileExpression(child)} AS `$name`"
+      case IsNotNull(child)   => s"${compileExpression(child)} IS NOT NULL"
+      case IsNull(child)      => s"${compileExpression(child)} IS NULL"
+      case UnaryMinus(child)  => s"(-${compileExpression(child)})"
+      case Not(child)         => s"NOT ${compileExpression(child)}"
+      case e @ Abs(child) =>
+        s"CAST(abs(${compileExpression(child)}) AS ${compileType(e.dataType, nullable = child.nullable)})"
+      case be @ BinaryArithmetic(_) => compileBinaryArithmetic(be)
       case GreaterThan(left, right) => s"(${compileExpression(left)} > ${compileExpression(right)})"
       case GreaterThanOrEqual(left, right) =>
         s"(${compileExpression(left)} >= ${compileExpression(right)})"
@@ -368,7 +414,6 @@ object CHSql {
       case In(value, list) =>
         s"${compileExpression(value)} IN (${list.map(compileExpression).mkString(", ")})"
       case ae @ AggregateExpression(_, _, _, _) => compileAggregateExpression(ae)
-      case Sum(child)                           => s"SUM(${compileExpression(child)})"
       // TODO: Support more expression types.
       case _ =>
         throw new UnsupportedOperationException(

@@ -18,6 +18,25 @@
 package org.apache.spark.sql
 
 class IssueTestSuite extends BaseClickHouseSuite {
+  test("complex plan tests") {
+    explainAndRunTest(
+      "select avg(tp_int8) from full_data_type_table group by tp_uint8",
+      skipJDBC = true
+    )
+    explainAndRunTest(
+      "select tp_int8 from full_data_type_table order by id_dt nulls first limit 10",
+      skipJDBC = true
+    )
+    explainAndRunTest(
+      "select tp_int8 from full_data_type_table where TP_STRING like 'a%'",
+      skipJDBC = true
+    )
+    explainAndRunTest(
+      "select tp_int8, tp_int8 + 1, cos(tp_int8), cos(tp_int32), tp_float32 as a from full_data_type_table where cos(tp_int16) > 0 and tp_float32 + 2 > 0 and tp_float64 < tp_float32 order by id_dt nulls first",
+      skipJDBC = true
+    )
+  }
+
   test("#438 NPE when decimal is NOT NULL") {
     clickHouseStmt.execute("DROP TABLE IF EXISTS test")
     clickHouseStmt.execute(

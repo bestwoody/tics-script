@@ -41,7 +41,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         .collectFirst {
           case rel @ LogicalRelation(_: TypesTestRelation, _: Option[Seq[Attribute]], _) =>
             TypesTestPlan(rel.output, sparkSession) :: Nil
-          case rel @ LogicalRelation(relation: CHRelation, output: Option[Seq[Attribute]], _) =>
+          case rel @ LogicalRelation(relation: CHRelation, _: Option[Seq[Attribute]], _) =>
             plan match {
               case ReturnAnswer(rootPlan) =>
                 rootPlan match {
@@ -53,7 +53,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
                       ) =>
                     createTopNPlan(limit, order, projectList, child) :: Nil
                   case Limit(IntegerLiteral(limit), child) =>
-                    CollectLimitExec(limit, createTopNPlan(limit, Nil, child.output, child)) :: Nil
+                    CollectLimitExec(limit, collectLimit(limit, child)) :: Nil
                   case other => planLater(other) :: Nil
                 }
               case Limit(IntegerLiteral(limit), Sort(order, true, child)) =>
@@ -72,21 +72,18 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
                   resultExpressions,
                   CHAggregationProjection(filters, _, _, _)
                   ) if enableAggPushdown =>
-                var aggExp = aggregateExpressions
-                var resultExp = resultExpressions
-                val rewriteResult = CHAggregation.rewriteAggregation(aggExp, resultExp)
-                aggExp = rewriteResult._1
-                resultExp = rewriteResult._2
-                // Add group / aggregate to CHPlan
+                val rewriteResult =
+                  CHAggregation.rewriteAggregation(aggregateExpressions, resultExpressions)
+                val aggExp = rewriteResult._1
+                val resultExp = rewriteResult._2
                 createAggregatePlan(groupingExpressions, aggExp, resultExp, relation, filters)
-
               case _ => Nil
             }
         }
         .toSeq
         .flatten
     } catch {
-      case e: UnsupportedOperationException =>
+      case _: UnsupportedOperationException =>
         logDebug("CHStrategy downgrading to Spark plan as strategy failed.")
         Nil
     }
@@ -114,6 +111,13 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
         )
       case _ => TakeOrderedAndProjectExec(limit, sortOrder, project, planLater(child))
     }
+
+  private def collectLimit(limit: Int, child: LogicalPlan): SparkPlan = child match {
+    case PhysicalOperation(projectList, filters, rel @ LogicalRelation(source: CHRelation, _, _))
+        if filters.forall(CHUtil.isSupportedExpression) =>
+      pruneTopNFilterProject(rel, source, projectList, filters, Nil, limit)
+    case _ => planLater(child)
+  }
 
   private def createAggregatePlan(groupingExpressions: Seq[NamedExpression],
                                   aggregateExpressions: Seq[AggregateExpression],
@@ -150,8 +154,26 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
       }
     }
 
-    val output = (aggregateExpressions.map(aliasPushedPartialResult) ++ groupingExpressions).map {
-      _.toAttribute
+    val aggregateAttributes =
+      aggregateExpressions.map(expr => aliasPushedPartialResult(expr).toAttribute)
+    val groupAttributes = groupingExpressions.map(_.toAttribute)
+
+    // output of plan should contain all references within aggregates and group by expressions
+    val output = aggregateAttributes ++ groupAttributes
+
+    val groupExpressionMap = groupingExpressions.map(expr => expr.exprId -> expr.toAttribute).toMap
+
+    // resultExpression might refer to some of the group by expressions
+    // Those expressions originally refer to table columns but now it refers to
+    // results pushed down.
+    // For example, select a + 1 from t group by a + 1
+    // expression a + 1 has been pushed down to CH
+    // and in turn a + 1 in projection should be replaced by
+    // reference of CH output entirely
+    val rewrittenResultExpressions = resultExpressions.map {
+      _.transform {
+        case e: NamedExpression => groupExpressionMap.getOrElse(e.exprId, e)
+      }.asInstanceOf[NamedExpression]
     }
 
     // As for project list, we emit all aggregate functions followed by group by columns.
@@ -169,43 +191,99 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     val chPlan = CHScanExec(output, sparkSession, relation, chLogicalPlan)
 
     AggUtils.planAggregateWithoutDistinct(
-      groupingExpressions,
+      groupAttributes,
       residualAggregateExpressions,
-      resultExpressions,
+      rewrittenResultExpressions,
       chPlan
     )
   }
 
+  /**
+   * Create a CH Plan from Spark Plan
+   * The plan will include following parameters
+   *
+   * @param relation a LogicRelation of CH columns
+   * @param chRelation a BaseRelation of CH columns
+   * @param projectList project list to output
+   * @param filterPredicates all filters in this SparkPlan
+   * @param sortOrders determines orderBy parameter
+   * @param limit row limit
+   * @return a rewritten CHPlan that contains CHScanExec
+   */
   private def createCHPlan(relation: LogicalRelation,
                            chRelation: CHRelation,
                            projectList: Seq[NamedExpression],
                            filterPredicates: Seq[Expression],
                            sortOrders: Seq[SortOrder],
                            limit: Option[Int]): SparkPlan = {
+    // 1. Compose the lower plan (CH).
 
-    val projectSet = AttributeSet(projectList.flatMap(_.references))
-    val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
-    val nameSet = (projectSet ++ filterSet).map(_.name.toLowerCase()).toSet
-    var output = relation.output.filter(attr => nameSet(attr.name.toLowerCase()))
-    // TODO: Choose the smallest column (in prime keys, or the timestamp key of MergeTree) as dummy output
-    if (output.isEmpty) {
-      output = Seq(relation.output.head)
-    }
-
-    val (pushdownFilters: Seq[Expression], residualFilters: Seq[Expression]) =
+    val (pushDownFilters: Seq[Expression], residualFilters: Seq[Expression]) =
       filterPredicates.partition(CHUtil.isSupportedExpression)
     val residualFilter: Option[Expression] = residualFilters.reduceLeftOption(And)
 
+    val (pushDownProjects: Seq[Expression], residualProjects: Seq[Expression]) =
+      projectList.partition(CHUtil.isSupportedExpression)
+
+    // Total push down project expressions = supported expressions in projectList + columns in residual projects and filters.
+    val totalPushDownProjects = (pushDownProjects.asInstanceOf[Seq[NamedExpression]]
+      ++ (residualProjects ++ residualFilters).flatMap(_.references)).distinct
+
     val chLogicalPlan =
-      CHLogicalPlan(output, pushdownFilters, Seq.empty, Seq.empty, sortOrders, limit)
+      CHLogicalPlan(totalPushDownProjects, pushDownFilters, Seq.empty, Seq.empty, sortOrders, limit)
 
-    val chExec = CHScanExec(output, sparkSession, chRelation, chLogicalPlan)
+    // 2. Determine the upper plan (Spark).
 
-    if (AttributeSet(projectList.map(_.toAttribute)) == projectSet &&
-        filterSet.subsetOf(projectSet)) {
+    // Rewrite project list by replacing push down expression to its reference.
+    val rewrittenProjectList = {
+      val totalPushDownProjectAttrMap =
+        totalPushDownProjects.map(expr => expr.exprId -> expr.toAttribute).toMap
+      projectList.map {
+        _.transform {
+          case e: NamedExpression => totalPushDownProjectAttrMap.getOrElse(e.exprId, e)
+        }.asInstanceOf[NamedExpression]
+      }
+    }
+    val rewrittenProjectAttrSet = rewrittenProjectList.map(_.toAttribute).distinct
+
+    // Check if we don't need to extra Spark Project,
+    // determined by the following two conditions (and):
+    // 1. No column in residual projects.
+    // 2. All residual filter columns are in the push down project list.
+    val noExtraProject = {
+      val pushDownProjectAttrs = AttributeSet(
+        pushDownProjects.map(_.asInstanceOf[NamedExpression].toAttribute)
+      )
+      val residualProjectCols = AttributeSet(residualProjects.flatMap(_.references))
+      val residualFilterCols = AttributeSet(residualFilters.flatMap(_.references))
+
+      residualProjectCols.isEmpty && residualFilterCols.subsetOf(pushDownProjectAttrs)
+    }
+
+    if (noExtraProject) {
+      // DON'T need extra Spark Project.
+
+      // Use rewritten project attributes as CH plan output.
+      val chExec = CHScanExec(
+        rewrittenProjectAttrSet,
+        sparkSession,
+        chRelation,
+        chLogicalPlan
+      )
       residualFilter.map(FilterExec(_, chExec)).getOrElse(chExec)
     } else {
-      ProjectExec(projectList, residualFilter.map(FilterExec(_, chExec)).getOrElse(chExec))
+      // Need extra Spark Project.
+
+      // Use total push down project attributes as CH plan output.
+      var totalPushDownProjectAttrs = totalPushDownProjects.map(_.toAttribute)
+      // TODO: Choose the smallest column (in prime keys, or the timestamp key of MergeTree) as dummy output
+      if (totalPushDownProjectAttrs.isEmpty) {
+        totalPushDownProjectAttrs = Seq(relation.output.head)
+      }
+      val chExec = CHScanExec(totalPushDownProjectAttrs, sparkSession, chRelation, chLogicalPlan)
+
+      // Use rewritten project list as Spark Project output.
+      ProjectExec(rewrittenProjectList, residualFilter.map(FilterExec(_, chExec)).getOrElse(chExec))
     }
   }
 }

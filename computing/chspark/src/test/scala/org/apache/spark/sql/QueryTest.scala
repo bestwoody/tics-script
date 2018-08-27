@@ -21,6 +21,7 @@ import java.sql.{Date, Timestamp}
 import java.text.SimpleDateFormat
 import java.util.{Locale, TimeZone}
 
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.execution.columnar.InMemoryRelation
@@ -57,24 +58,38 @@ abstract class QueryTest extends PlanTest {
     def toInteger(x: Any): Long = x match {
       case d: BigInt => d.bigInteger.longValue()
       case d: Number => d.longValue()
+      case d: Byte   => d.toLong
     }
 
     def toString(value: Any): String =
       new SimpleDateFormat("yy-MM-dd HH:mm:ss", Locale.CHINA).format(value)
 
+    def compNull(l: Any, r: Any): Boolean = {
+      if (l == null) {
+        if (r == null || r.toString.equalsIgnoreCase("null")) {
+          return true
+        }
+      } else if (l.toString.equalsIgnoreCase("null")) {
+        if (r == null || r.toString.equalsIgnoreCase("null")) {
+          return true
+        }
+      }
+      false
+    }
+
     def compValue(lhs: Any, rhs: Any): Boolean =
-      if (lhs == rhs || lhs.toString == rhs.toString) {
+      if (lhs == rhs || compNull(lhs, rhs) || lhs.toString == rhs.toString) {
         true
       } else
         lhs match {
-          case _: Array[Byte] =>
-            val l = lhs.asInstanceOf[Array[Byte]]
-            val r = rhs.asInstanceOf[Array[Byte]]
+          case _: Array[Any] =>
+            val l = lhs.asInstanceOf[Array[Any]]
+            val r = rhs.asInstanceOf[Array[Any]]
             if (l.length != r.length) {
               false
             } else {
               for (pos <- l.indices) {
-                if (l(pos) != r(pos)) {
+                if (!compValue(l(pos), r(pos))) {
                   return false
                 }
               }
@@ -84,10 +99,18 @@ abstract class QueryTest extends PlanTest {
             val l = toDouble(lhs)
             val r = toDouble(rhs)
             Math.abs(l - r) < eps || Math.abs(r) > eps && Math.abs((l - r) / r) < eps
-          case _: Number | _: BigInt | _: java.math.BigInteger =>
+          case _: Number | _: Byte | _: BigInt | _: java.math.BigInteger =>
             toInteger(lhs) == toInteger(rhs)
           case _: Timestamp =>
             toString(lhs) == toString(rhs)
+          case _: GenericRowWithSchema =>
+            val l = lhs.asInstanceOf[GenericRowWithSchema].values
+            val r = rhs match {
+              case v: GenericRowWithSchema => v.values
+              case s: String               => s.substring(1, s.length - 1).split(",")
+              case _                       => Array.empty[String]
+            }
+            compValue(l, r)
           case _ =>
             false
         }

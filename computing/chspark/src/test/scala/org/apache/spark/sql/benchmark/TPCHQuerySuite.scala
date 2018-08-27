@@ -94,7 +94,9 @@ class TPCHQuerySuite extends BaseClickHouseSuite {
       // using JDBC views to run CHSpark test.
       // Reversing the order of two will not result in such problem since JDBC database
       // mapping will replace original table views.
-      assert(compResult(chSparkRes(name), jdbcRes(name)))
+      //
+      // Note that ClickHouse JDBC has issues concerning SortOrder, and it is not fixed yet.
+      assert(compResult(chSparkRes(name), jdbcRes(name), isOrdered = false))
     }
   }
 }

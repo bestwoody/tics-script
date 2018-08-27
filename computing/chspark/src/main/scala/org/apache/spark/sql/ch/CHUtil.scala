@@ -25,7 +25,7 @@ import com.pingcap.common.IOUtil
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.CHUtil.SharedSparkCHClientInsert.Identity
 import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
@@ -743,7 +743,9 @@ object CHUtil {
       case _: AttributeReference => true
       case cast @ Cast(child, _) =>
         Hack.hackSupportCast(cast).getOrElse(isSupportedExpression(child))
-      case _: CreateNamedStruct => true
+      case _: CreateNamedStruct => false
+      case _ @Alias(child, _) =>
+        isSupportedExpression(child)
       // TODO: Don't pushdown IsNotNull maybe better
       case IsNotNull(child) =>
         isSupportedExpression(child)
@@ -764,7 +766,9 @@ object CHUtil {
       case Divide(lhs, rhs) =>
         isSupportedExpression(lhs) && isSupportedExpression(rhs)
       case Remainder(lhs, rhs) =>
-        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+        !rhs.canonicalized.equals(Literal(0)) && isSupportedExpression(lhs) && isSupportedExpression(
+          rhs
+        )
       case GreaterThan(lhs, rhs) =>
         isSupportedExpression(lhs) && isSupportedExpression(rhs)
       case GreaterThanOrEqual(lhs, rhs) =>
@@ -789,18 +793,17 @@ object CHUtil {
   def isSupportedAggregateExpression(ae: AggregateExpression): Boolean =
     // Should not support any AggregateExpression that has isDistinct = true,
     // because we have to unify results on different partitions.
-    (ae.aggregateFunction, ae.isDistinct) match {
-      case (_, true)            => false
-      case (Count(children), _) => children.forall(isSupportedExpression)
-      case (Min(child), _)      => isSupportedExpression(child)
-      case (Max(child), _)      => isSupportedExpression(child)
-      case (Sum(child), _) =>
+    ae.aggregateFunction match {
+      case _ if ae.isDistinct => false
+      case Sum(child) =>
         child.dataType match {
           case DecimalType() => false
           case _             => isSupportedExpression(child)
         }
-      case (Average(_), _) =>
+      case Average(_) =>
         throw new UnsupportedOperationException(s"Unexpected ${ae.toString} found.")
+      case PromotedSum(_) | Count(_) | Min(_) | Max(_) =>
+        ae.aggregateFunction.children.forall(isSupportedExpression)
       case _ => false
     }
 

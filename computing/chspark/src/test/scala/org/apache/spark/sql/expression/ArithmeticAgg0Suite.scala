@@ -91,7 +91,7 @@ class ArithmeticAgg0Suite extends BaseClickHouseSuite {
   allCases foreach { query =>
     {
       test(query) {
-        runTest(query)
+        runTest(query, skipJDBC = true)
       }
     }
   }

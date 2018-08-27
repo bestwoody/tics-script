@@ -135,6 +135,8 @@ public class TypeMappingJava {
     static private Map<Class<? extends DataType>, CHType> sparkTypeToCHTypeMap = new HashMap<>();
     static private Map<Class<? extends DataType>, CHTypeNullable> sparkTypeToCHTypeNullableMap = new HashMap<>();
     static {
+        sparkTypeToCHTypeMap.put(ByteType$.class, CHTypeInt8.instance);
+        sparkTypeToCHTypeNullableMap.put(ByteType$.class, CHTypeInt8.nullableInstance);
         sparkTypeToCHTypeMap.put(IntegerType$.class, CHTypeInt32.instance);
         sparkTypeToCHTypeNullableMap.put(IntegerType$.class, CHTypeInt32.nullableInstance);
         sparkTypeToCHTypeMap.put(LongType$.class, CHTypeInt64.instance);
@@ -179,6 +181,6 @@ public class TypeMappingJava {
                 return sparkTypeToCHTypeMap.get(dataType.getClass());
             }
         }
-        throw new UnsupportedOperationException("Target dataType for Cast is not supported.");
+        throw new UnsupportedOperationException("Target dataType " + dataType + " for Cast is not supported.");
     }
 }

@@ -70,7 +70,7 @@ class CHStrategySuite extends SharedSQLContext {
     )
     testQuery(
       "select mt_a a from mt",
-      Map((multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]"))
+      Map((multiNodeT, "CH plan [Project [mt_a AS `a`], Filter [], Aggregate [], TopN []]"))
     )
     testQuery(
       "select * from mt",
@@ -90,7 +90,7 @@ class CHStrategySuite extends SharedSQLContext {
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a, mt_b], Filter [(mt_b IS NOT NULL), (mt_b = 0)], Aggregate [], TopN []]"
+          "CH plan [Project [mt_a], Filter [(mt_b IS NOT NULL), (mt_b = 0)], Aggregate [], TopN []]"
         )
       )
     )
@@ -99,18 +99,46 @@ class CHStrategySuite extends SharedSQLContext {
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a, mt_b], Filter [(mt_a IN (1, 2, mt_b))], Aggregate [], TopN []]"
+          "CH plan [Project [mt_a], Filter [(mt_a IN (1, 2, mt_b))], Aggregate [], TopN []]"
+        )
+      )
+    )
+    testQuery(
+      "select mt_a + 1 as a from mt where cos(mt_b) = 0",
+      Map(
+        (
+          multiNodeT,
+          "CH plan [Project [(mt_a + 1) AS `a`, mt_b], Filter [], Aggregate [], TopN []]"
         )
       )
     )
     testQuery(
       "select cast(cos(mt_a) as string) from mt",
-      Map((multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]"))
+      Map(
+        (
+          multiNodeT,
+          "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]"
+        )
+      )
     )
     // Testing hack.
     testQuery(
       "select cast(cast(mt_a as String) as date) from mt",
-      Map((multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]"))
+      Map(
+        (
+          multiNodeT,
+          "CH plan [Project [CAST(CAST(mt_a AS STRING) AS DATE) AS `CAST(CAST(mt_a AS STRING) AS DATE)`], Filter [], Aggregate [], TopN []]"
+        )
+      )
+    )
+    testQuery(
+      "select cast(cast(mt_a as String) as date) a from mt",
+      Map(
+        (
+          multiNodeT,
+          "CH plan [Project [CAST(CAST(mt_a AS STRING) AS DATE) AS `a`], Filter [], Aggregate [], TopN []]"
+        )
+      )
     )
   }
 
@@ -118,7 +146,7 @@ class CHStrategySuite extends SharedSQLContext {
     // Predicate LIKE not pushing down, checking if column mt_b is correctly pushed.
     testQuery(
       "select mt_a from mt where MT_B like '%WHATEVER'",
-      Map((multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [], Aggregate [], TopN []]"))
+      Map((multiNodeT, "CH plan [Project [mt_a, MT_B], Filter [], Aggregate [], TopN []]"))
     )
   }
 
