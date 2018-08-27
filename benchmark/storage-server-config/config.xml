@@ -52,7 +52,10 @@
       -->
     <mark_cache_size>5368709120</mark_cache_size>
 
-    <!-- Path of persisted mapping cache in fast(er) disk device. Empty means disabled. -->
+    <!-- Path of persisted mapping cache in fast(er) disk device.
+         Empty means disabled.
+         Seperated with ';' if there are more than one path.
+      -->
     <persisted_mapping_cache_path></persisted_mapping_cache_path>
     <!-- Quota size in bytes of persisted mapping cache, in bytes. 0 means unlimited. -->
     <persisted_mapping_cache_size>0</persisted_mapping_cache_size>

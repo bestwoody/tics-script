@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeReader.cpp b/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
-index ef802fc633c6..862b7d1a49d5 100644
+index ef802fc633c6..d614d7561616 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
 @@ -4,6 +4,7 @@
@@ -55,7 +55,7 @@ index ef802fc633c6..862b7d1a49d5 100644
 +        if (!marks)
 +            loadMarks();
 +        if (update_persisted_cache)
-+            persisted_cache->cacheMarkRangesInDataFile(path, all_mark_ranges, *marks, marks_count, buffer_size);
++            persisted_cache->cacheRangesInDataFile(path, all_mark_ranges, *marks, marks_count, buffer_size);
 +        // May fail, but we can ignore it and read from origin file
 +        persisted_cache->redirectDataFile(path, all_mark_ranges, *marks, marks_count, update_persisted_cache);
 +    }

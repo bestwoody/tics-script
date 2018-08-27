@@ -16,7 +16,7 @@ class PersistedCache
 {
 public:
     PersistedCache(size_t max_size_in_bytes, const std::string & base_path,
-        const std::string & persisted_path, size_t min_seconds_to_evit = 120);
+        const std::string & persisted_path_setting, size_t min_seconds_to_evit = 120);
 
     ~PersistedCache();
 
@@ -31,7 +31,7 @@ public:
         const MarksInCompressedFile & marks, size_t file_marks_count, bool expected_exists);
 
     // Copy marks data from origin file to mapping hollow file
-    bool cacheMarkRangesInDataFile(const std::string & origin_path, const MarkRanges & mark_ranges,
+    bool cacheRangesInDataFile(const std::string & origin_path, const MarkRanges & mark_ranges,
         const MarksInCompressedFile & marks, size_t marks_count, size_t max_buffer_size);
 
 private:
@@ -81,7 +81,7 @@ private:
     void deletePart(const std::string & cache_path);
 
     // Scan cache dir and delete cached parts which origin parts no longer exists
-    void scanExpiredParts();
+    void scanUnregisteredParts();
 
     // If total used cache space nears the quota,
     //  scan all parts (in dir and in cache-status), delete the most unused parts
@@ -96,10 +96,10 @@ private:
     void performGC();
 
     // Get cache status of the part by a mkr or bin file's path, if status not exists, create one
-    PartCacheStatusPtr getPartCacheStatus(const std::string & origin_path);
+    PartCacheStatusPtr getPartCacheStatus(const std::string & origin_path, bool create_if_not_exists);
 
     // Get cache file path from origin path
-    bool getCachePath(const std::string & origin_path, std::string & cache_path);
+    bool getCachePath(const std::string & origin_path, bool is_part_path, std::string & cache_path);
 
     // Check all marks in mark_ranges are cached
     bool isFileMarksAllCached(const FileMarksCached & marks_status, const MarkRanges & mark_ranges,
@@ -121,7 +121,7 @@ private:
     const size_t min_seconds_to_evit;
 
     std::string base_path;
-    std::string persisted_path;
+    std::vector<std::string> persisted_paths;
 
     CacheStatus cache_status;
     std::mutex cache_lock;
