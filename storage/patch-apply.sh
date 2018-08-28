@@ -138,5 +138,6 @@ set -eu
 patch_apply "ch"
 patch_apply_contrib "poco"
 patch_apply_contrib "capnproto"
+patch_apply_contrib "boost"
 
 

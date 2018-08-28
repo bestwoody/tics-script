@@ -125,4 +125,5 @@ set -eu
 patch_extract "ch" "$force" ""
 patch_extract_contrib "$force" "poco"
 patch_extract_contrib "$force" "capnproto"
+patch_extract_contrib "$force" "boost"
 
