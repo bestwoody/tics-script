@@ -1,5 +1,5 @@
 diff --git a/libs/libcommon/include/common/DateLUTImpl.h b/libs/libcommon/include/common/DateLUTImpl.h
-index 535c863eeb3e..4145dafd4983 100644
+index 535c863eeb3e..f3a641e87461 100644
 --- a/libs/libcommon/include/common/DateLUTImpl.h
 +++ b/libs/libcommon/include/common/DateLUTImpl.h
 @@ -1,21 +1,28 @@
@@ -37,7 +37,7 @@ index 535c863eeb3e..4145dafd4983 100644
  
  
  /** Lookup table to conversion of time to date, and to month / year / day of week / day of month and so on.
-@@ -23,8 +30,29 @@ STRONG_TYPEDEF(UInt16, DayNum_t);
+@@ -23,8 +30,28 @@ STRONG_TYPEDEF(UInt16, DayNum_t);
    */
  class DateLUTImpl
  {
@@ -53,7 +53,7 @@ index 535c863eeb3e..4145dafd4983 100644
 +    
  public:
 -    DateLUTImpl(const std::string & time_zone);
-+    DateLUTImpl(const std::string &){
++    DateLUTImpl(const std::string & time_zone_) : time_zone(time_zone_) {
 +        DurationType utc_offset(boost::date_time::second_clock<ptime>::local_time() - boost::date_time::second_clock<ptime>::universal_time());
 +        std::ostringstream ss;
 +        if (!utc_offset.is_negative()) {
@@ -61,14 +61,13 @@ index 535c863eeb3e..4145dafd4983 100644
 +        } else {
 +            ss << "UTC" << utc_offset;
 +        }
-+        time_zone = ss.str();
-+        zone = TzPtr(new boost::local_time::posix_time_zone(time_zone));
++        zone = TzPtr(new boost::local_time::posix_time_zone(ss.str()));
 +        start_day_num = DateType(1400,1,1).day_count().as_number();
 +    };
  
  public:
      struct Values
-@@ -32,7 +60,7 @@ public:
+@@ -32,7 +59,7 @@ public:
          /// Least significat 32 bits from time_t at beginning of the day.
          /// If the unix timestamp of beginning of the day is negative (example: 1970-01-01 MSK, where time_t == -10800), then value is zero.
          /// Change to time_t; change constants above; and recompile the sources if you need to support time after 2105 year.
@@ -77,7 +76,7 @@ index 535c863eeb3e..4145dafd4983 100644
  
          /// Properties of the day.
          UInt16 year;
-@@ -54,206 +82,258 @@ private:
+@@ -54,206 +81,258 @@ private:
      /// Day nums are the same in all time zones. 1970-01-01 is 0 and so on.
      /// Table is relatively large, so better not to place the object on stack.
      /// In comparison to std::vector, plain array is cheaper by one indirection.
@@ -444,7 +443,7 @@ index 535c863eeb3e..4145dafd4983 100644
      }
  
      /** Only for time zones with/when offset from UTC is multiple of five minutes.
-@@ -267,29 +347,57 @@ public:
+@@ -267,29 +346,57 @@ public:
        *  each minute, with added or subtracted leap second, spans exactly 60 unix timestamps.
        */
  
@@ -517,7 +516,7 @@ index 535c863eeb3e..4145dafd4983 100644
      }
  
      /** Number of calendar day since the beginning of UNIX epoch (1970-01-01 is zero)
-@@ -300,75 +408,129 @@ public:
+@@ -300,75 +407,129 @@ public:
        *  because the same calendar day starts/ends at different timestamps in different time zones)
        */
  
@@ -679,7 +678,7 @@ index 535c863eeb3e..4145dafd4983 100644
      }
  
      /// Create DayNum_t from year, month, day of month.
-@@ -377,57 +539,80 @@ public:
+@@ -377,57 +538,80 @@ public:
          if (unlikely(year < DATE_LUT_MIN_YEAR || year > DATE_LUT_MAX_YEAR || month < 1 || month > 12 || day_of_month < 1 || day_of_month > 31))
              return DayNum_t(0);
  
@@ -785,7 +784,7 @@ index 535c863eeb3e..4145dafd4983 100644
      }
  
      inline DayNum_t YYYYMMDDToDayNum(UInt32 num) const
-@@ -436,194 +621,222 @@ public:
+@@ -436,194 +620,222 @@ public:
      }
  
  
