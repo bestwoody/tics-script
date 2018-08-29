@@ -493,7 +493,7 @@ object CHUtil {
     // TODO: could do sampling here to estimate a proper clientBatchSize/storageBatchRows/storageBatchBytes.
     val identities =
       cluster.nodes.map(
-        Identity(insertStmt, true, clientBatchSize, storageBatchRows, storageBatchBytes, _)
+        Identity(insertStmt, fromTiDB, clientBatchSize, storageBatchRows, storageBatchBytes, _)
       )
     var totalCount = 0
     identities.foreach(SharedSparkCHClientInsert.acquire)
