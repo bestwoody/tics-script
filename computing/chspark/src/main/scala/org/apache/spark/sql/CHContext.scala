@@ -87,45 +87,39 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
     val df = tiContext.getDataFrame(database, table)
     val (partitioner, pkOffset) = CHUtil.createTable(database, tableInfo.get, partitionNum, cluster)
 
-    try {
-      if (partitioner == Partitioner.Hash) {
-        CHUtil.insertDataHash(
-          df,
-          database,
-          table,
-          pkOffset,
-          fromTiDB = true,
-          sqlContext.conf
-            .getConfString(
-              CHConfigConst.CLIENT_BATCH_SIZE,
-              SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
-            )
-            .toInt,
-          batchRows,
-          batchBytes,
-          cluster
-        )
-      } else {
-        CHUtil.insertDataRandom(
-          df,
-          database,
-          table,
-          fromTiDB = true,
-          sqlContext.conf
-            .getConfString(
-              CHConfigConst.CLIENT_BATCH_SIZE,
-              SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
-            )
-            .toInt,
-          batchRows,
-          batchBytes,
-          cluster
-        )
-      }
-    } catch {
-      case e: Throwable =>
-        dropTable(database, table)
-        throw e
+    if (partitioner == Partitioner.Hash) {
+      CHUtil.insertDataHash(
+        df,
+        database,
+        table,
+        pkOffset,
+        fromTiDB = true,
+        sqlContext.conf
+          .getConfString(
+            CHConfigConst.CLIENT_BATCH_SIZE,
+            SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
+          )
+          .toInt,
+        batchRows,
+        batchBytes,
+        cluster
+      )
+    } else {
+      CHUtil.insertDataRandom(
+        df,
+        database,
+        table,
+        fromTiDB = true,
+        sqlContext.conf
+          .getConfString(
+            CHConfigConst.CLIENT_BATCH_SIZE,
+            SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
+          )
+          .toInt,
+        batchRows,
+        batchBytes,
+        cluster
+      )
     }
   }
 
