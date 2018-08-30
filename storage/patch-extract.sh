@@ -111,7 +111,10 @@ patch_extract_contrib()
 
 	patch_extract "${contrib}" "$force" ""
 	rm -rf "$this_dir/${contrib}-patch"
-	mv "$this_dir/ch/contrib/${contrib}-patch" "$this_dir/"
+
+	if [ -d "$this_dir/ch/contrib/${contrib}-patch" ]; then
+		mv "$this_dir/ch/contrib/${contrib}-patch" "$this_dir/"
+	fi
 
 	cd "$this_dir/"
 }
