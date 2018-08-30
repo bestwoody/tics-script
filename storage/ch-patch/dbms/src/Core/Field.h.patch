@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Core/Field.h b/dbms/src/Core/Field.h
-index 795bc4b70701..4df40dee6290 100644
+index 795bc4b70701..a51aad1bbd71 100644
 --- a/dbms/src/Core/Field.h
 +++ b/dbms/src/Core/Field.h
 @@ -55,6 +55,7 @@ public:
@@ -42,17 +42,15 @@ index 795bc4b70701..4df40dee6290 100644
  
              default:
                  throw Exception("Bad type of Field", ErrorCodes::BAD_TYPE_OF_FIELD);
-@@ -329,8 +334,8 @@ public:
+@@ -329,7 +334,7 @@ public:
  
  private:
      std::aligned_union_t<DBMS_MIN_FIELD_SIZE - sizeof(Types::Which),
 -        Null, UInt64, UInt128, Int64, Float64, String, Array, Tuple
--        > storage;
 +        Null, UInt64, UInt128, Int64, Float64, String, Array, Tuple, DecimalValue
-+        > storage{0};
+         > storage;
  
      Types::Which which;
- 
 @@ -368,6 +373,7 @@ private:
              case Types::String:  f(field.template get<String>());  return;
              case Types::Array:   f(field.template get<Array>());   return;
