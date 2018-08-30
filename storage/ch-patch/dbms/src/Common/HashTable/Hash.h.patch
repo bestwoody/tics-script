@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Common/HashTable/Hash.h b/dbms/src/Common/HashTable/Hash.h
-index e3b900d85cf0..95489cf09390 100644
+index e3b900d85cf0..10acb6ddf56f 100644
 --- a/dbms/src/Common/HashTable/Hash.h
 +++ b/dbms/src/Common/HashTable/Hash.h
 @@ -1,7 +1,12 @@
@@ -15,7 +15,7 @@ index e3b900d85cf0..95489cf09390 100644
  
  
  /** Hash functions that are better than the trivial function std::hash.
-@@ -87,6 +92,14 @@ DEFINE_HASH(DB::Float64)
+@@ -87,6 +92,15 @@ DEFINE_HASH(DB::Float64)
  
  #undef DEFINE_HASH
  
@@ -23,14 +23,15 @@ index e3b900d85cf0..95489cf09390 100644
 +{
 +    size_t operator() (DB::DecimalValue v) const {
 +        //return CityHash_v1_0_2::CityHash64(reinterpret_cast<char*>(&v), sizeof(v));
-+        return std::hash<std::string>{}(v.toString());
++        //return std::hash<std::string>{}(v.toString());
++        return boost::multiprecision::hash_value(v.value);
 +    }
 +};
 +
  
  template <typename T> struct HashCRC32;
  
-@@ -112,6 +125,16 @@ template <> struct HashCRC32<T>\
+@@ -112,6 +126,16 @@ template <> struct HashCRC32<T>\
      }\
  };
  
@@ -38,9 +39,9 @@ index e3b900d85cf0..95489cf09390 100644
 +{
 +    size_t operator() (DB::DecimalValue v) const
 +    {
-+//        return CityHash_v1_0_2::Hash128to64(CityHash_v1_0_2::CityHashCrc128(reinterpret_cast<char*>(&v), sizeof(DB::DecimalValue)));
-+//        return std::hash<std::string>{}(v.toString());
-+          return boost::multiprecision::hash_value(v.value);
++        //return CityHash_v1_0_2::Hash128to64(CityHash_v1_0_2::CityHashCrc128(reinterpret_cast<char*>(&v), sizeof(DB::DecimalValue)));
++        //return std::hash<std::string>{}(v.toString());
++        return boost::multiprecision::hash_value(v.value);
 +    }
 +};
 +
