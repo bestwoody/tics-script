@@ -18,7 +18,7 @@ patch_cp()
 	local target="$1"
 	local modified="$2"
 
-	local patch="../$target-patch/""${modified#*$target/}"
+	local patch="../$target-patch/$modified"
 	local path=`dirname "$patch"`
 	mkdir -p "$path"
 	cp -f "$modified" "$patch"
