@@ -181,6 +181,9 @@ public class MemoryUtil {
             bigInt = bigInt.abs();
         }
         byte[] arr = bigInt.toByteArray();
+        if (arr.length > 32) {
+            throw new RuntimeException("The inserting decimal is out of range: " + v.toString());
+        }
         int limbs = arr.length / 8;
         if (arr.length % 8 > 0) {
             limbs++;
