@@ -15,7 +15,7 @@ struct BlockPersistSync : public IBlockPersist {
             Buf buf = block[i]->Data(0, block.Rows());
             PersistLocationPtr loc = layout->PrepareColumnPartialWrite(*block[i], schema[i], pos_in_block_stream, block.Rows(), buf.size);
             if (::pwrite(loc->fd, buf.data, buf.size, loc->offset) < 0)
-                throw ErrFileWriteFailed(loc->address);
+                throw FS::ErrFileWriteFailed(loc->address);
             loc->Close();
         }
         ColumnWithTypeAndName encoded_pk = block.GetEncodedPKColumn();
@@ -29,7 +29,7 @@ struct BlockPersistSync : public IBlockPersist {
             PersistLocationPtr loc = layout->GetReadLocation(schema[i], pos_in_block_stream);
             char *pdata = block[i]->AssignBegin(loc->size);
             if (::pread(loc->fd, pdata, loc->size, loc->offset) < 0)
-                throw ErrFileReadFailed(loc->address);
+                throw FS::ErrFileReadFailed(loc->address);
             block[i]->AssignDone();
             loc->Close();
         }

@@ -26,7 +26,7 @@ public:
 
     void Close() override {
         if (do_fsync && ::fsync(fd) < 0)
-            throw ErrFileSyncFailed(address);
+            throw FS::ErrFileSyncFailed(address);
     }
 
 private:
@@ -60,10 +60,10 @@ public:
         const string file = path + "/" + info.name + ".dat";
         int fd = ::open(file.c_str(), O_RDONLY);
         if (fd < 0)
-            throw ErrFileCannotOpenForRead(file);
+            throw FS::ErrFileCannotOpenForRead(file);
         struct ::stat sb;
         if (fstat(fd, &sb) < 0)
-            throw ErrFileCannotStat(file);
+            throw FS::ErrFileCannotStat(file);
         PersistRange range = column_offsets.RangeAt(info, pos_in_block_stream);
         return make_shared<PersistLocationInFile>(file, fd, range.offset, range.size, false);
     }
@@ -88,13 +88,13 @@ template <typename TColumnsLayout>
 struct TablesLayoutByDir : public ITablesLayout {
     TablesLayoutByDir(const string & path_) : path(path_) {
         if (::mkdir(path.c_str(), 0700) < 0 && errno != EEXIST)
-            throw ErrCreateDirFailed(path);
+            throw FS::ErrCreateDirFailed(path);
     }
 
     ColumnsLayoutPtr GetColumnsLayout(const string &table) override {
         string dir = path + "/" + table;
         if (::mkdir(dir.c_str(), 0700) < 0 && errno != EEXIST)
-            throw ErrCreateDirFailed(dir);
+            throw FS::ErrCreateDirFailed(dir);
         return make_shared<TColumnsLayout>(dir);
     }
 

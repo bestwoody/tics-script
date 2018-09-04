@@ -18,7 +18,7 @@ struct ListDirs : public vector<string> {
         DIR *dir;
         dir = opendir(path.c_str());
         if (!dir)
-            throw ErrDirOpenFailed(path);
+            throw FS::ErrDirOpenFailed(path);
         struct dirent *ent;
         while ((ent = readdir(dir)) != NULL) {
             if (!(ent->d_type & DT_DIR))
