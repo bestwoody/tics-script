@@ -10,7 +10,6 @@ namespace moonshine {
 
 using std::string;
 
-// TODO: interface defination
 class IndexPersistSingleFile : public Index {
 public:
     IndexPersistSingleFile(const FSPtr &fs_, const string &file_) : fs(fs_), file(file_) {}

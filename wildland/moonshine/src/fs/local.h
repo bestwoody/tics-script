@@ -1,93 +1,68 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
+
+#include "fs/err.h"
+#include "fs/fs.h"
 
 namespace moonshine {
 
 using std::string;
+using std::vector;
 
-struct FSLocalSync {
-    using FileHandle = int;
-
-    struct ErrPersist : public Err {
-        ErrPersist(const string &msg) {
-            stringstream ss;
-            ss << msg << ", errno: " << errno;
-            this->msg = ss.str();
+struct FSLocalSync : public IFS {
+    void ListSubDirs(const string &path, vector<string> &dirs) override {
+        DIR *dir = ::opendir(path.c_str());
+        if (!dir)
+            throw ErrDirOpenFailed(path, errno);
+        struct dirent *ent;
+        while ((ent = ::readdir(dir)) != NULL) {
+            if (!(ent->d_type & DT_DIR))
+                continue;
+            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+                continue;
+            dirs.emplace_back(ent->d_name);
         }
-    };
+    }
 
-    struct ErrFileNotExists : public ErrPersist {
-        ErrFileNotExists(const string &file) : ErrPersist("file can not open for read: '" + file + "'") {}
-    };
+    void MkDir(const string &path) override {
+        if (::mkdir(path.c_str(), 0700) < 0 && errno != EEXIST)
+            throw ErrCreateDirFailed(path, errno);
+    }
 
-    struct ErrFileCannotOpenForWrite : public ErrPersist {
-        ErrFileCannotOpenForWrite(const string &file) : ErrPersist("file can not open for write: '" + file + "'") {}
-    };
-
-    struct ErrFileCannotOpenForRead : public ErrPersist {
-        ErrFileCannotOpenForRead(const string &file) : ErrPersist("file can not open for read: '" + file + "'") {}
-    };
-
-    struct ErrFileCannotStat : public ErrPersist {
-        ErrFileCannotStat(const string &file) : ErrPersist("file can not stat: '" + file + "'") {}
-    };
-
-    struct ErrCreateDirFailed : public ErrPersist {
-        ErrCreateDirFailed(const string &dir) : ErrPersist("create dir failed: '" + dir + "'") {}
-    };
-
-    struct ErrFileWriteFailed : public ErrPersist {
-        ErrFileWriteFailed(const string &file) : ErrPersist("file write failed: '" + file + "'") {}
-    };
-
-    struct ErrFileReadFailed : public ErrPersist {
-        ErrFileReadFailed(const string &file) : ErrPersist("file read failed: '" + file + "'") {}
-    };
-
-    struct ErrFileSyncFailed : public ErrPersist {
-        ErrFileSyncFailed(const string &file) : ErrPersist("file sync failed: '" + file + "'") {}
-    };
-
-    struct ErrFileCloseFailed : public ErrPersist {
-        ErrFileCloseFailed(const string &file) : ErrPersist("file close failed: '" + file + "'") {}
-    };
-
-    struct ErrDirOpenFailed : public ErrPersist {
-        ErrDirOpenFailed(const string &dir) : ErrPersist("dir open failed: '" + dir+ "'") {}
-    };
-
-    static size_t GetFileSize(FileHandle fd, const string &file = "") {
+    size_t GetFileSize(FileHandle fd, const string &display_file_name) override {
         struct ::stat sb;
         if (fstat(fd, &sb) < 0)
-            throw ErrFileCannotStat(FileName(file));
+            throw ErrFileCannotStat(display_file_name, errno);
         return sb.st_size;
     }
 
-    static FileHandle OpenForRead(const string &file) {
+    FileHandle OpenForRead(const string &file) override {
         FileHandle fd = ::open(file.c_str(), O_RDONLY);
         if (fd < 0) {
             if (errno == ENOENT)
-                throw ErrFileNotExists(file);
+                throw ErrFileNotExists(file, errno);
             else
-                throw ErrFileCannotOpenForRead(file);
+                throw ErrFileCannotOpenForRead(file, errno);
         }
         return fd;
     }
 
-    static size_t Read(FileHandle fd, char *buf, size_t size, size_t offset, const string &file = "") {
+    size_t Read(FileHandle fd, char *buf, size_t size, size_t offset, const string &display_file_name) override {
         int read = ::pread(fd, buf, size, offset);
         if (read < 0)
-            throw ErrFileReadFailed(FileName(file));
+            throw ErrFileReadFailed(display_file_name, errno);
         return size_t(read);
     }
 
-    static FileHandle OpenForWrite(const string &file, bool create, bool truncate) {
+    FileHandle OpenForWrite(const string &file, bool create, bool truncate) override {
         int flag = O_WRONLY;
         if (create)
             flag |= O_CREAT;
@@ -95,32 +70,27 @@ struct FSLocalSync {
             flag |= O_TRUNC;
         FileHandle fd = ::open(file.c_str(), flag, 0644);
         if (fd < 0)
-            throw ErrFileCannotOpenForWrite(file);
+            throw ErrFileCannotOpenForWrite(file, errno);
         return fd;
     }
 
-    static size_t Write(FileHandle fd, const char *data, size_t size, size_t offset, const string &file = "") {
+    size_t Write(FileHandle fd, const char *data, size_t size, size_t offset, const string &display_file_name) override {
         int written = ::pwrite(fd, data, size, offset);
         if (written < 0)
-            throw ErrFileWriteFailed(FileName(file));
+            throw ErrFileWriteFailed(display_file_name, errno);
         return size_t(written);
     }
 
-    static void Close(FileHandle fd, const string &file = "") {
+    void Close(FileHandle fd, const string &display_file_name) override {
         if (::fsync(fd) < 0)
-            throw ErrFileSyncFailed(FileName(file));
+            throw ErrFileSyncFailed(display_file_name, errno);
         if (::close(fd) < 0)
-            throw ErrFileCloseFailed(FileName(file));
+            throw ErrFileCloseFailed(display_file_name, errno);
     }
 
-    static void FSync(FileHandle fd, const string &file = "") {
+    void FSync(FileHandle fd, const string &display_file_name) override {
         if (::fsync(fd) < 0)
-            throw ErrFileSyncFailed(FileName(file));
-    }
-
-private:
-    static string FileName(const string &file) {
-        return file.empty() ? "<not present>" : file;
+            throw ErrFileSyncFailed(display_file_name, errno);
     }
 };
 

@@ -1,42 +1,44 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <unordered_map>
 #include <memory>
 
 #include "storage/storage.h"
-
-#include "storage/null/null.h"
-#include "storage/plain/plain.h"
-
-#include "io/base.h"
-#include "io/block.h"
+#include "fs/fs.h"
 
 namespace moonshine {
 
 using std::string;
+using std::vector;
 using std::unordered_map;
 using std::make_shared;
+using std::shared_ptr;
 
 struct ErrTableExists : public Err {
-    ErrTableExists(const string &msg) : Err(msg) {}
+    ErrTableExists(const string &msg) : Err(msg + " exists") {}
 };
 
 struct ErrTableNotExists : public Err {
-    ErrTableNotExists(const string &msg) : Err(msg) {}
+    ErrTableNotExists(const string &msg) : Err(msg + " not exists") {}
 };
 
 // TODO: mutex lock()
 class Storages {
 public:
-    Storages(const string &path_) : path(path_) {
-        Reg(make_shared<StorageNull>());
-        Reg(make_shared<StoragePlain<TablesLayoutByDir<ColumnsLayoutByBlock>, BlockPersistSync>>(path));
+    Storages(const FSPtr &fs_, const CreateSqlPersistPtr &meta_persist_, const string &path_) :
+        fs(fs_), meta_persist(meta_persist_), path(path_) {}
 
-        ListDirs table_names(path);
+    void LoadTables() {
+        vector<string> table_names;
+        try {
+            fs->ListSubDirs(path, table_names);
+        } catch (ErrDirOpenFailed) {
+        }
         for (const auto &name: table_names) {
             string create_sql;
-            StringPersist::Load(path + "/" + name + "/create.sql", create_sql);
+            meta_persist->Load(path + "/" + name + "/create.sql", create_sql);
             CreateTable(create_sql);
         }
     }
@@ -45,7 +47,7 @@ public:
         string name;
         TablePtr table = LoadTable(create_sql, name);
         tables[name] = table;
-        StringPersist::Save(path + "/" + name + "/create.sql", create_sql.c_str(), create_sql.size());
+        meta_persist->Save(path + "/" + name + "/create.sql", create_sql.c_str(), create_sql.size());
         return table;
     }
 
@@ -56,6 +58,17 @@ public:
             throw ErrSchemaParsingUnexpectedString("create", parser.Unparsed());
         if (!parser.MatchString("table"))
             throw ErrSchemaParsingUnexpectedString("table", parser.Unparsed());
+
+        bool ignore_if_exists = false;
+        if (parser.MatchString("if"))
+        {
+            if (!parser.MatchString("not"))
+                throw ErrSchemaParsingUnexpectedString("not", parser.Unparsed());
+            if (!parser.MatchString("exists"))
+                throw ErrSchemaParsingUnexpectedString("exists", parser.Unparsed());
+            ignore_if_exists = true;
+        }
+
         if (!parser.MatchToken(name))
             throw ErrSchemaParsingUnexpected(parser.Unparsed());
 
@@ -96,7 +109,7 @@ public:
         // if (!parser.MatchChar(')'))
         //     throw ErrSchemaParsingUnexpectedChar(')', parser.Unparsed());
 
-        return LoadTable(engine, name, schema, pk, args);
+        return LoadTable(engine, name, schema, pk, args, ignore_if_exists);
     }
 
     TablePtr LoadTable(
@@ -104,10 +117,17 @@ public:
         const string &name,
         const Schema &schema,
         const UnidirectSortDesc &pk,
-        const Args &args) {
+        const Args &args,
+        bool ignore_if_exists) {
 
         if (tables.find(name) != tables.end())
-            throw ErrTableExists("on creating table: '" + name + "'");
+        {
+            if (ignore_if_exists)
+                return GetTable(name);
+            else
+                throw ErrTableExists("on creating table: '" + name + "'");
+        }
+
         auto storage = storages.find(engine);
         if (storage == storages.end())
             throw ErrWrongUsage("unknown storage name: '" + engine + "'");
@@ -132,12 +152,15 @@ public:
         return type_factory;
     }
 
-private:
-    void Reg(StoragePtr &&storage) {
+    void Regester(StoragePtr &&storage) {
         const string name = storage->GetName();
         storages[name] = storage;
         storage_args[name] = storage->GetExpectedArgs();
     }
+
+private:
+    FSPtr fs;
+    CreateSqlPersistPtr meta_persist;
 
     string path;
     unordered_map<string, StoragePtr> storages;
@@ -146,5 +169,7 @@ private:
 
     TypeFactory type_factory;
 };
+
+using StoragesPtr = shared_ptr<Storages>;
 
 }

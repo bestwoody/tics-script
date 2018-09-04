@@ -2,7 +2,7 @@
 
 #include "base/args.h"
 #include "stream/random.h"
-#include "storage/storages.h"
+#include "storage/manifest.h"
 
 using std::string;
 
@@ -21,10 +21,10 @@ using moonshine::UnidirectSortDesc;
 using moonshine::GenRandBlock;
 using moonshine::StreamRandom;
 
-using moonshine::Args;
 using moonshine::BlocksInputPtr;
 using moonshine::TablePtr;
-using moonshine::Storages;
+using moonshine::StoragesPtr;
+using moonshine::CreateStoragesSimple;
 
 int CmdRandWrite(int argc, const char *argv[]) {
     if (argc != 4) {
@@ -33,10 +33,10 @@ int CmdRandWrite(int argc, const char *argv[]) {
     }
 
     string path(argv[0]);
-    Storages storages(path);
+    StoragesPtr storages = CreateStoragesSimple(path);
 
     string create_sql(argv[1]);
-    TablePtr table = storages.CreateTable(create_sql);
+    TablePtr table = storages->CreateTable(create_sql);
 
     size_t block_rows((size_t)atoi(argv[2]));
     size_t total_rows((size_t)atoi(argv[3]));
@@ -57,10 +57,10 @@ int CmdScan(int argc, const char *argv[]) {
     }
 
     string path(argv[0]);
-    Storages storages(path);
+    StoragesPtr storages = CreateStoragesSimple(path);
 
     string name(argv[1]);
-    TablePtr table = storages.GetTable(name);
+    TablePtr table = storages->GetTable(name);
 
     BlocksInputPtr blocks = table->Scan();
     while (!blocks->Done())
