@@ -140,6 +140,15 @@ class CHStrategySuite extends SharedSQLContext {
         )
       )
     )
+    testQuery(
+      "select ifNull(mt_a, mt_b + 1) from mt",
+      Map(
+        (
+          multiNodeT,
+          "CH plan [Project [coalesce(mt_a, (mt_b + 1)) AS `ifnull(mt.``mt_a``, (mt.``mt_b`` + 1))`], Filter [], Aggregate [], TopN []]"
+        )
+      )
+    )
   }
 
   test("filter plans") {

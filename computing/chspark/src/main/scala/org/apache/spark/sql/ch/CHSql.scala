@@ -23,7 +23,7 @@ import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
 import com.pingcap.tikv.types.MySQLType
 import com.pingcap.tispark.TiUtils
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
 
@@ -353,6 +353,17 @@ object CHSql {
     s"CAST($compileArithmetic AS ${compileType(arithmetic.dataType, nullable = arithmetic.nullable)})"
   }
 
+  def compileCoalesce(ce: Coalesce, idx: Integer): String =
+    if (idx == 1) {
+      s"ifNull(${compileExpression(ce.children.head)}, ${compileExpression(ce.children(1))})"
+    } else if (idx > 1) {
+      s"ifNull(${compileCoalesce(ce, idx - 1)}, ${compileExpression(ce.children(idx))})"
+    } else {
+      compileExpression(ce.children.head)
+    }
+
+  def compileAttributeName(name: String): String = s"`${name.replace("`", "\\`")}`"
+
   /**
    * Compile Spark Expressions into CH Expressions
    *
@@ -380,7 +391,7 @@ object CHSql {
           }
         }
       case attr: AttributeReference =>
-        s"`${Hack.hackAttributeReference(attr).getOrElse(attr.name).toLowerCase()}`"
+        compileAttributeName(Hack.hackAttributeReference(attr).getOrElse(attr.name).toLowerCase())
       //      case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
       case cast @ Cast(child, dataType) =>
         if (!Hack.hackSupportCast(cast).getOrElse(CHUtil.isSupportedExpression(child))) {
@@ -394,7 +405,7 @@ object CHSql {
           // Unsupported target type, downgrading to not casting.
           case _: UnsupportedOperationException => s"${compileExpression(child)}"
         }
-      case Alias(child, name) => s"${compileExpression(child)} AS `$name`"
+      case Alias(child, name) => s"${compileExpression(child)} AS ${compileAttributeName(name)}"
       case IsNotNull(child)   => s"${compileExpression(child)} IS NOT NULL"
       case IsNull(child)      => s"${compileExpression(child)} IS NULL"
       case UnaryMinus(child)  => s"(-${compileExpression(child)})"
@@ -413,6 +424,10 @@ object CHSql {
       case Or(left, right)      => s"(${compileExpression(left)} OR ${compileExpression(right)})"
       case In(value, list) =>
         s"${compileExpression(value)} IN (${list.map(compileExpression).mkString(", ")})"
+      case IfNull(left, right, _) =>
+        s"ifNull(${compileExpression(left)}, ${compileExpression(right)})"
+      case ce @ Coalesce(_) =>
+        compileCoalesce(ce, ce.children.length - 1)
       case ae @ AggregateExpression(_, _, _, _) => compileAggregateExpression(ae)
       // TODO: Support more expression types.
       case _ =>

@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.dsl.expressions._
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, CreateNamedStruct, Expression, Literal}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Coalesce, CreateNamedStruct, Expression, IfNull, Literal}
 import org.apache.spark.sql.types._
 
 class CHSqlSuite extends SparkFunSuite {
@@ -178,6 +178,20 @@ class CHSqlSuite extends SparkFunSuite {
   test("test alias expressions") {
     testCompileExpression(a.as("a2"), "`a` AS `a2`")
     testCompileExpression(a.as("a b"), "`a` AS `a b`")
+  }
+
+  test("test coalesce expressions") {
+    testCompileExpression(
+      Coalesce(Seq(a.withNullability(false), b.withNullability(false), c)),
+      "ifNull(ifNull(`a`, `b`), `c`)"
+    )
+    testCompileExpression(IfNull(a, b, Coalesce(Seq(a, b))), "ifNull(`a`, `b`)")
+  }
+
+  test("test attribute name") {
+    val attribute_with_backtick: AttributeReference =
+      AttributeReference("`a`", IntegerType, nullable = true)()
+    testCompileExpression(attribute_with_backtick, "`\\`a\\``")
   }
 
   test("create table statements") {

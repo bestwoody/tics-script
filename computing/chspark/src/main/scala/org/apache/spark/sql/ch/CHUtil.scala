@@ -25,7 +25,7 @@ import com.pingcap.common.IOUtil
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, Cast, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.CHUtil.SharedSparkCHClientInsert.Identity
 import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
@@ -785,6 +785,10 @@ object CHUtil {
         isSupportedExpression(lhs) && isSupportedExpression(rhs)
       case In(value, list) =>
         isSupportedExpression(value) && list.forall(isSupportedExpression)
+      case IfNull(lhs, rhs, _) =>
+        isSupportedExpression(lhs) && isSupportedExpression(rhs)
+      case Coalesce(children) =>
+        !children.exists(child => !isSupportedExpression(child))
       case ae @ AggregateExpression(_, _, _, _) =>
         isSupportedAggregateExpression(ae)
       case _ => false

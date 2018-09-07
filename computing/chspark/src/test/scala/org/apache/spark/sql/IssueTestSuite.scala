@@ -18,6 +18,17 @@
 package org.apache.spark.sql
 
 class IssueTestSuite extends BaseClickHouseSuite {
+  test("pushdown ifNull test") {
+    explainAndRunTest(
+      "select ifNull(tp_int8, tp_int8 + 1) from full_data_type_table order by id_dt",
+      skipJDBC = true
+    )
+    explainAndRunTest(
+      "select ifNull(tp_int8, 1) from full_data_type_table order by id_dt",
+      skipJDBC = true
+    )
+  }
+
   test("complex plan tests") {
     explainAndRunTest(
       "select avg(tp_int8) from full_data_type_table group by tp_uint8",

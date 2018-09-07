@@ -156,6 +156,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       .replace(" date(", " toDate(")
       .replace(" date)", " Nullable(Date))")
       .replace(" first(", " any(")
+      .replace(" ifnull(", " ifNull(")
 
   def execDBTSAndJudge(qSpark: String, skipped: Boolean = false): Boolean =
     try {
