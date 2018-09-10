@@ -10,6 +10,9 @@ export public_network="127.0.0.0/8"
 # Deploy user
 export user="root"
 
+# Update yum libs before install ceph
+export update_yum="false"
+
 # Osd loop device image file path, eg: /data/ceph-osd.img, should be empty if we use raw device in osd
 export osd_img=""
 # Osd loop device size, means nothing if we use raw device in osd

@@ -2,12 +2,9 @@
 
 set -eu
 
-# TODO: what if version changed?
-file="setuptools-33.1.1.zip"
+old=`pwd`
 
-rm -f "$file"
+cd ../../download/downloaded/
+sudo python ez_setup.py
 
-echo "=> curl https://bootstrap.pypa.io/ez_setup.py | sudo python"
-curl https://bootstrap.pypa.io/ez_setup.py | sudo python
-
-rm -f "$file"
+cd "$old"

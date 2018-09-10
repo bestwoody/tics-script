@@ -1,0 +1,26 @@
+[ceph]
+name=Ceph packages for $basearch
+baseurl=<repo_url>/$basearch
+enabled=1
+gpgcheck=1
+priority=2
+type=rpm-md
+gpgkey=<repo_gpg>
+
+[ceph-noarch]
+name=Ceph noarch packages
+baseurl=<repo_url>/noarch
+enabled=1
+gpgcheck=1
+priority=2
+type=rpm-md
+gpgkey=<repo_gpg>
+
+[ceph-source]
+name=Ceph source packages
+baseurl=<repo_url>/SRPMS
+enabled=0
+gpgcheck=1
+type=rpm-md
+gpgkey=<repo_gpg>
+priority=1
