@@ -25,6 +25,7 @@ import org.apache.spark.sql.catalyst.util.resourceToString
 import org.apache.spark.sql.test.TestConstants._
 import org.apache.spark.sql.test.Utils._
 import org.apache.spark.sql.test.{TestSQLContext, TestSparkSession}
+import org.apache.spark.util.Utils
 import org.apache.spark.{SparkConf, SparkFunSuite}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
@@ -215,6 +216,10 @@ object SharedSQLContext extends Logging {
 
   private def initializeConf(): Unit =
     if (_clickHouseConf == null) {
+      // Used for Hive external catalog, which is the default.
+      System.setProperty("test.tmp.dir", Utils.createTempDir().toURI.getPath)
+      System.setProperty("test.warehouse.dir", Utils.createTempDir().toURI.getPath)
+
       val confStream = Thread
         .currentThread()
         .getContextClassLoader
@@ -229,6 +234,7 @@ object SharedSQLContext extends Logging {
       tpchDBName = getOrElse(prop, TPCH_DB_NAME, "default")
       _clickHouseConf = prop
       _sparkSession = new TestSparkSession(sparkConf)
+      (new CHExtensions)(_sparkSession.extensions)
       truncateOutput = getFlag(prop, TRUNCATE_TEST_OUTPUT, defaultTrue = true)
       showTestOutput = getFlag(prop, SHOW_TEST_OUTPUT)
     }

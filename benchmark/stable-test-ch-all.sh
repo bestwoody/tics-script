@@ -1,8 +1,7 @@
 #!/bin/bash
 
 count="$1"
-partitionsPerSplit="$2"
-log="$3"
+log="$2"
 
 set -eu
 
@@ -15,6 +14,6 @@ for (( i = 0; i < $count; i++ )); do
 		if [ $j -eq 15 ]; then
 			continue
 		fi
-		./tpch-spark-r.sh "$j" "$partitionsPerSplit" "$log"
+		./tpch-spark-r.sh "$j" "$log"
 	done
 done

@@ -13,7 +13,7 @@
 * limitations under the License.
 */
 
-package com.pingcap.theflash.codegene;
+package com.pingcap.theflash.codegen;
 
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow;

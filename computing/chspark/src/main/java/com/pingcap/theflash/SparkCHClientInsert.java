@@ -20,7 +20,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.catalyst.util.DateTimeUtils;
 import org.apache.spark.sql.ch.CHUtil;
-import org.apache.spark.sql.ch.hack.Hack;
+import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.Decimal;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -167,10 +167,6 @@ public class SparkCHClientInsert implements Closeable {
                 }
             }
 
-            if (Hack.hackSparkColumnData(sparkField.name(), chType, row, i, col)) {
-                continue;
-            }
-
             // TODO  In some case like min(tp_int8 + tpfloat32 * 2), CH cast the result as Float64 while Spark not.
             if (chType == CHTypeString.instance || chType instanceof CHTypeFixedString) {
                 Object val = row.get(i);
@@ -236,10 +232,6 @@ public class SparkCHClientInsert implements Closeable {
                 } else {
                     chType = ((CHTypeNullable) chType).nested_data_type;
                 }
-            }
-
-            if (Hack.hackSparkColumnData(colName, chType, row, i, col)) {
-                continue;
             }
 
             // TODO  In some case like min(tp_int8 + tpfloat32 * 2), CH cast the result as Float64 while Spark not.

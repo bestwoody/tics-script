@@ -15,8 +15,8 @@
 
 package org.apache.spark.sql.execution
 
-import com.pingcap.theflash.codegene.CHColumnBatch
-import com.pingcap.theflash.codegene
+import com.pingcap.theflash.codegen.CHColumnBatch
+import com.pingcap.theflash.codegen
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.execution.metric.SQLMetrics
@@ -35,9 +35,7 @@ private[sql] trait CHBatchScan extends CodegenSupport {
   )
 
   /**
-   * Generate [[codegene.CHColumnVector]] expressions for
-   * our parent to consume as rows.
-   *
+   * Generate [[codegen.CHColumnVector]] expressions for our parent to consume as rows.
    * This is called once per [[CHColumnBatch]].
    */
   private def genCodeColumnVector(ctx: CodegenContext,
@@ -45,7 +43,6 @@ private[sql] trait CHBatchScan extends CodegenSupport {
                                   ordinal: String,
                                   dataType: DataType,
                                   nullable: Boolean): ExprCode = {
-
     val javaType = ctx.javaType(dataType)
     val value = ctx.getValue(columnVar, dataType, ordinal)
     val isNullVar = if (nullable) { ctx.freshName("isNull") } else { "false" }
@@ -68,33 +65,26 @@ private[sql] trait CHBatchScan extends CodegenSupport {
    */
   override protected def doProduce(ctx: CodegenContext): String = {
     // PhysicalRDD always just has one input
-    val input = ctx.freshName("input")
-    ctx.addMutableState("scala.collection.Iterator", input, s"$input = inputs[0];")
+    val input = ctx.addMutableState("scala.collection.Iterator", "input", v => s"$v = inputs[0];")
 
     // metrics
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     val scanTimeMetric = metricTerm(ctx, "scanTime")
-    val scanTimeTotalNs = ctx.freshName("scanTime")
-    ctx.addMutableState("long", scanTimeTotalNs, s"$scanTimeTotalNs = 0;")
+    val scanTimeTotalNs = ctx.addMutableState(ctx.JAVA_LONG, "scanTime") // init as scanTime = 0
 
     val chBatchClz = classOf[CHColumnBatch].getName
-    val batch = ctx.freshName("batch")
-    ctx.addMutableState(chBatchClz, batch, s"$batch = null;")
+    val batch = ctx.addMutableState(chBatchClz, "batch")
 
-    val idx = ctx.freshName("batchIdx")
-    ctx.addMutableState("int", idx, s"$idx = 0;")
-
-    val columnVectorClz = classOf[codegene.CHColumnVector].getName
-
-    val colVars = output.indices.map(i => ctx.freshName("colInstance" + i))
-    val columnAssigns = colVars.zipWithIndex.map {
-      case (name, i) =>
-        ctx.addMutableState(columnVectorClz, name, s"$name = null;")
-        s"$name = $batch.column($i);"
-    }
+    val idx = ctx.addMutableState(ctx.JAVA_INT, "batchIdx")
+    val columnVectorClz = classOf[codegen.CHColumnVector].getName
+    val (colVars, columnAssigns) = output.indices.map {
+      case i =>
+        val name = ctx.addMutableState(columnVectorClz, s"colInstance$i")
+        (name, s"$name = ($columnVectorClz) $batch.column($i);")
+    }.unzip
 
     val nextBatch = ctx.freshName("nextBatch")
-    ctx.addNewFunction(
+    val nextBatchFuncName = ctx.addNewFunction(
       nextBatch,
       s"""
          |private void $nextBatch() throws java.io.IOException {
@@ -115,21 +105,30 @@ private[sql] trait CHBatchScan extends CodegenSupport {
       case (attr, colVar) =>
         genCodeColumnVector(ctx, colVar, rowIdx, attr.dataType, attr.nullable)
     }
+    val localIdx = ctx.freshName("localIdx")
+    val localEnd = ctx.freshName("localEnd")
     val numRows = ctx.freshName("numRows")
+    val shouldStop = if (parent.needStopCheck) {
+      s"if (shouldStop()) { $idx = $rowIdx + 1; return; }"
+    } else {
+      "// shouldStop check is eliminated"
+    }
 
     s"""
        |if ($batch == null) {
-       |  $nextBatch();
+       |  $nextBatchFuncName();
        |}
        |while ($batch != null) {
        |  int $numRows = $batch.numRows();
-       |  while ($idx < $numRows) {
-       |    int $rowIdx = $idx++;
+       |  int $localEnd = $numRows - $idx;
+       |  for (int $localIdx = 0; $localIdx < $localEnd; $localIdx++) {
+       |    int $rowIdx = $idx + $localIdx;
        |    ${consume(ctx, columnsBatchInput).trim}
-       |    if (shouldStop()) return;
+       |    $shouldStop
        |  }
+       |  $idx = $numRows;
        |  $batch = null;
-       |  $nextBatch();
+       |  $nextBatchFuncName();
        |}
        |$scanTimeMetric.add($scanTimeTotalNs / (1000 * 1000));
        |$scanTimeTotalNs = 0;

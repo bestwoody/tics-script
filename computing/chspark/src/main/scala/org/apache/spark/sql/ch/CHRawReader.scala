@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
 
+import com.pingcap.common.Node
 import com.pingcap.theflash.SparkCHClientSelect
 
 import scala.util.Random
@@ -83,7 +84,7 @@ object CHRawReader {
     val host: String = if (args.length >= 6 && !args(5).isEmpty) args(5) else "127.0.0.1"
     val port: Int = if (args.length >= 7 && !args(6).isEmpty) args(6).toInt else 9000
 
-    val tableRef: CHTableRef = new CHTableRef(host, port, database, table)
+    val tableRef: CHTableRef = new CHTableRef(Node(host, port), database, table)
     val partitions = CHUtil.getPartitionList(tableRef).map("'" + _ + "'")
     if (partitions.isEmpty) {
       throw new Exception("Unable to get partition list of " + database + "." + table)

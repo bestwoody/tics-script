@@ -1,4 +1,4 @@
-package com.pingcap.theflash.codegene;
+package com.pingcap.theflash.codegen;
 
 import com.pingcap.ch.CHBlock;
 import com.pingcap.ch.columns.CHColumnWithTypeAndName;

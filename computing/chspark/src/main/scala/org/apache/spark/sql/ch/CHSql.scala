@@ -24,7 +24,6 @@ import com.pingcap.tikv.types.MySQLType
 import com.pingcap.tispark.TiUtils
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
-import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
@@ -63,24 +62,26 @@ object CHSql {
     }
 
   def createTableStmt(database: String,
-                      schema: StructType,
-                      primaryKeys: Array[String],
                       table: String,
-                      partitionNum: Option[Int] = None): String = {
+                      schema: StructType,
+                      chEngine: CHEngine,
+                      ifNotExists: Boolean): String = {
     val schemaStr = compileSchema(schema)
-    val pkStr = compilePKList(schema, primaryKeys)
-    s"CREATE TABLE ${getBackQuotedAbsTabName(database, table)} ($schemaStr) ENGINE = MutableMergeTree(${partitionNum
-      .map(_.toString + ", ")
-      .getOrElse("")}($pkStr), 8192)"
+    val engine = compileEngine(chEngine)
+    s"CREATE TABLE ${if (ifNotExists) "IF NOT EXISTS " else ""}${getBackQuotedAbsTabName(database, table)} ($schemaStr) ENGINE = $engine"
   }
 
-  def createTableStmt(database: String, table: TiTableInfo, partitionNum: Option[Int]): String = {
+  def createTableStmt(database: String,
+                      table: TiTableInfo,
+                      chEngine: CHEngine,
+                      ifNotExists: Boolean): String = {
     val schemaStr = compileSchema(table)
-    val pkStr = compilePKList(table)
-    s"CREATE TABLE ${getBackQuotedAbsTabName(database, table.getName)} ($schemaStr) ENGINE = MutableMergeTree(${partitionNum
-      .map(_.toString + ", ")
-      .getOrElse("")}($pkStr), 8192)"
+    val engine = compileEngine(chEngine)
+    s"CREATE TABLE ${if (ifNotExists) "IF NOT EXISTS " else ""}${getBackQuotedAbsTabName(database, table.getName)} ($schemaStr) ENGINE = $engine"
   }
+
+  def truncateTable(database: String, table: String) =
+    s"TRUNCATE TABLE ${getBackQuotedAbsTabName(database, table)}"
 
   case class Query(private val projection: String,
                    private val table: CHTableRef,
@@ -135,6 +136,14 @@ object CHSql {
     "DESC " + getBackQuotedAbsTabName(table.database, table.table)
 
   /**
+   * Compose a show create table string.
+   * @param table
+   * @return
+   */
+  def showCreateTable(table: CHTableRef): String =
+    s"SHOW CREATE TABLE `${table.database}`.`${table.table}`"
+
+  /**
    * Show tables
    * @param database to perform show table
    * @return
@@ -165,11 +174,8 @@ object CHSql {
     val sb = new StringBuilder()
     var first = true
     schema.fields foreach { field =>
-      val colDef = Hack
-        .hackColumnDef(field.name, field.dataType, field.nullable)
-        .getOrElse(
-          s"`${field.name.toLowerCase()}` ${TypeMappingJava.sparkTypeToCHType(field.dataType, field.nullable).name()}"
-        )
+      val colDef =
+        s"`${compileStructField(field)}` ${TypeMappingJava.sparkTypeToCHType(field.dataType, field.nullable).name()}"
       if (first) {
         sb.append(colDef)
       } else {
@@ -216,8 +222,7 @@ object CHSql {
       chType = new CHTypeNullable(chType)
     }
     val sparkType = TiUtils.toSparkDataType(dataType)
-    val columnName =
-      Hack.hackColumnName(column.getName, sparkType).getOrElse(column.getName.toLowerCase())
+    val columnName = column.getName.toLowerCase()
     s"`$columnName` ${chType.name()}"
   }
 
@@ -226,12 +231,23 @@ object CHSql {
       .map(column => analyzeColumnDef(column, table))
       .mkString(",")
 
+  private def compileEngine(chEngine: CHEngine): String =
+    chEngine match {
+      case mmt: MutableMergeTree =>
+        compileMutableMergeTree(mmt)
+      case _ => throw new UnsupportedOperationException(s"Engine ${chEngine.name}")
+    }
+
+  private def compileMutableMergeTree(mmt: MutableMergeTree): String =
+    s"${mmt.name}(${mmt.partitionNum
+      .map(_.toString + ", ")
+      .getOrElse("")}${mmt.pkList.map("`" + _.toLowerCase() + "`").mkString("(", ",", ")")}, ${mmt.bucketNum})"
+
   private def compilePKList(table: TiTableInfo): String =
     table.getColumns
       .filter(c => c.isPrimaryKey)
       .map(
-        c =>
-          s"`${Hack.hackColumnName(c.getName, TiUtils.toSparkDataType(c.getType)).getOrElse(c.getName)}`"
+        c => s"`${c.getName}`"
       )
       .mkString(",")
 
@@ -242,7 +258,7 @@ object CHSql {
           schema
             .collectFirst {
               case field if field.name.equalsIgnoreCase(pk) =>
-                s"`${Hack.hackColumnName(field.name, field.dataType).getOrElse(field.name.toLowerCase())}`"
+                s"`${compileStructField(field)}`"
             }
             .getOrElse(throw new IllegalArgumentException(s"column $pk does not exists"))
       )
@@ -391,10 +407,10 @@ object CHSql {
           }
         }
       case attr: AttributeReference =>
-        compileAttributeName(Hack.hackAttributeReference(attr).getOrElse(attr.name).toLowerCase())
-      //      case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
-      case cast @ Cast(child, dataType) =>
-        if (!Hack.hackSupportCast(cast).getOrElse(CHUtil.isSupportedExpression(child))) {
+        compileAttributeName(attr.name.toLowerCase())
+      // case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
+      case cast @ Cast(child, dataType, _) =>
+        if (!CHUtil.isSupportedExpression(child)) {
           throw new UnsupportedOperationException(
             s"Shouldn't be casting expression $expression to type $dataType."
           )
@@ -435,6 +451,9 @@ object CHSql {
           s"Expression $expression is not supported by CHSql."
         )
     }
+
+  private def compileStructField(field: StructField): String =
+    field.name.toLowerCase()
 
   /**
    * Escape a string to CH string literal.

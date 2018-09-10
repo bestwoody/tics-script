@@ -15,8 +15,9 @@
 
 package org.apache.spark.sql.ch
 
-class CHTableRef(val host: String, val port: Int, _database: String, _table: String)
-    extends Serializable {
+import com.pingcap.common.{Cluster, Node}
+
+class CHTableRef(val node: Node, _database: String, _table: String) extends Serializable {
   // CH database name and table name are all in lower-case so normalize them immediately.
   val database: String = Option(_database).getOrElse("").toLowerCase()
   val table: String = _table.toLowerCase()
@@ -24,5 +25,13 @@ class CHTableRef(val host: String, val port: Int, _database: String, _table: Str
   val mappedName: String = table
 
   override def toString: String =
-    s"{host=$host, port=$port, db=$database, table=$table}"
+    s"{host=${node.host}, port=${node.port}, db=$database, table=$table}"
+}
+
+object CHTableRef {
+  def ofNode(node: Node, db: String, table: String): CHTableRef =
+    new CHTableRef(node, db, table)
+
+  def ofCluster(cluster: Cluster, db: String, table: String): Array[CHTableRef] =
+    cluster.nodes.map(ofNode(_, db, table))
 }

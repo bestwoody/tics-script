@@ -1,5 +1,6 @@
 package com.pingcap.common
 
+import org.apache.spark.sql.ch.CHTableRef
 import java.util.Objects
 
 case class Node(host: String, port: Int) {
@@ -20,5 +21,9 @@ case class Cluster(nodes: Array[Node]) {}
 object Cluster {
   def getDefault: Cluster = {
     Cluster(Array(Node("127.0.0.1", 9000)))
+  }
+
+  def ofCHTableRefs(tables: Array[CHTableRef]): Cluster = {
+    Cluster(tables.map(_.node))
   }
 }

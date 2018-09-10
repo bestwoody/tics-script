@@ -18,6 +18,10 @@ package org.apache.spark.sql.ch
 object CHConfigConst {
   val ENABLE_PUSHDOWN_AGG: String = "spark.storage.plan.pushdown.agg"
   val ENABLE_SELRAW: String = "spark.storage.selraw"
+  val PARTITIONS_PER_SPLIT: String = "spark.storage.partitionsPerSplit"
+  val DEFAULT_PARTITIONS_PER_SPLIT = 1
   val CLUSTER_ADDRESSES: String = "spark.flash.addresses"
+  val STORAGE_BATCH_ROWS: String = "spark.flash.storage.batch.rows"
+  val STORAGE_BATCH_BYTES: String = "spark.flash.storage.batch.bytes"
   val CLIENT_BATCH_SIZE: String = "spark.flash.client.batch.size"
 }

@@ -15,6 +15,7 @@
 
 package org.apache.spark.sql.ch
 
+import com.pingcap.common.Node
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Coalesce, CreateNamedStruct, Expression, IfNull, Literal}
@@ -32,7 +33,7 @@ class CHSqlSuite extends SparkFunSuite {
   val b: AttributeReference = 'b.int
   val c: AttributeReference = 'C.string
   val d: AttributeReference = 'd.byte
-  val t = new CHTableRef(null, 0, "D", "T")
+  val t = new CHTableRef(Node("", 0), "D", "T")
 
   def testCompileExpression(e: Expression, expected: String): Unit =
     assert(CHSql.compileExpression(e) == expected)
@@ -40,9 +41,19 @@ class CHSqlSuite extends SparkFunSuite {
   def testCreateTable(database: String,
                       table: String,
                       schema: StructType,
+                      partitionNum: Option[Int],
                       pkList: Array[String],
+                      bucketNum: Int,
                       expected: String): Unit =
-    assert(CHSql.createTableStmt(database, schema, pkList, table) == expected)
+    assert(
+      CHSql.createTableStmt(
+        database,
+        table,
+        schema,
+        MutableMergeTree(partitionNum, pkList, bucketNum),
+        false
+      ) == expected
+    )
 
   def testQuery(table: CHTableRef, chLogicalPlan: CHLogicalPlan, expected: String): Unit =
     assert(CHSql.query(table, chLogicalPlan).buildQuery() == expected)
@@ -165,7 +176,7 @@ class CHSqlSuite extends SparkFunSuite {
 
     testCompileExpression(
       (a + b + c).cast(StringType).as((a + b + c).cast(StringType).sql),
-      "CAST(CAST((CAST((`a` + `b`) AS Nullable(Int32)) + `c`) AS Nullable(Int32)) AS Nullable(String)) AS `CAST(((`A` + `b`) + `C`) AS STRING)`"
+      "CAST(CAST((CAST((`a` + `b`) AS Nullable(Int32)) + `c`) AS Nullable(Int32)) AS Nullable(String)) AS `CAST(((\\`A\\` + \\`b\\`) + \\`C\\`) AS STRING)`"
     )
 
     // A strange Spark TypeCoercion rule that might change after update Spark version...
@@ -200,15 +211,17 @@ class CHSqlSuite extends SparkFunSuite {
       "tesT",
       new StructType(
         Array(
-          StructField("I", IntegerType, false),
+          StructField("I am", IntegerType, false),
           StructField("D", DoubleType, true),
           StructField("s", StringType, true),
           StructField("dt", DateType, true),
           StructField("dt_NN", DateType, false)
         )
       ),
-      Array("I"),
-      "CREATE TABLE `test`.`test` (`i` Int32, `d` Nullable(Float64), `s` Nullable(String), `dt` Nullable(Date), `dt_nn` Date) ENGINE = MutableMergeTree((`i`), 8192)"
+      Some(64),
+      Array("I am"),
+      8192,
+      "CREATE TABLE `test`.`test` (`i am` Int32, `d` Nullable(Float64), `s` Nullable(String), `dt` Nullable(Date), `dt_nn` Date) ENGINE = MutableMergeTree(64, (`i am`), 8192)"
     )
     testCreateTable(
       "Test",
@@ -220,8 +233,10 @@ class CHSqlSuite extends SparkFunSuite {
           StructField("dS", DecimalType.bounded(10, 0), true)
         )
       ),
+      None,
       Array("I"),
-      "CREATE TABLE `test`.`test` (`i` Int32, `dd` Decimal(20, 1), `ds` Nullable(Decimal(10, 0))) ENGINE = MutableMergeTree((`i`), 8192)"
+      128,
+      "CREATE TABLE `test`.`test` (`i` Int32, `dd` Decimal(20, 1), `ds` Nullable(Decimal(10, 0))) ENGINE = MutableMergeTree((`i`), 128)"
     )
   }
 

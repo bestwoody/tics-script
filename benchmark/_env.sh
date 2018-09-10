@@ -14,8 +14,8 @@ export storage_server=("127.0.0.1")
 # Default database when we run scripts or in Spark
 export storage_db="default"
 
-# The number of partitions in CH that one RDD of Spark handle.
-export default_partitionsPerSplit="2"
+# The number of partitions in CH that one Spark split (== one Spark partition) handles.
+export partitionsPerSplit="1"
 
 # Use SELRAW for any query launch by CHSpark (except fetch table info)
 # DON'T set to 'true' for Non-Mutable table

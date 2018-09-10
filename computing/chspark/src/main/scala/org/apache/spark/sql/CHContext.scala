@@ -17,20 +17,36 @@ package org.apache.spark.sql
 
 import com.pingcap.common.{Cluster, Node}
 import com.pingcap.theflash.SparkCHClientInsert
-import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.ch.CHUtil.Partitioner
-import org.apache.spark.sql.ch.mock.TypesTestRelation
+import org.apache.spark.sql.catalyst.catalog._
+import org.apache.spark.sql.ch.CHUtil.{Partitioner, PrimaryKey}
 import org.apache.spark.sql.ch._
 import org.apache.spark.sql.types._
 
+import scala.collection.JavaConversions._
+
 class CHContext(val sparkSession: SparkSession) extends Serializable with Logging {
+  lazy val sqlContext: SQLContext = sparkSession.sqlContext
 
-  val sqlContext: SQLContext = sparkSession.sqlContext
+  lazy val tiContext: TiContext = new TiContext(sparkSession)
 
-  sparkSession.experimental.extraStrategies ++= Seq(new CHStrategy(sparkSession))
+  /**
+   * Concrete CH catalog.
+   */
+  lazy val chConcreteCatalog: CHSessionCatalog =
+    new CHConcreteSessionCatalog(this)(new CHDirectExternalCatalog(this))
 
-  val cluster: Cluster = {
+  /**
+   * Legacy catalog.
+   */
+  lazy val legacyCatalog: SessionCatalog = sqlContext.sessionState.catalog
+
+  /**
+   * Root catalog, could be composite or concrete CH catalog.
+   */
+  lazy val chCatalog: CHSessionCatalog = new CHCompositeSessionCatalog(this)
+
+  lazy val cluster: Cluster = {
     val clusterStr = sparkSession.conf.get(CHConfigConst.CLUSTER_ADDRESSES, "")
     if (clusterStr.isEmpty) {
       Cluster.getDefault
@@ -48,11 +64,6 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
         })
       new Cluster(nodes)
     }
-  }
-
-  def mapTypesTestTable(name: String = "types-test"): Unit = {
-    val rel = new TypesTestRelation(name)(sqlContext)
-    sqlContext.baseRelationToDataFrame(rel).createTempView(name)
   }
 
   // TODO: Needs to hook in catalog after 2.3 port
@@ -75,8 +86,8 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
   def createTableFromTiDB(
     database: String,
     table: String,
-    tiContext: TiContext,
-    partitionNum: Option[Int] = Some(128),
+    partitionNum: Option[Int] = Some(CHCatalogConst.DEFAULT_PARTITION_NUM),
+    bucketNum: Int = CHCatalogConst.DEFAULT_BUCKET_NUM,
     batchRows: Long = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_ROWS,
     batchBytes: Long = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_BYTES
   ): Unit = {
@@ -85,41 +96,48 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
       throw new IllegalArgumentException(s"Table $table not exists")
     }
     val df = tiContext.getDataFrame(database, table)
-    val (partitioner, pkOffset) = CHUtil.createTable(database, tableInfo.get, partitionNum, cluster)
+    // Tables created through CHContext APIs are now fixed as using MMT.
+    val mmt = MutableMergeTree(
+      partitionNum,
+      tableInfo.get.getColumns.filter(_.isPrimaryKey).map(_.getName),
+      bucketNum
+    )
+    CHUtil.createTable(database, tableInfo.get, mmt, false, cluster)
 
-    if (partitioner == Partitioner.Hash) {
-      CHUtil.insertDataHash(
-        df,
-        database,
-        table,
-        pkOffset,
-        fromTiDB = true,
-        sqlContext.conf
-          .getConfString(
-            CHConfigConst.CLIENT_BATCH_SIZE,
-            SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
-          )
-          .toInt,
-        batchRows,
-        batchBytes,
-        cluster
-      )
-    } else {
-      CHUtil.insertDataRandom(
-        df,
-        database,
-        table,
-        fromTiDB = true,
-        sqlContext.conf
-          .getConfString(
-            CHConfigConst.CLIENT_BATCH_SIZE,
-            SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
-          )
-          .toInt,
-        batchRows,
-        batchBytes,
-        cluster
-      )
+    Partitioner.fromTiTableInfo(tableInfo.get) match {
+      case Partitioner(Partitioner.Hash, keyIndex) =>
+        CHUtil.insertDataHash(
+          df,
+          database,
+          table,
+          keyIndex,
+          fromTiDB = true,
+          sqlContext.conf
+            .getConfString(
+              CHConfigConst.CLIENT_BATCH_SIZE,
+              SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
+            )
+            .toInt,
+          batchRows,
+          batchBytes,
+          cluster
+        )
+      case Partitioner(Partitioner.Random, _) =>
+        CHUtil.insertDataRandom(
+          df,
+          database,
+          table,
+          fromTiDB = true,
+          sqlContext.conf
+            .getConfString(
+              CHConfigConst.CLIENT_BATCH_SIZE,
+              SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
+            )
+            .toInt,
+          batchRows,
+          batchBytes,
+          cluster
+        )
     }
   }
 
@@ -128,33 +146,35 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
     table: String,
     primaryKeys: Array[String],
     df: DataFrame,
-    partitionNum: Option[Int] = Some(128),
+    partitionNum: Option[Int] = Some(CHCatalogConst.DEFAULT_PARTITION_NUM),
+    bucketNum: Int = CHCatalogConst.DEFAULT_BUCKET_NUM,
     batchRows: Long = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_ROWS,
     batchBytes: Long = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_BYTES
   ): Unit = {
-    val (partitioner, pkOffset) =
-      CHUtil.createTable(database, table, df.schema, primaryKeys, partitionNum, cluster)
+    // Tables created through CHContext APIs are now fixed as using MMT.
+    val mmt = MutableMergeTree(partitionNum, primaryKeys, bucketNum)
+    CHUtil.createTable(database, table, df.schema, mmt, false, cluster)
 
-    if (partitioner == Partitioner.Hash) {
-      CHUtil.insertDataHash(
-        df,
-        database,
-        table,
-        pkOffset,
-        fromTiDB = false,
-        sqlContext.conf
-          .getConfString(
-            CHConfigConst.CLIENT_BATCH_SIZE,
-            SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
-          )
-          .toInt,
-        batchRows,
-        batchBytes,
-        cluster
-      )
-    } else {
-      CHUtil
-        .insertDataRandom(
+    Partitioner.fromPrimaryKeys(PrimaryKey.fromSchema(df.schema, primaryKeys)) match {
+      case Partitioner(Partitioner.Hash, keyIndex) =>
+        CHUtil.insertDataHash(
+          df,
+          database,
+          table,
+          keyIndex,
+          false,
+          sqlContext.conf
+            .getConfString(
+              CHConfigConst.CLIENT_BATCH_SIZE,
+              SparkCHClientInsert.CLIENT_BATCH_INSERT_COUNT.toString
+            )
+            .toInt,
+          batchRows,
+          batchBytes,
+          cluster
+        )
+      case Partitioner(Partitioner.Random, _) =>
+        CHUtil.insertDataRandom(
           df,
           database,
           table,
@@ -172,41 +192,40 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
     }
   }
 
-  def mapCHTable(database: String = null, table: String, partitionsPerSplit: Int = 16): Unit = {
-
-    val conf: SparkConf = sparkSession.sparkContext.conf
-    val tableRef = new CHTableRef(cluster.nodes.head.host, cluster.nodes.head.port, database, table)
-    val rel = new CHRelation(Seq(tableRef), partitionsPerSplit)(sqlContext, conf)
+  def mapCHTable(database: String = null,
+                 table: String,
+                 partitionsPerSplit: Int = CHConfigConst.DEFAULT_PARTITIONS_PER_SPLIT): Unit = {
+    val tableRef = new CHTableRef(cluster.nodes.head, database, table)
+    val rel = new CHRelation(Array(tableRef), partitionsPerSplit)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRef.mappedName)
   }
 
-  def mapCHClusterTable(database: String = null,
-                        table: String,
-                        partitionsPerSplit: Int = 16): Unit = {
-
-    val conf: SparkConf = sparkSession.sparkContext.conf
-    val tableRefList: Seq[CHTableRef] =
-      cluster.nodes.map(node => new CHTableRef(node.host, node.port, database, table))
-    val rel = new CHRelation(tableRefList, partitionsPerSplit)(sqlContext, conf)
+  def mapCHClusterTable(
+    database: String = null,
+    table: String,
+    partitionsPerSplit: Int = CHConfigConst.DEFAULT_PARTITIONS_PER_SPLIT
+  ): Unit = {
+    val tableRefList: Array[CHTableRef] =
+      cluster.nodes.map(node => new CHTableRef(node, database, table))
+    val rel = new CHRelation(tableRefList, partitionsPerSplit)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList.head.mappedName)
   }
 
-  def mapCHClusterTableSimple(database: String = null,
-                              table: String,
-                              partitionsPerSplit: Int = 16): Unit = {
-
-    val conf: SparkConf = sparkSession.sparkContext.conf
-    val tableRefList: Seq[CHTableRef] =
-      cluster.nodes.map(node => new CHTableRef(node.host, node.port, database, table))
-    val rel = new CHRelation(tableRefList, partitionsPerSplit)(sqlContext, conf)
+  def mapCHClusterTableSimple(
+    database: String = null,
+    table: String,
+    partitionsPerSplit: Int = CHConfigConst.DEFAULT_PARTITIONS_PER_SPLIT
+  ): Unit = {
+    val tableRefList: Array[CHTableRef] =
+      cluster.nodes.map(node => new CHTableRef(node, database, table))
+    val rel = new CHRelation(tableRefList, partitionsPerSplit)(sqlContext)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList.head.mappedName)
   }
 
   def sql(sqlText: String): DataFrame =
     sqlContext.sql(sqlText)
 
-  import java.sql.DriverManager
-  import java.sql.Connection
+  import java.sql.{Connection, DriverManager}
 
   def updateSample(df: DataFrame, table: String, primaryKeys: Array[String]): Unit = {
     val schema = df.schema

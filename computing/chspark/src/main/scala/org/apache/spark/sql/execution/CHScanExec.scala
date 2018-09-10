@@ -36,5 +36,6 @@ case class CHScanExec(output: Seq[Attribute],
     new CHScanRDD(sparkSession, output, tableQueryPairs, chRelation.partitionsPerSplit) :: Nil
   }
 
-  override protected def doExecute(): RDD[InternalRow] = WholeStageCodegenExec(this).execute()
+  override protected def doExecute(): RDD[InternalRow] =
+    WholeStageCodegenExec(this)(codegenStageId = 0).execute()
 }

@@ -20,18 +20,20 @@ import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeSet, Cast, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.ch.mock.{TypesTestPlan, TypesTestRelation}
 import org.apache.spark.sql.execution.aggregate.AggUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.sql.{SparkSession, Strategy}
+import org.apache.spark.sql.{CHContext, SparkSession, Strategy}
 
-class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
+case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSession: SparkSession)
+    extends Strategy
+    with Logging {
   // -------------------- Dynamic configurations   --------------------
-  val sqlConf: SQLConf = sparkSession.sqlContext.conf
-  val enableAggPushdown: Boolean =
+  private val chContext = getOrCreateCHContext(sparkSession)
+  private val sqlConf: SQLConf = sparkSession.sqlContext.conf
+  private val enableAggPushdown: Boolean =
     sqlConf.getConfString(CHConfigConst.ENABLE_PUSHDOWN_AGG, "true").toBoolean
 
   // -------------------- Physical plan generation --------------------
@@ -39,9 +41,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     try {
       plan
         .collectFirst {
-          case rel @ LogicalRelation(_: TypesTestRelation, _: Option[Seq[Attribute]], _) =>
-            TypesTestPlan(rel.output, sparkSession) :: Nil
-          case rel @ LogicalRelation(relation: CHRelation, _: Option[Seq[Attribute]], _) =>
+          case rel @ LogicalRelation(relation: CHRelation, _, _, _) =>
             plan match {
               case ReturnAnswer(rootPlan) =>
                 rootPlan match {
@@ -63,7 +63,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
               case PhysicalOperation(
                   projectList,
                   filterPredicates,
-                  LogicalRelation(chr: CHRelation, _, _)
+                  LogicalRelation(chr: CHRelation, _, _, _)
                   ) =>
                 createCHPlan(rel, chr, projectList, filterPredicates, Seq.empty, Option.empty) :: Nil
               case CHAggregation(
@@ -101,8 +101,11 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
                              project: Seq[NamedExpression],
                              child: LogicalPlan): SparkPlan =
     child match {
-      case PhysicalOperation(projectList, filters, rel @ LogicalRelation(source: CHRelation, _, _))
-          if filters.forall(CHUtil.isSupportedExpression) =>
+      case PhysicalOperation(
+          projectList,
+          filters,
+          rel @ LogicalRelation(source: CHRelation, _, _, _)
+          ) if filters.forall(CHUtil.isSupportedExpression) =>
         TakeOrderedAndProjectExec(
           limit,
           sortOrder,
@@ -113,7 +116,7 @@ class CHStrategy(sparkSession: SparkSession) extends Strategy with Logging {
     }
 
   private def collectLimit(limit: Int, child: LogicalPlan): SparkPlan = child match {
-    case PhysicalOperation(projectList, filters, rel @ LogicalRelation(source: CHRelation, _, _))
+    case PhysicalOperation(projectList, filters, rel @ LogicalRelation(source: CHRelation, _, _, _))
         if filters.forall(CHUtil.isSupportedExpression) =>
       pruneTopNFilterProject(rel, source, projectList, filters, Nil, limit)
     case _ => planLater(child)
@@ -346,7 +349,7 @@ object CHAggregationProjection {
   def unapply(plan: LogicalPlan): Option[ReturnType] = plan match {
     // Only push down aggregates projection when all filters can be applied and
     // all projection expressions are column references
-    case PhysicalOperation(projects, filters, rel @ LogicalRelation(source: CHRelation, _, _))
+    case PhysicalOperation(projects, filters, rel @ LogicalRelation(source: CHRelation, _, _, _))
         if projects.forall(_.isInstanceOf[Attribute]) =>
       Some((filters, rel, source, projects))
     case _ => Option.empty[ReturnType]

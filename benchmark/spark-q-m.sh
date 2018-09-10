@@ -4,10 +4,6 @@ set -eu
 
 source ./_env.sh
 
-if [ -z "${partitionsPerSplit+x}" ]; then
-	partitionsPerSplit="$default_partitionsPerSplit"
-fi
-
 if [ "$#" -lt 1 ]; then
 	echo "<bin> usage: <bin> q1 q2 ... " >&2
 	exit 1
@@ -18,11 +14,9 @@ tmp="/tmp/spark-q/`date +%s`"
 
 print_spark_settings > "$tmp"
 
-echo 'val storage = new org.apache.spark.sql.CHContext(spark)' >> "$tmp"
-
 for sql in "$@"; do
 	if [ ! -z "$sql" ]; then
-		echo "storage.sql(\"$sql\")" >> "$tmp"
+		echo "spark.sql(\"$sql\")" >> "$tmp"
 	fi
 done
 

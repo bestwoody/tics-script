@@ -1,4 +1,4 @@
-package com.pingcap.theflash.codegene;
+package com.pingcap.theflash.codegen;
 
 import com.google.common.primitives.UnsignedLong;
 import com.pingcap.ch.columns.CHColumn;
@@ -6,7 +6,6 @@ import com.pingcap.ch.columns.CHColumnNullable;
 import com.pingcap.ch.columns.CHColumnNumber;
 import com.pingcap.ch.columns.CHColumnWithTypeAndName;
 import com.pingcap.ch.datatypes.CHType;
-import com.pingcap.ch.datatypes.CHTypeDate;
 import com.pingcap.ch.datatypes.CHTypeDateTime;
 import com.pingcap.ch.datatypes.CHTypeDecimal;
 import com.pingcap.ch.datatypes.CHTypeNullable;

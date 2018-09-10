@@ -3,7 +3,7 @@ package com.pingcap.theflash;
 import com.pingcap.ch.CHBlock;
 import com.pingcap.ch.CHConnection;
 import com.pingcap.ch.CHProtocol;
-import com.pingcap.theflash.codegene.CHColumnBatch;
+import com.pingcap.theflash.codegen.CHColumnBatch;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.spark.sql.ch.CHUtil;

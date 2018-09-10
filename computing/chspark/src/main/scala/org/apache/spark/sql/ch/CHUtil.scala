@@ -24,44 +24,68 @@ import com.pingcap.tikv.meta.TiTableInfo
 import com.pingcap.common.IOUtil
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.catalog.CHCatalogConst
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.CHUtil.SharedSparkCHClientInsert.Identity
-import org.apache.spark.sql.ch.hack.Hack
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
 
 import scala.collection.JavaConversions._
 
 object CHUtil {
+  class PrimaryKey(val column: StructField, val index: Int) {}
+
+  object PrimaryKey {
+    def fromSchema(schema: StructType, primaryKeys: Seq[String]): Seq[PrimaryKey] =
+      schema.zipWithIndex
+        .filter {
+          case (col, _) => primaryKeys.map(_.toLowerCase).contains(col.name.toLowerCase)
+        }
+        .map {
+          case (col, i) => new PrimaryKey(col, i)
+        }
+  }
+
+  case class Partitioner(method: Partitioner.Value, keyIndex: Int = -1) {}
 
   object Partitioner extends Enumeration {
     val Hash, Random = Value
+
+    def fromPrimaryKeys(primaryKeys: Seq[PrimaryKey]): Partitioner =
+      if (primaryKeys.length == 1) {
+        val primaryKey = primaryKeys.head
+        if (primaryKey.column.dataType.isInstanceOf[IntegralType]) {
+          Partitioner(Hash, primaryKey.index)
+        } else {
+          Partitioner(Random)
+        }
+      } else {
+        Partitioner(Random)
+      }
+
+    def fromTiTableInfo(tiTableInfo: TiTableInfo): Partitioner =
+      if (tiTableInfo.isPkHandle) {
+        val (_, index) = tiTableInfo.getColumns.zipWithIndex.filter {
+          case (c, _) => c.isPrimaryKey
+        }.head
+        Partitioner(Hash, index)
+      } else {
+        Partitioner(Random)
+      }
   }
 
   def createTable(database: String,
                   table: String,
                   schema: StructType,
-                  primaryKeys: Array[String],
-                  partitionNum: Option[Int],
-                  cluster: Cluster): (Partitioner.Value, Int) =
+                  chEngine: CHEngine,
+                  ifNotExists: Boolean,
+                  cluster: Cluster): Unit =
     try {
       cluster.nodes.foreach(
-        node => createTable(database, table, schema, primaryKeys, partitionNum, node)
+        node => createTable(database, table, schema, chEngine, ifNotExists, node)
       )
-      if (primaryKeys.length == 1) {
-        val primaryKey = primaryKeys.head.toLowerCase()
-        val (col, index) = schema.fields.zipWithIndex.filter {
-          case (c, _) => c.name.toLowerCase() == primaryKey
-        }.head
-        if (col.dataType.isInstanceOf[IntegralType]) {
-          (Partitioner.Hash, index)
-        } else {
-          (Partitioner.Random, -1)
-        }
-      } else {
-        (Partitioner.Random, -1)
-      }
     } catch {
       // roll back if any exception
       case e: Throwable =>
@@ -69,20 +93,33 @@ object CHUtil {
         throw e
     }
 
+  private def createTable(database: String,
+                          table: String,
+                          schema: StructType,
+                          chEngine: CHEngine,
+                          ifNotExists: Boolean,
+                          node: Node): Unit = {
+    var client: SparkCHClientSelect = null
+    try {
+      val queryString = CHSql.createTableStmt(database, table, schema, chEngine, ifNotExists)
+      client = new SparkCHClientSelect(queryString, node.host, node.port)
+      while (client.hasNext) {
+        client.next()
+      }
+    } finally {
+      IOUtil.closeQuietly(client)
+    }
+  }
+
   def createTable(database: String,
                   table: TiTableInfo,
-                  partitionNum: Option[Int],
-                  cluster: Cluster): (Partitioner.Value, Int) =
+                  chEngine: CHEngine,
+                  ifNotExists: Boolean,
+                  cluster: Cluster): Unit =
     try {
-      cluster.nodes.foreach(node => createTable(database, table, partitionNum, node))
-      if (table.isPkHandle) {
-        val (_, index) = table.getColumns.zipWithIndex.filter {
-          case (c, _) => c.isPrimaryKey
-        }.head
-        (Partitioner.Hash, index)
-      } else {
-        (Partitioner.Random, -1)
-      }
+      cluster.nodes.foreach(
+        node => createTable(database, table, chEngine, ifNotExists, node)
+      )
     } catch {
       // roll back if any exception
       case e: Throwable =>
@@ -92,35 +129,21 @@ object CHUtil {
 
   private def createTable(database: String,
                           table: TiTableInfo,
-                          partitionNum: Option[Int],
+                          chEngine: CHEngine,
+                          ifNotExists: Boolean,
                           node: Node): Unit = {
     var client: SparkCHClientSelect = null
     try {
-      val queryString = CHSql.createTableStmt(database, table, partitionNum)
+      val queryString =
+        CHSql.createTableStmt(database, table, chEngine, ifNotExists)
       client = new SparkCHClientSelect(queryString, node.host, node.port)
       while (client.hasNext) {
         client.next()
       }
     } finally {
-      IOUtil.closeQuietly(client)
-    }
-  }
-
-  private def createTable(database: String,
-                          table: String,
-                          schema: StructType,
-                          primaryKeys: Array[String],
-                          partitionNum: Option[Int],
-                          node: Node): Unit = {
-    var client: SparkCHClientSelect = null
-    try {
-      val queryString = CHSql.createTableStmt(database, schema, primaryKeys, table, partitionNum)
-      client = new SparkCHClientSelect(queryString, node.host, node.port)
-      while (client.hasNext) {
-        client.next()
+      if (client != null) {
+        client.close()
       }
-    } finally {
-      IOUtil.closeQuietly(client)
     }
   }
 
@@ -544,8 +567,8 @@ object CHUtil {
     val client = new SparkCHClientSelect(
       CHUtil.genQueryId("P"),
       CHSql.partitionList(table),
-      table.host,
-      table.port
+      table.node.host,
+      table.node.port
     )
     try {
       var partitions = new Array[String](0)
@@ -572,8 +595,8 @@ object CHUtil {
     val client = new SparkCHClientSelect(
       CHUtil.genQueryId("E"),
       CHSql.tableEngine(table),
-      table.host,
-      table.port
+      table.node.host,
+      table.node.port
     )
     try {
       if (!client.hasNext) {
@@ -658,8 +681,31 @@ object CHUtil {
     }
   }
 
+  def truncateTable(tableName: TableIdentifier, cluster: Cluster): Unit =
+    cluster.nodes.foreach(node => truncateTable(tableName, node))
+
+  def truncateTable(tableName: TableIdentifier, node: Node): Unit = {
+    val queryString = CHSql.truncateTable(tableName.database.get, tableName.table)
+    var client: SparkCHClientSelect = null
+    try {
+      client = new SparkCHClientSelect(queryString, node.host, node.port)
+      while (client.hasNext) {
+        client.next()
+      }
+    } finally {
+      IOUtil.closeQuietly(client)
+    }
+  }
+
   def getFields(table: CHTableRef): Array[StructField] = {
-    val metadata = new MetadataBuilder().putString("name", table.mappedName).build()
+    val pkList = getPrimaryKeys(table)
+
+    val buildMetadata = (name: String) => {
+      new MetadataBuilder()
+        .putString("name", table.mappedName)
+        .putBoolean(CHCatalogConst.COL_META_PRIMARY_KEY, pkList.contains(name))
+        .build()
+    }
 
     var fields = new Array[StructField](0)
 
@@ -667,7 +713,12 @@ object CHUtil {
     var types = new Array[String](0)
 
     val client =
-      new SparkCHClientSelect(CHUtil.genQueryId("D"), CHSql.desc(table), table.host, table.port)
+      new SparkCHClientSelect(
+        CHUtil.genQueryId("D"),
+        CHSql.desc(table),
+        table.node.host,
+        table.node.port
+      )
     try {
       while (client.hasNext) {
         val block = client.next()
@@ -692,11 +743,7 @@ object CHUtil {
       }
       for (i <- names.indices) {
         val t = TypeMappingJava.stringToSparkType(types(i))
-        val field = Hack
-          .hackStructField(names(i), t, metadata)
-          .getOrElse(
-            StructField(names(i), t.dataType, t.nullable, metadata)
-          )
+        val field = StructField(names(i), t.dataType, t.nullable, buildMetadata(names(i)))
         fields :+= field
       }
 
@@ -706,12 +753,54 @@ object CHUtil {
     }
   }
 
+  def getPrimaryKeys(table: CHTableRef): Seq[String] = {
+    val client = new SparkCHClientSelect(
+      CHUtil.genQueryId("PK"),
+      CHSql.showCreateTable(table),
+      table.node.host,
+      table.node.port
+    )
+    try {
+      if (!client.hasNext) {
+        throw new Exception("Send show create table request, not response")
+      }
+      val block = client.next()
+      if (block.numCols() != 1) {
+        throw new Exception("Send show create table request, wrong response")
+      }
+
+      val showCreateTable = block.column(0).getUTF8String(0).toString
+
+      // Consume all data.
+      while (client.hasNext) {
+        client.next()
+      }
+
+      var (start: Int, end: Int) =
+        (showCreateTable.lastIndexOf("(") + 1, showCreateTable.lastIndexOf(","))
+      if (showCreateTable.charAt(start) >= '0' && showCreateTable.charAt(start) <= '9') {
+        // Hit the partition num token, and no '(' afterwards (single column pk).
+        // In this case move to 1 char after the first space after start, i.e. "(16, i, 8192)".
+        start = showCreateTable.indexOf(" ", start) + 1
+      }
+      if (showCreateTable.charAt(end - 1) == ')') {
+        end -= 1
+      }
+
+      showCreateTable.substring(start, end).split(" *, *").map(_.trim)
+    } finally {
+      if (client != null) {
+        client.close()
+      }
+    }
+  }
+
   def getRowCount(table: CHTableRef, useSelraw: Boolean = false): Long = {
     val client = new SparkCHClientSelect(
       CHUtil.genQueryId("C"),
       CHSql.count(table, useSelraw),
-      table.host,
-      table.port
+      table.node.host,
+      table.node.port
     )
     try {
       if (!client.hasNext) {
@@ -739,11 +828,10 @@ object CHUtil {
   def isSupportedExpression(exp: Expression): Boolean =
     // println("PROBE isSupportedExpression:" + exp.getClass.getName + ", " + exp)
     exp match {
-      case _: Literal            => true
-      case _: AttributeReference => true
-      case cast @ Cast(child, _) =>
-        Hack.hackSupportCast(cast).getOrElse(isSupportedExpression(child))
-      case _: CreateNamedStruct => false
+      case _: Literal               => true
+      case _: AttributeReference    => true
+      case cast @ Cast(child, _, _) => isSupportedExpression(child)
+      case _: CreateNamedStruct     => false
       case _ @Alias(child, _) =>
         isSupportedExpression(child)
       // TODO: Don't pushdown IsNotNull maybe better

@@ -18,6 +18,7 @@
 package org.apache.spark.sql.expression
 
 import org.apache.spark.sql.BaseClickHouseSuite
+import org.apache.spark.sql.internal.SQLConf
 
 class ArithmeticTest0Suite extends BaseClickHouseSuite {
   private val allCases = Seq[String](
@@ -591,7 +592,10 @@ class ArithmeticTest0Suite extends BaseClickHouseSuite {
   allCases foreach { query =>
     {
       test(query) {
+        val old = SQLConf.get.decimalOperationsAllowPrecisionLoss
+        SQLConf.get.setConfString(SQLConf.DECIMAL_OPERATIONS_ALLOW_PREC_LOSS.key, "false")
         runTest(query)
+        SQLConf.get.setConfString(SQLConf.DECIMAL_OPERATIONS_ALLOW_PREC_LOSS.key, old.toString)
       }
     }
   }

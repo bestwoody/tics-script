@@ -1,6 +1,6 @@
 package com.pingcap.theflash;
 
-import com.pingcap.theflash.codegene.CHColumnBatch;
+import com.pingcap.theflash.codegen.CHColumnBatch;
 
 import com.pingcap.common.SimpleRow;
 import org.junit.Assert;
@@ -61,7 +61,7 @@ public class SparkCHClientInsertTest {
         }
 
         Random random = new Random();
-        long insertCount = random.nextLong() % (SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_ROWS * 3 + 1000) + SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_ROWS * 3;
+        long insertCount = random.nextLong() % (SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_ROWS / 1024 * 3 + 1000) + SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_ROWS / 1024 * 3;
         String insertSql = "insert into default.spark_insert_test values";
         try (SparkCHClientInsert insert = new SparkCHClientInsert("inserqid" + 2, insertSql, "127.0.0.1", 9000)) {
             insert.insertPrefix();

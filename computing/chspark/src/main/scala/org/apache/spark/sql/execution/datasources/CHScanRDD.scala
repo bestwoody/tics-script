@@ -24,7 +24,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch._
-import com.pingcap.theflash.codegene.CHColumnBatch
+import com.pingcap.theflash.codegen.CHColumnBatch
 import org.apache.spark.sql.ch.CHSql.Query
 import org.apache.spark.util.{TaskCompletionListener, TaskFailureListener}
 
@@ -41,7 +41,7 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
 
     logInfo(s"Query sent to CH: $query")
 
-    val client = new SparkCHClientSelect(query, table.host, table.port)
+    val client = new SparkCHClientSelect(query, table.node.host, table.node.port)
 
     context.addTaskFailureListener(new TaskFailureListener {
       override def onTaskFailure(context: TaskContext, error: Throwable): Unit = client.close()
@@ -57,7 +57,7 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
   }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    split.asInstanceOf[CHPartition].table.host :: Nil
+    split.asInstanceOf[CHPartition].table.node.host :: Nil
 
   override protected def getPartitions: Array[Partition] = {
     val result = new ListBuffer[CHPartition]

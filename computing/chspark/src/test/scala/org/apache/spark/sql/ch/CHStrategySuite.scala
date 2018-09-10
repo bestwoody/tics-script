@@ -15,7 +15,7 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.spark.sql.SharedSQLContext
+import org.apache.spark.sql.{CHContext, SharedSQLContext}
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
@@ -24,7 +24,7 @@ import org.apache.spark.sql.types.StructType
 
 class CHStrategySuite extends SharedSQLContext {
   class TestCHRelation(name: String, output: Attribute*)
-      extends CHRelation({ Seq.empty }, 0)(sqlContext, null) {
+      extends CHRelation({ Array.empty }, 0)(sqlContext) {
     val localRelation = LocalRelation(output)
     override lazy val schema: StructType = localRelation.schema
 
@@ -54,7 +54,7 @@ class CHStrategySuite extends SharedSQLContext {
 
   protected override def beforeAll(): Unit = {
     super.beforeAll()
-    spark.experimental.extraStrategies = new CHStrategy(spark) :: Nil
+    spark.experimental.extraStrategies = new CHStrategy(_ => new CHContext(spark))(spark) :: Nil
     multiNodeT = new TestCHRelation("mt", 'mt_a.int, 'mt_b.int, 'mt_c.string)
   }
 
@@ -155,7 +155,12 @@ class CHStrategySuite extends SharedSQLContext {
     // Predicate LIKE not pushing down, checking if column mt_b is correctly pushed.
     testQuery(
       "select mt_a from mt where MT_B like '%WHATEVER'",
-      Map((multiNodeT, "CH plan [Project [mt_a, MT_B], Filter [], Aggregate [], TopN []]"))
+      Map(
+        (
+          multiNodeT,
+          "CH plan [Project [mt_a, MT_B], Filter [(MT_B IS NOT NULL)], Aggregate [], TopN []]"
+        )
+      )
     )
   }
 
