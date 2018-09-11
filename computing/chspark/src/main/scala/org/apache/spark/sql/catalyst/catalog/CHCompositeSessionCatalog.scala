@@ -78,7 +78,7 @@ class CHCompositeSessionCatalog(chContext: CHContext)
   override def createCHTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit = {
     if (tableDesc.identifier.database.isEmpty && !currentCatalog.isInstanceOf[CHSessionCatalog]) {
       throw new AnalysisException(
-        s"Given table'db is empty and current database '$getCurrentDatabase' is not a Flash database"
+        s"Given table's db is empty and current database '$getCurrentDatabase' is not a Flash database"
       )
     }
     chConcreteCatalog.createCHTable(tableDesc, ignoreIfExists)

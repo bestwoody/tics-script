@@ -809,7 +809,7 @@ object CHUtil {
       end -= 1
     }
 
-    stmt.substring(start, end).split(" *, *").map(_.trim)
+    stmt.substring(start, end).split(" *, *").map(_.replaceAll("`", "").trim)
   }
 
   def getBucketNum(stmt: String): String = {

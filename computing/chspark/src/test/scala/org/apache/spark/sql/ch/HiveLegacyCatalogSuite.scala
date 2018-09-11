@@ -94,6 +94,10 @@ class HiveLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     assert(r.length == expected.length && r.zip(expected).forall(p => p._1.deep == p._2.deep))
   }
 
+  test("quoted names") {
+    runQuotedNameTest()
+  }
+
   test("databases") {
     runDatabaseTest()
   }

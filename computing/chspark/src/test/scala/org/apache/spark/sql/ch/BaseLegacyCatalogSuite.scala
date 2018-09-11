@@ -62,6 +62,32 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
     extended.sql(s"drop database if exists $testDbFlash cascade")
   }
 
+  def runQuotedNameTest(): Unit = {
+    val db = "quoted-db"
+    val t = "quoted-t"
+    val c = "i am"
+    extended.sql(s"drop database if exists `$db`")
+    extended.sql(s"create flash database `$db`")
+    verifyShowDatabases(Array("default", db))
+    extended.sql(s"use `$db`")
+    extended.sql(s"create table `$t`(`$c` int primary key) using mmt(128)")
+    verifyDescCHTable(
+      s"`$t`",
+      Array(
+        Array(c, "int", null),
+        Array("Engine", "MutableMergeTree(128)", ""),
+        Array("PK", c, "")
+      )
+    )
+    verifyShowCreateTable(s"`$t`", true)
+    extended.sql(s"insert into `$t` values(0)")
+    assert(extended.sql(s"select `$c` from `$t`").head.getInt(0) == 0)
+    verifyShowTables(s"`db`", Array(t), "default", Array())
+    extended.sql(s"use default")
+    extended.sql(s"drop table `$db`.`$t`")
+    extended.sql(s"drop database `$db`")
+  }
+
   def runDatabaseTest(): Unit = {
     verifyShowDatabases(Array("default"))
     assertThrows[NoSuchDatabaseException](extended.sql(s"show tables in $testLegacyDb"))
@@ -191,7 +217,7 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
         Array("i", "int", null),
         Array("s", "string", null),
         Array("d", "decimal(20,10)", null),
-        Array("Engine", "MutableMergeTree", ""),
+        Array("Engine", "MutableMergeTree(128)", ""),
         Array("PK", "i", "")
       )
     )

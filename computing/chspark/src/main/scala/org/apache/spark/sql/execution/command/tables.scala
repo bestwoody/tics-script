@@ -9,7 +9,6 @@ import org.apache.spark.sql.ch.{CHEngine, CHUtil, MutableMergeTree}
 import org.apache.spark.sql.types.StructType
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.JavaConversions._
 
 case class CHCreateTableCommand(chContext: CHContext,
                                 tableDesc: CatalogTable,
@@ -127,7 +126,7 @@ class CHDescribeTableCommand(val chContext: CHContext,
     append(
       buffer,
       "Engine",
-      table.properties.getOrElse(CHCatalogConst.TAB_META_ENGINE, "Unknown"),
+      CHEngine.fromCatalogTable(table).sql,
       ""
     )
     append(
