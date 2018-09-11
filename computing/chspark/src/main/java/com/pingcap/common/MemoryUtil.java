@@ -1,6 +1,6 @@
 package com.pingcap.common;
 
-import com.google.common.primitives.UnsignedLong;
+import shade.com.google.common.primitives.UnsignedLong;
 import com.pingcap.ch.datatypes.CHTypeDecimal;
 import com.sun.management.OperatingSystemMXBean;
 

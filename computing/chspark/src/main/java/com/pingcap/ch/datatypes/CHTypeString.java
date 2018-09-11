@@ -1,6 +1,6 @@
 package com.pingcap.ch.datatypes;
 
-import com.google.common.base.Preconditions;
+import shade.com.google.common.base.Preconditions;
 
 import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnString;

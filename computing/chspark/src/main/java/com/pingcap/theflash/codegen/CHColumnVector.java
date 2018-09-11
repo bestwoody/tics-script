@@ -1,6 +1,6 @@
 package com.pingcap.theflash.codegen;
 
-import com.google.common.primitives.UnsignedLong;
+import shade.com.google.common.primitives.UnsignedLong;
 import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnNullable;
 import com.pingcap.ch.columns.CHColumnNumber;

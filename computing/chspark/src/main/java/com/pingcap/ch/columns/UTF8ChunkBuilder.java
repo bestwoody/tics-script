@@ -1,6 +1,6 @@
 package com.pingcap.ch.columns;
 
-import com.google.common.base.Preconditions;
+import shade.com.google.common.base.Preconditions;
 import com.pingcap.common.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.util.List;

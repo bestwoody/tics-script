@@ -1,6 +1,6 @@
 package com.pingcap.ch.columns;
 
-import com.google.guava4pingcap.base.Preconditions;
+import shade.com.google.common.base.Preconditions;
 import com.pingcap.ch.columns.UTF8ChunkBuilder.SealedChunk;
 import java.util.ArrayList;
 import java.util.List;
