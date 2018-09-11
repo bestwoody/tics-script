@@ -1,6 +1,6 @@
 package com.pingcap.ch;
 
-import com.google.common.base.Preconditions;
+import shade.com.google.common.base.Preconditions;
 
 import com.pingcap.common.MemoryUtil;
 import com.pingcap.common.ReadBuffer;
