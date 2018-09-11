@@ -4,7 +4,6 @@ import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.{AnalysisException, SparkSession}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{DatabaseAlreadyExistsException, NoSuchDatabaseException, NoSuchTableException, TableAlreadyExistsException}
-import org.apache.spark.sql.SharedSQLContext
 import org.apache.spark.sql.catalyst.catalog.{CHSessionCatalog, SessionCatalog}
 
 abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
@@ -28,6 +27,17 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
                        expected: Array[String],
                        otherDb: String,
                        otherExpected: Array[String])
+
+  def verifyShowCreateTable(table: String, isCHTable: Boolean) = {
+    val stmt1 = extended.sql(s"show create table $table").head.getString(0)
+    assert(stmt1.contains("PRIMARY KEY") == isCHTable)
+    extended.sql(s"drop table $table")
+    extended.sql(stmt1)
+    val stmt2 = extended.sql(s"show create table $table").head.getString(0)
+    var last = stmt1.indexOf("DdlTime")
+    if (last == -1) last = stmt1.length
+    assert(stmt1.substring(0, last) == stmt2.substring(0, last))
+  }
 
   def verifyDescLegacyTable(table: String, expected: Array[Array[String]])
 
@@ -101,11 +111,14 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
         s"create table $testT(i int primary key, s String not null, d decimal(20, 10)) using MMT(128)"
       )
     )
+    assertThrows[NoSuchTableException](extended.sql(s"show create table $testT"))
     assertThrows[NoSuchTableException](extended.sql(s"desc $testT"))
     verifyShowTables("default", Array(), testCHDb, Array())
     extended.sql(
       s"create table $testT(i int, s String, d decimal(20, 10))"
     )
+    verifyShowCreateTable(s"$testT", false)
+    verifyShowCreateTable(s"default.$testT", false)
     verifyShowTables("default", Array(testT), testLegacyDb, Array())
     verifyShowTables("default", Array(testT), testCHDb, Array())
     assert(legacyCatalog.tableExists(TableIdentifier(testT, None)))
@@ -113,8 +126,9 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
     verifyShowTables(testLegacyDb, Array(), "default", Array(testT))
     verifyShowTables(testLegacyDb, Array(), testCHDb, Array())
     extended.sql(
-      s"create table $testCHDb.$testT(i int primary key, s String not null, d decimal(20, 10)) using MMT(128)"
+      s"create table $testCHDb.$testT(i int primary key, s String not null, d decimal(20, 10)) using MMT(32, 128)"
     )
+    verifyShowCreateTable(s"$testCHDb.$testT", true)
     extended.sql(s"use $testCHDb")
     verifyShowTables(testCHDb, Array(testT), "default", Array(testT))
     verifyShowTables(testCHDb, Array(testT), testLegacyDb, Array())
@@ -124,6 +138,7 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
         s"create table $testT(i int primary key, s String not null, d decimal(20, 10)) using MMT(128)"
       )
     )
+    verifyShowCreateTable(s"$testT", true)
     extended.sql(s"drop table default.$testT")
     assert(!legacyCatalog.tableExists(TableIdentifier(testT, Some("default"))))
     verifyShowTables(testCHDb, Array(testT), "default", Array())

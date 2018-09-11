@@ -66,14 +66,16 @@ class CHTableInfo(val table: CHTableRef, private var useSelraw: Boolean) extends
     )
   }
 
-  def fetchPrimaryKeys(): Unit =
+  def fetchPrimaryKeys(): Unit = {
+    val stmt = CHUtil.getShowCreateTable(table)
     info.primaryKeys = CHUtil
-      .getPrimaryKeys(table)
+      .getPrimaryKeys(stmt)
       .filterNot(!useSelraw && _ == TIDB_ROWID)
       .map(f => {
         val fi = info.schema.fieldIndex(f)
         new PrimaryKey(info.schema(fi), fi)
       })
+  }
 
   def fetchRows(): Unit =
     info.rowCount = CHUtil.getRowCount(table, info.engine == CHEngine.MutableMergeTree)

@@ -12,6 +12,8 @@ import org.apache.spark.sql.ch.CHUtil.Partitioner
 import org.apache.spark.sql.ch._
 import org.apache.spark.sql.types.StructType
 
+import scala.collection.mutable
+
 class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
 
   // Following are routed to CH catalog.
@@ -31,18 +33,7 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
       // A decent exception.
       throw new TableAlreadyExistsException(tableDesc.database, tableDesc.identifier.table)
     }
-    val engine =
-      CHEngine.withNameSafe(tableDesc.properties(CHCatalogConst.TAB_META_ENGINE)) match {
-        case CHEngine.MutableMergeTree =>
-          val partitionNum =
-            tableDesc.properties.get(CHCatalogConst.TAB_META_PARTITION_NUM).map(_.toInt)
-          val pkList = tableDesc.schema
-            .filter(_.metadata.getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY))
-            .map(_.name)
-          val bucketNum = tableDesc.properties(CHCatalogConst.TAB_META_BUCKET_NUM).toInt
-          MutableMergeTree(partitionNum, pkList, bucketNum)
-        case other => throw new RuntimeException(s"Invalid CH engine $other")
-      }
+    val engine = CHEngine.fromCatalogTable(tableDesc)
     CHUtil.createTable(database, table, tableDesc.schema, engine, ignoreIfExists, chContext.cluster)
   }
 
@@ -138,14 +129,21 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
   override def getTable(db: String, table: String): CatalogTable = {
     val chTableRef = CHTableRef.ofNode(chContext.cluster.nodes(0), db, table)
     val schema = CHUtil.getFields(chTableRef)
+    val stmt = CHUtil.getShowCreateTable(chTableRef)
+    val partitionNum = CHUtil.getPartitionNum(stmt)
+    val bucketNum = CHUtil.getBucketNum(stmt)
     val properties =
-      Map[String, String]((CHCatalogConst.TAB_META_ENGINE, CHUtil.getTableEngine(chTableRef)))
+      mutable.Map[String, String](
+        (CHCatalogConst.TAB_META_ENGINE, CHUtil.getTableEngine(chTableRef)),
+        (CHCatalogConst.TAB_META_BUCKET_NUM, bucketNum)
+      )
+    partitionNum.foreach(properties.put(CHCatalogConst.TAB_META_PARTITION_NUM, _))
     CatalogTable(
       TableIdentifier(table, Some(db)),
       CatalogTableType.EXTERNAL,
       CatalogStorageFormat.empty,
       new StructType(schema),
-      properties = properties
+      properties = properties.toMap
     )
   }
 

@@ -698,7 +698,8 @@ object CHUtil {
   }
 
   def getFields(table: CHTableRef): Array[StructField] = {
-    val pkList = getPrimaryKeys(table)
+    val stmt = getShowCreateTable(table)
+    val pkList = getPrimaryKeys(stmt)
 
     val buildMetadata = (name: String) => {
       new MetadataBuilder()
@@ -753,9 +754,9 @@ object CHUtil {
     }
   }
 
-  def getPrimaryKeys(table: CHTableRef): Seq[String] = {
+  def getShowCreateTable(table: CHTableRef): String = {
     val client = new SparkCHClientSelect(
-      CHUtil.genQueryId("PK"),
+      CHUtil.genQueryId("SCT"),
       CHSql.showCreateTable(table),
       table.node.host,
       table.node.port
@@ -776,23 +777,45 @@ object CHUtil {
         client.next()
       }
 
-      var (start: Int, end: Int) =
-        (showCreateTable.lastIndexOf("(") + 1, showCreateTable.lastIndexOf(","))
-      if (showCreateTable.charAt(start) >= '0' && showCreateTable.charAt(start) <= '9') {
-        // Hit the partition num token, and no '(' afterwards (single column pk).
-        // In this case move to 1 char after the first space after start, i.e. "(16, i, 8192)".
-        start = showCreateTable.indexOf(" ", start) + 1
-      }
-      if (showCreateTable.charAt(end - 1) == ')') {
-        end -= 1
-      }
-
-      showCreateTable.substring(start, end).split(" *, *").map(_.trim)
+      showCreateTable
     } finally {
       if (client != null) {
         client.close()
       }
     }
+  }
+
+  def getPartitionNum(stmt: String): Option[String] = {
+    val start: Int = stmt.lastIndexOf("(") + 1
+    if (stmt.charAt(start) >= '0' && stmt.charAt(start) <= '9') {
+      // Hit the partition num token, and no '(' afterwards (single column pk).
+      // In this case move to 1 char after the first space after start, i.e. "(16, i, 8192)".
+      val end = stmt.indexOf(",", start)
+      Some(stmt.substring(start, end))
+    } else {
+      None
+    }
+  }
+
+  def getPrimaryKeys(stmt: String): Seq[String] = {
+    var (start: Int, end: Int) =
+      (stmt.lastIndexOf("(") + 1, stmt.lastIndexOf(","))
+    if (stmt.charAt(start) >= '0' && stmt.charAt(start) <= '9') {
+      // Hit the partition num token, and no '(' afterwards (single column pk).
+      // In this case move to 1 char after the first space after start, i.e. "(16, i, 8192)".
+      start = stmt.indexOf(" ", start) + 1
+    }
+    if (stmt.charAt(end - 1) == ')') {
+      end -= 1
+    }
+
+    stmt.substring(start, end).split(" *, *").map(_.trim)
+  }
+
+  def getBucketNum(stmt: String): String = {
+    val start = stmt.lastIndexOf(",") + 2
+    val end = stmt.lastIndexOf(")")
+    stmt.substring(start, end)
   }
 
   def getRowCount(table: CHTableRef, useSelraw: Boolean = false): Long = {

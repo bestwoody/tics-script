@@ -35,16 +35,7 @@ case class CHCreateTableFromTiDBCommand(chContext: CHContext,
     if (tiTableInfo.isEmpty) {
       throw new IllegalArgumentException(s"Table $db.${tiTable.table} not exists")
     }
-    val engine =
-      CHEngine.withNameSafe(properties(CHCatalogConst.TAB_META_ENGINE)) match {
-        case CHEngine.MutableMergeTree =>
-          val partitionNum =
-            properties.get(CHCatalogConst.TAB_META_PARTITION_NUM).map(_.toInt)
-          val pkList = tiTableInfo.get.getColumns.filter(_.isPrimaryKey).map(_.getName)
-          val bucketNum = properties(CHCatalogConst.TAB_META_BUCKET_NUM).toInt
-          MutableMergeTree(partitionNum, pkList, bucketNum)
-        case other => throw new RuntimeException(s"Invalid CH engine $other")
-      }
+    val engine = CHEngine.fromTiTableInfo(tiTableInfo.get, properties)
     chCatalog.createTableFromTiDB(db, tiTableInfo.get, engine, ifNotExists)
     Seq.empty[Row]
   }
@@ -181,4 +172,41 @@ class CHShowTablesCommand(val chContext: CHContext,
       }
     }
   }
+}
+
+class CHShowCreateTableCommand(val chContext: CHContext, table: TableIdentifier)
+    extends ShowCreateTableCommand(table)
+    with CHCommand {
+  private def showCreateCHTable(tableMetadata: CatalogTable): String = {
+    val builder = StringBuilder.newBuilder
+    builder ++= s"CREATE TABLE ${table.quotedString}"
+
+    val schema = tableMetadata.schema
+      .map(col => {
+        val pk =
+          if (col.metadata.getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY)) " PRIMARY KEY" else ""
+        val notNull = if (col.nullable) "" else " NOT NULL"
+        s"`${col.name}` ${col.dataType.sql}$pk$notNull"
+      })
+      .mkString("(", ",", ")")
+    builder ++= schema
+
+    val engine = s" USING ${CHEngine.fromCatalogTable(tableMetadata).sql}"
+    builder ++= engine
+
+    builder.toString()
+  }
+
+  override def run(sparkSession: SparkSession): Seq[Row] =
+    chCatalog
+      .catalogOf(table.database)
+      .getOrElse(
+        throw new NoSuchDatabaseException(table.database.getOrElse(chCatalog.getCurrentDatabase))
+      ) match {
+      case _: CHSessionCatalog =>
+        val tableMetadata = chCatalog.getTableMetadata(table)
+        val stmt = showCreateCHTable(tableMetadata)
+        Seq(Row(stmt))
+      case _: SessionCatalog => super[ShowCreateTableCommand].run(sparkSession)
+    }
 }

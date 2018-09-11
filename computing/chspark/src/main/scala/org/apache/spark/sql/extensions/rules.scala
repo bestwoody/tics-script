@@ -45,6 +45,8 @@ case class CHDDLRule(getOrCreateCHContext: SparkSession => CHContext)(sparkSessi
         isExtended,
         partitionSpec
       )
+    case ShowCreateTableCommand(table) =>
+      new CHShowCreateTableCommand(chContext, table)
   }
 }
 
