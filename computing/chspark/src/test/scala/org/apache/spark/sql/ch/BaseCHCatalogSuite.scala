@@ -61,7 +61,7 @@ abstract class BaseCHCatalogSuite extends SparkFunSuite {
         Array("i", "int", null),
         Array("s", "string", null),
         Array("d", "decimal(20,10)", null),
-        Array("Engine", "MutableMergeTree", ""),
+        Array("Engine", "MutableMergeTree(128)", ""),
         Array("PK", "i", "")
       )
     )
