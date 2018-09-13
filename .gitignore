@@ -51,7 +51,9 @@ benchmark/tpch.log*
 
 # deployment generated files
 deployment/publish/theflash*
-deployment/ceph-tools/download
+deployment/ceph-tools/offline/downloaded
+deployment/ceph-tools/deploy/*.keyring
+deployment/ceph-tools/deploy/ceph.conf
 
 # computing running data dir
 computing/spark-warehouse
