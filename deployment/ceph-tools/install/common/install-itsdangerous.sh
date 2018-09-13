@@ -8,7 +8,7 @@ if [ ! -z "$itsdangerous_installed" ]; then
 	echo "=> python-itsdangerous installed, skipped"
 else
 	old=`pwd`
-	cd ../../download/downloaded
+	cd ../../offline/downloaded
 	file="python-itsdangerous-0.23-2.el7.noarch.rpm"
 	echo "=> sudo rpm -i $file"
 	sudo rpm -i "$file"

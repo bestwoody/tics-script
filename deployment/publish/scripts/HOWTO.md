@@ -11,6 +11,7 @@
         * `computing> ./build.sh`
 * Publish a package
     * Update all repos, build them as above
+    * `deployment/ceph-tools> ./download-all.sh`: download rpm libs for ceph installation
     * `deployment/publish> ./publish.sh`: will generate a `theflash-{git-hash-short}.tar.gz` file
 * Deploy a cluster
     * Cluster nodes: H0-Hn(ip addresses: IP0-IPn)
@@ -20,10 +21,12 @@
         * `storages-*.sh` scripts
     * Copy `theflash-<git-hash-short>.tar.gz` to all nodes
         * Put it in the same file system path in all nodes
-        * Unzip it: `theflash-{git-hash-short}> tar -xvzf <file>`
+        * Unzip it: `deploying-path> tar -xvzf theflash-{git-hash-short}.tar.gz`
         * A good practice:
             * Copy and unzip the package to one node, then scp it to other nodes
             * `theflash-{git-hash-short}> ./storages-spread-file.sh` can help, as long as `_env.sh` is configed
+        * `theflash-{git-hash-short}/ceph-tools/offline> ./create-local-repo.sh`:
+            * Create a local yum repo for ceph installation
     * Setup hosts file on every node, it's for ceph-deploy:
 ```
 /etc/hosts: add these lines before the "127.0.0.1" line

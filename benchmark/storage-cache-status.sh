@@ -16,4 +16,6 @@ if [ ! -z "$cache_path" ]; then
 			du -sh "$path"
 		fi
 	done
+else
+	echo "persisted cache disabled"
 fi

@@ -4,9 +4,12 @@
 #export repo_url="http://mirrors.163.com/ceph/rpm-mimic/el7"
 #export repo_url="http://download.ceph.com/ceph/rpm-mimic/el7"
 #export repo_url="http://mirrors.shu.edu.cn/ceph/rpm-mimic/el7"
-export repo_url="http://mirrors.aliyun.com/ceph/rpm-mimic/el7"
+
+#export repo_url="http://mirrors.aliyun.com/ceph/rpm-mimic/el7"
 #export repo_gpg="https://download.ceph.com/keys/release.asc"
-export repo_gpg="file://`readlink -f ../download/downloaded/release.asc`"
+
+export repo_url="file://`readlink -f ../offline/downloaded/yumlibs`"
+export repo_gpg="file://`readlink -f ../offline/downloaded/release.asc`"
 
 # Override ceph repo url
 # TODO: use local repo

@@ -5,7 +5,7 @@ repo_url="$1"
 set -eu
 
 if [ -z "$repo_url" ]; then
-	repo_url="http://mirrors.aliyun.com/ceph/rpm-mimic/el7"
+	repo_url="file://`readlink -f ../offline/downloaded/yumlibs`"
 fi
 
 cd el7

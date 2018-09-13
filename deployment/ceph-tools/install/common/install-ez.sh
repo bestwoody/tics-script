@@ -4,7 +4,7 @@ set -eu
 
 old=`pwd`
 
-cd ../../download/downloaded/
+cd ../../offline/downloaded/
 sudo python ez_setup.py
 
 cd "$old"

@@ -25,20 +25,20 @@ ceph-deploy --username "$user" new --public-network "$public_network" ${mains[@]
 
 for node in ${nodes[@]}; do
 	if [ "$update_yum" == "true" ]; then
-		echo "=> ssh $user@$node \"sudo yum -skip-broken -y update\""
+		echo "=> ssh $user@$node \"sudo yum --skip-broken -y update\""
 		confirm
-		ssh $user@$node "sudo yum -skip-broken -y update"
+		ssh $user@$node "sudo yum --skip-broken -y update"
 	fi
 
-	echo "=> ssh $user@$node \"sudo yum -skip-broken -y install ntp ntpdate ntp-doc\""
+	echo "=> ssh $user@$node \"sudo yum --skip-broken -y install ntp ntpdate ntp-doc\""
 	confirm
-	ssh $user@$node "sudo yum -skip-broken -y install ntp ntpdate ntp-doc"
+	ssh $user@$node "sudo yum --skip-broken -y install ntp ntpdate ntp-doc"
 
 	epel_installed=`rpm -qa | grep epel`
-	if [ -z "$epel_intalled" ]; then
-		echo "ssh $user@$node \"sudo yum -skip-broken -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm\""
+	if [ -z "$epel_installed" ]; then
+		echo "ssh $user@$node \"sudo yum --skip-broken -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm\""
 		confirm
-		ssh $user@$node "sudo yum -skip-broken -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+		ssh $user@$node "sudo yum --skip-broken -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
 	fi
 
 	echo "=> ceph-deploy --username $user install $node"

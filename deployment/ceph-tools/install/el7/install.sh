@@ -14,11 +14,11 @@ if [ -z "$repo_url" ]; then
 	exit 1
 fi
 
-echo "=> sudo rpm --import ../../download/downloaded/release.asc"
-sudo rpm --import ../../download/downloaded/release.asc
+echo "=> sudo rpm --import ../../offline/downloaded/release.asc"
+sudo rpm --import ../../offline/downloaded/release.asc
 
 echo "=> creating ceph.repo"
-repo_gpg="`readlink -f ../../download/downloaded/release.asc`"
+repo_gpg="`readlink -f ../../offline/downloaded/release.asc`"
 cp -f ceph.repo.tmpl ceph.repo
 sed -i "s#<repo_gpg>#file://${repo_gpg}#g" ceph.repo
 sed -i "s#<repo_url>#${repo_url}#g" ceph.repo
@@ -32,7 +32,7 @@ yum --skip-broken -y install ntp ntpdate ntp-doc ceph-deploy
 epel_installed=`rpm -qa | grep epel`
 if [ -z "$epel_installed" ]; then
 	old=`pwd`
-	cd ../../download/downloaded
+	cd ../../offline/downloaded
 	file="epel-release-latest-7.noarch.rpm"
 	echo "=> sudo rpm -i $file"
 	sudo rpm -i "$file"
