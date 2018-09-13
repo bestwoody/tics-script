@@ -18,6 +18,12 @@
 package org.apache.spark.sql
 
 class IssueTestSuite extends BaseClickHouseSuite {
+  test("Fix empty project list on oneRowRelation") {
+    spark.sql("use chspark_test")
+    spark.sql("select 1 as c").createOrReplaceTempView("t")
+    explainAndRunTest("select count(*) from t cross join full_data_type_table f on t.c = f.tp_int8")
+  }
+
   test("case when tests") {
     explainAndRunTest(
       "select CASE WHEN tp_int8 < 0 AND tp_uint8 % 2 = 0 THEN tp_string ELSE '' END AS src from full_data_type_table order by id_dt",

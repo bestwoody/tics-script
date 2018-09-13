@@ -229,8 +229,12 @@ case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSess
       projectList.partition(CHUtil.isSupportedExpression)
 
     // Total push down project expressions = supported expressions in projectList + columns in residual projects and filters.
-    val totalPushDownProjects = (pushDownProjects.asInstanceOf[Seq[NamedExpression]]
+    var totalPushDownProjects = (pushDownProjects.asInstanceOf[Seq[NamedExpression]]
       ++ (residualProjects ++ residualFilters).flatMap(_.references)).distinct
+    // TODO: Choose the smallest column (in prime keys, or the timestamp key of MergeTree) as dummy output
+    if (totalPushDownProjects.isEmpty) {
+      totalPushDownProjects = Seq(relation.output.head)
+    }
 
     val chLogicalPlan =
       CHLogicalPlan(totalPushDownProjects, pushDownFilters, Seq.empty, Seq.empty, sortOrders, limit)
@@ -276,13 +280,8 @@ case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSess
       residualFilter.map(FilterExec(_, chExec)).getOrElse(chExec)
     } else {
       // Need extra Spark Project.
-
       // Use total push down project attributes as CH plan output.
-      var totalPushDownProjectAttrs = totalPushDownProjects.map(_.toAttribute)
-      // TODO: Choose the smallest column (in prime keys, or the timestamp key of MergeTree) as dummy output
-      if (totalPushDownProjectAttrs.isEmpty) {
-        totalPushDownProjectAttrs = Seq(relation.output.head)
-      }
+      val totalPushDownProjectAttrs = totalPushDownProjects.map(_.toAttribute)
       val chExec = CHScanExec(totalPushDownProjectAttrs, sparkSession, chRelation, chLogicalPlan)
 
       // Use rewritten project list as Spark Project output.
