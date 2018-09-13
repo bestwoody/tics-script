@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeReader.cpp b/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
-index ef802fc633c6..d614d7561616 100644
+index ef802fc633c6..ab3ddea21b3a 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeReader.cpp
 @@ -4,6 +4,7 @@
@@ -25,7 +25,15 @@ index ef802fc633c6..d614d7561616 100644
      , uncompressed_cache(uncompressed_cache), mark_cache(mark_cache), save_marks_in_cache(save_marks_in_cache), storage(storage)
      , all_mark_ranges(all_mark_ranges), aio_threshold(aio_threshold), max_read_buffer_size(max_read_buffer_size)
  {
-@@ -159,11 +162,13 @@ size_t MergeTreeReader::readRows(size_t from_mark, bool continue_reading, size_t
+@@ -141,6 +144,7 @@ size_t MergeTreeReader::readRows(size_t from_mark, bool continue_reading, size_t
+         if (e.code() != ErrorCodes::MEMORY_LIMIT_EXCEEDED)
+             storage.reportBrokenPart(data_part->name);
+ 
++        /// TODO: addMessage(is it using cache or origin data)
+         /// Better diagnostics.
+         e.addMessage("(while reading from part " + path + " from mark " + toString(from_mark) + " with max_rows_to_read = " + toString(max_rows_to_read) + ")");
+         throw;
+@@ -159,11 +163,13 @@ size_t MergeTreeReader::readRows(size_t from_mark, bool continue_reading, size_t
  MergeTreeReader::Stream::Stream(
      const String & path_prefix_, const String & extension_, size_t marks_count_,
      const MarkRanges & all_mark_ranges,
@@ -39,7 +47,7 @@ index ef802fc633c6..d614d7561616 100644
      , mark_cache(mark_cache_), save_marks_in_cache(save_marks_in_cache_)
  {
      /// Compute the size of the buffer.
-@@ -202,6 +207,23 @@ MergeTreeReader::Stream::Stream(
+@@ -202,6 +208,23 @@ MergeTreeReader::Stream::Stream(
  
      size_t buffer_size = std::min(max_read_buffer_size, max_mark_range);
  
@@ -63,7 +71,7 @@ index ef802fc633c6..d614d7561616 100644
      /// Estimate size of the data to be read.
      size_t estimated_size = 0;
      if (aio_threshold > 0)
-@@ -214,7 +236,7 @@ MergeTreeReader::Stream::Stream(
+@@ -214,7 +237,7 @@ MergeTreeReader::Stream::Stream(
  
              size_t offset_end = (mark_range.end < marks_count)
                  ? getMark(mark_range.end).offset_in_compressed_file
@@ -72,7 +80,7 @@ index ef802fc633c6..d614d7561616 100644
  
              if (offset_end > offset_begin)
                  estimated_size += offset_end - offset_begin;
-@@ -225,7 +247,7 @@ MergeTreeReader::Stream::Stream(
+@@ -225,7 +248,7 @@ MergeTreeReader::Stream::Stream(
      if (uncompressed_cache)
      {
          auto buffer = std::make_unique<CachedCompressedReadBuffer>(
@@ -81,7 +89,7 @@ index ef802fc633c6..d614d7561616 100644
  
          if (profile_callback)
              buffer->setProfileCallback(profile_callback, clock_type);
-@@ -236,7 +258,7 @@ MergeTreeReader::Stream::Stream(
+@@ -236,7 +259,7 @@ MergeTreeReader::Stream::Stream(
      else
      {
          auto buffer = std::make_unique<CompressedReadBufferFromFile>(
@@ -90,7 +98,7 @@ index ef802fc633c6..d614d7561616 100644
  
          if (profile_callback)
              buffer->setProfileCallback(profile_callback, clock_type);
-@@ -264,8 +286,13 @@ void MergeTreeReader::Stream::loadMarks()
+@@ -264,20 +287,31 @@ void MergeTreeReader::Stream::loadMarks()
          /// Memory for marks must not be accounted as memory usage for query, because they are stored in shared cache.
          TemporarilyDisableMemoryTracker temporarily_disable_memory_tracker;
  
@@ -103,8 +111,13 @@ index ef802fc633c6..d614d7561616 100644
 +        // TODO: If is a broken cache file, just clear it and read from origin path
          if (expected_file_size != file_size)
              throw Exception(
-                 "bad size of marks file `" + path + "':" + std::to_string(file_size) + ", must be: "  + std::to_string(expected_file_size),
-@@ -275,6 +302,8 @@ void MergeTreeReader::Stream::loadMarks()
+-                "bad size of marks file `" + path + "':" + std::to_string(file_size) + ", must be: "  + std::to_string(expected_file_size),
++                "bad size of marks file `" + path + "'("
++                + (using_cached_marks_file ? "cached" : "origin")
++                + "):" + std::to_string(file_size) + ", must be: "  + std::to_string(expected_file_size),
+                 ErrorCodes::CORRUPTED_DATA);
+ 
+         auto res = std::make_shared<MarksInCompressedFile>(marks_count);
  
          /// Read directly to marks.
          ReadBufferFromFile buffer(path, file_size, -1, reinterpret_cast<char *>(res->data()));
@@ -112,8 +125,14 @@ index ef802fc633c6..d614d7561616 100644
 +            persisted_cache->cacheMarksFile(path, marks_count);
  
          if (buffer.eof() || buffer.buffer().size() != file_size)
-             throw Exception("Cannot read all marks from file " + path, ErrorCodes::CANNOT_READ_ALL_DATA);
-@@ -349,7 +378,7 @@ void MergeTreeReader::addStreams(const String & name, const IDataType & type, co
+-            throw Exception("Cannot read all marks from file " + path, ErrorCodes::CANNOT_READ_ALL_DATA);
++            throw Exception("Cannot read all marks from file " + path
++                + "(" + (using_cached_marks_file ? "cached" : "origin") + ")",
++                ErrorCodes::CANNOT_READ_ALL_DATA);
+ 
+         return res;
+     };
+@@ -349,7 +383,7 @@ void MergeTreeReader::addStreams(const String & name, const IDataType & type, co
  
          streams.emplace(stream_name, std::make_unique<Stream>(
              path + stream_name, DATA_FILE_EXTENSION, data_part->marks_count,
