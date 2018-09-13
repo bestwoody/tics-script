@@ -91,7 +91,6 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       logger.info("reload test data complete")
     } catch {
       case e: Exception =>
-        println(e.getStackTrace.mkString(","))
         logger.warn("reload test data failed", e)
     } finally {
       tableNames = tableNames.sorted.reverse
@@ -164,7 +163,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
   def execDBTSAndJudge(qSpark: String, skipped: Boolean = false): Boolean =
     try {
       if (skipped) {
-        logger.warn(s"Test is skipped. [With Spark SQL: $qSpark]")
+        printWarn(s"Test is skipped. [With Spark SQL: $qSpark]")
         true
       } else {
         val qClickHouse: String = convertSparkSQLToCHSQL(qSpark)
@@ -177,7 +176,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
   def explainSpark(str: String, skipped: Boolean = false): Unit =
     try {
       if (skipped) {
-        logger.warn(s"Test is skipped. [With Spark SQL: $str]")
+        printWarn(s"Test is skipped. [With Spark SQL: $str]")
       } else {
         spark.sql(str).explain()
       }
@@ -300,7 +299,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
                                      skipJDBC: Boolean = false,
                                      skipClickHouse: Boolean = false): Unit = {
     if (skipped) {
-      logger.warn(s"Test is skipped. [With Spark SQL: $qSpark]")
+      printWarn(s"Test is skipped. [With Spark SQL: $qSpark]")
       return
     }
 
@@ -330,7 +329,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     if (skipJDBC && skipClickHouse) {
       // If JDBC and ClickHouse tests are both skipped, the correctness of test is not guaranteed.
       // However the result might still be useful when we only want to test if the query fails in CHSpark.
-      logger.warn(
+      printWarn(
         s"Unknown correctness of test result: Skipped in both JDBC and ClickHouse. [With Spark SQL: $qSpark]"
       )
       return
@@ -342,8 +341,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
         printR2(r2)
       } catch {
         case e: Throwable =>
-          printMsg(e.getMessage)
-          logger.warn(s"Spark with JDBC failed when executing:$qJDBC", e) // JDBC failed
+          printMsg(s"Spark with JDBC failed when executing:$qJDBC" + e.getMessage) // JDBC failed
       }
     } else {
       if (r2 == null) {
@@ -363,8 +361,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
           printR3(r3)
         } catch {
           case e: Throwable =>
-            printMsg(e.getMessage)
-            logger.warn(s"ClickHouse failed when executing:$query", e) // ClickHouse failed
+            printWarn(s"ClickHouse failed when executing:$query", e) // ClickHouse failed
         }
       } else {
         if (r3 == null) {
@@ -399,14 +396,19 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
 
   private def printR3(result: List[List[Any]]) = printList("r3: ", result)
 
-  private def printMsg(result: String): Unit =
+  private def printMsg(msg: String): Unit =
     if (showTestOutput) {
-      println(result)
+      logger.info(msg)
+    }
+
+  private def printWarn(warn: String, e: Throwable = null): Unit =
+    if (showTestOutput) {
+      logger.warn(warn, e)
     }
 
   private def printList(prefix: String, result: List[List[Any]]): Unit =
     if (showTestOutput) {
-      println(prefix + " " + listToString(result))
+      logger.info(prefix + " " + listToString(result))
     }
 
   private def listToString(result: List[List[Any]]): String =

@@ -213,7 +213,7 @@ object SharedSQLContext extends Logging {
                      true
                  }) {}
         }
-        logger.warn("Loading CHSparkTest.sql successfully.")
+        logger.warn("Load CHSparkTest.sql successfully.")
       }
     }
 
