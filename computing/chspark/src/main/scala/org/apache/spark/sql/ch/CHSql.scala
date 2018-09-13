@@ -23,7 +23,7 @@ import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
 import com.pingcap.tikv.types.MySQLType
 import com.pingcap.tispark.TiUtils
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
@@ -369,6 +369,18 @@ object CHSql {
     s"CAST($compileArithmetic AS ${compileType(arithmetic.dataType, nullable = arithmetic.nullable)})"
   }
 
+  def compileCaseWhenExpression(ce: CaseWhen): String = {
+    val caseBranch = ce.branches
+      .map {
+        case (condition, returnVal) =>
+          s"WHEN ${compileExpression(condition)} THEN ${compileExpression(returnVal)}"
+      }
+      .mkString(" ")
+    // Spark treat else branch in CASE WHEN statements without else as "ELSE null"
+    val elseBranch = ce.elseValue.map(x => s"ELSE ${compileExpression(x)}").getOrElse("ELSE null")
+    s"CASE $caseBranch $elseBranch END"
+  }
+
   def compileCoalesce(ce: Coalesce, idx: Integer): String =
     if (idx == 1) {
       s"ifNull(${compileExpression(ce.children.head)}, ${compileExpression(ce.children(1))})"
@@ -409,7 +421,7 @@ object CHSql {
       case attr: AttributeReference =>
         compileAttributeName(attr.name.toLowerCase())
       // case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
-      case cast @ Cast(child, dataType, _) =>
+      case Cast(child, dataType, _) =>
         if (!CHUtil.isSupportedExpression(child)) {
           throw new UnsupportedOperationException(
             s"Shouldn't be casting expression $expression to type $dataType."
@@ -440,6 +452,8 @@ object CHSql {
       case Or(left, right)      => s"(${compileExpression(left)} OR ${compileExpression(right)})"
       case In(value, list) =>
         s"${compileExpression(value)} IN (${list.map(compileExpression).mkString(", ")})"
+      case ce @ CaseWhen(_, _) =>
+        compileCaseWhenExpression(ce)
       case IfNull(left, right, _) =>
         s"ifNull(${compileExpression(left)}, ${compileExpression(right)})"
       case ce @ Coalesce(_) =>

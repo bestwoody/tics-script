@@ -192,6 +192,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
 
   def explainAndRunTest(qSpark: String,
                         qJDBC: String = null,
+                        qClickHouse: Option[String] = Option.empty[String],
                         skipped: Boolean = false,
                         rSpark: List[List[Any]] = null,
                         rJDBC: List[List[Any]] = null,
@@ -201,11 +202,21 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     try {
       explainSpark(qSpark)
       if (qJDBC == null) {
-        runTestWithSkip(qSpark, skipped, rSpark, rJDBC, rClickHouse, skipJDBC, skipClickHouse)
+        runTestWithSkip(
+          qSpark,
+          qClickHouse,
+          skipped,
+          rSpark,
+          rJDBC,
+          rClickHouse,
+          skipJDBC,
+          skipClickHouse
+        )
       } else {
         runTestWithoutReplaceTableName(
           qSpark,
           qJDBC,
+          qClickHouse,
           skipped,
           rSpark,
           rJDBC,
@@ -220,6 +231,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
 
   def runTest(qSpark: String,
               qJDBC: String = null,
+              qClickHouse: Option[String] = Option.empty[String],
               rSpark: List[List[Any]] = null,
               rJDBC: List[List[Any]] = null,
               rClickHouse: List[List[Any]] = null,
@@ -229,6 +241,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       qSpark,
       if (qJDBC == null) replaceJDBCTableName(qSpark, skipJDBC)
       else replaceJDBCTableName(qJDBC, skipJDBC),
+      qClickHouse,
       qSpark.contains("[skip]"),
       rSpark,
       rJDBC,
@@ -238,6 +251,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     )
 
   def runTestWithSkip(qSpark: String,
+                      qClickHouse: Option[String] = Option.empty[String],
                       skipped: Boolean = false,
                       rSpark: List[List[Any]] = null,
                       rJDBC: List[List[Any]] = null,
@@ -247,6 +261,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
     runTestWithoutReplaceTableName(
       qSpark,
       replaceJDBCTableName(qSpark, skipJDBC),
+      qClickHouse,
       skipped,
       rSpark,
       rJDBC,
@@ -274,6 +289,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
    */
   def runTestWithoutReplaceTableName(qSpark: String,
                                      qJDBC: String,
+                                     qClickHouse: Option[String] = Option.empty[String],
                                      skipped: Boolean = false,
                                      rSpark: List[List[Any]] = null,
                                      rJDBC: List[List[Any]] = null,
@@ -335,17 +351,17 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
 
     val comp12 = compResult(r1, r2, isOrdered)
 
-    val qClickHouse: String = convertSparkSQLToCHSQL(qSpark)
+    val query: String = convertSparkSQLToCHSQL(qClickHouse.getOrElse(qSpark))
 
     if (skipJDBC || !comp12) {
       if (!skipClickHouse && r3 == null) {
         try {
-          r3 = queryClickHouse(qClickHouse)
+          r3 = queryClickHouse(query)
           printR3(r3)
         } catch {
           case e: Throwable =>
             printMsg(e.getMessage)
-            logger.warn(s"ClickHouse failed when executing:$qClickHouse", e) // ClickHouse failed
+            logger.warn(s"ClickHouse failed when executing:$query", e) // ClickHouse failed
         }
       } else {
         if (r3 == null) {

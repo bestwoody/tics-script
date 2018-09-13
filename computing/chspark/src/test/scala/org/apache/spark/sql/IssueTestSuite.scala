@@ -18,6 +18,36 @@
 package org.apache.spark.sql
 
 class IssueTestSuite extends BaseClickHouseSuite {
+  test("case when tests") {
+    explainAndRunTest(
+      "select CASE WHEN tp_int8 < 0 AND tp_uint8 % 2 = 0 THEN tp_string ELSE '' END AS src from full_data_type_table order by id_dt",
+      skipJDBC = true
+    )
+    explainAndRunTest(
+      "select CASE WHEN tp_int8 < 0 AND tp_uint8 % 2 = 0 THEN tp_string WHEN tp_int8 > 0 THEN 'positive' ELSE 'undefined' END from full_data_type_table order by id_dt",
+      skipJDBC = true
+    )
+    explainAndRunTest(
+      "select CASE WHEN tp_int8 < 0 AND cos(tp_uint8) = 0 THEN tp_string WHEN tp_int8 > 0 THEN 'positive' END from full_data_type_table order by id_dt",
+      qClickHouse = Option.apply(
+        "select CASE WHEN tp_int8 < 0 AND cos(tp_uint8) = 0 THEN tp_string WHEN tp_int8 > 0 THEN 'positive' ELSE null END from full_data_type_table order by id_dt"
+      ),
+      skipJDBC = true
+    )
+    // The following case is treated respectively because CH has different behaviours concerning the following cases:
+    //
+    // Scenario I : Case when (a = 0) then 'y' else 'n' end  ----- a is null ---->  'n'
+    // Scenario II: Case a when 0 then 'y' else 'n' end      ----- a is null ---->  null
+    //
+    // In Spark, both scenarios return 'n'.
+    // However, since we only push down Scenario I, which is also what Spark behaves, the correctness is still guaranteed.
+    explainAndRunTest(
+      "select CASE tp_boolean WHEN 0 THEN 'ok' ELSE 'wtf' END AS src from full_data_type_table order by tp_boolean nulls first, id_dt limit 5",
+      skipJDBC = true,
+      rClickHouse = List(List("wtf"), List("ok"), List("ok"), List("ok"), List("ok"))
+    )
+  }
+
   test("pushdown ifNull test") {
     explainAndRunTest(
       "select ifNull(tp_int8, tp_int8 + 1) from full_data_type_table order by id_dt",

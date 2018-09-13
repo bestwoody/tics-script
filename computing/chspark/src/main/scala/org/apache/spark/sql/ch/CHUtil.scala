@@ -27,7 +27,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CHCatalogConst
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.CHUtil.SharedSparkCHClientInsert.Identity
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
@@ -851,10 +851,10 @@ object CHUtil {
   def isSupportedExpression(exp: Expression): Boolean =
     // println("PROBE isSupportedExpression:" + exp.getClass.getName + ", " + exp)
     exp match {
-      case _: Literal               => true
-      case _: AttributeReference    => true
-      case cast @ Cast(child, _, _) => isSupportedExpression(child)
-      case _: CreateNamedStruct     => false
+      case _: Literal            => true
+      case _: AttributeReference => true
+      case Cast(child, _, _)     => isSupportedExpression(child)
+      case _: CreateNamedStruct  => false
       case _ @Alias(child, _) =>
         isSupportedExpression(child)
       // TODO: Don't pushdown IsNotNull maybe better
@@ -896,6 +896,8 @@ object CHUtil {
         isSupportedExpression(lhs) && isSupportedExpression(rhs)
       case In(value, list) =>
         isSupportedExpression(value) && list.forall(isSupportedExpression)
+      case ce @ CaseWhen(_, _) =>
+        isSupportedCaseWhenExpression(ce)
       case IfNull(lhs, rhs, _) =>
         isSupportedExpression(lhs) && isSupportedExpression(rhs)
       case Coalesce(children) =>
@@ -904,6 +906,11 @@ object CHUtil {
         isSupportedAggregateExpression(ae)
       case _ => false
     }
+
+  def isSupportedCaseWhenExpression(ce: CaseWhen): Boolean =
+    !ce.branches.exists {
+      case (branch, value) => !isSupportedExpression(branch) || !isSupportedExpression(value)
+    } && (ce.elseValue.isEmpty || isSupportedExpression(ce.elseValue.get))
 
   def isSupportedAggregateExpression(ae: AggregateExpression): Boolean =
     // Should not support any AggregateExpression that has isDistinct = true,
