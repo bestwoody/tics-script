@@ -66,12 +66,16 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
       .load()
       .createOrReplaceTempView(s"`$viewName$postfix`")
 
+  protected def setCurrentDatabase(dbName: String): Unit = {
+    clickHouseConn.setCatalog(dbName)
+    spark.sql(s"use $dbName")
+  }
+
   protected def loadTestData(databases: Seq[String] = Seq(testDBName)): Unit =
     try {
       tableNames = Seq.empty[String]
       for (dbName <- databases) {
-        clickHouseConn.setCatalog(dbName)
-        ch.mapCHDatabase(dbName)
+        setCurrentDatabase(dbName)
         val tableDF = spark.read
           .format("jdbc")
           .option(JDBCOptions.JDBC_URL, jdbcUrl + "/system")
@@ -97,8 +101,7 @@ class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
 
   def loadTestDataFromTestTables(testTables: TestTables): Unit = {
     val dbName = testTables.dbName
-    clickHouseConn.setCatalog(dbName)
-    ch.mapCHDatabase(dbName)
+    setCurrentDatabase(dbName)
     for (tableName <- testTables.tables) {
       createOrReplaceTempView(dbName, tableName)
     }

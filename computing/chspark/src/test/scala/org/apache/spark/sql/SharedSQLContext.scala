@@ -22,6 +22,7 @@ import java.util.Properties
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.util.resourceToString
+import org.apache.spark.sql.ch.CHStrategy
 import org.apache.spark.sql.test.TestConstants._
 import org.apache.spark.sql.test.Utils._
 import org.apache.spark.sql.test.{TestSQLContext, TestSparkSession}
@@ -44,7 +45,7 @@ trait SharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfter
 
   protected def spark: SparkSession = SharedSQLContext.spark
 
-  protected def ch: CHTestContext = SharedSQLContext.ch
+  protected def ch: CHContext = SharedSQLContext.ch
 
   protected def jdbc: SparkSession = SharedSQLContext.jdbc
 
@@ -100,7 +101,7 @@ object SharedSQLContext extends Logging {
   protected val logger: Logger = log
   protected val sparkConf = new SparkConf()
   private var _spark: SparkSession = _
-  private var _ch: CHTestContext = _
+  private var _ch: CHContext = _
   private var _clickHouseConf: Properties = _
   private var _clickHouseConnection: Connection = _
   private var _statement: Statement = _
@@ -115,7 +116,7 @@ object SharedSQLContext extends Logging {
 
   protected implicit def spark: SparkSession = _spark
 
-  protected implicit def ch: CHTestContext = _ch
+  protected implicit def ch: CHContext = _ch
 
   protected implicit def jdbc: SparkSession = _sparkJDBC
 
@@ -156,7 +157,9 @@ object SharedSQLContext extends Logging {
 
   protected def initializeCHContext(): Unit =
     if (_spark != null && _ch == null) {
-      _ch = new CHTestContext(_spark)
+      _ch = _spark.sessionState.planner.extraPlanningStrategies.head
+        .asInstanceOf[CHStrategy]
+        .getOrCreateCHContext(_spark)
     }
 
   private def initializeClickHouse(forceNotLoad: Boolean = false): Unit =

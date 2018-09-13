@@ -51,7 +51,7 @@ class TPCHQuerySuite extends BaseClickHouseSuite {
   private lazy val chSparkRes = {
     val result = mutable.Map[String, List[List[Any]]]()
     // We do not use statistic information here due to conflict of netty versions when physical plan has broadcast nodes.
-    ch.mapCHDatabase(database = tpchDBName)
+    setCurrentDatabase(tpchDBName)
     tpchQueries.foreach { name =>
       val queryString = resourceToString(
         s"tpch-sql/$name.sql",
@@ -87,14 +87,6 @@ class TPCHQuerySuite extends BaseClickHouseSuite {
 
   tpchQueries.foreach { name =>
     test(name) {
-      // We need to make sure `clickHouseMapDatabase` happens before JDBC tables mapping,
-      // because calling `clickHouseMapDatabase` will only try to `createTempView` in spark,
-      // so it will not replace existing tables with the same name, as a consequence,
-      // calling JDBC database mapping before `clickHouseMapDatabase` may result in unexpectedly
-      // using JDBC views to run CHSpark test.
-      // Reversing the order of two will not result in such problem since JDBC database
-      // mapping will replace original table views.
-      //
       // Note that ClickHouse JDBC has issues concerning SortOrder, and it is not fixed yet.
       assert(compResult(chSparkRes(name), jdbcRes(name), isOrdered = false))
     }
