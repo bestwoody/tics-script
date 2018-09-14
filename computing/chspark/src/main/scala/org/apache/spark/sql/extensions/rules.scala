@@ -12,7 +12,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 
 case class CHDDLRule(getOrCreateCHContext: SparkSession => CHContext)(sparkSession: SparkSession)
     extends Rule[LogicalPlan] {
-  protected val chContext = getOrCreateCHContext(sparkSession)
+  private lazy val chContext = getOrCreateCHContext(sparkSession)
 
   override def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
     // TODO: support other commands that may concern CH catalog.
@@ -53,7 +53,7 @@ case class CHDDLRule(getOrCreateCHContext: SparkSession => CHContext)(sparkSessi
 case class CHResolutionRule(getOrCreateCHContext: SparkSession => CHContext)(
   sparkSession: SparkSession
 ) extends Rule[LogicalPlan] {
-  protected val chContext = getOrCreateCHContext(sparkSession)
+  private lazy val chContext = getOrCreateCHContext(sparkSession)
 
   protected val resolveCHRelation: TableIdentifier => CHRelation =
     (tableIdentifier: TableIdentifier) =>

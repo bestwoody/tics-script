@@ -901,8 +901,8 @@ object CHUtil {
       case IfNull(lhs, rhs, _) =>
         isSupportedExpression(lhs) && isSupportedExpression(rhs)
       case Coalesce(children) =>
-        !children.exists(child => !isSupportedExpression(child))
-      case ae @ AggregateExpression(_, _, _, _) =>
+        children.forall(isSupportedExpression)
+      case ae: AggregateExpression =>
         isSupportedAggregateExpression(ae)
       case StringTrim(src, trimStr) =>
         isSupportedExpression(src) && trimStr.forall(isSupportedExpression)

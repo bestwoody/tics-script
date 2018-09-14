@@ -31,7 +31,6 @@ case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSess
     extends Strategy
     with Logging {
   // -------------------- Dynamic configurations   --------------------
-  private val chContext = getOrCreateCHContext(sparkSession)
   private val sqlConf: SQLConf = sparkSession.sqlContext.conf
   private val enableAggPushdown: Boolean =
     sqlConf.getConfString(CHConfigConst.ENABLE_PUSHDOWN_AGG, "true").toBoolean

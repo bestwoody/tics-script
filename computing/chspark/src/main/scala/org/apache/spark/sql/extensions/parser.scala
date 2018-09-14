@@ -11,7 +11,7 @@ import org.apache.spark.sql.{CHContext, SparkSession}
 case class CHParser(getOrCreateCHContext: SparkSession => CHContext)(sparkSession: SparkSession,
                                                                      delegate: ParserInterface)
     extends ParserInterface {
-  private val chContext = getOrCreateCHContext(sparkSession)
+  private lazy val chContext = getOrCreateCHContext(sparkSession)
 
   private lazy val internal = new CHSqlParser(sparkSession.sqlContext.conf)
 

@@ -440,7 +440,7 @@ object CHSql {
       case Not(child)         => s"NOT ${compileExpression(child)}"
       case e @ Abs(child) =>
         s"CAST(abs(${compileExpression(child)}) AS ${compileType(e.dataType, nullable = child.nullable)})"
-      case be @ BinaryArithmetic(_) => compileBinaryArithmetic(be)
+      case be: BinaryArithmetic     => compileBinaryArithmetic(be)
       case GreaterThan(left, right) => s"(${compileExpression(left)} > ${compileExpression(right)})"
       case GreaterThanOrEqual(left, right) =>
         s"(${compileExpression(left)} >= ${compileExpression(right)})"
@@ -452,13 +452,13 @@ object CHSql {
       case Or(left, right)      => s"(${compileExpression(left)} OR ${compileExpression(right)})"
       case In(value, list) =>
         s"${compileExpression(value)} IN (${list.map(compileExpression).mkString(", ")})"
-      case ce @ CaseWhen(_, _) =>
+      case ce: CaseWhen =>
         compileCaseWhenExpression(ce)
       case IfNull(left, right, _) =>
         s"ifNull(${compileExpression(left)}, ${compileExpression(right)})"
-      case ce @ Coalesce(_) =>
+      case ce: Coalesce =>
         compileCoalesce(ce, ce.children.length - 1)
-      case ae @ AggregateExpression(_, _, _, _) => compileAggregateExpression(ae)
+      case ae: AggregateExpression => compileAggregateExpression(ae)
       case StringTrim(src, trimStr) => s"trim(${compileExpression(src)}${trimStr.map(t => s",  ${compileExpression(t)}").getOrElse("")})"
       case StringTrimLeft(src, trimStr) => s"ltrim(${compileExpression(src)}${trimStr.map(t => s",  ${compileExpression(t)}").getOrElse("")})"
       case StringTrimRight(src, trimStr) => s"rtrim(${compileExpression(src)}${trimStr.map(t => s",  ${compileExpression(t)}").getOrElse("")})"
