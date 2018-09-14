@@ -1,0 +1,12 @@
+diff --git a/dbms/src/Functions/tests/CMakeLists.txt b/dbms/src/Functions/tests/CMakeLists.txt
+index 64998be158eb..79ce44df4932 100644
+--- a/dbms/src/Functions/tests/CMakeLists.txt
++++ b/dbms/src/Functions/tests/CMakeLists.txt
+@@ -2,3 +2,6 @@ include_directories (${CMAKE_CURRENT_BINARY_DIR})
+ 
+ add_executable (number_traits number_traits.cpp)
+ target_link_libraries (number_traits dbms)
++
++add_executable (strings_trim strings_trim.cpp)
++target_link_libraries (strings_trim dbms gtest_main clickhouse_functions)
+\ No newline at end of file

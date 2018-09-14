@@ -1,0 +1,163 @@
+diff --git a/dbms/src/Functions/FunctionsString.cpp b/dbms/src/Functions/FunctionsString.cpp
+index 1fa2df5379f0..692189bc314e 100644
+--- a/dbms/src/Functions/FunctionsString.cpp
++++ b/dbms/src/Functions/FunctionsString.cpp
+@@ -684,11 +684,6 @@ public:
+         return name;
+     }
+ 
+-    bool isVariadic() const override
+-    {
+-        return true;
+-    }
+-
+     size_t getNumberOfArguments() const override
+     {
+         return 0;
+@@ -1090,6 +1085,107 @@ private:
+ };
+ 
+ 
++template <typename Name, bool ltrim, bool rtrim>
++class TrimImpl : public IFunction
++{
++public:
++    static constexpr auto name = Name::name;
++    explicit TrimImpl() {}
++    static FunctionPtr create(const Context & )
++    {
++        return std::make_shared<TrimImpl>();
++    }
++
++    String getName() const override
++    {
++        return name;
++    }
++
++    bool isVariadic() const override { return true; }
++
++    size_t getNumberOfArguments() const override
++    {
++        return 0;
++    }
++
++    DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
++    {
++        if (arguments.empty() || arguments.size() > 2)
++            throw Exception("Number of arguments for function " + getName() + " doesn't match: passed " + toString(arguments.size())
++                                + ", should be 1 or 2.",
++                          ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH);
++
++        for (const auto arg_idx : ext::range(0, arguments.size()))
++        {
++            const auto arg = arguments[arg_idx].get();
++            if (!arg->isStringOrFixedString())
++                throw Exception{
++                    "Illegal type " + arg->getName() + " of argument " + std::to_string(arg_idx + 1) + " of function " + getName(),
++					ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT};
++        }
++
++        return std::make_shared<DataTypeString>();
++    }
++
++    void executeImpl(Block & block, const ColumnNumbers & arguments, const size_t result) override
++    {
++        if (arguments.size() == 1)
++            executeTrim(block, arguments, result);
++        else if (arguments.size() == 2)
++            executeTrimWs(block, arguments, result);
++        else
++            throw Exception("Number of arguments for function " + getName() + " doesn't match: passed " + toString(arguments.size())
++								+ ", should beat least 1.",
++							ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH);
++    }
++
++private:
++    void executeTrim(Block & block, const ColumnNumbers & arguments, const size_t result)
++    {
++        const IColumn * c0 = block.getByPosition(arguments[0]).column.get();
++        const ColumnString * c0_string = checkAndGetColumn<ColumnString>(c0);
++        const ColumnConst * c0_const_string = checkAndGetColumnConst<ColumnString>(c0);
++
++        auto c_res = ColumnString::create();
++
++        if (c0_string)
++            trim<ltrim, rtrim, StringSource, StringSink>(StringSource(*c0_string), StringSink(*c_res, c0->size()));
++        else if (c0_const_string)
++            trim<ltrim, rtrim, ConstSource<StringSource>, StringSink>(ConstSource<StringSource>(*c0_const_string), StringSink(*c_res, c0->size()));
++        else
++            throw Exception{"Argument of function " + getName() + " must be string", ErrorCodes::ILLEGAL_COLUMN};
++
++        block.getByPosition(result).column = std::move(c_res);
++    }
++
++    void executeTrimWs(Block & block, const ColumnNumbers & arguments, const size_t result)
++    {
++        const IColumn * c0 = block.getByPosition(arguments[0]).column.get();
++        const IColumn * c1 = block.getByPosition(arguments[1]).column.get();
++
++        const ColumnString * c0_string = checkAndGetColumn<ColumnString>(c0);
++        const ColumnString * c1_string = checkAndGetColumn<ColumnString>(c1);
++        const ColumnConst * c0_const_string = checkAndGetColumnConst<ColumnString>(c0);
++        const ColumnConst * c1_const_string = checkAndGetColumnConst<ColumnString>(c1);
++
++        auto c_res = ColumnString::create();
++
++        if (c0_string && c1_string)
++            trim<ltrim, rtrim, StringSource, StringSource, StringSink>(StringSource(*c0_string), StringSource(*c1_string), StringSink(*c_res, c0->size()));
++        else if (c0_string && c1_const_string)
++            trim<ltrim, rtrim, StringSource, ConstSource<StringSource>, StringSink>(StringSource(*c0_string), ConstSource<StringSource>(*c1_const_string), StringSink(*c_res, c0->size()));
++        else if (c0_const_string && c1_string)
++            trim<ltrim, rtrim, ConstSource<StringSource>, StringSource, StringSink>(ConstSource<StringSource>(*c0_const_string), StringSource(*c1_string), StringSink(*c_res, c0->size()));
++        else if (c0_const_string && c1_const_string)
++            trim<ltrim, rtrim, ConstSource<StringSource>, ConstSource<StringSource>, StringSink>(ConstSource<StringSource>(*c0_const_string), ConstSource<StringSource>(*c1_const_string), StringSink(*c_res, c0->size()));
++        else
++            throw Exception{"Argument of function " + getName() + " must be string", ErrorCodes::ILLEGAL_COLUMN};
++
++        block.getByPosition(result).column = std::move(c_res);
++    }
++};
++
++
+ struct NameEmpty
+ {
+     static constexpr auto name = "empty";
+@@ -1118,6 +1214,18 @@ struct NameReverseUTF8
+ {
+     static constexpr auto name = "reverseUTF8";
+ };
++struct NameTrim
++{
++    static constexpr auto name = "trim";
++};
++struct NameLTrim
++{
++    static constexpr auto name = "ltrim";
++};
++struct NameRTrim
++{
++    static constexpr auto name = "rtrim";
++};
+ struct NameConcat
+ {
+     static constexpr auto name = "concat";
+@@ -1134,6 +1242,9 @@ using FunctionLengthUTF8 = FunctionStringOrArrayToT<LengthUTF8Impl, NameLengthUT
+ using FunctionLower = FunctionStringToString<LowerUpperImpl<'A', 'Z'>, NameLower>;
+ using FunctionUpper = FunctionStringToString<LowerUpperImpl<'a', 'z'>, NameUpper>;
+ using FunctionReverseUTF8 = FunctionStringToString<ReverseUTF8Impl, NameReverseUTF8, true>;
++using FunctionTrim = TrimImpl<NameTrim, true, true>;
++using FunctionLTrim = TrimImpl<NameLTrim, true, false>;
++using FunctionRTrim = TrimImpl<NameRTrim, false, true>;
+ using FunctionConcat = ConcatImpl<NameConcat, false>;
+ using FunctionConcatAssumeInjective = ConcatImpl<NameConcatAssumeInjective, true>;
+ 
+@@ -1150,6 +1261,9 @@ void registerFunctionsString(FunctionFactory & factory)
+     factory.registerFunction<FunctionUpperUTF8>();
+     factory.registerFunction<FunctionReverse>();
+     factory.registerFunction<FunctionReverseUTF8>();
++    factory.registerFunction<FunctionTrim>();
++    factory.registerFunction<FunctionLTrim>();
++    factory.registerFunction<FunctionRTrim>();
+     factory.registerFunction<FunctionConcat>();
+     factory.registerFunction<FunctionConcatAssumeInjective>();
+     factory.registerFunction<FunctionSubstring>();

@@ -27,7 +27,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CHCatalogConst
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.CHUtil.SharedSparkCHClientInsert.Identity
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
@@ -904,6 +904,12 @@ object CHUtil {
         !children.exists(child => !isSupportedExpression(child))
       case ae @ AggregateExpression(_, _, _, _) =>
         isSupportedAggregateExpression(ae)
+      case StringTrim(src, trimStr) =>
+        isSupportedExpression(src) && trimStr.forall(isSupportedExpression)
+      case StringTrimLeft(src, trimStr) =>
+        isSupportedExpression(src) && trimStr.forall(isSupportedExpression)
+      case StringTrimRight(src, trimStr) =>
+        isSupportedExpression(src) && trimStr.forall(isSupportedExpression)
       case _ => false
     }
 

@@ -23,7 +23,7 @@ import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
 import com.pingcap.tikv.types.MySQLType
 import com.pingcap.tispark.TiUtils
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, StringTrimLeft, StringTrimRight, StringTrim, Subtract, UnaryMinus}
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
@@ -459,6 +459,9 @@ object CHSql {
       case ce @ Coalesce(_) =>
         compileCoalesce(ce, ce.children.length - 1)
       case ae @ AggregateExpression(_, _, _, _) => compileAggregateExpression(ae)
+      case StringTrim(src, trimStr) => s"trim(${compileExpression(src)}${trimStr.map(t => s",  ${compileExpression(t)}").getOrElse("")})"
+      case StringTrimLeft(src, trimStr) => s"ltrim(${compileExpression(src)}${trimStr.map(t => s",  ${compileExpression(t)}").getOrElse("")})"
+      case StringTrimRight(src, trimStr) => s"rtrim(${compileExpression(src)}${trimStr.map(t => s",  ${compileExpression(t)}").getOrElse("")})"
       // TODO: Support more expression types.
       case _ =>
         throw new UnsupportedOperationException(

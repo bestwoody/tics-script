@@ -58,6 +58,7 @@ deployment/ceph-tools/deploy/ceph.conf
 # computing running data dir
 computing/spark-warehouse
 computing/spark
+computing/spark.old
 
 # computing test config
 computing/chspark/src/test/resources/clickhouse_config.properties
