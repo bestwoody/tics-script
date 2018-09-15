@@ -22,5 +22,6 @@ print_spark_settings()
 	echo 'spark.conf.set("spark.storage.plan.pushdown.agg", "'$pushdown'")'
 	echo 'spark.conf.set("spark.storage.selraw", "'$selraw'")'
 	echo 'spark.conf.set("spark.storage.partitionsPerSplit", "'$partitionsPerSplit'")'
+	echo 'spark.conf.set("spark.flash.catalog_impl", "'concrete'")'
 }
 export print_spark_settings

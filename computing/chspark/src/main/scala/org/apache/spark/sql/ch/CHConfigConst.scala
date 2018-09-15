@@ -16,6 +16,7 @@
 package org.apache.spark.sql.ch
 
 object CHConfigConst {
+  val CATALOG_IMPL: String = "spark.flash.catalog_impl"
   val ENABLE_PUSHDOWN_AGG: String = "spark.storage.plan.pushdown.agg"
   val ENABLE_SELRAW: String = "spark.storage.selraw"
   val PARTITIONS_PER_SPLIT: String = "spark.storage.partitionsPerSplit"
