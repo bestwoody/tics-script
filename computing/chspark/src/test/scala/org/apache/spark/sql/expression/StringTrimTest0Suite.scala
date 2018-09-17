@@ -30,11 +30,11 @@ class StringTrimTest0Suite extends BaseClickHouseSuite {
   )
 
   allCases foreach { query =>
-  {
-    test(query) {
-      runTest(query)
+    {
+      test(query) {
+        runTest(query)
+      }
     }
-  }
   }
 
 }
