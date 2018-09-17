@@ -53,7 +53,7 @@ case class CHDDLRule(getOrCreateCHContext: SparkSession => CHContext)(sparkSessi
 case class CHResolutionRule(getOrCreateCHContext: SparkSession => CHContext)(
   sparkSession: SparkSession
 ) extends Rule[LogicalPlan] {
-  private lazy val chContext = getOrCreateCHContext(sparkSession)
+  protected lazy val chContext = getOrCreateCHContext(sparkSession)
 
   protected val resolveCHRelation: TableIdentifier => CHRelation =
     (tableIdentifier: TableIdentifier) =>
