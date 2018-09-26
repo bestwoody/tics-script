@@ -48,41 +48,41 @@ class TPCHQuerySuite extends BaseClickHouseSuite {
     "q22"
   )
 
-  private lazy val chSparkRes = {
-    val result = mutable.Map[String, List[List[Any]]]()
+  val tpchTables = Seq(
+    "lineitem",
+    "orders",
+    "customer",
+    "nation",
+    "customer",
+    "partsupp",
+    "part",
+    "region",
+    "supplier"
+  )
+
+  private def chSparkRes(q: String) = {
+    tpchTables.foreach(spark.sqlContext.dropTempTable)
     // We do not use statistic information here due to conflict of netty versions when physical plan has broadcast nodes.
     setCurrentDatabase(tpchDBName)
-    tpchQueries.foreach { name =>
-      val queryString = resourceToString(
-        s"tpch-sql/$name.sql",
-        classLoader = Thread.currentThread().getContextClassLoader
-      )
-      result(name) = querySpark(queryString)
-      println(s"CHSpark finished $name")
-    }
-    result
+    val queryString = resourceToString(
+      s"tpch-sql/$q.sql",
+      classLoader = Thread.currentThread().getContextClassLoader
+    )
+    val res = querySpark(queryString)
+    println(s"CHSpark finished $q")
+    res
   }
 
-  private lazy val jdbcRes = {
-    val result = mutable.Map[String, List[List[Any]]]()
-    createOrReplaceTempView(tpchDBName, "lineitem", "")
-    createOrReplaceTempView(tpchDBName, "orders", "")
-    createOrReplaceTempView(tpchDBName, "customer", "")
-    createOrReplaceTempView(tpchDBName, "nation", "")
-    createOrReplaceTempView(tpchDBName, "customer", "")
-    createOrReplaceTempView(tpchDBName, "part", "")
-    createOrReplaceTempView(tpchDBName, "partsupp", "")
-    createOrReplaceTempView(tpchDBName, "region", "")
-    createOrReplaceTempView(tpchDBName, "supplier", "")
-    tpchQueries.foreach { name =>
-      val queryString = resourceToString(
-        s"tpch-sql/$name.sql",
-        classLoader = Thread.currentThread().getContextClassLoader
-      )
-      result(name) = querySpark(queryString)
-      println(s"Spark JDBC finished $name")
-    }
-    result
+  private def jdbcRes(q: String) = {
+    tpchTables.foreach(createOrReplaceTempView(tpchDBName, _, ""))
+    setCurrentDatabase("default")
+    val queryString = resourceToString(
+      s"tpch-sql/$q.sql",
+      classLoader = Thread.currentThread().getContextClassLoader
+    )
+    val res = querySpark(queryString)
+    println(s"Spark JDBC finished $q")
+    res
   }
 
   tpchQueries.foreach { name =>

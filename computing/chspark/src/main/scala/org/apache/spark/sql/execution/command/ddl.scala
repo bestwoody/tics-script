@@ -1,17 +1,18 @@
 package org.apache.spark.sql.execution.command
 
-import org.apache.spark.sql.{CHContext, Row, SparkSession}
+import org.apache.spark.sql.{AnalysisException, CHContext, Row, SparkSession}
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
-import org.apache.spark.sql.catalyst.catalog.CatalogDatabase
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogTableType}
 
 import scala.util.control.NonFatal
 
-case class CHCreateDatabaseCommand(chContext: CHContext, databaseName: String, ifNotExists: Boolean)
+case class CreateFlashDatabaseCommand(chContext: CHContext,
+                                      databaseName: String,
+                                      ifNotExists: Boolean)
     extends RunnableCommand
     with CHCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    chCatalog.createCHDatabase(
+    chCatalog.createFlashDatabase(
       CatalogDatabase(
         databaseName,
         "flash",
@@ -44,7 +45,23 @@ class CHDropTableCommand(val chContext: CHContext,
     extends DropTableCommand(tableName, ifExists, isView, purge)
     with CHCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    if (chCatalog.tableExists(tableName)) {
+    if (!chCatalog.isTemporaryTable(tableName) && chCatalog.tableExists(tableName)) {
+      // If the command DROP VIEW is to drop a table or DROP TABLE is to drop a view
+      // issue an exception.
+      chCatalog.getTableMetadata(tableName).tableType match {
+        case CatalogTableType.VIEW if !isView =>
+          throw new AnalysisException(
+            "Cannot drop a view with DROP TABLE. Please use DROP VIEW instead"
+          )
+        case o if o != CatalogTableType.VIEW && isView =>
+          throw new AnalysisException(
+            s"Cannot drop a table with DROP VIEW. Please use DROP TABLE instead"
+          )
+        case _ =>
+      }
+    }
+
+    if (chCatalog.isTemporaryTable(tableName) || chCatalog.tableExists(tableName)) {
       try {
         sparkSession.sharedState.cacheManager.uncacheQuery(sparkSession.table(tableName))
       } catch {
@@ -55,9 +72,8 @@ class CHDropTableCommand(val chContext: CHContext,
     } else if (ifExists) {
       // no-op
     } else {
-      throw new NoSuchTableException(tableName.database.getOrElse(""), tableName.table)
+      throw new AnalysisException(s"Table or view not found: ${tableName.identifier}")
     }
-
     Seq.empty[Row]
   }
 }

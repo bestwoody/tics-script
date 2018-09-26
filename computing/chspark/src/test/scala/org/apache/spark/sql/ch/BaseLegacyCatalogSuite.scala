@@ -1,10 +1,13 @@
 package org.apache.spark.sql.ch
 
+import java.util.Locale
+
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.{AnalysisException, SparkSession}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SparkSession}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{DatabaseAlreadyExistsException, NoSuchDatabaseException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.{CHSessionCatalog, SessionCatalog}
+import org.apache.spark.sql.internal.StaticSQLConf
 
 abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
   var extended: SparkSession
@@ -19,6 +22,7 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
   val testCHDb: String
   val testDbFlash: String = "flash"
   val testDbWhatever: String = "whateverwhatever"
+  val testTWhatever: String = "whateverwhatever"
   val testT: String
 
   def verifyShowDatabases(expected: Array[String])
@@ -86,6 +90,17 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
     extended.sql(s"use default")
     extended.sql(s"drop table `$db`.`$t`")
     extended.sql(s"drop database `$db`")
+  }
+
+  def runValidateCatalogTest(): Unit = {
+    extended.sql(s"create flash database $testCHDb")
+    assertThrows[AnalysisException](
+      extended.sql(s"create table $testT(i int primary key) using mmt")
+    )
+    assertThrows[AnalysisException](extended.sql(s"create table from tidb $testT using mmt"))
+    extended.sql(s"use $testCHDb")
+    assertThrows[AnalysisException](extended.sql(s"create table $testT(i int)"))
+    extended.sql(s"drop database $testCHDb")
   }
 
   def runDatabaseTest(): Unit = {
@@ -225,6 +240,9 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
 
   def runInsertTest(): Unit = {
     extended.sql(s"use default")
+    assertThrows[AnalysisException](
+      extended.sql(s"insert into $testTWhatever values(0, 'default', null)")
+    )
     extended.sql(s"insert into $testT values(0, 'default', null)")
     extended.sql(s"insert into $testLegacyDb.$testT values(1, 'legacy', 12.34)")
     extended.sql(s"use $testCHDb")
@@ -286,6 +304,8 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
       assert(r.deep == expected.deep)
     }
 
+    assertThrows[AnalysisException](extended.sql(s"select * from $testTWhatever"))
+
     verifySingleTable("default", testT, Array(0))
     verifySingleTable(testLegacyDb, testT, Array(1))
     verifySingleTable(testCHDb, testT, Array(2))
@@ -293,5 +313,132 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
     verifyJoinTable("default", testT, testLegacyDb, testT, Array((0, 1)))
     verifyJoinTable(testLegacyDb, testT, testCHDb, testT, Array((1, 2)))
     verifyJoinTable(testCHDb, testT, "default", testT, Array((2, 0)))
+  }
+
+  def runTempViewTest(): Unit = {
+    val globalTempDB =
+      extended.conf.get(StaticSQLConf.GLOBAL_TEMP_DATABASE).toLowerCase(Locale.ROOT)
+
+    assertThrows[AnalysisException](extended.sql(s"create flash database $globalTempDB"))
+    assertThrows[AnalysisException](extended.sql(s"create database $globalTempDB"))
+    assertThrows[AnalysisException](extended.sql(s"drop database $globalTempDB"))
+    assertThrows[AnalysisException](extended.sql(s"use $globalTempDB"))
+
+    def verifyTempView(db: String, otherDb: String) = {
+      extended.sql(s"use $db")
+      extended.sql(s"select 1 as vc").createTempView(testT)
+      verifyShowTables(db, Array(testT, testT), otherDb, Array(testT, testT))
+      extended.sql(s"select vc from $testT")
+      extended.sql(s"drop table $testT")
+      verifyShowTables(db, Array(testT), otherDb, Array(testT))
+
+      extended.sql(s"use $otherDb")
+      extended.sql(s"create temporary view $testT as select 1 as vc")
+      verifyShowTables(db, Array(testT, testT), otherDb, Array(testT, testT))
+      extended.sql(s"select vc from $testT")
+      extended.sql(s"drop view $testT")
+      verifyShowTables(db, Array(testT), otherDb, Array(testT))
+
+      extended.sql(s"create global temporary view $testT as select 1 as gvc")
+      verifyShowTables(db, Array(testT), otherDb, Array(testT))
+      assert(
+        extended.sql(s"show tables from $globalTempDB").collect().map(_.getString(1)).deep == Array(
+          testT
+        ).deep
+      )
+      extended.sql(s"select gvc from $globalTempDB.$testT")
+      extended.sql(s"drop table $globalTempDB.$testT")
+      verifyShowTables(db, Array(testT), otherDb, Array(testT))
+      assert(extended.sql(s"show tables from $globalTempDB").collect().isEmpty)
+
+      extended.sql(s"create temporary view $testT as select 1 as vc")
+      extended.sql(s"select 1 as gvc").createGlobalTempView(testT)
+
+      extended.sql(s"use $db")
+      extended.sql(s"select vc from $testT")
+      extended.sql(s"select gvc from $globalTempDB.$testT")
+      extended.sql(s"select i from $db.$testT")
+      extended.sql(s"select i from $otherDb.$testT")
+
+      extended.sql(s"use $otherDb")
+      extended.sql(s"select vc from $testT")
+      extended.sql(s"select gvc from $globalTempDB.$testT")
+      extended.sql(s"select i from $db.$testT")
+      extended.sql(s"select i from $otherDb.$testT")
+
+      extended.sql(s"drop table $testT")
+      extended.sql(s"drop table $globalTempDB.$testT")
+    }
+
+    verifyTempView("default", testLegacyDb)
+    verifyTempView("default", testCHDb)
+    verifyTempView(testLegacyDb, testCHDb)
+
+    def verifyTempView2(db: String, otherDb: String) = {
+      def verifyDf(df1: DataFrame, df2: DataFrame) =
+        assert(df1.except(df2).count() == 0 && df2.except(df1).count() == 0)
+      val df = extended.sql(s"select i from $db.$testT")
+      val otherDf = extended.sql(s"select i from $otherDb.$testT")
+
+      extended.sql(s"use $db")
+      extended.sql(s"create temporary view v as select * from $testT")
+      var dfV = extended.sql(s"select i from v")
+      verifyDf(df, dfV)
+      extended.sql(s"use $otherDb")
+      dfV = extended.sql(s"select i from v")
+      verifyDf(df, dfV)
+      extended.sql(s"drop view v")
+
+      extended.sql(s"create temporary view v as select * from $db.$testT")
+      dfV = extended.sql(s"select i from v")
+      verifyDf(df, dfV)
+      dfV = extended.sql(s"select i from v")
+      verifyDf(df, dfV)
+      extended.sql(s"drop view v")
+
+      extended.sql(s"use $otherDb")
+      extended.sql(s"create temporary view v as select * from $testT")
+      var otherDfV = extended.sql(s"select i from v")
+      verifyDf(otherDf, otherDfV)
+      extended.sql(s"use $db")
+      otherDfV = extended.sql(s"select i from v")
+      verifyDf(otherDf, otherDfV)
+      extended.sql(s"drop view v")
+
+      extended.sql(s"create temporary view v as select * from $otherDb.$testT")
+      otherDfV = extended.sql(s"select i from v")
+      verifyDf(otherDf, otherDfV)
+      dfV = extended.sql(s"select i from v")
+      verifyDf(otherDf, otherDfV)
+      extended.sql(s"drop view v")
+    }
+
+    verifyTempView2("default", testLegacyDb)
+    verifyTempView2("default", testCHDb)
+    verifyTempView2(testLegacyDb, testCHDb)
+
+    extended.sql(s"create temporary view $testT as select 1 as vc")
+    extended.sql(s"create global temporary view $testT as select 1 as gvc")
+
+    extended.sql(s"use default")
+    extended.sql(s"drop table if exists default.$testT")
+    verifyShowTables("default", Array(testT), testLegacyDb, Array(testT, testT))
+    verifyShowTables("default", Array(testT), testCHDb, Array(testT, testT))
+    extended.sql(s"select vc from $testT")
+    extended.sql(s"select gvc from $globalTempDB.$testT")
+
+    extended.sql(s"use $testLegacyDb")
+    extended.sql(s"drop table if exists $testLegacyDb.$testT")
+    verifyShowTables(testLegacyDb, Array(testT), "default", Array(testT))
+    verifyShowTables(testLegacyDb, Array(testT), testCHDb, Array(testT, testT))
+    extended.sql(s"select vc from $testT")
+    extended.sql(s"select gvc from $globalTempDB.$testT")
+
+    extended.sql(s"use $testCHDb")
+    extended.sql(s"drop table if exists $testCHDb.$testT")
+    verifyShowTables(testCHDb, Array(testT), "default", Array(testT))
+    verifyShowTables(testCHDb, Array(testT), testLegacyDb, Array(testT))
+    extended.sql(s"select vc from $testT")
+    extended.sql(s"select gvc from $globalTempDB.$testT")
   }
 }

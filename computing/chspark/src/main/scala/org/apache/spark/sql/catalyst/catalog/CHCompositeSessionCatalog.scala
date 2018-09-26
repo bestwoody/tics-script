@@ -4,33 +4,29 @@ import java.net.URI
 import java.util.concurrent.Callable
 
 import com.pingcap.tikv.meta.TiTableInfo
-import org.apache.spark.sql.{AnalysisException, CHContext}
+import org.apache.spark.sql.CHContext
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, QualifiedTableName, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis.{EmptyFunctionRegistry, NoSuchDatabaseException}
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.ch.CHEngine
+import org.apache.spark.sql.ch.{CHConfigConst, CHEngine}
 import org.apache.spark.sql.types.StructType
 
 /**
- * Policy of operating composite catalog, with one CH catalog being either primary or secondary catalog.
+ * Policy of operating a composition of several catalogs with priorities:
+ * 1. A session catalog that operates temp views, which precedence all other catalogs.
+ * 2. A primary and a secondary catalog that operate entities other than temp views, primary precedences secondary obviously.
+ * 3. A dedicate CH catalog for specialized usages for CH entities.
  */
 trait CompositeCatalogPolicy {
+  val sessionCatalog: SessionCatalog
+
   val primaryCatalog: SessionCatalog
   val secondaryCatalog: SessionCatalog
-  val chConcreteCatalog: CHSessionCatalog
-}
 
-/**
- * Identical CH catalog policy.
- * @param chContext
- */
-case class IdentityPolicy(chContext: CHContext) extends CompositeCatalogPolicy {
-  override val primaryCatalog: SessionCatalog = chContext.chConcreteCatalog
-  override val secondaryCatalog: SessionCatalog = chContext.chConcreteCatalog
-  override val chConcreteCatalog: CHSessionCatalog = chContext.chConcreteCatalog
+  val chConcreteCatalog: CHSessionCatalog
 }
 
 /**
@@ -38,62 +34,94 @@ case class IdentityPolicy(chContext: CHContext) extends CompositeCatalogPolicy {
  * @param chContext
  */
 case class LegacyFirstPolicy(chContext: CHContext) extends CompositeCatalogPolicy {
+  override val sessionCatalog: SessionCatalog = chContext.legacyCatalog
   override val primaryCatalog: SessionCatalog = chContext.legacyCatalog
   override val secondaryCatalog: SessionCatalog = chContext.chConcreteCatalog
   override val chConcreteCatalog: CHSessionCatalog = chContext.chConcreteCatalog
 }
 
 /**
- * A composition of two catalogs that behaves as a concrete catalog.
+ * CH catalog first policy.
  * @param chContext
  */
-class CHCompositeSessionCatalog(chContext: CHContext)
+case class CHFirstPolicy(chContext: CHContext) extends CompositeCatalogPolicy {
+  override val sessionCatalog: SessionCatalog = chContext.legacyCatalog
+  override val primaryCatalog: SessionCatalog = chContext.chConcreteCatalog
+  override val secondaryCatalog: SessionCatalog = chContext.legacyCatalog
+  override val chConcreteCatalog: CHSessionCatalog = chContext.chConcreteCatalog
+}
+
+/**
+ * A composition of two catalogs that behaves as a concrete catalog.
+ * It derives Spark's session catalog and overrides the behaviors as below:
+ * 1. Methods inherited from trait CHSessionCatalog are directly routed to CH catalog.
+ * 2. Methods that need to consider both CH catalog and legacy catalog are implemented using composition logic that
+ *    either routes to the corresponding catalog or combine results from both.
+ *    And when concerning temp views, use session catalog if needed.
+ * 3. The rests are routed to session catalog.
+ * @param chContext
+ */
+class CHCompositeSessionCatalog(val chContext: CHContext)
     extends SessionCatalog(
       chContext.chConcreteCatalog.externalCatalog,
       EmptyFunctionRegistry,
       chContext.sqlContext.conf
     )
-    with CompositeCatalogPolicy
     with CHSessionCatalog {
 
-  // TODO: configuration for policy choosing.
-  val policy: CompositeCatalogPolicy = LegacyFirstPolicy(chContext)
+  val policy: CompositeCatalogPolicy = {
+    val catalogPolicy =
+      chContext.sqlContext.conf.getConfString(CHConfigConst.CATALOG_POLICY, "legacyfirst")
+    if (catalogPolicy.equals("flashfirst"))
+      CHFirstPolicy(chContext)
+    else if (catalogPolicy.equals("legacyfirst"))
+      LegacyFirstPolicy(chContext)
+    else
+      throw new RuntimeException(
+        s"Invalid catalog policy: $catalogPolicy, valid options are 'legacyfirst' and 'flashfirst'."
+      )
+  }
 
-  override val primaryCatalog: SessionCatalog = policy.primaryCatalog
-  override val secondaryCatalog: SessionCatalog = policy.secondaryCatalog
-  override val chConcreteCatalog: CHSessionCatalog = policy.chConcreteCatalog
+  // Shortcuts.
+  val sessionCatalog: SessionCatalog = policy.sessionCatalog
+  val primaryCatalog: SessionCatalog = policy.primaryCatalog
+  val secondaryCatalog: SessionCatalog = policy.secondaryCatalog
+  val chConcreteCatalog: CHSessionCatalog = policy.chConcreteCatalog
 
   // Used to manage catalog change by setting current database.
   var currentCatalog: SessionCatalog = primaryCatalog
 
   // Following are routed to CH catalog.
+
   override def catalogOf(database: Option[String]): Option[SessionCatalog] =
     database
-      .map(db => { Seq(primaryCatalog, secondaryCatalog).find(_.databaseExists(db)) })
+      .map(db => {
+        // Global temp db is special, route to session catalog.
+        if (db == globalTempDB) {
+          Some(sessionCatalog)
+        } else {
+          Seq(primaryCatalog, secondaryCatalog).find(_.databaseExists(db))
+        }
+      })
       .getOrElse(Some(currentCatalog))
 
-  override def createCHDatabase(databaseDesc: CatalogDatabase, ignoreIfExists: Boolean): Unit =
-    chConcreteCatalog.createCHDatabase(databaseDesc, ignoreIfExists)
+  override def createFlashDatabase(databaseDesc: CatalogDatabase, ignoreIfExists: Boolean): Unit =
+    chConcreteCatalog.createFlashDatabase(databaseDesc, ignoreIfExists)
 
-  override def createCHTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit = {
-    if (tableDesc.identifier.database.isEmpty && !currentCatalog.isInstanceOf[CHSessionCatalog]) {
-      throw new AnalysisException(
-        s"Given table's db is empty and current database '$getCurrentDatabase' is not a Flash database"
-      )
-    }
-    chConcreteCatalog.createCHTable(tableDesc, ignoreIfExists)
-  }
+  override def createFlashTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit =
+    chConcreteCatalog.createFlashTable(tableDesc, ignoreIfExists)
 
-  override def createTableFromTiDB(db: String,
-                                   tiTableInfo: TiTableInfo,
-                                   engine: CHEngine,
-                                   ignoreIfExists: Boolean): Unit =
-    chConcreteCatalog.createTableFromTiDB(db, tiTableInfo, engine, ignoreIfExists)
+  override def createFlashTableFromTiDB(db: String,
+                                        tiTableInfo: TiTableInfo,
+                                        engine: CHEngine,
+                                        ignoreIfExists: Boolean): Unit =
+    chConcreteCatalog.createFlashTableFromTiDB(db, tiTableInfo, engine, ignoreIfExists)
 
   override def loadTableFromTiDB(db: String, tiTable: TiTableInfo, isOverwrite: Boolean): Unit =
     chConcreteCatalog.loadTableFromTiDB(db, tiTable, isOverwrite)
 
   // Following are handled by composite catalog.
+
   override def dropDatabase(db: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit =
     catalogOf(Some(db))
       .getOrElse(if (!ignoreIfNotExists) throw new NoSuchDatabaseException(db) else return )
@@ -151,56 +179,94 @@ class CHCompositeSessionCatalog(chContext: CHContext)
 
   override def tableExists(name: TableIdentifier): Boolean =
     catalogOf(name.database)
-      .map {
-        // Need to exclude tables from CH's default db.
-        case chCatalog: CHSessionCatalog =>
-          !name.database.getOrElse(getCurrentDatabase).equals("default") && chCatalog.tableExists(
-            name
-          )
-        case catalog: SessionCatalog => catalog.tableExists(name)
-      }
       .getOrElse(throw new NoSuchDatabaseException(name.database.getOrElse(getCurrentDatabase)))
+      .tableExists(name)
 
   override def getTableMetadata(name: TableIdentifier): CatalogTable =
     catalogOf(name.database)
       .getOrElse(throw new NoSuchDatabaseException(name.database.getOrElse(getCurrentDatabase)))
       .getTableMetadata(name)
 
-  override def renameTable(oldName: TableIdentifier, newName: TableIdentifier): Unit = {
-    val db = formatDatabaseName(oldName.database.getOrElse(getCurrentDatabase))
-    newName.database.map(formatDatabaseName).foreach { newDb =>
-      if (db != newDb) {
-        throw new AnalysisException(
-          s"RENAME TABLE source and destination databases do not match: '$db' != '$newDb'"
-        )
-      }
+  override def getTempViewOrPermanentTableMetadata(name: TableIdentifier): CatalogTable =
+    if (isTemporaryTable(name)) {
+      sessionCatalog.getTempViewOrPermanentTableMetadata(name)
+    } else {
+      catalogOf(name.database)
+        .getOrElse(throw new NoSuchDatabaseException(name.database.getOrElse(getCurrentDatabase)))
+        .getTempViewOrPermanentTableMetadata(name)
     }
-    catalogOf(oldName.database)
-      .getOrElse(throw new NoSuchDatabaseException(oldName.database.getOrElse(getCurrentDatabase)))
-      .renameTable(oldName, newName)
-  }
+
+  override def renameTable(oldName: TableIdentifier, newName: TableIdentifier): Unit =
+    if (isTemporaryTable(oldName)) {
+      sessionCatalog.renameTable(oldName, newName)
+    } else {
+      catalogOf(oldName.database)
+        .getOrElse(
+          throw new NoSuchDatabaseException(oldName.database.getOrElse(getCurrentDatabase))
+        )
+        .renameTable(oldName, newName)
+    }
 
   override def dropTable(name: TableIdentifier, ignoreIfNotExists: Boolean, purge: Boolean): Unit =
-    catalogOf(name.database)
-      .getOrElse(throw new NoSuchDatabaseException(name.database.getOrElse(getCurrentDatabase)))
-      .dropTable(name, ignoreIfNotExists, purge)
+    if (isTemporaryTable(name)) {
+      sessionCatalog.dropTable(name, ignoreIfNotExists, purge)
+    } else {
+      catalogOf(name.database)
+        .getOrElse(throw new NoSuchDatabaseException(name.database.getOrElse(getCurrentDatabase)))
+        .dropTable(name, ignoreIfNotExists, purge)
+    }
 
   override def lookupRelation(name: TableIdentifier): LogicalPlan =
-    catalogOf(name.database)
-      .getOrElse(throw new NoSuchDatabaseException(name.database.getOrElse(getCurrentDatabase)))
-      .lookupRelation(name)
+    if (isTemporaryTable(name)) {
+      sessionCatalog.lookupRelation(name)
+    } else {
+      catalogOf(name.database)
+        .getOrElse(throw new NoSuchDatabaseException(name.database.getOrElse(getCurrentDatabase)))
+        .lookupRelation(name)
+    }
 
-  override def listTables(db: String): Seq[TableIdentifier] =
-    catalogOf(Some(db))
-      .getOrElse(throw new NoSuchDatabaseException(db))
-      .listTables(db)
+  /**
+   * List tables method is the only special one (so far at least) that must fuse the results from session catalog
+   * (to get temp views) and (legacy + CH) catalog.
+   * @param db
+   * @param pattern
+   * @return
+   */
+  override def listTables(db: String, pattern: String): Seq[TableIdentifier] = {
+    val dbName = formatDatabaseName(db)
+    catalogOf(Some(dbName))
+      .getOrElse(throw new NoSuchDatabaseException(dbName)) match {
+      case chCatalog: CHSessionCatalog =>
+        // For CH catalog, get temp views (both global and local) in a little bit hacky way:
+        // If the passed-in db is global temp db, leverage session catalog, otherwise db might not exist in session catalog, we use current db instead.
+        // And finally plus the CH tables.
+        val tempViews = if (dbName == globalTempDB) {
+          sessionCatalog
+            .listTables(dbName, pattern)
+        } else {
+          sessionCatalog
+            .listTables(sessionCatalog.getCurrentDatabase, pattern)
+            .filter(sessionCatalog.isTemporaryTable)
+        }
+        val tables = chCatalog.listTables(db, pattern)
+        tables ++ tempViews
+      case catalog =>
+        // Non-CH catalog's list table already contains temp views.
+        catalog.listTables(db, pattern)
+    }
+  }
 
-  override def listTables(db: String, pattern: String): Seq[TableIdentifier] =
-    catalogOf(Some(db))
-      .getOrElse(throw new NoSuchDatabaseException(db))
-      .listTables(db, pattern)
+  override def refreshTable(name: TableIdentifier): Unit =
+    if (isTemporaryTable(name)) {
+      sessionCatalog.refreshTable(name)
+    } else {
+      catalogOf(name.database)
+        .getOrElse(throw new NoSuchDatabaseException(name.database.getOrElse(getCurrentDatabase)))
+        .refreshTable(name)
+    }
 
-  // Following are all routed to primary catalog.
+  // Following are all routed to session catalog.
+
   override def createDatabase(dbDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit =
     primaryCatalog.createDatabase(dbDefinition, ignoreIfExists)
 
@@ -243,116 +309,111 @@ class CHCompositeSessionCatalog(chContext: CHContext)
   override def createTempView(name: String,
                               tableDefinition: LogicalPlan,
                               overrideIfExists: Boolean): Unit =
-    primaryCatalog.createTempView(name, tableDefinition, overrideIfExists)
+    sessionCatalog.createTempView(name, tableDefinition, overrideIfExists)
 
   override def createGlobalTempView(name: String,
                                     viewDefinition: LogicalPlan,
                                     overrideIfExists: Boolean): Unit =
-    primaryCatalog.createGlobalTempView(name, viewDefinition, overrideIfExists)
+    sessionCatalog.createGlobalTempView(name, viewDefinition, overrideIfExists)
 
   override def alterTempViewDefinition(name: TableIdentifier,
                                        viewDefinition: LogicalPlan): Boolean =
-    primaryCatalog.alterTempViewDefinition(name, viewDefinition)
+    sessionCatalog.alterTempViewDefinition(name, viewDefinition)
 
-  override def getTempView(name: String): Option[LogicalPlan] = primaryCatalog.getTempView(name)
+  override def getTempView(name: String): Option[LogicalPlan] = sessionCatalog.getTempView(name)
 
   override def getGlobalTempView(name: String): Option[LogicalPlan] =
-    primaryCatalog.getGlobalTempView(name)
+    sessionCatalog.getGlobalTempView(name)
 
-  override def dropTempView(name: String): Boolean = primaryCatalog.dropTempView(name)
+  override def dropTempView(name: String): Boolean = sessionCatalog.dropTempView(name)
 
-  override def dropGlobalTempView(name: String): Boolean = primaryCatalog.dropGlobalTempView(name)
-
-  override def getTempViewOrPermanentTableMetadata(name: TableIdentifier): CatalogTable =
-    primaryCatalog.getTempViewOrPermanentTableMetadata(name)
+  override def dropGlobalTempView(name: String): Boolean = sessionCatalog.dropGlobalTempView(name)
 
   override def isTemporaryTable(name: TableIdentifier): Boolean =
-    primaryCatalog.isTemporaryTable(name)
+    sessionCatalog.isTemporaryTable(name)
 
-  override def refreshTable(name: TableIdentifier): Unit = primaryCatalog.refreshTable(name)
-
-  override def clearTempTables(): Unit = primaryCatalog.clearTempTables()
+  override def clearTempTables(): Unit = sessionCatalog.clearTempTables()
 
   override def createPartitions(tableName: TableIdentifier,
                                 parts: Seq[CatalogTablePartition],
                                 ignoreIfExists: Boolean): Unit =
-    primaryCatalog.createPartitions(tableName, parts, ignoreIfExists)
+    sessionCatalog.createPartitions(tableName, parts, ignoreIfExists)
 
   override def dropPartitions(tableName: TableIdentifier,
                               specs: Seq[TablePartitionSpec],
                               ignoreIfNotExists: Boolean,
                               purge: Boolean,
                               retainData: Boolean): Unit =
-    primaryCatalog.dropPartitions(tableName, specs, ignoreIfNotExists, purge, retainData)
+    sessionCatalog.dropPartitions(tableName, specs, ignoreIfNotExists, purge, retainData)
 
   override def renamePartitions(tableName: TableIdentifier,
                                 specs: Seq[TablePartitionSpec],
                                 newSpecs: Seq[TablePartitionSpec]): Unit =
-    primaryCatalog.renamePartitions(tableName, specs, newSpecs)
+    sessionCatalog.renamePartitions(tableName, specs, newSpecs)
 
   override def alterPartitions(tableName: TableIdentifier,
                                parts: Seq[CatalogTablePartition]): Unit =
-    primaryCatalog.alterPartitions(tableName, parts)
+    sessionCatalog.alterPartitions(tableName, parts)
 
   override def getPartition(tableName: TableIdentifier,
                             spec: TablePartitionSpec): CatalogTablePartition =
-    primaryCatalog.getPartition(tableName, spec)
+    sessionCatalog.getPartition(tableName, spec)
 
   override def listPartitionNames(tableName: TableIdentifier,
                                   partialSpec: Option[TablePartitionSpec]): Seq[String] =
-    primaryCatalog.listPartitionNames(tableName, partialSpec)
+    sessionCatalog.listPartitionNames(tableName, partialSpec)
 
   override def listPartitions(tableName: TableIdentifier,
                               partialSpec: Option[TablePartitionSpec]): Seq[CatalogTablePartition] =
-    primaryCatalog.listPartitions(tableName, partialSpec)
+    sessionCatalog.listPartitions(tableName, partialSpec)
 
   override def listPartitionsByFilter(tableName: TableIdentifier,
                                       predicates: Seq[Expression]): Seq[CatalogTablePartition] =
-    primaryCatalog.listPartitionsByFilter(tableName, predicates)
+    sessionCatalog.listPartitionsByFilter(tableName, predicates)
 
   override def createFunction(funcDefinition: CatalogFunction, ignoreIfExists: Boolean): Unit =
-    primaryCatalog.createFunction(funcDefinition, ignoreIfExists)
+    sessionCatalog.createFunction(funcDefinition, ignoreIfExists)
 
   override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit =
-    primaryCatalog.dropFunction(name, ignoreIfNotExists)
+    sessionCatalog.dropFunction(name, ignoreIfNotExists)
 
   override def alterFunction(funcDefinition: CatalogFunction): Unit =
-    primaryCatalog.alterFunction(funcDefinition)
+    sessionCatalog.alterFunction(funcDefinition)
 
   override def getFunctionMetadata(name: FunctionIdentifier): CatalogFunction =
-    primaryCatalog.getFunctionMetadata(name)
+    sessionCatalog.getFunctionMetadata(name)
 
   override def functionExists(name: FunctionIdentifier): Boolean =
-    primaryCatalog.functionExists(name)
+    sessionCatalog.functionExists(name)
 
   override def loadFunctionResources(resources: Seq[FunctionResource]): Unit =
-    primaryCatalog.loadFunctionResources(resources)
+    sessionCatalog.loadFunctionResources(resources)
 
   override def registerFunction(funcDefinition: CatalogFunction,
                                 overrideIfExists: Boolean,
                                 functionBuilder: Option[FunctionBuilder]): Unit =
-    primaryCatalog.registerFunction(funcDefinition, overrideIfExists, functionBuilder)
+    sessionCatalog.registerFunction(funcDefinition, overrideIfExists, functionBuilder)
 
   override def dropTempFunction(name: String, ignoreIfNotExists: Boolean): Unit =
-    primaryCatalog.dropTempFunction(name, ignoreIfNotExists)
+    sessionCatalog.dropTempFunction(name, ignoreIfNotExists)
 
   override def isTemporaryFunction(name: FunctionIdentifier): Boolean =
-    primaryCatalog.isTemporaryFunction(name)
+    sessionCatalog.isTemporaryFunction(name)
 
   override def lookupFunctionInfo(name: FunctionIdentifier): ExpressionInfo =
-    primaryCatalog.lookupFunctionInfo(name)
+    sessionCatalog.lookupFunctionInfo(name)
 
   override def lookupFunction(name: FunctionIdentifier, children: Seq[Expression]): Expression =
-    primaryCatalog.lookupFunction(name, children)
+    sessionCatalog.lookupFunction(name, children)
 
   override def listFunctions(db: String): Seq[(FunctionIdentifier, String)] =
-    primaryCatalog.listFunctions(db)
+    sessionCatalog.listFunctions(db)
 
   override def listFunctions(db: String, pattern: String): Seq[(FunctionIdentifier, String)] =
-    primaryCatalog.listFunctions(db, pattern)
+    sessionCatalog.listFunctions(db, pattern)
 
-  override def reset(): Unit = primaryCatalog.reset()
+  override def reset(): Unit = sessionCatalog.reset()
 
   override private[sql] def copyStateTo(target: SessionCatalog): Unit =
-    primaryCatalog.copyStateTo(target)
+    sessionCatalog.copyStateTo(target)
 }

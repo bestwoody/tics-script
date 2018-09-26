@@ -16,17 +16,18 @@ import scala.collection.mutable
 class CHInMemoryExternalCatalog(chContext: CHContext)
     extends InMemoryCatalog
     with CHExternalCatalog {
-  override protected def doCreateCHDatabase(databaseDesc: CatalogDatabase,
-                                            ignoreIfExists: Boolean): Unit =
+  override protected def doCreateFlashDatabase(databaseDesc: CatalogDatabase,
+                                               ignoreIfExists: Boolean): Unit =
     doCreateDatabase(databaseDesc, ignoreIfExists)
 
-  override protected def doCreateCHTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit =
+  override protected def doCreateFlashTable(tableDesc: CatalogTable,
+                                            ignoreIfExists: Boolean): Unit =
     doCreateTable(tableDesc, ignoreIfExists)
 
-  override protected def doCreateTableFromTiDB(database: String,
-                                               tiTableInfo: TiTableInfo,
-                                               engine: CHEngine,
-                                               ignoreIfExists: Boolean): Unit = ???
+  override protected def doCreateFlashTableFromTiDB(database: String,
+                                                    tiTableInfo: TiTableInfo,
+                                                    engine: CHEngine,
+                                                    ignoreIfExists: Boolean): Unit = ???
 
   override def loadTableFromTiDB(db: String, tiTable: TiTableInfo, isOverwrite: Boolean): Unit = ???
 }
@@ -81,23 +82,18 @@ object CHResolutionRuleWithInMemoryRelation {
   }
 }
 
-class CHTestContext(sparkSession: SparkSession,
-                    sessionCatalog: CHContext => CHExternalCatalog => CHSessionCatalog,
-                    externalCatalog: CHContext => CHExternalCatalog)
+class CHTestContext(sparkSession: SparkSession, externalCatalog: CHContext => CHExternalCatalog)
     extends CHContext(sparkSession) {
   override lazy val chConcreteCatalog: CHSessionCatalog =
     new CHConcreteSessionCatalog(this)(externalCatalog(this))
-  override lazy val chCatalog: CHSessionCatalog =
-    sessionCatalog(this)(chConcreteCatalog.externalCatalog.asInstanceOf[CHExternalCatalog])
 }
 
-class CHTestExtensions(sessionCatalog: CHContext => CHExternalCatalog => CHSessionCatalog,
-                       externalCatalog: CHContext => CHExternalCatalog,
+class CHTestExtensions(externalCatalog: CHContext => CHExternalCatalog,
                        rule: (SparkSession => CHContext) => (SparkSession => CHResolutionRule))
     extends CHExtensions {
   override def getOrCreateCHContext(sparkSession: SparkSession): CHContext = {
     if (chContext == null) {
-      chContext = new CHTestContext(sparkSession, sessionCatalog, externalCatalog)
+      chContext = new CHTestContext(sparkSession, externalCatalog)
     }
     chContext
   }
@@ -113,20 +109,19 @@ class CHTestExtensions(sessionCatalog: CHContext => CHExternalCatalog => CHSessi
 class CHExtendedSparkSessionBuilder {
   var root: SparkSession.Builder = SparkSession.builder().master("local[1]")
 
-  var sessionCatalog: CHContext => CHExternalCatalog => CHSessionCatalog = _
   var externalCatalog: CHContext => CHExternalCatalog = _
   var rule: (SparkSession => CHContext) => (SparkSession => CHResolutionRule) =
     (f: SparkSession => CHContext) => CHResolutionRule(f)
 
-  def withConcreteSessionCatalog(): CHExtendedSparkSessionBuilder = {
-    sessionCatalog = (chContext: CHContext) =>
-      (externalCatalog: CHExternalCatalog) =>
-        new CHConcreteSessionCatalog(chContext)(externalCatalog)
+  def withLegacyFirstPolicy(): CHExtendedSparkSessionBuilder = {
+    root = root
+      .config(CHConfigConst.CATALOG_POLICY, "legacyfirst")
     this
   }
 
-  def withCompositeSessionCatalog(): CHExtendedSparkSessionBuilder = {
-    sessionCatalog = (chContext: CHContext) => _ => new CHCompositeSessionCatalog(chContext)
+  def withCHFirstPolicy(): CHExtendedSparkSessionBuilder = {
+    root = root
+      .config(CHConfigConst.CATALOG_POLICY, "flashfirst")
     this
   }
 
@@ -156,7 +151,7 @@ class CHExtendedSparkSessionBuilder {
   }
 
   def getOrCreate(): SparkSession =
-    root.withExtensions(new CHTestExtensions(sessionCatalog, externalCatalog, rule)).getOrCreate()
+    root.withExtensions(new CHTestExtensions(externalCatalog, rule)).getOrCreate()
 }
 
 object CHExtendedSparkSessionBuilder {

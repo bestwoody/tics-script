@@ -18,7 +18,7 @@ class InMemoryLegacyCatalogSuite extends BaseLegacyCatalogSuite {
 
     extended = CHExtendedSparkSessionBuilder
       .builder()
-      .withCompositeSessionCatalog()
+      .withLegacyFirstPolicy()
       .withInMemoryExternalCatalog()
       .withHiveLegacyCatalog()
       .getOrCreate()
@@ -90,6 +90,10 @@ class InMemoryLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     runQuotedNameTest()
   }
 
+  test("validate catalog") {
+    runValidateCatalogTest()
+  }
+
   test("databases") {
     runDatabaseTest()
   }
@@ -104,5 +108,9 @@ class InMemoryLegacyCatalogSuite extends BaseLegacyCatalogSuite {
 
   test("queries") {
     runQueryTest()
+  }
+
+  test("temp views") {
+    runTempViewTest()
   }
 }

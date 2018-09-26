@@ -42,15 +42,9 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
   lazy val legacyCatalog: SessionCatalog = sqlContext.sessionState.catalog
 
   /**
-   * Root catalog, could be composite or concrete CH catalog.
+   * Root catalog, always be composite catalog.
    */
-  lazy val chCatalog: CHSessionCatalog = {
-    val catalogImpl = sqlContext.conf.getConfString(CHConfigConst.CATALOG_IMPL, "composite")
-    if (catalogImpl.equals("concrete"))
-      chConcreteCatalog
-    else
-      new CHCompositeSessionCatalog(this)
-  }
+  lazy val chCatalog: CHSessionCatalog = new CHCompositeSessionCatalog(this)
 
   lazy val cluster: Cluster = {
     val clusterStr = sparkSession.conf.get(CHConfigConst.CLUSTER_ADDRESSES, "")

@@ -3,7 +3,7 @@ package org.apache.spark.sql.catalyst.parser
 import org.antlr.v4.runtime.atn.PredictionMode
 import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
-import org.apache.spark.sql.{AnalysisException, SaveMode}
+import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.trees.Origin
@@ -64,7 +64,7 @@ class CHSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) with SqlBa
   override def visitCreateDatabase(ctx: SqlBaseParser.CreateDatabaseContext): LogicalPlan =
     withOrigin(ctx) {
       if (ctx.FLASH() != null) {
-        CHCreateDatabase(ctx.identifier.getText, ctx.EXISTS != null)
+        CreateFlashDatabase(ctx.identifier.getText, ctx.EXISTS != null)
       } else {
         super.visitCreateDatabase(ctx)
       }
@@ -101,7 +101,7 @@ class CHSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) with SqlBa
           properties = properties
         )
 
-        CHCreateTable(tableDesc, ifNotExists)
+        CreateFlashTable(tableDesc, ifNotExists)
       } else {
         super.visitCreateTable(ctx)
       }
@@ -120,7 +120,7 @@ class CHSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) with SqlBa
       val tiTable = visitTableIdentifier(ctx.source)
       val properties = visitChEngine(tableProvider().chTableProvider().chEngine())
 
-      CreateTableFromTiDB(tiTable, properties, ctx.EXISTS != null)
+      CreateFlashTableFromTiDB(tiTable, properties, ctx.EXISTS != null)
     }
 
   override def visitLoadDataFromTiDB(ctx: SqlBaseParser.LoadDataFromTiDBContext): LogicalPlan =

@@ -5,26 +5,26 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.NoSuchDatabaseException
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.ch.{CHEngine, CHUtil, MutableMergeTree}
+import org.apache.spark.sql.ch.{CHEngine, CHUtil}
 import org.apache.spark.sql.types.StructType
 
 import scala.collection.mutable.ArrayBuffer
 
-case class CHCreateTableCommand(chContext: CHContext,
-                                tableDesc: CatalogTable,
-                                ignoreIfExists: Boolean)
+case class CreateFlashTableCommand(chContext: CHContext,
+                                   tableDesc: CatalogTable,
+                                   ignoreIfExists: Boolean)
     extends RunnableCommand
     with CHCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    chCatalog.createCHTable(tableDesc, ignoreIfExists)
+    chCatalog.createFlashTable(tableDesc, ignoreIfExists)
     Seq.empty[Row]
   }
 }
 
-case class CHCreateTableFromTiDBCommand(chContext: CHContext,
-                                        tiTable: TableIdentifier,
-                                        properties: Map[String, String],
-                                        ifNotExists: Boolean)
+case class CreateFlashTableFromTiDBCommand(chContext: CHContext,
+                                           tiTable: TableIdentifier,
+                                           properties: Map[String, String],
+                                           ifNotExists: Boolean)
     extends RunnableCommand
     with CHCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
@@ -35,14 +35,14 @@ case class CHCreateTableFromTiDBCommand(chContext: CHContext,
       throw new IllegalArgumentException(s"Table $db.${tiTable.table} not exists")
     }
     val engine = CHEngine.fromTiTableInfo(tiTableInfo.get, properties)
-    chCatalog.createTableFromTiDB(db, tiTableInfo.get, engine, ifNotExists)
+    chCatalog.createFlashTableFromTiDB(db, tiTableInfo.get, engine, ifNotExists)
     Seq.empty[Row]
   }
 }
 
-case class CHLoadDataFromTiDBCommand(chContext: CHContext,
-                                     tiTable: TableIdentifier,
-                                     isOverwrite: Boolean)
+case class LoadDataFromTiDBCommand(chContext: CHContext,
+                                   tiTable: TableIdentifier,
+                                   isOverwrite: Boolean)
     extends RunnableCommand
     with CHCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
@@ -104,7 +104,7 @@ class CHDescribeTableCommand(val chContext: CHContext,
         }
 
         result
-      case _: SessionCatalog => super[DescribeTableCommand].run(sparkSession)
+      case _: SessionCatalog => super.run(sparkSession)
     }
 
   private def describeSchema(schema: StructType,
@@ -206,6 +206,6 @@ class CHShowCreateTableCommand(val chContext: CHContext, table: TableIdentifier)
         val tableMetadata = chCatalog.getTableMetadata(table)
         val stmt = showCreateCHTable(tableMetadata)
         Seq(Row(stmt))
-      case _: SessionCatalog => super[ShowCreateTableCommand].run(sparkSession)
+      case _: SessionCatalog => super.run(sparkSession)
     }
 }

@@ -17,7 +17,7 @@ class CHDirectCatalogSuite extends BaseCHCatalogSuite {
 
     extended = CHExtendedSparkSessionBuilder
       .builder()
-      .withConcreteSessionCatalog()
+      .withCHFirstPolicy()
       .withDirectExternalCatalog()
       .withHiveLegacyCatalog()
       .getOrCreate()
@@ -93,5 +93,13 @@ class CHDirectCatalogSuite extends BaseCHCatalogSuite {
 
   test("queries") {
     runQueryTest()
+  }
+
+  test("with-as-es") {
+    runWithAsTest()
+  }
+
+  test("temp views") {
+    runTempViewTest()
   }
 }

@@ -17,8 +17,8 @@ import scala.collection.mutable
 class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
 
   // Following are routed to CH catalog.
-  override protected def doCreateCHDatabase(databaseDesc: CatalogDatabase,
-                                            ignoreIfExists: Boolean): Unit = {
+  override protected def doCreateFlashDatabase(databaseDesc: CatalogDatabase,
+                                               ignoreIfExists: Boolean): Unit = {
     if (!ignoreIfExists && databaseExists(databaseDesc.name)) {
       // A decent exception.
       throw new DatabaseAlreadyExistsException(databaseDesc.name)
@@ -26,7 +26,8 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
     CHUtil.createDatabase(databaseDesc.name, chContext.cluster, ignoreIfExists)
   }
 
-  override protected def doCreateCHTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit = {
+  override protected def doCreateFlashTable(tableDesc: CatalogTable,
+                                            ignoreIfExists: Boolean): Unit = {
     val database = tableDesc.identifier.database.get
     val table = tableDesc.identifier.table
     if (!ignoreIfExists && tableExists(tableDesc.database, tableDesc.identifier.table)) {
@@ -37,10 +38,10 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
     CHUtil.createTable(database, table, tableDesc.schema, engine, ignoreIfExists, chContext.cluster)
   }
 
-  override protected def doCreateTableFromTiDB(database: String,
-                                               tiTableInfo: TiTableInfo,
-                                               engine: CHEngine,
-                                               ignoreIfExists: Boolean): Unit = {
+  override protected def doCreateFlashTableFromTiDB(database: String,
+                                                    tiTableInfo: TiTableInfo,
+                                                    engine: CHEngine,
+                                                    ignoreIfExists: Boolean): Unit = {
     if (!ignoreIfExists && tableExists(database, tiTableInfo.getName)) {
       // A decent exception.
       throw new TableAlreadyExistsException(database, tiTableInfo.getName)

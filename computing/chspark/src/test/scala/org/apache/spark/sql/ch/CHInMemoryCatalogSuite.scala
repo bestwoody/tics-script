@@ -17,7 +17,7 @@ class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
 
     extended = CHExtendedSparkSessionBuilder
       .builder()
-      .withConcreteSessionCatalog()
+      .withCHFirstPolicy()
       .withInMemoryExternalCatalog()
       .withInMemoryLegacyCatalog()
       .getOrCreate()
@@ -84,5 +84,13 @@ class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
 
   test("queries") {
     runQueryTest()
+  }
+
+  test("with-as-es") {
+    runWithAsTest()
+  }
+
+  test("temp views") {
+    runTempViewTest()
   }
 }

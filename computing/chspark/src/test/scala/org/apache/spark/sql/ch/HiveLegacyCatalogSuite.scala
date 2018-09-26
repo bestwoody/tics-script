@@ -17,7 +17,7 @@ class HiveLegacyCatalogSuite extends BaseLegacyCatalogSuite {
 
     extended = CHExtendedSparkSessionBuilder
       .builder()
-      .withCompositeSessionCatalog()
+      .withLegacyFirstPolicy()
       .withDirectExternalCatalog()
       .withHiveLegacyCatalog()
       .getOrCreate()
@@ -98,6 +98,10 @@ class HiveLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     runQuotedNameTest()
   }
 
+  test("validate catalog") {
+    runValidateCatalogTest()
+  }
+
   test("databases") {
     runDatabaseTest()
   }
@@ -112,5 +116,9 @@ class HiveLegacyCatalogSuite extends BaseLegacyCatalogSuite {
 
   test("queries") {
     runQueryTest()
+  }
+
+  test("temp views") {
+    runTempViewTest()
   }
 }
