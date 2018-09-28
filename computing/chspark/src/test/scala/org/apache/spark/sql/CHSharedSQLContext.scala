@@ -40,30 +40,30 @@ import ru.yandex.clickhouse.settings.ClickHouseProperties
  *
  * `clickhouse_config.properties` must be provided in test resources folder
  */
-trait SharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfterAll with Logging {
+trait CHSharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfterAll with Logging {
   protected val logger: Logger = log
 
-  protected def spark: SparkSession = SharedSQLContext.spark
+  protected def spark: SparkSession = CHSharedSQLContext.spark
 
-  protected def ch: CHContext = SharedSQLContext.ch
+  protected def ch: CHContext = CHSharedSQLContext.ch
 
-  protected def jdbc: SparkSession = SharedSQLContext.jdbc
+  protected def jdbc: SparkSession = CHSharedSQLContext.jdbc
 
-  protected def clickHouseConn: Connection = SharedSQLContext.clickHouseConn
+  protected def clickHouseConn: Connection = CHSharedSQLContext.clickHouseConn
 
   protected def sql: String => DataFrame = spark.sql _
 
-  protected def jdbcUrl: String = SharedSQLContext.jdbcUrl
+  protected def jdbcUrl: String = CHSharedSQLContext.jdbcUrl
 
-  protected def testDBName: String = SharedSQLContext.testDBName
+  protected def testDBName: String = CHSharedSQLContext.testDBName
 
-  protected def tpchDBName: String = SharedSQLContext.tpchDBName
+  protected def tpchDBName: String = CHSharedSQLContext.tpchDBName
 
-  protected def refreshConnections(): Unit = SharedSQLContext.refreshConnections()
+  protected def refreshConnections(): Unit = CHSharedSQLContext.refreshConnections()
 
-  protected def truncateOutput: Boolean = SharedSQLContext.truncateOutput
+  protected def truncateOutput: Boolean = CHSharedSQLContext.truncateOutput
 
-  protected def showTestOutput: Boolean = SharedSQLContext.showTestOutput
+  protected def showTestOutput: Boolean = CHSharedSQLContext.showTestOutput
 
   /**
    * The [[TestSQLContext]] to use for all tests in this suite.
@@ -73,7 +73,7 @@ trait SharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfter
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     try {
-      SharedSQLContext.init()
+      CHSharedSQLContext.init()
     } catch {
       case e: Throwable =>
         fail(
@@ -86,7 +86,7 @@ trait SharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfter
   override protected def afterAll(): Unit = {
     super.afterAll()
     try {
-      SharedSQLContext.stop()
+      CHSharedSQLContext.stop()
     } catch {
       case e: Throwable =>
         fail(
@@ -97,7 +97,7 @@ trait SharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfter
   }
 }
 
-object SharedSQLContext extends Logging {
+object CHSharedSQLContext extends Logging {
   protected val logger: Logger = log
   protected val sparkConf = new SparkConf()
   private var _spark: SparkSession = _

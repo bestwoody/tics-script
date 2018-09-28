@@ -30,7 +30,7 @@ import org.apache.spark.sql.types.StructField
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
-abstract class QueryTest extends PlanTest {
+abstract class CHQueryTest extends PlanTest {
 
   protected def spark: SparkSession
 
@@ -307,7 +307,7 @@ abstract class QueryTest extends PlanTest {
 
     assertEmptyMissingInput(analyzedDF)
 
-    QueryTest.checkAnswer(analyzedDF, expectedAnswer) match {
+    CHQueryTest.checkAnswer(analyzedDF, expectedAnswer) match {
       case Some(errorMessage) => fail(errorMessage)
       case None               =>
     }
@@ -338,7 +338,7 @@ abstract class QueryTest extends PlanTest {
 
     actualAnswer.zip(expectedAnswer).foreach {
       case (actualRow, expectedRow) =>
-        QueryTest.checkAggregatesWithTol(actualRow, expectedRow, absTol)
+        CHQueryTest.checkAggregatesWithTol(actualRow, expectedRow, absTol)
     }
   }
 
@@ -382,7 +382,7 @@ abstract class QueryTest extends PlanTest {
   }
 }
 
-object QueryTest {
+object CHQueryTest {
 
   /**
    * Runs the plan and makes sure the answer matches the expected result.

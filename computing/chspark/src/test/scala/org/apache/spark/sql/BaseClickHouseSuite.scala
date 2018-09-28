@@ -25,7 +25,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 
 import scala.collection.mutable.ArrayBuffer
 
-class BaseClickHouseSuite extends QueryTest with SharedSQLContext {
+class BaseClickHouseSuite extends CHQueryTest with CHSharedSQLContext {
 
   protected var clickHouseStmt: Statement = _
 

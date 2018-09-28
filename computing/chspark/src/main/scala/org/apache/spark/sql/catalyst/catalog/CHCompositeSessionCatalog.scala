@@ -20,7 +20,7 @@ import org.apache.spark.sql.types.StructType
  * 2. A primary and a secondary catalog that operate entities other than temp views, primary precedences secondary obviously.
  * 3. A dedicate CH catalog for specialized usages for CH entities.
  */
-trait CompositeCatalogPolicy {
+trait CHCompositeCatalogPolicy {
   val sessionCatalog: SessionCatalog
 
   val primaryCatalog: SessionCatalog
@@ -33,7 +33,7 @@ trait CompositeCatalogPolicy {
  * Legacy catalog first policy.
  * @param chContext
  */
-case class LegacyFirstPolicy(chContext: CHContext) extends CompositeCatalogPolicy {
+case class CHLegacyFirstPolicy(chContext: CHContext) extends CHCompositeCatalogPolicy {
   override val sessionCatalog: SessionCatalog = chContext.legacyCatalog
   override val primaryCatalog: SessionCatalog = chContext.legacyCatalog
   override val secondaryCatalog: SessionCatalog = chContext.chConcreteCatalog
@@ -44,7 +44,7 @@ case class LegacyFirstPolicy(chContext: CHContext) extends CompositeCatalogPolic
  * CH catalog first policy.
  * @param chContext
  */
-case class CHFirstPolicy(chContext: CHContext) extends CompositeCatalogPolicy {
+case class CHFirstPolicy(chContext: CHContext) extends CHCompositeCatalogPolicy {
   override val sessionCatalog: SessionCatalog = chContext.legacyCatalog
   override val primaryCatalog: SessionCatalog = chContext.chConcreteCatalog
   override val secondaryCatalog: SessionCatalog = chContext.legacyCatalog
@@ -69,13 +69,13 @@ class CHCompositeSessionCatalog(val chContext: CHContext)
     )
     with CHSessionCatalog {
 
-  val policy: CompositeCatalogPolicy = {
+  val policy: CHCompositeCatalogPolicy = {
     val catalogPolicy =
       chContext.sqlContext.conf.getConfString(CHConfigConst.CATALOG_POLICY, "legacyfirst")
     if (catalogPolicy.equals("flashfirst"))
       CHFirstPolicy(chContext)
     else if (catalogPolicy.equals("legacyfirst"))
-      LegacyFirstPolicy(chContext)
+      CHLegacyFirstPolicy(chContext)
     else
       throw new RuntimeException(
         s"Invalid catalog policy: $catalogPolicy, valid options are 'legacyfirst' and 'flashfirst'."

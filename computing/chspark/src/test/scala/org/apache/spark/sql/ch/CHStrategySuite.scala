@@ -15,14 +15,14 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.spark.sql.{CHContext, SharedSQLContext}
+import org.apache.spark.sql.{CHContext, CHSharedSQLContext}
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
 import org.apache.spark.sql.execution.CHScanExec
 import org.apache.spark.sql.types.StructType
 
-class CHStrategySuite extends SharedSQLContext {
+class CHStrategySuite extends CHSharedSQLContext {
   class TestCHRelation(name: String, output: Attribute*)
       extends CHRelation({ Array.empty }, 0)(sqlContext) {
     val localRelation = LocalRelation(output)
