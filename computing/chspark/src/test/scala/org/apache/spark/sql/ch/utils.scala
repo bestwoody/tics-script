@@ -139,14 +139,14 @@ class CHExtendedSparkSessionBuilder {
   def withHiveLegacyCatalog(): CHExtendedSparkSessionBuilder = {
     root = root
       .config(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
-      .config(StaticSQLConf.WAREHOUSE_PATH.key, "/data/warehouse")
+      .config(StaticSQLConf.WAREHOUSE_PATH.key, "/tmp/warehouse")
     this
   }
 
   def withInMemoryLegacyCatalog(): CHExtendedSparkSessionBuilder = {
     root = root
       .config(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "in-memory")
-      .config(StaticSQLConf.WAREHOUSE_PATH.key, "/data/warehouse")
+      .config(StaticSQLConf.WAREHOUSE_PATH.key, "/tmp/warehouse")
     this
   }
 
