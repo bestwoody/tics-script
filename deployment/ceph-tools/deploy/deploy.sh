@@ -41,9 +41,9 @@ for node in ${nodes[@]}; do
 		ssh $user@$node "sudo yum --skip-broken -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
 	fi
 
-	echo "=> ceph-deploy --username $user install $node"
+	echo "=> ceph-deploy --username $user install --no-adjust-repos $node"
 	confirm
-	ceph-deploy --username "$user" install "$node"
+	ceph-deploy --username "$user" install --no-adjust-repos "$node"
 done
 
 echo "=> ceph-deploy --username $user --overwrite-conf mon create-initial"

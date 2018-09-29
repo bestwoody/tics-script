@@ -11,8 +11,6 @@
 export repo_url="file://`readlink -f ../offline/downloaded/yumlibs`"
 export repo_gpg="file://`readlink -f ../offline/downloaded/release.asc`"
 
-# Override ceph repo url
-# TODO: use local repo
 # This is a weird behavior of ceph-deploy:
 #   0. There are 3 different ways to specify the ceph repo url:
 #      a. The yum config file, normally is /etc/yum.repos.d/ceph.repo
@@ -29,6 +27,8 @@ export repo_gpg="file://`readlink -f ../offline/downloaded/release.asc`"
 #         A. If '--repo-url' exists, use '--repo-url',
 #            but may fallback to default url in some sub-commad called by ceph-deploy, seems it's a bug
 #         B. If '--repo-url' not exists, fallback to default value, but not use yum config
+#
+# Now we use '--no-adjust-repos' in the 'ceph-deploy install' command, the repo file will not changed during installing
 export CEPH_DEPLOY_REPO_URL="$repo_url"
 export CEPH_DEPLOY_GPG_URL="$repo_gpg"
 

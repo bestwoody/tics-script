@@ -24,11 +24,11 @@ add_to_deps()
 	echo "$lib" >> "$out"
 	local subs=`sudo yum deplist $lib 2>&1 | python parse-yum-deps.py "$out" "$ignore"`
 	if [ ! -z "$subs" ]; then
-		# echo "[$lib] sub deplist start" >> "$out"
+		echo "=> parsing $lib deplist"
 		echo "$subs" | while read sub; do
 			add_to_deps "$sub"
 		done
-		# echo "[$lib] sub deplist end" >> "$out"
+		echo "=> $lib OK"
 	fi
 }
 

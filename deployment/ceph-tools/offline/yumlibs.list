@@ -23,7 +23,11 @@ librados2
 libradosstriper1
 librgw2
 librbd1
+python2-six
+python2-bcrypt
+python-cffi
 python-cephfs
 python-rados
 python-rbd
 python-rgw
+yum-plugin-priorities

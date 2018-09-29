@@ -18,14 +18,18 @@ if [ -z "$out" ]; then
 	out="$dir/libs.list"
 fi
 
-sudo yum install yum-plugin-downloadonly 
+echo "=> installing yum-plugin-downloadonly"
+sudo yum install yum-plugin-downloadonly >/dev/null
 
+echo "=> parsing yumlibs deps"
 ./parse-yum-deps.sh "$ignore" "$in" "$out"
 
 cat "$out" | uniq | while read lib; do
-	echo "=> downloading $lib"
+	echo "=> downloading $lib with 'yum reinstall'"
 	sudo yum reinstall --setopt=protected_multilib=false --downloadonly --downloaddir="$dir" $lib
+	echo "=> downloading $lib done"
 	if [ $? != 0 ]; then
+		echo "=> downloading $lib with 'yum install'"
 		sudo yum install --setopt=protected_multilib=false --downloadonly --downloaddir="$dir" $lib
 		if [ $? != 0 ]; then
 			echo "=> $lib failed" >&2
