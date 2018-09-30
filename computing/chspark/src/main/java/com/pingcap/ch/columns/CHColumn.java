@@ -22,7 +22,7 @@ public abstract class CHColumn {
         return dataType().name();
     }
 
-    public final int size() {
+    public int size() {
         return size;
     }
 

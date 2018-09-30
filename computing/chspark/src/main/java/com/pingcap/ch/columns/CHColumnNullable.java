@@ -21,6 +21,11 @@ public class CHColumnNullable extends CHColumn {
     }
 
     @Override
+    public int size() {
+        return nested_column.size();
+    }
+
+    @Override
     public long byteCount() {
         return null_map.byteCount() + nested_column.byteCount();
     }
