@@ -22,11 +22,17 @@ import org.apache.spark.sql.BaseClickHouseSuite
 class StringTrimTest0Suite extends BaseClickHouseSuite {
   private val allCases = Seq[String](
     "select trim(tp_string) from full_data_type_table",
-    "select trim(tp_string, ' i3wm') from full_data_type_table",
+    "select trim(' i3wm', tp_string) from full_data_type_table",
     "select ltrim(tp_string) from full_data_type_table",
-    "select ltrim(tp_string, ' arch') from full_data_type_table",
+    "select ltrim(' arch', tp_string) from full_data_type_table",
     "select rtrim(tp_string) from full_data_type_table",
-    "select rtrim(tp_string, 'linux') from full_data_type_table"
+    "select rtrim('linux', tp_string) from full_data_type_table",
+    "select trim(tp_utf8) from full_data_type_table",
+    "select trim('分布式', tp_utf8) from full_data_type_table",
+    "select ltrim(tp_utf8) from full_data_type_table",
+    "select ltrim('一致性协议', tp_utf8) from full_data_type_table",
+    "select rtrim(tp_utf8) from full_data_type_table",
+    "select rtrim('事务', tp_utf8) from full_data_type_table"
   )
 
   allCases foreach { query =>

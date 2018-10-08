@@ -23,7 +23,7 @@ import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
 import com.pingcap.tikv.types.MySQLType
 import com.pingcap.tispark.TiUtils
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, StringLPad, StringRPad, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
@@ -465,6 +465,10 @@ object CHSql {
         s"ltrim(${compileExpression(src)}${trimStr.map(t => s",  ${compileExpression(t)}").getOrElse("")})"
       case StringTrimRight(src, trimStr) =>
         s"rtrim(${compileExpression(src)}${trimStr.map(t => s",  ${compileExpression(t)}").getOrElse("")})"
+      case StringLPad(str, len, pad) =>
+        s"lpad(${compileExpression(str)}, ${compileExpression(len)}, ${compileExpression(pad)})"
+      case StringRPad(str, len, pad) =>
+        s"rpad(${compileExpression(str)}, ${compileExpression(len)}, ${compileExpression(pad)})"
       // TODO: Support more expression types.
       case _ =>
         throw new UnsupportedOperationException(
