@@ -12,8 +12,6 @@
 * `[here]> ./spark-q.sh <sql>`: can access storage tables in `<sql>`
 * Intereactive mode
     * `[here]> ./spark-shell.sh`: into Spark intereactive mode
-    * `[here]> val storage = new org.apache.spark.sql.CHContext(spark)`: create storage context
-    * `[here]> storage.mapCHClusterTable(database=<database>, table=<table>)`: map a storage table to Spark
     * `[here]> storage.sql("select count(*) from <table>")`: use the mapped table in Spark
 
 ## Data and log path. IMPORTANT: data in these paths may lost on system reboot!
