@@ -15,43 +15,6 @@ import org.apache.spark.sql.ch.{CHConfigConst, CHEngine}
 import org.apache.spark.sql.types.StructType
 
 /**
- * Policy of operating a composition of several catalogs with priorities:
- * 1. A session catalog that operates temp views, which precedence all other catalogs.
- * 2. A primary and a secondary catalog that operate entities other than temp views, primary precedences secondary obviously.
- * 3. A dedicate CH catalog for specialized usages for CH entities.
- */
-trait CHCompositeCatalogPolicy {
-  val sessionCatalog: SessionCatalog
-
-  val primaryCatalog: SessionCatalog
-  val secondaryCatalog: SessionCatalog
-
-  val chConcreteCatalog: CHSessionCatalog
-}
-
-/**
- * Legacy catalog first policy.
- * @param chContext
- */
-case class CHLegacyFirstPolicy(chContext: CHContext) extends CHCompositeCatalogPolicy {
-  override val sessionCatalog: SessionCatalog = chContext.legacyCatalog
-  override val primaryCatalog: SessionCatalog = chContext.legacyCatalog
-  override val secondaryCatalog: SessionCatalog = chContext.chConcreteCatalog
-  override val chConcreteCatalog: CHSessionCatalog = chContext.chConcreteCatalog
-}
-
-/**
- * CH catalog first policy.
- * @param chContext
- */
-case class CHFirstPolicy(chContext: CHContext) extends CHCompositeCatalogPolicy {
-  override val sessionCatalog: SessionCatalog = chContext.legacyCatalog
-  override val primaryCatalog: SessionCatalog = chContext.chConcreteCatalog
-  override val secondaryCatalog: SessionCatalog = chContext.legacyCatalog
-  override val chConcreteCatalog: CHSessionCatalog = chContext.chConcreteCatalog
-}
-
-/**
  * A composition of two catalogs that behaves as a concrete catalog.
  * It derives Spark's session catalog and overrides the behaviors as below:
  * 1. Methods inherited from trait CHSessionCatalog are directly routed to CH catalog.
@@ -68,6 +31,43 @@ class CHCompositeSessionCatalog(val chContext: CHContext)
       chContext.sqlContext.conf
     )
     with CHSessionCatalog {
+
+  /**
+   * Policy of operating a composition of several catalogs with priorities:
+   * 1. A session catalog that operates temp views, which precedence all other catalogs.
+   * 2. A primary and a secondary catalog that operate entities other than temp views, primary precedences secondary obviously.
+   * 3. A dedicate CH catalog for specialized usages for CH entities.
+   */
+  trait CHCompositeCatalogPolicy {
+    val sessionCatalog: SessionCatalog
+
+    val primaryCatalog: SessionCatalog
+    val secondaryCatalog: SessionCatalog
+
+    val chConcreteCatalog: CHSessionCatalog
+  }
+
+  /**
+   * Legacy catalog first policy.
+   * @param chContext
+   */
+  case class CHLegacyFirstPolicy(chContext: CHContext) extends CHCompositeCatalogPolicy {
+    override val sessionCatalog: SessionCatalog = chContext.legacyCatalog
+    override val primaryCatalog: SessionCatalog = chContext.legacyCatalog
+    override val secondaryCatalog: SessionCatalog = chContext.chConcreteCatalog
+    override val chConcreteCatalog: CHSessionCatalog = chContext.chConcreteCatalog
+  }
+
+  /**
+   * CH catalog first policy.
+   * @param chContext
+   */
+  case class CHFirstPolicy(chContext: CHContext) extends CHCompositeCatalogPolicy {
+    override val sessionCatalog: SessionCatalog = chContext.legacyCatalog
+    override val primaryCatalog: SessionCatalog = chContext.chConcreteCatalog
+    override val secondaryCatalog: SessionCatalog = chContext.legacyCatalog
+    override val chConcreteCatalog: CHSessionCatalog = chContext.chConcreteCatalog
+  }
 
   val policy: CHCompositeCatalogPolicy = {
     val catalogPolicy =
