@@ -87,6 +87,10 @@ class CHDirectCatalogSuite extends BaseCHCatalogSuite {
     runTableTest()
   }
 
+  test("caches") {
+    runCacheTest()
+  }
+
   test("inserts") {
     runInsertTest()
   }

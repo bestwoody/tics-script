@@ -4,7 +4,7 @@ import com.pingcap.tikv.meta.TiTableInfo
 import org.apache.spark.sql.{CHContext, SparkSession, _}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.extensions.{CHDDLRule, CHParser, CHResolutionRule}
 import org.apache.spark.sql.internal.StaticSQLConf
@@ -71,7 +71,7 @@ class CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext: SparkSession =>
 
   override def apply(plan: LogicalPlan): LogicalPlan = super.apply(plan).transformUp {
     case LogicalRelation(r @ CHInMemoryRelation(_, _), output, _, _) =>
-      r.data.get.logicalPlan
+      r.data.map(_.logicalPlan).getOrElse(LocalRelation(output))
   }
 }
 

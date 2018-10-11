@@ -110,6 +110,10 @@ class HiveLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     runTableTest()
   }
 
+  test("caches") {
+    runCacheTest()
+  }
+
   test("inserts") {
     runInsertTest()
   }

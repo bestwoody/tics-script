@@ -238,6 +238,17 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
     )
   }
 
+  // TODO: need to revisit this test once CH cache commands are implemented.
+  // So far this test only protects successive commands after caching anything,
+  // regardless whether the cache command itself works.
+  def runCacheTest(): Unit = {
+    extended.sql(s"use default")
+    extended.sql(s"cache table default.$testT")
+    // Testing FLASH-44.
+    extended.sql(s"show databases")
+    extended.sql(s"show tables")
+  }
+
   def runInsertTest(): Unit = {
     extended.sql(s"use default")
     assertThrows[AnalysisException](

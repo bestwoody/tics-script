@@ -3,14 +3,12 @@ package org.apache.spark.sql.execution.command
 import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.{CHContext, Row, SparkSession}
 
-class CHShowDatabasesCommand(val chContext: CHContext, databasePattern: Option[String])
-    extends ShowDatabasesCommand(databasePattern)
-    with CHCommand {
-
+case class CHShowDatabasesCommand(chContext: CHContext, delegate: ShowDatabasesCommand)
+    extends CHDelegateCommand(delegate) {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val databases =
       // Not leveraging catalog-specific db pattern, at least Hive and Spark behave different than each other.
-      databasePattern
+      delegate.databasePattern
         .map(StringUtils.filterPattern(chCatalog.listDatabases(), _))
         .getOrElse(chCatalog.listDatabases())
     databases.map { d =>
@@ -19,11 +17,10 @@ class CHShowDatabasesCommand(val chContext: CHContext, databasePattern: Option[S
   }
 }
 
-case class CHSetDatabaseCommand(chContext: CHContext, databaseName: String)
-    extends RunnableCommand
-    with CHCommand {
+case class CHSetDatabaseCommand(chContext: CHContext, delegate: SetDatabaseCommand)
+    extends CHDelegateCommand(delegate) {
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    chCatalog.setCurrentDatabase(databaseName)
+    chCatalog.setCurrentDatabase(delegate.databaseName)
     Seq.empty[Row]
   }
 }

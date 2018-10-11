@@ -49,29 +49,23 @@ case class CHDDLRule(getOrCreateCHContext: SparkSession => CHContext)(sparkSessi
     case ct @ CreateTable(tableDesc, _, _) =>
       validateCatalog(tableDesc.identifier.database, isFlash = false)
       ct
-    case DropDatabaseCommand(databaseName, ifExists, cascade) =>
-      new CHDropDatabaseCommand(chContext, databaseName, ifExists, cascade)
-    case ShowDatabasesCommand(databasePattern) =>
-      new CHShowDatabasesCommand(chContext, databasePattern)
-    case SetDatabaseCommand(databaseName) =>
-      CHSetDatabaseCommand(chContext, databaseName)
-    case TruncateTableCommand(tableName, partitionSpec) =>
-      new CHTruncateTableCommand(chContext, tableName, partitionSpec)
+    case d @ DropDatabaseCommand(_, _, _) =>
+      CHDropDatabaseCommand(chContext, d)
+    case s @ ShowDatabasesCommand(_) =>
+      CHShowDatabasesCommand(chContext, s)
+    case s @ SetDatabaseCommand(_) =>
+      CHSetDatabaseCommand(chContext, s)
+    case t @ TruncateTableCommand(_, _) =>
+      CHTruncateTableCommand(chContext, t)
     // TODO: support desc db/column/etc.
-    case DescribeTableCommand(table, partitionSpec, isExtended) =>
-      new CHDescribeTableCommand(chContext, table, partitionSpec, isExtended)
-    case DropTableCommand(tableName, ifExists, isView, purge) =>
-      new CHDropTableCommand(chContext, tableName, ifExists, isView, purge)
-    case ShowTablesCommand(databaseName, tableIdentifierPattern, isExtended, partitionSpec) =>
-      new CHShowTablesCommand(
-        chContext,
-        databaseName,
-        tableIdentifierPattern,
-        isExtended,
-        partitionSpec
-      )
-    case ShowCreateTableCommand(table) =>
-      new CHShowCreateTableCommand(chContext, table)
+    case d @ DescribeTableCommand(_, _, _) =>
+      CHDescribeTableCommand(chContext, d)
+    case d @ DropTableCommand(_, _, _, _) =>
+      CHDropTableCommand(chContext, d)
+    case s @ ShowTablesCommand(_, _, _, _) =>
+      CHShowTablesCommand(chContext, s)
+    case s @ ShowCreateTableCommand(_) =>
+      CHShowCreateTableCommand(chContext, s)
   }
 }
 
