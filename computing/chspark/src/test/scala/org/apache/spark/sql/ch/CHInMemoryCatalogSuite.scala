@@ -78,6 +78,10 @@ class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
     runTableTest()
   }
 
+  test("explains") {
+    runExplainTest()
+  }
+
   test("caches") {
     runCacheTest()
   }

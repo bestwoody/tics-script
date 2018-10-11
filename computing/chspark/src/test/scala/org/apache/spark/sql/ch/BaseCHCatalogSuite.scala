@@ -90,6 +90,12 @@ abstract class BaseCHCatalogSuite extends SparkFunSuite {
     verifyShowTables(testDb, Array(testT), "default", Array(testT))
   }
 
+  def runExplainTest(): Unit = {
+    extended.sql(s"use $testDb")
+    assert(extended.sql(s"explain select * from ${testT}123").collect().head.getString(0).contains("NoSuchTableException"))
+    assert(!extended.sql(s"explain select * from $testT").collect().head.getString(0).contains("NoSuchTableException"))
+  }
+
   // TODO: need to revisit this test once CH cache commands are implemented.
   // So far this test only protects successive commands after caching anything,
   // regardless whether the cache command itself works.

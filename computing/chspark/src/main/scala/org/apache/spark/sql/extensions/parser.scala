@@ -5,7 +5,7 @@ import org.apache.spark.sql.catalyst.expressions.{Exists, Expression, ListQuery,
 import org.apache.spark.sql.catalyst.parser._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.execution.command.CreateViewCommand
+import org.apache.spark.sql.execution.command.{CreateViewCommand, ExplainCommand}
 import org.apache.spark.sql.execution.datasources.CreateTable
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.sql.{CHContext, SparkSession}
@@ -80,6 +80,8 @@ case class CHParser(getOrCreateCHContext: SparkSession => CHContext)(sparkSessio
               (tuple._1, tuple._2.copy(child = tuple._2.child.transform(qualifyTableIdentifier)))
           )
       )
+    case e @ ExplainCommand(logicalPlan, _, _, _) =>
+      e.copy(logicalPlan = logicalPlan.transform(qualifyTableIdentifier))
   }
 
   override def parsePlan(sqlText: String): LogicalPlan =
