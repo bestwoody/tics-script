@@ -1,0 +1,23 @@
+diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataPart.h b/dbms/src/Storages/MergeTree/MergeTreeDataPart.h
+index c1c1274f7b98..975306e3b976 100644
+--- a/dbms/src/Storages/MergeTree/MergeTreeDataPart.h
++++ b/dbms/src/Storages/MergeTree/MergeTreeDataPart.h
+@@ -7,6 +7,7 @@
+ #include <Storages/MergeTree/MergeTreePartition.h>
+ #include <Storages/MergeTree/MergeTreeDataPartChecksum.h>
+ #include <Columns/IColumn.h>
++#include <IO/CompactContext.h>
+ #include <shared_mutex>
+ 
+ 
+@@ -89,6 +90,10 @@ struct MergeTreeDataPart
+     /// If true it means that there are no ZooKeeper node for this part, so it should be deleted only from filesystem
+     bool is_duplicate = false;
+ 
++    CompactReadContextPtr compactCtxPtr;
++
++    void tryToGetCompactCtx();
++
+     /**
+      * Part state is a stage of its lifetime. States are ordered and state of a part could be increased only.
+      * Part state should be modified under data_parts mutex.

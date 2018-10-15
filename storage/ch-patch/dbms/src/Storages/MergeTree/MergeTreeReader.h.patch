@@ -1,8 +1,17 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeReader.h b/dbms/src/Storages/MergeTree/MergeTreeReader.h
-index a4a6b4dc0f76..beabf6bf9759 100644
+index a4a6b4dc0f76..d83169591eba 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeReader.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeReader.h
-@@ -25,6 +25,8 @@ public:
+@@ -6,6 +6,8 @@
+ #include <Storages/MergeTree/MergeTreeRangeReader.h>
+ #include <Core/NamesAndTypes.h>
+ 
++#include<IO/CompactContext.h>
++
+ 
+ namespace DB
+ {
+@@ -25,6 +27,8 @@ public:
  
      MergeTreeReader(const String & path, /// Path to the directory containing the part
          const MergeTreeData::DataPartPtr & data_part, const NamesAndTypesList & columns,
@@ -11,24 +20,36 @@ index a4a6b4dc0f76..beabf6bf9759 100644
          UncompressedCache * uncompressed_cache,
          MarkCache * mark_cache,
          bool save_marks_in_cache,
-@@ -56,6 +58,7 @@ private:
+@@ -54,8 +58,10 @@ private:
+     {
+     public:
          Stream(
-             const String & path_prefix_, const String & extension_, size_t marks_count_,
+-            const String & path_prefix_, const String & extension_, size_t marks_count_,
++            const String & path_prefix_, const String & stream_name, const String & extension_, size_t marks_count_,
              const MarkRanges & all_mark_ranges,
 +            PersistedCache * persisted_cache, bool update_persisted_cache,
++            CompactReadContextPtr compactContextPtr_,
              MarkCache * mark_cache, bool save_marks_in_cache,
              UncompressedCache * uncompressed_cache,
              size_t aio_threshold, size_t max_read_buffer_size,
-@@ -78,6 +81,8 @@ private:
+@@ -74,10 +80,16 @@ private:
+         void loadMarks();
+ 
+         std::string path_prefix;
++        std::string stream_name;
+         std::string extension;
  
          size_t marks_count;
  
 +        PersistedCache * persisted_cache;
 +        bool update_persisted_cache;
++
++        CompactReadContextPtr compactContextPtr;
++
          MarkCache * mark_cache;
          bool save_marks_in_cache;
          MarkCache::MappedPtr marks;
-@@ -98,6 +103,9 @@ private:
+@@ -98,6 +110,9 @@ private:
      /// Columns that are read.
      NamesAndTypesList columns;
  
@@ -38,3 +59,12 @@ index a4a6b4dc0f76..beabf6bf9759 100644
      UncompressedCache * uncompressed_cache;
      MarkCache * mark_cache;
      /// If save_marks_in_cache is false, then, if marks are not in cache, we will load them but won't save in the cache, to avoid evicting other data.
+@@ -121,6 +136,8 @@ private:
+     size_t readRows(size_t from_mark, bool continue_reading, size_t max_rows_to_read, Block & res);
+ 
+     friend class MergeTreeRangeReader::DelayedStream;
++
++    CompactReadContextPtr compactContextPtr;
+ };
+ 
+ }

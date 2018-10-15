@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
-index 9d6d41fa9d59..bfe544f266a1 100644
+index 9d6d41fa9d59..b535dd8380b3 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 @@ -6,6 +6,8 @@
@@ -96,3 +96,12 @@ index 9d6d41fa9d59..bfe544f266a1 100644
          Row partition(partition_columns.size());
          for (size_t i = 0; i < partition_columns.size(); ++i)
              partition[i] = Field((*partition_columns[i])[partition_num_to_first_row[num]]);
+@@ -206,7 +234,7 @@ MergeTreeData::MutableDataPartPtr MergeTreeDataWriter::writeTempPart(BlockWithPa
+     auto compression_settings = data.context.chooseCompressionSettings(0, 0);
+ 
+     NamesAndTypesList columns = data.getColumns().getAllPhysical().filter(block.getNames());
+-    MergedBlockOutputStream out(data, new_data_part->getFullPath(), columns, compression_settings);
++    MergedBlockOutputStream out(data, new_data_part->getFullPath(), columns, true, compression_settings);
+ 
+     out.writePrefix();
+     out.writeWithPermutation(block, perm_ptr);

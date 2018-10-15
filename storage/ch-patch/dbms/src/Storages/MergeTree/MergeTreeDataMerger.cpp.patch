@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
-index f2d6e773be18..d0fb4abbf391 100644
+index f2d6e773be18..66e57a17cc58 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataMerger.cpp
 @@ -343,7 +343,8 @@ static void extractMergingAndGatheringColumns(const NamesAndTypesList & all_colu
@@ -34,6 +34,15 @@ index f2d6e773be18..d0fb4abbf391 100644
          case MergeTreeData::MergingParams::Graphite:
              merged_stream = std::make_unique<GraphiteRollupSortedBlockInputStream>(
                  src_streams, sort_desc, DEFAULT_MERGE_BLOCK_SIZE,
+@@ -659,7 +666,7 @@ MergeTreeData::MutableDataPartPtr MergeTreeDataMerger::mergePartsToTemporaryPart
+             static_cast<double> (merge_entry->total_size_bytes_compressed) / data.getTotalActiveSizeInBytes());
+ 
+     MergedBlockOutputStream to{
+-        data, new_part_tmp_path, merging_columns, compression_settings, merged_column_to_size, aio_threshold};
++        data, new_part_tmp_path, merging_columns, false, compression_settings, merged_column_to_size, aio_threshold};
+ 
+     merged_stream->readPrefix();
+     to.writePrefix();
 @@ -727,7 +734,7 @@ MergeTreeData::MutableDataPartPtr MergeTreeDataMerger::mergePartsToTemporaryPart
              {
                  auto column_part_stream = std::make_shared<MergeTreeBlockInputStream>(

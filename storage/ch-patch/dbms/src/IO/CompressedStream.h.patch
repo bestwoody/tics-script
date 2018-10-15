@@ -1,0 +1,13 @@
+diff --git a/dbms/src/IO/CompressedStream.h b/dbms/src/IO/CompressedStream.h
+index 5a00db0201de..0507a68ed2f4 100644
+--- a/dbms/src/IO/CompressedStream.h
++++ b/dbms/src/IO/CompressedStream.h
+@@ -47,6 +47,8 @@ enum class CompressionMethodByte : uint8_t
+     NONE     = 0x02,
+     LZ4      = 0x82,
+     ZSTD     = 0x90,
++    // COL_END is not a compreesion method, but a flag of column end used in compact file.
++    COL_END  = 0x66,
+ };
+ 
+ }
