@@ -19,9 +19,11 @@ class InMemoryLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     extended = CHExtendedSparkSessionBuilder
       .builder()
       .withLegacyFirstPolicy()
-      .withInMemoryExternalCatalog()
+      .withInMemoryCH()
       .withHiveLegacyCatalog()
       .getOrCreate()
+
+    extended.sparkContext.setLogLevel("WARN")
 
     init()
   }
@@ -102,12 +104,12 @@ class InMemoryLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     runTableTest()
   }
 
-  test("caches") {
-    runCacheTest()
-  }
-
   test("inserts") {
     runInsertTest()
+  }
+
+  test("caches") {
+    runCacheTest()
   }
 
   test("queries") {

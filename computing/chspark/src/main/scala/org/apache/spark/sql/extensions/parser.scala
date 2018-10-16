@@ -5,7 +5,7 @@ import org.apache.spark.sql.catalyst.expressions.{Exists, Expression, ListQuery,
 import org.apache.spark.sql.catalyst.parser._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.execution.command.{CreateViewCommand, ExplainCommand}
+import org.apache.spark.sql.execution.command.{CacheTableCommand, CreateViewCommand, ExplainCommand, UncacheTableCommand}
 import org.apache.spark.sql.execution.datasources.CreateTable
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.sql.{CHContext, SparkSession}
@@ -16,6 +16,12 @@ case class CHParser(getOrCreateCHContext: SparkSession => CHContext)(sparkSessio
   private lazy val chContext = getOrCreateCHContext(sparkSession)
 
   private lazy val internal = new CHSqlParser(sparkSession.sqlContext.conf)
+
+  private def qualifyTableIdentifierInternal(tableIdentifier: TableIdentifier): TableIdentifier =
+    TableIdentifier(
+      tableIdentifier.table,
+      Some(tableIdentifier.database.getOrElse(chContext.chCatalog.getCurrentDatabase))
+    )
 
   /**
    * Qualify table name before table resolution, concerning the following conditions:
@@ -36,30 +42,32 @@ case class CHParser(getOrCreateCHContext: SparkSession => CHContext)(sparkSessio
         if tableIdentifier.database.isEmpty && chContext.legacyCatalog
           .getTempView(tableIdentifier.table)
           .isEmpty =>
-      r.copy(
-        TableIdentifier(
-          tableIdentifier.table,
-          Some(tableIdentifier.database.getOrElse(chContext.chCatalog.getCurrentDatabase))
-        )
-      )
+      r.copy(qualifyTableIdentifierInternal(tableIdentifier))
     case i @ InsertIntoTable(r @ UnresolvedRelation(tableIdentifier), _, _, _, _)
         // When getting temp view, we leverage legacy catalog.
         if tableIdentifier.database.isEmpty && chContext.legacyCatalog
           .getTempView(tableIdentifier.table)
           .isEmpty =>
-      i.copy(
-        r.copy(
-          TableIdentifier(
-            tableIdentifier.table,
-            Some(tableIdentifier.database.getOrElse(chContext.chCatalog.getCurrentDatabase))
-          )
-        )
-      )
+      i.copy(r.copy(qualifyTableIdentifierInternal(tableIdentifier)))
     case ce @ CreateTable(tableDesc, _, _) if tableDesc.identifier.database.isEmpty =>
       ce.copy(
         tableDesc
-          .copy(tableDesc.identifier.copy(database = Some(chContext.chCatalog.getCurrentDatabase)))
+          .copy(qualifyTableIdentifierInternal(tableDesc.identifier))
       )
+    case c @ CacheTableCommand(tableIdent, plan, _)
+        if plan.isEmpty && tableIdent.database.isEmpty && chContext.legacyCatalog
+          .getTempView(tableIdent.table)
+          .isEmpty =>
+      // Caching an unqualified catalog table.
+      c.copy(qualifyTableIdentifierInternal(tableIdent))
+    case c @ CacheTableCommand(_, plan, _) if plan.isDefined =>
+      c.copy(plan = Some(plan.get.transform(qualifyTableIdentifier)))
+    case u @ UncacheTableCommand(tableIdent, _)
+        if tableIdent.database.isEmpty && chContext.legacyCatalog
+          .getTempView(tableIdent.table)
+          .isEmpty =>
+      // Uncaching an unqualified catalog table.
+      u.copy(qualifyTableIdentifierInternal(tableIdent))
     case f @ Filter(condition, _) =>
       f.copy(condition = condition.transform {
         case e @ Exists(plan, _, _)         => e.copy(plan = plan.transform(qualifyTableIdentifier))

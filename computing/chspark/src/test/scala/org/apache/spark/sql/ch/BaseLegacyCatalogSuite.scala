@@ -7,6 +7,7 @@ import org.apache.spark.sql.{AnalysisException, DataFrame, SparkSession}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{DatabaseAlreadyExistsException, NoSuchDatabaseException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.{CHSessionCatalog, SessionCatalog}
+import org.apache.spark.sql.execution.columnar.{InMemoryRelation, InMemoryTableScanExec}
 import org.apache.spark.sql.internal.StaticSQLConf
 
 abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
@@ -238,17 +239,6 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
     )
   }
 
-  // TODO: need to revisit this test once CH cache commands are implemented.
-  // So far this test only protects successive commands after caching anything,
-  // regardless whether the cache command itself works.
-  def runCacheTest(): Unit = {
-    extended.sql(s"use default")
-    extended.sql(s"cache table default.$testT")
-    // Testing FLASH-44.
-    extended.sql(s"show databases")
-    extended.sql(s"show tables")
-  }
-
   def runInsertTest(): Unit = {
     extended.sql(s"use default")
     assertThrows[AnalysisException](
@@ -258,6 +248,93 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
     extended.sql(s"insert into $testLegacyDb.$testT values(1, 'legacy', 12.34)")
     extended.sql(s"use $testCHDb")
     extended.sql(s"insert into $testT values(2, 'CH', 0.0)")
+  }
+
+  def runCacheTest(): Unit = {
+    def verifyCacheQuery(view: String, tableIdentifier: TableIdentifier, expected: Array[Int]) = {
+      val df = extended.sql(s"select * from $view order by i")
+      df.explain()
+      val plan = df.queryExecution.sparkPlan
+      assert(plan.find {
+        case InMemoryTableScanExec(_, _, InMemoryRelation(_, _, _, _, _, tableName))
+            if tableName.get == s"`$view`" =>
+          true
+        case _ => false
+      }.isDefined)
+      assert(df.collect().map(_.getInt(0)).deep == expected.deep)
+    }
+
+    extended.sql(s"use $testCHDb")
+    var legacyExpected =
+      extended.sql(s"select * from $testLegacyDb.$testT order by i").collect().map(_.getInt(0))
+    var chExpected =
+      extended.sql(s"select * from $testCHDb.$testT order by i").collect().map(_.getInt(0))
+    extended.sql(s"cache table cached_$testLegacyDb as select * from $testLegacyDb.$testT")
+    verifyCacheQuery(
+      s"cached_$testLegacyDb",
+      TableIdentifier(testT, Some(testLegacyDb)),
+      legacyExpected
+    )
+    extended.sql(s"cache table cached_$testCHDb as select * from $testT")
+    verifyCacheQuery(s"cached_$testCHDb", TableIdentifier(testT, Some(testCHDb)), chExpected)
+    extended.sql(s"drop table cached_$testLegacyDb")
+    extended.sql(s"drop table cached_$testCHDb")
+
+    def verifyCacheTable(tableIdentifier: TableIdentifier, query: String, expected: Array[Int]) = {
+      val df = extended.sql(query)
+      df.explain()
+      val plan = df.queryExecution.sparkPlan
+      assert(plan.find {
+        case InMemoryTableScanExec(_, _, InMemoryRelation(_, _, _, _, _, tableName))
+            if tableName.get == tableIdentifier.quotedString =>
+          true
+        case _ => false
+      }.isDefined)
+      assert(df.collect().map(_.getInt(0)).deep == expected.deep)
+    }
+
+    extended.sql(s"use $testLegacyDb")
+    legacyExpected =
+      extended.sql(s"select * from $testLegacyDb.$testT order by i").collect().map(_.getInt(0))
+    chExpected =
+      extended.sql(s"select * from $testCHDb.$testT order by i").collect().map(_.getInt(0))
+    extended.sql(s"cache table $testT")
+    extended.sql(s"cache table $testCHDb.$testT")
+    verifyCacheTable(
+      TableIdentifier(testT, Some(testLegacyDb)),
+      s"select * from $testLegacyDb.$testT order by i",
+      legacyExpected
+    )
+    extended.sql(s"use $testCHDb")
+    verifyCacheTable(
+      TableIdentifier(testT, Some(testCHDb)),
+      s"select * from $testT order by i",
+      chExpected
+    )
+
+    // Testing FLASH-44.
+    extended.sql(s"show databases")
+    extended.sql(s"show tables")
+
+    def verifyUncacheTable(query: String) = {
+      val df = extended.sql(query)
+      df.explain()
+      val plan = df.queryExecution.sparkPlan
+      assert(plan.find {
+        case InMemoryTableScanExec(_, _, InMemoryRelation(_, _, _, _, _, _)) =>
+          true
+        case _ => false
+      }.isEmpty)
+    }
+
+    extended.sql(s"use $testLegacyDb")
+    extended.sql(s"uncache table $testCHDb.$testT")
+    extended.sql(s"use $testCHDb")
+    verifyUncacheTable(s"select * from $testT")
+    extended.sql(s"use $testLegacyDb")
+    extended.sql(s"uncache table $testT")
+    extended.sql(s"use $testCHDb")
+    verifyUncacheTable(s"select * from $testLegacyDb.$testT")
   }
 
   def runQueryTest(): Unit = {

@@ -4,14 +4,15 @@ import com.pingcap.tikv.meta.TiTableInfo
 import org.apache.spark.sql.{CHContext, SparkSession, _}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.extensions.{CHDDLRule, CHParser, CHResolutionRule}
 import org.apache.spark.sql.internal.StaticSQLConf
-import org.apache.spark.sql.sources.InsertableRelation
+import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation}
 import org.apache.spark.sql.types.StructType
 
 import scala.collection.mutable
+import scala.collection.JavaConversions._
 
 class CHInMemoryExternalCatalog(chContext: CHContext)
     extends InMemoryCatalog
@@ -32,27 +33,27 @@ class CHInMemoryExternalCatalog(chContext: CHContext)
   override def loadTableFromTiDB(db: String, tiTable: TiTableInfo, isOverwrite: Boolean): Unit = ???
 }
 
-case class CHInMemoryRelation(tableIdentifier: TableIdentifier, _schema: StructType)
-    extends CHRelation(Array.empty[CHTableRef], 0)(null)
+case class CHInMemoryRelation(sparkSession: SparkSession,
+                              tableIdentifier: TableIdentifier,
+                              schema: StructType)
+    extends BaseRelation
     with InsertableRelation {
-  def data: Option[DataFrame] =
-    CHInMemoryRelation.dataRegistry.get(tableIdentifier)
-
-  override lazy val schema: StructType = _schema
+  def data: DataFrame =
+    CHInMemoryRelation.dataRegistry
+      .getOrElse(tableIdentifier, sparkSession.createDataFrame(List.empty[Row], schema))
 
   override def sizeInBytes: Long =
-    if (data.isEmpty) {
-      0
-    } else {
-      data.get.count() * 4
-    }
+    data.count() * 4
 
   override def insert(df: DataFrame, overwrite: Boolean): Unit =
-    CHInMemoryRelation.dataRegistry(tableIdentifier) = if (overwrite || data.isEmpty) {
+    CHInMemoryRelation.dataRegistry(tableIdentifier) = if (overwrite) {
       df
     } else {
-      data.get.union(df)
+      df.collect()
+      data.union(df)
     }
+
+  override def sqlContext: SQLContext = sparkSession.sqlContext
 }
 
 object CHInMemoryRelation {
@@ -63,15 +64,19 @@ object CHInMemoryRelation {
 class CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext: SparkSession => CHContext)(
   sparkSession: SparkSession
 ) extends CHResolutionRule(getOrCreateCHContext)(sparkSession) {
-  override val resolveCHRelation: TableIdentifier => CHInMemoryRelation =
+  override val resolveRelation: TableIdentifier => LogicalPlan =
     (tableIdentifier: TableIdentifier) => {
       val catalogTable = chContext.chCatalog.getTableMetadata(tableIdentifier)
-      CHInMemoryRelation(tableIdentifier, catalogTable.schema)
+      val alias = formatTableName(tableIdentifier.table)
+      SubqueryAlias(
+        alias,
+        LogicalRelation(new CHInMemoryRelation(sparkSession, tableIdentifier, catalogTable.schema))
+      )
     }
 
   override def apply(plan: LogicalPlan): LogicalPlan = super.apply(plan).transformUp {
-    case LogicalRelation(r @ CHInMemoryRelation(_, _), output, _, _) =>
-      r.data.map(_.logicalPlan).getOrElse(LocalRelation(output))
+    case LogicalRelation(r, _, _, _) if r.isInstanceOf[CHInMemoryRelation] =>
+      r.asInstanceOf[CHInMemoryRelation].data.logicalPlan
   }
 }
 
@@ -82,18 +87,17 @@ object CHResolutionRuleWithInMemoryRelation {
   }
 }
 
-class CHTestContext(sparkSession: SparkSession, externalCatalog: CHContext => CHExternalCatalog)
-    extends CHContext(sparkSession) {
+class CHTestContext(sparkSession: SparkSession, inMemory: Boolean) extends CHContext(sparkSession) {
   override lazy val chConcreteCatalog: CHSessionCatalog =
-    new CHConcreteSessionCatalog(this)(externalCatalog(this))
+    new CHConcreteSessionCatalog(this)(
+      if (inMemory) new CHInMemoryExternalCatalog(this) else new CHDirectExternalCatalog(this)
+    )
 }
 
-class CHTestExtensions(externalCatalog: CHContext => CHExternalCatalog,
-                       rule: (SparkSession => CHContext) => (SparkSession => CHResolutionRule))
-    extends CHExtensions {
+class CHTestExtensions(inMemory: Boolean) extends CHExtensions {
   override def getOrCreateCHContext(sparkSession: SparkSession): CHContext = {
     if (chContext == null) {
-      chContext = new CHTestContext(sparkSession, externalCatalog)
+      chContext = new CHTestContext(sparkSession, inMemory)
     }
     chContext
   }
@@ -101,7 +105,11 @@ class CHTestExtensions(externalCatalog: CHContext => CHExternalCatalog,
   override def apply(e: SparkSessionExtensions): Unit = {
     e.injectParser(CHParser(getOrCreateCHContext))
     e.injectResolutionRule(CHDDLRule(getOrCreateCHContext))
-    e.injectResolutionRule(rule(getOrCreateCHContext))
+    if (inMemory) {
+      e.injectResolutionRule(CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext))
+    } else {
+      e.injectResolutionRule(CHResolutionRule(getOrCreateCHContext))
+    }
     e.injectPlannerStrategy(CHStrategy(getOrCreateCHContext))
   }
 }
@@ -109,9 +117,7 @@ class CHTestExtensions(externalCatalog: CHContext => CHExternalCatalog,
 class CHExtendedSparkSessionBuilder {
   var root: SparkSession.Builder = SparkSession.builder().master("local[1]")
 
-  var externalCatalog: CHContext => CHExternalCatalog = _
-  var rule: (SparkSession => CHContext) => (SparkSession => CHResolutionRule) =
-    (f: SparkSession => CHContext) => CHResolutionRule(f)
+  var inMemory = false
 
   def withLegacyFirstPolicy(): CHExtendedSparkSessionBuilder = {
     root = root
@@ -125,14 +131,8 @@ class CHExtendedSparkSessionBuilder {
     this
   }
 
-  def withDirectExternalCatalog(): CHExtendedSparkSessionBuilder = {
-    externalCatalog = (chContext: CHContext) => new CHDirectExternalCatalog(chContext)
-    this
-  }
-
-  def withInMemoryExternalCatalog(): CHExtendedSparkSessionBuilder = {
-    externalCatalog = (chContext: CHContext) => new CHInMemoryExternalCatalog(chContext)
-    rule = (f: SparkSession => CHContext) => CHResolutionRuleWithInMemoryRelation(f)
+  def withInMemoryCH(): CHExtendedSparkSessionBuilder = {
+    inMemory = true
     this
   }
 
@@ -151,7 +151,7 @@ class CHExtendedSparkSessionBuilder {
   }
 
   def getOrCreate(): SparkSession =
-    root.withExtensions(new CHTestExtensions(externalCatalog, rule)).getOrCreate()
+    root.withExtensions(new CHTestExtensions(inMemory)).getOrCreate()
 }
 
 object CHExtendedSparkSessionBuilder {

@@ -1,4 +1,5 @@
 package org.apache.spark.sql.ch
+
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.util.Utils
 
@@ -18,9 +19,10 @@ class HiveLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     extended = CHExtendedSparkSessionBuilder
       .builder()
       .withLegacyFirstPolicy()
-      .withDirectExternalCatalog()
       .withHiveLegacyCatalog()
       .getOrCreate()
+
+    extended.sparkContext.setLogLevel("WARN")
 
     init()
   }
@@ -110,12 +112,12 @@ class HiveLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     runTableTest()
   }
 
-  test("caches") {
-    runCacheTest()
-  }
-
   test("inserts") {
     runInsertTest()
+  }
+
+  test("caches") {
+    runCacheTest()
   }
 
   test("queries") {

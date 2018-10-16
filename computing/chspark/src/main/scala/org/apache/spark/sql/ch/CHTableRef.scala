@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import com.pingcap.common.{Cluster, Node}
 
-class CHTableRef(val node: Node, _database: String, _table: String) extends Serializable {
+case class CHTableRef(node: Node, _database: String, _table: String) {
   // CH database name and table name are all in lower-case so normalize them immediately.
   val database: String = Option(_database).getOrElse("").toLowerCase()
   val table: String = _table.toLowerCase()

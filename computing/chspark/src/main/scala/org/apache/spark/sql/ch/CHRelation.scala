@@ -22,9 +22,9 @@ import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation}
 import org.apache.spark.sql.types.StructType
 
-class CHRelation(
-  val tables: Array[CHTableRef],
-  val partitionsPerSplit: Int
+case class CHRelation(
+  tables: Array[CHTableRef],
+  partitionsPerSplit: Int
 )(@transient val sqlContext: SQLContext)
     extends BaseRelation
     with InsertableRelation {
@@ -105,5 +105,12 @@ class CHRelation(
           Cluster.ofCHTableRefs(tables)
         )
     }
+  }
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: CHRelation =>
+      this.tables.deep == other.tables.deep
+    case _ =>
+      false
   }
 }

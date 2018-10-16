@@ -18,9 +18,10 @@ class CHDirectCatalogSuite extends BaseCHCatalogSuite {
     extended = CHExtendedSparkSessionBuilder
       .builder()
       .withCHFirstPolicy()
-      .withDirectExternalCatalog()
       .withHiveLegacyCatalog()
       .getOrCreate()
+
+    extended.sparkContext.setLogLevel("WARN")
 
     init()
   }
@@ -91,12 +92,12 @@ class CHDirectCatalogSuite extends BaseCHCatalogSuite {
     runExplainTest()
   }
 
-  test("caches") {
-    runCacheTest()
-  }
-
   test("inserts") {
     runInsertTest()
+  }
+
+  test("caches") {
+    runCacheTest()
   }
 
   test("queries") {

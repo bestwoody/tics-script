@@ -1,10 +1,12 @@
 package org.apache.spark.sql.extensions
 
+import java.util.Locale
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CHSessionCatalog
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.ch.{CHConfigConst, CHRelation, CHTableRef}
 import org.apache.spark.sql.execution.command._
@@ -74,7 +76,10 @@ case class CHResolutionRule(getOrCreateCHContext: SparkSession => CHContext)(
 ) extends Rule[LogicalPlan] {
   protected lazy val chContext = getOrCreateCHContext(sparkSession)
 
-  protected val resolveCHRelation: TableIdentifier => CHRelation =
+  protected[this] def formatTableName(name: String): String =
+    if (sparkSession.sqlContext.conf.caseSensitiveAnalysis) name else name.toLowerCase(Locale.ROOT)
+
+  protected val resolveRelation: TableIdentifier => LogicalPlan =
     (tableIdentifier: TableIdentifier) => {
       val qualified = tableIdentifier.copy(
         database = Some(tableIdentifier.database.getOrElse(chContext.chCatalog.getCurrentDatabase))
@@ -83,7 +88,7 @@ case class CHResolutionRule(getOrCreateCHContext: SparkSession => CHContext)(
       if (!chContext.chCatalog.tableExists(qualified)) {
         throw new NoSuchTableException(qualified.database.get, qualified.table)
       }
-      new CHRelation(
+      val chRelation = CHRelation(
         CHTableRef
           .ofCluster(
             chContext.cluster,
@@ -97,6 +102,8 @@ case class CHResolutionRule(getOrCreateCHContext: SparkSession => CHContext)(
           )
           .toInt
       )(chContext.sqlContext)
+      val alias = formatTableName(tableIdentifier.table)
+      SubqueryAlias(alias, LogicalRelation(chRelation))
     }
 
   override def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
@@ -104,11 +111,11 @@ case class CHResolutionRule(getOrCreateCHContext: SparkSession => CHContext)(
         if chContext.chCatalog
           .catalogOf(tableIdentifier.database)
           .exists(_.isInstanceOf[CHSessionCatalog]) =>
-      LogicalRelation(resolveCHRelation(tableIdentifier))
+      resolveRelation(tableIdentifier)
     case i @ InsertIntoTable(UnresolvedRelation(tableIdentifier), _, _, _, _)
         if chContext.chCatalog
           .catalogOf(tableIdentifier.database)
           .exists(_.isInstanceOf[CHSessionCatalog]) =>
-      i.copy(table = LogicalRelation(resolveCHRelation(tableIdentifier)))
+      i.copy(table = EliminateSubqueryAliases(resolveRelation(tableIdentifier)))
   }
 }

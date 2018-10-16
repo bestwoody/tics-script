@@ -18,9 +18,11 @@ class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
     extended = CHExtendedSparkSessionBuilder
       .builder()
       .withCHFirstPolicy()
-      .withInMemoryExternalCatalog()
+      .withInMemoryCH()
       .withInMemoryLegacyCatalog()
       .getOrCreate()
+
+    extended.sparkContext.setLogLevel("WARN")
 
     init()
   }
@@ -82,12 +84,12 @@ class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
     runExplainTest()
   }
 
-  test("caches") {
-    runCacheTest()
-  }
-
   test("inserts") {
     runInsertTest()
+  }
+
+  test("caches") {
+    runCacheTest()
   }
 
   test("queries") {
