@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergedBlockOutputStream.cpp b/dbms/src/Storages/MergeTree/MergedBlockOutputStream.cpp
-index 6c9409be833a..8c41c449caa5 100644
+index 6c9409be833a..a7838b7c81e5 100644
 --- a/dbms/src/Storages/MergeTree/MergedBlockOutputStream.cpp
 +++ b/dbms/src/Storages/MergeTree/MergedBlockOutputStream.cpp
 @@ -31,7 +31,8 @@ IMergedBlockOutputStream::IMergedBlockOutputStream(
@@ -12,7 +12,7 @@ index 6c9409be833a..8c41c449caa5 100644
  {
  }
  
-@@ -54,14 +55,22 @@ void IMergedBlockOutputStream::addStreams(
+@@ -54,14 +55,23 @@ void IMergedBlockOutputStream::addStreams(
          if (column_streams.count(stream_name))
              return;
  
@@ -37,13 +37,14 @@ index 6c9409be833a..8c41c449caa5 100644
 +            column_streams[stream_name] = std::make_unique<ColumnStream>(
 +                stream_name,
 +                compression_settings,
-+                compactCtxPtr
++                compactCtxPtr,
++                IDataType::isNullMap(substream_path)
 +            );
 +        }
      };
  
      type.enumerateStreams(callback, {});
-@@ -77,6 +86,11 @@ void IMergedBlockOutputStream::writeData(
+@@ -77,6 +87,11 @@ void IMergedBlockOutputStream::writeData(
  {
      size_t size = column.size();
      size_t prev_mark = 0;
@@ -55,7 +56,7 @@ index 6c9409be833a..8c41c449caa5 100644
      while (prev_mark < size)
      {
          size_t limit = 0;
-@@ -88,7 +102,6 @@ void IMergedBlockOutputStream::writeData(
+@@ -88,7 +103,6 @@ void IMergedBlockOutputStream::writeData(
          {
              limit = storage.index_granularity;
  
@@ -63,7 +64,7 @@ index 6c9409be833a..8c41c449caa5 100644
              type.enumerateStreams([&] (const IDataType::SubstreamPath & substream_path)
              {
                  bool is_offsets = !substream_path.empty() && substream_path.back().type == IDataType::Substream::ArraySizes;
-@@ -107,8 +120,9 @@ void IMergedBlockOutputStream::writeData(
+@@ -107,8 +121,9 @@ void IMergedBlockOutputStream::writeData(
                  if (stream.compressed.offset() >= min_compress_block_size)
                      stream.compressed.next();
  
@@ -74,7 +75,7 @@ index 6c9409be833a..8c41c449caa5 100644
              }, {});
          }
  
-@@ -143,11 +157,34 @@ void IMergedBlockOutputStream::writeData(
+@@ -143,11 +158,49 @@ void IMergedBlockOutputStream::writeData(
                  return;
  
              column_streams[stream_name]->compressed.nextIfAtEnd();
@@ -87,6 +88,7 @@ index 6c9409be833a..8c41c449caa5 100644
 +    if (compactCtxPtr != nullptr)
 +    {
 +        compactCtxPtr->endMark(name);
++        std::string null_map_name;
 +        type.enumerateStreams([&] (const IDataType::SubstreamPath & substream_path)
 +        {
 +            bool is_offsets = !substream_path.empty() && substream_path.back().type == IDataType::Substream::ArraySizes;
@@ -99,17 +101,31 @@ index 6c9409be833a..8c41c449caa5 100644
 +            if (is_offsets && offset_columns.count(stream_name))
 +                return;
 +
++            if (IDataType::isNullMap(substream_path)) {
++                null_map_name = stream_name;
++            }
++
 +            column_streams[stream_name]->compressed.next();
-+            compactCtxPtr->writeEOF();
++            compactCtxPtr->writeEOF(column_streams[stream_name]->plain_hashing);
 +            column_streams[stream_name]->plain_hashing->next();
 +            column_streams[stream_name]->marks.next();
 +        }, {});
++        if (!null_map_name.empty()) {
++            std::string col_string = column_streams[null_map_name]->substream_col_stream.str();
++            size_t file_offset = column_streams[name]->plain_hashing->count();
++            column_streams[name]->plain_hashing->write(col_string.c_str(), col_string.size());
++            column_streams[name]->plain_hashing->next();
++            auto marks_string = column_streams[null_map_name]->substream_mark_stream.str();
++            compactCtxPtr -> beginMark(null_map_name);
++            compactCtxPtr -> mergeMarksStream(marks_string, file_offset);
++            compactCtxPtr -> endMark(null_map_name);
++        }
 +    }
 +
      /// Memoize offsets for Nested types, that are already written. They will not be written again for next columns of Nested structure.
      type.enumerateStreams([&] (const IDataType::SubstreamPath & substream_path)
      {
-@@ -177,10 +214,20 @@ IMergedBlockOutputStream::ColumnStream::ColumnStream(
+@@ -177,10 +230,24 @@ IMergedBlockOutputStream::ColumnStream::ColumnStream(
      data_file_extension{data_file_extension_},
      marks_file_extension{marks_file_extension_},
      plain_file(createWriteBufferFromFileBase(data_path + data_file_extension, estimated_size, aio_threshold, max_compress_block_size)),
@@ -117,24 +133,28 @@ index 6c9409be833a..8c41c449caa5 100644
 -    marks_file(marks_path + marks_file_extension, 4096, O_TRUNC | O_CREAT | O_WRONLY), marks(marks_file)
 -{
 -}
-+    plain_hashing(new HashingWriteBuffer(*plain_file)), compressed_buf(*plain_hashing, compression_settings), compressed(compressed_buf),
-+    marks_file(new WriteBufferFromFile(marks_path + marks_file_extension, 4096, O_TRUNC | O_CREAT | O_WRONLY)), marks(*marks_file)
++    plain_hashing(std::make_shared<HashingWriteBuffer>(*plain_file)), compressed_buf(*plain_hashing, compression_settings), compressed(compressed_buf),
++    marks_file(std::make_unique<WriteBufferFromFile>(marks_path + marks_file_extension, 4096, O_TRUNC | O_CREAT | O_WRONLY)), marks(*marks_file)
 +{}
 +
 +IMergedBlockOutputStream::ColumnStream::ColumnStream(
 +    const String & escaped_column_name_,
 +    CompressionSettings compression_settings,
-+    const CompactWriteContextPtr & compactCtxPtr) :
++    const CompactWriteContextPtr & compactCtxPtr,
++    bool is_substream) :
 +    escaped_column_name(escaped_column_name_),
-+    plain_hashing(&compactCtxPtr->plain_hashing), compressed_buf(*plain_hashing, compression_settings), compressed(compressed_buf),
-+    marks_sstream(new WriteBufferFromOStream(compactCtxPtr->mark_stream)),
++    substream_ostream(is_substream ? std::make_unique<WriteBufferFromOStream>(substream_col_stream) : NULL),
++    plain_hashing(is_substream ? std::make_shared<HashingWriteBuffer>(*substream_ostream) : compactCtxPtr->plain_hashing), 
++    compressed_buf(*plain_hashing, compression_settings), 
++    compressed(compressed_buf),
++    marks_sstream(std::make_unique<WriteBufferFromOStream>(is_substream ? substream_mark_stream: compactCtxPtr->mark_stream)),
 +    marks(*marks_sstream)
 +{}
 +
  
  void IMergedBlockOutputStream::ColumnStream::finalize()
  {
-@@ -192,7 +239,7 @@ void IMergedBlockOutputStream::ColumnStream::finalize()
+@@ -192,7 +259,7 @@ void IMergedBlockOutputStream::ColumnStream::finalize()
  void IMergedBlockOutputStream::ColumnStream::sync()
  {
      plain_file->sync();
@@ -143,7 +163,7 @@ index 6c9409be833a..8c41c449caa5 100644
  }
  
  void IMergedBlockOutputStream::ColumnStream::addToChecksums(MergeTreeData::DataPart::Checksums & checksums)
-@@ -202,8 +249,8 @@ void IMergedBlockOutputStream::ColumnStream::addToChecksums(MergeTreeData::DataP
+@@ -202,8 +269,8 @@ void IMergedBlockOutputStream::ColumnStream::addToChecksums(MergeTreeData::DataP
      checksums.files[name + data_file_extension].is_compressed = true;
      checksums.files[name + data_file_extension].uncompressed_size = compressed.count();
      checksums.files[name + data_file_extension].uncompressed_hash = compressed.getHash();
@@ -154,7 +174,7 @@ index 6c9409be833a..8c41c449caa5 100644
  
      checksums.files[name + marks_file_extension].file_size = marks.count();
      checksums.files[name + marks_file_extension].file_hash = marks.getHash();
-@@ -216,6 +263,7 @@ MergedBlockOutputStream::MergedBlockOutputStream(
+@@ -216,6 +283,7 @@ MergedBlockOutputStream::MergedBlockOutputStream(
      MergeTreeData & storage_,
      String part_path_,
      const NamesAndTypesList & columns_list_,
@@ -162,7 +182,7 @@ index 6c9409be833a..8c41c449caa5 100644
      CompressionSettings compression_settings)
      : IMergedBlockOutputStream(
          storage_, storage_.context.getSettings().min_compress_block_size,
-@@ -223,6 +271,8 @@ MergedBlockOutputStream::MergedBlockOutputStream(
+@@ -223,6 +291,8 @@ MergedBlockOutputStream::MergedBlockOutputStream(
          storage_.context.getSettings().min_bytes_to_use_direct_io),
      columns_list(columns_list_), part_path(part_path_)
  {
@@ -171,7 +191,7 @@ index 6c9409be833a..8c41c449caa5 100644
      init();
      for (const auto & it : columns_list)
          addStreams(part_path, it.name, *it.type, 0, false);
-@@ -232,6 +282,7 @@ MergedBlockOutputStream::MergedBlockOutputStream(
+@@ -232,6 +302,7 @@ MergedBlockOutputStream::MergedBlockOutputStream(
      MergeTreeData & storage_,
      String part_path_,
      const NamesAndTypesList & columns_list_,
@@ -179,7 +199,7 @@ index 6c9409be833a..8c41c449caa5 100644
      CompressionSettings compression_settings,
      const MergeTreeData::DataPart::ColumnToSize & merged_column_to_size_,
      size_t aio_threshold_)
-@@ -241,6 +292,8 @@ MergedBlockOutputStream::MergedBlockOutputStream(
+@@ -241,6 +312,8 @@ MergedBlockOutputStream::MergedBlockOutputStream(
          aio_threshold_),
      columns_list(columns_list_), part_path(part_path_)
  {
@@ -188,14 +208,14 @@ index 6c9409be833a..8c41c449caa5 100644
      init();
      for (const auto & it : columns_list)
      {
-@@ -300,13 +353,18 @@ void MergedBlockOutputStream::writeSuffixAndFinalizePart(
+@@ -300,13 +373,18 @@ void MergedBlockOutputStream::writeSuffixAndFinalizePart(
          checksums.files["primary.idx"].file_hash = index_stream->getHash();
          index_stream = nullptr;
      }
 +    if (compactCtxPtr != nullptr) {
 +        compactCtxPtr->finalize(rows_count);
-+        checksums.files[CompactWriteCtx::CompactFileName].file_size = compactCtxPtr-> plain_hashing.count();
-+        checksums.files[CompactWriteCtx::CompactFileName].file_hash = compactCtxPtr-> plain_hashing.getHash();
++        checksums.files[CompactWriteCtx::CompactFileName].file_size = compactCtxPtr-> plain_hashing->count();
++        checksums.files[CompactWriteCtx::CompactFileName].file_hash = compactCtxPtr-> plain_hashing->getHash();
 +    } else {
  
 -    for (ColumnStreams::iterator it = column_streams.begin(); it != column_streams.end(); ++it)
@@ -212,7 +232,7 @@ index 6c9409be833a..8c41c449caa5 100644
      column_streams.clear();
  
      if (rows_count == 0)
-@@ -360,6 +418,7 @@ void MergedBlockOutputStream::init()
+@@ -360,6 +438,7 @@ void MergedBlockOutputStream::init()
              part_path + "primary.idx", DBMS_DEFAULT_BUFFER_SIZE, O_TRUNC | O_CREAT | O_WRONLY);
          index_stream = std::make_unique<HashingWriteBuffer>(*index_file_stream);
      }

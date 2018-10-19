@@ -1,0 +1,13 @@
+diff --git a/dbms/src/DataTypes/IDataType.h b/dbms/src/DataTypes/IDataType.h
+index 3fd3bc7f005f..87cb5e6809a5 100644
+--- a/dbms/src/DataTypes/IDataType.h
++++ b/dbms/src/DataTypes/IDataType.h
+@@ -360,6 +360,8 @@ public:
+     static void updateAvgValueSizeHint(const IColumn & column, double & avg_value_size_hint);
+ 
+     static String getFileNameForStream(const String & column_name, const SubstreamPath & path);
++
++    static bool isNullMap(const SubstreamPath & path);
+ };
+ 
+ 

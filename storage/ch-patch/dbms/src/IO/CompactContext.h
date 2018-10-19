@@ -36,7 +36,7 @@ struct CompactWriteCtx : public CompactCtxBase {
     std::ostringstream mark_stream;
 
     WriteBufferFromFile plain_file;
-    HashingWriteBuffer  plain_hashing;
+    std::shared_ptr<HashingWriteBuffer> plain_hashing;
 
     CompactWriteCtx(std::string part_path, size_t buffer_size);
 
@@ -44,9 +44,12 @@ struct CompactWriteCtx : public CompactCtxBase {
 
     void endMark(std::string name);
 
-    void writeEOF();
+    // write EOF flag for hashing buffer.
+    void writeEOF(std::shared_ptr<HashingWriteBuffer>);
 
     void finalize(size_t);
+
+    void mergeMarksStream(std::string, size_t);
 
 private:
     size_t flushAllMarks();

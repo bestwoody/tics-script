@@ -7,6 +7,7 @@
 #include <IO/CompactContext.h>
 #include <IO/CompressedStream.h>
 #include <IO/WriteHelpers.h>
+#include <IO/ReadBufferFromIStream.h>
 
 namespace ProfileEvents
 {
@@ -29,7 +30,7 @@ CompactWriteCtx::CompactWriteCtx(std::string compact_path_, size_t buffer_size) 
     file_name(compact_path_),
     fd(::open(file_name.c_str(), O_WRONLY | O_TRUNC | O_CREAT, 0666)),
     plain_file(WriteBufferFromFile(fd, file_name, buffer_size)),
-    plain_hashing(HashingWriteBuffer(plain_file))
+    plain_hashing(std::make_shared<HashingWriteBuffer>(plain_file))
 {
     if (fd == -1) {
         ProfileEvents::increment(ProfileEvents::FileOpenFailed);
@@ -38,25 +39,25 @@ CompactWriteCtx::CompactWriteCtx(std::string compact_path_, size_t buffer_size) 
 }
 
 size_t CompactWriteCtx::flushAllMarks() {
-    plain_hashing.next();
-    size_t offset_of_all_marks = plain_hashing.count();
-    plain_hashing.write(mark_stream.str().c_str(), mark_stream.str().size());
-    plain_hashing.next();
+    plain_hashing->next();
+    size_t offset_of_all_marks = plain_hashing->count();
+    plain_hashing->write(mark_stream.str().c_str(), mark_stream.str().size());
+    plain_hashing->next();
     return offset_of_all_marks;
 }
 
 void CompactWriteCtx::writeFooter(size_t rows_count, size_t offset_of_all_marks) {
-    size_t footerOffset = plain_hashing.count();
-    writeIntBinary(mark_map.size(), plain_hashing);
+    size_t footerOffset = plain_hashing->count();
+    writeIntBinary(mark_map.size(), *plain_hashing);
     for (auto it = mark_map.begin(); it != mark_map.end(); it++) {
-        writeBinary(it->first, plain_hashing);
-        writeIntBinary(it->second.begin + offset_of_all_marks, plain_hashing);
-        writeIntBinary(it->second.end + offset_of_all_marks, plain_hashing);
+        writeBinary(it->first, *plain_hashing);
+        writeIntBinary(it->second.begin + offset_of_all_marks, *plain_hashing);
+        writeIntBinary(it->second.end + offset_of_all_marks, *plain_hashing);
     }
-    writeIntBinary(rows_count, plain_hashing);
-    writeIntBinary(footerOffset, plain_hashing);
-    writeIntBinary(MagicNumber << 2 | Version, plain_hashing);
-    plain_hashing.next();
+    writeIntBinary(rows_count, *plain_hashing);
+    writeIntBinary(footerOffset, *plain_hashing);
+    writeIntBinary(MagicNumber << 2 | Version, *plain_hashing);
+    plain_hashing->next();
 }
 
 void CompactWriteCtx::finalize(size_t rows_count) {
@@ -72,10 +73,25 @@ void CompactWriteCtx::endMark(std::string name) {
     mark_map[name].end = mark_stream.tellp();
 }
 
-void CompactWriteCtx::writeEOF() {
+void CompactWriteCtx::mergeMarksStream(std::string mark_str, size_t file_offset) {
+    std::istringstream read_mark_stream(mark_str);
+    ReadBufferFromIStream read_buffer(read_mark_stream);
+    WriteBufferFromOStream write_buffer(mark_stream);
+    while(!read_buffer.eof()) {
+        size_t offset_in_file;
+        size_t offset_in_block;
+        readIntBinary(offset_in_file, read_buffer);
+        readIntBinary(offset_in_block, read_buffer);
+        offset_in_file += file_offset;
+        writeIntBinary(offset_in_file, write_buffer);
+        writeIntBinary(offset_in_block, write_buffer);
+    }
+}
+
+void CompactWriteCtx::writeEOF(std::shared_ptr<HashingWriteBuffer> hashing) {
     CityHash_v1_0_2::uint128 checksum;
-    plain_hashing.write(reinterpret_cast<const char *>(&checksum), sizeof(checksum));
-    writeIntBinary(CompressionMethodByte::COL_END, plain_hashing);
+    hashing->write(reinterpret_cast<const char *>(&checksum), sizeof(checksum));
+    writeIntBinary(CompressionMethodByte::COL_END, *hashing);
 }
 
 CompactReadCtx::CompactReadCtx(std::string compact_path_) {
