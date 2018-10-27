@@ -257,13 +257,14 @@ bool PersistedCache::redirectDataFile(std::string & origin_path, const MarkRange
     {
         if (expected_exists)
         {
-            LOG_INFO(log, "PersistedCacheMisses, cache file not found, remove status, origin: " << origin_path);
+            LOG_INFO(log, "PersistedCacheMisses, cache file not found, origin: " << origin_path);
             ProfileEvents::increment(ProfileEvents::PersistedCacheFileMisses);
 
-            std::lock_guard<std::mutex> lock(part_status->part_lock);
-            if (part_status->operating)
-                return false;
-            part_status->files_marks_cached.erase(origin_path);
+            // Fixed bug: lock up before checking file exists
+            // std::lock_guard<std::mutex> lock(part_status->part_lock);
+            // if (part_status->operating)
+            //    return false;
+            // part_status->files_marks_cached.erase(origin_path);
         }
         else
         {
