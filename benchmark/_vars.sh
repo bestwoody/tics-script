@@ -10,12 +10,10 @@ setup_dylib_path()
 		gcc_path="`dirname $gcc_path`"
 		gcc_path="`dirname $gcc_path`"
 
-		local lib_path="$DYLD_LIBRARY_PATH:$gcc_path/lib/gcc/7"
-
 		if [ -z ${DYLD_LIBRARY_PATH+x} ]; then
-			export DYLD_LIBRARY_PATH="$lib_path"
+			export DYLD_LIBRARY_PATH="$gcc_path/lib/gcc/7"
 		else
-			export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:$lib_path"
+			export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:$gcc_path/lib/gcc/7"
 		fi
 	else
 		# *.so/*.a path for linux
