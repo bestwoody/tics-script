@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/Context.cpp b/dbms/src/Interpreters/Context.cpp
-index e95e4193cf8a..8460b08f2c10 100644
+index e95e4193cf8a..84d0c31db649 100644
 --- a/dbms/src/Interpreters/Context.cpp
 +++ b/dbms/src/Interpreters/Context.cpp
 @@ -38,10 +38,12 @@
@@ -56,10 +56,18 @@ index e95e4193cf8a..8460b08f2c10 100644
  void Context::setMarkCache(size_t cache_size_in_bytes)
  {
      auto lock = getLock();
-@@ -1703,6 +1725,14 @@ void Context::setFormatSchemaPath(const String & path)
+@@ -1703,6 +1725,22 @@ void Context::setFormatSchemaPath(const String & path)
      shared->format_schema_path = path;
  }
  
++void Context::setUseL0Opt(bool use_l0) {
++    use_l0_opt = use_l0;
++}
++
++bool Context::useL0Opt() const {
++    return use_l0_opt;
++}
++
 +SharedQueriesPtr Context::getSharedQueries()
 +{
 +    auto lock = getLock();

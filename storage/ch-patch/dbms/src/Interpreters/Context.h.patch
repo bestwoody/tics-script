@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/Context.h b/dbms/src/Interpreters/Context.h
-index a8bfc5975de6..17fb91258efb 100644
+index a8bfc5975de6..e010f1866529 100644
 --- a/dbms/src/Interpreters/Context.h
 +++ b/dbms/src/Interpreters/Context.h
 @@ -45,6 +45,7 @@ class Cluster;
@@ -20,7 +20,16 @@ index a8bfc5975de6..17fb91258efb 100644
  
  /// (database name, table name)
  using DatabaseAndTableName = std::pair<String, String>;
-@@ -313,6 +315,10 @@ public:
+@@ -116,6 +118,8 @@ private:
+     UInt64 session_close_cycle = 0;
+     bool session_is_used = false;
+ 
++    bool use_l0_opt = true;
++
+     using DatabasePtr = std::shared_ptr<IDatabase>;
+     using Databases = std::map<String, std::shared_ptr<IDatabase>>;
+ 
+@@ -313,6 +317,10 @@ public:
      std::shared_ptr<UncompressedCache> getUncompressedCache() const;
      void dropUncompressedCache() const;
  
@@ -31,7 +40,17 @@ index a8bfc5975de6..17fb91258efb 100644
      /// Create a cache of marks of specified size. This can be done only once.
      void setMarkCache(size_t cache_size_in_bytes);
      std::shared_ptr<MarkCache> getMarkCache() const;
-@@ -388,6 +394,8 @@ public:
+@@ -326,6 +334,9 @@ public:
+       */
+     void dropCaches() const;
+ 
++    void setUseL0Opt(bool use_l0_opt) ;
++    bool useL0Opt() const;
++
+     BackgroundProcessingPool & getBackgroundPool();
+ 
+     void setDDLWorker(std::shared_ptr<DDLWorker> ddl_worker);
+@@ -388,6 +399,8 @@ public:
      String getFormatSchemaPath() const;
      void setFormatSchemaPath(const String & path);
  
