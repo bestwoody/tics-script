@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
-index 9d6d41fa9d59..cd33bbfc5451 100644
+index 9d6d41fa9d59..58ea6ee629c9 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 @@ -6,6 +6,8 @@
@@ -26,7 +26,7 @@ index 9d6d41fa9d59..cd33bbfc5451 100644
      {
          Data::key_type key = hash128(i, columns.size(), columns);
 +        // TODO: Better mod calculating.
-+        key = (partition_mod == 1) ? key : UInt128(key.low % partition_mod);
++        key = UInt128(key.low % partition_mod);
 +
          typename Data::iterator it;
          bool inserted;

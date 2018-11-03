@@ -16,7 +16,7 @@ verb="2"
 set -eu
 
 if [ -z "$database" ]; then
-	echo "usage: <bin> database [table-name=j2s_medium(as: j2s-cases/{table-name}.sql)] [sending-batch-rows-count=524288] [writing-batch-rows-count=10485760] [insert-rows-count=20480000] [threads=4] [host] [port]" >&2
+	echo "usage: <bin> database [table-name=j2s_medium(as: j2s-cases/{table-name}.sql)] [sending-batch-rows-count=524288] [writing-batch-rows-count=10485760] [insert-rows-count=20480000] [threads=8] [host] [port]" >&2
 	exit 1
 fi
 
