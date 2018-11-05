@@ -17,7 +17,19 @@
 ## Test alter ordinary columns:
 
 >> alter table test drop column a
+>> select * from test
+┌─────────dt─┬─b─┐
+│ 0000-00-00 │ 1 │
+│ 0000-00-00 │ 2 │
+└────────────┴───┘
+
 >> alter table test add column a Int32 default 9
+>> select * from test
+┌─────────dt─┬─b─┬─a─┐
+│ 0000-00-00 │ 1 │ 9 │
+│ 0000-00-00 │ 2 │ 9 │
+└────────────┴───┴───┘
+
 >> alter table test modify column a Int64 default 6
 >> select * from test
 ┌─────────dt─┬─b─┬─a─┐
