@@ -1,7 +1,16 @@
 diff --git a/dbms/src/Interpreters/InterpreterSelectQuery.cpp b/dbms/src/Interpreters/InterpreterSelectQuery.cpp
-index 5481f1de3b8f..8803741eb24d 100644
+index 5481f1de3b8f..ff5e91076421 100644
 --- a/dbms/src/Interpreters/InterpreterSelectQuery.cpp
 +++ b/dbms/src/Interpreters/InterpreterSelectQuery.cpp
+@@ -666,7 +666,7 @@ QueryProcessingStage::Enum InterpreterSelectQuery::executeFetchColumns(Pipeline
+             auto optimize_prewhere = [&](auto & merge_tree)
+             {
+                 /// Try transferring some condition from WHERE to PREWHERE if enabled and viable
+-                if (settings.optimize_move_to_prewhere && query.where_expression && !query.prewhere_expression && !query.final())
++                if (settings.optimize_move_to_prewhere && query.where_expression && !query.prewhere_expression && !query.final() && storage->supportsPrewhere())
+                     MergeTreeWhereOptimizer{query_info, context, merge_tree.getData(), required_columns, log};
+             };
+ 
 @@ -676,6 +676,16 @@ QueryProcessingStage::Enum InterpreterSelectQuery::executeFetchColumns(Pipeline
                  optimize_prewhere(*merge_tree);
          }
