@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
-index 9d6d41fa9d59..58ea6ee629c9 100644
+index 9d6d41fa9d59..1ff0f0c2b416 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataWriter.cpp
 @@ -6,6 +6,8 @@
@@ -96,11 +96,12 @@ index 9d6d41fa9d59..58ea6ee629c9 100644
          Row partition(partition_columns.size());
          for (size_t i = 0; i < partition_columns.size(); ++i)
              partition[i] = Field((*partition_columns[i])[partition_num_to_first_row[num]]);
-@@ -205,8 +233,10 @@ MergeTreeData::MutableDataPartPtr MergeTreeDataWriter::writeTempPart(BlockWithPa
+@@ -205,8 +233,11 @@ MergeTreeData::MutableDataPartPtr MergeTreeDataWriter::writeTempPart(BlockWithPa
      ///  either default lz4 or compression method with zero thresholds on absolute and relative part size.
      auto compression_settings = data.context.chooseCompressionSettings(0, 0);
  
-+    bool use_l0_opt = data.context.useL0Opt();
++    // TODO: pass use_l0_opt as arg from caller
++    bool use_l0_opt = data.context.useL0Opt() && data.merging_params.mode == MergeTreeData::MergingParams::Mutable;
 +
      NamesAndTypesList columns = data.getColumns().getAllPhysical().filter(block.getNames());
 -    MergedBlockOutputStream out(data, new_data_part->getFullPath(), columns, compression_settings);
