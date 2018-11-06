@@ -1,3 +1,13 @@
+# This is cause by mix up usage import and delete, not exactly a bug
+#
+# The proper way:
+#   Usage 1: use import only to insert and modify data
+#   Usage 2: use insert to add data, use update and delete to modify data, but not use import
+#
+# We should pass a warning or an exception to client for that.
+
+#RETURN
+
 >> drop table if exists test
 >> create table test (
 	i Int32,

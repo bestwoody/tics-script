@@ -13,7 +13,7 @@
 └────────────┴───┴────┘
 
 >> delete from test
-Code: 62. DB::Exception: Syntax error: failed at position 17 (end of query): . Expected one of: WHERE, Dot, token
+Code: 62. DB::Exception: Syntax error: failed at position 17 (end of query): . Expected one of: token, Dot, WHERE
 
 >> delete from test where k = 1
 

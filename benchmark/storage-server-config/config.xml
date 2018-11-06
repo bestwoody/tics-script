@@ -66,6 +66,8 @@
     <!-- Path to temporary data for processing hard queries. -->
     <tmp_path>/data/theflash/tmp</tmp_path>
 
+    <l0_optimize>true</l0_optimize>
+
     <!-- Path to configuration file with users, access rights, profiles of settings, quotas. -->
     <users_config>users.xml</users_config>
 
