@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Storages/MergeTree/MergeTreeDataPart.h b/dbms/src/Storages/MergeTree/MergeTreeDataPart.h
-index c1c1274f7b98..975306e3b976 100644
+index c1c1274f7b98..df286039467c 100644
 --- a/dbms/src/Storages/MergeTree/MergeTreeDataPart.h
 +++ b/dbms/src/Storages/MergeTree/MergeTreeDataPart.h
 @@ -7,6 +7,7 @@
@@ -10,13 +10,15 @@ index c1c1274f7b98..975306e3b976 100644
  #include <shared_mutex>
  
  
-@@ -89,6 +90,10 @@ struct MergeTreeDataPart
+@@ -89,6 +90,12 @@ struct MergeTreeDataPart
      /// If true it means that there are no ZooKeeper node for this part, so it should be deleted only from filesystem
      bool is_duplicate = false;
  
 +    CompactReadContextPtr compactCtxPtr;
 +
 +    void tryToGetCompactCtx();
++
++    bool isCompactFormat() const;
 +
      /**
       * Part state is a stage of its lifetime. States are ordered and state of a part could be increased only.
