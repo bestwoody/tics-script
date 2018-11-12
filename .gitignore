@@ -72,6 +72,7 @@ benchmark/metastore_db
 .idea
 *.iml
 *.swp
+tags
 
 .DS_Store
 lib/
