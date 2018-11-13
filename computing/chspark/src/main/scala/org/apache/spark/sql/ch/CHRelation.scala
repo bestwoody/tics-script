@@ -17,7 +17,7 @@ package org.apache.spark.sql.ch
 
 import com.pingcap.common.Cluster
 import com.pingcap.theflash.SparkCHClientInsert
-import org.apache.spark.sql.ch.CHUtil.{Partitioner, PrimaryKey}
+import org.apache.spark.sql.ch.CHUtil.Partitioner
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation}
 import org.apache.spark.sql.types.StructType
@@ -36,21 +36,17 @@ case class CHRelation(
   }
 
   def useSelraw: Boolean =
-    if (tableInfo.engine == CHEngine.MutableMergeTree) {
+    if (tableInfo.engine.name == CHEngine.MutableMergeTree) {
       sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW, "false").toBoolean
     } else {
       false
     }
 
-  if (tables.size != tables.toSet.size)
+  if (tables.length != tables.toSet.size)
     throw new Exception("Duplicated tables: " + tables.toString)
 
   override lazy val schema: StructType = {
     tableInfo.schema
-  }
-
-  lazy val primaryKeys: Seq[PrimaryKey] = {
-    CHTableInfos.getInfo(tables, useSelraw).primaryKeys
   }
 
   override def sizeInBytes: Long = {
@@ -80,7 +76,7 @@ case class CHRelation(
         SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_BYTES.toString
       )
       .toLong
-    Partitioner.fromPrimaryKeys(primaryKeys) match {
+    Partitioner.fromCHTableInfo(tableInfo) match {
       case Partitioner(Partitioner.Hash, keyIndex) =>
         CHUtil.insertDataHash(
           data,

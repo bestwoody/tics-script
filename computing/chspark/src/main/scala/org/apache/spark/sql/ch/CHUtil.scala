@@ -65,6 +65,16 @@ object CHUtil {
         Partitioner(Random)
       }
 
+    def fromCHTableInfo(tableInfo: TableInfo): Partitioner = tableInfo.engine match {
+      case MutableMergeTree(_, pkList, _) =>
+        if (pkList.size == 1 && tableInfo.schema(pkList.head).dataType.isInstanceOf[IntegralType]) {
+          Partitioner(Hash, tableInfo.schema.getFieldIndex(pkList.head).get)
+        } else {
+          Partitioner(Random)
+        }
+      case LogEngine() => Partitioner(Random)
+    }
+
     def fromTiTableInfo(tiTableInfo: TiTableInfo): Partitioner =
       if (tiTableInfo.isPkHandle) {
         val (_, index) = tiTableInfo.getColumns.zipWithIndex.filter {
@@ -86,6 +96,7 @@ object CHUtil {
       cluster.nodes.foreach(
         node => createTable(database, table, schema, chEngine, ifNotExists, node)
       )
+
     } catch {
       // roll back if any exception
       case e: Throwable =>
@@ -698,16 +709,6 @@ object CHUtil {
   }
 
   def getFields(table: CHTableRef): Array[StructField] = {
-    val stmt = getShowCreateTable(table)
-    val pkList = getPrimaryKeys(stmt)
-
-    val buildMetadata = (name: String) => {
-      new MetadataBuilder()
-        .putString("name", table.mappedName)
-        .putBoolean(CHCatalogConst.COL_META_PRIMARY_KEY, pkList.contains(name))
-        .build()
-    }
-
     var fields = new Array[StructField](0)
 
     var names = new Array[String](0)
@@ -744,7 +745,7 @@ object CHUtil {
       }
       for (i <- names.indices) {
         val t = TypeMappingJava.stringToSparkType(types(i))
-        val field = StructField(names(i), t.dataType, t.nullable, buildMetadata(names(i)))
+        val field = StructField(names(i), t.dataType, t.nullable)
         fields :+= field
       }
 
@@ -783,6 +784,15 @@ object CHUtil {
         client.close()
       }
     }
+  }
+
+  def getTableEngine(stmt: String): String = {
+    val start: Int = stmt.lastIndexOf("ENGINE = ") + 9
+    var end: Int = stmt.indexOf("(", start)
+    if (end == -1) {
+      end = stmt.length
+    }
+    stmt.substring(start, end)
   }
 
   def getPartitionNum(stmt: String): Option[String] = {

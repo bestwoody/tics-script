@@ -116,6 +116,10 @@ class InMemoryLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     runQueryTest()
   }
 
+  test("ctas-es") {
+    runCTASTest()
+  }
+
   test("temp views") {
     runTempViewTest()
   }

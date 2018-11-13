@@ -14,25 +14,6 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.mutable
 import scala.collection.JavaConversions._
 
-class CHInMemoryExternalCatalog(chContext: CHContext)
-    extends InMemoryCatalog
-    with CHExternalCatalog {
-  override protected def doCreateFlashDatabase(databaseDesc: CatalogDatabase,
-                                               ignoreIfExists: Boolean): Unit =
-    doCreateDatabase(databaseDesc, ignoreIfExists)
-
-  override protected def doCreateFlashTable(tableDesc: CatalogTable,
-                                            ignoreIfExists: Boolean): Unit =
-    doCreateTable(tableDesc, ignoreIfExists)
-
-  override protected def doCreateFlashTableFromTiDB(database: String,
-                                                    tiTableInfo: TiTableInfo,
-                                                    engine: CHEngine,
-                                                    ignoreIfExists: Boolean): Unit = ???
-
-  override def loadTableFromTiDB(db: String, tiTable: TiTableInfo, isOverwrite: Boolean): Unit = ???
-}
-
 case class CHInMemoryRelation(sparkSession: SparkSession,
                               tableIdentifier: TableIdentifier,
                               schema: StructType)
@@ -59,6 +40,34 @@ case class CHInMemoryRelation(sparkSession: SparkSession,
 object CHInMemoryRelation {
   val dataRegistry: mutable.Map[TableIdentifier, DataFrame] =
     mutable.Map[TableIdentifier, DataFrame]()
+}
+
+class CHInMemoryExternalCatalog(chContext: CHContext)
+    extends InMemoryCatalog
+    with CHExternalCatalog {
+  override protected def doCreateFlashDatabase(databaseDesc: CatalogDatabase,
+                                               ignoreIfExists: Boolean): Unit =
+    doCreateDatabase(databaseDesc, ignoreIfExists)
+
+  override protected def doCreateFlashTable(tableDesc: CatalogTable,
+                                            query: Option[LogicalPlan],
+                                            ignoreIfExists: Boolean): Unit =
+    if (query.nonEmpty) {
+      val df = Dataset.ofRows(chContext.sparkSession, query.get)
+      val schema = df.schema
+      doCreateTable(tableDesc.copy(schema = schema), ignoreIfExists)
+      val chRelation = CHInMemoryRelation(chContext.sparkSession, tableDesc.identifier, schema)
+      chRelation.insert(Dataset.ofRows(chContext.sparkSession, query.get), true)
+    } else {
+      doCreateTable(tableDesc, ignoreIfExists)
+    }
+
+  override protected def doCreateFlashTableFromTiDB(database: String,
+                                                    tiTableInfo: TiTableInfo,
+                                                    engine: CHEngine,
+                                                    ignoreIfExists: Boolean): Unit = ???
+
+  override def loadTableFromTiDB(db: String, tiTable: TiTableInfo, isOverwrite: Boolean): Unit = ???
 }
 
 class CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext: SparkSession => CHContext)(

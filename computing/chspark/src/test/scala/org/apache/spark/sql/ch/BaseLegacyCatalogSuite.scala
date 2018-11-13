@@ -403,6 +403,71 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
     verifyJoinTable(testCHDb, testT, "default", testT, Array((2, 0)))
   }
 
+  def runCTASTest(): Unit = {
+    def verify(t1: String, t2: String) = {
+      val df1 = extended.sql(s"select * from $t1")
+      val df2 = extended.sql(s"select * from $t2")
+      assert(df1.except(df2).count() == 0 && df2.except(df1).count() == 0)
+    }
+    val ctas = "ctas"
+
+    extended.sql(s"drop table if exists $testCHDb.$ctas")
+    extended.sql(s"create table $testCHDb.$ctas using LOG as select * from $testCHDb.$testT")
+    verify(s"$testCHDb.$ctas", s"$testCHDb.$testT")
+    extended.sql(s"drop table if exists $testCHDb.$ctas")
+
+    extended.sql(s"use $testLegacyDb")
+    assertThrows[AnalysisException](
+      extended.sql(s"create table $ctas using LOG as select * from $testCHDb.$testT")
+    )
+    assertThrows[AnalysisException](
+      extended.sql(s"create table $testCHDb.$ctas as select * from $testT")
+    )
+    extended.sql(s"create table $ctas as select * from $testCHDb.$testT")
+    verify(s"$testLegacyDb.$ctas", s"$testCHDb.$testT")
+    extended.sql(s"create table $testCHDb.$ctas using LOG as select * from $testT")
+    verify(s"$testCHDb.$ctas", s"$testLegacyDb.$testT")
+    extended.sql(s"drop table if exists $testLegacyDb.$ctas")
+    extended.sql(s"drop table if exists $testCHDb.$ctas")
+    assertThrows[AnalysisException](
+      extended.sql(s"create table $testCHDb.$ctas as select * from $testCHDb.$testT")
+    )
+    assertThrows[AnalysisException](
+      extended.sql(s"create table $ctas using LOG as select * from $testT")
+    )
+    extended.sql(s"create table $ctas as select * from $testT")
+    verify(s"$testLegacyDb.$ctas", s"$testLegacyDb.$testT")
+    extended.sql(s"create table $testCHDb.$ctas using LOG as select * from $testCHDb.$testT")
+    verify(s"$testCHDb.$ctas", s"$testCHDb.$testT")
+    extended.sql(s"drop table if exists $testLegacyDb.$ctas")
+    extended.sql(s"drop table if exists $testCHDb.$ctas")
+
+    extended.sql(s"use $testCHDb")
+    assertThrows[AnalysisException](
+      extended.sql(s"create table $ctas as select * from $testLegacyDb.$testT")
+    )
+    assertThrows[AnalysisException](
+      extended.sql(s"create table $testLegacyDb.$ctas using LOG as select * from $testT")
+    )
+    extended.sql(s"create table $ctas using LOG as select * from $testLegacyDb.$testT")
+    verify(s"$testCHDb.$ctas", s"$testLegacyDb.$testT")
+    extended.sql(s"create table $testLegacyDb.$ctas as select * from $testT")
+    verify(s"$testLegacyDb.$ctas", s"$testCHDb.$testT")
+    extended.sql(s"drop table if exists $testLegacyDb.$ctas")
+    extended.sql(s"drop table if exists $testCHDb.$ctas")
+    assertThrows[AnalysisException](
+      extended
+        .sql(s"create table $testLegacyDb.$ctas using LOG as select * from $testLegacyDb.$testT")
+    )
+    assertThrows[AnalysisException](extended.sql(s"create table $ctas as select * from $testT"))
+    extended.sql(s"create table $ctas using LOG as select * from $testT")
+    verify(s"$testCHDb.$ctas", s"$testCHDb.$testT")
+    extended.sql(s"create table $testLegacyDb.$ctas as select * from $testLegacyDb.$testT")
+    verify(s"$testLegacyDb.$ctas", s"$testLegacyDb.$testT")
+    extended.sql(s"drop table if exists $testLegacyDb.$ctas")
+    extended.sql(s"drop table if exists $testCHDb.$ctas")
+  }
+
   def runTempViewTest(): Unit = {
     val globalTempDB =
       extended.conf.get(StaticSQLConf.GLOBAL_TEMP_DATABASE).toLowerCase(Locale.ROOT)

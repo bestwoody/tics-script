@@ -221,6 +221,16 @@ abstract class BaseCHCatalogSuite extends SparkFunSuite {
     verifyTable(testDb, "default", testT, Array(1, 3))
   }
 
+  def runCTASTest(): Unit = {
+    val ctas = "ctas"
+    extended.sql(s"drop table if exists $testDb.$ctas")
+    extended.sql(s"create table $testDb.$ctas using LOG as select * from $testDb.$testT")
+    val df1 = extended.sql(s"select * from $testDb.$ctas")
+    val df2 = extended.sql(s"select * from $testDb.$testT")
+    assert(df1.except(df2).count() == 0 && df2.except(df1).count() == 0)
+    extended.sql(s"drop table if exists $testDb.$ctas")
+  }
+
   def runWithAsTest(): Unit = {
     def verifyWithAs(db: String, otherDb: String, table: String, expected: Array[Int]) = {
       var r: Array[Int] = null

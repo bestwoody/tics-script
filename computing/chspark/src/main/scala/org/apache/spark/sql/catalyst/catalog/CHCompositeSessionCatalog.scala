@@ -108,8 +108,10 @@ class CHCompositeSessionCatalog(val chContext: CHContext)
   override def createFlashDatabase(databaseDesc: CatalogDatabase, ignoreIfExists: Boolean): Unit =
     chConcreteCatalog.createFlashDatabase(databaseDesc, ignoreIfExists)
 
-  override def createFlashTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit =
-    chConcreteCatalog.createFlashTable(tableDesc, ignoreIfExists)
+  override def createFlashTable(tableDesc: CatalogTable,
+                                query: Option[LogicalPlan],
+                                ignoreIfExists: Boolean): Unit =
+    chConcreteCatalog.createFlashTable(tableDesc, query, ignoreIfExists)
 
   override def createFlashTableFromTiDB(db: String,
                                         tiTableInfo: TiTableInfo,

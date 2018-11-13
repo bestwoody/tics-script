@@ -289,11 +289,16 @@ tableProvider
     ;
 
 mmtEngine
-    : MMT | MUTABLEMERGETREE
+    : (MMT | MUTABLEMERGETREE) ('(' (partitionNum=INTEGER_VALUE ',')? bucketNum=INTEGER_VALUE ')')?
+    ;
+
+logEngine
+    : LOG
     ;
 
 chEngine
-    : mmtEngine ('(' (partitionNum=INTEGER_VALUE ',')? bucketNum=INTEGER_VALUE ')')?
+    : mmtEngine
+    | logEngine
     ;
 
 chTableProvider
@@ -1013,6 +1018,7 @@ INPATH: 'INPATH';
 PRIMARY: 'PRIMARY';
 KEY: 'KEY';
 MMT: 'MMT';
+LOG: 'LOG';
 MUTABLEMERGETREE: 'MUTABLEMERGETREE';
 TIDB: 'TIDB';
 FLASH: 'FLASH';

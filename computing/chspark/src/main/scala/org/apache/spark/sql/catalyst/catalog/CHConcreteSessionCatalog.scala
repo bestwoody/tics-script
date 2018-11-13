@@ -4,6 +4,7 @@ import com.pingcap.tikv.meta.TiTableInfo
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.{AnalysisException, CHContext}
 import org.apache.spark.sql.catalyst.analysis.EmptyFunctionRegistry
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.ch.CHEngine
 
 /**
@@ -39,12 +40,14 @@ class CHConcreteSessionCatalog(val chContext: CHContext)(chExternalCatalog: CHEx
     chExternalCatalog.createFlashDatabase(databaseDesc.copy(dbName), ignoreIfExists)
   }
 
-  override def createFlashTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit = {
+  override def createFlashTable(tableDesc: CatalogTable,
+                                query: Option[LogicalPlan],
+                                ignoreIfExists: Boolean): Unit = {
     val db = formatDatabaseName(tableDesc.identifier.database.getOrElse(getCurrentDatabase))
     val table = formatTableName(tableDesc.identifier.table)
     requireDbExists(db)
     chExternalCatalog
-      .createFlashTable(tableDesc.copy(TableIdentifier(table, Some(db))), ignoreIfExists)
+      .createFlashTable(tableDesc.copy(TableIdentifier(table, Some(db))), query, ignoreIfExists)
   }
 
   override def createFlashTableFromTiDB(database: String,

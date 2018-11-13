@@ -39,9 +39,9 @@ case class CHDDLRule(getOrCreateCHContext: SparkSession => CHContext)(sparkSessi
     // TODO: support other commands that may concern CH catalog.
     case CreateFlashDatabase(databaseName, ifNotExists) =>
       CreateFlashDatabaseCommand(chContext, databaseName, ifNotExists)
-    case CreateFlashTable(tableDesc, ifNotExists) =>
+    case CreateFlashTable(tableDesc, query, ifNotExists) =>
       validateCatalog(tableDesc.identifier.database, isFlash = true)
-      CreateFlashTableCommand(chContext, tableDesc, ifNotExists)
+      CreateFlashTableCommand(chContext, tableDesc, query, ifNotExists)
     case CreateFlashTableFromTiDB(tiTable, properties, ifNotExists) =>
       validateCatalog(tiTable.database, isFlash = true)
       CreateFlashTableFromTiDBCommand(chContext, tiTable, properties, ifNotExists)

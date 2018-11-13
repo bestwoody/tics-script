@@ -15,28 +15,20 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.spark.sql.ch.CHUtil.PrimaryKey
 import org.apache.spark.sql.types.StructType
 
 import scala.collection.mutable
 
-class TableInfo(var schema: StructType,
-                var primaryKeys: Seq[PrimaryKey],
-                var rowWidth: Int,
-                var rowCount: Long,
-                var engine: CHEngine.Value)
+class TableInfo(var schema: StructType, var rowWidth: Int, var rowCount: Long, var engine: CHEngine)
     extends Serializable {}
 
 class CHTableInfo(val table: CHTableRef, private var useSelraw: Boolean) extends Serializable {
   private var info: TableInfo =
-    new TableInfo(null, Seq.empty[PrimaryKey], -1, -1, CHEngine._Unknown)
+    new TableInfo(null, -1, -1, null)
   private val TIDB_ROWID = "_tidb_rowid"
 
   def getSchema: StructType =
     info.schema
-
-  def getPrimaryKeys: Seq[PrimaryKey] =
-    info.primaryKeys
 
   def getRowWidth: Long =
     info.rowWidth
@@ -48,14 +40,16 @@ class CHTableInfo(val table: CHTableRef, private var useSelraw: Boolean) extends
     info
 
   def fetchTableEngine(): Unit = {
-    info.engine = CHEngine.withNameSafe(CHUtil.getTableEngine(table))
-    if (info.engine != CHEngine.MutableMergeTree) {
+    val stmt = CHUtil.getShowCreateTable(table)
+    info.engine = CHEngine.fromCreateStatement(stmt)
+    if (info.engine.name != CHEngine.MutableMergeTree) {
       useSelraw = false
     }
   }
 
   def fetchSchema(): Unit = {
-    val fields = CHUtil.getFields(table)
+    val fields = info.engine.mapFields(CHUtil.getFields(table))
+
     info.schema = new StructType(
       if (useSelraw) {
         fields
@@ -66,25 +60,13 @@ class CHTableInfo(val table: CHTableRef, private var useSelraw: Boolean) extends
     )
   }
 
-  def fetchPrimaryKeys(): Unit = {
-    val stmt = CHUtil.getShowCreateTable(table)
-    info.primaryKeys = CHUtil
-      .getPrimaryKeys(stmt)
-      .filterNot(!useSelraw && _ == TIDB_ROWID)
-      .map(f => {
-        val fi = info.schema.fieldIndex(f)
-        new PrimaryKey(info.schema(fi), fi)
-      })
-  }
-
   def fetchRows(): Unit =
-    info.rowCount = CHUtil.getRowCount(table, info.engine == CHEngine.MutableMergeTree)
+    info.rowCount = CHUtil.getRowCount(table, info.engine.name == CHEngine.MutableMergeTree)
 
   // TODO: Parallel fetch
   def fetchInfo(): Unit = {
     fetchTableEngine()
     fetchSchema()
-    fetchPrimaryKeys()
     fetchRows()
   }
 
@@ -110,10 +92,9 @@ object CHTableInfos {
     clusterTable.foreach(table => {
       val curr = getInfo(table, useSelraw).getInfo
       if (info == null) {
-        info =
-          new TableInfo(curr.schema, curr.primaryKeys, curr.rowWidth, curr.rowCount, curr.engine)
+        info = new TableInfo(curr.schema, curr.rowWidth, curr.rowCount, curr.engine)
       } else {
-        if (info.schema != curr.schema || info.primaryKeys != curr.primaryKeys || info.engine != curr.engine) {
+        if (info.schema != curr.schema || info.engine != curr.engine) {
           throw new Exception("Cluster table schema not the same: " + table)
         }
         info.rowCount += curr.rowCount

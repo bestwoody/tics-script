@@ -235,8 +235,11 @@ object CHSql {
     chEngine match {
       case mmt: MutableMergeTree =>
         compileMutableMergeTree(mmt)
-      case _ => throw new UnsupportedOperationException(s"Engine ${chEngine.name}")
+      case logEngine: LogEngine => compileLogEngine(logEngine)
+      case _                    => throw new UnsupportedOperationException(s"Engine ${chEngine.name}")
     }
+
+  private def compileLogEngine(logEngine: LogEngine): String = "Log"
 
   private def compileMutableMergeTree(mmt: MutableMergeTree): String =
     s"${mmt.name}(${mmt.partitionNum

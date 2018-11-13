@@ -75,33 +75,52 @@ class CHSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) with SqlBa
       import ctx._
 
       if (tableProvider() != null && tableProvider().chTableProvider() != null) {
-        val (table, temp, ifNotExists, external) = visitCreateTableHeader(ctx.createTableHeader)
+        val (table, temp, ifNotExists, _) = visitCreateTableHeader(ctx.createTableHeader)
         if (temp) {
           operationNotAllowed("CREATE TEMPORARY TABLE for Flash", ctx)
         }
-        if (ctx.query != null) {
-          operationNotAllowed("CTAS for Flash", ctx)
-        }
+
         val schema = Option(ctx.colTypeList()).map(createSchema)
-        if (schema.isEmpty) {
-          operationNotAllowed("Empty schema", ctx)
-        }
-        val pkList = schema.get.filter(_.metadata.getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY))
-        if (pkList.isEmpty) {
-          operationNotAllowed("Flash table with no primary key", ctx)
-        }
         val properties = visitChEngine(tableProvider().chTableProvider().chEngine())
 
-        val tableDesc = CatalogTable(
-          table,
-          CatalogTableType.EXTERNAL,
-          CatalogStorageFormat.empty,
-          schema.get,
-          Some("flash"),
-          properties = properties
-        )
+        if (ctx.query != null) {
+          // Get the backing query.
+          val query = plan(ctx.query)
+          val tableDesc = CatalogTable(
+            table,
+            CatalogTableType.EXTERNAL,
+            CatalogStorageFormat.empty,
+            schema = schema.getOrElse(new StructType),
+            provider = Some("flash"),
+            properties = properties
+          )
 
-        CreateFlashTable(tableDesc, ifNotExists)
+          // Don't allow explicit specification of schema for CTAS
+          if (schema.nonEmpty) {
+            operationNotAllowed(
+              "Schema may not be specified in a Create Table As Select (CTAS) statement",
+              ctx
+            )
+          }
+          CreateFlashTable(tableDesc, Some(query), ifNotExists)
+        } else {
+          if (schema.isEmpty) {
+            operationNotAllowed("Schema is not defined in Create Table", ctx)
+          }
+          val pkList = schema.get.filter(_.metadata.getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY))
+          if (pkList.isEmpty) {
+            operationNotAllowed("Flash mutable table with no primary key", ctx)
+          }
+          val tableDesc = CatalogTable(
+            table,
+            CatalogTableType.EXTERNAL,
+            CatalogStorageFormat.empty,
+            schema = schema.getOrElse(new StructType),
+            provider = Some("flash"),
+            properties = properties
+          )
+          CreateFlashTable(tableDesc, None, ifNotExists)
+        }
       } else {
         super.visitCreateTable(ctx)
       }
@@ -135,9 +154,23 @@ class CHSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) with SqlBa
     withOrigin(ctx) {
       import ctx._
 
-      if (mmtEngine() == null) {
-        operationNotAllowed("Flash table using storage format other than MMT", ctx)
+      if (mmtEngine() != null) {
+        visitMmtEngine(mmtEngine())
+      } else if (logEngine() != null) {
+        visitLogEngine(logEngine())
+      } else {
+        operationNotAllowed("Flash table storage engine is not specified", ctx)
       }
+    }
+
+  override def visitLogEngine(ctx: SqlBaseParser.LogEngineContext): Map[String, String] =
+    withOrigin(ctx) {
+      Map(CHCatalogConst.TAB_META_ENGINE -> CHEngine.Log.toString)
+    }
+
+  override def visitMmtEngine(ctx: SqlBaseParser.MmtEngineContext): Map[String, String] =
+    withOrigin(ctx) {
+      import ctx._
 
       val properties = mutable.Map[String, String]()
 

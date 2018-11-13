@@ -4,17 +4,20 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.NoSuchDatabaseException
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.ch.{CHEngine, CHUtil}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.ch._
 import org.apache.spark.sql.types.StructType
 
 import scala.collection.mutable.ArrayBuffer
 
 case class CreateFlashTableCommand(chContext: CHContext,
                                    tableDesc: CatalogTable,
+                                   query: Option[LogicalPlan],
                                    ignoreIfExists: Boolean)
     extends CHCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    chCatalog.createFlashTable(tableDesc, ignoreIfExists)
+    chCatalog.createFlashTable(tableDesc, query, ignoreIfExists)
+
     Seq.empty[Row]
   }
 }
@@ -42,7 +45,7 @@ case class LoadDataFromTiDBCommand(chContext: CHContext,
                                    isOverwrite: Boolean)
     extends CHCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val ti = new TiContext(sparkSession)
+    val ti = chContext.tiContext
     val db = tiTable.database.getOrElse(chCatalog.getCurrentDatabase)
     val tiTableInfo = ti.meta.getTable(db, tiTable.table)
     if (tiTableInfo.isEmpty) {

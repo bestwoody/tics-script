@@ -96,6 +96,10 @@ class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
     runQueryTest()
   }
 
+  test("ctas-es") {
+    runCTASTest()
+  }
+
   test("with-as-es") {
     runWithAsTest()
   }

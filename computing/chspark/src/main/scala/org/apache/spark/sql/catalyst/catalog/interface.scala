@@ -6,6 +6,7 @@ import com.pingcap.tikv.meta.TiTableInfo
 import org.apache.spark.sql.CHContext
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.ch.CHEngine
 import org.apache.spark.sql.internal.StaticSQLConf
 
@@ -29,7 +30,9 @@ object CHCatalogConst {
 trait CHCatalog {
   def createFlashDatabase(databaseDesc: CatalogDatabase, ignoreIfExists: Boolean): Unit
 
-  def createFlashTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit
+  def createFlashTable(tableDesc: CatalogTable,
+                       query: Option[LogicalPlan],
+                       ignoreIfExists: Boolean): Unit
 
   def createFlashTableFromTiDB(db: String,
                                tiTableInfo: TiTableInfo,
@@ -78,9 +81,11 @@ trait CHExternalCatalog extends ExternalCatalog with CHCatalog {
     postToAll(CreateDatabaseEvent(databaseDesc.name))
   }
 
-  override final def createFlashTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit = {
+  override final def createFlashTable(tableDesc: CatalogTable,
+                                      query: Option[LogicalPlan],
+                                      ignoreIfExists: Boolean): Unit = {
     postToAll(CreateTablePreEvent(tableDesc.identifier.database.get, tableDesc.identifier.table))
-    doCreateFlashTable(tableDesc, ignoreIfExists)
+    doCreateFlashTable(tableDesc, query, ignoreIfExists)
     postToAll(CreateTableEvent(tableDesc.identifier.database.get, tableDesc.identifier.table))
   }
 
@@ -96,7 +101,9 @@ trait CHExternalCatalog extends ExternalCatalog with CHCatalog {
 
   protected def doCreateFlashDatabase(databaseDesc: CatalogDatabase, ignoreIfExists: Boolean): Unit
 
-  protected def doCreateFlashTable(tableDesc: CatalogTable, ignoreIfExists: Boolean): Unit
+  protected def doCreateFlashTable(tableDesc: CatalogTable,
+                                   query: Option[LogicalPlan],
+                                   ignoreIfExists: Boolean): Unit
 
   protected def doCreateFlashTableFromTiDB(database: String,
                                            tiTableInfo: TiTableInfo,

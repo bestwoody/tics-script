@@ -11,8 +11,11 @@ case class CreateFlashDatabase(databaseName: String, ifNotExists: Boolean) exten
   override lazy val resolved: Boolean = false
 }
 
-case class CreateFlashTable(tableDesc: CatalogTable, ignoreIfExists: Boolean) extends LogicalPlan {
-  override def children: Seq[LogicalPlan] = Seq.empty[LogicalPlan]
+case class CreateFlashTable(tableDesc: CatalogTable,
+                            query: Option[LogicalPlan],
+                            ignoreIfExists: Boolean)
+    extends LogicalPlan {
+  override def children: Seq[LogicalPlan] = query.toSeq
   override def output: Seq[Attribute] = Seq.empty
   override lazy val resolved: Boolean = false
 }

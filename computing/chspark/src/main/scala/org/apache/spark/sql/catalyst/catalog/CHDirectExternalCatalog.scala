@@ -2,11 +2,12 @@ package org.apache.spark.sql.catalyst.catalog
 
 import com.pingcap.theflash.SparkCHClientInsert
 import com.pingcap.tikv.meta.TiTableInfo
-import org.apache.spark.sql.CHContext
+import org.apache.spark.sql.{CHContext, Dataset}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{DatabaseAlreadyExistsException, NoSuchDatabaseException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.ch.CHUtil.Partitioner
 import org.apache.spark.sql.ch._
@@ -27,6 +28,7 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
   }
 
   override protected def doCreateFlashTable(tableDesc: CatalogTable,
+                                            query: Option[LogicalPlan],
                                             ignoreIfExists: Boolean): Unit = {
     val database = tableDesc.identifier.database.get
     val table = tableDesc.identifier.table
@@ -35,7 +37,29 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
       throw new TableAlreadyExistsException(tableDesc.database, tableDesc.identifier.table)
     }
     val engine = CHEngine.fromCatalogTable(tableDesc)
-    CHUtil.createTable(database, table, tableDesc.schema, engine, ignoreIfExists, chContext.cluster)
+    if (query.nonEmpty) {
+      val df = Dataset.ofRows(chContext.sparkSession, query.get)
+      val schema = df.schema
+      CHUtil.createTable(database, table, schema, engine, ignoreIfExists, chContext.cluster)
+      val chRelation = CHRelation(
+        CHTableRef
+          .ofCluster(
+            chContext.cluster,
+            tableDesc.identifier.database.get,
+            tableDesc.identifier.table
+          ),
+        chContext.sqlContext.conf
+          .getConfString(
+            CHConfigConst.PARTITIONS_PER_SPLIT,
+            CHConfigConst.DEFAULT_PARTITIONS_PER_SPLIT.toString
+          )
+          .toInt
+      )(chContext.sqlContext)
+      chRelation.insert(Dataset.ofRows(chContext.sparkSession, query.get), true)
+    } else {
+      CHUtil
+        .createTable(database, table, tableDesc.schema, engine, ignoreIfExists, chContext.cluster)
+    }
   }
 
   override protected def doCreateFlashTableFromTiDB(database: String,
@@ -129,16 +153,10 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
 
   override def getTable(db: String, table: String): CatalogTable = {
     val chTableRef = CHTableRef.ofNode(chContext.cluster.nodes(0), db, table)
-    val schema = CHUtil.getFields(chTableRef)
     val stmt = CHUtil.getShowCreateTable(chTableRef)
-    val partitionNum = CHUtil.getPartitionNum(stmt)
-    val bucketNum = CHUtil.getBucketNum(stmt)
-    val properties =
-      mutable.Map[String, String](
-        (CHCatalogConst.TAB_META_ENGINE, CHUtil.getTableEngine(chTableRef)),
-        (CHCatalogConst.TAB_META_BUCKET_NUM, bucketNum)
-      )
-    partitionNum.foreach(properties.put(CHCatalogConst.TAB_META_PARTITION_NUM, _))
+    val engine = CHEngine.fromCreateStatement(stmt)
+    val schema = engine.mapFields(CHUtil.getFields(chTableRef))
+    val properties = engine.toProperties
     CatalogTable(
       TableIdentifier(table, Some(db)),
       CatalogTableType.EXTERNAL,
