@@ -2,7 +2,7 @@ package org.apache.spark.sql.ch
 
 import com.pingcap.tikv.meta.TiTableInfo
 import org.apache.spark.sql.catalyst.catalog.{CHCatalogConst, CatalogTable}
-import org.apache.spark.sql.types.{MetadataBuilder, StructField}
+import org.apache.spark.sql.types.{Metadata, MetadataBuilder, StructField}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -18,7 +18,11 @@ object CHEngine extends Enumeration {
         val partitionNum =
           tableDesc.properties.get(CHCatalogConst.TAB_META_PARTITION_NUM).map(_.toInt)
         val pkList = tableDesc.schema
-          .filter(_.metadata.getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY))
+          .filter(
+            f =>
+              f.metadata.contains(CHCatalogConst.COL_META_PRIMARY_KEY) && f.metadata
+                .getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY)
+          )
           .map(_.name)
         val bucketNum = tableDesc.properties(CHCatalogConst.TAB_META_BUCKET_NUM).toInt
         new MutableMergeTree(partitionNum, pkList, bucketNum)
@@ -58,7 +62,7 @@ abstract class CHEngine(val name: CHEngine.Value) {
   def mapFields(fields: Array[StructField]): Array[StructField]
 }
 
-case class LogEngine() extends CHEngine(CHEngine.MutableMergeTree) {
+case class LogEngine() extends CHEngine(CHEngine.Log) {
   override def sql: String = "Log"
 
   override def toProperties: mutable.Map[String, String] = mutable.Map[String, String](
@@ -83,11 +87,15 @@ case class MutableMergeTree(partitionNum: Option[Int], pkList: Seq[String], buck
   }
 
   override def mapFields(fields: Array[StructField]): Array[StructField] = {
-    val buildMetadata = (name: String) => {
-      new MetadataBuilder()
-        .putBoolean(CHCatalogConst.COL_META_PRIMARY_KEY, pkList.contains(name))
-        .build()
+    val buildMetadata = (name: String, metadata: Metadata) => {
+      val builder = new MetadataBuilder()
+        .withMetadata(metadata)
+      if (pkList.contains(name)) {
+        builder.putBoolean(CHCatalogConst.COL_META_PRIMARY_KEY, true)
+      }
+      builder.build()
     }
-    fields.map(field => field.copy(metadata = buildMetadata(field.name)))
+
+    fields.map(field => field.copy(metadata = buildMetadata(field.name, field.metadata)))
   }
 }

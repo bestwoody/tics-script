@@ -107,7 +107,11 @@ class CHSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) with SqlBa
           if (schema.isEmpty) {
             operationNotAllowed("Schema is not defined in Create Table", ctx)
           }
-          val pkList = schema.get.filter(_.metadata.getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY))
+          val pkList = schema.get.filter(
+            f =>
+              f.metadata.contains(CHCatalogConst.COL_META_PRIMARY_KEY) && f.metadata
+                .getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY)
+          )
           if (pkList.isEmpty) {
             operationNotAllowed("Flash mutable table with no primary key", ctx)
           }
@@ -217,7 +221,9 @@ class CHSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) with SqlBa
       isPk = true
     }
 
-    builder.putBoolean(CHCatalogConst.COL_META_PRIMARY_KEY, isPk)
+    if (isPk) {
+      builder.putBoolean(CHCatalogConst.COL_META_PRIMARY_KEY, true)
+    }
 
     StructField(identifier.getText, cleanedDataType, nullable, builder.build())
   }

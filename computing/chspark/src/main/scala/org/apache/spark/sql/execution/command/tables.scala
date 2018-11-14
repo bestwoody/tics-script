@@ -128,7 +128,11 @@ case class CHDescribeTableCommand(chContext: CHContext, delegate: DescribeTableC
       buffer,
       "PK",
       table.schema
-        .filter(_.metadata.getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY))
+        .filter(
+          f =>
+            f.metadata.contains(CHCatalogConst.COL_META_PRIMARY_KEY) && f.metadata
+              .getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY)
+        )
         .map(_.name)
         .mkString(","),
       ""
@@ -174,7 +178,9 @@ case class CHShowCreateTableCommand(chContext: CHContext, delegate: ShowCreateTa
     val schema = tableMetadata.schema
       .map(col => {
         val pk =
-          if (col.metadata.getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY)) " PRIMARY KEY" else ""
+          if (col.metadata.contains(CHCatalogConst.COL_META_PRIMARY_KEY) && col.metadata
+                .getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY)) " PRIMARY KEY"
+          else ""
         val notNull = if (col.nullable) "" else " NOT NULL"
         s"`${col.name}` ${col.dataType.sql}$pk$notNull"
       })
