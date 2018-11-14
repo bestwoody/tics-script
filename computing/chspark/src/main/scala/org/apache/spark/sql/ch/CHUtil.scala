@@ -34,7 +34,7 @@ import org.apache.spark.sql.{DataFrame, Row}
 import scala.collection.JavaConversions._
 
 object CHUtil {
-  class PrimaryKey(val column: StructField, val index: Int) {}
+  case class PrimaryKey(column: StructField, index: Int) {}
 
   object PrimaryKey {
     def fromSchema(schema: StructType, primaryKeys: Seq[String]): Seq[PrimaryKey] =
@@ -43,7 +43,7 @@ object CHUtil {
           case (col, _) => primaryKeys.map(_.toLowerCase).contains(col.name.toLowerCase)
         }
         .map {
-          case (col, i) => new PrimaryKey(col, i)
+          case (col, i) => PrimaryKey(col, i)
         }
   }
 
