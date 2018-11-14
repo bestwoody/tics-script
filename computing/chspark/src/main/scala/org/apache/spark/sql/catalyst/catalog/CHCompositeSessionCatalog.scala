@@ -122,6 +122,9 @@ class CHCompositeSessionCatalog(val chContext: CHContext)
   override def loadTableFromTiDB(db: String, tiTable: TiTableInfo, isOverwrite: Boolean): Unit =
     chConcreteCatalog.loadTableFromTiDB(db, tiTable, isOverwrite)
 
+  override def truncateTable(tableIdentifier: TableIdentifier): Unit =
+    chConcreteCatalog.truncateTable(tableIdentifier)
+
   // Following are handled by composite catalog.
 
   override def dropDatabase(db: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit =

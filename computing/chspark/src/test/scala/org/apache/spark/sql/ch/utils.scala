@@ -28,10 +28,9 @@ case class CHInMemoryRelation(sparkSession: SparkSession,
 
   override def insert(df: DataFrame, overwrite: Boolean): Unit =
     CHInMemoryRelation.dataRegistry(tableIdentifier) = if (overwrite) {
-      df
+      sparkSession.createDataFrame(df.collect().toSeq, schema)
     } else {
-      df.collect()
-      data.union(df)
+      sparkSession.createDataFrame(data.union(df).collect().toSeq, schema)
     }
 
   override def sqlContext: SQLContext = sparkSession.sqlContext
@@ -68,6 +67,12 @@ class CHInMemoryExternalCatalog(chContext: CHContext)
                                                     ignoreIfExists: Boolean): Unit = ???
 
   override def loadTableFromTiDB(db: String, tiTable: TiTableInfo, isOverwrite: Boolean): Unit = ???
+
+  override def truncateTable(tableIdentifier: TableIdentifier): Unit = {
+    val table = getTable(tableIdentifier.database.get, tableIdentifier.table)
+    CHInMemoryRelation.dataRegistry(tableIdentifier) =
+      chContext.sparkSession.createDataFrame(List.empty[Row], table.schema)
+  }
 }
 
 class CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext: SparkSession => CHContext)(

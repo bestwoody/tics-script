@@ -68,4 +68,13 @@ class CHConcreteSessionCatalog(val chContext: CHContext)(chExternalCatalog: CHEx
     requireTableExists(TableIdentifier(table, Some(db)))
     chExternalCatalog.loadTableFromTiDB(db, tiTable, isOverwrite)
   }
+
+  override def truncateTable(tableName: TableIdentifier): Unit = {
+    val db = formatDatabaseName(tableName.database.getOrElse(getCurrentDatabase))
+    val table = formatTableName(tableName.table)
+    val tableIdentifier = TableIdentifier(table, Some(db))
+    requireDbExists(db)
+    requireTableExists(tableIdentifier)
+    chExternalCatalog.truncateTable(tableIdentifier)
+  }
 }

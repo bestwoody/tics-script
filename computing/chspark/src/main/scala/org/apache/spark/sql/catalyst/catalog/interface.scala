@@ -40,6 +40,8 @@ trait CHCatalog {
                                ignoreIfExists: Boolean): Unit
 
   def loadTableFromTiDB(db: String, tiTable: TiTableInfo, isOverwrite: Boolean): Unit
+
+  def truncateTable(tableIdentifier: TableIdentifier): Unit
 }
 
 trait CHSessionCatalog extends SessionCatalog with CHCatalog {

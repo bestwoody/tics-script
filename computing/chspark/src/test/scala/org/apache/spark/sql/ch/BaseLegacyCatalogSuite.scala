@@ -51,7 +51,10 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
   def init(): Unit = {
     extended.sql(s"create database if not exists default")
     extended.sql(s"create flash database if not exists default")
+
     extended.sql(s"drop table if exists default.$testT")
+    extended.sql(s"drop table if exists default.$testTWhatever")
+
     extended.sql(s"drop database if exists $testLegacyDb cascade")
     extended.sql(s"drop database if exists $testCHDb cascade")
     extended.sql(s"drop database if exists $testDbFlash cascade")
@@ -60,11 +63,12 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
 
   def cleanUp(): Unit = {
     extended.sql(s"drop table if exists default.$testT")
-    extended.sql(s"drop table if exists $testLegacyDb.$testT")
-    extended.sql(s"drop table if exists $testCHDb.$testT")
+    extended.sql(s"drop table if exists default.$testTWhatever")
+
     extended.sql(s"drop database if exists $testLegacyDb cascade")
     extended.sql(s"drop database if exists $testCHDb cascade")
     extended.sql(s"drop database if exists $testDbFlash cascade")
+    extended.sql(s"drop database if exists $testDbWhatever cascade")
   }
 
   def runQuotedNameTest(): Unit = {
@@ -335,6 +339,34 @@ abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
     extended.sql(s"uncache table $testT")
     extended.sql(s"use $testCHDb")
     verifyUncacheTable(s"select * from $testLegacyDb.$testT")
+  }
+
+  def runTruncateTest(): Unit = {
+    extended.sql(s"use $testLegacyDb")
+
+    assertThrows[AnalysisException](extended.sql(s"truncate table $testTWhatever"))
+    assertThrows[AnalysisException](extended.sql(s"truncate table $testDbWhatever.$testT"))
+
+    extended.sql(s"drop table if exists $testCHDb.ctas_$testLegacyDb")
+    extended.sql(s"drop table if exists $testLegacyDb.ctas_$testCHDb")
+
+    extended.sql(s"create table $testCHDb.ctas_$testLegacyDb using log as select * from $testT")
+    extended.sql(s"create table ctas_$testCHDb as select * from $testCHDb.$testT")
+
+    extended.sql(s"truncate table $testT")
+    extended.sql(s"truncate table $testCHDb.$testT")
+
+    assert(extended.sql(s"select * from $testLegacyDb.$testT").count() == 0)
+    assert(extended.sql(s"select * from $testCHDb.$testT").count() == 0)
+
+    extended.sql(s"insert into table $testT select * from $testCHDb.ctas_$testLegacyDb")
+    extended.sql(s"insert into table $testCHDb.$testT select * from ctas_$testCHDb")
+
+    extended.sql(s"drop table $testCHDb.ctas_$testLegacyDb")
+    extended.sql(s"drop table $testLegacyDb.ctas_$testCHDb")
+
+    assert(extended.sql(s"select * from $testLegacyDb.$testT").count() > 0)
+    assert(extended.sql(s"select * from $testCHDb.$testT").count() > 0)
   }
 
   def runQueryTest(): Unit = {

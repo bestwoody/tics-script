@@ -13,6 +13,8 @@ abstract class BaseCHCatalogSuite extends SparkFunSuite {
   var extended: SparkSession
   val testDb: String
   val testT: String
+  val testDbWhatever: String = "whateverwhatever"
+  val testTWhatever: String = "whateverwhatever"
 
   def verifyShowDatabases(expected: Array[String])
 
@@ -27,15 +29,18 @@ abstract class BaseCHCatalogSuite extends SparkFunSuite {
     extended.sql("create flash database if not exists default")
 
     extended.sql(s"drop table if exists default.$testT")
-    // Drop twice to make sure for both legacy and CH catalog.
+    extended.sql(s"drop table if exists default.$testTWhatever")
+
     extended.sql(s"drop database if exists $testDb")
-    extended.sql(s"drop database if exists $testDb")
+    extended.sql(s"drop database if exists $testDbWhatever cascade")
   }
 
   def cleanUp(): Unit = {
-    // Drop twice to make sure for both legacy and CH catalog.
+    extended.sql(s"drop table if exists default.$testT")
+    extended.sql(s"drop table if exists default.$testTWhatever")
+
     extended.sql(s"drop database if exists $testDb")
-    extended.sql(s"drop database if exists $testDb")
+    extended.sql(s"drop database if exists $testDbWhatever cascade")
   }
 
   def runDatabaseTest(): Unit = {
@@ -229,6 +234,34 @@ abstract class BaseCHCatalogSuite extends SparkFunSuite {
     val df2 = extended.sql(s"select * from $testDb.$testT")
     assert(df1.except(df2).count() == 0 && df2.except(df1).count() == 0)
     extended.sql(s"drop table if exists $testDb.$ctas")
+  }
+
+  def runTruncateTest(): Unit = {
+    extended.sql(s"use default")
+
+    assertThrows[AnalysisException](extended.sql(s"truncate table $testTWhatever"))
+    assertThrows[AnalysisException](extended.sql(s"truncate table $testDbWhatever.$testT"))
+
+    extended.sql(s"drop table if exists $testDb.ctas_default")
+    extended.sql(s"drop table if exists default.ctas_$testDb")
+
+    extended.sql(s"create table $testDb.ctas_default using log as select * from $testT")
+    extended.sql(s"create table ctas_$testDb using log as select * from $testDb.$testT")
+
+    extended.sql(s"truncate table $testT")
+    extended.sql(s"truncate table $testDb.$testT")
+
+    assert(extended.sql(s"select * from default.$testT").count() == 0)
+    assert(extended.sql(s"select * from $testDb.$testT").count() == 0)
+
+    extended.sql(s"insert into table $testT select * from $testDb.ctas_default")
+    extended.sql(s"insert into table $testDb.$testT select * from ctas_$testDb")
+
+    extended.sql(s"drop table $testDb.ctas_default")
+    extended.sql(s"drop table default.ctas_$testDb")
+
+    assert(extended.sql(s"select * from default.$testT").count() > 0)
+    assert(extended.sql(s"select * from $testDb.$testT").count() > 0)
   }
 
   def runWithAsTest(): Unit = {

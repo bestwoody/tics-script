@@ -122,6 +122,9 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
     }
   }
 
+  override def truncateTable(tableIdentifier: TableIdentifier): Unit =
+    CHUtil.truncateTable(tableIdentifier, chContext.cluster)
+
   override protected def doDropDatabase(db: String,
                                         ignoreIfNotExists: Boolean,
                                         cascade: Boolean): Unit = {

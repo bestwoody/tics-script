@@ -120,6 +120,10 @@ class HiveLegacyCatalogSuite extends BaseLegacyCatalogSuite {
     runCacheTest()
   }
 
+  test("truncates") {
+    runTruncateTest()
+  }
+
   test("queries") {
     runQueryTest()
   }

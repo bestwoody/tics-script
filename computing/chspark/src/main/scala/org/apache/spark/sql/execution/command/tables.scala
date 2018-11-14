@@ -68,7 +68,7 @@ case class CHTruncateTableCommand(chContext: CHContext, delegate: TruncateTableC
         )
       ) match {
       case _: CHSessionCatalog =>
-        CHUtil.truncateTable(delegate.tableName, chContext.cluster)
+        chCatalog.truncateTable(delegate.tableName)
         Seq.empty[Row]
       case _: SessionCatalog => super.run(sparkSession)
     }

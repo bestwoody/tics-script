@@ -108,6 +108,10 @@ class CHDirectCatalogSuite extends BaseCHCatalogSuite {
     runCTASTest()
   }
 
+  test("truncates") {
+    runTruncateTest()
+  }
+
   test("with-as-es") {
     runWithAsTest()
   }
