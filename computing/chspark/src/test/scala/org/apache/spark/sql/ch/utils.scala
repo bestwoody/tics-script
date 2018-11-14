@@ -113,7 +113,7 @@ class CHTestExtensions(inMemory: Boolean) extends CHExtensions {
 
   override def apply(e: SparkSessionExtensions): Unit = {
     e.injectParser(CHParser(getOrCreateCHContext))
-    e.injectResolutionRule(CHDDLRule(getOrCreateCHContext))
+    e.injectResolutionRule(CHDDLRule(getOrCreateCHContext, getOrCreateTiContext))
     if (inMemory) {
       e.injectResolutionRule(CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext))
     } else {

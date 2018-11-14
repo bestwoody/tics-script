@@ -23,12 +23,13 @@ case class CreateFlashTableCommand(chContext: CHContext,
 }
 
 case class CreateFlashTableFromTiDBCommand(chContext: CHContext,
+                                           tiContext: TiContext,
                                            tiTable: TableIdentifier,
                                            properties: Map[String, String],
                                            ifNotExists: Boolean)
     extends CHCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val ti = new TiContext(sparkSession)
+    val ti = tiContext
     val db = tiTable.database.getOrElse(chCatalog.getCurrentDatabase)
     val tiTableInfo = ti.meta.getTable(db, tiTable.table)
     if (tiTableInfo.isEmpty) {

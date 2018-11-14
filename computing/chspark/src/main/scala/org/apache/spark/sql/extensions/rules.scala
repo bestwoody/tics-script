@@ -12,9 +12,11 @@ import org.apache.spark.sql.ch.{CHConfigConst, CHRelation, CHTableRef}
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
 
-case class CHDDLRule(getOrCreateCHContext: SparkSession => CHContext)(sparkSession: SparkSession)
+case class CHDDLRule(getOrCreateCHContext: SparkSession => CHContext,
+                     getOrCreateTiContext: SparkSession => TiContext)(sparkSession: SparkSession)
     extends Rule[LogicalPlan] {
   private lazy val chContext = getOrCreateCHContext(sparkSession)
+  private lazy val tiContext = getOrCreateTiContext(sparkSession)
 
   /**
    * Validate catalog of the table being operated on.
@@ -44,7 +46,7 @@ case class CHDDLRule(getOrCreateCHContext: SparkSession => CHContext)(sparkSessi
       CreateFlashTableCommand(chContext, tableDesc, query, ifNotExists)
     case CreateFlashTableFromTiDB(tiTable, properties, ifNotExists) =>
       validateCatalog(tiTable.database, isFlash = true)
-      CreateFlashTableFromTiDBCommand(chContext, tiTable, properties, ifNotExists)
+      CreateFlashTableFromTiDBCommand(chContext, tiContext, tiTable, properties, ifNotExists)
     case LoadDataFromTiDB(tiTable, isOverwrite) =>
       validateCatalog(tiTable.database, isFlash = true)
       LoadDataFromTiDBCommand(chContext, tiTable, isOverwrite)
