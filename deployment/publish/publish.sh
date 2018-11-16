@@ -65,7 +65,7 @@ spark_dir="$computing_dir/spark"
 spark_pack="$publish_dir/$name/spark"
 rm -rf "$spark_pack"
 cp -rf "$spark_dir" "$spark_pack"
-cp -rf "$publish_dir/scripts/spark/spark-defaults.conf" "$spark_pack/conf/"
+cp -rf "$computing_dir/conf/spark-defaults.conf" "$spark_pack/conf/"
 
 if [ "$build" == "true" ]; then
 	echo "=> building tpch dbgen"
