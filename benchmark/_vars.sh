@@ -17,7 +17,7 @@ setup_dylib_path()
 		fi
 	else
 		# *.so/*.a path for linux
-		local lib_path="`dirname $storage_bin`:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib"
+		local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:`dirname $storage_bin`"
 		if [ -z ${LD_LIBRARY_PATH+x} ]; then
 			export LD_LIBRARY_PATH="$lib_path"
 		else
