@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Core/AccurateComparison.h b/dbms/src/Core/AccurateComparison.h
-index c84405e2dd4e..1ee2d60ea71a 100644
+index c84405e2dd4e..67775c8722a4 100644
 --- a/dbms/src/Core/AccurateComparison.h
 +++ b/dbms/src/Core/AccurateComparison.h
 @@ -27,12 +27,14 @@ using DB::UInt64;
@@ -14,7 +14,7 @@ index c84405e2dd4e..1ee2d60ea71a 100644
  template <typename A, typename B>
  constexpr bool is_safe_conversion = (std::is_floating_point_v<A> && std::is_floating_point_v<B>)
 -    || (std::is_integral_v<A> && std::is_integral_v<B> && !(std::is_signed_v<A> ^ std::is_signed_v<B>));
-+    || ((std::is_integral_v<A> && std::is_integral_v<B> && !(std::is_signed_v<A> ^ std::is_signed_v<B>)) || (DB::IsDecimalValue<A> && DB::IsDecimalValue<B>));
++    || ((std::is_integral_v<A> && std::is_integral_v<B> && !(std::is_signed_v<A> ^ std::is_signed_v<B>)) || (DB::IsDecimal<A> && DB::IsDecimal<B>));
  template <typename A, typename B>
  using bool_if_safe_conversion = std::enable_if_t<is_safe_conversion<A, B>, bool>;
  template <typename A, typename B>
@@ -23,30 +23,30 @@ index c84405e2dd4e..1ee2d60ea71a 100644
  }
  
 +template <typename Dec, typename TInt>
-+using bool_if_dec_int = std::enable_if_t<DB::IsDecimalValue<Dec> && std::is_integral_v<TInt>, bool>;
++using bool_if_dec_int = std::enable_if_t<DB::IsDecimal<Dec> && std::is_integral_v<TInt>, bool>;
 +
 +template <typename Dec, typename TInt>
 +inline bool_if_dec_int<Dec, TInt> equalsOpTmpl(Dec d, TInt i) {
-+    return d == DB::DecimalValue(i);
++    return d == DB::Decimal(i);
 +}
 +
 +template <typename TInt, typename Dec>
 +inline bool_if_dec_int<Dec, TInt> equalsOpTmpl(TInt i, Dec d) {
-+    return d == DB::DecimalValue(i);
++    return d == DB::Decimal(i);
 +}
 +
 +template <typename Dec, typename TInt>
 +inline bool_if_dec_int<Dec, TInt> greaterOpTmpl(Dec d, TInt i) {
-+    return d > DB::DecimalValue(i);
++    return d > DB::Decimal(i);
 +}
 +
 +template <typename TInt, typename Dec>
 +inline bool_if_dec_int<Dec, TInt> greaterOpTmpl(TInt i, Dec d) {
-+    return DB::DecimalValue(i) > d;
++    return DB::Decimal(i) > d;
 +}
 +
 +template <typename Dec, typename TFlt>
-+using bool_if_dec_flt = std::enable_if_t<DB::IsDecimalValue<Dec> && std::is_floating_point_v<TFlt>, bool>;
++using bool_if_dec_flt = std::enable_if_t<DB::IsDecimal<Dec> && std::is_floating_point_v<TFlt>, bool>;
 +
 +template <typename Dec, typename TFlt>
 +inline bool_if_dec_flt<Dec, TFlt> equalsOpTmpl(Dec d, TFlt f) {

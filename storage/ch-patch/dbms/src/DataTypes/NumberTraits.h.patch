@@ -1,14 +1,14 @@
 diff --git a/dbms/src/DataTypes/NumberTraits.h b/dbms/src/DataTypes/NumberTraits.h
-index 196af30ae83f..5551989f8a93 100644
+index 196af30ae83f..65e69de4cd89 100644
 --- a/dbms/src/DataTypes/NumberTraits.h
 +++ b/dbms/src/DataTypes/NumberTraits.h
 @@ -112,6 +112,11 @@ template <typename A> struct ResultOfNegate
          std::is_signed_v<A> ? sizeof(A) : nextSize(sizeof(A))>::Type;
  };
  
-+template <> struct ResultOfNegate<DecimalValue>
++template <> struct ResultOfNegate<Decimal>
 +{
-+    using Type = DecimalValue;
++    using Type = Decimal;
 +};
 +
  template <typename A> struct ResultOfAbs
@@ -18,9 +18,9 @@ index 196af30ae83f..5551989f8a93 100644
          sizeof(A)>::Type;
  };
  
-+template <> struct ResultOfAbs<DecimalValue>
++template <> struct ResultOfAbs<Decimal>
 +{
-+    using Type = DecimalValue;
++    using Type = Decimal;
 +};
 +
  /** For bitwise operations, an integer is obtained with number of bits is equal to the maximum of the arguments.
@@ -30,9 +30,9 @@ index 196af30ae83f..5551989f8a93 100644
          sizeof(A)>::Type;
  };
  
-+template <> struct ResultOfBitNot<DecimalValue>
++template <> struct ResultOfBitNot<Decimal>
 +{
-+    using Type = DecimalValue;
++    using Type = Decimal;
 +};
  
  /** Type casting for `if` function:

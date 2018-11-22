@@ -1,12 +1,12 @@
 diff --git a/dbms/src/DataTypes/FieldToDataType.cpp b/dbms/src/DataTypes/FieldToDataType.cpp
-index 1b4fbd53c6bd..668c374ddce4 100644
+index 1b4fbd53c6bd..788793376946 100644
 --- a/dbms/src/DataTypes/FieldToDataType.cpp
 +++ b/dbms/src/DataTypes/FieldToDataType.cpp
 @@ -52,6 +52,11 @@ DataTypePtr FieldToDataType::operator() (const String &) const
      return std::make_shared<DataTypeString>();
  }
  
-+DataTypePtr FieldToDataType::operator() (const DecimalValue & x) const
++DataTypePtr FieldToDataType::operator() (const Decimal & x) const
 +{
 +    return std::make_shared<DataTypeDecimal>(x.precision, x.scale);
 +}

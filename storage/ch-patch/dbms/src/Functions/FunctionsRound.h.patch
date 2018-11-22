@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Functions/FunctionsRound.h b/dbms/src/Functions/FunctionsRound.h
-index d5429b76318e..b1693ce4eff8 100644
+index d5429b76318e..a431ca7c1e6a 100644
 --- a/dbms/src/Functions/FunctionsRound.h
 +++ b/dbms/src/Functions/FunctionsRound.h
 @@ -73,6 +73,12 @@ roundDownToPowerOfTwo(T x)
@@ -7,7 +7,7 @@ index d5429b76318e..b1693ce4eff8 100644
  }
  
 +template <typename T>
-+inline std::enable_if_t<std::is_same_v<DecimalValue, T>, T> roundDownToPowerOfTwo(T)
++inline std::enable_if_t<std::is_same_v<Decimal, T>, T> roundDownToPowerOfTwo(T)
 +{
 +    return {};
 +}
@@ -19,9 +19,9 @@ index d5429b76318e..b1693ce4eff8 100644
      }
  };
  
-+template <> struct RoundDurationImpl<DecimalValue>{
++template <> struct RoundDurationImpl<Decimal>{
 +    using ResultType = UInt16;
-+    static inline ResultType apply(DecimalValue) { throw Exception("RoundDuration of decimal is not implemented yet."); }
++    static inline ResultType apply(Decimal) { throw Exception("RoundDuration of decimal is not implemented yet."); }
 +};
 +
  template <typename A>
@@ -31,9 +31,9 @@ index d5429b76318e..b1693ce4eff8 100644
      }
  };
  
-+template <> struct RoundAgeImpl<DecimalValue>{
++template <> struct RoundAgeImpl<Decimal>{
 +    using ResultType = UInt8;
-+    static inline ResultType apply(DecimalValue) { throw Exception("RoundAge of decimal is not implemented yet."); }
++    static inline ResultType apply(Decimal) { throw Exception("RoundAge of decimal is not implemented yet."); }
 +};
  
  /** This parameter controls the behavior of the rounding functions.

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Interpreters/convertFieldToType.cpp b/dbms/src/Interpreters/convertFieldToType.cpp
-index 361351b659bf..f38aa4c95b7d 100644
+index 361351b659bf..93c1286e959a 100644
 --- a/dbms/src/Interpreters/convertFieldToType.cpp
 +++ b/dbms/src/Interpreters/convertFieldToType.cpp
 @@ -66,6 +66,8 @@ static Field convertNumericType(const Field & from, const IDataType & type)
@@ -7,7 +7,7 @@ index 361351b659bf..f38aa4c95b7d 100644
      if (from.getType() == Field::Types::Float64)
          return convertNumericTypeImpl<Float64, To>(from);
 +    if (from.getType() == Field::Types::Decimal)
-+        return convertNumericTypeImpl<DecimalValue, To>(from);
++        return convertNumericTypeImpl<Decimal, To>(from);
  
      throw Exception("Type mismatch in IN or VALUES section. Expected: " + type.getName() + ". Got: "
          + Field::Types::toString(from.getType()), ErrorCodes::TYPE_MISMATCH);
@@ -15,7 +15,7 @@ index 361351b659bf..f38aa4c95b7d 100644
          if (typeid_cast<const DataTypeInt64 *>(&type)) return convertNumericType<Int64>(src, type);
          if (typeid_cast<const DataTypeFloat32 *>(&type)) return convertNumericType<Float32>(src, type);
          if (typeid_cast<const DataTypeFloat64 *>(&type)) return convertNumericType<Float64>(src, type);
-+        if (typeid_cast<const DataTypeDecimal *>(&type)) return convertNumericType<DecimalValue>(src, type);
++        if (typeid_cast<const DataTypeDecimal *>(&type)) return convertNumericType<Decimal>(src, type);
  
          const bool is_date = typeid_cast<const DataTypeDate *>(&type);
          bool is_datetime = false;

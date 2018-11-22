@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Functions/FunctionsConversion.h b/dbms/src/Functions/FunctionsConversion.h
-index 7e1901f5a059..00f5c1977142 100644
+index 7e1901f5a059..750e03f4b97f 100644
 --- a/dbms/src/Functions/FunctionsConversion.h
 +++ b/dbms/src/Functions/FunctionsConversion.h
 @@ -103,6 +103,84 @@ struct ConvertImpl
@@ -10,7 +10,7 @@ index 7e1901f5a059..00f5c1977142 100644
 +struct ConvertToDecimalImpl
 +{
 +    using FromFieldType = typename FromDataType::FieldType;
-+    using ToFieldType = DecimalValue;
++    using ToFieldType = Decimal;
 +
 +    static void execute(Block & block, const ColumnNumbers & arguments, size_t result, PrecType prec, ScaleType scale)
 +    {

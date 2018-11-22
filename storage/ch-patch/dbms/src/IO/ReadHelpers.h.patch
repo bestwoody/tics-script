@@ -1,5 +1,5 @@
 diff --git a/dbms/src/IO/ReadHelpers.h b/dbms/src/IO/ReadHelpers.h
-index 2d3b405675f5..9f584361f83b 100644
+index 2d3b405675f5..cd950adf7635 100644
 --- a/dbms/src/IO/ReadHelpers.h
 +++ b/dbms/src/IO/ReadHelpers.h
 @@ -1,5 +1,6 @@
@@ -21,7 +21,7 @@ index 2d3b405675f5..9f584361f83b 100644
      }
  }
  
-+inline void decimalRound(DecimalValue& x, ReadBuffer & buf)
++inline void decimalRound(Decimal& x, ReadBuffer & buf)
 +{
 +    ++buf.position();
 +    if (buf.eof()) {
@@ -36,7 +36,7 @@ index 2d3b405675f5..9f584361f83b 100644
 +    }
 +}
 +
-+inline void readDecimalText(DecimalValue& x, ReadBuffer & buf)
++inline void readDecimalText(Decimal& x, ReadBuffer & buf)
 +{
 +    size_t scale = x.scale;
 +    bool negative = false; 
@@ -116,7 +116,7 @@ index 2d3b405675f5..9f584361f83b 100644
  inline void readBinary(UInt256 & x, ReadBuffer & buf) { readPODBinary(x, buf); }
  inline void readBinary(LocalDate & x, ReadBuffer & buf) { readPODBinary(x, buf); }
  inline void readBinary(LocalDateTime & x, ReadBuffer & buf) { readPODBinary(x, buf); }
-+inline void readBinary(DecimalValue & x, ReadBuffer & buf) { readPODBinary(x, buf); }
++inline void readBinary(Decimal & x, ReadBuffer & buf) { readPODBinary(x, buf); }
  
  
  /// Generic methods to read value in text tab-separated format.
@@ -124,7 +124,7 @@ index 2d3b405675f5..9f584361f83b 100644
  inline std::enable_if_t<std::is_floating_point_v<T>, void>
  readText(T & x, ReadBuffer & buf) { readFloatText(x, buf); }
  
-+inline void readText(DecimalValue & x, ReadBuffer & buf) { readDecimalText(x, buf); }
++inline void readText(Decimal & x, ReadBuffer & buf) { readDecimalText(x, buf); }
  inline void readText(bool & x, ReadBuffer & buf) { readBoolText(x, buf); }
  inline void readText(String & x, ReadBuffer & buf) { readEscapedString(x, buf); }
  inline void readText(LocalDate & x, ReadBuffer & buf) { readDateText(x, buf); }
@@ -132,7 +132,7 @@ index 2d3b405675f5..9f584361f83b 100644
  inline void readCSV(LocalDate & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
  inline void readCSV(LocalDateTime & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
  inline void readCSV(UUID & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
-+inline void readCSV(DecimalValue & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
++inline void readCSV(Decimal & x, ReadBuffer & buf) { readCSVSimple(x, buf); }
  inline void readCSV(UInt128 &, ReadBuffer &)
  {
      /** Because UInt128 isn't a natural type, without arithmetic operator and only use as an intermediary type -for UUID-

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Core/Field.h b/dbms/src/Core/Field.h
-index 795bc4b70701..a51aad1bbd71 100644
+index 795bc4b70701..fa3392781c63 100644
 --- a/dbms/src/Core/Field.h
 +++ b/dbms/src/Core/Field.h
 @@ -55,6 +55,7 @@ public:
@@ -22,7 +22,7 @@ index 795bc4b70701..a51aad1bbd71 100644
              case Types::String:  return get<String>()  < rhs.get<String>();
              case Types::Array:   return get<Array>()   < rhs.get<Array>();
              case Types::Tuple:   return get<Tuple>()   < rhs.get<Tuple>();
-+            case Types::Decimal: return get<DecimalValue>() < rhs.get<DecimalValue>();
++            case Types::Decimal: return get<Decimal>() < rhs.get<Decimal>();
  
              default:
                  throw Exception("Bad type of Field", ErrorCodes::BAD_TYPE_OF_FIELD);
@@ -30,7 +30,7 @@ index 795bc4b70701..a51aad1bbd71 100644
              case Types::String:  return get<String>()  <= rhs.get<String>();
              case Types::Array:   return get<Array>()   <= rhs.get<Array>();
              case Types::Tuple:   return get<Tuple>()   <= rhs.get<Tuple>();
-+            case Types::Decimal: return get<DecimalValue>() <= rhs.get<DecimalValue>();
++            case Types::Decimal: return get<Decimal>() <= rhs.get<Decimal>();
  
  
              default:
@@ -38,7 +38,7 @@ index 795bc4b70701..a51aad1bbd71 100644
              case Types::Array:   return get<Array>()   == rhs.get<Array>();
              case Types::Tuple:   return get<Tuple>()   == rhs.get<Tuple>();
              case Types::UInt128: return get<UInt128>() == rhs.get<UInt128>();
-+            case Types::Decimal: return get<DecimalValue>() == rhs.get<DecimalValue>();
++            case Types::Decimal: return get<Decimal>() == rhs.get<Decimal>();
  
              default:
                  throw Exception("Bad type of Field", ErrorCodes::BAD_TYPE_OF_FIELD);
@@ -47,7 +47,7 @@ index 795bc4b70701..a51aad1bbd71 100644
  private:
      std::aligned_union_t<DBMS_MIN_FIELD_SIZE - sizeof(Types::Which),
 -        Null, UInt64, UInt128, Int64, Float64, String, Array, Tuple
-+        Null, UInt64, UInt128, Int64, Float64, String, Array, Tuple, DecimalValue
++        Null, UInt64, UInt128, Int64, Float64, String, Array, Tuple, Decimal
          > storage;
  
      Types::Which which;
@@ -55,7 +55,7 @@ index 795bc4b70701..a51aad1bbd71 100644
              case Types::String:  f(field.template get<String>());  return;
              case Types::Array:   f(field.template get<Array>());   return;
              case Types::Tuple:   f(field.template get<Tuple>());   return;
-+            case Types::Decimal: f(field.template get<DecimalValue>()); return;
++            case Types::Decimal: f(field.template get<Decimal>()); return;
  
              default:
                  throw Exception("Bad type of Field", ErrorCodes::BAD_TYPE_OF_FIELD);
@@ -63,7 +63,7 @@ index 795bc4b70701..a51aad1bbd71 100644
  template <> struct Field::TypeToEnum<String>  { static const Types::Which value = Types::String; };
  template <> struct Field::TypeToEnum<Array>   { static const Types::Which value = Types::Array; };
  template <> struct Field::TypeToEnum<Tuple>   { static const Types::Which value = Types::Tuple; };
-+template <> struct Field::TypeToEnum<DecimalValue>   { static const Types::Which value = Types::Decimal; };
++template <> struct Field::TypeToEnum<Decimal>   { static const Types::Which value = Types::Decimal; };
  
  template <> struct Field::EnumToType<Field::Types::Null>    { using Type = Null; };
  template <> struct Field::EnumToType<Field::Types::UInt64>  { using Type = UInt64; };
@@ -71,7 +71,7 @@ index 795bc4b70701..a51aad1bbd71 100644
  template <> struct Field::EnumToType<Field::Types::String>  { using Type = String; };
  template <> struct Field::EnumToType<Field::Types::Array>   { using Type = Array; };
  template <> struct Field::EnumToType<Field::Types::Tuple>   { using Type = Tuple; };
-+template <> struct Field::EnumToType<Field::Types::Decimal> { using Type = DecimalValue; };
++template <> struct Field::EnumToType<Field::Types::Decimal> { using Type = Decimal; };
  
  
  template <typename T>
@@ -79,7 +79,7 @@ index 795bc4b70701..a51aad1bbd71 100644
  template <> struct NearestFieldType<Tuple>   { using Type = Tuple; };
  template <> struct NearestFieldType<bool>    { using Type = UInt64; };
  template <> struct NearestFieldType<Null>    { using Type = Null; };
-+template <> struct NearestFieldType<DecimalValue> { using Type = DecimalValue; };
++template <> struct NearestFieldType<Decimal> { using Type = Decimal; };
  
  
  template <typename T>

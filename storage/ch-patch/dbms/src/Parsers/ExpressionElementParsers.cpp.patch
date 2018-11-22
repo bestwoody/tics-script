@@ -1,12 +1,12 @@
 diff --git a/dbms/src/Parsers/ExpressionElementParsers.cpp b/dbms/src/Parsers/ExpressionElementParsers.cpp
-index 29cca1b2bda2..9e8a5dc7d2cf 100644
+index 29cca1b2bda2..936ad225bac6 100644
 --- a/dbms/src/Parsers/ExpressionElementParsers.cpp
 +++ b/dbms/src/Parsers/ExpressionElementParsers.cpp
 @@ -501,6 +501,14 @@ bool ParserNumber::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
  
      res = float_value;
  
-+    DecimalValue dec;
++    Decimal dec;
 +    if (parseDecimal(buf, pos->size(), dec)) {
 +        if (negative) {
 +            dec.value = -dec.value;

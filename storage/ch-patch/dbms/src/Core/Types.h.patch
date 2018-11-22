@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Core/Types.h b/dbms/src/Core/Types.h
-index 1f09dcba17a9..7441fd01b3eb 100644
+index 1f09dcba17a9..e888683c75c5 100644
 --- a/dbms/src/Core/Types.h
 +++ b/dbms/src/Core/Types.h
 @@ -3,6 +3,7 @@
@@ -14,7 +14,7 @@ index 1f09dcba17a9..7441fd01b3eb 100644
  template <> constexpr bool IsNumber<Int64> = true;
  template <> constexpr bool IsNumber<Float32> = true;
  template <> constexpr bool IsNumber<Float64> = true;
-+template <> constexpr bool IsNumber<DecimalValue> = true;
++template <> constexpr bool IsNumber<Decimal> = true;
  
  template <typename T> struct TypeName;
  
@@ -22,7 +22,7 @@ index 1f09dcba17a9..7441fd01b3eb 100644
  template <> struct TypeName<Float32> { static const char * get() { return "Float32"; } };
  template <> struct TypeName<Float64> { static const char * get() { return "Float64"; } };
  template <> struct TypeName<String>  { static const char * get() { return "String";  } };
-+template <> struct TypeName<DecimalValue>  { static const char * get() { return "Decimal";  } };
++template <> struct TypeName<Decimal>  { static const char * get() { return "Decimal";  } };
  
  
  /// Not a data type in database, defined just for convenience.

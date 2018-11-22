@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Common/SipHash.h b/dbms/src/Common/SipHash.h
-index a9f007f7aa43..f30952ba642c 100644
+index a9f007f7aa43..442691d3b49f 100644
 --- a/dbms/src/Common/SipHash.h
 +++ b/dbms/src/Common/SipHash.h
 @@ -15,6 +15,7 @@
@@ -14,7 +14,7 @@ index a9f007f7aa43..f30952ba642c 100644
      return hash.get64();
  }
  
-+inline UInt64 sipHash64(const DB::DecimalValue& x)
++inline UInt64 sipHash64(const DB::Decimal& x)
 +{
 +    SipHash hash;
 +    hash.update(reinterpret_cast<const char *>(&x), sizeof(x));

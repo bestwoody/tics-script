@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Columns/ColumnVector.cpp b/dbms/src/Columns/ColumnVector.cpp
-index 3509c14c3aab..5a0f706ab007 100644
+index 3509c14c3aab..54bcec294aa0 100644
 --- a/dbms/src/Columns/ColumnVector.cpp
 +++ b/dbms/src/Columns/ColumnVector.cpp
 @@ -122,12 +122,62 @@ MutableColumnPtr ColumnVector<T>::cloneResized(size_t size) const
@@ -7,7 +7,7 @@ index 3509c14c3aab..5a0f706ab007 100644
  }
  
 +template <>
-+MutableColumnPtr ColumnVector<DecimalValue>::cloneResized(size_t size) const
++MutableColumnPtr ColumnVector<Decimal>::cloneResized(size_t size) const
 +{
 +    auto res = this->create();
 +
@@ -45,19 +45,19 @@ index 3509c14c3aab..5a0f706ab007 100644
 +}
 +
 +template <>
-+UInt64 ColumnVector<DecimalValue>::get64(size_t n) const
++UInt64 ColumnVector<Decimal>::get64(size_t n) const
 +{
 +    return IColumn::get64(n);
 +}
 +
 +template <>
-+UInt64 ColumnVector<DecimalValue>::getUInt(size_t n) const
++UInt64 ColumnVector<Decimal>::getUInt(size_t n) const
 +{
 +    return IColumn::getUInt(n);
 +}
 +
 +template <>
-+Int64 ColumnVector<DecimalValue>::getInt(size_t n) const
++Int64 ColumnVector<Decimal>::getInt(size_t n) const
 +{
 +    return IColumn::getInt(n);
 +}
@@ -70,22 +70,22 @@ index 3509c14c3aab..5a0f706ab007 100644
  }
  
 +template <>
-+void ColumnVector<DecimalValue>::getExtremes(Field & min, Field & max) const
++void ColumnVector<Decimal>::getExtremes(Field & min, Field & max) const
 +{
 +    size_t size = data.size();
 +
 +    if (size == 0)
 +    {
-+        min = DecimalValue();
-+        max = DecimalValue();
++        min = Decimal();
++        max = Decimal();
 +        return;
 +    }
 +
 +    bool has_value = false;
 +
-+    DecimalValue cur_min, cur_max;
++    Decimal cur_min, cur_max;
 +
-+    for (const DecimalValue x : data)
++    for (const Decimal x : data)
 +    {
 +        if (isNaN(x))
 +            continue;
@@ -115,5 +115,5 @@ index 3509c14c3aab..5a0f706ab007 100644
  template class ColumnVector<Int64>;
  template class ColumnVector<Float32>;
  template class ColumnVector<Float64>;
-+template class ColumnVector<DecimalValue>;
++template class ColumnVector<Decimal>;
  }

@@ -1,5 +1,5 @@
 diff --git a/dbms/src/AggregateFunctions/AggregateFunctionAvg.h b/dbms/src/AggregateFunctions/AggregateFunctionAvg.h
-index 84288cecb86b..7fed187772dd 100644
+index 84288cecb86b..18b734885cdb 100644
 --- a/dbms/src/AggregateFunctions/AggregateFunctionAvg.h
 +++ b/dbms/src/AggregateFunctions/AggregateFunctionAvg.h
 @@ -4,6 +4,7 @@
@@ -18,7 +18,7 @@ index 84288cecb86b..7fed187772dd 100644
 +    AggregateFunctionAvgData(){}
 +
 +    AggregateFunctionAvgData(PrecType prec, ScaleType scale){
-+        sum = DecimalValue(0, prec, scale);
++        sum = Decimal(0, prec, scale);
 +    }
  };
  
@@ -42,7 +42,7 @@ index 84288cecb86b..7fed187772dd 100644
      DataTypePtr getReturnType() const override
      {
 -        return std::make_shared<DataTypeFloat64>();
-+        if constexpr (IsDecimalValue<T>)
++        if constexpr (IsDecimal<T>)
 +            return std::make_shared<DataTypeDecimal>(result_prec, result_scale);
 +        else 
 +            return std::make_shared<DataTypeFloat64>();
@@ -55,7 +55,7 @@ index 84288cecb86b..7fed187772dd 100644
      {
 -        static_cast<ColumnFloat64 &>(to).getData().push_back(
 -            static_cast<Float64>(this->data(place).sum) / this->data(place).count);
-+        if constexpr (IsDecimalValue<T>)
++        if constexpr (IsDecimal<T>)
 +            static_cast<ColumnDecimal &>(to).getData().push_back(
 +                this->data(place).sum.getAvg(this->data(place).count, result_prec, result_scale));
 +        else
@@ -65,7 +65,7 @@ index 84288cecb86b..7fed187772dd 100644
 +
 +    void create(AggregateDataPtr place) const override {
 +        using Data = AggregateFunctionAvgData<typename NearestFieldType<T>::Type>;
-+        if constexpr (IsDecimalValue<T>)
++        if constexpr (IsDecimal<T>)
 +            new (place) Data(result_prec, result_scale);
 +        else
 +            new (place) Data;

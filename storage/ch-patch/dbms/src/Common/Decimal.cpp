@@ -9,11 +9,11 @@ inline void checkOverFlow(int256_t v, PrecType prec) {
     }
 }
 
-void DecimalValue::checkOverflow() const {
+void Decimal::checkOverflow() const {
     checkOverFlow(value, precision);
 }
 
-PrecType DecimalValue::getRealPrec() const {
+PrecType Decimal::getRealPrec() const {
     auto _v = value < 0 ? - value : value;
     for (PrecType i = 1; i <= decimal_max_prec; i++) 
     {
@@ -25,7 +25,7 @@ PrecType DecimalValue::getRealPrec() const {
     throw Exception("Decimal value overflow", ErrorCodes::DECIMAL_OVERFLOW_ERROR);
 }
 
-DecimalValue DecimalValue::operator + (const DecimalValue & v) const {
+Decimal Decimal::operator + (const Decimal & v) const {
     ScaleType result_scale;
     PrecType result_prec;
     PlusDecimalInferer::infer(precision, scale, v.precision, v.scale, result_prec, result_scale);
@@ -38,10 +38,10 @@ DecimalValue DecimalValue::operator + (const DecimalValue & v) const {
     }
     int256_t result_value = value_a + value_b;
     checkOverFlow(result_value, result_prec);
-    return DecimalValue(result_value, result_prec, result_scale);
+    return Decimal(result_value, result_prec, result_scale);
 }
 
-void DecimalValue::operator += (const DecimalValue & v) {
+void Decimal::operator += (const Decimal & v) {
     if (precision == 0) {
         *this = v;
     } 
@@ -54,21 +54,21 @@ void DecimalValue::operator += (const DecimalValue & v) {
     }
 }
 
-DecimalValue DecimalValue::operator - (const DecimalValue & v) const {
-    DecimalValue tmp = v;
+Decimal Decimal::operator - (const Decimal & v) const {
+    Decimal tmp = v;
     tmp.value = -tmp.value;
     return (*this) + tmp;
 }
 
-DecimalValue DecimalValue::operator - () const {
-    return DecimalValue(-value, precision, scale);
+Decimal Decimal::operator - () const {
+    return Decimal(-value, precision, scale);
 }
 
-DecimalValue DecimalValue::operator ~ () const {
-    return DecimalValue(~value, precision, scale);
+Decimal Decimal::operator ~ () const {
+    return Decimal(~value, precision, scale);
 }
 
-DecimalValue DecimalValue::operator * (const DecimalValue & v) const {
+Decimal Decimal::operator * (const Decimal & v) const {
     ScaleType result_scale;
     PrecType result_prec;
     MulDecimalInferer::infer(precision, scale, v.precision, v.scale, result_prec, result_scale);
@@ -79,10 +79,10 @@ DecimalValue DecimalValue::operator * (const DecimalValue & v) const {
         result_value /= 10;
     }
     checkOverFlow(result_value, result_prec);
-    return DecimalValue(result_value, result_prec, result_scale);
+    return Decimal(result_value, result_prec, result_scale);
 }
 
-DecimalValue DecimalValue::operator / (const DecimalValue & v) const {
+Decimal Decimal::operator / (const Decimal & v) const {
     ScaleType result_scale;
     PrecType result_prec;
     DivDecimalInferer::infer(precision, scale, v.precision, v.scale, result_prec, result_scale);
@@ -91,10 +91,10 @@ DecimalValue DecimalValue::operator / (const DecimalValue & v) const {
         result_value *= 10;
     result_value /= v.value;
     checkOverFlow(result_value, result_prec);
-    return DecimalValue(result_value, result_prec, result_scale);
+    return Decimal(result_value, result_prec, result_scale);
 }
 
-std::string DecimalValue::toString() const 
+std::string Decimal::toString() const 
 {
     char str[decimal_max_prec + 5];
     size_t len = precision;
@@ -138,7 +138,7 @@ enum cmpResult {
     ls = 2,
 };
 
-inline cmpResult scaleAndCompare(const DecimalValue & v1, const DecimalValue & v2) {
+inline cmpResult scaleAndCompare(const Decimal & v1, const Decimal & v2) {
     int256_t nv = v1.value;
     for (ScaleType i = v1.scale; i < v2.scale; i++) {
         nv = nv * 10;
@@ -146,7 +146,7 @@ inline cmpResult scaleAndCompare(const DecimalValue & v1, const DecimalValue & v
     return nv < v2.value ? cmpResult::ls : ( nv == v2.value? cmpResult::eq : cmpResult::gt );
 }
 
-bool DecimalValue::operator == (const DecimalValue & v) const {
+bool Decimal::operator == (const Decimal & v) const {
     if (scale == v.scale) {
         return value == v.value;
     } else if (scale < v.scale) {
@@ -158,7 +158,7 @@ bool DecimalValue::operator == (const DecimalValue & v) const {
     }
 }
 
-bool DecimalValue::operator < (const DecimalValue & v) const {
+bool Decimal::operator < (const Decimal & v) const {
     if (scale == v.scale) {
         return value < v.value;
     } else if (scale < v.scale) {
@@ -170,23 +170,23 @@ bool DecimalValue::operator < (const DecimalValue & v) const {
     }
 }
 
-bool DecimalValue::operator != (const DecimalValue & v) const {
+bool Decimal::operator != (const Decimal & v) const {
     return !(*this == v);
 }
 
-bool DecimalValue::operator >= (const DecimalValue & v) const {
+bool Decimal::operator >= (const Decimal & v) const {
     return !(*this < v);
 }
 
-bool DecimalValue::operator <= (const DecimalValue & v) const {
+bool Decimal::operator <= (const Decimal & v) const {
     return !(*this > v);
 }
 
-bool DecimalValue::operator > (const DecimalValue & v) const {
+bool Decimal::operator > (const Decimal & v) const {
     return v < *this;
 }
 
-bool parseDecimal(const char* str, size_t len, DecimalValue &dec) {
+bool parseDecimal(const char* str, size_t len, Decimal &dec) {
     PrecType &prec = dec.precision = 0;
     ScaleType &scale = dec.scale = 0;
     auto &value = dec.value = 0;
@@ -211,7 +211,7 @@ bool parseDecimal(const char* str, size_t len, DecimalValue &dec) {
     return true;
 }
 
-DecimalValue ToDecimal(DecimalValue dec, PrecType prec, ScaleType scale) {
+Decimal ToDecimal(Decimal dec, PrecType prec, ScaleType scale) {
     dec.ScaleTo(prec, scale);
     return dec;
 }

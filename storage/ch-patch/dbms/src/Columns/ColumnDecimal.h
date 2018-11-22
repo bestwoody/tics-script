@@ -4,5 +4,5 @@
 
 namespace DB
 {
-    using ColumnDecimal = ColumnVector<DecimalValue>;
+    using ColumnDecimal = ColumnVector<Decimal>;
 }

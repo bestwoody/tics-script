@@ -22,7 +22,7 @@ private:
     ScaleType scale;
 
 public:
-    using FieldType = DecimalValue;
+    using FieldType = Decimal;
 
     static constexpr bool is_parametric = true;
 
@@ -76,7 +76,7 @@ public:
 
     Field getDefault() const override
     {
-        return DecimalValue();
+        return Decimal();
     }
 
     bool equals(const IDataType & rhs) const override {
@@ -90,7 +90,7 @@ public:
     bool isValueRepresentedByInteger() const override {return scale == 0;}
     bool isValueUnambiguouslyRepresentedInContiguousMemoryRegion() const override { return true; }
     bool haveMaximumSizeOfValue() const override { return true; }
-    size_t getSizeOfValueInMemory() const override { return sizeof(DecimalValue); }
+    size_t getSizeOfValueInMemory() const override { return sizeof(Decimal); }
     bool isCategorial() const override { return true; }
     bool canBeInsideNullable() const override { return true; }
 };

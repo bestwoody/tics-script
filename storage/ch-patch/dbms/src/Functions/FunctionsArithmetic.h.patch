@@ -1,5 +1,5 @@
 diff --git a/dbms/src/Functions/FunctionsArithmetic.h b/dbms/src/Functions/FunctionsArithmetic.h
-index b015e2039869..59384cd162d7 100644
+index b015e2039869..b4dc9ffb3664 100644
 --- a/dbms/src/Functions/FunctionsArithmetic.h
 +++ b/dbms/src/Functions/FunctionsArithmetic.h
 @@ -1,6 +1,7 @@
@@ -25,7 +25,7 @@ index b015e2039869..59384cd162d7 100644
  };
  
 -
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct PlusImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct PlusImpl;
  template <typename A, typename B>
 -struct PlusImpl
 +struct PlusImpl<A,B,false>
@@ -39,7 +39,7 @@ index b015e2039869..59384cd162d7 100644
 +template <typename A, typename B>
 +struct PlusImpl<A,B,true>
 +{
-+    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, DecimalValue>;
++    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, Decimal>;
 +    using ResultPrecInferer = PlusDecimalInferer;
 +
 +    template <typename Result = ResultType>
@@ -49,7 +49,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct MultiplyImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct MultiplyImpl;
  
  template <typename A, typename B>
 -struct MultiplyImpl
@@ -65,7 +65,7 @@ index b015e2039869..59384cd162d7 100644
 +struct MultiplyImpl<A,B,true>
  {
 -    using ResultType = typename NumberTraits::ResultOfSubtraction<A, B>::Type;
-+    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, DecimalValue>;
++    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, Decimal>;
 +
 +    using ResultPrecInferer = MulDecimalInferer;
 +    template <typename Result = ResultType>
@@ -75,7 +75,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct MinusImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct MinusImpl;
  
 +template <typename A, typename B>
 +struct MinusImpl<A,B,false>
@@ -92,7 +92,7 @@ index b015e2039869..59384cd162d7 100644
 -struct DivideFloatingImpl
 +struct MinusImpl<A,B,true>
 +{
-+    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, DecimalValue>;
++    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, Decimal>;
 +    using ResultPrecInferer = PlusDecimalInferer;
 +
 +    template <typename Result = ResultType>
@@ -102,7 +102,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct DivideFloatingImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct DivideFloatingImpl;
 +template <typename A, typename B>
 +struct DivideFloatingImpl<A,B,false>
  {
@@ -116,7 +116,7 @@ index b015e2039869..59384cd162d7 100644
 +struct DivideFloatingImpl<A,B,true>
 +{
 +    using ResultPrecInferer = DivDecimalInferer;
-+    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, DecimalValue>;
++    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, Decimal>;
 +
 +    template <typename Result = ResultType>
 +    static inline Result apply(A a, B b)
@@ -131,7 +131,7 @@ index b015e2039869..59384cd162d7 100644
  #pragma GCC diagnostic pop
  
  
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct DivideIntegralImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct DivideIntegralImpl;
  template <typename A, typename B>
 -struct DivideIntegralImpl
 +struct DivideIntegralImpl<A, B, false>
@@ -157,7 +157,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct DivideIntegralOrZeroImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct DivideIntegralOrZeroImpl;
 +template <typename A, typename B>
 +struct DivideIntegralOrZeroImpl<A,B,false>
  {
@@ -182,7 +182,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct ModuloImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct ModuloImpl;
 +template <typename A, typename B>
 +struct ModuloImpl<A,B,false>
  {
@@ -206,7 +206,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct BitAndImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct BitAndImpl;
 +template <typename A, typename B>
 +struct BitAndImpl<A,B,false>
  {
@@ -230,7 +230,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct BitOrImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct BitOrImpl;
 +template <typename A, typename B>
 +struct BitOrImpl<A,B,false>
  {
@@ -254,7 +254,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct BitXorImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct BitXorImpl;
 +template <typename A, typename B>
 +struct BitXorImpl<A,B,false>
  {
@@ -278,7 +278,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct BitShiftLeftImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct BitShiftLeftImpl;
 +template <typename A, typename B>
 +struct BitShiftLeftImpl<A,B,false>
  {
@@ -302,7 +302,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct BitShiftRightImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct BitShiftRightImpl;
 +template <typename A, typename B>
 +struct BitShiftRightImpl<A,B,false>
  {
@@ -326,7 +326,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct BitRotateLeftImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct BitRotateLeftImpl;
 +template <typename A, typename B>
 +struct BitRotateLeftImpl<A,B,false>
  {
@@ -350,7 +350,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct BitRotateRightImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct BitRotateRightImpl;
 +template <typename A, typename B>
 +struct BitRotateRightImpl<A,B,false>
  {
@@ -380,7 +380,7 @@ index b015e2039869..59384cd162d7 100644
  template <typename T>
  std::enable_if_t<std::is_floating_point_v<T>, Int64> toInteger(T x) { return Int64(x); }
  
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct BitTestImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct BitTestImpl;
  template <typename A, typename B>
 -struct BitTestImpl
 +struct BitTestImpl<A,B,false>
@@ -399,10 +399,10 @@ index b015e2039869..59384cd162d7 100644
 +    template <typename Result = ResultType>
 +    static inline Result apply(A a, B b)
 +    {
-+        if constexpr(!IsDecimalValue<B>) {
++        if constexpr(!IsDecimal<B>) {
 +            BitTestImpl<Result, Result>::apply(static_cast<int64_t>(a), b);
 +        }
-+        else if constexpr(!IsDecimalValue<A>) {
++        else if constexpr(!IsDecimal<A>) {
 +            BitTestImpl<Result, Result>::apply(a, static_cast<int64_t>(b));
 +        }
 +        else
@@ -411,7 +411,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct LeastBaseImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct LeastBaseImpl;
  template <typename A, typename B>
 -struct LeastBaseImpl
 +struct LeastBaseImpl<A,B,false>
@@ -425,7 +425,7 @@ index b015e2039869..59384cd162d7 100644
 +template<typename A, typename B>
 +struct LeastBaseImpl<A,B,true>
 +{
-+    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, DecimalValue>;
++    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, Decimal>;
 +    using ResultPrecInferer = PlusDecimalInferer;
 +
 +    template <typename Result = ResultType>
@@ -444,7 +444,7 @@ index b015e2039869..59384cd162d7 100644
  
 -template <typename A, typename B>
 -struct GreatestBaseImpl
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct GreatestBaseImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct GreatestBaseImpl;
 +template<typename A, typename B>
 +struct GreatestBaseImpl<A,B,false>
  {
@@ -457,7 +457,7 @@ index b015e2039869..59384cd162d7 100644
 +template<typename A, typename B>
 +struct GreatestBaseImpl<A,B,true>
 +{
-+    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, DecimalValue>;
++    using ResultType = If<std::is_floating_point_v<A> || std::is_floating_point_v<B>, double, Decimal>;
 +    using ResultPrecInferer = PlusDecimalInferer;
 +
 +    template <typename Result = ResultType>
@@ -474,12 +474,12 @@ index b015e2039869..59384cd162d7 100644
              return static_cast<ResultType>(a);
          else if constexpr (std::is_floating_point_v<A>)
              return static_cast<ResultType>(std::abs(a));
-+        else if constexpr (IsDecimalValue<A>)
-+            return a < DecimalValue(0) ? -a : a;
++        else if constexpr (IsDecimal<A>)
++            return a < Decimal(0) ? -a : a;
      }
  };
  
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct GCDImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct GCDImpl;
  template <typename A, typename B>
 -struct GCDImpl
 +struct GCDImpl<A, B, false>
@@ -502,7 +502,7 @@ index b015e2039869..59384cd162d7 100644
 +    }
 +};
 +
-+template <typename A, typename B, bool existDecimal = IsDecimalValue<A> || IsDecimalValue<B> > struct LCMImpl;
++template <typename A, typename B, bool existDecimal = IsDecimal<A> || IsDecimal<B> > struct LCMImpl;
 +template <typename A, typename B>
 +struct LCMImpl<A,B,false>
  {
@@ -532,11 +532,11 @@ index b015e2039869..59384cd162d7 100644
  };
  
 +template <>
-+struct IntExp2Impl<DecimalValue>
++struct IntExp2Impl<Decimal>
 +{
 +    using ResultType = UInt64;
 +
-+    static inline ResultType apply(DecimalValue)
++    static inline ResultType apply(Decimal)
 +    {
 +        return 0;
 +    }
@@ -550,11 +550,11 @@ index b015e2039869..59384cd162d7 100644
  };
  
 +template <>
-+struct IntExp10Impl<DecimalValue>
++struct IntExp10Impl<Decimal>
 +{
 +    using ResultType = UInt64;
 +
-+    static inline ResultType apply(DecimalValue a)
++    static inline ResultType apply(Decimal a)
 +    {
 +        return intExp10(a);
 +    }
@@ -570,7 +570,7 @@ index b015e2039869..59384cd162d7 100644
  };
  
 +template<>
-+struct DataTypeFromFieldType<DecimalValue>
++struct DataTypeFromFieldType<Decimal>
 +{
 +    using Type = DataTypeDecimal;
 +};
@@ -586,7 +586,7 @@ index b015e2039869..59384cd162d7 100644
 +    DataTypePtr getDecimalReturnType(const DataTypes & arguments) const {
 +        using LeftFieldType = typename LeftDataType::FieldType;
 +        using RightFieldType = typename RightDataType::FieldType;
-+        if constexpr (!IsDecimalValue<typename Op<LeftFieldType, RightFieldType>::ResultType>)
++        if constexpr (!IsDecimal<typename Op<LeftFieldType, RightFieldType>::ResultType>)
 +        {
 +            return std::make_shared<typename DataTypeFromFieldType<typename Op<LeftFieldType, RightFieldType>::ResultType>::Type>();
 +        } 
@@ -733,7 +733,7 @@ index b015e2039869..59384cd162d7 100644
              || executeType<Int16>(block, arguments, result)
              || executeType<Int32>(block, arguments, result)
              || executeType<Int64>(block, arguments, result)
-+            || executeType<DecimalValue>(block, arguments, result)
++            || executeType<Decimal>(block, arguments, result)
              || executeType<Float32>(block, arguments, result)
              || executeType<Float64>(block, arguments, result)))
             throw Exception("Illegal column " + block.getByPosition(arguments[0]).column->getName()

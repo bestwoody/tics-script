@@ -118,47 +118,47 @@ struct OtherInferer {
 };
 
 // TODO use template to make type of value arguable.
-struct DecimalValue {
+struct Decimal {
     int256_t value;
     PrecType precision;
     ScaleType scale;
 
-    DecimalValue(const DecimalValue& d): value(d.value), precision(d.precision), scale(d.scale) {}
-    DecimalValue():value(0), precision(0), scale(0) {}
-    DecimalValue(int256_t v_, PrecType prec_, ScaleType scale_): value(v_), precision(prec_), scale(scale_){}
+    Decimal(const Decimal& d): value(d.value), precision(d.precision), scale(d.scale) {}
+    Decimal():value(0), precision(0), scale(0) {}
+    Decimal(int256_t v_, PrecType prec_, ScaleType scale_): value(v_), precision(prec_), scale(scale_){}
 
     template<typename T, std::enable_if_t<std::is_integral<T>{}>* = nullptr >
-    DecimalValue(T v): value(v), precision(IntPrec<T>::prec), scale(0) {}
+    Decimal(T v): value(v), precision(IntPrec<T>::prec), scale(0) {}
 
     template<typename T, std::enable_if_t<std::is_floating_point<T>{}>* = nullptr >
-    DecimalValue(T) {
+    Decimal(T) {
         throw Exception("please use cast function to convert float to decimal");
     }
 
-    // check if DecimalValue is inited without any change.
+    // check if Decimal is inited without any change.
     bool isZero() const {
         return precision == 0 && scale == 0;
     }
 
-    DecimalValue operator + (const DecimalValue& v) const ;
+    Decimal operator + (const Decimal& v) const ;
 
-    void operator += (const DecimalValue& v) ;
+    void operator += (const Decimal& v) ;
 
-    void operator = (const DecimalValue& v) {
+    void operator = (const Decimal& v) {
         value = v.value;
         precision = v.precision;
         scale = v.scale;
     }
 
-    DecimalValue operator - (const DecimalValue& v) const ;
+    Decimal operator - (const Decimal& v) const ;
 
-    DecimalValue operator - () const ;
+    Decimal operator - () const ;
 
-    DecimalValue operator ~ () const ;
+    Decimal operator ~ () const ;
 
-    DecimalValue operator * (const DecimalValue& v) const ;
+    Decimal operator * (const Decimal& v) const ;
 
-    DecimalValue operator / (const DecimalValue& v) const ;
+    Decimal operator / (const Decimal& v) const ;
 
     template <typename T, std::enable_if_t<std::is_floating_point<T>{}>* = nullptr>
     operator T () const {
@@ -182,17 +182,17 @@ struct DecimalValue {
         return result;
     }
 
-    bool operator < (const DecimalValue& v) const;
+    bool operator < (const Decimal& v) const;
 
-    bool operator <= (const DecimalValue& v) const;
+    bool operator <= (const Decimal& v) const;
 
-    bool operator == (const DecimalValue& v) const;
+    bool operator == (const Decimal& v) const;
 
-    bool operator >= (const DecimalValue& v) const;
+    bool operator >= (const Decimal& v) const;
 
-    bool operator > (const DecimalValue& v) const;
+    bool operator > (const Decimal& v) const;
 
-    bool operator != (const DecimalValue& v) const;
+    bool operator != (const Decimal& v) const;
 
     void checkOverflow() const;
 
@@ -225,7 +225,7 @@ struct DecimalValue {
         scale = scale_;
     }
 
-    DecimalValue getAvg(uint64_t cnt, PrecType result_prec, ScaleType result_scale) const {
+    Decimal getAvg(uint64_t cnt, PrecType result_prec, ScaleType result_scale) const {
         auto tmpValue = value;
         if (result_scale > scale) {
             for (ScaleType i = 0; i < result_scale - scale; i++) {
@@ -233,16 +233,16 @@ struct DecimalValue {
             }
         }
         tmpValue /= cnt;
-        DecimalValue dec(tmpValue, result_prec, result_scale);
+        Decimal dec(tmpValue, result_prec, result_scale);
         dec.checkOverflow();
         return dec;
     }
 };
 
-template <typename DataType> constexpr bool IsDecimalValue = false;
-template <> constexpr bool IsDecimalValue<DecimalValue> = true;
+template <typename DataType> constexpr bool IsDecimal = false;
+template <> constexpr bool IsDecimal<Decimal> = true;
 
-bool parseDecimal(const char *str, size_t len, DecimalValue& dec);
+bool parseDecimal(const char *str, size_t len, Decimal& dec);
 
 class DecimalMaxValue final : public ext::singleton<DecimalMaxValue> {
     friend class ext::singleton<DecimalMaxValue>;
@@ -266,15 +266,15 @@ public:
 } ;
 
 template<typename T>
-std::enable_if_t<std::is_integral_v<T>, DecimalValue> ToDecimal(T value, PrecType prec, ScaleType scale)
+std::enable_if_t<std::is_integral_v<T>, Decimal> ToDecimal(T value, PrecType prec, ScaleType scale)
 {
-    DecimalValue dec(value);
+    Decimal dec(value);
     dec.ScaleTo(prec, scale);
     return dec;
 }
 
 template<typename T>
-std::enable_if_t<std::is_floating_point_v<T>, DecimalValue> ToDecimal(T value, PrecType prec, ScaleType scale)
+std::enable_if_t<std::is_floating_point_v<T>, Decimal> ToDecimal(T value, PrecType prec, ScaleType scale)
 {
     bool neg = false;
     if (value < 0) {
@@ -298,11 +298,11 @@ std::enable_if_t<std::is_floating_point_v<T>, DecimalValue> ToDecimal(T value, P
     if (neg) {
         v = -v;
     }
-    DecimalValue dec(v, prec, scale);
+    Decimal dec(v, prec, scale);
     dec.checkOverflow();
     return dec;
 }
 
-DecimalValue ToDecimal(DecimalValue dec, PrecType prec, ScaleType scale);
+Decimal ToDecimal(Decimal dec, PrecType prec, ScaleType scale);
 
 }

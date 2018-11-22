@@ -19,13 +19,13 @@ std::string DataTypeDecimal::getName() const
 
 void DataTypeDecimal::serializeBinary(const Field & field, WriteBuffer & ostr) const
 {
-    const DecimalValue & v = get<const DecimalValue &>(field);
+    const Decimal & v = get<const Decimal &>(field);
     writeBinary(v, ostr);
 }
 
 void DataTypeDecimal::deserializeBinary(Field & field, ReadBuffer & istr) const
 {
-    DecimalValue v;
+    Decimal v;
     readBinary(v, istr);
     field = v;
 }
@@ -37,7 +37,7 @@ void DataTypeDecimal::serializeBinary(const IColumn & column, size_t row_num, Wr
 
 void DataTypeDecimal::deserializeBinary(IColumn & column, ReadBuffer & istr) const 
 {
-    DecimalValue v;
+    Decimal v;
     readBinary(v, istr);
     static_cast<ColumnDecimal&>(column).getData().push_back(v);
 }
@@ -51,7 +51,7 @@ void DataTypeDecimal::serializeBinaryBulk(const IColumn & column, WriteBuffer & 
     if (limit == 0 || offset + limit > size)
         limit = size - offset;
 
-    ostr.write(reinterpret_cast<const char *>(&x[offset]), sizeof(DecimalValue) * limit);
+    ostr.write(reinterpret_cast<const char *>(&x[offset]), sizeof(Decimal) * limit);
 }
 
 void DataTypeDecimal::deserializeBinaryBulk(IColumn & column, ReadBuffer & istr, size_t limit, double /*avg_value_size_hint*/) const
@@ -59,8 +59,8 @@ void DataTypeDecimal::deserializeBinaryBulk(IColumn & column, ReadBuffer & istr,
     typename ColumnDecimal::Container & x = typeid_cast<ColumnDecimal &>(column).getData();
     size_t initial_size = x.size();
     x.resize(initial_size + limit);
-    size_t size = istr.readBig(reinterpret_cast<char*>(&x[initial_size]), sizeof(DecimalValue) * limit);
-    x.resize(initial_size + size / sizeof(DecimalValue));
+    size_t size = istr.readBig(reinterpret_cast<char*>(&x[initial_size]), sizeof(Decimal) * limit);
+    x.resize(initial_size + size / sizeof(Decimal));
 }
 
 void DataTypeDecimal::serializeText(const IColumn & column, size_t row_num, WriteBuffer & ostr) const 
@@ -75,7 +75,7 @@ void DataTypeDecimal::serializeTextEscaped(const IColumn & column, size_t row_nu
 
 void DataTypeDecimal::deserializeTextEscaped(IColumn & column, ReadBuffer & istr) const
 {
-    DecimalValue v(0, precision, scale);
+    Decimal v(0, precision, scale);
     readText(v, istr);
     static_cast<ColumnDecimal &>(column).getData().push_back(v);
 }
@@ -85,7 +85,7 @@ void DataTypeDecimal::serializeTextQuoted(const IColumn & column, size_t row_num
 }
 
 void DataTypeDecimal::deserializeTextQuoted(IColumn & column, ReadBuffer & istr) const {
-    DecimalValue v(0, precision, scale);
+    Decimal v(0, precision, scale);
     readText(v, istr);
     static_cast<ColumnDecimal &>(column).getData().push_back(v);
 }
@@ -107,7 +107,7 @@ void DataTypeDecimal::serializeTextCSV(const IColumn& column, size_t row_num, Wr
 
 void DataTypeDecimal::deserializeTextCSV(IColumn & column, ReadBuffer & istr, const char /*delimiter*/) const
 {
-    DecimalValue x(0, precision, scale);
+    Decimal x(0, precision, scale);
     readCSV(x, istr);
     static_cast<ColumnDecimal &>(column).getData().push_back(x);
 }
