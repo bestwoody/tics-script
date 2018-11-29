@@ -158,6 +158,18 @@ struct Decimal {
 
     Decimal operator * (const Decimal& v) const ;
 
+    template<typename T, std::enable_if_t<std::is_floating_point<T>{}>* = nullptr>
+    T operator*(const T& v) const
+    {
+        return static_cast<T>(*this) * (v);
+    }
+
+    template<typename T, std::enable_if_t<std::is_integral<T>{}>* = nullptr>
+    Decimal operator*(const T& v) const
+    {
+        return (*this) * static_cast<Decimal>(v);
+    }
+
     Decimal operator / (const Decimal& v) const ;
 
     template <typename T, std::enable_if_t<std::is_floating_point<T>{}>* = nullptr>
