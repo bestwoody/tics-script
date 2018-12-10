@@ -74,16 +74,11 @@ class CHTableInfo(val table: CHTableRef, private var useSelraw: Boolean) extends
   fetchInfo()
 }
 
+// TODO: This is the metadata of a CH table, and should be cached by utilizing Spark's catalog
+// like how hive metadata is cached.
 object CHTableInfos {
-  val instances: mutable.Map[CHTableRef, CHTableInfo] = mutable.Map()
-
-  // TODO: Background refresh
-  def getInfo(table: CHTableRef, useSelraw: Boolean): CHTableInfo = this.synchronized {
-    if (!instances.contains(table)) {
-      instances += (table -> new CHTableInfo(table, useSelraw))
-    }
-    instances(table)
-  }
+  def getInfo(table: CHTableRef, useSelraw: Boolean): CHTableInfo =
+    new CHTableInfo(table, useSelraw)
 
   // TODO: Parallel fetch
   // TODO: Data tiling in different tables should be considered
