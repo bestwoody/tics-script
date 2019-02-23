@@ -2,6 +2,7 @@ package org.apache.spark.sql.extensions
 
 import java.util.Locale
 
+import com.pingcap.tikv.meta.TiTimestamp
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
@@ -77,12 +78,13 @@ case class CHResolutionRule(getOrCreateCHContext: SparkSession => CHContext)(
   sparkSession: SparkSession
 ) extends Rule[LogicalPlan] {
   protected lazy val chContext = getOrCreateCHContext(sparkSession)
+  protected lazy val tiContext: TiContext = chContext.tiContext
 
   protected[this] def formatTableName(name: String): String =
     if (sparkSession.sqlContext.conf.caseSensitiveAnalysis) name else name.toLowerCase(Locale.ROOT)
 
-  protected val resolveRelation: TableIdentifier => LogicalPlan =
-    (tableIdentifier: TableIdentifier) => {
+  protected val resolveRelation: (TableIdentifier, TiTimestamp) => LogicalPlan =
+    (tableIdentifier: TableIdentifier, ts: TiTimestamp) => {
       val qualified = tableIdentifier.copy(
         database = Some(tableIdentifier.database.getOrElse(chContext.chCatalog.getCurrentDatabase))
       )
@@ -102,22 +104,26 @@ case class CHResolutionRule(getOrCreateCHContext: SparkSession => CHContext)(
             CHConfigConst.PARTITIONS_PER_SPLIT,
             CHConfigConst.DEFAULT_PARTITIONS_PER_SPLIT.toString
           )
-          .toInt
-      )(chContext.sqlContext)
+          .toInt,
+        Some(ts)
+      )(chContext.sqlContext, chContext)
       val alias = formatTableName(tableIdentifier.table)
       SubqueryAlias(alias, LogicalRelation(chRelation))
     }
 
-  override def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
-    case UnresolvedRelation(tableIdentifier)
-        if chContext.chCatalog
-          .catalogOf(tableIdentifier.database)
-          .exists(_.isInstanceOf[CHSessionCatalog]) =>
-      resolveRelation(tableIdentifier)
-    case i @ InsertIntoTable(UnresolvedRelation(tableIdentifier), _, _, _, _)
-        if chContext.chCatalog
-          .catalogOf(tableIdentifier.database)
-          .exists(_.isInstanceOf[CHSessionCatalog]) =>
-      i.copy(table = EliminateSubqueryAliases(resolveRelation(tableIdentifier)))
+  override def apply(plan: LogicalPlan): LogicalPlan = {
+    val ts = tiContext.tiSession.getTimestamp
+    plan transformUp {
+      case UnresolvedRelation(tableIdentifier)
+          if chContext.chCatalog
+            .catalogOf(tableIdentifier.database)
+            .exists(_.isInstanceOf[CHSessionCatalog]) =>
+        resolveRelation(tableIdentifier, ts)
+      case i @ InsertIntoTable(UnresolvedRelation(tableIdentifier), _, _, _, _)
+          if chContext.chCatalog
+            .catalogOf(tableIdentifier.database)
+            .exists(_.isInstanceOf[CHSessionCatalog]) =>
+        i.copy(table = EliminateSubqueryAliases(resolveRelation(tableIdentifier, ts)))
+    }
   }
 }

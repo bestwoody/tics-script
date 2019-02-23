@@ -12,8 +12,10 @@ if [ "$type" = "-h" ]; then
 	exit 0
 elif [ "$type" = "-a" ]; then
 	build_type="ASan"
-else
+elif [ -z "$type" ]; then
 	build_type="Debug"
+else
+	build_type="$type"
 fi
 
 source ./_build.sh

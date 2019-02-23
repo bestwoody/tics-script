@@ -109,9 +109,13 @@ def analyze(partitions, parts, is_mmt):
     print "Parts level-total size(MB) of each level:", level_total_sizes
     print "Parts avg size(MB) of each level:", level_avg_sizes
     if is_mmt:
-        print "Approximate write batch size(MB):", level_0_size == 0 and '?' or format(len(partitions) * level_0_size, '.2f')
+        write_batch = "?"
+        if level_0_size != 0:
+            write_batch = format(level_0_size, '.2f') + " - "
+            write_batch += format(len(partitions) * level_0_size, '.2f')
+        print "Approximate write batch size(MB):", write_batch
     if len(partitions) > 0:
-        print "Approximate finished write batchs count:", float(max_end) / len(partitions)
+        print "Approximate finished write batchs count:", float(max_end) / len(partitions), "-", float(max_end)
         print "Approximate write amplification: %.1f" % (float(io_size) / total_size)
 
 analyze(*parse())

@@ -17,7 +17,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <protobuf.version>3.1.0</protobuf.version>
     <junit.version>4.12</junit.version>
-    <spark.version>2.3.1</spark.version>
+    <spark.version>2.3.3</spark.version>
     <scala.binary.version>2.11</scala.binary.version>
     <scala.version>2.11</scala.version>
     <scalatest.version>3.0.3</scalatest.version>
@@ -294,7 +294,9 @@
       </plugin>
       <!-- Assembly Plug-in -->
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.1.0</version>
         <configuration>
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -306,23 +308,6 @@
             <phase>package</phase>
             <goals>
               <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- Scala Format Plug-in -->
-      <plugin>
-        <groupId>org.antipathy</groupId>
-        <artifactId>mvn-scalafmt</artifactId>
-        <version>0.7_1.5.1</version>
-        <configuration>
-          <configLocation>${project.basedir}/scalafmt.conf</configLocation>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>validate</phase>
-            <goals>
-              <goal>format</goal>
             </goals>
           </execution>
         </executions>
@@ -344,6 +329,45 @@
           <visitor>true</visitor>
           <sourceDirectory>../chspark/src/main/antlr4</sourceDirectory>
         </configuration>
+      </plugin>
+      <!-- Google-java-format -->
+      <plugin>
+        <groupId>com.coveo</groupId>
+        <artifactId>fmt-maven-plugin</artifactId>
+        <version>2.6.0</version>
+        <configuration>
+          <sourceDirectory>src/main/java</sourceDirectory>
+          <testSourceDirectory>src/test/java</testSourceDirectory>
+          <verbose>true</verbose>
+          <filesNamePattern>.*\.java</filesNamePattern>
+          <skip>false</skip>
+          <skipSortingImports>false</skipSortingImports>
+          <style>google</style>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>format</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Scala Format Plug-in -->
+      <plugin>
+        <groupId>org.antipathy</groupId>
+        <artifactId>mvn-scalafmt</artifactId>
+        <version>0.7_1.5.1</version>
+        <configuration>
+          <configLocation>${project.basedir}/scalafmt.conf</configLocation>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>format</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

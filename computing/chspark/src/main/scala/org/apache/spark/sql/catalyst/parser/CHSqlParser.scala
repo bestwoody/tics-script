@@ -7,7 +7,7 @@ import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.trees.Origin
-import org.apache.spark.sql.ch.CHEngine
+import org.apache.spark.sql.ch.{CHEngine, LogEngine, MutableMergeTreeEngine, TxnMergeTreeEngine}
 import org.apache.spark.sql.execution.{SparkSqlAstBuilder, SparkSqlParser}
 import org.apache.spark.sql.extensions._
 import org.apache.spark.sql.internal.SQLConf
@@ -158,38 +158,44 @@ class CHSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) with SqlBa
     withOrigin(ctx) {
       import ctx._
 
-      if (mmtEngine() != null) {
-        visitMmtEngine(mmtEngine())
-      } else if (logEngine() != null) {
-        visitLogEngine(logEngine())
-      } else {
-        operationNotAllowed("Flash table storage engine is not specified", ctx)
-      }
+      val engine =
+        if (mmtEngine() != null) {
+          visitMmtEngine(mmtEngine())
+        } else if (tmtEngine() != null) {
+          visitTmtEngine(tmtEngine())
+        } else if (logEngine() != null) {
+          visitLogEngine(logEngine())
+        } else {
+          operationNotAllowed("Flash table storage engine is not specified", ctx)
+        }
+
+      engine.toProperties.toMap
     }
 
-  override def visitLogEngine(ctx: SqlBaseParser.LogEngineContext): Map[String, String] =
+  override def visitLogEngine(ctx: SqlBaseParser.LogEngineContext): LogEngine =
     withOrigin(ctx) {
-      Map(CHCatalogConst.TAB_META_ENGINE -> CHEngine.Log.toString)
+      LogEngine()
     }
 
-  override def visitMmtEngine(ctx: SqlBaseParser.MmtEngineContext): Map[String, String] =
+  override def visitMmtEngine(ctx: SqlBaseParser.MmtEngineContext): MutableMergeTreeEngine =
     withOrigin(ctx) {
       import ctx._
 
-      val properties = mutable.Map[String, String]()
-
-      properties += (CHCatalogConst.TAB_META_ENGINE -> CHEngine.MutableMergeTree.toString)
       // Partition number could be empty, respecting not specifying partition number in CH create table statement.
-      if (partitionNum != null) {
-        properties += (CHCatalogConst.TAB_META_PARTITION_NUM -> partitionNum.getText)
-      }
-      if (bucketNum != null) {
-        properties += (CHCatalogConst.TAB_META_BUCKET_NUM -> bucketNum.getText)
-      } else {
-        properties += (CHCatalogConst.TAB_META_BUCKET_NUM -> CHCatalogConst.DEFAULT_BUCKET_NUM.toString)
-      }
+      val pn = if (partitionNum != null) Some(partitionNum.getText.toInt) else None
+      val bn = if (bucketNum != null) bucketNum.getText.toInt else CHCatalogConst.DEFAULT_BUCKET_NUM
+      MutableMergeTreeEngine(pn, Seq.empty[String], bn)
+    }
 
-      properties.toMap
+  override def visitTmtEngine(ctx: SqlBaseParser.TmtEngineContext): TxnMergeTreeEngine =
+    withOrigin(ctx) {
+      import ctx._
+
+      // Partition number could be empty, respecting not specifying partition number in CH create table statement.
+      val pn = if (partitionNum != null) Some(partitionNum.getText.toInt) else None
+      val bn = if (bucketNum != null) bucketNum.getText.toInt else CHCatalogConst.DEFAULT_BUCKET_NUM
+      val ti = tableInfo.getText
+      TxnMergeTreeEngine(pn, Seq.empty[String], bn, ti)
     }
 
   override def visitPrimaryKey(ctx: SqlBaseParser.PrimaryKeyContext): AnyRef = ???

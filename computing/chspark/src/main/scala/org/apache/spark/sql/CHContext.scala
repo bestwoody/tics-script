@@ -97,7 +97,7 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
     }
     val df = tiContext.getDataFrame(database, table)
     // Tables created through CHContext APIs are now fixed as using MMT.
-    val mmt = MutableMergeTree(
+    val mmt = MutableMergeTreeEngine(
       partitionNum,
       tableInfo.get.getColumns.filter(_.isPrimaryKey).map(_.getName),
       bucketNum
@@ -152,7 +152,7 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
     batchBytes: Long = SparkCHClientInsert.STORAGE_BATCH_INSERT_COUNT_BYTES
   ): Unit = {
     // Tables created through CHContext APIs are now fixed as using MMT.
-    val mmt = MutableMergeTree(partitionNum, primaryKeys, bucketNum)
+    val mmt = MutableMergeTreeEngine(partitionNum, primaryKeys, bucketNum)
     CHUtil.createTable(database, table, df.schema, mmt, false, cluster)
 
     Partitioner.fromPrimaryKeys(PrimaryKey.fromSchema(df.schema, primaryKeys)) match {
@@ -196,7 +196,7 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
                  table: String,
                  partitionsPerSplit: Int = CHConfigConst.DEFAULT_PARTITIONS_PER_SPLIT): Unit = {
     val tableRef = new CHTableRef(cluster.nodes.head, database, table)
-    val rel = new CHRelation(Array(tableRef), partitionsPerSplit)(sqlContext)
+    val rel = CHRelation(Array(tableRef), partitionsPerSplit)(sqlContext, this)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRef.mappedName)
   }
 
@@ -207,7 +207,7 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
   ): Unit = {
     val tableRefList: Array[CHTableRef] =
       cluster.nodes.map(node => new CHTableRef(node, database, table))
-    val rel = new CHRelation(tableRefList, partitionsPerSplit)(sqlContext)
+    val rel = CHRelation(tableRefList, partitionsPerSplit)(sqlContext, this)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList.head.mappedName)
   }
 
@@ -218,7 +218,7 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
   ): Unit = {
     val tableRefList: Array[CHTableRef] =
       cluster.nodes.map(node => new CHTableRef(node, database, table))
-    val rel = new CHRelation(tableRefList, partitionsPerSplit)(sqlContext)
+    val rel = CHRelation(tableRefList, partitionsPerSplit)(sqlContext, this)
     sqlContext.baseRelationToDataFrame(rel).createTempView(tableRefList.head.mappedName)
   }
 

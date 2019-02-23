@@ -50,7 +50,7 @@ class CHSqlSuite extends SparkFunSuite {
         database,
         table,
         schema,
-        MutableMergeTree(partitionNum, pkList, bucketNum),
+        MutableMergeTreeEngine(partitionNum, pkList, bucketNum),
         false
       ) == expected
     )

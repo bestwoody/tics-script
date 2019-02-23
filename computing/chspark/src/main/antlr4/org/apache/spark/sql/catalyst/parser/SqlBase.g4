@@ -292,12 +292,17 @@ mmtEngine
     : (MMT | MUTABLEMERGETREE) ('(' (partitionNum=INTEGER_VALUE ',')? bucketNum=INTEGER_VALUE ')')?
     ;
 
+tmtEngine
+    : (TMT | TXNMERGETREE) '(' (partitionNum=INTEGER_VALUE ',')? (bucketNum=INTEGER_VALUE ',')? tableInfo=STRING ')'
+    ;
+
 logEngine
     : LOG
     ;
 
 chEngine
     : mmtEngine
+    | tmtEngine
     | logEngine
     ;
 
@@ -781,7 +786,7 @@ nonReserved
     | DATABASE | SELECT | FROM | WHERE | HAVING | TO | TABLE | WITH | NOT
     | DIRECTORY
     | BOTH | LEADING | TRAILING
-    | PRIMARY | KEY | MMT | MUTABLEMERGETREE | TIDB | FLASH
+    | PRIMARY | KEY | MMT | MUTABLEMERGETREE | TMT | TXNMERGETREE | TIDB | FLASH
     ;
 
 SELECT: 'SELECT';
@@ -1020,6 +1025,8 @@ KEY: 'KEY';
 MMT: 'MMT';
 LOG: 'LOG';
 MUTABLEMERGETREE: 'MUTABLEMERGETREE';
+TMT: 'TMT';
+TXNMERGETREE: 'TXNMERGETREE';
 TIDB: 'TIDB';
 FLASH: 'FLASH';
 

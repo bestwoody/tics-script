@@ -36,6 +36,7 @@ dependency-reduced-pom.xml
 build
 
 # storage compile result and running data dir
+storage/ch-patch/autom4te.cache/
 storage/build
 storage/build_clang
 storage/*-cache
@@ -73,7 +74,11 @@ benchmark/metastore_db
 *.iml
 *.swp
 tags
+.clang-format
 
 .DS_Store
 lib/
 backup/
+
+# for temp
+storage/ch-patch/contrib/kvproto

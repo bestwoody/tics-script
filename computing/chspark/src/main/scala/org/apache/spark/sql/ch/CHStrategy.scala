@@ -190,7 +190,8 @@ case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSess
       Option.empty
     )
 
-    val chPlan = CHScanExec(output, sparkSession, relation, chLogicalPlan)
+    val chPlan =
+      CHScanExec(output, getOrCreateCHContext(sparkSession), sparkSession, relation, chLogicalPlan)
 
     AggUtils.planAggregateWithoutDistinct(
       groupAttributes,
@@ -272,6 +273,7 @@ case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSess
       // Use rewritten project attributes as CH plan output.
       val chExec = CHScanExec(
         rewrittenProjectAttrSet,
+        getOrCreateCHContext(sparkSession),
         sparkSession,
         chRelation,
         chLogicalPlan
@@ -281,7 +283,13 @@ case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSess
       // Need extra Spark Project.
       // Use total push down project attributes as CH plan output.
       val totalPushDownProjectAttrs = totalPushDownProjects.map(_.toAttribute)
-      val chExec = CHScanExec(totalPushDownProjectAttrs, sparkSession, chRelation, chLogicalPlan)
+      val chExec = CHScanExec(
+        totalPushDownProjectAttrs,
+        getOrCreateCHContext(sparkSession),
+        sparkSession,
+        chRelation,
+        chLogicalPlan
+      )
 
       // Use rewritten project list as Spark Project output.
       ProjectExec(rewrittenProjectList, residualFilter.map(FilterExec(_, chExec)).getOrElse(chExec))

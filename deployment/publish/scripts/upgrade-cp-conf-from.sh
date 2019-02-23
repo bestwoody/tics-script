@@ -1,4 +1,6 @@
 from_path="$1"
+step_by_step="$2"
+just_copy="$3"
 
 set -ue
 
@@ -7,9 +9,19 @@ if [ -z "$from_path" ]; then
 	exit 1
 fi
 
+if [ -z "$step_by_step" ]; then
+	step_by_step="true"
+fi
+
+if [ -z "$just_copy" ]; then
+	just_copy="false"
+fi
+
 confirm()
 {
-	read -p "=> hit enter to continue"
+	if [ "$step_by_step" == "true" ]; then
+		read -p "=> hit enter to continue"
+	fi
 }
 
 if [ ! -f "$from_path/package-info" ]; then
@@ -58,6 +70,10 @@ cat ./upgrade-cp-conf-from.pernode | while read file; do
 		fi
 	done
 done
+
+if [ "$just_copy" == "true" ]; then
+	exit
+fi
 
 echo "=> stoping all storage services:"
 confirm

@@ -15,16 +15,22 @@
 
 package org.apache.spark.sql.ch
 
+import org.apache.spark.sql.CHContext
 import org.apache.spark.sql.types.StructType
 
-import scala.collection.mutable
-
-class TableInfo(var schema: StructType, var rowWidth: Int, var rowCount: Long, var engine: CHEngine)
+class TableInfo(@transient val chContext: CHContext,
+                var schema: StructType,
+                var rowWidth: Int,
+                var rowCount: Long,
+                var engine: CHEngine)
     extends Serializable {}
 
-class CHTableInfo(val table: CHTableRef, private var useSelraw: Boolean) extends Serializable {
+class CHTableInfo(@transient val chContext: CHContext,
+                  val table: CHTableRef,
+                  private var useSelraw: Boolean)
+    extends Serializable {
   private var info: TableInfo =
-    new TableInfo(null, -1, -1, null)
+    new TableInfo(chContext, null, -1, -1, null)
   private val TIDB_ROWID = "_tidb_rowid"
 
   def getSchema: StructType =
@@ -42,7 +48,7 @@ class CHTableInfo(val table: CHTableRef, private var useSelraw: Boolean) extends
   def fetchTableEngine(): Unit = {
     val stmt = CHUtil.getShowCreateTable(table)
     info.engine = CHEngine.fromCreateStatement(stmt)
-    if (info.engine.name != CHEngine.MutableMergeTree) {
+    if (info.engine.name != CHEngine.MutableMergeTree && info.engine.name != CHEngine.TxnMergeTree) {
       useSelraw = false
     }
   }
@@ -77,17 +83,19 @@ class CHTableInfo(val table: CHTableRef, private var useSelraw: Boolean) extends
 // TODO: This is the metadata of a CH table, and should be cached by utilizing Spark's catalog
 // like how hive metadata is cached.
 object CHTableInfos {
-  def getInfo(table: CHTableRef, useSelraw: Boolean): CHTableInfo =
-    new CHTableInfo(table, useSelraw)
+  def getInfo(chContext: CHContext, table: CHTableRef, useSelraw: Boolean): CHTableInfo =
+    new CHTableInfo(chContext, table, useSelraw)
 
   // TODO: Parallel fetch
   // TODO: Data tiling in different tables should be considered
-  def getInfo(clusterTable: Seq[CHTableRef], useSelraw: Boolean): TableInfo = {
+  def getInfo(chContext: CHContext,
+              clusterTable: Seq[CHTableRef],
+              useSelraw: Boolean): TableInfo = {
     var info: TableInfo = null
     clusterTable.foreach(table => {
-      val curr = getInfo(table, useSelraw).getInfo
+      val curr = getInfo(chContext, table, useSelraw).getInfo
       if (info == null) {
-        info = new TableInfo(curr.schema, curr.rowWidth, curr.rowCount, curr.engine)
+        info = new TableInfo(chContext, curr.schema, curr.rowWidth, curr.rowCount, curr.engine)
       } else {
         if (info.schema != curr.schema || info.engine != curr.engine) {
           throw new Exception("Cluster table schema not the same: " + table)

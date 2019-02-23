@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import com.pingcap.common.{Cluster, Node}
 import com.pingcap.theflash.{SparkCHClientInsert, SparkCHClientSelect, TypeMappingJava}
-import com.pingcap.tikv.meta.TiTableInfo
+import com.pingcap.tikv.meta.{TiTableInfo, TiTimestamp}
 import com.pingcap.common.IOUtil
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
@@ -29,7 +29,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, StringLPad, StringRPad, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.CHUtil.SharedSparkCHClientInsert.Identity
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{CHContext, DataFrame, Row}
 
 import scala.collection.JavaConversions._
 
@@ -65,13 +65,15 @@ object CHUtil {
       }
 
     def fromCHTableInfo(tableInfo: TableInfo): Partitioner = tableInfo.engine match {
-      case MutableMergeTree(_, pkList, _) =>
+      case MutableMergeTreeEngine(_, pkList, _) =>
         if (pkList.size == 1 && tableInfo.schema(pkList.head).dataType.isInstanceOf[IntegralType]) {
           Partitioner(Hash, tableInfo.schema.getFieldIndex(pkList.head).get)
         } else {
           Partitioner(Random)
         }
       case LogEngine() => Partitioner(Random)
+      case TxnMergeTreeEngine(_, _, _, _) =>
+        throw new RuntimeException("Partitioner for TMT engine not supported")
     }
 
     def fromTiTableInfo(tiTableInfo: TiTableInfo): Partitioner =
@@ -783,48 +785,6 @@ object CHUtil {
         client.close()
       }
     }
-  }
-
-  def getTableEngine(stmt: String): String = {
-    val start: Int = stmt.lastIndexOf("ENGINE = ") + 9
-    var end: Int = stmt.indexOf("(", start)
-    if (end == -1) {
-      end = stmt.length
-    }
-    stmt.substring(start, end)
-  }
-
-  def getPartitionNum(stmt: String): Option[String] = {
-    val start: Int = stmt.lastIndexOf("(") + 1
-    if (stmt.charAt(start) >= '0' && stmt.charAt(start) <= '9') {
-      // Hit the partition num token, and no '(' afterwards (single column pk).
-      // In this case move to 1 char after the first space after start, i.e. "(16, i, 8192)".
-      val end = stmt.indexOf(",", start)
-      Some(stmt.substring(start, end))
-    } else {
-      None
-    }
-  }
-
-  def getPrimaryKeys(stmt: String): Seq[String] = {
-    var (start: Int, end: Int) =
-      (stmt.lastIndexOf("(") + 1, stmt.lastIndexOf(","))
-    if (stmt.charAt(start) >= '0' && stmt.charAt(start) <= '9') {
-      // Hit the partition num token, and no '(' afterwards (single column pk).
-      // In this case move to 1 char after the first space after start, i.e. "(16, i, 8192)".
-      start = stmt.indexOf(" ", start) + 1
-    }
-    if (stmt.charAt(end - 1) == ')') {
-      end -= 1
-    }
-
-    stmt.substring(start, end).split(" *, *").map(_.replaceAll("`", "").trim)
-  }
-
-  def getBucketNum(stmt: String): String = {
-    val start = stmt.lastIndexOf(",") + 2
-    val end = stmt.lastIndexOf(")")
-    stmt.substring(start, end)
   }
 
   def getRowCount(table: CHTableRef, useSelraw: Boolean = false): Long = {

@@ -121,6 +121,8 @@ make_ch()
 	# https://stackoverflow.com/a/23378780
 	physical_cpu_count=$([ $(uname) = 'Darwin' ] && sysctl -n hw.physicalcpu_max || lscpu -p | egrep -v '^#' | sort -u -t, -k 2,4 | wc -l)
 
+	# physical_cpu_count=1
+
 	if [ "$is_clang" = "true" ]; then
 		if [ "$build_type" = "ASan" ]; then
 			cmake "$source_related_dir" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC -DCMAKE_BUILD_TYPE=ASan -DENABLE_TCMALLOC=0

@@ -1,6 +1,6 @@
 package org.apache.spark.sql.ch
 
-import com.pingcap.tikv.meta.TiTableInfo
+import com.pingcap.tikv.meta.{TiTableInfo, TiTimestamp}
 import org.apache.spark.sql.{CHContext, SparkSession, _}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
@@ -78,8 +78,8 @@ class CHInMemoryExternalCatalog(chContext: CHContext)
 class CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext: SparkSession => CHContext)(
   sparkSession: SparkSession
 ) extends CHResolutionRule(getOrCreateCHContext)(sparkSession) {
-  override val resolveRelation: TableIdentifier => LogicalPlan =
-    (tableIdentifier: TableIdentifier) => {
+  override protected val resolveRelation: (TableIdentifier, TiTimestamp) => LogicalPlan =
+    (tableIdentifier: TableIdentifier, ts: TiTimestamp) => {
       val catalogTable = chContext.chCatalog.getTableMetadata(tableIdentifier)
       val alias = formatTableName(tableIdentifier.table)
       SubqueryAlias(

@@ -1,59 +1,58 @@
 package com.pingcap.common;
 
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class AutoGrowByteBuffer {
-    private ByteBuffer initBuf;
-    private ByteBuffer buf;
+  private ByteBuffer initBuf;
+  private ByteBuffer buf;
 
-    public AutoGrowByteBuffer(ByteBuffer initBuf) {
-        initBuf.clear();
-        this.initBuf = initBuf;
-        this.buf = initBuf;
+  public AutoGrowByteBuffer(ByteBuffer initBuf) {
+    initBuf.clear();
+    this.initBuf = initBuf;
+    this.buf = initBuf;
+  }
+
+  public int dataSize() {
+    return buf.position();
+  }
+
+  public ByteBuffer getByteBuffer() {
+    return buf;
+  }
+
+  private void beforeIncrease(int inc) {
+    int minCap = buf.position() + inc;
+    if (minCap > buf.capacity()) {
+      int newCap = buf.capacity();
+      do {
+        newCap = newCap << 1;
+      } while (minCap > newCap);
+
+      ByteBuffer newBuf = MemoryUtil.allocateDirect(newCap);
+      MemoryUtil.copyMemory(
+          MemoryUtil.getAddress(buf), MemoryUtil.getAddress(newBuf), buf.position());
+      newBuf.position(buf.position());
+
+      if (buf != initBuf) {
+        MemoryUtil.free(buf);
+      }
+
+      buf = newBuf;
     }
+  }
 
-    public int dataSize() {
-        return buf.position();
-    }
+  public void put(ReadBuffer reader, int len) throws IOException {
+    beforeIncrease(len);
 
-    public ByteBuffer getByteBuffer() {
-        return buf;
-    }
+    buf.limit(buf.position() + len);
+    reader.read(buf);
+  }
 
-    private void beforeIncrease(int inc) {
-        int minCap = buf.position() + inc;
-        if (minCap > buf.capacity()) {
-            int newCap = buf.capacity();
-            do {
-                newCap = newCap << 1;
-            } while (minCap > newCap);
+  public void putByte(byte v) {
+    beforeIncrease(1);
 
-            ByteBuffer newBuf = MemoryUtil.allocateDirect(newCap);
-            MemoryUtil.copyMemory(MemoryUtil.getAddress(buf), MemoryUtil.getAddress(newBuf), buf.position());
-            newBuf.position(buf.position());
-
-            if (buf != initBuf) {
-                MemoryUtil.free(buf);
-            }
-
-            buf = newBuf;
-        }
-    }
-
-    public void put(ReadBuffer reader, int len) throws IOException {
-        beforeIncrease(len);
-
-        buf.limit(buf.position() + len);
-        reader.read(buf);
-    }
-
-    public void putByte(byte v) {
-        beforeIncrease(1);
-
-        buf.limit(buf.position() + 1);
-        buf.put(v);
-    }
-
+    buf.limit(buf.position() + 1);
+    buf.put(v);
+  }
 }

@@ -14,5 +14,5 @@
     * MutableMergeTree engine testcases
     * Run by: mutable-test.sh
 
-## Dev on CH and keep syncing with the official repository
+## Dev on CH submodule
 * See [dev-on-ch](./ch-dev.md)

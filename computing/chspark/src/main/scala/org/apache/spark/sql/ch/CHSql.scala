@@ -233,18 +233,25 @@ object CHSql {
 
   private def compileEngine(chEngine: CHEngine): String =
     chEngine match {
-      case mmt: MutableMergeTree =>
+      case mmt: MutableMergeTreeEngine =>
         compileMutableMergeTree(mmt)
+      case tmt: TxnMergeTreeEngine =>
+        compileTxnMergeTree(tmt)
       case logEngine: LogEngine => compileLogEngine(logEngine)
       case _                    => throw new UnsupportedOperationException(s"Engine ${chEngine.name}")
     }
 
   private def compileLogEngine(logEngine: LogEngine): String = "Log"
 
-  private def compileMutableMergeTree(mmt: MutableMergeTree): String =
+  private def compileMutableMergeTree(mmt: MutableMergeTreeEngine): String =
     s"${mmt.name}(${mmt.partitionNum
       .map(_.toString + ", ")
       .getOrElse("")}${mmt.pkList.map("`" + _.toLowerCase() + "`").mkString("(", ",", ")")}, ${mmt.bucketNum})"
+
+  private def compileTxnMergeTree(tmt: TxnMergeTreeEngine): String =
+    s"${tmt.name}(${tmt.partitionNum
+      .map(_.toString + ", ")
+      .getOrElse("")}${tmt.pkList.map("`" + _.toLowerCase() + "`").mkString("(", ",", ")")}, ${tmt.bucketNum}), '${tmt.tableInfo}'"
 
   private def compilePKList(table: TiTableInfo): String =
     table.getColumns

@@ -36,7 +36,7 @@ echo "$pids" | while read pid; do
 		sleep 1
 
 		pid_exists=`ps -ef | grep theflash | grep "$pid"`
-		if [ -z "$pids" ]; then
+		if [ -z "$pids_exists" ]; then
 			echo "#$i pid $pid closed"
 			break
 		fi

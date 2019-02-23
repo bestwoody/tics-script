@@ -15,8 +15,6 @@ import org.apache.spark.sql.internal.StaticSQLConf
  */
 object CHCatalogConst {
   val TAB_META_ENGINE = "engine"
-  val TAB_META_PARTITION_NUM = "partition_num"
-  val TAB_META_BUCKET_NUM = "bucket_num"
 
   val COL_META_PRIMARY_KEY = "primary_key"
 

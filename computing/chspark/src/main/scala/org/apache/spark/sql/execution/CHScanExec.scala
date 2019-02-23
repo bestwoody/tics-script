@@ -16,13 +16,14 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{CHContext, SparkSession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch.{CHLogicalPlan, CHRelation, CHSql}
 import org.apache.spark.sql.execution.datasources.CHScanRDD
 
 case class CHScanExec(output: Seq[Attribute],
+                      @transient chContext: CHContext,
                       @transient sparkSession: SparkSession,
                       @transient chRelation: CHRelation,
                       @transient chLogicalPlan: CHLogicalPlan)
@@ -33,7 +34,14 @@ case class CHScanExec(output: Seq[Attribute],
     val tableQueryPairs = chRelation.tables.map(table => {
       (table, CHSql.query(table, chLogicalPlan, chRelation.useSelraw))
     })
-    new CHScanRDD(sparkSession, output, tableQueryPairs, chRelation.partitionsPerSplit) :: Nil
+    new CHScanRDD(
+      chContext,
+      sparkSession,
+      output,
+      tableQueryPairs,
+      chRelation.partitionsPerSplit,
+      chRelation.ts
+    ) :: Nil
   }
 
   override protected def doExecute(): RDD[InternalRow] =

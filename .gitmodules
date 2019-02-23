@@ -4,5 +4,5 @@
 	ignore = dirty
 [submodule "storage/ch"]
 	path = storage/ch
-	url = https://github.com/yandex/clickhouse
+	url = git@github.com:pingcap/tics.git
 	ignore = dirty

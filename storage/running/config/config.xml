@@ -6,14 +6,25 @@
 
     <logger>
         <level>trace</level>
-        <log>/tmp/theflash/running/server.log</log>
-        <errorlog>/tmp/theflash/running/error.log</errorlog>
+        <log>/tmp/theflash/server.log</log>
+        <errorlog>/tmp/theflash/error.log</errorlog>
         <size>1000M</size>
         <count>10</count>
         <!-- <console>1</console> --> <!-- Default behavior is autodetection (log to console if not daemon mode and is tty) -->
     </logger>
 
     <display_name>the flash</display_name>
+
+    <raft>
+        <service_addr>0.0.0.0:3930</service_addr>
+        <kvstore_path>/tmp/theflash/kvstore</kvstore_path>
+        <!--pd_addr>127.0.0.1:2379</pd_addr-->
+    </raft>
+
+    <tidb>
+        <service_ip>127.0.0.1</service_ip>
+        <status_port>10080</status_port>
+    </tidb>
 
     <http_port>8123</http_port>
     <tcp_port>9000</tcp_port>
@@ -61,12 +72,12 @@
     <persisted_mapping_cache_size>0</persisted_mapping_cache_size>
 
     <!-- Path to data directory, with trailing slash. -->
-    <path>/tmp/theflash/running/db</path>
+    <path>/tmp/theflash/db</path>
 
     <!-- Path to temporary data for processing hard queries. -->
-    <tmp_path>/tmp/theflash/running/tmp</tmp_path>
+    <tmp_path>/tmp/theflash/tmp</tmp_path>
 
-    <l0_optimize>true</l0_optimize>
+    <l0_optimize>false</l0_optimize>
 
     <!-- Path to configuration file with users, access rights, profiles of settings, quotas. -->
     <users_config>users.xml</users_config>

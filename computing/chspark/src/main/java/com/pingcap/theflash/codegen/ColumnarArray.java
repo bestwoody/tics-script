@@ -1,17 +1,17 @@
 /*
-* Copyright 2017 PingCAP, Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2017 PingCAP, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.pingcap.theflash.codegen;
 
@@ -45,25 +45,39 @@ public class ColumnarArray extends ArrayData {
   }
 
   @Override
-  public boolean[] toBooleanArray() { return data.getBooleans(offset, length); }
+  public boolean[] toBooleanArray() {
+    return data.getBooleans(offset, length);
+  }
 
   @Override
-  public byte[] toByteArray() { return data.getBytes(offset, length); }
+  public byte[] toByteArray() {
+    return data.getBytes(offset, length);
+  }
 
   @Override
-  public short[] toShortArray() { return data.getShorts(offset, length); }
+  public short[] toShortArray() {
+    return data.getShorts(offset, length);
+  }
 
   @Override
-  public int[] toIntArray() { return data.getInts(offset, length); }
+  public int[] toIntArray() {
+    return data.getInts(offset, length);
+  }
 
   @Override
-  public long[] toLongArray() { return data.getLongs(offset, length); }
+  public long[] toLongArray() {
+    return data.getLongs(offset, length);
+  }
 
   @Override
-  public float[] toFloatArray() { return data.getFloats(offset, length); }
+  public float[] toFloatArray() {
+    return data.getFloats(offset, length);
+  }
 
   @Override
-  public double[] toDoubleArray() { return data.getDoubles(offset, length); }
+  public double[] toDoubleArray() {
+    return data.getDoubles(offset, length);
+  }
 
   // TODO: this is extremely expensive.
   @Override
@@ -77,13 +91,15 @@ public class ColumnarArray extends ArrayData {
         }
       }
       return list;
-    } catch(Exception e) {
+    } catch (Exception e) {
       throw new RuntimeException("Could not get the array", e);
     }
   }
 
   @Override
-  public boolean isNullAt(int ordinal) { return data.isNullAt(offset + ordinal); }
+  public boolean isNullAt(int ordinal) {
+    return data.isNullAt(offset + ordinal);
+  }
 
   @Override
   public void setNullAt(int i) {
@@ -96,7 +112,9 @@ public class ColumnarArray extends ArrayData {
   }
 
   @Override
-  public byte getByte(int ordinal) { return data.getByte(offset + ordinal); }
+  public byte getByte(int ordinal) {
+    return data.getByte(offset + ordinal);
+  }
 
   @Override
   public short getShort(int ordinal) {
@@ -104,10 +122,14 @@ public class ColumnarArray extends ArrayData {
   }
 
   @Override
-  public int getInt(int ordinal) { return data.getInt(offset + ordinal); }
+  public int getInt(int ordinal) {
+    return data.getInt(offset + ordinal);
+  }
 
   @Override
-  public long getLong(int ordinal) { return data.getLong(offset + ordinal); }
+  public long getLong(int ordinal) {
+    return data.getLong(offset + ordinal);
+  }
 
   @Override
   public float getFloat(int ordinal) {
@@ -115,7 +137,9 @@ public class ColumnarArray extends ArrayData {
   }
 
   @Override
-  public double getDouble(int ordinal) { return data.getDouble(offset + ordinal); }
+  public double getDouble(int ordinal) {
+    return data.getDouble(offset + ordinal);
+  }
 
   @Override
   public Decimal getDecimal(int ordinal, int precision, int scale) {
@@ -184,7 +208,7 @@ public class ColumnarArray extends ArrayData {
     } else if (dataType instanceof ArrayType) {
       return getArray(ordinal);
     } else if (dataType instanceof StructType) {
-      return getStruct(ordinal, ((StructType)dataType).fields().length);
+      return getStruct(ordinal, ((StructType) dataType).fields().length);
     } else if (dataType instanceof MapType) {
       return getMap(ordinal);
     } else if (dataType instanceof CalendarIntervalType) {

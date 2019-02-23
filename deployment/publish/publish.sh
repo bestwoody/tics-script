@@ -127,6 +127,7 @@ cp -f "$publish_dir/scripts/upgrade-cp-conf-from.unified" "$scripts_pack"
 cp -f "$publish_dir/scripts/upgrade-cp-conf-from.pernode" "$scripts_pack"
 cp -f $publish_dir/scripts/*.sh "$scripts_pack"
 cp -f $publish_dir/scripts/tpch/load/*.sh "$tpch_pack/load"
+cp -f "$storage_dir/dbg-invoke.sh" "$scripts_pack"
 
 echo "=> packing to ./${name}.tar.gz (may take some time)"
 tar -cvzf "./${name}.tar.gz" "$name"

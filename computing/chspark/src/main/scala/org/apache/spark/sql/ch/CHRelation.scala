@@ -17,22 +17,24 @@ package org.apache.spark.sql.ch
 
 import com.pingcap.common.Cluster
 import com.pingcap.theflash.SparkCHClientInsert
+import com.pingcap.tikv.meta.TiTimestamp
 import org.apache.spark.sql.ch.CHUtil.Partitioner
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{CHContext, DataFrame, SQLContext}
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation}
 import org.apache.spark.sql.types.StructType
 
 case class CHRelation(
   tables: Array[CHTableRef],
-  partitionsPerSplit: Int
-)(@transient val sqlContext: SQLContext)
+  partitionsPerSplit: Int,
+  ts: Option[TiTimestamp] = None
+)(@transient val sqlContext: SQLContext, @transient val chContext: CHContext)
     extends BaseRelation
     with InsertableRelation {
 
   private lazy val tableInfo: TableInfo = {
     val useSelraw =
       sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW, "false").toBoolean
-    CHTableInfos.getInfo(tables, useSelraw)
+    CHTableInfos.getInfo(chContext, tables, useSelraw)
   }
 
   def useSelraw: Boolean =

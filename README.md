@@ -11,9 +11,8 @@ An OLAP project of TiDB
 ## Quick start guide
 * Build
     * `theflash> git submodule update --init --recursive`: fetch all submodule
-    * Build patched CH:
-        * `theflash/storage> ./patch-apply.sh`: apply patch to CH
-        * `theflash/storage> ./build.sh`: build patched CH
+    * Build CH:
+        * `theflash/storage> ./build.sh`: build CH
     * Build Spark and CHSpark
         * `theflash/computing/spark> follow the build method of Spark`: build Spark
         * `theflash/computing> ./build.sh`: build CHSpark

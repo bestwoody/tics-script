@@ -20,19 +20,25 @@ import com.pingcap.theflash.SparkCHClientSelect
 import scala.collection.mutable.ListBuffer
 import org.apache.spark.{Partition, TaskContext}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{CHContext, SparkSession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch._
 import com.pingcap.theflash.codegen.CHColumnBatch
+import com.pingcap.tispark.TiSessionCache
+import com.pingcap.tikv.meta.TiTimestamp
 import org.apache.spark.sql.ch.CHSql.Query
 import org.apache.spark.util.{TaskCompletionListener, TaskFailureListener}
 
-class CHScanRDD(@transient private val sparkSession: SparkSession,
+class CHScanRDD(@transient private val chContext: CHContext,
+                @transient private val sparkSession: SparkSession,
                 @transient val output: Seq[Attribute],
                 val tableQueryPairs: Seq[(CHTableRef, Query)],
-                private val partitionPerSplit: Int)
+                private val partitionPerSplit: Int,
+                val ts: Option[TiTimestamp] = None)
     extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
+
+  private val tiConf = chContext.tiContext.tiSession.getConf
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     val part = split.asInstanceOf[CHPartition]
@@ -41,7 +47,13 @@ class CHScanRDD(@transient private val sparkSession: SparkSession,
 
     logInfo(s"Query sent to CH: $query")
 
-    val client = new SparkCHClientSelect(query, table.node.host, table.node.port)
+    val client = new SparkCHClientSelect(
+      query,
+      table.node.host,
+      table.node.port,
+      TiSessionCache.getSession(tiConf),
+      ts.orNull
+    )
 
     context.addTaskFailureListener(new TaskFailureListener {
       override def onTaskFailure(context: TaskContext, error: Throwable): Unit = client.close()

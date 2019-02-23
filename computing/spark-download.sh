@@ -2,8 +2,8 @@
 
 set -eu
 
-name="spark-2.3.1-bin-hadoop2.7"
-address="http://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.1"
+name="spark-2.3.3-bin-hadoop2.7"
+address="http://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.3"
 
 file="$name.tgz"
 url="$address/$file"

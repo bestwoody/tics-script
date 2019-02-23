@@ -1,7 +1,7 @@
 #!/bin/bash
 
-server="$1"
-query="$2"
+query="$1"
+server="$2"
 format="$3"
 
 set -eu

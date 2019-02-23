@@ -54,7 +54,7 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
             CHConfigConst.DEFAULT_PARTITIONS_PER_SPLIT.toString
           )
           .toInt
-      )(chContext.sqlContext)
+      )(chContext.sqlContext, chContext)
       chRelation.insert(Dataset.ofRows(chContext.sparkSession, query.get), true)
     } else {
       CHUtil

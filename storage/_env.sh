@@ -1,7 +1,12 @@
 #!/bin/bash
 
 # Executable path
-export storage_bin="build/dbms/src/Server/theflash"
+
+if [ `uname` == "Darwin" ]; then
+	export storage_bin="build_clang/dbms/src/Server/theflash"
+else
+	export storage_bin="build/dbms/src/Server/theflash"
+fi
 
 # Serve config for launching
 export storage_server_config="running/config/config.xml"
