@@ -18,7 +18,9 @@
 package org.apache.spark.sql.expression
 
 import org.apache.spark.sql.BaseClickHouseSuite
+import org.scalatest.Ignore
 
+@Ignore
 class ComplexAggregateSuite extends BaseClickHouseSuite {
   private val allCases = Seq[String](
     "select min(tp_int8) from full_data_type_table",

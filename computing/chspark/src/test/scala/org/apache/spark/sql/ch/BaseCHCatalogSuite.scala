@@ -7,9 +7,9 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.NoSuchDatabaseException
 import org.apache.spark.sql.execution.columnar.{InMemoryRelation, InMemoryTableScanExec}
 import org.apache.spark.sql.internal.StaticSQLConf
-import org.apache.spark.sql.{AnalysisException, DataFrame, SparkSession}
+import org.apache.spark.sql.{AnalysisException, CHSharedSQLContext, DataFrame, SparkSession}
 
-abstract class BaseCHCatalogSuite extends SparkFunSuite {
+abstract class BaseCHCatalogSuite extends SparkFunSuite with CHSharedSQLContext {
   var extended: SparkSession
   val testDb: String
   val testT: String

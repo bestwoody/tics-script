@@ -2,7 +2,9 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.util.Utils
+import org.scalatest.Ignore
 
+@Ignore
 class HiveLegacyCatalogSuite extends BaseLegacyCatalogSuite {
   override var extended: SparkSession = _
   override val testLegacyDb: String = "hive_test_test_test_db"

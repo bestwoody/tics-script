@@ -18,7 +18,9 @@
 package org.apache.spark.sql.expression
 
 import org.apache.spark.sql.BaseClickHouseSuite
+import org.scalatest.Ignore
 
+@Ignore
 class ArithmeticAgg0Suite extends BaseClickHouseSuite {
   private val allCases = Seq[String](
     "select min(id_dt) from full_data_type_table",

@@ -2,7 +2,9 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.sql._
 import org.apache.spark.util.Utils
+import org.scalatest.Ignore
 
+@Ignore
 class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
   override var extended: SparkSession = _
   override val testDb = "in_memory_test_test_test_db"

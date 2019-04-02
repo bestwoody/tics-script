@@ -19,9 +19,11 @@ package org.apache.spark.sql.benchmark
 
 import org.apache.spark.sql.BaseClickHouseSuite
 import org.apache.spark.sql.catalyst.util.resourceToString
+import org.scalatest.Ignore
 
 import scala.collection.mutable
 
+@Ignore
 class TPCHQuerySuite extends BaseClickHouseSuite {
   val tpchQueries = Seq(
     "q1",

@@ -20,6 +20,7 @@ package org.apache.spark.sql
 import java.sql.{Connection, Statement}
 import java.util.Properties
 
+import com.pingcap.tispark.TiConfigConst
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.util.resourceToString
 import org.apache.spark.sql.ch.CHStrategy
@@ -236,6 +237,8 @@ object CHSharedSQLContext extends Logging {
       testDBName = getOrElse(prop, TEST_DB_NAME, "chspark_test")
       tpchDBName = getOrElse(prop, TPCH_DB_NAME, "default")
       _clickHouseConf = prop
+
+      sparkConf.set(TiConfigConst.PD_ADDRESSES, "127.0.0.1:2379")
       _sparkSession = new TestSparkSession(sparkConf)
       (new CHExtensions)(_sparkSession.extensions)
       truncateOutput = getFlag(prop, TRUNCATE_TEST_OUTPUT, defaultTrue = true)

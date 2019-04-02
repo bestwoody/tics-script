@@ -82,3 +82,7 @@ backup/
 
 # for temp
 storage/ch-patch/contrib/kvproto
+
+# Tests
+tests/maven/data
+tests/maven/log

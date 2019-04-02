@@ -3,14 +3,14 @@ package org.apache.spark.sql.ch
 import java.util.Locale
 
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.{AnalysisException, DataFrame, SparkSession}
+import org.apache.spark.sql.{AnalysisException, CHSharedSQLContext, DataFrame, SparkSession}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{DatabaseAlreadyExistsException, NoSuchDatabaseException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.{CHSessionCatalog, SessionCatalog}
 import org.apache.spark.sql.execution.columnar.{InMemoryRelation, InMemoryTableScanExec}
 import org.apache.spark.sql.internal.StaticSQLConf
 
-abstract class BaseLegacyCatalogSuite extends SparkFunSuite {
+abstract class BaseLegacyCatalogSuite extends SparkFunSuite with CHSharedSQLContext {
   var extended: SparkSession
 
   lazy val chCatalog: CHSessionCatalog = extended.sessionState.planner.extraPlanningStrategies.head

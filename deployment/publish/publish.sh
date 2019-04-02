@@ -69,7 +69,7 @@ cp -rf "$computing_dir/conf/spark-defaults.conf" "$spark_pack/conf/"
 
 if [ "$build" == "true" ]; then
 	echo "=> building tpch dbgen"
-	cd "$benchmark_dir/tpch-dbgen" && make cd "$publish_dir"
+	cd "$benchmark_dir/tpch-dbgen" && make && cd "$publish_dir"
 fi
 
 echo "=> copying tpch dbgen"

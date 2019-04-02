@@ -84,7 +84,7 @@ class IssueTestSuite extends BaseClickHouseSuite {
     )
   }
 
-  test("#438 NPE when decimal is NOT NULL") {
+  ignore("#438 NPE when decimal is NOT NULL") {
     clickHouseStmt.execute("DROP TABLE IF EXISTS test")
     clickHouseStmt.execute(
       """CREATE TABLE test ( d Decimal(65, 20), nd Nullable(Decimal(65, 20)), md Nullable(Decimal(65, 30)), bd Nullable(Decimal(37, 10))) ENGINE = MutableMergeTree(d, 8192)"""
