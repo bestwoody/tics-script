@@ -31,7 +31,7 @@ case class CHRelation(
     extends BaseRelation
     with InsertableRelation {
 
-  private lazy val tableInfo: TableInfo = {
+  lazy val tableInfo: TableInfo = {
     val useSelraw =
       sqlContext.conf.getConfString(CHConfigConst.ENABLE_SELRAW, "false").toBoolean
     CHTableInfos.getInfo(chContext, tables, useSelraw)

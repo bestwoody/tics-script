@@ -19,7 +19,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{CHContext, SparkSession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.ch.{CHLogicalPlan, CHRelation, CHSql}
+import org.apache.spark.sql.ch.{CHEngine, CHLogicalPlan, CHRelation, CHSql}
 import org.apache.spark.sql.execution.datasources.CHScanRDD
 
 case class CHScanExec(output: Seq[Attribute],
@@ -40,7 +40,8 @@ case class CHScanExec(output: Seq[Attribute],
       output,
       tableQueryPairs,
       chRelation.partitionsPerSplit,
-      chRelation.ts
+      chRelation.ts,
+      chRelation.tableInfo.engine.name == CHEngine.TxnMergeTree
     ) :: Nil
   }
 

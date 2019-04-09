@@ -35,25 +35,45 @@ class CHScanRDD(@transient private val chContext: CHContext,
                 @transient val output: Seq[Attribute],
                 val tableQueryPairs: Seq[(CHTableRef, Query)],
                 private val partitionPerSplit: Int,
-                val ts: Option[TiTimestamp] = None)
+                val ts: Option[TiTimestamp] = None,
+                val isTMT: Boolean)
     extends RDD[InternalRow](sparkSession.sparkContext, Nil) {
 
   private val tiConf = chContext.tiContext.tiSession.getConf
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
-    val part = split.asInstanceOf[CHPartition]
-    val table = part.table
-    val query = part.query
+    var client: SparkCHClientSelect = null
+    if (isTMT) {
+      val part = split.asInstanceOf[CHRegionPartition]
+      val table = part.regions.table
+      val query = part.query
 
-    logInfo(s"Query sent to CH: $query")
+      logInfo(s"Query sent to CH: $query")
 
-    val client = new SparkCHClientSelect(
-      query,
-      table.node.host,
-      table.node.port,
-      TiSessionCache.getSession(tiConf),
-      ts.orNull
-    )
+      client = new SparkCHClientSelect(
+        query,
+        table.node.host,
+        table.node.port,
+        TiSessionCache.getSession(tiConf),
+        ts.orNull,
+        part.regions.region
+      )
+    } else {
+      val part = split.asInstanceOf[CHPartition]
+      val table = part.table
+      val query = part.query
+
+      logInfo(s"Query sent to CH: $query")
+
+      client = new SparkCHClientSelect(
+        query,
+        table.node.host,
+        table.node.port,
+        TiSessionCache.getSession(tiConf),
+        ts.orNull,
+        null
+      )
+    }
 
     context.addTaskFailureListener(new TaskFailureListener {
       override def onTaskFailure(context: TaskContext, error: Throwable): Unit = client.close()
@@ -69,25 +89,52 @@ class CHScanRDD(@transient private val chContext: CHContext,
   }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    split.asInstanceOf[CHPartition].table.node.host :: Nil
+    if (isTMT) {
+      split.asInstanceOf[CHRegionPartition].regions.table.node.host :: Nil
+    } else {
+      split.asInstanceOf[CHPartition].table.node.host :: Nil
+    }
 
-  override protected def getPartitions: Array[Partition] = {
-    val result = new ListBuffer[CHPartition]
-
-    var index = 0
-
-    val curParts = ListBuffer.empty[String]
-    var table: CHTableRef = null
-    for (p <- tableQueryPairs) {
+  override protected def getPartitions: Array[Partition] =
+    if (isTMT) {
+      val result = new ListBuffer[CHRegionPartition]
+      var index = 0
+      val curParts = ListBuffer.empty[String]
+      var table: CHTableRef = null
+      val p = tableQueryPairs(0)
       table = p._1
-      val partitionList = CHUtil.getPartitionList(table).map(part => s"'$part'")
-      if (partitionList.isEmpty) {
-        result.append(new CHPartition(index, p._1, p._2.buildQuery()))
+      val tableInfo = new CHTableInfo(chContext, table, false)
+      val regions =
+        CHUtil
+          .getRegionPartitionList(tableInfo, TiSessionCache.getSession(tiConf), partitionPerSplit)
+      for (region <- regions) {
+        result.append(new CHRegionPartition(index, region, p._2.buildQuery()))
         index += 1
-      } else {
-        for (part <- partitionList) {
-          curParts += part
-          if (curParts.length >= partitionPerSplit) {
+      }
+      result.toArray
+    } else {
+      val result = new ListBuffer[CHPartition]
+      var index = 0
+      val curParts = ListBuffer.empty[String]
+      var table: CHTableRef = null
+      for (p <- tableQueryPairs) {
+        table = p._1
+        val partitionList = CHUtil.getPartitionList(table).map(part => s"'$part'")
+        if (partitionList.isEmpty) {
+          result.append(new CHPartition(index, p._1, p._2.buildQuery()))
+          index += 1
+        } else {
+          for (part <- partitionList) {
+            curParts += part
+            if (curParts.length >= partitionPerSplit) {
+              result.append(
+                new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})"))
+              )
+              curParts.clear()
+              index += 1
+            }
+          }
+          if (curParts.nonEmpty) {
             result.append(
               new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})"))
             )
@@ -95,16 +142,7 @@ class CHScanRDD(@transient private val chContext: CHContext,
             index += 1
           }
         }
-        if (curParts.nonEmpty) {
-          result.append(
-            new CHPartition(index, p._1, p._2.buildQuery(s"(${curParts.mkString(",")})"))
-          )
-          curParts.clear()
-          index += 1
-        }
       }
+      result.toArray
     }
-
-    result.toArray
-  }
 }

@@ -322,7 +322,10 @@ class BaseClickHouseSuite extends CHQueryTest with CHSharedSQLContext {
         r1 = querySpark(qSpark)
         printR1(r1)
       } catch {
-        case e: Throwable => fail(e)
+        case e: Throwable => {
+          e.printStackTrace()
+          fail(e)
+        }
       }
     }
 

@@ -14,6 +14,7 @@ public class CHProtocol {
         8; /// A block with minimums and maximums (compressed or not).
     public static final int TablesStatusResponse = 9; // / A response to TablesStatus request.
     public static final int LockInfos = 100; // / Lock infos of some pending transactions.
+    public static final int RegionException = 101; // / The exception during query execution.
   }
 
   public static class Client {

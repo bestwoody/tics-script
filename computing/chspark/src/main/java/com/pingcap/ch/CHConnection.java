@@ -3,7 +3,6 @@ package com.pingcap.ch;
 import com.pingcap.common.MemoryUtil;
 import com.pingcap.common.ReadBuffer;
 import com.pingcap.common.WriteBuffer;
-import com.pingcap.tikv.kvproto.Kvrpcpb;
 import com.pingcap.tikv.txn.Lock;
 import java.io.Closeable;
 import java.io.IOException;
@@ -16,6 +15,7 @@ import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tikv.kvproto.Kvrpcpb;
 import shade.com.google.common.base.Preconditions;
 import shade.com.google.protobuf.ByteString;
 
@@ -36,8 +36,8 @@ public class CHConnection implements Closeable {
 
   private static final Logger logger = LoggerFactory.getLogger(CHConnection.class);
 
-  private final String host;
-  private final int port;
+  public final String host;
+  public final int port;
   private final String defaultDatabase;
   private final String user;
   private final String password;
@@ -65,6 +65,7 @@ public class CHConnection implements Closeable {
     public CHProgress progress;
     public CHBlockStreamProfileInfo profileInfo;
     public List<Lock> lockInfos;
+    public List<Long> exceptionRegionIDs;
 
     public boolean isEndOfStream() {
       return type == CHProtocol.Server.EndOfStream;
@@ -216,6 +217,9 @@ public class CHConnection implements Closeable {
         case CHProtocol.Server.Exception:
           res.exceptionMsg = receiveException();
           return res;
+        case CHProtocol.Server.RegionException:
+          res.exceptionRegionIDs = receiveRegionIDs();
+          return res;
         case CHProtocol.Server.LockInfos:
           res.lockInfos = receiveLockInfos();
           return res;
@@ -313,6 +317,16 @@ public class CHConnection implements Closeable {
 
   private String receiveException() throws IOException {
     return readException("Exception read from CH server (" + host + ":" + port + ")");
+  }
+
+  private List<Long> receiveRegionIDs() throws IOException {
+    List<Long> regionIDs = new ArrayList<Long>();
+    long size = reader.readVarUInt64();
+    for (int i = 0; i < size; i++) {
+      long id = reader.readVarUInt64();
+      regionIDs.add(id);
+    }
+    return regionIDs;
   }
 
   private List<Lock> receiveLockInfos() throws IOException {
