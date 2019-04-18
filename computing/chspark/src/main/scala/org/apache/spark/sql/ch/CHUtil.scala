@@ -20,12 +20,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 import com.pingcap.common.{Cluster, Node}
 import com.pingcap.theflash.{SparkCHClientInsert, SparkCHClientSelect, TypeMappingJava}
-import com.pingcap.tikv.meta.{TiTableInfo, TiTimestamp}
+import com.pingcap.tikv.meta.TiTableInfo
 import com.pingcap.common.IOUtil
-import com.pingcap.tikv.{TiConfiguration, TiSession}
-import com.pingcap.tikv.key.{Key, RowKey, TypedKey}
+import com.pingcap.tikv.PDClient
+import com.pingcap.tikv.key.{Key, RowKey}
 import com.pingcap.tikv.region.TiRegion
-import com.pingcap.tikv.util.{BackOffer, ConcreteBackOffer}
+import com.pingcap.tikv.util.ConcreteBackOffer
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -33,12 +33,12 @@ import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, StringLPad, StringRPad, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.CHUtil.SharedSparkCHClientInsert.Identity
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{CHContext, DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row}
 
 import scala.collection.JavaConversions._
-import org.json4s._
-import org.json4s.jackson.JsonMethods._
 import org.tikv.kvproto.Metapb.Peer
+
+import scala.collection.mutable
 
 object CHUtil {
   case class PrimaryKey(column: StructField, index: Int) {}
@@ -582,86 +582,45 @@ object CHUtil {
     }
   }
 
-  def getRegionPartitionList(table: CHTableInfo,
-                             session: TiSession,
-                             partitionNum: Int): Array[CHRegionPartitionRef] = {
-    val tableInfoStr = table.getInfo.engine match {
-      case TxnMergeTreeEngine(_, _, _, tableInfo) =>
-        tableInfo
-      case _ =>
-        throw new Exception("The required table should be tmt engine.")
-    }
-    val parsed = parse(tableInfoStr)
-    val ids: List[BigInt] = for {
-      JObject(child) <- parsed
-      JField("table_info", JObject(tableInfo)) <- child
-      JField("id", JInt(id)) <- tableInfo
-    } yield id
-    if (ids.length != 1) {
-      throw new Exception("wrong json format")
-    }
+  def getRegionLearnerPeerByLabel(region: TiRegion,
+                                  pdClient: PDClient,
+                                  labelKey: String,
+                                  labelValue: String): Option[Peer] =
+    region.getLearnerList.find(peer => {
+      val store = pdClient.getStore(ConcreteBackOffer.newCustomBackOff(1000), peer.getStoreId)
+      store.getLabelsList.exists(label => label.getKey == labelKey && label.getValue == labelValue)
+    })
 
-    val id = ids.head.intValue
-    val startKey: Key = RowKey.createMin(id)
-    val endKey: Key = RowKey.createBeyondMax(id)
+  def getTableLearnerPeerRegionMap(tableID: Long,
+                                   pdClient: PDClient): Map[String, Array[TiRegion]] = {
+    val startKey: Key = RowKey.createMin(tableID)
+    val endKey: Key = RowKey.createBeyondMax(tableID)
 
-    var nodePartMap = collection.mutable.Map[Node, Array[TiRegion]]()
-    val pdClt = session.getPDClient
     var curKey = startKey
-    var result = new Array[CHRegionPartitionRef](0)
+    val regionMap = mutable.Map[String, Array[TiRegion]]()
     while (curKey.compareTo(endKey) < 0) {
       val region =
-        pdClt.getRegionByKey(ConcreteBackOffer.newCustomBackOff(1000), curKey.toByteString)
-      val peers = region.getLearnerList().toList
-      var peer: Peer = null
-      for (peer_ <- peers) {
-        val store = pdClt.getStore(ConcreteBackOffer.newCustomBackOff(1000), peer_.getStoreId)
-        var is_learner = false
-        for (label <- store.getLabelsList) {
-          if (label.getKey == "zone" && label.getValue == "engine") {
-            is_learner = true
-          }
-        }
-        if (is_learner)
-          peer = peer_
-      }
+        pdClient.getRegionByKey(ConcreteBackOffer.newCustomBackOff(1000), curKey.toByteString)
+      val peer = getRegionLearnerPeerByLabel(region, pdClient, "zone", "engine").getOrElse(
+        throw new RuntimeException(
+          s"Couldn't find learner peer by label 'zone:engine' for region $region"
+        )
+      )
       val storeID = peer.getStoreId
-      val store = pdClt.getStore(ConcreteBackOffer.newCustomBackOff(1000), storeID)
-      val addr = store.getAddress
-      val split = addr.split(":")
+      val store = pdClient.getStore(ConcreteBackOffer.newCustomBackOff(1000), storeID)
+      val address = store.getAddress
+      val split = address.split(":")
       if (split.length != 2) {
-        throw new Exception("got wrong address")
+        throw new RuntimeException(s"Wrong peer address format: $split for region $region")
       }
-      val node = new Node(split(0), table.table.node.port)
-      var li = nodePartMap.getOrElse(node, Array())
-      li :+= region
-      nodePartMap.put(node, li)
+      val peerHost = split(0)
+      regionMap.putIfAbsent(peerHost, Array[TiRegion]())
+      regionMap(peerHost) = regionMap(peerHost) :+ region
 
       curKey = Key.toRawKey(region.getEndKey)
     }
 
-    var partNum = partitionNum
-    nodePartMap.keys.foreach { node =>
-      val tableRef = new CHTableRef(node, table.table.database, table.table.table)
-      var li = nodePartMap(node)
-      var idx = 0
-      val len = li.length
-      if (partNum == 0) {
-        partNum = len
-      }
-      while (idx < len) {
-        var cur = (len - idx) / partNum
-        if (cur == 0) {
-          cur += 1
-        }
-        val sub = li.splitAt(cur)
-        result :+= new CHRegionPartitionRef(tableRef, sub._1)
-        li = sub._2
-        idx += cur
-        partNum += -1
-      }
-    }
-    result
+    regionMap.toMap
   }
 
   def getPartitionList(table: CHTableRef): Array[String] = {

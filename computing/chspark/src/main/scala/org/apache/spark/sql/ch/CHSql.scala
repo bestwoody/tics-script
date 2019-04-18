@@ -21,7 +21,6 @@ import com.pingcap.ch.datatypes.CHTypeNumber.{CHTypeInt32, CHTypeUInt16, CHTypeU
 import com.pingcap.theflash.TypeMappingJava
 import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
 import com.pingcap.tikv.types.MySQLType
-import com.pingcap.tispark.TiUtils
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, StringLPad, StringRPad, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
 import org.apache.spark.sql.types._
@@ -83,23 +82,6 @@ object CHSql {
   def truncateTable(database: String, table: String) =
     s"TRUNCATE TABLE ${getBackQuotedAbsTabName(database, table)}"
 
-  case class Query(private val projection: String,
-                   private val table: CHTableRef,
-                   private val filter: String,
-                   private val aggregation: String,
-                   private val topN: String) {
-    def buildQuery(partition: String): String =
-      buildQueryInternal(CHSql.compileTable(table, partition))
-
-    def buildQuery(): String =
-      buildQueryInternal(CHSql.compileTable(table))
-
-    private def buildQueryInternal(from: String): String =
-      s"$projection$from$filter$aggregation$topN"
-
-    override def toString: String = buildQuery()
-  }
-
   def tableEngine(table: CHTableRef): String =
     s"SELECT engine FROM system.tables WHERE database = '${table.database}' AND name = '${table.table}'"
 
@@ -107,17 +89,17 @@ object CHSql {
    * Compose a query string based on given input table and CH logical plan.
    * @param table
    * @param chLogicalPlan
+   * @param partitions
    * @param useSelraw
    * @return
    */
-  def query(table: CHTableRef, chLogicalPlan: CHLogicalPlan, useSelraw: Boolean = false): Query =
-    Query(
-      compileProject(chLogicalPlan.chProject, useSelraw),
-      table,
-      compileFilter(chLogicalPlan.chFilter),
-      compileAggregate(chLogicalPlan.chAggregate),
-      compileTopN(chLogicalPlan.chTopN)
-    )
+  def query(table: CHTableRef,
+            chLogicalPlan: CHLogicalPlan,
+            partitions: Array[String] = null,
+            useSelraw: Boolean = false): String =
+    s"${compileProject(chLogicalPlan.chProject, useSelraw)}${compileTable(table, partitions)}${compileFilter(
+      chLogicalPlan.chFilter
+    )}${compileAggregate(chLogicalPlan.chAggregate)}${compileTopN(chLogicalPlan.chTopN)}"
 
   /**
    * Query partition list of a table
@@ -221,7 +203,6 @@ object CHSql {
     if (!column.isPrimaryKey && !dataType.isNotNull) {
       chType = new CHTypeNullable(chType)
     }
-    val sparkType = TiUtils.toSparkDataType(dataType)
     val columnName = column.getName.toLowerCase()
     s"`$columnName` ${chType.name()}"
   }
@@ -279,11 +260,13 @@ object CHSql {
       .map(compileExpression)
       .mkString(", ")
 
-  private def compileTable(table: CHTableRef, partitions: String = null): String =
+  private def compileTable(table: CHTableRef, partitions: Array[String] = null): String =
     if (partitions == null || partitions.isEmpty) {
       s" FROM ${getBackQuotedAbsTabName(table.database, table.mappedName)}"
     } else {
-      s" FROM ${getBackQuotedAbsTabName(table.database, table.mappedName)} PARTITION $partitions"
+      s" FROM ${getBackQuotedAbsTabName(table.database, table.mappedName)} PARTITION (${partitions
+        .map(part => s"'$part'")
+        .mkString(",")})"
     }
 
   private def compileFilter(chFilter: CHFilter): String =

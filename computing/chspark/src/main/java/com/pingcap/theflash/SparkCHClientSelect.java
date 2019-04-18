@@ -56,22 +56,12 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
 
   private AtomicBoolean closed = new AtomicBoolean(false);
 
+  public SparkCHClientSelect(String query, String host, int port) {
+    this(CHUtil.genQueryId("G"), query, host, port);
+  }
+
   public SparkCHClientSelect(String queryId, String query, String host, int port) {
     this(queryId, query, host, port, 0, 0, false);
-  }
-
-  public SparkCHClientSelect(String query, String host, int port) {
-    this(CHUtil.genQueryId("G"), query, host, port, 0, 0, false);
-  }
-
-  public SparkCHClientSelect(
-      String query,
-      String host,
-      int port,
-      TiSession tiSession,
-      TiTimestamp startTs,
-      TiRegion[] region) {
-    this(CHUtil.genQueryId("G"), query, host, port, 0, 0, false, tiSession, startTs, region);
   }
 
   public SparkCHClientSelect(
@@ -83,6 +73,16 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
       int clientIndex,
       boolean sharedMode) {
     this(queryId, query, host, port, clientCount, clientIndex, sharedMode, null, null, null);
+  }
+
+  public SparkCHClientSelect(
+      String query,
+      String host,
+      int port,
+      TiSession tiSession,
+      TiTimestamp startTs,
+      TiRegion[] region) {
+    this(CHUtil.genQueryId("G"), query, host, port, 0, 0, false, tiSession, startTs, region);
   }
 
   public SparkCHClientSelect(
@@ -169,7 +169,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
         if (tiSession != null) {
           listBuilder.add(new CHSetting.SettingUInt("resolve_locks", 1));
         }
-        if (regions != null) {
+        if (regions != null && regions.length > 0) {
           List<String> regionArray = new ArrayList<>();
           for (TiRegion region : regions) {
             regionArray.add(region.getMeta().toString());

@@ -13,8 +13,6 @@ import org.apache.spark.sql.ch.CHUtil.Partitioner
 import org.apache.spark.sql.ch._
 import org.apache.spark.sql.types.StructType
 
-import scala.collection.mutable
-
 class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
 
   // Following are routed to CH catalog.
@@ -154,10 +152,36 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
     CHUtil.dropTable(db, table, chContext.cluster, ignoreIfNotExists)
   }
 
+  /**
+   * Hack to filter out the physical/sub table of a TiDB partition.
+   * @param db
+   * @param table
+   * @return
+   */
+  protected def isPartitionSubTable(db: String, table: String): Boolean = {
+    val chTableRef = CHTableRef.ofNode(chContext.cluster.nodes(0), db, table)
+    val stmt = CHUtil.getShowCreateTable(chTableRef)
+    val engine = CHEngine.fromCreateStatement(stmt)
+    isPartitionSubTable(engine)
+  }
+
+  /**
+   * Hack to filter out the physical/sub table of a TiDB partition.
+   * @param engine
+   * @return
+   */
+  protected def isPartitionSubTable(engine: CHEngine): Boolean = engine match {
+    case TxnMergeTreeEngine(_, _, _, tableInfo) => tableInfo.contains("is_partition_sub_table")
+    case _                                      => false
+  }
+
   override def getTable(db: String, table: String): CatalogTable = {
     val chTableRef = CHTableRef.ofNode(chContext.cluster.nodes(0), db, table)
     val stmt = CHUtil.getShowCreateTable(chTableRef)
     val engine = CHEngine.fromCreateStatement(stmt)
+    if (isPartitionSubTable(engine)) {
+      throw new NoSuchTableException(db, table)
+    }
     val schema = engine.mapFields(CHUtil.getFields(chTableRef))
     val properties = engine.toProperties
     CatalogTable(
@@ -170,10 +194,10 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
   }
 
   override def tableExists(db: String, table: String): Boolean =
-    CHUtil.listTables(db, chContext.cluster.nodes.head).contains(table.toLowerCase())
+    listTables(db).contains(table.toLowerCase())
 
   override def listTables(db: String): Seq[String] =
-    CHUtil.listTables(db, chContext.cluster.nodes.head)
+    CHUtil.listTables(db, chContext.cluster.nodes.head).filter(!isPartitionSubTable(db, _))
 
   override def listTables(db: String, pattern: String): Seq[String] =
     StringUtils.filterPattern(listTables(db), pattern)

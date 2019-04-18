@@ -56,7 +56,7 @@ class CHSqlSuite extends SparkFunSuite {
     )
 
   def testQuery(table: CHTableRef, chLogicalPlan: CHLogicalPlan, expected: String): Unit =
-    assert(CHSql.query(table, chLogicalPlan).buildQuery() == expected)
+    assert(CHSql.query(table, chLogicalPlan) == expected)
 
   def ignoreQuery(table: CHTableRef, chLogicalPlan: CHLogicalPlan, expected: String): Unit =
     println(s"ignored test sql: $expected")

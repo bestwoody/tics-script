@@ -1,11 +1,19 @@
 package org.apache.spark.sql.ch
 
+import java.net.InetAddress
+
+import com.pingcap.tikv.TiSession
+import com.pingcap.tikv.expression.visitor.{MetaResolver, PrunedPartitionBuilder}
 import com.pingcap.tikv.meta.TiTableInfo
+import com.pingcap.tispark.BasicExpression
 import org.apache.spark.sql.catalyst.catalog.{CHCatalogConst, CatalogTable}
 import org.apache.spark.sql.types.{Metadata, MetadataBuilder, StructField}
+import org.json4s.JsonAST.{JField, JInt, JObject}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 
 object CHEngine extends Enumeration {
   val MutableMergeTree, TxnMergeTree, MergeTree, Log = Value
@@ -104,6 +112,17 @@ abstract class CHEngine(val name: CHEngine.Value) {
   def fromCreateStatement(stmt: String): Unit
 
   def mapFields(fields: Array[StructField]): Array[StructField]
+
+  /**
+   * Engine-specific logic to generate CH physical plans (later to CH partitions) that are used in CHScanRDD.
+   * @param chRelation
+   * @param chLogicalPlan
+   * @param tiSession
+   * @return
+   */
+  def getPhysicalPlans(chRelation: CHRelation,
+                       chLogicalPlan: CHLogicalPlan,
+                       tiSession: TiSession): Array[CHPhysicalPlan]
 }
 
 case class LogEngine() extends CHEngine(CHEngine.Log) {
@@ -120,6 +139,19 @@ case class LogEngine() extends CHEngine(CHEngine.Log) {
   override def fromCreateStatement(stmt: String): Unit = ()
 
   override def mapFields(fields: Array[StructField]): Array[StructField] = fields
+
+  override def getPhysicalPlans(chRelation: CHRelation,
+                                chLogicalPlan: CHLogicalPlan,
+                                tiSession: TiSession): Array[CHPhysicalPlan] =
+    chRelation.tables.map(
+      table =>
+        CHPhysicalPlan(
+          table,
+          CHSql.query(table, chLogicalPlan, null, chRelation.useSelraw),
+          None,
+          None
+      )
+    )
 }
 
 case class MutableMergeTreeEngine(var partitionNum: Option[Int],
@@ -185,6 +217,24 @@ case class MutableMergeTreeEngine(var partitionNum: Option[Int],
 
     fields.map(field => field.copy(metadata = buildMetadata(field.name, field.metadata)))
   }
+
+  override def getPhysicalPlans(chRelation: CHRelation,
+                                chLogicalPlan: CHLogicalPlan,
+                                tiSession: TiSession): Array[CHPhysicalPlan] =
+    chRelation.tables.flatMap(table => {
+      val partitionList = CHUtil.getPartitionList(table)
+      partitionList
+        .grouped(chRelation.partitionsPerSplit)
+        .map(
+          partitions =>
+            CHPhysicalPlan(
+              table,
+              CHSql.query(table, chLogicalPlan, partitions, chRelation.useSelraw),
+              None,
+              None
+          )
+        )
+    })
 }
 
 case class TxnMergeTreeEngine(var partitionNum: Option[Int],
@@ -256,5 +306,82 @@ case class TxnMergeTreeEngine(var partitionNum: Option[Int],
     }
 
     fields.map(field => field.copy(metadata = buildMetadata(field.name, field.metadata)))
+  }
+
+  private lazy val tableID: Long = {
+    val parsed = parse(tableInfo)
+    val ids: List[BigInt] = for {
+      JObject(child) <- parsed
+      JField("table_info", JObject(tableInfo)) <- child
+      JField("id", JInt(id)) <- tableInfo
+    } yield id
+    if (ids.length != 1) {
+      throw new Exception("Wrong table info json format " + tableInfo)
+    }
+    ids.head.longValue()
+  }
+
+  private def getPhysicalPlansByTableID(tableID: Long,
+                                        tableName: String,
+                                        chRelation: CHRelation,
+                                        chLogicalPlan: CHLogicalPlan,
+                                        tiSession: TiSession): Array[CHPhysicalPlan] = {
+    val regionMap = CHUtil.getTableLearnerPeerRegionMap(tableID, tiSession.getPDClient)
+    regionMap
+      .flatMap(p => {
+        val regionList = p._2
+        val addr = InetAddress.getByName(p._1).getHostAddress
+        // TODO: Doesn't support multiple TiFlash instances on single node with separate ports.
+        // We'll need a decent way to identify a TiFlash instance, i.e. store ID or so.
+        // Now hack by finding by host name only.
+        val table = chRelation.tables
+          .collectFirst {
+            // Creating a new table ref using the given tableName,
+            // which might be a mangled one of a sub-table of a partition table.
+            case t if addr == InetAddress.getByName(t.node.host).getHostAddress =>
+              CHTableRef(t.node, t.database, tableName)
+          }
+          .getOrElse(
+            throw new RuntimeException(
+              s"Peer ${p._1}/$addr reported by PD not exists in TiFlash cluster."
+            )
+          )
+        val query = CHSql.query(table, chLogicalPlan, null, chRelation.useSelraw)
+        regionList
+          .grouped(chRelation.partitionsPerSplit)
+          .map(regionGroup => CHPhysicalPlan(table, query, chRelation.ts, Some(regionGroup)))
+      })
+      .toArray
+  }
+
+  override def getPhysicalPlans(chRelation: CHRelation,
+                                chLogicalPlan: CHLogicalPlan,
+                                tiSession: TiSession): Array[CHPhysicalPlan] = {
+    val tiTableInfo =
+      tiSession.getCatalog.getTable(chRelation.tables(0).database, chRelation.tables(0).table)
+
+    if (tiTableInfo.isPartitionEnabled) {
+      type TiExpression = com.pingcap.tikv.expression.Expression
+      val tiFilters: Seq[TiExpression] = chLogicalPlan.chFilter.predicates.collect {
+        case BasicExpression(expr) => expr
+      }
+      MetaResolver.resolve(tiFilters, tiTableInfo)
+      val prunedPartBuilder = new PrunedPartitionBuilder()
+      val prunedParts = prunedPartBuilder.prune(tiTableInfo, tiFilters)
+      prunedParts
+        .flatMap(partition => {
+          val tableName = tiTableInfo.getName + "_" + partition.getId
+          getPhysicalPlansByTableID(
+            partition.getId,
+            tableName,
+            chRelation,
+            chLogicalPlan,
+            tiSession
+          )
+        })
+        .toArray
+    } else {
+      getPhysicalPlansByTableID(tableID, tiTableInfo.getName, chRelation, chLogicalPlan, tiSession)
+    }
   }
 }

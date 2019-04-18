@@ -19,7 +19,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{CHContext, SparkSession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.ch.{CHEngine, CHLogicalPlan, CHRelation, CHSql}
+import org.apache.spark.sql.ch.{CHLogicalPlan, CHRelation}
 import org.apache.spark.sql.execution.datasources.CHScanRDD
 
 case class CHScanExec(output: Seq[Attribute],
@@ -30,20 +30,13 @@ case class CHScanExec(output: Seq[Attribute],
     extends LeafExecNode
     with CHBatchScan {
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = {
-    val tableQueryPairs = chRelation.tables.map(table => {
-      (table, CHSql.query(table, chLogicalPlan, chRelation.useSelraw))
-    })
+  override def inputRDDs(): Seq[RDD[InternalRow]] =
     new CHScanRDD(
       chContext,
       sparkSession,
-      output,
-      tableQueryPairs,
-      chRelation.partitionsPerSplit,
-      chRelation.ts,
-      chRelation.tableInfo.engine.name == CHEngine.TxnMergeTree
+      chRelation,
+      chLogicalPlan
     ) :: Nil
-  }
 
   override protected def doExecute(): RDD[InternalRow] =
     WholeStageCodegenExec(this)(codegenStageId = 0).execute()

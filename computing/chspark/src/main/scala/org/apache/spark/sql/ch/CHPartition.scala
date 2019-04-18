@@ -15,13 +15,28 @@
 
 package org.apache.spark.sql.ch
 
+import com.pingcap.theflash.SparkCHClientSelect
+import com.pingcap.tikv.TiConfiguration
+import com.pingcap.tikv.meta.TiTimestamp
+import com.pingcap.tikv.region.TiRegion
+import com.pingcap.tispark.TiSessionCache
 import org.apache.spark.Partition
 
-class CHPartition(val idx: Int, val table: CHTableRef, val query: String) extends Partition {
-  override def index: Int = idx
+case class CHPhysicalPlan(table: CHTableRef,
+                          query: String,
+                          ts: Option[TiTimestamp],
+                          regions: Option[Array[TiRegion]]) {
+  override def toString: String =
+    s"{${table.node}, query='$query', ts=${ts.map(_.getVersion).orNull}, regions=${regions.map(_.mkString("[", ",", "]"))}}"
+
+  def createCHClient(tiConf: TiConfiguration): SparkCHClientSelect = new SparkCHClientSelect(
+    query,
+    table.node.host,
+    table.node.port,
+    TiSessionCache.getSession(tiConf),
+    ts.orNull,
+    regions.orNull
+  )
 }
 
-class CHRegionPartition(val idx: Int, val regions: CHRegionPartitionRef, val query: String)
-    extends Partition {
-  override def index: Int = idx
-}
+case class CHPartition(index: Int, chPhysicalPlan: CHPhysicalPlan) extends Partition {}
