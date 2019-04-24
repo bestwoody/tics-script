@@ -1,5 +1,6 @@
 package org.apache.spark.sql.ch
 
+import com.pingcap.common.Node
 import com.pingcap.tikv.meta.{TiTableInfo, TiTimestamp}
 import org.apache.spark.sql.{CHContext, SparkSession, _}
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -73,6 +74,10 @@ class CHInMemoryExternalCatalog(chContext: CHContext)
     CHInMemoryRelation.dataRegistry(tableIdentifier) =
       chContext.sparkSession.createDataFrame(List.empty[Row], table.schema)
   }
+
+  override def databaseExists(db: String, node: Node): Boolean = ???
+
+  override def tableExists(db: String, table: String, node: Node): Boolean = ???
 }
 
 class CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext: SparkSession => CHContext)(

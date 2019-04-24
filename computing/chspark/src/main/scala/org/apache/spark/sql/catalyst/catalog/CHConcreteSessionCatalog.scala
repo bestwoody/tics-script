@@ -1,5 +1,6 @@
 package org.apache.spark.sql.catalyst.catalog
 
+import com.pingcap.common.Node
 import com.pingcap.tikv.meta.TiTableInfo
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.{AnalysisException, CHContext}
@@ -77,4 +78,10 @@ class CHConcreteSessionCatalog(val chContext: CHContext)(chExternalCatalog: CHEx
     requireTableExists(tableIdentifier)
     chExternalCatalog.truncateTable(tableIdentifier)
   }
+
+  override def databaseExists(db: String, node: Node): Boolean =
+    chExternalCatalog.databaseExists(db, node)
+
+  override def tableExists(db: String, table: String, node: Node): Boolean =
+    chExternalCatalog.tableExists(db, table, node)
 }

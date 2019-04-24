@@ -3,6 +3,7 @@ package org.apache.spark.sql.catalyst.catalog
 import java.net.URI
 import java.util.concurrent.Callable
 
+import com.pingcap.common.Node
 import com.pingcap.tikv.meta.TiTableInfo
 import org.apache.spark.sql.CHContext
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, QualifiedTableName, TableIdentifier}
@@ -124,6 +125,12 @@ class CHCompositeSessionCatalog(val chContext: CHContext)
 
   override def truncateTable(tableIdentifier: TableIdentifier): Unit =
     chConcreteCatalog.truncateTable(tableIdentifier)
+
+  override def databaseExists(db: String, node: Node): Boolean =
+    chConcreteCatalog.databaseExists(db, node)
+
+  override def tableExists(db: String, table: String, node: Node): Boolean =
+    chConcreteCatalog.tableExists(db, table, node)
 
   // Following are handled by composite catalog.
 

@@ -1,5 +1,6 @@
 package org.apache.spark.sql.catalyst.catalog
 
+import com.pingcap.common.Node
 import com.pingcap.theflash.SparkCHClientInsert
 import com.pingcap.tikv.meta.TiTableInfo
 import org.apache.spark.sql.{CHContext, Dataset}
@@ -123,43 +124,15 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
   override def truncateTable(tableIdentifier: TableIdentifier): Unit =
     CHUtil.truncateTable(tableIdentifier, chContext.cluster)
 
-  override protected def doDropDatabase(db: String,
-                                        ignoreIfNotExists: Boolean,
-                                        cascade: Boolean): Unit = {
-    if (!ignoreIfNotExists && !databaseExists(db)) {
-      // A decent exception.
-      throw new NoSuchDatabaseException(db)
-    }
-    CHUtil.dropDatabase(db, chContext.cluster, ignoreIfNotExists)
-  }
-
-  override def databaseExists(db: String): Boolean =
-    CHUtil.listDatabases(chContext.cluster.nodes.head).contains(db.toLowerCase())
-
-  override def listDatabases(): Seq[String] = CHUtil.listDatabases(chContext.cluster.nodes.head)
-
-  override def listDatabases(pattern: String): Seq[String] =
-    StringUtils.filterPattern(listDatabases(), pattern)
-
-  override protected def doDropTable(db: String,
-                                     table: String,
-                                     ignoreIfNotExists: Boolean,
-                                     purge: Boolean): Unit = {
-    if (!ignoreIfNotExists && !tableExists(db, table)) {
-      // A decent exception.
-      throw new NoSuchTableException(db, table)
-    }
-    CHUtil.dropTable(db, table, chContext.cluster, ignoreIfNotExists)
-  }
-
   /**
    * Hack to filter out the physical/sub table of a TiDB partition.
    * @param db
    * @param table
+   * @param node
    * @return
    */
-  protected def isPartitionSubTable(db: String, table: String): Boolean = {
-    val chTableRef = CHTableRef.ofNode(chContext.cluster.nodes(0), db, table)
+  protected def isPartitionSubTable(db: String, table: String, node: Node): Boolean = {
+    val chTableRef = CHTableRef.ofNode(node, db, table)
     val stmt = CHUtil.getShowCreateTable(chTableRef)
     val engine = CHEngine.fromCreateStatement(stmt)
     isPartitionSubTable(engine)
@@ -175,13 +148,53 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
     case _                                      => false
   }
 
-  override def getTable(db: String, table: String): CatalogTable = {
-    val chTableRef = CHTableRef.ofNode(chContext.cluster.nodes(0), db, table)
-    val stmt = CHUtil.getShowCreateTable(chTableRef)
-    val engine = CHEngine.fromCreateStatement(stmt)
-    if (isPartitionSubTable(engine)) {
+  override def databaseExists(db: String, node: Node): Boolean =
+    CHUtil.listDatabases(node).contains(db.toLowerCase())
+
+  override def tableExists(db: String, table: String, node: Node): Boolean =
+    databaseExists(db, node) && CHUtil
+      .listTables(db, node)
+      .contains(table.toLowerCase()) && !isPartitionSubTable(db, table, node)
+
+  override protected def doDropDatabase(db: String,
+                                        ignoreIfNotExists: Boolean,
+                                        cascade: Boolean): Unit = {
+    if (!ignoreIfNotExists && !databaseExists(db)) {
+      // A decent exception.
+      throw new NoSuchDatabaseException(db)
+    }
+    CHUtil.dropDatabase(db, chContext.cluster, ignoreIfNotExists)
+  }
+
+  override def databaseExists(db: String): Boolean =
+    chContext.cluster.nodes.exists(databaseExists(db, _))
+
+  override def listDatabases(): Seq[String] =
+    chContext.cluster.nodes.flatMap(CHUtil.listDatabases).toSet.toSeq
+
+  override def listDatabases(pattern: String): Seq[String] =
+    StringUtils.filterPattern(listDatabases(), pattern)
+
+  override protected def doDropTable(db: String,
+                                     table: String,
+                                     ignoreIfNotExists: Boolean,
+                                     purge: Boolean): Unit = {
+    if (!ignoreIfNotExists && !tableExists(db, table)) {
+      // A decent exception.
       throw new NoSuchTableException(db, table)
     }
+    CHUtil.dropTable(db, table, chContext.cluster, ignoreIfNotExists)
+  }
+
+  override def getTable(db: String, table: String): CatalogTable = {
+    val node = chContext.cluster.nodes
+      .find(tableExists(db, table, _))
+      .getOrElse(
+        throw new NoSuchTableException(db, table)
+      )
+    val chTableRef = CHTableRef.ofNode(node, db, table)
+    val stmt = CHUtil.getShowCreateTable(chTableRef)
+    val engine = CHEngine.fromCreateStatement(stmt)
     val schema = engine.mapFields(CHUtil.getFields(chTableRef))
     val properties = engine.toProperties
     CatalogTable(
@@ -194,10 +207,14 @@ class CHDirectExternalCatalog(chContext: CHContext) extends CHExternalCatalog {
   }
 
   override def tableExists(db: String, table: String): Boolean =
-    listTables(db).contains(table.toLowerCase())
+    chContext.cluster.nodes.exists(tableExists(db, table, _))
 
   override def listTables(db: String): Seq[String] =
-    CHUtil.listTables(db, chContext.cluster.nodes.head).filter(!isPartitionSubTable(db, _))
+    chContext.cluster.nodes
+      .filter(databaseExists(db, _))
+      .flatMap(node => CHUtil.listTables(db, node).filter(!isPartitionSubTable(db, _, node)))
+      .toSet
+      .toSeq
 
   override def listTables(db: String, pattern: String): Seq[String] =
     StringUtils.filterPattern(listTables(db), pattern)

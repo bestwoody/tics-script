@@ -2,6 +2,7 @@ package org.apache.spark.sql.catalyst.catalog
 
 import java.util.Locale
 
+import com.pingcap.common.Node
 import com.pingcap.tikv.meta.TiTableInfo
 import org.apache.spark.sql.CHContext
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -40,6 +41,12 @@ trait CHCatalog {
   def loadTableFromTiDB(db: String, tiTable: TiTableInfo, isOverwrite: Boolean): Unit
 
   def truncateTable(tableIdentifier: TableIdentifier): Unit
+
+  // Following are per-CH-node entity existence checking.
+
+  def databaseExists(db: String, node: Node): Boolean
+
+  def tableExists(db: String, table: String, node: Node): Boolean
 }
 
 trait CHSessionCatalog extends SessionCatalog with CHCatalog {

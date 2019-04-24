@@ -2,6 +2,7 @@ package org.apache.spark.sql.extensions
 
 import java.util.Locale
 
+import com.pingcap.common.Cluster
 import com.pingcap.tikv.meta.TiTimestamp
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -92,12 +93,14 @@ case class CHResolutionRule(getOrCreateCHContext: SparkSession => CHContext)(
       if (!chContext.chCatalog.tableExists(qualified)) {
         throw new NoSuchTableException(qualified.database.get, qualified.table)
       }
+      val db = qualified.database.get
+      val tab = qualified.table
       val chRelation = CHRelation(
         CHTableRef
           .ofCluster(
-            chContext.cluster,
-            qualified.database.get,
-            qualified.table
+            Cluster(chContext.cluster.nodes.filter(chContext.chCatalog.tableExists(db, tab, _))),
+            db,
+            tab
           ),
         chContext.sqlContext.conf
           .getConfString(

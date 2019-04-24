@@ -97,7 +97,7 @@ object CHTableInfos {
       if (info == null) {
         info = new TableInfo(chContext, curr.schema, curr.rowWidth, curr.rowCount, curr.engine)
       } else {
-        if (info.schema != curr.schema || info.engine != curr.engine) {
+        if (info.schema != curr.schema || info.engine.name != curr.engine.name) {
           throw new Exception("Cluster table schema not the same: " + table)
         }
         info.rowCount += curr.rowCount
