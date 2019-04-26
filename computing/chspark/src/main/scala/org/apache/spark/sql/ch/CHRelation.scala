@@ -26,7 +26,7 @@ import org.apache.spark.sql.types.StructType
 case class CHRelation(
   tables: Array[CHTableRef],
   partitionsPerSplit: Int,
-  ts: Option[TiTimestamp] = None
+  ts: TiTimestamp = null
 )(@transient val sqlContext: SQLContext, @transient val chContext: CHContext)
     extends BaseRelation
     with InsertableRelation {

@@ -26,6 +26,5 @@ class CHExtensions extends (SparkSessionExtensions => Unit) {
     e.injectResolutionRule(CHDDLRule(getOrCreateCHContext, getOrCreateTiContext))
     e.injectResolutionRule(CHResolutionRule(getOrCreateCHContext))
     e.injectPlannerStrategy(CHStrategy(getOrCreateCHContext))
-    e.injectPlannerStrategy(TiStrategy(getOrCreateTiContext))
   }
 }

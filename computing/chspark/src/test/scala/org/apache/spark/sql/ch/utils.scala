@@ -83,15 +83,15 @@ class CHInMemoryExternalCatalog(chContext: CHContext)
 class CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext: SparkSession => CHContext)(
   sparkSession: SparkSession
 ) extends CHResolutionRule(getOrCreateCHContext)(sparkSession) {
-  override protected val resolveRelation: (TableIdentifier, TiTimestamp) => LogicalPlan =
-    (tableIdentifier: TableIdentifier, ts: TiTimestamp) => {
-      val catalogTable = chContext.chCatalog.getTableMetadata(tableIdentifier)
-      val alias = formatTableName(tableIdentifier.table)
-      SubqueryAlias(
-        alias,
-        LogicalRelation(new CHInMemoryRelation(sparkSession, tableIdentifier, catalogTable.schema))
-      )
-    }
+  override protected def resolveRelation(tableIdentifier: TableIdentifier,
+                                         ts: TiTimestamp): LogicalPlan = {
+    val catalogTable = chContext.chCatalog.getTableMetadata(tableIdentifier)
+    val alias = formatTableName(tableIdentifier.table)
+    SubqueryAlias(
+      alias,
+      LogicalRelation(new CHInMemoryRelation(sparkSession, tableIdentifier, catalogTable.schema))
+    )
+  }
 
   override def apply(plan: LogicalPlan): LogicalPlan = super.apply(plan).transformUp {
     case LogicalRelation(r, _, _, _) if r.isInstanceOf[CHInMemoryRelation] =>

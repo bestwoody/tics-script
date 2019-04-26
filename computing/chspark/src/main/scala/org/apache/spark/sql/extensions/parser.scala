@@ -1,7 +1,7 @@
 package org.apache.spark.sql.extensions
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.expressions.{Exists, Expression, ListQuery, NamedExpression, ScalarSubquery}
+import org.apache.spark.sql.catalyst.expressions.{Expression, SubqueryExpression}
 import org.apache.spark.sql.catalyst.parser._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
@@ -68,16 +68,6 @@ case class CHParser(getOrCreateCHContext: SparkSession => CHContext)(sparkSessio
           .isEmpty =>
       // Uncaching an unqualified catalog table.
       u.copy(qualifyTableIdentifierInternal(tableIdent))
-    case f @ Filter(condition, _) =>
-      f.copy(condition = condition.transform {
-        case e @ Exists(plan, _, _)         => e.copy(plan = plan.transform(qualifyTableIdentifier))
-        case ls @ ListQuery(plan, _, _, _)  => ls.copy(plan = plan.transform(qualifyTableIdentifier))
-        case s @ ScalarSubquery(plan, _, _) => s.copy(plan = plan.transform(qualifyTableIdentifier))
-      })
-    case p @ Project(projectList, _) =>
-      p.copy(projectList = projectList.map(_.transform {
-        case s @ ScalarSubquery(plan, _, _) => s.copy(plan = plan.transform(qualifyTableIdentifier))
-      }.asInstanceOf[NamedExpression]))
     case cv @ CreateViewCommand(_, _, _, _, _, child, _, _, _) =>
       cv.copy(child = child.transform(qualifyTableIdentifier))
     case w @ With(_, cteRelations) =>
@@ -90,6 +80,10 @@ case class CHParser(getOrCreateCHContext: SparkSession => CHContext)(sparkSessio
       )
     case e @ ExplainCommand(logicalPlan, _, _, _) =>
       e.copy(logicalPlan = logicalPlan.transform(qualifyTableIdentifier))
+    case plan: LogicalPlan =>
+      plan transformExpressions {
+        case s: SubqueryExpression => s.withNewPlan(s.plan transform qualifyTableIdentifier)
+      }
   }
 
   override def parsePlan(sqlText: String): LogicalPlan =
