@@ -32,19 +32,60 @@ public class TypeMappingJava {
       this.scale = scale;
     }
 
-    // Recalculate CH Decimal precision and scale to fit into Spark Decimal range
+    // Recalculate CH Decimal precision and scale to fit into Spark Decimal range,
     // e.g., Decimal(65,20) will be transformed into Decimal(38, -7), and values
     // within 1.0E+7 will be truncated to zero
     private static PrecisionAndScale fromCHToSpark(int precision, int scale) {
-      return new PrecisionAndScale(
-          Math.min(precision, CHTypeDecimal.MAX_PRECISION),
-          scale - Math.max(0, precision - CHTypeDecimal.MAX_PRECISION));
+      int adjusted_precision = precision;
+      int adjusted_scale = scale;
+      if (precision > DecimalType.MAX_PRECISION()) {
+        adjusted_precision = DecimalType.MAX_PRECISION();
+        adjusted_scale = scale - precision + DecimalType.MAX_PRECISION();
+      }
+      if (adjusted_scale > DecimalType.MAX_SCALE()) {
+        throw new RuntimeException(
+            "CH Decimal ("
+                + precision
+                + ", "
+                + scale
+                + ") adjusted to ("
+                + adjusted_precision
+                + ", "
+                + adjusted_scale
+                + ") scale not supported");
+      }
+      return new PrecisionAndScale(adjusted_precision, adjusted_scale);
+    }
+
+    // Recalculate Spark Decimal precision and scale to fit into CH Decimal range,
+    // i.e., negative scale is not allowed in CH so we extend precision by moving scale to zero.
+    private static PrecisionAndScale fromSparkToCH(int precision, int scale) {
+      int adjusted_precision = precision;
+      int adjusted_scale = scale;
+      if (scale < 0) {
+        adjusted_precision = precision - scale;
+        adjusted_scale = 0;
+      }
+      if (adjusted_precision > CHTypeDecimal.MAX_PRECISION
+          || adjusted_scale > CHTypeDecimal.MAX_SCALE) {
+        throw new RuntimeException(
+            "Spark Decimal ("
+                + precision
+                + ", "
+                + scale
+                + ") adjusted to ("
+                + adjusted_precision
+                + ", "
+                + adjusted_scale
+                + ") scale not supported");
+      }
+      return new PrecisionAndScale(adjusted_precision, adjusted_scale);
     }
   }
 
-  public static DataTypeAndNullable chTypetoSparkType(CHType chType) {
+  public static DataTypeAndNullable chTypeToSparkType(CHType chType) {
     if (chType instanceof CHTypeNullable) {
-      DataTypeAndNullable t = chTypetoSparkType(((CHTypeNullable) chType).nested_data_type);
+      DataTypeAndNullable t = chTypeToSparkType(((CHTypeNullable) chType).nested_data_type);
       return new DataTypeAndNullable(t.dataType, true);
     }
     if (chType == CHTypeString.instance || chType instanceof CHTypeFixedString) {
@@ -168,7 +209,9 @@ public class TypeMappingJava {
   public static CHType sparkTypeToCHType(DataType dataType, boolean nullable) {
     if (dataType instanceof DecimalType) {
       DecimalType decimalType = (DecimalType) dataType;
-      CHTypeDecimal chTypeDecimal = new CHTypeDecimal(decimalType.precision(), decimalType.scale());
+      PrecisionAndScale p =
+          PrecisionAndScale.fromSparkToCH(decimalType.precision(), decimalType.scale());
+      CHTypeDecimal chTypeDecimal = new CHTypeDecimal(p.precision, p.scale);
       if (nullable) {
         return new CHTypeNullable(chTypeDecimal);
       }

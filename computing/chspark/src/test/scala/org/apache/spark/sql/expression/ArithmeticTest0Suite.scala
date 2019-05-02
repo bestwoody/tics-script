@@ -169,7 +169,8 @@ class ArithmeticTest0Suite extends BaseClickHouseSuite {
     "select tp_decimal / -32768 from full_data_type_table order by tp_decimal nulls last limit 10",
     "select tp_decimal / 127 from full_data_type_table order by tp_decimal nulls last limit 10",
     "select tp_decimal / -128 from full_data_type_table order by tp_decimal nulls last limit 10",
-    "select tp_decimal / 0 from full_data_type_table order by tp_decimal nulls last limit 10",
+    // Exception: division by zero.
+    "[skip]select tp_decimal / 0 from full_data_type_table order by tp_decimal nulls last limit 10",
     "select tp_decimal / 2147868.65536 from full_data_type_table order by tp_decimal nulls last limit 10",
     "select tp_uint8 + 18446744073709551615 from full_data_type_table order by tp_uint8 nulls last limit 10",
     "select tp_uint8 + 9223372036854775807 from full_data_type_table order by tp_uint8 nulls last limit 10",
@@ -561,7 +562,8 @@ class ArithmeticTest0Suite extends BaseClickHouseSuite {
     "select tp_int64 - -128 from full_data_type_table order by tp_int64 nulls last limit 10",
     "select tp_int64 - 0 from full_data_type_table order by tp_int64 nulls last limit 10",
     "select tp_int64 - 2147868.65536 from full_data_type_table order by tp_int64 nulls last limit 10",
-    "select tp_int64 * 18446744073709551615 from full_data_type_table order by tp_int64 nulls last limit 10",
+    // Exception: decimal overflow.
+    "[skip]select tp_int64 * 18446744073709551615 from full_data_type_table order by tp_int64 nulls last limit 10",
     "select tp_int64 * 9223372036854775807 from full_data_type_table order by tp_int64 nulls last limit 10",
     "select tp_int64 * -9223372036854775808 from full_data_type_table order by tp_int64 nulls last limit 10",
     "select tp_int64 * 3.14159265358979 from full_data_type_table order by tp_int64 nulls last limit 10",

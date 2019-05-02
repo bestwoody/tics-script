@@ -22,7 +22,7 @@ public class CHColumnVector extends ColumnVector {
   private CHType type;
 
   public CHColumnVector(CHColumnWithTypeAndName column) {
-    super(TypeMappingJava.chTypetoSparkType(column.dataType()).dataType);
+    super(TypeMappingJava.chTypeToSparkType(column.dataType()).dataType);
     CHType originalType = column.dataType();
     if (originalType instanceof CHTypeNullable) {
       this.type = ((CHTypeNullable) originalType).nested_data_type;

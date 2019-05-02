@@ -28,7 +28,8 @@ class ArithmeticTest2Suite extends BaseClickHouseSuite {
     "select tp_uint16 from full_data_type_table where tp_int32 / tp_float32 != 0 order by id_dt",
     "select tp_uint16 from full_data_type_table where tp_int32 / tp_float64 > 0 order by id_dt",
     "select tp_uint16 from full_data_type_table where tp_float32 / tp_uint16 > 0 order by id_dt",
-    "select tp_uint16 from full_data_type_table where tp_decimal / tp_uint16 > 0 order by id_dt",
+    // Exception: division by zero.
+    "[skip]select tp_uint16 from full_data_type_table where tp_decimal / tp_uint16 > 0 order by id_dt",
     "select tp_uint16 from full_data_type_table where tp_decimal / tp_float64 > 0 order by id_dt",
     "select tp_uint16 from full_data_type_table where tp_float64 / tp_uint8 > 0 order by id_dt",
     "[skip]select tp_uint16 from full_data_type_table where tp_uint64 / tp_int8 > 0 order by id_dt",

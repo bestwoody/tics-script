@@ -30,7 +30,7 @@ import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, StringLPad, StringRPad, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, CaseWhen, Cast, CheckOverflow, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, PromotePrecision, Remainder, StringLPad, StringRPad, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
 import org.apache.spark.sql.ch.CHUtil.SharedSparkCHClientInsert.Identity
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
@@ -870,8 +870,14 @@ object CHUtil {
     exp match {
       case _: Literal            => true
       case _: AttributeReference => true
-      case Cast(child, _, _)     => isSupportedExpression(child)
-      case _: CreateNamedStruct  => false
+      case cast @ Cast(child, dataType, _) =>
+        try {
+          TypeMappingJava.sparkTypeToCHType(dataType, cast.nullable)
+          isSupportedExpression(child)
+        } catch {
+          case _: Throwable => false
+        }
+      case _: CreateNamedStruct => false
       case _ @Alias(child, _) =>
         isSupportedExpression(child)
       // TODO: Don't pushdown IsNotNull maybe better
@@ -931,6 +937,10 @@ object CHUtil {
         isSupportedExpression(str) && isSupportedExpression(len) && isSupportedExpression(pad)
       case StringRPad(str, len, pad) =>
         isSupportedExpression(str) && isSupportedExpression(len) && isSupportedExpression(pad)
+      case PromotePrecision(child) =>
+        isSupportedExpression(child)
+      case CheckOverflow(child, _) =>
+        isSupportedExpression(child)
       case _ => false
     }
 
@@ -944,14 +954,9 @@ object CHUtil {
     // because we have to unify results on different partitions.
     ae.aggregateFunction match {
       case _ if ae.isDistinct => false
-      case Sum(child) =>
-        child.dataType match {
-          case DecimalType() => false
-          case _             => isSupportedExpression(child)
-        }
       case Average(_) =>
         throw new UnsupportedOperationException(s"Unexpected ${ae.toString} found.")
-      case PromotedSum(_) | Count(_) | Min(_) | Max(_) =>
+      case PromotedSum(_) | Count(_) | Min(_) | Max(_) | Sum(_) =>
         ae.aggregateFunction.children.forall(isSupportedExpression)
       case _ => false
     }

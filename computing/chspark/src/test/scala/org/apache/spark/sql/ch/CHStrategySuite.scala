@@ -54,8 +54,8 @@ class CHStrategySuite extends CHSharedSQLContext {
 
   protected override def beforeAll(): Unit = {
     super.beforeAll()
-    spark.experimental.extraStrategies = new CHStrategy(_ => new CHContext(spark))(spark) :: Nil
-    multiNodeT = new TestCHRelation("mt", 'mt_a.int, 'mt_b.int, 'mt_c.string)
+    spark.experimental.extraStrategies = CHStrategy(_ => new CHContext(spark))(spark) :: Nil
+    multiNodeT = new TestCHRelation("mt", 'mt_a.int, 'mt_b.int, 'mt_c.string, 'mt_d.decimal(38, 10))
   }
 
   protected override def afterAll(): Unit = {
@@ -74,7 +74,9 @@ class CHStrategySuite extends CHSharedSQLContext {
     )
     testQuery(
       "select * from mt",
-      Map((multiNodeT, "CH plan [Project [mt_a, mt_b, mt_c], Filter [], Aggregate [], TopN []]"))
+      Map(
+        (multiNodeT, "CH plan [Project [mt_a, mt_b, mt_c, mt_d], Filter [], Aggregate [], TopN []]")
+      )
     )
     testQuery(
       "select mt_a from mt where mt_a = 0",
@@ -226,6 +228,21 @@ class CHStrategySuite extends CHSharedSQLContext {
     testQuery(
       "select sum(distinct mt_a) from mt",
       Map((multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]"))
+    )
+    testQuery(
+      "select sum(mt_d) from mt",
+      Map(
+        (multiNodeT, "CH plan [Project [sum(mt_d)], Filter [], Aggregate [[sum(mt_d)]], TopN []]")
+      )
+    )
+    testQuery(
+      "select sum(mt_d + 1) from mt",
+      Map(
+        (
+          multiNodeT,
+          "CH plan [Project [sum((CAST(mt_d AS DECIMAL(38,9)) + 1.000000000))], Filter [], Aggregate [[sum((CAST(mt_d AS DECIMAL(38,9)) + 1.000000000))]], TopN []]"
+        )
+      )
     )
   }
 

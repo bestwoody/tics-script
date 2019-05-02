@@ -33,6 +33,7 @@ class CHSqlSuite extends SparkFunSuite {
   val b: AttributeReference = 'b.int
   val c: AttributeReference = 'C.string
   val d: AttributeReference = 'd.byte
+  val e: AttributeReference = 'e.decimal(38, 10)
   val t = new CHTableRef(Node("", 0), "D", "T")
 
   def testCompileExpression(e: Expression, expected: String): Unit =
@@ -129,6 +130,14 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression(max(a), "MAX(`a`)")
     testCompileExpression(min(a), "MIN(`a`)")
     testCompileExpression(sum(a), "SUM(`a`)")
+    testCompileExpression(
+      sum(e),
+      "CAST(SUM(CAST(`e` AS Nullable(Decimal(38, 10)))) AS Nullable(Decimal(38, 10)))"
+    )
+    testCompileExpression(
+      sum(e + 1),
+      "CAST(SUM((CAST(`e` AS Nullable(Decimal(38, 10))) + 1)) AS Nullable(Decimal(38, 10)))"
+    )
   }
 
   test("cast expressions") {
@@ -159,7 +168,7 @@ class CHSqlSuite extends SparkFunSuite {
 
     testCompileExpression(
       (a.withNullability(false) + b.withNullability(false)).cast(DecimalType.FloatDecimal),
-      "CAST(CAST((`a` + `b`) AS Int32) AS Decimal(14, 7))"
+      "CAST(CAST((`a` + `b`) AS Int32) AS Nullable(Decimal(14, 7)))"
     )
 
     testCompileExpression(a + d, "CAST((`a` + `d`) AS Nullable(Int32))")

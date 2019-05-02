@@ -22,7 +22,7 @@ import com.pingcap.theflash.TypeMappingJava
 import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
 import com.pingcap.tikv.types.MySQLType
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, CaseWhen, Cast, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, Remainder, StringLPad, StringRPad, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, CaseWhen, Cast, CheckOverflow, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, PromotePrecision, Remainder, StringLPad, StringRPad, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
@@ -294,34 +294,30 @@ object CHSql {
          })
          .mkString(", ")) + chTopN.n.map(" LIMIT " + _).getOrElse("")
 
+  def compileType(dataType: DataType, nullable: Boolean): String =
+    TypeMappingJava.sparkTypeToCHType(dataType, nullable).name()
+
+  def explicitCast(sql: String, dataType: DataType, nullable: Boolean): String =
+    s"CAST($sql AS ${compileType(dataType, nullable)})"
+
   private def compileAggregateExpression(ae: AggregateExpression): String =
-    (ae.aggregateFunction, ae.isDistinct) match {
-      case (_, true) =>
+    (ae.aggregateFunction, ae.dataType, ae.isDistinct) match {
+      case (_, _, true) =>
         throw new UnsupportedOperationException(
           s"Aggregate Function ${ae.toString} push down is not supported by CHSql."
         )
-      case (Count(children), _) => s"COUNT(${children.map(compileExpression).mkString(", ")})"
-      case (Min(child), _)      => s"MIN(${compileExpression(child)})"
-      case (Max(child), _)      => s"MAX(${compileExpression(child)})"
-      case (Sum(child), _) =>
-        child.dataType match {
-          case DecimalType() =>
-            throw new UnsupportedOperationException(
-              s"Aggregate Function ${ae.toString} over decimal value is not supported by CHSql."
-            )
-          case _ =>
-        }
-        s"SUM(${compileExpression(child)})"
-      case (Average(_), _) =>
-        throw new UnsupportedOperationException(s"Unexpected ${ae.toString} found when compiling.")
+      case (Count(children), _, _)         => s"COUNT(${children.map(compileExpression).mkString(", ")})"
+      case (Min(child), _, _)              => s"MIN(${compileExpression(child)})"
+      case (Max(child), _, _)              => s"MAX(${compileExpression(child)})"
+      case (Sum(child), _: DecimalType, _) =>
+        // Explicitly cast SUM(decimal) as CH will promote it by +40 precision which could easily exceed the max precision of Spark decimal.
+        explicitCast(s"SUM(${compileExpression(child)})", ae.dataType, ae.nullable)
+      case (Sum(child), _, _) => s"SUM(${compileExpression(child)})"
       case _ =>
         throw new UnsupportedOperationException(
           s"Aggregate Function ${ae.toString} push down is not supported by CHSql."
         )
     }
-
-  def compileType(dataType: DataType, nullable: Boolean): String =
-    TypeMappingJava.sparkTypeToCHType(dataType, nullable).name()
 
   /**
    *  For cases like (a + b), due to inconsistent type promotion between Spark
@@ -359,7 +355,13 @@ object CHSql {
           s"Binary Arithmetic Function ${arithmetic.toString} push down is not supported by CHSql."
         )
     }
-    s"CAST($compileArithmetic AS ${compileType(arithmetic.dataType, nullable = arithmetic.nullable)})"
+    arithmetic.dataType match {
+      case _: DecimalType =>
+        // Decimal binary arithmetic's cast will be done by compiling CheckOverflow, so skip casting here.
+        compileArithmetic
+      case _ =>
+        explicitCast(compileArithmetic, arithmetic.dataType, arithmetic.nullable)
+    }
   }
 
   def compileCaseWhenExpression(ce: CaseWhen): String = {
@@ -405,34 +407,33 @@ object CHSql {
             case TimestampType =>
               // DateTime in storage is stored as seconds rather than milliseconds
               (value.asInstanceOf[java.lang.Long] / 1000000).toString
-            case BooleanType =>
+            case b: BooleanType =>
               val isTrue = if (value.toString.equalsIgnoreCase("TRUE")) 1 else 0
-              s"CAST($isTrue AS UInt8)"
+              explicitCast(s"$isTrue", b, nullable = false)
+            case d: DecimalType =>
+              // Explicitly cast decimal literal, as this may affect precision.
+              explicitCast(value.toString, d, nullable = false)
             case _ => value.toString
           }
         }
-      case attr: AttributeReference =>
-        compileAttributeName(attr.name.toLowerCase())
+      case AttributeReference(name, dataType, nullable, _) =>
+        dataType match {
+          // Explicitly cast decimal attribute, as the underlying CH type may be UInt64.
+          // See how method [[TypeMapping.chTypeToSparkType]] treats UInt64.
+          case _: DecimalType =>
+            explicitCast(compileAttributeName(name.toLowerCase), dataType, nullable)
+          case _ => compileAttributeName(name.toLowerCase)
+        }
       // case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
-      case Cast(child, dataType, _) =>
-        if (!CHUtil.isSupportedExpression(child)) {
-          throw new UnsupportedOperationException(
-            s"Shouldn't be casting expression $expression to type $dataType."
-          )
-        }
-        try {
-          s"CAST(${compileExpression(child)} AS ${compileType(dataType, nullable = child.nullable)})"
-        } catch {
-          // Unsupported target type, downgrading to not casting.
-          case _: UnsupportedOperationException => s"${compileExpression(child)}"
-        }
+      case cast @ Cast(child, dataType, _) =>
+        explicitCast(compileExpression(child), dataType, cast.nullable)
       case Alias(child, name) => s"${compileExpression(child)} AS ${compileAttributeName(name)}"
       case IsNotNull(child)   => s"${compileExpression(child)} IS NOT NULL"
       case IsNull(child)      => s"${compileExpression(child)} IS NULL"
       case UnaryMinus(child)  => s"(-${compileExpression(child)})"
       case Not(child)         => s"NOT ${compileExpression(child)}"
       case e @ Abs(child) =>
-        s"CAST(abs(${compileExpression(child)}) AS ${compileType(e.dataType, nullable = child.nullable)})"
+        explicitCast(s"abs(${compileExpression(child)})", e.dataType, e.nullable)
       case be: BinaryArithmetic     => compileBinaryArithmetic(be)
       case GreaterThan(left, right) => s"(${compileExpression(left)} > ${compileExpression(right)})"
       case GreaterThanOrEqual(left, right) =>
@@ -462,6 +463,11 @@ object CHSql {
         s"lpad(${compileExpression(str)}, ${compileExpression(len)}, ${compileExpression(pad)})"
       case StringRPad(str, len, pad) =>
         s"rpad(${compileExpression(str)}, ${compileExpression(len)}, ${compileExpression(pad)})"
+      case PromotePrecision(child) =>
+        compileExpression(child)
+      case CheckOverflow(child, dataType) =>
+        // Spark's CheckOverflow plays as a Decimal cast + overflow check (if overflow, emit null), we treat it as a normal cast.
+        explicitCast(compileExpression(child), dataType, child.nullable)
       // TODO: Support more expression types.
       case _ =>
         throw new UnsupportedOperationException(

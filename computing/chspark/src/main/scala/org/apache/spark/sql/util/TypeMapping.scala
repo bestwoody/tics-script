@@ -10,7 +10,7 @@ object TypeMapping {
 
   def chSchemaToSparkSchema(chBlock: CHBlock): StructType =
     StructType(chBlock.columns.asScala.map { f =>
-      val dt = TypeMappingJava.chTypetoSparkType(f.dataType)
+      val dt = TypeMappingJava.chTypeToSparkType(f.dataType)
       StructField(f.name, dt.dataType, dt.nullable)
     })
 
