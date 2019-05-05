@@ -1,10 +1,7 @@
 package org.apache.spark.sql.ch
 
 import org.apache.spark.sql._
-import org.apache.spark.util.Utils
-import org.scalatest.Ignore
 
-@Ignore
 class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
   override var extended: SparkSession = _
   override val testDb = "in_memory_test_test_test_db"
@@ -13,18 +10,12 @@ class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
-    // Used for Hive external catalog, which is the default.
-    System.setProperty("test.tmp.dir", Utils.createTempDir().toURI.getPath)
-    System.setProperty("test.warehouse.dir", Utils.createTempDir().toURI.getPath)
-
     extended = CHExtendedSparkSessionBuilder
       .builder()
       .withCHFirstPolicy()
       .withInMemoryCH()
       .withInMemoryLegacyCatalog()
       .getOrCreate()
-
-    extended.sparkContext.setLogLevel("WARN")
 
     init()
   }
@@ -38,15 +29,14 @@ class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
   }
 
   override def verifyShowDatabases(expected: Array[String]) = {
+    // There might be legacy databases in CH, so use a relative loosing check rule.
     var r = extended.sql("show databases").collect().map(_.getString(0))
-    assert(r.sorted(Ordering.String).deep == expected.sorted(Ordering.String).deep)
+    assert(r.contains("default"))
     r = extended.sql("""show databases ".efault*"""").collect().map(_.getString(0))
     assert(r.sorted(Ordering.String).deep == Array("default").sorted(Ordering.String).deep)
     r = extended.sql(s"""show databases "^((?!default).)*"""").collect().map(_.getString(0))
-    assert(
-      r.sorted(Ordering.String)
-        .deep == expected.filterNot(_ == "default").sorted(Ordering.String).deep
-    )
+    assert(!r.contains("default"))
+    assert(expected.filterNot(_ == "default").forall(r.contains))
   }
 
   override def verifyShowTables(db: String,
@@ -112,5 +102,9 @@ class CHInMemoryCatalogSuite extends BaseCHCatalogSuite {
 
   test("temp views") {
     runTempViewTest()
+  }
+
+  test("sub-queries") {
+    runSubqueryTest()
   }
 }

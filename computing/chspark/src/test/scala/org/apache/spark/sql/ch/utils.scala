@@ -1,7 +1,8 @@
 package org.apache.spark.sql.ch
 
 import com.pingcap.common.Node
-import com.pingcap.tikv.meta.{TiTableInfo, TiTimestamp}
+import com.pingcap.tikv.meta.TiTableInfo
+import com.pingcap.tispark.TiConfigConst
 import org.apache.spark.sql.{CHContext, SparkSession, _}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
@@ -83,8 +84,7 @@ class CHInMemoryExternalCatalog(chContext: CHContext)
 class CHResolutionRuleWithInMemoryRelation(getOrCreateCHContext: SparkSession => CHContext)(
   sparkSession: SparkSession
 ) extends CHResolutionRule(getOrCreateCHContext)(sparkSession) {
-  override protected def resolveRelation(tableIdentifier: TableIdentifier,
-                                         ts: TiTimestamp): LogicalPlan = {
+  override protected def resolveRelation(tableIdentifier: TableIdentifier): LogicalPlan = {
     val catalogTable = chContext.chCatalog.getTableMetadata(tableIdentifier)
     val alias = formatTableName(tableIdentifier.table)
     SubqueryAlias(
@@ -129,12 +129,14 @@ class CHTestExtensions(inMemory: Boolean) extends CHExtensions {
     } else {
       e.injectResolutionRule(CHResolutionRule(getOrCreateCHContext))
     }
+    e.injectPlannerStrategy(CHApplyTimestampStrategy(getOrCreateCHContext))
     e.injectPlannerStrategy(CHStrategy(getOrCreateCHContext))
   }
 }
 
 class CHExtendedSparkSessionBuilder {
-  var root: SparkSession.Builder = SparkSession.builder().master("local[1]")
+  var root: SparkSession.Builder =
+    SparkSession.builder().master("local[1]").config(TiConfigConst.PD_ADDRESSES, "127.0.0.1:2379")
 
   var inMemory = false
 
@@ -157,6 +159,7 @@ class CHExtendedSparkSessionBuilder {
 
   def withHiveLegacyCatalog(): CHExtendedSparkSessionBuilder = {
     root = root
+      .enableHiveSupport()
       .config(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
       .config(StaticSQLConf.WAREHOUSE_PATH.key, "/tmp/warehouse")
     this

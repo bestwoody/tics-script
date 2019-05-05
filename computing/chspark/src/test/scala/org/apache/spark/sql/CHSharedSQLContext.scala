@@ -23,7 +23,7 @@ import java.util.Properties
 import com.pingcap.tispark.TiConfigConst
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.util.resourceToString
-import org.apache.spark.sql.ch.CHStrategy
+import org.apache.spark.sql.ch.CHApplyTimestampStrategy
 import org.apache.spark.sql.test.TestConstants._
 import org.apache.spark.sql.test.Utils._
 import org.apache.spark.sql.test.{TestSQLContext, TestSparkSession}
@@ -159,7 +159,7 @@ object CHSharedSQLContext extends Logging {
   protected def initializeCHContext(): Unit =
     if (_spark != null && _ch == null) {
       _ch = _spark.sessionState.planner.extraPlanningStrategies.head
-        .asInstanceOf[CHStrategy]
+        .asInstanceOf[CHApplyTimestampStrategy]
         .getOrCreateCHContext(_spark)
     }
 

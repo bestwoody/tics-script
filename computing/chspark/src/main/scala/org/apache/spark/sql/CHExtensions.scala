@@ -1,6 +1,6 @@
 package org.apache.spark.sql
 
-import org.apache.spark.sql.ch.CHStrategy
+import org.apache.spark.sql.ch.{CHApplyTimestampStrategy, CHStrategy}
 import org.apache.spark.sql.extensions.{CHDDLRule, CHParser, CHResolutionRule}
 
 class CHExtensions extends (SparkSessionExtensions => Unit) {
@@ -25,6 +25,7 @@ class CHExtensions extends (SparkSessionExtensions => Unit) {
     e.injectParser(CHParser(getOrCreateCHContext))
     e.injectResolutionRule(CHDDLRule(getOrCreateCHContext, getOrCreateTiContext))
     e.injectResolutionRule(CHResolutionRule(getOrCreateCHContext))
+    e.injectPlannerStrategy(CHApplyTimestampStrategy(getOrCreateCHContext))
     e.injectPlannerStrategy(CHStrategy(getOrCreateCHContext))
   }
 }

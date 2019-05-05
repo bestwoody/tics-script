@@ -28,7 +28,7 @@ class CHLogicalPlan(val chProject: CHProject,
                     val chFilter: CHFilter,
                     val chAggregate: CHAggregate,
                     val chTopN: CHTopN) {
-  override def toString: String = s"CH plan [$chProject, $chFilter, $chAggregate, $chTopN]"
+  override def toString: String = s"CHLogicalPlan($chProject, $chFilter, $chAggregate, $chTopN)"
 }
 
 object CHLogicalPlan {
@@ -54,11 +54,11 @@ object CHLogicalPlan {
 }
 
 class CHProject(val projectList: Seq[Expression]) {
-  override def toString: String = projectList.map(util.toPrettySQL).mkString("Project [", ", ", "]")
+  override def toString: String = projectList.map(util.toPrettySQL).mkString("project=[", ", ", "]")
 }
 
 class CHFilter(val predicates: Seq[Expression]) {
-  override def toString: String = predicates.map(util.toPrettySQL).mkString("Filter [", ", ", "]")
+  override def toString: String = predicates.map(util.toPrettySQL).mkString("filter=[", ", ", "]")
 }
 
 class CHAggregate(val groupingExpressions: Seq[NamedExpression],
@@ -76,7 +76,7 @@ class CHAggregate(val groupingExpressions: Seq[NamedExpression],
           .map(util.toPrettySQL)
           .mkString("[", ", ", "]")
     ).filter(_.nonEmpty)
-      .mkString("Aggregate [", ", ", "]")
+      .mkString("agg=[", ", ", "]")
 }
 
 class CHTopN(val sortOrders: Seq[SortOrder], val n: Option[Int]) {
@@ -85,5 +85,5 @@ class CHTopN(val sortOrders: Seq[SortOrder], val n: Option[Int]) {
       if (sortOrders.isEmpty) "" else sortOrders.map(util.toPrettySQL).mkString("[", ", ", "]"),
       n.getOrElse("").toString
     ).filter(_.nonEmpty)
-      .mkString("TopN [", ", ", "]")
+      .mkString("topN=[", ", ", "]")
 }

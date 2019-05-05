@@ -349,7 +349,7 @@ case class TxnMergeTreeEngine(var partitionNum: Option[Int],
         val query = CHSql.query(table, chLogicalPlan, null, chRelation.useSelraw)
         regionList
           .grouped(chRelation.partitionsPerSplit)
-          .map(regionGroup => CHPhysicalPlan(table, query, Some(chRelation.ts), Some(regionGroup)))
+          .map(regionGroup => CHPhysicalPlan(table, query, chRelation.ts, Some(regionGroup)))
       })
       .toArray
   }

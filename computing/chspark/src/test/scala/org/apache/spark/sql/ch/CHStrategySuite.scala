@@ -15,139 +15,144 @@
 
 package org.apache.spark.sql.ch
 
-import org.apache.spark.sql.{CHContext, CHSharedSQLContext}
-import org.apache.spark.sql.catalyst.dsl.expressions._
-import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
-import org.apache.spark.sql.execution.CHScanExec
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.CHSharedSQLContext
+import org.apache.spark.sql.execution.{CHScanExec, SparkPlan}
 
 class CHStrategySuite extends CHSharedSQLContext {
-  class TestCHRelation(name: String, output: Attribute*)
-      extends CHRelation({ Array.empty }, 0)(sqlContext, null) {
-    val localRelation = LocalRelation(output)
-    override lazy val schema: StructType = localRelation.schema
 
-    sqlContext.baseRelationToDataFrame(this).createTempView(name)
+  private def collectCHScans(sparkPlan: SparkPlan): Seq[CHScanExec] = sparkPlan flatMap {
+    case chScan: CHScanExec => chScan :: Nil
+    case plan: SparkPlan    => plan.subqueries flatMap collectCHScans
   }
 
-  private def testQuery(query: String, expected: Map[TestCHRelation, String]) = {
-    val plans = spark
-      .sql(query)
-      .queryExecution
-      .sparkPlan
-      .collect {
-        case chScanExec: CHScanExec => chScanExec
-      }
+  private def testCHLogicalPlan(query: String, expected: Map[String, String]): Unit = {
+    val chScans = collectCHScans(spark.sql(query).queryExecution.executedPlan)
       .map(
-        chScanExec =>
-          chScanExec.chRelation match {
-            case testCHRelation: TestCHRelation => (testCHRelation, chScanExec.chLogicalPlan)
-        }
+        chScan => (chScan.chRelation.tables.head.table, chScan.chLogicalPlan)
       )
       .toMap
-    assert(plans.size == expected.size)
-    expected.foreach(e => assert(plans(e._1).toString == e._2))
+    assert(chScans.size == expected.size)
+    expected.foreach(e => assert(chScans(e._1).toString == e._2))
   }
 
-  var multiNodeT: TestCHRelation = _
+  private def testTimestamp(query: String, expected: Int): Unit = {
+    val chScans = collectCHScans(spark.sql(query).queryExecution.executedPlan).map(
+      chScan => chScan.chRelation.ts
+    )
+    assert(chScans.size == expected)
+    val ts = chScans.head
+    assert(ts.nonEmpty)
+    chScans.foreach(t => assert(t == ts))
+  }
+
+  val multiNodeT = "mt"
+  val multiNodeT2 = "mt2"
 
   protected override def beforeAll(): Unit = {
     super.beforeAll()
-    spark.experimental.extraStrategies = CHStrategy(_ => new CHContext(spark))(spark) :: Nil
-    multiNodeT = new TestCHRelation("mt", 'mt_a.int, 'mt_b.int, 'mt_c.string, 'mt_d.decimal(38, 10))
+    spark.sql("create flash database if not exists strategy_test")
+    spark.sql("use strategy_test")
+    spark.sql(
+      s"create table if not exists $multiNodeT(mt_a int primary key, mt_b int, mt_c string, mt_d decimal(38, 10)) using mmt(128)"
+    )
+    spark.sql(
+      s"create table if not exists $multiNodeT2(mt2_a int primary key, mt2_b int, mt2_c string, mt2_d decimal(38, 10)) using mmt(128)"
+    )
   }
 
   protected override def afterAll(): Unit = {
-    spark.experimental.extraStrategies = Nil
+    spark.sql(s"drop table $multiNodeT")
+    spark.sql(s"drop table $multiNodeT2")
+    spark.sql("use default")
+    spark.sql("drop database strategy_test")
     super.afterAll()
   }
 
   test("basic plans") {
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt",
-      Map((multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]"))
+      Map((multiNodeT, "CHLogicalPlan(project=[mt_a], filter=[], agg=[], topN=[])"))
     )
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a a from mt",
-      Map((multiNodeT, "CH plan [Project [mt_a AS `a`], Filter [], Aggregate [], TopN []]"))
+      Map((multiNodeT, "CHLogicalPlan(project=[mt_a AS `a`], filter=[], agg=[], topN=[])"))
     )
-    testQuery(
+    testCHLogicalPlan(
       "select * from mt",
       Map(
-        (multiNodeT, "CH plan [Project [mt_a, mt_b, mt_c, mt_d], Filter [], Aggregate [], TopN []]")
+        (multiNodeT, "CHLogicalPlan(project=[mt_a, mt_b, mt_c, mt_d], filter=[], agg=[], topN=[])")
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt where mt_a = 0",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a], Filter [(mt_a IS NOT NULL), (mt_a = 0)], Aggregate [], TopN []]"
+          "CHLogicalPlan(project=[mt_a], filter=[(mt_a = 0)], agg=[], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt where mt_b = 0",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a], Filter [(mt_b IS NOT NULL), (mt_b = 0)], Aggregate [], TopN []]"
+          "CHLogicalPlan(project=[mt_a], filter=[(mt_b IS NOT NULL), (mt_b = 0)], agg=[], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt where mt_a in (1, 2, mt_b)",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a], Filter [(mt_a IN (1, 2, mt_b))], Aggregate [], TopN []]"
+          "CHLogicalPlan(project=[mt_a], filter=[(mt_a IN (1, 2, mt_b))], agg=[], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a + 1 as a from mt where cos(mt_b) = 0",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [(mt_a + 1) AS `a`, mt_b], Filter [], Aggregate [], TopN []]"
+          "CHLogicalPlan(project=[(mt_a + 1) AS `a`, mt_b], filter=[], agg=[], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select cast(cos(mt_a) as string) from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]"
+          "CHLogicalPlan(project=[mt_a], filter=[], agg=[], topN=[])"
         )
       )
     )
     // Testing hack.
-    testQuery(
+    testCHLogicalPlan(
       "select cast(cast(mt_a as String) as date) from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [CAST(CAST(mt_a AS STRING) AS DATE) AS `CAST(CAST(mt_a AS STRING) AS DATE)`], Filter [], Aggregate [], TopN []]"
+          "CHLogicalPlan(project=[CAST(CAST(mt_a AS STRING) AS DATE) AS `CAST(CAST(mt_a AS STRING) AS DATE)`], filter=[], agg=[], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select cast(cast(mt_a as String) as date) a from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [CAST(CAST(mt_a AS STRING) AS DATE) AS `a`], Filter [], Aggregate [], TopN []]"
+          "CHLogicalPlan(project=[CAST(CAST(mt_a AS STRING) AS DATE) AS `a`], filter=[], agg=[], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select ifNull(mt_a, mt_b + 1) from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [coalesce(mt_a, (mt_b + 1)) AS `ifnull(mt.``mt_a``, (mt.``mt_b`` + 1))`], Filter [], Aggregate [], TopN []]"
+          "CHLogicalPlan(project=[coalesce(mt_a, (mt_b + 1)) AS `ifnull(mt.``mt_a``, (mt.``mt_b`` + 1))`], filter=[], agg=[], topN=[])"
         )
       )
     )
@@ -155,132 +160,144 @@ class CHStrategySuite extends CHSharedSQLContext {
 
   test("filter plans") {
     // Predicate LIKE not pushing down, checking if column mt_b is correctly pushed.
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt where MT_B like '%WHATEVER'",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a, MT_B], Filter [(MT_B IS NOT NULL)], Aggregate [], TopN []]"
+          "CHLogicalPlan(project=[mt_a, MT_B], filter=[(MT_B IS NOT NULL)], agg=[], topN=[])"
         )
       )
     )
   }
 
   test("multi-node aggregate plans") {
-    testQuery(
+    testCHLogicalPlan(
       "select sum(mt_a) from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [sum(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT))]], TopN []]"
+          "CHLogicalPlan(project=[sum(CAST(mt_a AS BIGINT))], filter=[], agg=[[sum(CAST(mt_a AS BIGINT))]], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select sum(mt_a) AS sum_mt_a from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [sum(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT))]], TopN []]"
+          "CHLogicalPlan(project=[sum(CAST(mt_a AS BIGINT))], filter=[], agg=[[sum(CAST(mt_a AS BIGINT))]], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select sum(mt_a) + sum(mt_b) from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))]], TopN []]"
+          "CHLogicalPlan(project=[sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))], filter=[], agg=[[sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))]], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select sum(mt_a) + sum(mt_b) AS sum_mt_a_mt_b from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))]], TopN []]"
+          "CHLogicalPlan(project=[sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))], filter=[], agg=[[sum(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT))]], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select avg(mt_a) from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))]], TopN []]"
+          "CHLogicalPlan(project=[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))], filter=[], agg=[[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT))]], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select avg(mt_a) + avg(mt_b) from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))], Filter [], Aggregate [[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))]], TopN []]"
+          "CHLogicalPlan(project=[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))], filter=[], agg=[[sum(CAST(mt_a AS BIGINT)), count(CAST(mt_a AS BIGINT)), sum(CAST(mt_b AS BIGINT)), count(CAST(mt_b AS BIGINT))]], topN=[])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select count(mt_a) from mt where cos(mt_b) = 0",
-      Map((multiNodeT, "CH plan [Project [mt_a, mt_b], Filter [], Aggregate [], TopN []]"))
+      Map((multiNodeT, "CHLogicalPlan(project=[mt_b], filter=[], agg=[], topN=[])"))
     )
-    testQuery(
+    testCHLogicalPlan(
       "select sum(distinct mt_a) from mt",
-      Map((multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]"))
+      Map((multiNodeT, "CHLogicalPlan(project=[mt_a], filter=[], agg=[], topN=[])"))
     )
-    testQuery(
+    testCHLogicalPlan(
       "select sum(mt_d) from mt",
       Map(
-        (multiNodeT, "CH plan [Project [sum(mt_d)], Filter [], Aggregate [[sum(mt_d)]], TopN []]")
+        (multiNodeT, "CHLogicalPlan(project=[sum(mt_d)], filter=[], agg=[[sum(mt_d)]], topN=[])")
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select sum(mt_d + 1) from mt",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [sum((CAST(mt_d AS DECIMAL(38,9)) + 1.000000000))], Filter [], Aggregate [[sum((CAST(mt_d AS DECIMAL(38,9)) + 1.000000000))]], TopN []]"
+          "CHLogicalPlan(project=[sum((CAST(mt_d AS DECIMAL(38,9)) + 1.000000000))], filter=[], agg=[[sum((CAST(mt_d AS DECIMAL(38,9)) + 1.000000000))]], topN=[])"
         )
       )
     )
   }
 
   test("top-n plans") {
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt order by mt_a",
-      Map((multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN []]"))
+      Map((multiNodeT, "CHLogicalPlan(project=[mt_a], filter=[], agg=[], topN=[])"))
     )
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt limit 1",
-      Map((multiNodeT, "CH plan [Project [mt_a], Filter [], Aggregate [], TopN [1]]"))
+      Map((multiNodeT, "CHLogicalPlan(project=[mt_a], filter=[], agg=[], topN=[1])"))
     )
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt order by mt_a limit 1",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a], Filter [], Aggregate [], TopN [[mt_a ASC NULLS FIRST], 1]]"
+          "CHLogicalPlan(project=[mt_a], filter=[], agg=[], topN=[[mt_a ASC NULLS FIRST], 1])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt order by mt_a asc, mt_b desc limit 1",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a, mt_b], Filter [], Aggregate [], TopN [[mt_a ASC NULLS FIRST, mt_b DESC NULLS LAST], 1]]"
+          "CHLogicalPlan(project=[mt_a, mt_b], filter=[], agg=[], topN=[[mt_a ASC NULLS FIRST, mt_b DESC NULLS LAST], 1])"
         )
       )
     )
-    testQuery(
+    testCHLogicalPlan(
       "select mt_a from mt order by (mt_a, mt_b) desc limit 1",
       Map(
         (
           multiNodeT,
-          "CH plan [Project [mt_a, mt_b], Filter [], Aggregate [], TopN [[named_struct(mt_a, mt_a, mt_b, mt_b) DESC NULLS LAST], 1]]"
+          "CHLogicalPlan(project=[mt_a, mt_b], filter=[], agg=[], topN=[[named_struct(mt_a, mt_a, mt_b, mt_b) DESC NULLS LAST], 1])"
         )
       )
+    )
+  }
+
+  test("subquery timestamps") {
+    testTimestamp(
+      "select 1 from mt t1 join (select count(*) as c from mt2) t2 on t1.mt_a = t2.c",
+      2
+    )
+    testTimestamp("select 1 from mt where (select count(*) from mt2) > mt_a", 2)
+    testTimestamp(
+      "select 1 from mt where (select count(*) from mt2 where (select count(*) from mt) > 0) > mt_a",
+      3
     )
   }
 }

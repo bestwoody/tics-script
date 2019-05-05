@@ -26,7 +26,7 @@ import org.apache.spark.sql.types.StructType
 case class CHRelation(
   tables: Array[CHTableRef],
   partitionsPerSplit: Int,
-  ts: TiTimestamp = null
+  var ts: Option[TiTimestamp] = None
 )(@transient val sqlContext: SQLContext, @transient val chContext: CHContext)
     extends BaseRelation
     with InsertableRelation {
@@ -110,5 +110,13 @@ case class CHRelation(
       this.tables.deep == other.tables.deep
     case _ =>
       false
+  }
+
+  override def toString: String = {
+    val tbls = tables
+      .groupBy(_.table.toLowerCase)
+      .map(pair => (pair._1, pair._2.map(ref => s"${ref.node.host}:${ref.node.port}")))
+      .map(pair => s"${pair._1}(${pair._2.mkString(",")})")
+    s"CHRelation(tables=[${tbls.mkString(",")}], partitions=$partitionsPerSplit, ts=${ts.map(_.getVersion).orNull})"
   }
 }

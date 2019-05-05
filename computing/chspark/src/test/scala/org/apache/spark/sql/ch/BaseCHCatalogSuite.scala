@@ -7,9 +7,9 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.NoSuchDatabaseException
 import org.apache.spark.sql.execution.columnar.{InMemoryRelation, InMemoryTableScanExec}
 import org.apache.spark.sql.internal.StaticSQLConf
-import org.apache.spark.sql.{AnalysisException, CHSharedSQLContext, DataFrame, SparkSession}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SparkSession}
 
-abstract class BaseCHCatalogSuite extends SparkFunSuite with CHSharedSQLContext {
+abstract class BaseCHCatalogSuite extends SparkFunSuite {
   var extended: SparkSession
   val testDb: String
   val testT: String
@@ -26,6 +26,8 @@ abstract class BaseCHCatalogSuite extends SparkFunSuite with CHSharedSQLContext 
   def verifyDescTable(table: String, expected: Array[Array[String]])
 
   def init(): Unit = {
+    extended.sparkContext.setLogLevel("ERROR")
+
     extended.sql("create flash database if not exists default")
 
     extended.sql(s"drop table if exists default.$testT")
@@ -403,5 +405,19 @@ abstract class BaseCHCatalogSuite extends SparkFunSuite with CHSharedSQLContext 
     verifyShowTables(testDb, Array(testT), "default", Array(testT))
     extended.sql(s"select vc from $testT")
     extended.sql(s"select gvc from $globalTempDB.$testT")
+
+    extended.sql(s"drop view $testT")
+    extended.sql(s"drop view $globalTempDB.$testT")
+  }
+
+  def runSubqueryTest(): Unit = {
+    // View appearing in subquery.
+    extended.sql(s"create temporary view v as select 1 as vc")
+    extended.sql(
+      s"create table $testT(i int primary key, s String not null, d decimal(20, 10)) using MMT(128)"
+    )
+    extended.sql(s"select * from $testT where (select count(*) from v) > 1")
+    extended.sql(s"drop table $testT")
+    extended.sql(s"drop view v")
   }
 }

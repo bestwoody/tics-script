@@ -2,9 +2,7 @@ package org.apache.spark.sql.ch
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.util.Utils
-import org.scalatest.Ignore
 
-@Ignore
 class InMemoryLegacyCatalogSuite extends BaseLegacyCatalogSuite {
   override var extended: SparkSession = _
   override val testLegacyDb: String = "hive_test_test_test_db"
@@ -25,8 +23,6 @@ class InMemoryLegacyCatalogSuite extends BaseLegacyCatalogSuite {
       .withHiveLegacyCatalog()
       .getOrCreate()
 
-    extended.sparkContext.setLogLevel("WARN")
-
     init()
   }
 
@@ -39,15 +35,14 @@ class InMemoryLegacyCatalogSuite extends BaseLegacyCatalogSuite {
   }
 
   override def verifyShowDatabases(expected: Array[String]) = {
+    // There might be existing databases in CH, so use a relative loosing check rule.
     var r = extended.sql("show databases").collect().map(_.getString(0))
-    assert(r.sorted(Ordering.String).deep == expected.sorted(Ordering.String).deep)
+    assert(r.contains("default"))
     r = extended.sql("""show databases ".efault*"""").collect().map(_.getString(0))
     assert(r.sorted(Ordering.String).deep == Array("default").sorted(Ordering.String).deep)
     r = extended.sql(s"""show databases "^((?!default).)*"""").collect().map(_.getString(0))
-    assert(
-      r.sorted(Ordering.String)
-        .deep == expected.filterNot(_ == "default").sorted(Ordering.String).deep
-    )
+    assert(!r.contains("default"))
+    assert(expected.filterNot(_ == "default").forall(r.contains))
   }
 
   override def verifyShowTables(db: String,

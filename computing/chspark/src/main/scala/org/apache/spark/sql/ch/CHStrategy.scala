@@ -15,9 +15,10 @@
 
 package org.apache.spark.sql.ch
 
+import com.pingcap.tikv.meta.TiTimestamp
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeSet, Cast, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeSet, Cast, Divide, Expression, IntegerLiteral, NamedExpression, SortOrder, SubqueryExpression}
 import org.apache.spark.sql.catalyst.planning.{PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.execution.aggregate.AggUtils
@@ -25,7 +26,30 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.sql.{CHContext, SparkSession, Strategy}
+import org.apache.spark.sql.{CHContext, SparkSession, Strategy, TiContext}
+
+case class CHApplyTimestampStrategy(getOrCreateCHContext: SparkSession => CHContext)(
+  sparkSession: SparkSession
+) extends Strategy {
+  protected lazy val tiContext: TiContext = getOrCreateCHContext(sparkSession).tiContext
+
+  protected def applyTimestamp(plan: LogicalPlan, ts: Some[TiTimestamp]): Unit = plan foreachUp {
+    case LogicalRelation(relation: CHRelation, _, _, _) =>
+      relation.ts = relation.ts.orElse(ts)
+    case other: LogicalPlan =>
+      other transformExpressionsUp {
+        case s: SubqueryExpression =>
+          applyTimestamp(s.plan, ts)
+          s
+      }
+  }
+
+  override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
+    val ts = Some(tiContext.tiSession.getTimestamp)
+    applyTimestamp(plan, ts)
+    Nil
+  }
+}
 
 case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSession: SparkSession)
     extends Strategy
@@ -191,7 +215,7 @@ case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSess
     )
 
     val chPlan =
-      CHScanExec(output, getOrCreateCHContext(sparkSession), sparkSession, relation, chLogicalPlan)
+      CHScanExec(output, relation, chLogicalPlan)(getOrCreateCHContext(sparkSession), sparkSession)
 
     AggUtils.planAggregateWithoutDistinct(
       groupAttributes,
@@ -273,11 +297,9 @@ case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSess
       // Use rewritten project attributes as CH plan output.
       val chExec = CHScanExec(
         rewrittenProjectAttrSet,
-        getOrCreateCHContext(sparkSession),
-        sparkSession,
         chRelation,
         chLogicalPlan
-      )
+      )(getOrCreateCHContext(sparkSession), sparkSession)
       residualFilter.map(FilterExec(_, chExec)).getOrElse(chExec)
     } else {
       // Need extra Spark Project.
@@ -285,11 +307,9 @@ case class CHStrategy(getOrCreateCHContext: SparkSession => CHContext)(sparkSess
       val totalPushDownProjectAttrs = totalPushDownProjects.map(_.toAttribute)
       val chExec = CHScanExec(
         totalPushDownProjectAttrs,
-        getOrCreateCHContext(sparkSession),
-        sparkSession,
         chRelation,
         chLogicalPlan
-      )
+      )(getOrCreateCHContext(sparkSession), sparkSession)
 
       // Use rewritten project list as Spark Project output.
       ProjectExec(rewrittenProjectList, residualFilter.map(FilterExec(_, chExec)).getOrElse(chExec))

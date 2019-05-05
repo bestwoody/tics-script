@@ -22,11 +22,11 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.ch.{CHLogicalPlan, CHRelation}
 import org.apache.spark.sql.execution.datasources.CHScanRDD
 
-case class CHScanExec(output: Seq[Attribute],
-                      @transient chContext: CHContext,
-                      @transient sparkSession: SparkSession,
-                      @transient chRelation: CHRelation,
-                      @transient chLogicalPlan: CHLogicalPlan)
+case class CHScanExec(
+  output: Seq[Attribute],
+  @transient chRelation: CHRelation,
+  @transient chLogicalPlan: CHLogicalPlan
+)(@transient val chContext: CHContext, @transient val sparkSession: SparkSession)
     extends LeafExecNode
     with CHBatchScan {
 
@@ -40,4 +40,6 @@ case class CHScanExec(output: Seq[Attribute],
 
   override protected def doExecute(): RDD[InternalRow] =
     WholeStageCodegenExec(this)(codegenStageId = 0).execute()
+
+  override def otherCopyArgs: Seq[AnyRef] = chContext :: sparkSession :: Nil
 }
