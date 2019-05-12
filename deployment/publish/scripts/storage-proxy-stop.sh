@@ -1,18 +1,16 @@
-#!/bin/bash
-
 set -eu
 
-pids=`./storage-pid.sh`
+pids=`./storage-proxy-pid.sh`
 
 if [ -z "$pids" ]; then
-	echo "storage pid not found, skipped and exiting"
+	echo "tiflash-proxy pid not found, skipped and exiting"
 	exit
 fi
 
 pids_count=`echo "$pids" | wc -l | awk '{print $1}'`
 
 if [ "$pids_count" != "1" ]; then
-	echo "found $pids_count storage process, closing them..."
+	echo "found $pids_count tiflash-proxy process, closing them..."
 fi
 
 heavy_kill="false"

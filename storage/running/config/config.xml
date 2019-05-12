@@ -6,8 +6,8 @@
 
     <logger>
         <level>trace</level>
-        <log>/tmp/theflash/server.log</log>
-        <errorlog>/tmp/theflash/error.log</errorlog>
+        <log>/tmp/tiflash/server.log</log>
+        <errorlog>/tmp/tiflash/error.log</errorlog>
         <size>1000M</size>
         <count>10</count>
         <!-- <console>1</console> --> <!-- Default behavior is autodetection (log to console if not daemon mode and is tty) -->
@@ -17,8 +17,8 @@
 
     <raft>
         <service_addr>0.0.0.0:3930</service_addr>
-        <kvstore_path>/tmp/theflash/kvstore</kvstore_path>
-        <!--pd_addr>127.0.0.1:2379</pd_addr-->
+        <kvstore_path>/tmp/tiflash/kvstore</kvstore_path>
+        <pd_addr>127.0.0.1:2379</pd_addr>
     </raft>
 
     <tidb>
@@ -72,10 +72,10 @@
     <persisted_mapping_cache_size>0</persisted_mapping_cache_size>
 
     <!-- Path to data directory, with trailing slash. -->
-    <path>/tmp/theflash/db</path>
+    <path>/tmp/tiflash/db</path>
 
     <!-- Path to temporary data for processing hard queries. -->
-    <tmp_path>/tmp/theflash/tmp</tmp_path>
+    <tmp_path>/tmp/tiflash/tmp</tmp_path>
 
     <l0_optimize>false</l0_optimize>
 

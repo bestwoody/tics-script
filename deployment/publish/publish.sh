@@ -16,7 +16,7 @@ fi
 
 repo_git_hash=`git log HEAD -1 | head -n 1 | awk '{print $2}'`
 if [ -z "$name" ]; then
-    name="theflash-${repo_git_hash:0:6}"
+    name="tiflash-${repo_git_hash:0:6}"
 fi
 
 publish_dir="`pwd`"
@@ -41,7 +41,7 @@ fi
 echo "=> copying theflash"
 storage_pack="$publish_dir/$name/storage"
 mkdir -p "$storage_pack"
-cp -f "$storage_dir/build/dbms/src/Server/theflash" "$storage_pack"
+cp -f "$storage_dir/build/dbms/src/Server/theflash" "$storage_pack/tiflash"
 cp -f "$storage_dir/running/config/config.xml" "$storage_pack"
 cp -f "$storage_dir/running/config/users.xml" "$storage_pack"
 
@@ -53,12 +53,12 @@ ldd "$storage_dir/build/dbms/src/Server/theflash" | grep '/' | grep '=>' | \
 done
 
 if [ "$build" == "true" ]; then
-	echo "=> building chspark:"
+	echo "=> building tiflashspark:"
 	cd "$computing_dir" && ./build.sh && cd "$publish_dir"
 fi
 
-echo "=> copying chspark"
-cp "$computing_dir/chspark/target/chspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" "$computing_dir/spark/jars/"
+echo "=> copying tiflashspark"
+cp "$computing_dir/chspark/target/chspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" "$computing_dir/spark/jars/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar"
 
 echo "=> copying spark"
 spark_dir="$computing_dir/spark"
@@ -71,6 +71,16 @@ if [ "$build" == "true" ]; then
 	echo "=> building tpch dbgen"
 	cd "$benchmark_dir/tpch-dbgen" && make && cd "$publish_dir"
 fi
+
+echo "=> copying tiflash_proxy"
+tiflash_proxy_pack="$publish_dir/$name/tiflash-proxy"
+mkdir -p "$tiflash_proxy_pack"
+wget -O "$tiflash_proxy_pack/tiflash-proxy" 139.219.11.38:8000/15JRou/tiflash-proxy
+cp -f "$publish_dir/scripts/tiflash-proxy.toml" "$tiflash_proxy_pack/tiflash-proxy.toml"
+cp -f "$publish_dir/scripts/storage-proxy-start.sh" "$publish_dir/$name"
+cp -f "$publish_dir/scripts/storage-proxy-stop.sh" "$publish_dir/$name"
+cp -f "$publish_dir/scripts/storage-proxy-pid.sh" "$publish_dir/$name"
+chmod 744 "$tiflash_proxy_pack/tiflash-proxy"
 
 echo "=> copying tpch dbgen"
 tpch_pack="$publish_dir/$name/tpch"

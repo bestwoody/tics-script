@@ -3,7 +3,7 @@
 source ./_helper.sh
 
 # Executable path
-export storage_bin="storage/theflash"
+export storage_bin="storage/tiflash"
 
 # Storage server list for scripts and Spark, eg: ("127.0.0.1"), or: ("127.0.0.1:9000" "127.0.0.1:9006")
 export storage_server=("127.0.0.1")
@@ -30,6 +30,10 @@ export pushdown="true"
 
 # The executor-memory parameter of spark-shell.
 export spark_executor_memory=12G
+
+export tiflash_proxy_bin="tiflash-proxy/tiflash-proxy"
+
+export tiflash_proxy_config="tiflash-proxy/tiflash-proxy.toml"
 
 # Setup running env vars
 source ./_vars.sh
