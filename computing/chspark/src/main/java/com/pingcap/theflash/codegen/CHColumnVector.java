@@ -176,7 +176,7 @@ public class CHColumnVector extends ColumnVector {
       if (result.changePrecision(precision, scale)) {
         return result;
       } else {
-        throw new IllegalArgumentException("Decimal value overflowed");
+	throw new IllegalArgumentException("Decimal(" + precision + ", " + scale + ") value " + result + " overflowed.");
       }
     }
 
