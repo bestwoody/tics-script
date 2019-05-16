@@ -326,26 +326,20 @@ case class TxnMergeTreeEngine(var partitionNum: Option[Int],
                                         chRelation: CHRelation,
                                         chLogicalPlan: CHLogicalPlan,
                                         tiSession: TiSession): Array[CHPhysicalPlan] = {
+    // TODO: Doesn't support multiple TiFlash instances on single node with separate ports.
+    // We'll need a decent way to identify a TiFlash instance, i.e. store ID or so.
+    // Now hack by finding by host name only.
     val regionMap = CHUtil.getTableLearnerPeerRegionMap(tableID, tiSession.getPDClient)
-    regionMap
+    val hostRegionMap = regionMap.map(p => (InetAddress.getByName(p._1).getHostAddress, p._2))
+    val hostTableMap =
+      chRelation.tables.map(t => (InetAddress.getByName(t.node.host).getHostAddress, t)).toMap
+    // Filter out (node, regions)s that don't have the table. Regions in such nodes would be all empty.
+    val tableRegionMap =
+      hostRegionMap.filter(p => hostTableMap.contains(p._1)).map(p => (hostTableMap(p._1), p._2))
+    tableRegionMap
       .flatMap(p => {
         val regionList = p._2
-        val addr = InetAddress.getByName(p._1).getHostAddress
-        // TODO: Doesn't support multiple TiFlash instances on single node with separate ports.
-        // We'll need a decent way to identify a TiFlash instance, i.e. store ID or so.
-        // Now hack by finding by host name only.
-        val table = chRelation.tables
-          .collectFirst {
-            // Creating a new table ref using the given tableName,
-            // which might be a mangled one of a sub-table of a partition table.
-            case t if addr == InetAddress.getByName(t.node.host).getHostAddress =>
-              CHTableRef(t.node, t.database, tableName)
-          }
-          .getOrElse(
-            throw new RuntimeException(
-              s"Peer ${p._1}/$addr reported by PD not exists in TiFlash cluster."
-            )
-          )
+        val table = CHTableRef(p._1.node, p._1.database, tableName)
         val query = CHSql.query(table, chLogicalPlan, null, chRelation.useSelraw)
         regionList
           .grouped(chRelation.partitionsPerSplit)
