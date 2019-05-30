@@ -15,48 +15,34 @@
 
 package org.apache.spark.sql.ch
 
+import com.pingcap.tispark.statistics.StatisticsManager
 import org.apache.spark.sql.CHContext
 import org.apache.spark.sql.types.StructType
 
 class TableInfo(@transient val chContext: CHContext,
-                var schema: StructType,
-                var rowWidth: Int,
-                var rowCount: Long,
-                var engine: CHEngine)
+                val schema: StructType,
+                val rowCount: Long,
+                val engine: CHEngine)
     extends Serializable {}
 
 class CHTableInfo(@transient val chContext: CHContext,
                   val table: CHTableRef,
                   private var useSelraw: Boolean)
     extends Serializable {
-  private var info: TableInfo =
-    new TableInfo(chContext, null, -1, -1, null)
   private val TIDB_ROWID = "_tidb_rowid"
 
-  def getSchema: StructType =
-    info.schema
-
-  def getRowWidth: Long =
-    info.rowWidth
-
-  def getRowCount: Long =
-    info.rowCount
-
-  def getInfo: TableInfo =
-    info
-
-  def fetchTableEngine(): Unit = {
+  val engine: CHEngine = {
     val stmt = CHUtil.getShowCreateTable(table)
-    info.engine = CHEngine.fromCreateStatement(stmt)
-    if (info.engine.name != CHEngine.MutableMergeTree && info.engine.name != CHEngine.TxnMergeTree) {
+    val _engine = CHEngine.fromCreateStatement(stmt)
+    if (_engine.name != CHEngine.MutableMergeTree && _engine.name != CHEngine.TxnMergeTree) {
       useSelraw = false
     }
+    _engine
   }
 
-  def fetchSchema(): Unit = {
-    val fields = info.engine.mapFields(CHUtil.getFields(table))
-
-    info.schema = new StructType(
+  val schema: StructType = {
+    val fields = engine.mapFields(CHUtil.getFields(table))
+    new StructType(
       if (useSelraw) {
         fields
       } else {
@@ -65,19 +51,6 @@ class CHTableInfo(@transient val chContext: CHContext,
       }
     )
   }
-
-  def fetchRows(): Unit =
-    info.rowCount = CHUtil.getRowCount(table, info.engine.name == CHEngine.MutableMergeTree)
-
-  // TODO: Parallel fetch
-  def fetchInfo(): Unit = {
-    fetchTableEngine()
-    fetchSchema()
-    fetchRows()
-  }
-
-  // TODO: Async fetch
-  fetchInfo()
 }
 
 // TODO: This is the metadata of a CH table, and should be cached by utilizing Spark's catalog
@@ -91,18 +64,30 @@ object CHTableInfos {
   def getInfo(chContext: CHContext,
               clusterTable: Seq[CHTableRef],
               useSelraw: Boolean): TableInfo = {
-    var info: TableInfo = null
-    clusterTable.foreach(table => {
-      val curr = getInfo(chContext, table, useSelraw).getInfo
-      if (info == null) {
-        info = new TableInfo(chContext, curr.schema, curr.rowWidth, curr.rowCount, curr.engine)
-      } else {
-        if (info.schema != curr.schema || info.engine.name != curr.engine.name) {
-          throw new Exception("Cluster table schema not the same: " + table)
-        }
-        info.rowCount += curr.rowCount
+    val tiContext = chContext.tiContext
+    val nullFreeClusterTable = clusterTable.filter(_ != null)
+
+    val headTable = nullFreeClusterTable.headOption.get
+    if (headTable == null) {
+      throw new Exception("Empty table info")
+    }
+
+    val chTableInfo = new CHTableInfo(chContext, headTable, useSelraw)
+    if (nullFreeClusterTable
+          .map(new CHTableInfo(chContext, _, useSelraw))
+          .exists(i => i.schema != chTableInfo.schema || i.engine != chTableInfo.engine)) {
+      throw new Exception("Table info inconsistent among TiFlash nodes")
+    }
+
+    val tiTableOpt = tiContext.meta.getTable(headTable._database, headTable._table)
+    var sizeInBytes = Long.MaxValue
+    if (tiTableOpt.nonEmpty) {
+      if (tiContext.autoLoad) {
+        StatisticsManager.loadStatisticsInfo(tiTableOpt.get)
       }
-    })
-    info
+      sizeInBytes = StatisticsManager.estimateTableSize(tiTableOpt.get)
+    }
+
+    new TableInfo(chContext, chTableInfo.schema, sizeInBytes, chTableInfo.engine)
   }
 }
