@@ -329,7 +329,7 @@ case class TxnMergeTreeEngine(var partitionNum: Option[Int],
     // TODO: Doesn't support multiple TiFlash instances on single node with separate ports.
     // We'll need a decent way to identify a TiFlash instance, i.e. store ID or so.
     // Now hack by finding by host name only.
-    val regionMap = CHUtil.getTableLearnerPeerRegionMap(tableID, tiSession.getPDClient)
+    val regionMap = CHUtil.getTableLearnerPeerRegionMap(tableID, tiSession)
     val hostRegionMap = regionMap.map(p => (InetAddress.getByName(p._1).getHostAddress, p._2))
     val hostTableMap =
       chRelation.tables.map(t => (InetAddress.getByName(t.node.host).getHostAddress, t)).toMap

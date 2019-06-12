@@ -11,6 +11,7 @@ import com.pingcap.ch.CHProtocol;
 import com.pingcap.ch.CHSetting;
 import com.pingcap.theflash.codegen.CHColumnBatch;
 import com.pingcap.tikv.TiSession;
+import com.pingcap.tikv.event.CacheInvalidateEvent;
 import com.pingcap.tikv.key.Key;
 import com.pingcap.tikv.meta.TiTimestamp;
 import com.pingcap.tikv.region.RegionManager;
@@ -24,6 +25,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.hive.ql.lockmgr.LockException;
@@ -47,6 +49,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
   private final int clientCount;
   private final int clientIndex;
   private final boolean sharedMode;
+  private final Function<CacheInvalidateEvent, Void> cacheInvalidateCallBack;
 
   private TiSession tiSession;
   private TiTimestamp startTs;
@@ -108,6 +111,8 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
     this.tiSession = tiSession;
     this.startTs = startTs;
     this.sessionQ = new ArrayQueue<>();
+    this.cacheInvalidateCallBack =
+        tiSession == null ? null : tiSession.getCacheInvalidateCallback();
     // null regions is used to get data from system table (e.g., fetch schema information)
     // regions won't be null when reading data from TxnMergeTree engine
     if (regions == null) {
@@ -236,10 +241,16 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
 
     private void updateRegions(List<TiRegion> regions) {
       for (TiRegion region : regions) {
-        tiSession
-            .getRegionManager()
-            .onRequestFail(region.getId(), region.getLearnerList().get(0).getStoreId());
-        // TODO: Find by label.
+
+        long storeId =
+            CHUtil.getRegionLearnerPeerByLabel(
+                    region, tiSession.getRegionManager(), "zone", "engine")
+                .get()
+                .getStoreId();
+        tiSession.getRegionManager().onRequestFail(region.getId(), storeId);
+        cacheInvalidateCallBack.apply(
+            new CacheInvalidateEvent(
+                region.getId(), storeId, true, true, CacheInvalidateEvent.CacheType.REGION_STORE));
       }
       Set<TiRegion> newRegions = new HashSet<>();
       for (TiRegion region : regions) {
@@ -251,8 +262,11 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
           String host =
               tiSession
                   .getRegionManager()
-                  .getStoreById(newRegion.getLearnerList().get(0).getStoreId())
-                  // TODO: Find by label.
+                  .getStoreById(
+                      CHUtil.getRegionLearnerPeerByLabel(
+                              region, tiSession.getRegionManager(), "zone", "engine")
+                          .get()
+                          .getStoreId())
                   .getAddress()
                   .split(":")[0];
           if (!host.equals(conn.host)) {

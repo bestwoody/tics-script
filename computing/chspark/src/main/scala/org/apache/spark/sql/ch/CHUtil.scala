@@ -22,9 +22,9 @@ import com.pingcap.common.{Cluster, Node}
 import com.pingcap.theflash.{SparkCHClientInsert, SparkCHClientSelect, TypeMappingJava}
 import com.pingcap.tikv.meta.TiTableInfo
 import com.pingcap.common.IOUtil
-import com.pingcap.tikv.PDClient
+import com.pingcap.tikv.{PDClient, TiSession}
 import com.pingcap.tikv.key.{Key, RowKey}
-import com.pingcap.tikv.region.TiRegion
+import com.pingcap.tikv.region.{RegionManager, TiRegion}
 import com.pingcap.tikv.util.ConcreteBackOffer
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
@@ -40,7 +40,7 @@ import org.tikv.kvproto.Metapb.Peer
 
 import scala.collection.mutable
 
-object CHUtil {
+object CHUtil extends Logging {
   case class PrimaryKey(column: StructField, index: Int) {}
 
   object PrimaryKey {
@@ -583,31 +583,33 @@ object CHUtil {
   }
 
   def getRegionLearnerPeerByLabel(region: TiRegion,
-                                  pdClient: PDClient,
+                                  regionMgr: RegionManager,
                                   labelKey: String,
                                   labelValue: String): Option[Peer] =
     region.getLearnerList.find(peer => {
-      val store = pdClient.getStore(ConcreteBackOffer.newCustomBackOff(1000), peer.getStoreId)
+      val store = regionMgr.getStoreById(peer.getStoreId)
       store.getLabelsList.exists(label => label.getKey == labelKey && label.getValue == labelValue)
     })
 
   def getTableLearnerPeerRegionMap(tableID: Long,
-                                   pdClient: PDClient): Map[String, Array[TiRegion]] = {
+                                   tiSession: TiSession): Map[String, Array[TiRegion]] = {
     val startKey: Key = RowKey.createMin(tableID)
     val endKey: Key = RowKey.createBeyondMax(tableID)
 
     var curKey = startKey
     val regionMap = mutable.Map[String, Array[TiRegion]]()
+    logDebug(s"begin to get regions")
+    val regionManager = tiSession.getRegionManager()
     while (curKey.compareTo(endKey) < 0) {
       val region =
-        pdClient.getRegionByKey(ConcreteBackOffer.newCustomBackOff(1000), curKey.toByteString)
-      val peer = getRegionLearnerPeerByLabel(region, pdClient, "zone", "engine").getOrElse(
+        regionManager.getRegionByKey(curKey.toByteString)
+      val peer = getRegionLearnerPeerByLabel(region, regionManager, "zone", "engine").getOrElse(
         throw new RuntimeException(
           s"Couldn't find learner peer by label 'zone:engine' for region $region"
         )
       )
       val storeID = peer.getStoreId
-      val store = pdClient.getStore(ConcreteBackOffer.newCustomBackOff(1000), storeID)
+      val store = regionManager.getStoreById(storeID)
       val address = store.getAddress
       val split = address.split(":")
       if (split.length != 2) {
@@ -619,6 +621,7 @@ object CHUtil {
 
       curKey = Key.toRawKey(region.getEndKey)
     }
+    logDebug(s"end getting regions")
 
     regionMap.toMap
   }

@@ -20,6 +20,7 @@ import com.pingcap.tikv.TiConfiguration
 import com.pingcap.tikv.meta.TiTimestamp
 import com.pingcap.tikv.region.TiRegion
 import com.pingcap.tispark.TiSessionCache
+import com.pingcap.tispark.listener.CacheInvalidateListener
 import org.apache.spark.Partition
 
 case class CHPhysicalPlan(table: CHTableRef,
@@ -29,14 +30,19 @@ case class CHPhysicalPlan(table: CHTableRef,
   override def toString: String =
     s"{${table.node}, query='$query', ts=${ts.map(_.getVersion).orNull}, regions=${regions.map(_.mkString("[", ",", "]"))}}"
 
-  def createCHClient(tiConf: TiConfiguration): SparkCHClientSelect = new SparkCHClientSelect(
-    query,
-    table.node.host,
-    table.node.port,
-    TiSessionCache.getSession(tiConf),
-    ts.orNull,
-    regions.orNull
-  )
+  @transient private val callBackFunc = CacheInvalidateListener.getInstance()
+  def createCHClient(tiConf: TiConfiguration): SparkCHClientSelect = {
+    val tiSession = TiSessionCache.getSession(tiConf)
+    tiSession.injectCallBackFunc(callBackFunc)
+    new SparkCHClientSelect(
+      query,
+      table.node.host,
+      table.node.port,
+      tiSession,
+      ts.orNull,
+      regions.orNull
+    )
+  }
 }
 
 case class CHPartition(index: Int, chPhysicalPlan: CHPhysicalPlan) extends Partition {}
