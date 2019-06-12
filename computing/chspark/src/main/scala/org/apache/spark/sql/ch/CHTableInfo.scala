@@ -75,7 +75,7 @@ object CHTableInfos {
     val chTableInfo = new CHTableInfo(chContext, headTable, useSelraw)
     if (nullFreeClusterTable
           .map(new CHTableInfo(chContext, _, useSelraw))
-          .exists(i => i.schema != chTableInfo.schema || i.engine != chTableInfo.engine)) {
+          .exists(i => i.schema != chTableInfo.schema)) {
       throw new Exception("Table info inconsistent among TiFlash nodes")
     }
 

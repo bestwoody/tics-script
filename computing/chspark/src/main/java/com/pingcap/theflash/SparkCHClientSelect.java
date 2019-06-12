@@ -24,8 +24,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.hive.ql.lockmgr.LockException;
+import org.apache.log4j.Logger;
 import org.apache.spark.sql.ch.CHUtil;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.sql.util.TypeMapping;
@@ -55,6 +57,8 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
   private Queue<CHSession> sessionQ;
 
   private AtomicBoolean closed = new AtomicBoolean(false);
+
+  private static final Logger logger = Logger.getLogger(SparkCHClientSelect.class);
 
   public SparkCHClientSelect(String query, String host, int port) {
     this(CHUtil.genQueryId("G"), query, host, port);
@@ -104,7 +108,13 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
     this.tiSession = tiSession;
     this.startTs = startTs;
     this.sessionQ = new ArrayQueue<>();
-    this.sessionQ.offer(new CHSession(host, port, regions));
+    // null regions is used to get data from system table (e.g., fetch schema information)
+    // regions won't be null when reading data from TxnMergeTree engine
+    if (regions == null) {
+      this.sessionQ.offer(new CHSession(host, port, (TiRegion) null));
+    } else {
+      this.sessionQ.offer(new CHSession(host, port, new HashSet<>(Arrays.asList(regions))));
+    }
   }
 
   @Override
@@ -121,11 +131,11 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
 
   private class CHSession {
     private CHConnection conn;
-    private TiRegion[] regions;
+    private Set<TiRegion> regions;
     private CHBlock curBlock;
     private AtomicBoolean closed = new AtomicBoolean(false);
 
-    public CHSession(String host, int port, TiRegion[] regions) {
+    public CHSession(String host, int port, Set<TiRegion> regions) {
       this.conn = new CHConnection(host, port, "", "default", "", "CHSpark");
       this.regions = regions;
     }
@@ -133,8 +143,8 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
     public CHSession(String host, int port, TiRegion region) {
       this.conn = new CHConnection(host, port, "", "default", "", "CHSpark");
       if (region != null) {
-        this.regions = new TiRegion[1];
-        this.regions[0] = region;
+        this.regions = new HashSet<>();
+        this.regions.add(region);
       }
     }
 
@@ -169,7 +179,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
         if (tiSession != null) {
           listBuilder.add(new CHSetting.SettingUInt("resolve_locks", 1));
         }
-        if (regions != null && regions.length > 0) {
+        if (regions != null && regions.size() > 0) {
           List<String> regionArray = new ArrayList<>();
           for (TiRegion region : regions) {
             regionArray.add(region.getMeta().toString());
@@ -224,14 +234,14 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
       return new CHColumnBatch(curBlock, sparkSchema);
     }
 
-    private boolean updateRegions(List<TiRegion> regions) {
+    private void updateRegions(List<TiRegion> regions) {
       for (TiRegion region : regions) {
         tiSession
             .getRegionManager()
             .onRequestFail(region.getId(), region.getLearnerList().get(0).getStoreId());
         // TODO: Find by label.
       }
-      List<TiRegion> newRegions = new ArrayList<>();
+      Set<TiRegion> newRegions = new HashSet<>();
       for (TiRegion region : regions) {
         Key startKey = Key.toRawKey(region.getStartKey());
         Key endKey = Key.toRawKey(region.getEndKey());
@@ -253,7 +263,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
           cur = Key.toRawKey(newRegion.getEndKey());
         }
       }
-      return !newRegions.isEmpty();
+      this.regions.addAll(newRegions);
     }
 
     public void sendQueryIfNot() throws IOException {
@@ -287,20 +297,22 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
             backOffer.doBackOff(BoTxnLockFast, new LockException());
           }
         } else if (p.exceptionRegionIDs != null) {
-          List<TiRegion> retryRegions = new ArrayList<>();
-          for (TiRegion originR : regions) {
-            for (Long retryR : p.exceptionRegionIDs) {
-              if (originR.getId() == retryR) {
-                retryRegions.add(originR);
-                break;
-              }
-            }
+          List<TiRegion> retryRegions =
+              regions
+                  .stream()
+                  .filter(x -> p.exceptionRegionIDs.contains(x.getId()))
+                  .collect(Collectors.toList());
+          for (TiRegion region : retryRegions) {
+            regions.remove(region);
           }
-          if (!updateRegions(retryRegions)) {
+          logger.warn(String.format("retry regions: [%s]", retryRegions));
+          updateRegions(retryRegions);
+          if (regions.size() == 0) {
             close();
             return;
           }
-          backOffer.doBackOff(BoRegionMiss, new LockException());
+          backOffer.doBackOff(
+              BoRegionMiss, new RuntimeException("retry timeout for regions: " + regions));
         } else {
           if (p.isEndOfStream()) {
             // No schema return. We are done.
