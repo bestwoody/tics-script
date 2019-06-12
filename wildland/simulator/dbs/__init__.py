@@ -1,2 +1,2 @@
 from db import *
-from lazydog import LazyDog
+from lazy import *
