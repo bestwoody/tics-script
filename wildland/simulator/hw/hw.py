@@ -437,6 +437,12 @@ class Resource:
         return self.processor.load(kv_size, sec) + self.memory.load(kv_size) + \
             self.locks.load(sec) + self.disk.load(kv_size, sec)
 
+    def load_str(self, kv_size, indent = 0):
+        msg = [' ' * indent + 'Load of:\n']
+        for k, v in self.load(kv_size):
+            msg += [' ' * (indent + 2), k, ': ', v, '\n']
+        return msg
+
     def clone(self):
         resource = copy.deepcopy(self)
         resource.reset()

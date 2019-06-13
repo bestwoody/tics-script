@@ -23,12 +23,7 @@ class Partition:
         self.env.hw.memory.on_alloc(1)
 
     def size_in_files(self):
-        real, stored = 0, 0
-        for file in self._files:
-            r, s = file.size(self)
-            real += r
-            stored += s
-        return real, stored
+        return db.size_in_files(self._files, self)
 
     def size_in_cache(self):
         return self._write_cache.size()
@@ -67,14 +62,27 @@ class Partition:
         self.env.hw.memory.on_free(stored_size)
         self._write_cache = db.WriteCache(self.seg_min, self.seg_max)
 
-    def _full_compact(self, begin, end, indent = 0, show_id = True, show_detail = True):
-        # TODO: form sorted multi-segs
-        real, _ = self.size_in_files()
-        size = real + self._write_cache.size()
+    def _compact(self, begin, end, indent, show_id, show_detail):
+        files, include_write_cache = self._select_compact_files(begin, end, indent, show_id, show_detail)
+        return self._do_compact(files, include_write_cache, begin, end, indent, show_id, show_detail)
 
-        new_min = min(self.min(), self._write_cache.min())
+    # TODO: return unsorted files
+    def _select_compact_files(self, begin, end, indent, show_id, show_detail):
+        '''return ([files], include_write_cache)'''
+        return map(lambda x: x, self._files), True
+
+    def _do_compact(self, files, include_write_cache, begin, end, indent = 0, show_id = True, show_detail = True):
+        # TODO: form sorted multi-segs
+        size, _ = db.size_in_files(files, self)
+        if include_write_cache:
+            size += self._write_cache.size()
+
+        new_min = self.min()
+        new_max = self.max()
+        if include_write_cache:
+            new_min = min(new_min, self._write_cache.min())
+            new_max = max(new_max, self._write_cache.max())
         new_min = max(new_min, begin)
-        new_max = max(self.max(), self._write_cache.max())
         new_max = min(new_max, end - 1)
 
         seg = db.Seg(new_min, new_max, base.Sorted.asc, size)
@@ -87,21 +95,23 @@ class Partition:
         to_file.add(block)
         self.env.files_cache.add(to_file)
 
-        for file in self._files:
+        for file in files:
             file.rm_ref(self)
             if file.no_ref():
                 self.env.files_cache.pop(file)
+            self._files.remove(file)
 
-        # modify data in the end
-        self._files = [to_file]
-        self._write_cache = db.WriteCache(self.seg_min, self.seg_max)
+        self._files.append(to_file)
+        if include_write_cache:
+            self._write_cache = db.WriteCache(self.seg_min, self.seg_max)
+        return size
 
     # TODO: faster
     def read(self, k, begin, end, indent = 0, show_id = True, show_detail = True):
         allow_compact = self.env.config.auto_compact
         msg, size, compacting = self._scan(begin, end, allow_compact, indent, show_id, show_detail)
         if compacting:
-            self._full_compact(begin, end, 0, show_id, False)
+            self._compact(begin, end, 0, show_id, False)
             write_size = size
             if self.env.config.use_compress:
                 write_size = self.env.hw.processor.compressor.on_compress(size)
@@ -119,7 +129,7 @@ class Partition:
         allow_compact = self.env.config.auto_compact
         msg, size, compacting = self._scan(begin, end, allow_compact, indent, show_id, show_detail)
         if compacting:
-            self._full_compact(begin, end, 0, show_id, False)
+            self._compact(begin, end, 0, show_id, False)
             write_size = size
             if self.env.config.use_compress:
                 write_size = self.env.hw.processor.compressor.on_compress(size)
@@ -141,7 +151,7 @@ class Partition:
         allow_compact = self.env.config.auto_compact
         msg, size, compacting = self._scan(begin, end, allow_compact, indent, show_id, show_detail)
         if compacting:
-            self._full_compact(begin, end, 0, show_id, False)
+            self._compact(begin, end, 0, show_id, False)
             write_size = size
             if self.env.config.use_compress:
                 write_size = self.env.hw.processor.compressor.on_compress(size)
@@ -258,7 +268,10 @@ class DB(db.DB):
 
     def write(self, k, thread_id):
         db.DB.write(self, k, thread_id)
+
         self.env.kvs_cache.pop(k, self.env.hw)
+        self.env.hw.locks.on_access_obj(self.env.kvs_cache, thread_id)
+
         i = base.upper_bound(self._boundaries, k) - 1
         self._partitions[i].write(k, thread_id)
         partition = self._partitions[i]
@@ -323,15 +336,21 @@ class DB(db.DB):
         return len(files)
 
     def read(self, k, thread_id, indent = 0, show_id = True):
+        db.DB.read(self, k, thread_id, indent, show_id)
+
         cached = self.env.kvs_cache.access(k, self.env.hw)
+        self.env.hw.locks.on_access_obj(self.env.kvs_cache, thread_id)
         if cached:
-            return ['cached\n'], 0
+            return ['cached', '\n'], 0
+
         if self.env.config.calculate_elapsed:
             self.env.hw.set_snapshot()
+
         db.DB.read(self, k, thread_id, indent, show_id)
         i = base.upper_bound(self._boundaries, k) - 1
         partition, begin, end = self._partitions[i], self._boundaries[i], self._boundaries[i + 1]
         msg = partition.read(k, begin, end, indent + 2, show_id, False)
+
         if self.env.config.calculate_elapsed:
             elapsed_sec = self.env.hw.elapsed_sec_from_snapshot(self.env.config.kv_size)
         else:
@@ -339,9 +358,10 @@ class DB(db.DB):
         return msg, elapsed_sec
 
     def scan_range(self, begin, end, thread_id, indent = 0, show_id = True):
+        db.DB.scan_range(self, begin, end, thread_id, indent, show_id)
+
         if self.env.config.calculate_elapsed:
             self.env.hw.set_snapshot()
-        db.DB.scan_range(self, begin, end, thread_id, indent, show_id)
         i = base.upper_bound(self._boundaries, begin) - 1
         j = base.upper_bound(self._boundaries, end) - 1
         msg = []
@@ -358,6 +378,8 @@ class DB(db.DB):
         return msg, size, elapsed_sec
 
     def scan_all(self, indent = 0, show_id = True, show_detail = True):
+        db.DB.scan_all(self, indent, show_id, show_detail)
+
         id = lambda obj, name: show_id and name + base.obj_id(obj) or name
         msg = []
         for i in range(0, len(self._partitions)):
@@ -366,3 +388,11 @@ class DB(db.DB):
             msg += [' range[', base.i2s(begin), ', ', base.i2s(end), ')\n']
             msg += partition.scan_all(begin, end, indent + 2, show_id, show_detail)
         return msg
+
+    def status_from_snapshot(self, indent = 0):
+        res = db.DB.status_from_snapshot(self, indent)
+        res += [
+            ' ' * indent, 'Partition info:\n',
+            ' ' * indent, '  Partition count: ', self.partition_num(), '\n',
+            ' ' * indent, '  File count: ', self.file_num(), '\n']
+        return res

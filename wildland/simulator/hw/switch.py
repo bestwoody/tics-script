@@ -6,6 +6,12 @@ class ResourceSwitch:
         self._children = {}
         self.__getitem__ = self._children.__getitem__
 
+        class Obj:
+            pass
+        self.summary = Obj()
+        self.summary.disk = Obj()
+        self.summary.disk.total_write_k_num = lambda: sum(map(lambda x: x.disk.total_write_k_num(), self._children.values()))
+
     def switch(self, name, remove_if_exists = False):
         exists = self._children.has_key(name)
         if exists:

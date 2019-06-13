@@ -35,6 +35,7 @@ Create a simulator to help design new engine, currently for the lazy engine
 *****     Combined patterns: round robin, probability distribution
 *****     Pattern/operator executor
 *****     Put args into config file
+-----     Put hardware module into config file
 *****   Resource simulating
 *****     Disk: IOPS, IOBW. TODO: more types of IOPS (eg: seq write with fsync)
 *****     CPU: compress, sort, sorted merge, locks, key compare
@@ -86,4 +87,6 @@ Create a simulator to help design new engine, currently for the lazy engine
 ```
 
 ### Next TODO
+* Half-sort
 * Delta-base data storage
+* Better cache info display

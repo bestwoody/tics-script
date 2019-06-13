@@ -50,7 +50,75 @@ class DB:
     def current_write_amplification(self):
         if self._write_k_num == 0:
             return 0.0
-        return decimal.Decimal(self.env.hw.disk.total_write_k_num()) / self._write_k_num
+        return decimal.Decimal(self.env.hw.summary.disk.total_write_k_num()) / self._write_k_num
+
+    def set_snapshot(self, name):
+        self._ss_name = name
+        self._ss_write_k_num = self._write_k_num
+        self.env.hw.switch(name, False)
+
+    def status_from_snapshot(self, indent = 0):
+        kv_size = self.env.config.kv_size
+        hw = self.env.hw
+
+        k_num = self._write_k_num - self._ss_write_k_num
+        output_kv = hw.api.total_output_k_num()
+        write_kv = hw.disk.total_write_k_num()
+        read_kv = hw.disk.total_read_k_num()
+
+        sec = hw.elapsed_sec(kv_size)
+
+        def get_perf_str(n, sec):
+            if sec > 0:
+                perf_bytes = base.divb2s(n * kv_size, sec)
+                perf_kv = base.div(n, sec)
+            elif n > 0:
+                perf_bytes = '(max)'
+                perf_kv = '(max)'
+            else:
+                perf_bytes = '0'
+                perf_kv = '0'
+            return perf_bytes, perf_kv
+
+        def add_line(res, *line):
+            res.append(' ' * indent)
+            res += list(line)
+            res.append('\n')
+
+        res = []
+        add_line(res, 'Elapsed ms: ', '%.3f' % (hw.elapsed_sec(kv_size) * 1000))
+        add_line(res, 'Write amplification include WAL: ', '%.1f%%' % (self.current_write_amplification() * 100))
+
+        if k_num + output_kv + write_kv + read_kv > 0:
+            add_line(res, 'IO:')
+            if k_num > 0:
+                add_line(res, '  DB write: ', k_num, ' kv')
+            if output_kv > 0:
+                add_line(res, '  DB read: ', '%.0f' % output_kv, ' kv')
+            if write_kv > 0:
+                add_line(res, '  Disk write: ', base.b2s(write_kv * kv_size), ', ', '%.0f' % write_kv, ' kv')
+            if read_kv > 0:
+                add_line(res, '  Disk read: ', base.b2s(read_kv * kv_size), ', ', '%.0f' % read_kv, ' kv')
+        if k_num > 0:
+            perf_bytes, perf_kv = get_perf_str(k_num, sec)
+            add_line(res, 'Write performance: ', perf_bytes + '/s, ', perf_kv, ' kv/s')
+        if output_kv > 0:
+            perf_bytes, perf_kv = get_perf_str(output_kv, sec)
+            add_line(res, 'Read performance: ', perf_bytes + '/s, ', perf_kv, ' kv/s')
+
+        res += self.env.hw.load_str(kv_size, indent)
+
+        _, kvs_cache_access_count = self.env.kvs_cache.hit_total()
+        files_cache_mem = self.env.files_cache.mem_used()
+        if kvs_cache_access_count + files_cache_mem > 0:
+            add_line(res, 'Cache status')
+            if kvs_cache_access_count > 0:
+                res += self.env.kvs_cache.str(kv_size, self.k_num(), indent + 2)
+            if files_cache_mem > 0:
+                add_line(res, '  FilesCache size: ', '%0.f' % files_cache_mem, '/', '%0.f' % self.k_num(),
+                    ' kv = %.0f%% DB Size' % (float(files_cache_mem) * 100 / self.k_num()))
+
+        return res
 
 class Seg:
     def __init__(self, min = base.Limit.maxint, max = base.Limit.minint, sorted = base.Sorted.both, size = 0):
@@ -275,6 +343,10 @@ class File:
             res += block.segs()
         return res
 
+    def sorted(self):
+        # TODO: half-sorted is alright
+        return is_sorted(self.segs())
+
     def read(self, hw, partition):
         size = 0
         for block in self._blocks:
@@ -328,6 +400,14 @@ class File:
         for block in self._blocks:
             partitions.union(block.refs(include_detached))
         return len(partitions)
+
+def size_in_files(files, partition):
+    real, stored = 0, 0
+    for file in files:
+        r, s = file.size(partition)
+        real += r
+        stored += s
+    return real, stored
 
 class WriteCache:
     def __init__(self, seg_min, seg_max):
@@ -409,6 +489,9 @@ class FilesCache:
     def str(self):
         return map(lambda x: base.obj_id(x), list(self._files))
 
+    def mem_used(self):
+        return self._mem_used
+
 class KvsCache:
     def __init__(self, quota = -1):
         self._quota = quota
@@ -450,3 +533,11 @@ class KvsCache:
 
     def size(self):
         return len(self._kvs)
+
+    def str(self, kv_size, db_size, indent = 0):
+        hit, total = self.hit_total()
+        if total <= 0:
+            return []
+        return [' ' * indent, 'KvsCache hit rate: ', hit, '/', total, ' = %.1f%%' % (float(hit) * 100 / total),
+            ', size: ', base.b2s(self.size() * kv_size), ', ', self.size(), ' kv, ',
+            '%.0f%% DB Size' % (float(self.size()) * 100 / db_size), '\n']

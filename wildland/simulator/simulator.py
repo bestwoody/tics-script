@@ -7,11 +7,19 @@ import ops
 import cases
 import ConfigParser
 
-def load_conf(conf_files = ['conf/default.conf']):
+def load_conf(conf_files):
     conf = ConfigParser.ConfigParser()
     for file in conf_files:
         conf.read(file)
+    conf.source = conf_files
     return conf
+
+def display_config(conf, display = base.display, indent = 0):
+    display([' ' * indent, 'Config: ', conf.source, '\n'])
+    for section in conf.sections():
+        display([' ' * (indent + 2), section, '\n'])
+        for option in conf.options(section):
+            display([' ' * (indent + 4),option, ' = ', conf.get(section, option), '\n'])
 
 def create_lazydog(conf):
     kv_size = conf.getint('db_common', 'kv_size')
@@ -38,13 +46,6 @@ def create_lazydog(conf):
     db = dbs.LazyDog(env, seg_min, seg_max, partition_split_size, wal_group_size)
     return db
 
-def display_config(conf, display = base.display, indent = 0):
-    display([' ' * indent, 'Config\n'])
-    for section in conf.sections():
-        display([' ' * (indent + 2), section, '\n'])
-        for option in conf.options(section):
-            display([' ' * (indent + 4),option, ' = ', conf.get(section, option), '\n'])
-
 def get_verb_level(argv, i, conf):
     verb_level = conf.getint('bench_common', 'verb_level')
     if len(argv) > i and len(argv[i]) > 0:
@@ -63,6 +64,7 @@ def lazydog_write_then_scan(argv):
 
     db = create_lazydog(conf)
     pattern = cases.gen_write_baseline_pattern(pattern_name, conf.getint('bench_common', 'count'))
+    assert pattern, 'pattern name: ' + pattern_name + ' not found'
 
     base.display(db.env.hw.str())
     base.display('---\n')
@@ -97,6 +99,7 @@ def lazydog_baseline(argv):
         base.display('---\n')
         base.display('pattern: ' + pattern_name + '\n')
         pattern = cases.gen_write_baseline_pattern(pattern_name, conf.getint('bench_common', 'count'))
+        assert pattern, 'pattern name: ' + pattern_name + ' not found'
         cases.write_then_scan(db, pattern, verb_level)
 
 def lazydog_oltp(argv):
@@ -111,6 +114,7 @@ def lazydog_oltp(argv):
 
     db = create_lazydog(conf)
     pattern = cases.gen_oltp_baseline_pattern(pattern_name, conf.getint('bench_common', 'count'))
+    assert pattern, 'pattern name: ' + pattern_name + ' not found'
 
     base.display(db.env.hw.str())
     base.display('---\n')
@@ -137,6 +141,7 @@ def lazydog_olap(argv):
 
     count = conf.getint('bench_common', 'count')
     write_pattern, scan_pattern = cases.gen_olap_baseline_pattern(pattern_name, count)
+    assert write_pattern and scan_pattern, 'pattern name: ' + pattern_name + ' not found'
     cases.write(db, write_pattern)
     base.display('---\n')
     cases.run_mix_ops(db, scan_pattern, verb_level, 'OLAP')
