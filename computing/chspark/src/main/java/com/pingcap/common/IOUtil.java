@@ -51,6 +51,14 @@ public class IOUtil {
     dest.put((byte) (value & 0x7F));
   }
 
+  public static void writeVarInt64(long value, ByteBuffer out) {
+    writeVarUInt64((value << 1) ^ (value >> 63), out);
+  }
+
+  public static void writeVarInt64(long value, WriteBuffer writer) throws IOException {
+    writeVarUInt64((value << 1) ^ (value >> 63), writer);
+  }
+
   public static void writeVarUInt64(long value, ByteBuffer out) {
     while ((value & 0xFFFFFFFFFFFFFF80L) != 0L) {
       out.put((byte) ((int) ((value & 0x7F) | 0x80)));

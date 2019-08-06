@@ -26,6 +26,7 @@ import org.apache.spark.Partition
 case class CHPhysicalPlan(table: CHTableRef,
                           query: String,
                           ts: Option[TiTimestamp],
+                          schemaVersion: Option[java.lang.Long],
                           regions: Option[Array[TiRegion]]) {
   override def toString: String =
     s"{${table.node}, query='$query', ts=${ts.map(_.getVersion).orNull}, regions=${regions.map(_.mkString("[", ",", "]"))}}"
@@ -40,6 +41,7 @@ case class CHPhysicalPlan(table: CHTableRef,
       table.node.port,
       tiSession,
       ts.orNull,
+      schemaVersion.orNull,
       regions.orNull
     )
   }

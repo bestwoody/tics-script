@@ -23,6 +23,21 @@ public abstract class CHSetting {
     writer.writeUTF8StrWithVarLen("");
   }
 
+  public static class SettingInt extends CHSetting {
+    public long value;
+
+    public SettingInt(String name, long value) {
+      super(name);
+      Preconditions.checkArgument(value >= 0);
+      this.value = value;
+    }
+
+    @Override
+    public void write(WriteBuffer writer) throws IOException {
+      writer.writeVarInt64(value);
+    }
+  }
+
   public static class SettingUInt extends CHSetting {
     public long value;
 

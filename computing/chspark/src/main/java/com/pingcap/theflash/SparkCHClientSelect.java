@@ -53,6 +53,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
 
   private TiSession tiSession;
   private TiTimestamp startTs;
+  private Long schemaVersion;
 
   private CHBlock chSchema;
   private StructType sparkSchema;
@@ -68,18 +69,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
   }
 
   public SparkCHClientSelect(String queryId, String query, String host, int port) {
-    this(queryId, query, host, port, 0, 0, false);
-  }
-
-  public SparkCHClientSelect(
-      String queryId,
-      String query,
-      String host,
-      int port,
-      int clientCount,
-      int clientIndex,
-      boolean sharedMode) {
-    this(queryId, query, host, port, clientCount, clientIndex, sharedMode, null, null, null);
+    this(queryId, query, host, port, 0, 0, false, null, null, null, null);
   }
 
   public SparkCHClientSelect(
@@ -88,8 +78,20 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
       int port,
       TiSession tiSession,
       TiTimestamp startTs,
+      Long schemaVersion,
       TiRegion[] region) {
-    this(CHUtil.genQueryId("G"), query, host, port, 0, 0, false, tiSession, startTs, region);
+    this(
+        CHUtil.genQueryId("G"),
+        query,
+        host,
+        port,
+        0,
+        0,
+        false,
+        tiSession,
+        startTs,
+        schemaVersion,
+        region);
   }
 
   public SparkCHClientSelect(
@@ -102,6 +104,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
       boolean sharedMode,
       TiSession tiSession,
       TiTimestamp startTs,
+      Long schemaVersion,
       TiRegion[] regions) {
     this.queryId = queryId;
     this.query = query;
@@ -110,6 +113,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
     this.sharedMode = sharedMode;
     this.tiSession = tiSession;
     this.startTs = startTs;
+    this.schemaVersion = schemaVersion;
     this.sessionQ = new ArrayQueue<>();
     this.cacheInvalidateCallBack =
         tiSession == null ? null : tiSession.getCacheInvalidateCallback();
@@ -180,6 +184,9 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
         ImmutableList.Builder<CHSetting> listBuilder = ImmutableList.builder();
         if (startTs != null) {
           listBuilder.add(new CHSetting.SettingUInt("read_tso", startTs.getVersion()));
+        }
+        if (schemaVersion != null) {
+          listBuilder.add(new CHSetting.SettingInt("schema_version", schemaVersion));
         }
         if (tiSession != null) {
           listBuilder.add(new CHSetting.SettingUInt("resolve_locks", 1));

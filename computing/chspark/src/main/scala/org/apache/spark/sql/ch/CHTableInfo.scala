@@ -29,8 +29,6 @@ class CHTableInfo(@transient val chContext: CHContext,
                   val table: CHTableRef,
                   private var useSelraw: Boolean)
     extends Serializable {
-  private val TIDB_ROWID = "_tidb_rowid"
-
   val engine: CHEngine = {
     val stmt = CHUtil.getShowCreateTable(table)
     val _engine = CHEngine.fromCreateStatement(stmt)
@@ -47,7 +45,7 @@ class CHTableInfo(@transient val chContext: CHContext,
         fields
       } else {
         // Exclude implicit TIDB_ROWID column if not using selRaw.
-        fields.filterNot(_.name == TIDB_ROWID)
+        fields.filterNot(_.name == CHEngine.TIDB_ROWID)
       }
     )
   }
@@ -67,19 +65,26 @@ object CHTableInfos {
     val tiContext = chContext.tiContext
     val nullFreeClusterTable = clusterTable.filter(_ != null)
 
-    val headTable = nullFreeClusterTable.headOption.get
-    if (headTable == null) {
-      throw new Exception("Empty table info")
-    }
+    var chTableInfo = new CHTableInfo(chContext, nullFreeClusterTable.head, useSelraw)
+    var maxSchemaVer = chTableInfo.engine.getSchemaVersion()
+    nullFreeClusterTable
+      .map(new CHTableInfo(chContext, _, useSelraw))
+      .foreach(tableInfo => {
+        tableInfo.engine.getSchemaVersion() match {
+          case Some(schemaVer) =>
+            // If has schema version, get the schema with the latest schema version to be golden, the rest will auto-sync to latest when processing this query.
+            if (schemaVer > maxSchemaVer.get) {
+              maxSchemaVer = tableInfo.engine.getSchemaVersion()
+              chTableInfo = tableInfo
+            }
+          case None =>
+            // If has no schema version, check schema equality.
+            if (chTableInfo.schema != tableInfo.schema)
+              throw new Exception("Table info inconsistent among TiFlash nodes")
+        }
+      })
 
-    val chTableInfo = new CHTableInfo(chContext, headTable, useSelraw)
-    if (nullFreeClusterTable
-          .map(new CHTableInfo(chContext, _, useSelraw))
-          .exists(i => i.schema != chTableInfo.schema)) {
-      throw new Exception("Table info inconsistent among TiFlash nodes")
-    }
-
-    val tiTableOpt = tiContext.meta.getTable(headTable._database, headTable._table)
+    val tiTableOpt = tiContext.meta.getTable(chTableInfo.table._database, chTableInfo.table._table)
     var sizeInBytes = Long.MaxValue
     if (tiTableOpt.nonEmpty) {
       if (tiContext.autoLoad) {

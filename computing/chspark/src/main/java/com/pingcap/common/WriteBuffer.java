@@ -104,6 +104,10 @@ public class WriteBuffer implements Closeable {
 
   // Convenient methods.
 
+  public void writeVarInt64(long value) throws IOException {
+    IOUtil.writeVarInt64(value, this);
+  }
+
   public void writeVarUInt64(long value) throws IOException {
     IOUtil.writeVarUInt64(value, this);
   }

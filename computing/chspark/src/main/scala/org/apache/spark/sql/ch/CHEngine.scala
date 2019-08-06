@@ -4,7 +4,7 @@ import java.net.InetAddress
 
 import com.pingcap.tikv.TiSession
 import com.pingcap.tikv.expression.visitor.{MetaResolver, PrunedPartitionBuilder}
-import com.pingcap.tikv.meta.TiTableInfo
+import com.pingcap.tikv.meta.{SchemaState, TiTableInfo}
 import com.pingcap.tispark.BasicExpression
 import org.apache.spark.sql.catalyst.catalog.{CHCatalogConst, CatalogTable}
 import org.apache.spark.sql.types.{Metadata, MetadataBuilder, StructField}
@@ -17,6 +17,8 @@ import org.json4s.jackson.JsonMethods._
 
 object CHEngine extends Enumeration {
   val MutableMergeTree, TxnMergeTree, MergeTree, Log = Value
+
+  val TIDB_ROWID = "_tidb_rowid"
 
   private def getCHEngine(name: String): CHEngine =
     CHEngine.withName(name) match {
@@ -113,6 +115,8 @@ abstract class CHEngine(val name: CHEngine.Value) {
 
   def mapFields(fields: Array[StructField]): Array[StructField]
 
+  def getSchemaVersion(): Option[java.lang.Long] = None
+
   /**
    * Engine-specific logic to generate CH physical plans (later to CH partitions) that are used in CHScanRDD.
    * @param chRelation
@@ -148,6 +152,7 @@ case class LogEngine() extends CHEngine(CHEngine.Log) {
         CHPhysicalPlan(
           table,
           CHSql.query(table, chLogicalPlan, null, chRelation.useSelraw),
+          None,
           None,
           None
       )
@@ -231,6 +236,7 @@ case class MutableMergeTreeEngine(var partitionNum: Option[Int],
               table,
               CHSql.query(table, chLogicalPlan, partitions, chRelation.useSelraw),
               None,
+              None,
               None
           )
         )
@@ -245,6 +251,8 @@ case class TxnMergeTreeEngine(var partitionNum: Option[Int],
   private val TMT_TAB_META_PARTITION_NUM = "tmt_partition_num"
   private val TMT_TAB_META_BUCKET_NUM = "tmt_bucket_num"
   private val TMT_TAB_META_TABLE_INFO = "tmt_table_info"
+
+  private lazy val parsedTableInfo = parse(tableInfo)
 
   override def sql: String =
     s"TxnMergeTree(${partitionNum.map(_.toString + ", ").getOrElse("")}$bucketNum, '$tableInfo')"
@@ -305,20 +313,31 @@ case class TxnMergeTreeEngine(var partitionNum: Option[Int],
       builder.build()
     }
 
-    fields.map(field => field.copy(metadata = buildMetadata(field.name, field.metadata)))
+    val colInfos = (for {
+      JObject(child) <- parsedTableInfo
+      JField("cols", JArray(cols)) <- child
+      JObject(col) <- cols
+      JField("name", JObject(ciName)) <- col
+      JField("L", JString(name)) <- ciName
+      JField("state", JInt(state)) <- col
+    } yield (name, SchemaState.fromValue(state.intValue()))).toMap
+
+    fields
+      .filter(
+        field =>
+          field.name == CHEngine.TIDB_ROWID || colInfos(field.name) == SchemaState.StatePublic
+      )
+      .map(field => field.copy(metadata = buildMetadata(field.name, field.metadata)))
+  }
+
+  override lazy val getSchemaVersion: Option[java.lang.Long] = {
+    implicit val formats = DefaultFormats
+    Some((parsedTableInfo \ "schema_version").extract[Long])
   }
 
   private lazy val tableID: Long = {
-    val parsed = parse(tableInfo)
-    val ids: List[BigInt] = for {
-      JObject(child) <- parsed
-      JField("table_info", JObject(tableInfo)) <- child
-      JField("id", JInt(id)) <- tableInfo
-    } yield id
-    if (ids.length != 1) {
-      throw new Exception("Wrong table info json format " + tableInfo)
-    }
-    ids.head.longValue()
+    implicit val formats = DefaultFormats
+    (parsedTableInfo \ "id").extract[Long]
   }
 
   private def getPhysicalPlansByTableID(tableID: Long,
@@ -343,7 +362,16 @@ case class TxnMergeTreeEngine(var partitionNum: Option[Int],
         val query = CHSql.query(table, chLogicalPlan, null, chRelation.useSelraw)
         regionList
           .grouped(chRelation.partitionsPerSplit)
-          .map(regionGroup => CHPhysicalPlan(table, query, chRelation.ts, Some(regionGroup)))
+          .map(
+            regionGroup =>
+              CHPhysicalPlan(
+                table,
+                query,
+                chRelation.ts,
+                chRelation.tableInfo.engine.getSchemaVersion(),
+                Some(regionGroup)
+            )
+          )
       })
       .toArray
   }
