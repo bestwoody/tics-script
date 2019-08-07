@@ -1,18 +1,16 @@
 # The Flash
 An OLAP project of TiDB
 
-## Design
-* [The big picture](./docs/the-big-picture.md)
-* [The CH-Spark solution](./docs/ch-spark-tcp.md)
-* [Speed compare to parquet](./docs/benchmark-result/theflash-tpch-1-node.md)
-* [More docs](./docs)
+## Design Docs
+* [Docs on confluence](https://internal.pingcap.net/confluence/pages/viewpage.action?pageId=14451924)
+* [Earlier docs](./deprecated/docs)
 
 
 ## Quick start guide
 * Build
     * `theflash> git submodule update --init --recursive`: fetch all submodule
     * Build CH:
-        * `theflash/storage> ./build.sh`: build CH
+        * `theflash/storage> ./build.sh`: build CH (use `./build_clang.sh` if it's on Mac)
     * Build Spark and CHSpark
         * `theflash/computing/spark> follow the build method of Spark`: build Spark
         * `theflash/computing> ./build.sh`: build CHSpark
