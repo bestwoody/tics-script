@@ -247,6 +247,9 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
     }
 
     private void updateRegions(List<TiRegion> regions) {
+      if (tiSession == null) {
+        return;
+      }
       for (TiRegion region : regions) {
 
         long storeId =
@@ -255,9 +258,15 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
                 .get()
                 .getStoreId();
         tiSession.getRegionManager().onRequestFail(region.getId(), storeId);
-        cacheInvalidateCallBack.apply(
-            new CacheInvalidateEvent(
-                region.getId(), storeId, true, true, CacheInvalidateEvent.CacheType.REGION_STORE));
+        if (cacheInvalidateCallBack != null) {
+          cacheInvalidateCallBack.apply(
+              new CacheInvalidateEvent(
+                  region.getId(),
+                  storeId,
+                  true,
+                  true,
+                  CacheInvalidateEvent.CacheType.REGION_STORE));
+        }
       }
       Set<TiRegion> newRegions = new HashSet<>();
       for (TiRegion region : regions) {

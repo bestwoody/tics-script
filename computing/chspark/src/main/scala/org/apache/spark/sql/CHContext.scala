@@ -17,6 +17,8 @@ package org.apache.spark.sql
 
 import com.pingcap.common.{Cluster, Node}
 import com.pingcap.theflash.SparkCHClientInsert
+import com.pingcap.tispark.TiSessionCache
+import com.pingcap.tispark.listener.CacheInvalidateListener
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.ch.CHUtil.{Partitioner, PrimaryKey}
@@ -28,7 +30,7 @@ import scala.collection.JavaConversions._
 class CHContext(val sparkSession: SparkSession) extends Serializable with Logging {
   lazy val sqlContext: SQLContext = sparkSession.sqlContext
 
-  lazy val tiContext: TiContext = new TiContext(sparkSession)
+  val tiContext: TiContext = new TiContext(sparkSession)
 
   /**
    * Concrete CH catalog.
@@ -45,6 +47,12 @@ class CHContext(val sparkSession: SparkSession) extends Serializable with Loggin
    * Root catalog, always be composite catalog.
    */
   lazy val chCatalog: CHSessionCatalog = new CHCompositeSessionCatalog(this)
+
+  val tiSession = tiContext.tiSession
+
+  CacheInvalidateListener
+    .initCacheListener(sparkSession.sparkContext, tiSession.getRegionManager)
+  tiSession.injectCallBackFunc(CacheInvalidateListener.getInstance())
 
   lazy val cluster: Cluster = {
     val clusterStr = sparkSession.conf.get(CHConfigConst.CLUSTER_ADDRESSES, "")

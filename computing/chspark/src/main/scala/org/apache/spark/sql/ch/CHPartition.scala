@@ -31,10 +31,9 @@ case class CHPhysicalPlan(table: CHTableRef,
   override def toString: String =
     s"{${table.node}, query='$query', ts=${ts.map(_.getVersion).orNull}, regions=${regions.map(_.mkString("[", ",", "]"))}}"
 
-  @transient private val callBackFunc = CacheInvalidateListener.getInstance()
   def createCHClient(tiConf: TiConfiguration): SparkCHClientSelect = {
     val tiSession = TiSessionCache.getSession(tiConf)
-    tiSession.injectCallBackFunc(callBackFunc)
+    tiSession.injectCallBackFunc(CacheInvalidateListener.getInstance())
     new SparkCHClientSelect(
       query,
       table.node.host,
