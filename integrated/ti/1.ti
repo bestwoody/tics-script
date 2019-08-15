@@ -1,7 +1,9 @@
-dir=node0
+dir=nodes/4
+p=+4
 
-pd: {dir}/pd
-tikv: {dir}/tikv
-tidb: {dir}/tidb
-tiflash: {dir}/tiflash
-rngine: {dir}/rngine tiflash={dir}/tiflash
+pd: {dir}/pd ports{p}
+tikv: {dir}/tikv ports{p}
+tidb: {dir}/tidb ports{p}
+
+tiflash: {dir}/tiflash ports{p}
+rngine: {dir}/rngine tiflash={dir}/tiflash ports{p}

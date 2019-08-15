@@ -1,4 +1,4 @@
-dir=node
+dir=nodes/
 
 pd: {dir}6/pd ports+6
 

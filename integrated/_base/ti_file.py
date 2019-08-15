@@ -43,7 +43,7 @@ class Mod:
     def __init__(self, name):
         self.name = name
         self.dir = ""
-        self.ports = "0"
+        self.ports = "+0"
         self.host = ""
         self.pd = ""
 
@@ -51,13 +51,13 @@ class ModRngine:
     def __init__(self):
         self.name = "rngine"
         self.dir = ""
-        self.ports = "0"
+        self.ports = "+0"
         self.host = ""
         self.tiflash = ""
         self.pd = ""
 
 def error(msg):
-    sys.stderr.write('[ti2sh.py] ' + msg + '\n')
+    sys.stderr.write('[ti_file.py] ' + msg + '\n')
     sys.exit(1)
 
 def parse_kvs(kvs_str, sep = '#'):
