@@ -1,0 +1,156 @@
+# The ops/ti.sh tool
+The ops/ti.sh is design for fast testing, CI, or POCing, anyone can easily deploy and control a TiDB+TiFlash cluster in no time.
+
+## Quick start
+Write a `my.ti` file like this(or copy from: `./ti/local_1_node.ti`), you can put it anywhere you want:
+```
+pd: node0/pd
+tikv: node0/tikv
+tidb: node0/tidb
+tiflash: node0/tiflash
+rngine: node0/rngine tiflash=node0/tiflash
+```
+
+Then run `ops/ti.sh my.ti run`:
+```
+=> pd #0 (node0/pd)            <-- "node0/pd" is this pd's running dir
+18036
+=> tikv #0 (node0/tikv)
+18143
+=> tidb #0 (node0/tidb)
+18238
+=> tiflash #0 (node0/tiflash)
+18511
+=> rngine #0 (node0/rngine)
+18647
+```
+
+Now it works, we got a cluster running.
+We can use `ops/ti.sh my.ti status`(the word `status` can be omitted) to check cluster status:
+```
+OK     pd #0 (node0/pd)        <-- "#0" means it's the 1st pd
+OK     tikv #0 (node0/tikv)
+OK     tidb #0 (node0/tidb)
+OK     tiflash #0 (node0/tiflash)
+OK     rngine #0 (node0/rngine)
+```
+
+And use `ops/ti.sh my.ti prop` to check cluster config:
+```
+pd #0 (node0/pd)
+    pid: 18036
+    pd_name: pd0
+    advertise_host: 10.0.0.14
+    pd_port: 13579
+    peer_port: 13680
+    initial_cluster: pd0=http://10.0.0.14:13680
+tikv #0 (node0/tikv)
+    pid: 18143
+    listen_host: 10.0.0.14
+    tikv_port: 20431
+    advertise_host: 10.0.0.14
+    pd_addr: 10.0.0.14:13579
+...
+```
+And `stop` `fstop`(fast/force stop) can be used for close the cluster
+
+One `ti` file means one cluster, you can bring up lots of cluster in one computer, without cross interference.
+
+## How to edit a `*.ti` file
+Take one line for example `pd: node0/pd`
+The format is simple: `mod-name: prop prop ...`, there is space chars seperated the mod-name and the props.
+```
+pd:             <- the module name, we have a small set of modules:
+                   pd, tikv, tidb, tiflash, rngine
+```
+
+The props supported now are:
+```
+node0/pd        <- the module's dir, can be abs-path or rel-path,
+                   dir is the uniq id of a module instance.
+ports+1         <- the ports-delta of this module,
+                   "+1" means all listening ports will increase 1 (from default value),
+                   and "-n" is allowed.
+host=10.0.0.1   <- this module should be deployed to which host.
+                   (WIP)
+tiflash=/opt/t  <- only used by rngine module,
+                   it means which tiflash instance rngine should connect,
+                   "tiflash=host:dir" is used for support remote connect. (WIP)
+```
+
+A little more complex case:
+```
+pd: node1/pd ports+1
+pd: node2/pd ports+2
+pd: node3/pd ports+3
+tikv: node1/tikv ports+1
+tikv: node2/tikv ports+2
+tidb: node1/tidb ports+1
+tidb: node2/tidb ports+2
+tiflash: node1/tiflash ports+1
+tiflash: node2/tiflash ports+2
+rngine: node1/rngine tiflash=node1/tiflash ports+1
+rngine: node2/rngine tiflash=node2/tiflash ports+2
+```
+
+## Vars supporting
+Define a var in `my.ti` like this:
+```
+root_dir=/data/ti
+```
+
+Use a var like this:
+```
+tidb: {root_dir}/tidb1 ports+1
+tidb: {root_dir}/tidb2 ports+2
+```
+A var's value can be set by defining lines, or pass from `ti.sh` args (`ops/ti.sh ti-file cmd [args(k=v#k=v#..)]`)
+
+## "import" supporting
+Edit a `ti` file:
+```
+## idc.ti
+ip1=172.16.5.81
+ip2=172.16.5.82
+ip3=172.16.5.85
+```
+
+And then import this file:
+```
+## my.ti
+import idc.ti
+
+pd: /data/pd ports+1 host={ip1}
+pd: /data/pd ports+2 host={ip2}
+pd: /data/pd ports+3 host={ip3}
+```
+
+Or, combine `import` with `var`:
+```
+## my.ti
+import {hosts}
+```
+And pass the specific hosts conf by `ops/ti.sh my.ti run "hosts=hosts.ti"`
+
+## Detail configuring
+There are 3 things are involved when we using `ops/ti.sh`:
+* The tool itself: `ops/ti.sh` and it's supporting scripts, no data stored.
+* The conf templates: it stored in a dir.
+    * The default dir located at `launch/local/conf_templ`
+    * You can pass args `conf-templ-dir`(`ops/ti.sh ti-file cmd [args] [conf-templ-dir]`) to use another one.
+    * `templates` means they'er not the real conf files, the real ones are in module dirs.
+    * Take a look at the `default_ports.sh` will helps to avoid port-conflict when we modifys ports using `+n`
+* The `my.ti` file and the dirs used by modules in the file, these are the data we care.
+    * Once a module is running, it doesn't rely on `conf templates` or `ops/ti.sh` any more.
+
+## Why we should use this tool
+* It's the easy to use, powerful, and robust, we need those in coding and testing and POC and any casual-use scenario.
+* Scripts are flexible, especially we are in the rapid-dev phase.
+* The formal tool (ansible) can't be valid (has rich features) in a short time.
+
+## How it plans to go
+* The features of one-node-cluster are stable now.
+* Working in progress: support multi-node-cluster, remote deployment and other ops.
+* Support integration test and benchmark test, maybe POC deployment in this year.
+* Step down when it's most features can be covered by ansible (or other tools).
+
