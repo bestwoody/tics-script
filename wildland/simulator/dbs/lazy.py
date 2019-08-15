@@ -9,13 +9,19 @@ class LazyDog(partition.DB):
             env.log.debug('new partition:', base.obj_id(self))
             partition.Partition.__init__(self, env, seg_min, seg_max, files)
 
+        def clone(self, share_data):
+            assert self._write_cache.size() == 0, 'write_cache should be persisted before partition split'
+            files = share_data and self._files or []
+            return LazyDog.Partition(self.env, self.seg_min, self.seg_max, files)
+
         def find_split_point(self, my_range_begin, my_range_end, prev_partition, next_partition):
             res = 0
             min, max = self.min(), self.max()
             prev_empty = prev_partition and prev_partition.empty()
             next_empty = next_partition and next_partition.empty()
 
-            sorted = self.sorted()
+            assert self._write_cache.info().size > 0
+            sorted = self._write_cache.info().sorted
             asc = (sorted == base.Sorted.asc or sorted == base.Sorted.both)
             desc = (sorted == base.Sorted.desc or sorted == base.Sorted.both)
 
@@ -31,17 +37,6 @@ class LazyDog(partition.DB):
                 self.env.log.debug('split at (min + max) / 2:', min, max)
                 res = (min + max) / 2
             return res
-
-        def split(self, my_range_begin, my_range_end, prev_partition, next_partition):
-            '''return: n splited_partitions, n-1 split_point'''
-            assert self._write_cache.size() == 0, 'write_cache should be persisted before partition split'
-            split_point = self.find_split_point(my_range_begin, my_range_end, prev_partition, next_partition)
-            if split_point <= self.min():
-                return [LazyDog.Partition(self.env, self.seg_min, self.seg_max), self], [split_point]
-            elif split_point > self.max():
-                return [self, LazyDog.Partition(self.env, self.seg_min, self.seg_max)], [split_point]
-            new = LazyDog.Partition(self.env, self.seg_min, self.seg_max, self._files)
-            return [self, new], [split_point]
 
     def __init__(self, env, seg_min, seg_max, partition_split_size, wal_group_size):
         first_partition = LazyDog.Partition(env, seg_min, seg_max)

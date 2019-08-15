@@ -120,7 +120,9 @@ def lazydog_oltp(argv):
     base.display('---\n')
     display_config(conf)
     base.display('---\n')
-    cases.run_mix_ops(db, pattern, verb_level, 'OLTP')
+    cases.mix_ops(db, pattern, verb_level, 'OLTP')
+    base.display('---\n')
+    cases.scan_all(db, verb_level, 'at_the_end')
 
 def lazydog_olap(argv):
     if len(argv) < 2:
@@ -144,7 +146,7 @@ def lazydog_olap(argv):
     assert write_pattern and scan_pattern, 'pattern name: ' + pattern_name + ' not found'
     cases.write(db, write_pattern)
     base.display('---\n')
-    cases.run_mix_ops(db, scan_pattern, verb_level, 'OLAP')
+    cases.mix_ops(db, scan_pattern, verb_level, 'OLAP')
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

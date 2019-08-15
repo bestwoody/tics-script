@@ -16,12 +16,6 @@ class Partition:
 
         self._write_cache = db.WriteCache(seg_min, seg_max)
 
-    def write(self, k, thread_id):
-        self._write_cache.write(k)
-        self.env.hw.locks.on_access_obj(self._write_cache, thread_id)
-        self.env.hw.disk.on_seq_write(1, self.env.config.wal_fsync)
-        self.env.hw.memory.on_alloc(1)
-
     def size_in_files(self):
         return db.size_in_files(self._files, self)
 
@@ -42,16 +36,13 @@ class Partition:
         _, stored = self.size_in_files()
         return self._write_cache.size() == 0 and stored == 0
 
-    def files(self):
-        return set(self._files)
+    def clone(self, share_data):
+        '''return: new partition object'''
+        assert False, 'not impl'
 
-    def sorted(self):
-        # TODO: too slow, use iterator
-        segs = []
-        for file in self._files:
-            segs += file.segs()
-        segs += self._write_cache.segs()
-        return db.is_sorted(segs)
+    def find_split_point(self, my_range_begin, my_range_end, prev_partition, next_partition):
+        '''return: split point'''
+        assert False, 'not impl'
 
     def add_file(self, file):
         self._files.append(file)
@@ -62,51 +53,20 @@ class Partition:
         self.env.hw.memory.on_free(stored_size)
         self._write_cache = db.WriteCache(self.seg_min, self.seg_max)
 
-    def _compact(self, begin, end, indent, show_id, show_detail):
-        files, include_write_cache = self._select_compact_files(begin, end, indent, show_id, show_detail)
-        return self._do_compact(files, include_write_cache, begin, end, indent, show_id, show_detail)
+    def split(self, split_point, my_range_begin, my_range_end, prev_partition, next_partition):
+        '''return: n splited_partitions, n-1 split_point'''
+        if split_point <= self.min():
+            return [self.clone(False), self], [split_point]
+        elif split_point > self.max():
+            return [self, self.clone(False)], [split_point]
+        return [self, self.clone(True)], [split_point]
 
-    # TODO: return unsorted files
-    def _select_compact_files(self, begin, end, indent, show_id, show_detail):
-        '''return ([files], include_write_cache)'''
-        return map(lambda x: x, self._files), True
+    def write(self, k, thread_id):
+        self._write_cache.write(k)
+        self.env.hw.locks.on_access_obj(self._write_cache, thread_id)
+        self.env.hw.disk.on_seq_write(1, self.env.config.wal_fsync)
+        self.env.hw.memory.on_alloc(1)
 
-    def _do_compact(self, files, include_write_cache, begin, end, indent = 0, show_id = True, show_detail = True):
-        # TODO: form sorted multi-segs
-        size, _ = db.size_in_files(files, self)
-        if include_write_cache:
-            size += self._write_cache.size()
-
-        new_min = self.min()
-        new_max = self.max()
-        if include_write_cache:
-            new_min = min(new_min, self._write_cache.min())
-            new_max = max(new_max, self._write_cache.max())
-        new_min = max(new_min, begin)
-        new_max = min(new_max, end - 1)
-
-        seg = db.Seg(new_min, new_max, base.Sorted.asc, size)
-
-        # TODO: move this to db.py
-        dist = db.Dist(self.seg_min, self.seg_max, [seg])
-        block = db.Block(dist)
-        block.add_ref(self)
-        to_file = db.File(self.env.config.use_compress)
-        to_file.add(block)
-        self.env.files_cache.add(to_file)
-
-        for file in files:
-            file.rm_ref(self)
-            if file.no_ref():
-                self.env.files_cache.pop(file)
-            self._files.remove(file)
-
-        self._files.append(to_file)
-        if include_write_cache:
-            self._write_cache = db.WriteCache(self.seg_min, self.seg_max)
-        return size
-
-    # TODO: faster
     def read(self, k, begin, end, indent = 0, show_id = True, show_detail = True):
         allow_compact = self.env.config.auto_compact
         msg, size, compacting = self._scan(begin, end, allow_compact, indent, show_id, show_detail)
@@ -165,7 +125,66 @@ class Partition:
         self.env.hw.api.on_output(size)
         return msg
 
-    def _scan(self, begin, end, allow_compact, indent = 0, show_id = True, show_detail = True):
+    def _get_streams(self):
+        '''return ([sorted], [unsorted])'''
+        sorted = []
+        unsorted = []
+        for file in self._files:
+            if file.is_all_blocks_sorted():
+                sorted.append(file.block_infos())
+            else:
+                unsorted.append(file.block_infos())
+        if self._write_cache.info().size > 0:
+            if self._write_cache.info().sorted != base.Sorted.none:
+                sorted.append([self._write_cache.info()])
+            else:
+                unsorted.append([self._write_cache.info()])
+        return sorted, unsorted
+
+    def _compact(self, begin, end, indent, show_id, show_detail):
+        files, include_write_cache = self._select_compact_files(begin, end, indent, show_id, show_detail)
+        return self._do_compact(files, include_write_cache, begin, end, indent, show_id, show_detail)
+
+    def _select_compact_files(self, begin, end, indent, show_id, show_detail):
+        '''return ([files], include_write_cache)'''
+        return filter(lambda x: not x.is_all_blocks_sorted(), self._files), True
+
+    def _do_compact(self, files, include_write_cache, begin, end, indent = 0, show_id = True, show_detail = True):
+        # TODO: form sorted multi-segs
+        size, _ = db.size_in_files(files, self)
+        if include_write_cache:
+            size += self._write_cache.size()
+
+        new_min = self.min()
+        new_max = self.max()
+        if include_write_cache:
+            new_min = min(new_min, self._write_cache.min())
+            new_max = max(new_max, self._write_cache.max())
+        new_min = max(new_min, begin)
+        new_max = min(new_max, end - 1)
+
+        seg = db.Seg(new_min, new_max, base.Sorted.asc, size)
+        info = db.Seg(new_min, new_max, base.Sorted.asc, size)
+
+        block = db.Block(db.Dist(self.seg_min, self.seg_max, info, [seg]))
+        block.add_ref(self)
+        to_file = db.File(self.env.config.use_compress)
+        to_file.add(block)
+
+        self.env.files_cache.add(to_file)
+
+        for file in files:
+            file.rm_ref(self)
+            if file.no_ref():
+                self.env.files_cache.pop(file)
+            self._files.remove(file)
+
+        self._files.append(to_file)
+        if include_write_cache:
+            self._write_cache = db.WriteCache(self.seg_min, self.seg_max)
+        return size
+
+    def _scan(self, begin, end, allow_compact, indent = 0, show_id = True, show_detail = True, dry_run = False):
         id = lambda obj, name: show_id and name + base.obj_id(obj) or name
         msg = []
 
@@ -192,7 +211,7 @@ class Partition:
                 msg += [' ' * indent, 'files: ', len(self._files), '\n']
             for file in self._files:
                 if not self.env.files_cache.cached(file):
-                    file.read(self.env.hw, self)
+                    not dry_run and file.read(self.env.hw, self)
                 r, s = file.size(self)
                 if not self.env.files_cache.cached(file):
                     real_size_disk += r
@@ -202,11 +221,10 @@ class Partition:
                     real_size_cache += r
                     read_size_cache += s
                     files_in_cache.add(file)
-                self.env.files_cache.add(file)
+                not dry_run and self.env.files_cache.add(file)
                 if show_detail:
                     msg += file.str(indent + 2, show_id)
 
-        streams = (cached_size > 0 and 1 or 0) + len(self._files)
         size = cached_size + real_size
 
         io_plan = []
@@ -229,27 +247,29 @@ class Partition:
 
         compacting = False
 
-        sorted = self.sorted()
-        if self.empty():
+        sorted_streams, unsorted_streams = self._get_streams()
+        sorted_n, unsorted_n = len(sorted_streams), len(unsorted_streams)
+        if sorted_n + unsorted_n == 0:
             read_plan = 'empty'
-        elif sorted == base.Sorted.none:
-            self.env.hw.processor.sorter.on_sort(size)
+        # TODO partially sort
+        elif unsorted_n > 0:
+            not dry_run and self.env.hw.processor.sorter.on_sort(size)
             read_plan = 'sort(' + io_plan + ')'
-            compacting = allow_compact
-        elif streams > 1:
-            self.env.hw.processor.sorter.on_sorted_merge(size)
-            read_plan = 'sorted_merge(', io_plan, ', with ', streams, ' streams)'
-            compacting = allow_compact
+            compacting = (unsorted_n) > 1 and allow_compact
+        elif sorted_n > 1:
+            not dry_run and self.env.hw.processor.sorter.on_sorted_merge(size)
+            read_plan = 'sorted_merge(' + io_plan + ', with ' + str(sorted_n) + ' streams)'
+            #compacting = allow_compact
         elif stored_size > 0:
             read_plan = io_plan
         elif cached_size > 0:
             read_plan = io_plan
         else:
-            read_plan = '?'
+            read_plan = '?' + str(sorted_n) + ' ' + str(unsorted_n) + ' ' + str(stored_size)
 
         msg += [' ' * indent, compacting and 'compact' or 'read', ': ', read_plan, ' => ', '%.1f' % size, ' kv\n']
 
-        self.env.log.debug('partition output', '%.1f' % size, 'kv')
+        not dry_run and self.env.log.debug('partition output', '%.1f' % size, 'kv')
         return msg, size, compacting
 
 class DB(db.DB):
@@ -265,6 +285,12 @@ class DB(db.DB):
 
     def partition_num(self):
         return len(self._partitions)
+
+    def file_num(self):
+        files = set()
+        for partition in self._partitions:
+            files = files.union(partition.files())
+        return len(files)
 
     def write(self, k, thread_id):
         db.DB.write(self, k, thread_id)
@@ -285,55 +311,13 @@ class DB(db.DB):
 
         if partition.size_in_cache() + size_in_file < self._partition_split_size:
             return
-        j = self._persist_wal_relate_to_partition(i)
-        self._split_partition(i, k)
-        self._adjust_wal_groups_after_split(j)
 
-    def _persist_wal_relate_to_partition(self, i):
-        ''' collect partitions in the same wal group'''
-        j, s = base.locate_index_in_size_list(self._wal_group_sizes, i)
-        partitions = map(lambda n: self._partitions[n + s], range(0, self._wal_group_sizes[j]))
-        self.env.log.debug('persisting, wal group:', self._wal_group_sizes,
-            '<-', i, '=>', j, range(0, self._wal_group_sizes[j]))
-        file = db.File(False)
-        for partition in partitions:
-            partition.persist_write_cache(file)
-        return j
-
-    def _adjust_wal_groups_after_split(self, j):
-        self._wal_group_sizes[j] += 1
-        if self._wal_group_size < 0 or self._wal_group_sizes[j] <= self._wal_group_size:
-            return
-        s1 = self._wal_group_sizes[j] / 2
-        s2 = self._wal_group_sizes[j] - s1
-        self._wal_group_sizes[j] = s2
-        self._wal_group_sizes.insert(j, s1)
-
-    def _split_partition(self, i, k):
-        partition = self._partitions[i]
         prev = (i != 0) and self._partitions[i - 1] or None
         next = (i + 1 < len(self._partitions)) and self._partitions[i + 1] or None
-        partitions, split_points = partition.split(self._boundaries[i], self._boundaries[i + 1], prev, next)
-        self.env.log.debug('split:', map(lambda x: base.i2s(x), self._boundaries), '<-', k, '=>', split_points)
-        if len(split_points) == 0:
-            return
-
-        assert self._partitions[i] in partitions, 'splitted partitions should have the origin one, ' + \
-            'so that the related files dont need to clean ref-partitions'
-
-        self._partitions.pop(i)
-        partitions.reverse()
-        for p in partitions:
-            self._partitions.insert(i, p)
-        split_points.reverse()
-        for b in split_points:
-            self._boundaries.insert(i + 1, b)
-
-    def file_num(self):
-        files = set()
-        for partition in self._partitions:
-            files = files.union(partition.files())
-        return len(files)
+        split_point = partition.find_split_point(self._boundaries[i], self._boundaries[i + 1], prev, next)
+        j = self._persist_wal_relate_to_partition(i)
+        self._split_partition(i, k, split_point)
+        self._adjust_wal_groups_after_split(j)
 
     def read(self, k, thread_id, indent = 0, show_id = True):
         db.DB.read(self, k, thread_id, indent, show_id)
@@ -388,6 +372,47 @@ class DB(db.DB):
             msg += [' range[', base.i2s(begin), ', ', base.i2s(end), ')\n']
             msg += partition.scan_all(begin, end, indent + 2, show_id, show_detail)
         return msg
+
+    def _persist_wal_relate_to_partition(self, i):
+        ''' collect partitions in the same wal group'''
+        j, s = base.locate_index_in_size_list(self._wal_group_sizes, i)
+        partitions = map(lambda n: self._partitions[n + s], range(0, self._wal_group_sizes[j]))
+        self.env.log.debug('persisting, wal group:', self._wal_group_sizes,
+            '<-', i, '=>', j, range(0, self._wal_group_sizes[j]))
+        file = db.File(False)
+        for partition in partitions:
+            partition.persist_write_cache(file)
+        return j
+
+    def _adjust_wal_groups_after_split(self, j):
+        self._wal_group_sizes[j] += 1
+        if self._wal_group_size < 0 or self._wal_group_sizes[j] <= self._wal_group_size:
+            return
+        s1 = self._wal_group_sizes[j] / 2
+        s2 = self._wal_group_sizes[j] - s1
+        self._wal_group_sizes[j] = s2
+        self._wal_group_sizes.insert(j, s1)
+
+    def _split_partition(self, i, k, split_point):
+        partition = self._partitions[i]
+        prev = (i != 0) and self._partitions[i - 1] or None
+        next = (i + 1 < len(self._partitions)) and self._partitions[i + 1] or None
+        partitions, split_points = partition.split(
+            split_point, self._boundaries[i], self._boundaries[i + 1], prev, next)
+        self.env.log.debug('split:', map(lambda x: base.i2s(x), self._boundaries), '<-', k, '=>', split_points)
+        if len(split_points) == 0:
+            return
+
+        assert self._partitions[i] in partitions, 'splitted partitions should have the origin one, ' + \
+            'so that the related files dont need to clean ref-partitions'
+
+        self._partitions.pop(i)
+        partitions.reverse()
+        for p in partitions:
+            self._partitions.insert(i, p)
+        split_points.reverse()
+        for b in split_points:
+            self._boundaries.insert(i + 1, b)
 
     def status_from_snapshot(self, indent = 0):
         res = db.DB.status_from_snapshot(self, indent)

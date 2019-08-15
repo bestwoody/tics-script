@@ -30,12 +30,10 @@ class DB:
         '''return None'''
         self._write_k_num += 1
 
-    # TODO: return latency
     def read(self, k, thread_id, indent = 0, show_id = True):
         '''return ([msg], elapsed_src)'''
         return ['(un-impl)', 'read ', k], 0
 
-    # TODO: return latency
     def scan_range(self, begin, end, thread_id, indent = 0, show_id = True):
         '''return ([msg], k_num, elapsed_sec)'''
         return ['(un-impl)', 'scan from ', begin, ' to ', end], 0, 0
@@ -44,81 +42,21 @@ class DB:
         '''return [msg]'''
         return ['(un-impl)', 'scan all']
 
-    def k_num(self):
-        return self._write_k_num
-
     def current_write_amplification(self):
         if self._write_k_num == 0:
             return 0.0
         return decimal.Decimal(self.env.hw.summary.disk.total_write_k_num()) / self._write_k_num
+
+    def k_num(self):
+        return self._write_k_num
 
     def set_snapshot(self, name):
         self._ss_name = name
         self._ss_write_k_num = self._write_k_num
         self.env.hw.switch(name, False)
 
-    def status_from_snapshot(self, indent = 0):
-        kv_size = self.env.config.kv_size
-        hw = self.env.hw
-
-        k_num = self._write_k_num - self._ss_write_k_num
-        output_kv = hw.api.total_output_k_num()
-        write_kv = hw.disk.total_write_k_num()
-        read_kv = hw.disk.total_read_k_num()
-
-        sec = hw.elapsed_sec(kv_size)
-
-        def get_perf_str(n, sec):
-            if sec > 0:
-                perf_bytes = base.divb2s(n * kv_size, sec)
-                perf_kv = base.div(n, sec)
-            elif n > 0:
-                perf_bytes = '(max)'
-                perf_kv = '(max)'
-            else:
-                perf_bytes = '0'
-                perf_kv = '0'
-            return perf_bytes, perf_kv
-
-        def add_line(res, *line):
-            res.append(' ' * indent)
-            res += list(line)
-            res.append('\n')
-
-        res = []
-        add_line(res, 'Elapsed ms: ', '%.3f' % (hw.elapsed_sec(kv_size) * 1000))
-        add_line(res, 'Write amplification include WAL: ', '%.1f%%' % (self.current_write_amplification() * 100))
-
-        if k_num + output_kv + write_kv + read_kv > 0:
-            add_line(res, 'IO:')
-            if k_num > 0:
-                add_line(res, '  DB write: ', k_num, ' kv')
-            if output_kv > 0:
-                add_line(res, '  DB read: ', '%.0f' % output_kv, ' kv')
-            if write_kv > 0:
-                add_line(res, '  Disk write: ', base.b2s(write_kv * kv_size), ', ', '%.0f' % write_kv, ' kv')
-            if read_kv > 0:
-                add_line(res, '  Disk read: ', base.b2s(read_kv * kv_size), ', ', '%.0f' % read_kv, ' kv')
-        if k_num > 0:
-            perf_bytes, perf_kv = get_perf_str(k_num, sec)
-            add_line(res, 'Write performance: ', perf_bytes + '/s, ', perf_kv, ' kv/s')
-        if output_kv > 0:
-            perf_bytes, perf_kv = get_perf_str(output_kv, sec)
-            add_line(res, 'Read performance: ', perf_bytes + '/s, ', perf_kv, ' kv/s')
-
-        res += self.env.hw.load_str(kv_size, indent)
-
-        _, kvs_cache_access_count = self.env.kvs_cache.hit_total()
-        files_cache_mem = self.env.files_cache.mem_used()
-        if kvs_cache_access_count + files_cache_mem > 0:
-            add_line(res, 'Cache status')
-            if kvs_cache_access_count > 0:
-                res += self.env.kvs_cache.str(kv_size, self.k_num(), indent + 2)
-            if files_cache_mem > 0:
-                add_line(res, '  FilesCache size: ', '%0.f' % files_cache_mem, '/', '%0.f' % self.k_num(),
-                    ' kv = %.0f%% DB Size' % (float(files_cache_mem) * 100 / self.k_num()))
-
-        return res
+    def write_k_num_from_snapshot(self):
+        return self._write_k_num - self._ss_write_k_num
 
 class Seg:
     def __init__(self, min = base.Limit.maxint, max = base.Limit.minint, sorted = base.Sorted.both, size = 0):
@@ -127,7 +65,7 @@ class Seg:
         self.sorted = sorted
         self.size = size
 
-    def write(self, k, split_min, split_max):
+    def write(self, k, split_min = base.Limit.maxint, split_max = base.Limit.maxint):
         if self.size == 0:
             self.min = k
             self.max = k
@@ -181,67 +119,13 @@ class Seg:
             base.Sorted.str(self.sorted), '}']
         return msg
 
-def is_sorted(segs):
-    if len(segs) == 0:
-        return base.Sorted.both
-    if len(segs) == 1:
-        return segs[0].sorted
-
-    res = segs[0].sorted
-    min = segs[0].min
-    max = segs[0].max
-    for seg in segs[1:]:
-        if res == base.Sorted.none or seg.sorted == base.Sorted.none:
-            return base.Sorted.none
-        elif res == base.Sorted.both:
-            if seg.sorted == base.Sorted.both:
-                if max == seg.min:
-                    res = base.Sorted.both
-                elif max < seg.min:
-                    res = base.Sorted.asc
-                elif min > seg.max:
-                    res = base.Sorted.desc
-            elif seg.sorted == base.Sorted.asc:
-                if max <= seg.min:
-                    res = base.Sorted.asc
-                else:
-                    res = base.Sorted.none
-            elif seg.sorted == base.Sorted.desc:
-                if min >= seg.max:
-                    res = base.Sorted.desc
-                else:
-                    res = base.Sorted.none
-        elif res == base.Sorted.asc:
-            if (seg.sorted == base.Sorted.both or seg.sorted == base.Sorted.asc) and max <= seg.min:
-                res = base.Sorted.asc
-            else:
-                res = base.Sorted.none
-        elif res == base.Sorted.desc:
-            if (seg.sorted == base.Sorted.both or seg.sorted == base.Sorted.desc) and min >= seg.max:
-                res = base.Sorted.desc
-            else:
-                res = base.Sorted.none
-    return res
-
 class Dist:
-    def __init__(self, seg_min, seg_max, segs = None):
+    def __init__(self, seg_min, seg_max, info = None, segs = None):
         self._segs = segs or [Seg()]
         self._curr = self._segs[-1]
+        self.info = info or Seg()
         self.seg_min = seg_min
         self.seg_max = seg_max
-
-    def add(self, seg):
-        self._segs.append(seg)
-        self._curr = seg
-
-    def size(self):
-        return sum(map(lambda x: x.size, self._segs))
-
-    def min(self):
-        return min(map(lambda x: x.min, self._segs))
-
-    def max(self):
-        return max(map(lambda x: x.max, self._segs))
 
     def write(self, k):
         written = self._curr.write(k, self.seg_min, self.seg_max)
@@ -250,24 +134,15 @@ class Dist:
             self._curr = self._segs[-1]
             written = self._curr.write(k, self.seg_min, self.seg_max)
         assert(written)
-
-    def sorted(self):
-        return is_sorted(self._segs)
-
-    def intersect(self, dist):
-        if self.max <= dist.min() or self.min >= dist.max():
-            return False
-        return True
+        written = self.info.write(k)
+        assert(written)
 
     def str(self, ref_num, show_id = True):
         id = lambda obj, name: show_id and name + base.obj_id(obj) or name
-        msg = [id(self, 'dist'), ' ', len(self._segs), ' ', base.Sorted.str(self.sorted()),' ']
+        msg = [id(self, 'dist'), ' ', len(self._segs), ' ', base.Sorted.str(self.info.sorted),' ']
         for seg in self._segs:
             msg += seg.str(ref_num, show_id)
         return msg
-
-    def segs(self):
-        return self._segs
 
 class Block:
     def __init__(self, dist):
@@ -275,32 +150,20 @@ class Block:
         self._partitions = []
         self._detacheds = []
 
-    def min(self):
-        return self._dist.min()
-
-    def max(self):
-        return self._dist.max()
-
-    def str(self, indent = 0, show_id = True):
-        id = lambda obj, name: show_id and name + base.obj_id(obj) or name
-        msg = [' ' * indent, 'block', id(self, ''), '\n']
-        msg += [' ' * (indent + 2), 'ref partitions: ', len(self._partitions), '-', len(self._detacheds)]
-        for partition in self._partitions:
-            msg += [' ', (partition in self._detacheds and '-' or ''), id(partition, '')]
-        msg += ['\n', ' ' * (indent + 2)] + self._dist.str(len(self._partitions), show_id) + ['\n']
-        return msg
+    def info(self):
+        return self._dist.info
 
     def size(self, partition):
         if partition in self._detacheds or partition not in self._partitions:
             return decimal.Decimal(0), 0
-        stored = self._dist.size()
+        stored = self._dist.info.size
         real = stored
         if len(self._partitions) > 1:
             real = decimal.Decimal(stored) / len(self._partitions)
         return real, stored
 
     def stored_size(self):
-        return self._dist.size()
+        return self._dist.info.size
 
     def add_ref(self, partition):
         if partition in self._partitions:
@@ -321,9 +184,6 @@ class Block:
             return set(self._partitions)
         return set(self._partitions).difference(set(self._detacheds))
 
-    def segs(self):
-        return self._dist.segs()
-
     def read(self, hw, partition, compressed):
         size, _ = self.size(partition)
         read_size = size
@@ -332,34 +192,22 @@ class Block:
         hw.disk.on_seq_read(read_size)
         return size
 
+    def str(self, indent = 0, show_id = True):
+        id = lambda obj, name: show_id and name + base.obj_id(obj) or name
+        msg = [' ' * indent, 'block', id(self, ''), '\n']
+        msg += [' ' * (indent + 2), 'ref partitions: ', len(self._partitions), '-', len(self._detacheds)]
+        for partition in self._partitions:
+            msg += [' ', (partition in self._detacheds and '-' or ''), id(partition, '')]
+        msg += ['\n', ' ' * (indent + 2)] + self._dist.str(len(self._partitions), show_id) + ['\n']
+        return msg
+
 class File:
     def __init__(self, compressed):
         self._blocks = []
         self._compressed = compressed
 
-    def segs(self):
-        res = []
-        for block in self._blocks:
-            res += block.segs()
-        return res
-
-    def sorted(self):
-        # TODO: half-sorted is alright
-        return is_sorted(self.segs())
-
-    def read(self, hw, partition):
-        size = 0
-        for block in self._blocks:
-            size += block.read(hw, partition, self._compressed)
-        return size
-
-    def str(self, indent = 0, show_id = True):
-        id = lambda obj, name: show_id and name + base.obj_id(obj) or name
-        msg = [' ' * indent, 'file', id(self, ''), ' ', len(self._blocks), ' blocks',
-            self._compressed and ' compressed' or '', '\n']
-        for block in self._blocks:
-            msg += block.str(indent + 2, show_id)
-        return msg
+    def block_infos(self):
+        return map(lambda x: x.info(), self._blocks)
 
     def size(self, partition):
         real, stored = 0, 0
@@ -373,10 +221,10 @@ class File:
         return sum(map(lambda b: b.stored_size(), self._blocks))
 
     def min(self):
-        return min(map(lambda block: block.min(), self._blocks))
+        return min(map(lambda block: block.info().min, self._blocks))
 
     def max(self):
-        return max(map(lambda block: block.max(), self._blocks))
+        return max(map(lambda block: block.info().max, self._blocks))
 
     def add(self, block):
         self._blocks.append(block)
@@ -401,6 +249,26 @@ class File:
             partitions.union(block.refs(include_detached))
         return len(partitions)
 
+    def is_all_blocks_sorted(self):
+        for block in  self._blocks:
+            if block.info().sorted == base.Sorted.none:
+                return False
+        return True
+
+    def read(self, hw, partition):
+        size = 0
+        for block in self._blocks:
+            size += block.read(hw, partition, self._compressed)
+        return size
+
+    def str(self, indent = 0, show_id = True):
+        id = lambda obj, name: show_id and name + base.obj_id(obj) or name
+        msg = [' ' * indent, 'file', id(self, ''), ' ', len(self._blocks), ' blocks',
+            self._compressed and ' compressed' or '', '\n']
+        for block in self._blocks:
+            msg += block.str(indent + 2, show_id)
+        return msg
+
 def size_in_files(files, partition):
     real, stored = 0, 0
     for file in files:
@@ -412,33 +280,24 @@ def size_in_files(files, partition):
 class WriteCache:
     def __init__(self, seg_min, seg_max):
         self._dist = Dist(seg_min, seg_max)
-        self._size = 0
 
-    def segs(self):
-        return self._dist.segs()
+    def info(self):
+        return self._dist.info
 
     def size(self):
-        return self._size
+        return self._dist.info.size
 
     def min(self):
-        return self._dist.min()
+        return self._dist.info.min
 
     def max(self):
-        return self._dist.max()
+        return self._dist.info.max
 
     def write(self, k):
         self._dist.write(k)
-        self._size += 1
-
-    def str(self, show_id = True, show_detail = True):
-        id = lambda obj, name: show_id and name + base.obj_id(obj) or name
-        res = [id(self, 'cache:'), ' size=', self._size, ' ']
-        if show_detail:
-            res += self._dist.str(1, show_id)
-        return res
 
     def persist(self, partition, file = None):
-        if self._size <= 0:
+        if self.size() <= 0:
             return file
         file = file or File()
         block = Block(self._dist)
@@ -446,6 +305,13 @@ class WriteCache:
         file.add(block)
         partition.add_file(file)
         return file
+
+    def str(self, show_id = True, show_detail = True):
+        id = lambda obj, name: show_id and name + base.obj_id(obj) or name
+        res = [id(self, 'cache:'), ' size=', self.size(), ' ']
+        if show_detail:
+            res += self._dist.str(1, show_id)
+        return res
 
 class FilesCache:
     def __init__(self, hw, mem_quota_bytes = -1):
@@ -486,11 +352,11 @@ class FilesCache:
     def cached(self, file):
         return file in self._files
 
-    def str(self):
-        return map(lambda x: base.obj_id(x), list(self._files))
-
     def mem_used(self):
         return self._mem_used
+
+    def str(self):
+        return map(lambda x: base.obj_id(x), list(self._files))
 
 class KvsCache:
     def __init__(self, quota = -1):

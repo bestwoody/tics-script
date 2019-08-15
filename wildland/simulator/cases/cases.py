@@ -2,13 +2,74 @@ import decimal
 import base
 import ops
 
-# TODO: move `display` to each modules
+def status_from_snapshot(db, indent = 0):
+    kv_size = db.env.config.kv_size
+    hw = db.env.hw
+
+    k_num = db.write_k_num_from_snapshot()
+    output_kv = hw.api.total_output_k_num()
+    write_kv = hw.disk.total_write_k_num()
+    read_kv = hw.disk.total_read_k_num()
+
+    sec = hw.elapsed_sec(kv_size)
+
+    def get_perf_str(n, sec):
+        if sec > 0:
+            perf_bytes = base.divb2s(n * kv_size, sec)
+            perf_kv = base.div(n, sec)
+        elif n > 0:
+            perf_bytes = '(max)'
+            perf_kv = '(max)'
+        else:
+            perf_bytes = '0'
+            perf_kv = '0'
+        return perf_bytes, perf_kv
+
+    def add_line(res, *line):
+        res.append(' ' * indent)
+        res += list(line)
+        res.append('\n')
+
+    res = []
+    add_line(res, 'Elapsed ms: ', '%.3f' % (hw.elapsed_sec(kv_size) * 1000))
+    add_line(res, 'Write amplification include WAL: ', '%.1f%%' % (db.current_write_amplification() * 100))
+
+    if k_num + output_kv + write_kv + read_kv > 0:
+        add_line(res, 'IO:')
+        if k_num > 0:
+            add_line(res, '  DB write: ', k_num, ' kv')
+        if output_kv > 0:
+            add_line(res, '  DB read: ', '%.0f' % output_kv, ' kv')
+        if write_kv > 0:
+            add_line(res, '  Disk write: ', base.b2s(write_kv * kv_size), ', ', '%.0f' % write_kv, ' kv')
+        if read_kv > 0:
+            add_line(res, '  Disk read: ', base.b2s(read_kv * kv_size), ', ', '%.0f' % read_kv, ' kv')
+    if k_num > 0:
+        perf_bytes, perf_kv = get_perf_str(k_num, sec)
+        add_line(res, 'Write performance: ', perf_bytes + '/s, ', perf_kv, ' kv/s')
+    if output_kv > 0:
+        perf_bytes, perf_kv = get_perf_str(output_kv, sec)
+        add_line(res, 'Read performance: ', perf_bytes + '/s, ', perf_kv, ' kv/s')
+
+    res += db.env.hw.load_str(kv_size, indent)
+
+    _, kvs_cache_access_count = db.env.kvs_cache.hit_total()
+    files_cache_mem = db.env.files_cache.mem_used()
+    if kvs_cache_access_count + files_cache_mem > 0:
+        add_line(res, 'Cache status')
+        if kvs_cache_access_count > 0:
+            res += db.env.kvs_cache.str(kv_size, db.k_num(), indent + 2)
+        if files_cache_mem > 0:
+            add_line(res, '  FilesCache size: ', '%0.f' % files_cache_mem, '/', '%0.f' % db.k_num(),
+                ' kv = %.0f%% DB Size' % (float(files_cache_mem) * 100 / db.k_num()))
+
+    return res
 
 def write(db, pattern):
     db.set_snapshot('write')
     ops.execute(db, pattern)
     base.display(['Write simulating:\n  Pattern:\n', pattern.str(4), '  -\n'])
-    base.display(db.status_from_snapshot(2))
+    base.display(status_from_snapshot(db, 2))
 
 def scan_all(db, verb_level, title):
     db.set_snapshot('scan_all_' + title)
@@ -18,7 +79,7 @@ def scan_all(db, verb_level, title):
         base.display(scan_msg)
         base.display('---\n')
     base.display(['ScanAll(', title, '):\n'])
-    base.display(db.status_from_snapshot(2))
+    base.display(status_from_snapshot(db, 2))
 
 def write_then_scan(db, pattern, verb_level):
     kv_size = db.env.config.kv_size
@@ -30,37 +91,10 @@ def write_then_scan(db, pattern, verb_level):
         base.display('---\n')
         scan_all(db, verb_level, '2nd')
 
-def run_mix_ops(db, pattern, verb_level, title):
-    ops_funcs = {
-        ops.Read.name: lambda x: db.read(x.k, x.thread_id),
-        ops.ScanRange.name: lambda x: db.scan_range(x.begin, x.end, x.show_detail, x.thread_id),
-    }
-    read_avg_sec = base.AggAvg()
-    scan_range_avg_sec = base.AggAvg()
-    scan_range_avg_output = base.AggAvg()
-    if db.env.config.calculate_elapsed:
-        def do_read(x):
-            msg, sec = db.read(x.k, x.thread_id)
-            read_avg_sec.add(sec)
-            return msg, sec
-        ops_funcs[ops.Read.name] = do_read
-        def do_scan_range(x):
-            msg, size, sec = db.scan_range(x.begin, x.end, x.show_detail, x.thread_id)
-            scan_range_avg_sec.add(sec)
-            scan_range_avg_output.add(size)
-            return msg, size, sec
-        ops_funcs[ops.ScanRange.name] = do_scan_range
-
-    kv_size = db.env.config.kv_size
-
+def mix_ops(db, pattern, verb_level, title):
     db.set_snapshot(title)
-    ops.execute(db, pattern, ops_funcs)
+    executor = ops.Executor(db)
+    executor.exe(pattern)
     base.display([title + ':\n', '  Pattern:\n', pattern.str(4), '  -\n'])
-    base.display(db.status_from_snapshot(2))
-
-    if not read_avg_sec.empty():
-        base.display(['  Read avg elapsed time (ms): ', '%.3f' % (read_avg_sec.avg() * 1000), '\n'])
-    if not scan_range_avg_sec.empty():
-        base.display(['  Scan range avg elapsed time (ms): ', '%.3f' % (scan_range_avg_sec.avg() * 1000), '\n'])
-        base.display(['  Scan range avg output: ', base.b2s(scan_range_avg_output.avg() * kv_size), ', ',
-            '%.0f' % scan_range_avg_output.avg(), ' kv\n'])
+    base.display(status_from_snapshot(db, 2))
+    base.display(executor.elapsed_str(2))

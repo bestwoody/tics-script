@@ -37,7 +37,7 @@ Create a simulator to help design new engine, currently for the lazy engine
 *****     Put args into config file
 -----     Put hardware module into config file
 *****   Resource simulating
-*****     Disk: IOPS, IOBW. TODO: more types of IOPS (eg: seq write with fsync)
+*****     Disk: IOPS, IOBW. TODO: more types of IOPS
 *****     CPU: compress, sort, sorted merge, locks, key compare
 *****     Memory: current used, peak used
 *****   Performance calculating
@@ -87,6 +87,7 @@ Create a simulator to help design new engine, currently for the lazy engine
 ```
 
 ### Next TODO
+* Mem Peak: show % DB size
+* Clear sorting infos
 * Half-sort
 * Delta-base data storage
-* Better cache info display
