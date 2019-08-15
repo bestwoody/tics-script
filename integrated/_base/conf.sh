@@ -18,16 +18,18 @@ function cp_bin_to_dir()
 
 	local bin_name=`echo "${entry_str}" | awk '{print $2}'`
 	local paths_str=`echo "${entry_str}" | awk '{print $3}'`
-	local paths=(${paths_str//:/ })
 	local found=false
-	for path in ${paths[@]}; do
-		local path=`replace_substr "${path}" '{integrated}' "${integrated}"`
-		if [ -f ${path} ]; then
-			cp_when_diff "${path}" "${dest_dir}/${bin_name}"
-			found=true
-			break
-		fi
-	done
+	if [ ! -z ${paths_str} ]; then
+		local paths=(${paths_str//:/ })
+		for path in ${paths[@]}; do
+			local path=`replace_substr "${path}" '{integrated}' "${integrated}"`
+			if [ -f ${path} ]; then
+				cp_when_diff "${path}" "${dest_dir}/${bin_name}"
+				found=true
+				break
+			fi
+		done
+	fi
 
 	if [ ${found} == true ]; then
 		return
