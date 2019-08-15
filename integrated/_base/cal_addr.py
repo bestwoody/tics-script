@@ -20,6 +20,10 @@ def cal(addr, default_host, default_port, ensure_http = False):
         port = kv[1].strip()
         if len(port) == 0:
             port = int(default_port)
+        elif port[0] == '=':
+            port = int(port[0][1:])
+        elif port[0] != '+' and port[0] != '-':
+            port = int(port)
         else:
             port = int(port) + int(default_port)
     if len(host) == 0:

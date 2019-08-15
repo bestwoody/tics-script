@@ -1,0 +1,7 @@
+dir=node0
+
+pd: {dir}/pd
+tikv: {dir}/tikv
+tidb: {dir}/tidb
+tiflash: {dir}/tiflash
+rngine: {dir}/rngine tiflash={dir}/tiflash

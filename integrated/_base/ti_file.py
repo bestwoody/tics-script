@@ -45,6 +45,7 @@ class Mod:
         self.dir = ""
         self.ports = "0"
         self.host = ""
+        self.pd = ""
 
 class ModRngine:
     def __init__(self):
@@ -53,6 +54,7 @@ class ModRngine:
         self.ports = "0"
         self.host = ""
         self.tiflash = ""
+        self.pd = ""
 
 def error(msg):
     sys.stderr.write('[ti2sh.py] ' + msg + '\n')
@@ -85,6 +87,11 @@ def parse_mod(obj, line, origin):
             if len(kv) != 2 or kv[0].strip() != 'tiflash':
                 error('bad tiflash prop: ' + origin)
             setattr(obj, 'tiflash', kv[1].strip())
+        elif field.startswith('pd'):
+            kv = field.split('=')
+            if len(kv) != 2 or kv[0].strip() != 'pd':
+                error('bad pd prop: ' + origin)
+            setattr(obj, 'pd', kv[1].strip())
         else:
             old_dir = str(getattr(obj, 'dir'))
             if len(old_dir) != 0:
@@ -202,7 +209,8 @@ def render_tikvs(res, conf):
         print '# tikv_run dir conf_templ_dir pd_addr advertise_host ports_delta'
         print 'tikv_run "%s" \\' % tikv.dir
         print '\t"%s" \\' % conf.conf_templ_dir
-        print '\t"%s" "%s" "%s"' % (','.join(res.pd_addr), tikv.host, tikv.ports)
+        pd_addr = tikv.pd or ','.join(res.pd_addr)
+        print '\t"%s" "%s" "%s"' % (pd_addr, tikv.host, tikv.ports)
 
 def render_tidbs(res, conf):
     for i in range(0, len(res.tidbs)):
@@ -212,7 +220,8 @@ def render_tidbs(res, conf):
         print '# tidb_run dir conf_templ_dir pd_addr advertise_host ports_delta'
         print 'tidb_run "%s" \\' % tidb.dir
         print '\t"%s" \\' % conf.conf_templ_dir
-        print '\t"%s" "%s" "%s"' % (','.join(res.pd_addr), tidb.host, tidb.ports)
+        pd_addr = tidb.pd or ','.join(res.pd_addr)
+        print '\t"%s" "%s" "%s"' % (pd_addr, tidb.host, tidb.ports)
 
 def render_tiflashs(res, conf):
     if len(res.tiflashs) == 0:
@@ -231,7 +240,8 @@ def render_tiflashs(res, conf):
         print '# tiflash_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host'
         print 'tiflash_run "%s" \\' % tiflash.dir
         print '\t"%s" \\' % conf.conf_templ_dir
-        print '\t"true" "%s" "%s" "%s"' % (';'.join(res.pd_addr), tiflash.ports, tiflash.host)
+        pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
+        print '\t"true" "%s" "%s" "%s"' % (pd_addr, tiflash.ports, tiflash.host)
 
 def render_rngines(res, conf):
     for i in range(0, len(res.rngines)):
@@ -242,7 +252,8 @@ def render_rngines(res, conf):
         print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % rngine.tiflash
         print 'rngine_run "%s" \\' % rngine.dir
         print '\t"%s" \\' % conf.conf_templ_dir
-        print '\t"%s" "${tiflash_addr}" "%s" "%s"' % (','.join(res.pd_addr), rngine.host, rngine.ports)
+        pd_addr = rngine.pd or ','.join(res.pd_addr)
+        print '\t"%s" "${tiflash_addr}" "%s" "%s"' % (pd_addr, rngine.host, rngine.ports)
 
 def render(res, conf):
     print_sh_header(conf)
