@@ -1,0 +1,19 @@
+pd: node1/pd ports+1
+pd: node2/pd ports+2
+pd: node3/pd ports+3
+
+tikv: node1/tikv ports+1
+tikv: node2/tikv ports+2
+tikv: node3/tikv ports+3
+
+tidb: node1/tidb ports+1
+tidb: node2/tidb ports+2
+tidb: node3/tidb ports+3
+
+tiflash: node1/tiflash ports+1
+tiflash: node2/tiflash ports+2
+tiflash: node3/tiflash ports+3
+
+rngine: node1/rngine tiflash=node1/tiflash ports+1
+rngine: node2/rngine tiflash=node2/tiflash ports+2
+rngine: node3/rngine tiflash=node3/tiflash ports+3

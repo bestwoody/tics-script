@@ -1,0 +1,21 @@
+import {hosts}
+
+pd: /data/pd ports+1 host={ip1}
+pd: /data/pd ports+2 host={ip2}
+pd: /data/pd ports+3 host={ip3}
+
+tikv: /data/tikv ports+1 host={ip1}
+tikv: /data/tikv ports+2 host={ip2}
+tikv: /data/tikv ports+3 host={ip3}
+
+tidb: /data/tidb ports+1 host={ip1}
+tidb: /data/tidb ports+2 host={ip2}
+tidb: /data/tidb ports+3 host={ip3}
+
+tiflash: /data/tiflash ports+1 host={ip1}
+tiflash: /data/tiflash ports+2 host={ip2}
+tiflash: /data/tiflash ports+3 host={ip3}
+
+rngine: /data/rngine tiflash=node1/tiflash ports+1 host={ip1}
+rngine: /data/rngine tiflash=node2/tiflash ports+2 host={ip2}
+rngine: /data/rngine tiflash=node3/tiflash ports+3 host={ip3}

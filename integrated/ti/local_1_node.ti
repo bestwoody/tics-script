@@ -1,0 +1,5 @@
+pd: node0/pd
+tikv: node0/tikv
+tidb: node0/tidb
+tiflash: node0/tiflash
+rngine: node0/rngine tiflash=node0/tiflash

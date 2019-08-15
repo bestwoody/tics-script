@@ -1,0 +1,10 @@
+export default_tiflash_http_port=8123
+export default_tiflash_tcp_port=9000
+export default_tiflash_interserver_http_port=9109
+export default_tiflash_raft_port=3930
+export default_pd_port=13579
+export default_pd_peer_port=13680
+export default_tikv_port=20431
+export default_tidb_port=10080
+export default_tidb_status_port=12490
+export default_rngine_port=20532
