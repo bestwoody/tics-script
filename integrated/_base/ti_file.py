@@ -170,6 +170,11 @@ def print_mod_header(mod):
     print 'echo "=> %s #%d (%s)"' % (mod.name, mod.index, mod.dir)
     print ''
 
+def print_cp_bin(mod, conf):
+    line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "/tmp/ti_cache"'
+    print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir)
+    print ''
+
 def render_pds(res, conf):
     pds = res.pds
     if len(pds) == 0:
@@ -193,6 +198,7 @@ def render_pds(res, conf):
 
     for pd in pds:
         print_mod_header(pd)
+        print_cp_bin(pd, conf)
         print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster'
         print 'pd_run "%s" \\' % pd.dir
         print '\t"%s" \\' % conf.conf_templ_dir
@@ -203,6 +209,7 @@ def render_tikvs(res, conf):
         tikv = res.tikvs[i]
         setattr(tikv, 'index', i)
         print_mod_header(tikv)
+        print_cp_bin(tikv, conf)
         print '# tikv_run dir conf_templ_dir pd_addr advertise_host ports_delta'
         print 'tikv_run "%s" \\' % tikv.dir
         print '\t"%s" \\' % conf.conf_templ_dir
@@ -214,6 +221,7 @@ def render_tidbs(res, conf):
         tidb = res.tidbs[i]
         setattr(tidb, 'index', i)
         print_mod_header(tidb)
+        print_cp_bin(tidb, conf)
         print '# tidb_run dir conf_templ_dir pd_addr advertise_host ports_delta'
         print 'tidb_run "%s" \\' % tidb.dir
         print '\t"%s" \\' % conf.conf_templ_dir
@@ -234,6 +242,7 @@ def render_tiflashs(res, conf):
         tiflash = res.tiflashs[i]
         setattr(tiflash, 'index', i)
         print_mod_header(tiflash)
+        print_cp_bin(tiflash, conf)
         print '# tiflash_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host'
         print 'tiflash_run "%s" \\' % tiflash.dir
         print '\t"%s" \\' % conf.conf_templ_dir
@@ -245,6 +254,7 @@ def render_rngines(res, conf):
         rngine = res.rngines[i]
         setattr(rngine, 'index', i)
         print_mod_header(rngine)
+        print_cp_bin(rngine, conf)
         print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta'
         print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % rngine.tiflash
         print 'rngine_run "%s" \\' % rngine.dir

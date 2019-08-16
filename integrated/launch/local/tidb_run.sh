@@ -36,6 +36,6 @@ fi
 # Where is tidb config template files
 conf_templ_dir="${here}/conf_templ"
 
-source "${conf_templ_dir}/default_ports.sh"
+cp_bin_to_dir "tidb" "${tidb_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
 
 tidb_run "${tidb_dir}" "${conf_templ_dir}" "${pd_addr}" "${advertise_host}" "${ports_delta}"

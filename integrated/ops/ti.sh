@@ -19,6 +19,9 @@ fi
 if [ "${cmd}" == "up" ]; then
 	cmd="run"
 fi
+if [ "${cmd}" == "down" ]; then
+	cmd="stop"
+fi
 
 if [ -z "${conf_templ_dir}" ]; then
 	conf_templ_dir="${integrated}/launch/local/conf_templ"

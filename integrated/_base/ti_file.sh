@@ -166,7 +166,7 @@ function ti_file_exe()
 		return
 	fi
 
-	echo "[script ti.sh] usage: <script> cmd(run|stop|status) ti_file [conf_templ_dir] [args(k=v#k=v#..)]" >&2
+	echo "[script ti.sh] usage: <script> cmd(run|stop|status|prop|fstop|dry) ti_file [conf_templ_dir] [args(k=v#k=v#..)]" >&2
 	return 1
 }
 export -f ti_file_exe

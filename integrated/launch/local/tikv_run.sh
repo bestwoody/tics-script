@@ -36,6 +36,6 @@ fi
 # Where is tikv config template files
 conf_templ_dir="${here}/conf_templ"
 
-source "${conf_templ_dir}/default_ports.sh"
+cp_bin_to_dir "tikv" "${tikv_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
 
 tikv_run "${tikv_dir}" "${conf_templ_dir}" "${pd_addr}" "${advertise_host}" "${ports_delta}"

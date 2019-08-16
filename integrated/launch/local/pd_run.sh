@@ -36,6 +36,6 @@ fi
 # Where is pd config template files
 conf_templ_dir="${here}/conf_templ"
 
-source "${conf_templ_dir}/default_ports.sh"
+cp_bin_to_dir "pd" "${pd_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
 
 pd_run "${pd_dir}" "${conf_templ_dir}" "${name_ports_delta}" "${advertise_host}" "" "${initial_cluster}"

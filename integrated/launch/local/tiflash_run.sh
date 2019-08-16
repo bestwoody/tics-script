@@ -36,6 +36,6 @@ fi
 # Where is tiflash config template files
 conf_templ_dir="${here}/conf_templ"
 
-source "${conf_templ_dir}/default_ports.sh"
+cp_bin_to_dir "tiflash" "${tiflash_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
 
 tiflash_run "${tiflash_dir}" "${conf_templ_dir}" "${daemon_mode}" "${pd_addr}" "${ports_delta}"

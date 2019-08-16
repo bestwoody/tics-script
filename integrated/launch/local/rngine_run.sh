@@ -39,6 +39,6 @@ fi
 # Where is rngine config template files
 conf_templ_dir="${here}/conf_templ"
 
-source "${conf_templ_dir}/default_ports.sh"
+cp_bin_to_dir "rngine" "${rngine_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
 
 rngine_run "${rngine_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${advertise_host}" "${ports_delta}"

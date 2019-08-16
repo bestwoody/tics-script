@@ -75,8 +75,6 @@ function tiflash_run()
 		return 1
 	fi
 
-	cp_bin_to_dir "tiflash" "${tiflash_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
-
 	tiflash_dir=`abs_path "${tiflash_dir}"`
 
 	local conf_file="${tiflash_dir}/conf/config.xml"
@@ -240,8 +238,6 @@ function pd_run()
 		initial_cluster=$(cal_addr "${initial_cluster}" "${advertise_host}" "${default_pd_peer_port}" "${pd_name}")
 	fi
 
-	cp_bin_to_dir "pd" "${pd_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
-
 	pd_dir=`abs_path "${pd_dir}"`
 
 	local proc_cnt=`print_proc_cnt "${pd_dir}/pd.toml" "\-\-config"`
@@ -346,8 +342,6 @@ function tikv_run()
 
 	local tikv_port=$((${ports_delta} + ${default_tikv_port}))
 
-	cp_bin_to_dir "tikv" "${tikv_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
-
 	tikv_dir=`abs_path "${tikv_dir}"`
 
 	local proc_cnt=`print_proc_cnt "${tikv_dir}/tikv.toml" "\-\-config"`
@@ -442,8 +436,6 @@ function tidb_run()
 
 	local tidb_port=$((${ports_delta} + ${default_tidb_port}))
 	local status_port=$((${ports_delta} + ${default_tidb_status_port}))
-
-	cp_bin_to_dir "tidb" "${tidb_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
 
 	tidb_dir=`abs_path "${tidb_dir}"`
 
@@ -551,8 +543,6 @@ function rngine_run()
 	fi
 
 	local rngine_port=$((${ports_delta} + ${default_rngine_port}))
-
-	cp_bin_to_dir "rngine" "${rngine_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
 
 	rngine_dir=`abs_path "${rngine_dir}"`
 

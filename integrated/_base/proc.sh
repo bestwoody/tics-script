@@ -97,19 +97,23 @@ function stop_proc()
 					echo "#${i} pid ${pid} closing..."
 				fi
 			fi
-			kill ${pid}
+			kill ${pid} 2>/dev/null
 			if [ "${heavy_kill}" == "true" ]; then
-				kill ${pid}
+				kill ${pid} 2>/dev/null
 			fi
 		fi
 
-		sleep 1
+		if [ "${heaviest_kill}" != "true" ]; then
+			sleep 0.05
+		fi
 
 		local pid_cnt=`print_proc_cnt "${find_str}" "${str2}"`
 		if [ "${pid_cnt}" == "0" ]; then
 			# echo "#${i} pid ${pid} closed"
 			break
 		fi
+
+		sleep 0.5
 
 		if [ ${i} -ge 29 ]; then
 			heavy_kill="true"
