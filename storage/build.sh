@@ -14,4 +14,6 @@ if [ -z "$type" ]; then
 fi
 
 source ./_build.sh
+echo "`cd ch/contrib/kvproto && ./generate_cpp.sh`"
+
 build_ch "ch" "$target" "false" "$type"

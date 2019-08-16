@@ -2,7 +2,7 @@
 
 function print_ip()
 {
-	ifconfig | grep 'en[0123456789]\|eth[0123456789]\|wlp[0123456789]' -A 3 | \
+	ifconfig | grep 'en[0123456789]\|eth[0123456789]\|wlp[0123456789]\|em[0123456789]' -A 3 | \
 		grep -v inet6 | grep inet | grep -i mask | awk '{print $2}'
 }
 export -f print_ip

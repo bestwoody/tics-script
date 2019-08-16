@@ -170,7 +170,7 @@ There are 3 things are involved when we using `ops/ti.sh`:
     * The default dir located at `launch/local/conf_templ`
     * You can pass args `conf-templ-dir`(`ops/ti.sh ti-file cmd [args] [conf-templ-dir]`) to use another one.
     * `templates` means they'er not the real conf files, the real ones are in module dirs.
-    * Take a look at the `default_ports.sh` will helps to avoid port-conflict when we modifys ports using `+n`
+    * Take a look at the `default.ports` will helps to avoid port-conflict when we modifys ports using `+n`
     * `conf_temp/bin.paths` and `conf_temp/bin.urls` defined where we can get the module bins
 * The `my.ti` file and the dirs used by modules in the file, these are the data we care.
     * Once a module is running, it doesn't rely on `conf templates` or `ops/ti.sh` any more.

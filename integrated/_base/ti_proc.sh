@@ -7,27 +7,6 @@ function tiflash_run()
 		return 1
 	fi
 
-	if [ -z "${default_pd_port+x}" ]; then
-		echo "[func tiflash_run] \$default_pd_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_tiflash_http_port+x}" ]; then
-		echo "[func tiflash_run] \$default_tiflash_http_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_tiflash_tcp_port+x}" ]; then
-		echo "[func tiflash_run] \$default_tiflash_tcp_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_tiflash_interserver_http_port+x}" ]; then
-		echo "[func tiflash_run] \$default_tiflash_interserver_http_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_tiflash_raft_port+x}" ]; then
-		echo "[func tiflash_run] \$default_tiflash_raft_port not set" >&2
-		return 1
-	fi
-
 	local tiflash_dir="${1}"
 	local conf_templ_dir="${2}"
 
@@ -53,6 +32,34 @@ function tiflash_run()
 		local listen_host=""
 	else
 		local listen_host="${6}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func tiflash_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tiflash_http_port=`get_value "${default_ports}" 'tiflash_http_port'`
+	if [ -z "${default_tiflash_http_port}" ]; then
+		echo "[func tiflash_run] get default tiflash_http_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tiflash_tcp_port=`get_value "${default_ports}" 'tiflash_tcp_port'`
+	if [ -z "${default_tiflash_tcp_port}" ]; then
+		echo "[func tiflash_run] get default tiflash_tcp_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tiflash_interserver_http_port=`get_value "${default_ports}" 'tiflash_interserver_http_port'`
+	if [ -z "${default_tiflash_interserver_http_port}" ]; then
+		echo "[func tiflash_run] get default tiflash_interserver_http_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tiflash_raft_port=`get_value "${default_ports}" 'tiflash_raft_port'`
+	if [ -z "${default_tiflash_raft_port}" ]; then
+		echo "[func tiflash_run] get default tiflash_raft_port from ${default_ports} failed" >&2
+		return 1
 	fi
 
 	pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
@@ -171,15 +178,6 @@ function pd_run()
 		return 1
 	fi
 
-	if [ -z "${default_pd_port+x}" ]; then
-		echo "[func pd_run] \$default_pd_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_pd_peer_port+x}" ]; then
-		echo "[func pd_run] \$default_pd_peer_port not set" >&2
-		return 1
-	fi
-
 	local pd_dir="${1}"
 	local conf_templ_dir="${2}"
 
@@ -218,6 +216,19 @@ function pd_run()
 
 	if [ -z "${pd_name}" ]; then
 		pd_name="pd${name_ports_delta}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func pd_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_pd_peer_port=`get_value "${default_ports}" 'pd_peer_port'`
+	if [ -z "${default_pd_peer_port}" ]; then
+		echo "[func pd_run] get default pd_peer_port from ${default_ports} failed" >&2
+		return 1
 	fi
 
 	local pd_port=$((${name_ports_delta} + ${default_pd_port}))
@@ -286,15 +297,6 @@ function tikv_run()
 		return 1
 	fi
 
-	if [ -z "${default_pd_port+x}" ]; then
-		echo "[func tikv_run] \$default_pd_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_tikv_port+x}" ]; then
-		echo "[func tikv_run] \$default_tikv_port not set" >&2
-		return 1
-	fi
-
 	local tikv_dir="${1}"
 	local conf_templ_dir="${2}"
 	local pd_addr="${3}"
@@ -309,6 +311,19 @@ function tikv_run()
 		local ports_delta="0"
 	else
 		local ports_delta="${5}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func tikv_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tikv_port=`get_value "${default_ports}" 'tikv_port'`
+	if [ -z "${default_tikv_port}" ]; then
+		echo "[func tikv_run] get default tikv_port from ${default_ports} failed" >&2
+		return 1
 	fi
 
 	pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
@@ -385,19 +400,6 @@ function tidb_run()
 		return 1
 	fi
 
-	if [ -z "${default_pd_port+x}" ]; then
-		echo "[func tidb_run] \$default_pd_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_tidb_port+x}" ]; then
-		echo "[func tidb_run] \$default_tidb_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_tidb_status_port+x}" ]; then
-		echo "[func tidb_run] \$default_tidb_status_port not set" >&2
-		return 1
-	fi
-
 	local tidb_dir="${1}"
 	local conf_templ_dir="${2}"
 	local pd_addr="${3}"
@@ -412,6 +414,24 @@ function tidb_run()
 		local ports_delta="0"
 	else
 		local ports_delta="${5}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func tidb_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tidb_port=`get_value "${default_ports}" 'tidb_port'`
+	if [ -z "${default_tidb_port}" ]; then
+		echo "[func tidb_run] get default tidb_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tidb_status_port=`get_value "${default_ports}" 'tidb_status_port'`
+	if [ -z "${default_tidb_status_port}" ]; then
+		echo "[func tidb_run] get default tidb_status_port from ${default_ports} failed" >&2
+		return 1
 	fi
 
 	pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
@@ -485,19 +505,6 @@ function rngine_run()
 		return 1
 	fi
 
-	if [ -z "${default_pd_port+x}" ]; then
-		echo "[func rngine_run] \$default_pd_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_rngine_port+x}" ]; then
-		echo "[func rngine_run] \$default_rngine_port not set" >&2
-		return 1
-	fi
-	if [ -z "${default_tiflash_raft_port+x}" ]; then
-		echo "[func rngine_run] \$default_tiflash_raft_port not set" >&2
-		return 1
-	fi
-
 	local rngine_dir="${1}"
 	local conf_templ_dir="${2}"
 	local pd_addr="${3}"
@@ -513,6 +520,24 @@ function rngine_run()
 		local ports_delta="0"
 	else
 		local ports_delta="${6}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func rngine_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_rngine_port=`get_value "${default_ports}" 'rngine_port'`
+	if [ -z "${default_rngine_port}" ]; then
+		echo "[func rngine_run] get default rngine_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tiflash_raft_port=`get_value "${default_ports}" 'tiflash_raft_port'`
+	if [ -z "${default_tiflash_raft_port}" ]; then
+		echo "[func rngine_run] get default tiflash_raft_port from ${default_ports} failed" >&2
+		return 1
 	fi
 
 	if [ -z "${tiflash_addr}" ]; then

@@ -159,9 +159,6 @@ def print_sh_header(conf):
     print '# Setup base env (export functions)'
     print 'source "%s/_env.sh"' % conf.integrated_dir
     print 'auto_error_handle'
-    print ''
-    print '# Export default ports (of pd/tikv/tidb/..) into env'
-    print 'source "%s/default_ports.sh"' % conf.conf_templ_dir
 
 def print_sep():
     print ''
