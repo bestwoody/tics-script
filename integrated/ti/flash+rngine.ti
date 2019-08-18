@@ -1,3 +1,5 @@
 dir=nodes
-tiflash: {dir}/0/tiflash
-rngine: {dir}/0/rngine tiflash={dir}0/tiflash
+pd=:
+
+tiflash: {dir}/0/tiflash pd={pd}
+rngine: {dir}/0/rngine tiflash={dir}/0/tiflash pd={pd}

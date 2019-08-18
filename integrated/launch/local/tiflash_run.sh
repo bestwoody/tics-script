@@ -12,8 +12,7 @@ pd_addr="${3}"
 # Run as daemon or not
 daemon_mode="${4}"
 
-here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
-source "${here}/_env.sh"
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
 
 if [ -z "${tiflash_dir}" ]; then
@@ -34,8 +33,9 @@ if [ -z "${daemon_mode}" ]; then
 fi
 
 # Where is tiflash config template files
-conf_templ_dir="${here}/conf_templ"
+conf_templ_dir="${integrated}/conf"
+cache_dir="/tmp/ti/integrated/master/bins"
 
-cp_bin_to_dir "tiflash" "${tiflash_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
+cp_bin_to_dir "tiflash" "${tiflash_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls" "${cache_dir}"
 
 tiflash_run "${tiflash_dir}" "${conf_templ_dir}" "${daemon_mode}" "${pd_addr}" "${ports_delta}"

@@ -24,7 +24,7 @@ if [ "${cmd}" == "down" ]; then
 fi
 
 if [ -z "${conf_templ_dir}" ]; then
-	conf_templ_dir="${integrated}/launch/local/conf_templ"
+	conf_templ_dir="${integrated}/conf"
 fi
 
 ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${args}"

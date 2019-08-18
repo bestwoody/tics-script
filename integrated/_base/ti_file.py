@@ -141,11 +141,14 @@ def parse_file(res, path, kvs):
             matched = False
             for mod, func in mods.items():
                 if line.startswith(mod):
-                    line = line[len(mod):].strip()
-                    if not line.startswith(':'):
+                    props = line[len(mod):].strip()
+                    if props.startswith(':'):
+                        func(res, props[1:].strip(), origin)
+                        matched = True
+                    elif props.startswith('='):
+                        pass
+                    else:
                         error('bad mod header: ' + origin)
-                    func(res, line[1:].strip(), origin)
-                    matched = True
                     break
             if not matched:
                 kv = line.split('=')
@@ -153,8 +156,10 @@ def parse_file(res, path, kvs):
                     error('bad args line: ' + origin)
                 kvs['{' + kv[0].strip() + '}'] = kv[1].strip()
 
-def print_sh_header(conf):
+def print_sh_header(conf, kvs):
     print '#!/bin/bash'
+    print ''
+    print '# .ti rendered args: ' + str(kvs)
     print ''
     print '# Setup base env (export functions)'
     print 'source "%s/_env.sh"' % conf.integrated_dir
@@ -171,7 +176,7 @@ def print_mod_header(mod):
     print ''
 
 def print_cp_bin(mod, conf):
-    line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "/tmp/ti_cache"'
+    line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "/tmp/ti/integrated/master/bins"'
     print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir)
     print ''
 
@@ -262,8 +267,8 @@ def render_rngines(res, conf):
         pd_addr = rngine.pd or ','.join(res.pd_addr)
         print '\t"%s" "${tiflash_addr}" "%s" "%s"' % (pd_addr, rngine.host, rngine.ports)
 
-def render(res, conf):
-    print_sh_header(conf)
+def render(res, conf, kvs):
+    print_sh_header(conf, kvs)
     render_pds(res, conf)
     render_tikvs(res, conf)
     render_tidbs(res, conf)
@@ -308,7 +313,7 @@ if __name__ == '__main__':
     parse_file(res, path, kvs)
 
     if cmd == 'render':
-        render(res, conf)
+        render(res, conf, kvs)
     elif cmd == 'locate':
         locate(res)
     else:

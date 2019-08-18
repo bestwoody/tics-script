@@ -12,8 +12,7 @@ advertise_host="${3}"
 # Cluster pd urls
 initial_cluster="${4}"
 
-here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
-source "${here}/_env.sh"
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
 
 if [ -z "${pd_dir}" ]; then
@@ -34,8 +33,9 @@ if [ -z "${initial_cluster}" ]; then
 fi
 
 # Where is pd config template files
-conf_templ_dir="${here}/conf_templ"
+conf_templ_dir="${integrated}/conf"
+cache_dir="/tmp/ti/integrated/master/bins"
 
-cp_bin_to_dir "pd" "${pd_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
+cp_bin_to_dir "pd" "${pd_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls" "$cache_dir"
 
 pd_run "${pd_dir}" "${conf_templ_dir}" "${name_ports_delta}" "${advertise_host}" "" "${initial_cluster}"

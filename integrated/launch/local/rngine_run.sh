@@ -15,8 +15,7 @@ tiflash_addr="${4}"
 # Tell others where to find me
 advertise_host="${5}"
 
-here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
-source "${here}/_env.sh"
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
 
 if [ -z "${rngine_dir}" ]; then
@@ -37,8 +36,9 @@ if [ -z "${advertise_host}" ]; then
 fi
 
 # Where is rngine config template files
-conf_templ_dir="${here}/conf_templ"
+conf_templ_dir="${integrated}/conf"
+cache_dir="/tmp/ti/integrated/master/bins"
 
-cp_bin_to_dir "rngine" "${rngine_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls"
+cp_bin_to_dir "rngine" "${rngine_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls" "${cache_dir}"
 
 rngine_run "${rngine_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${advertise_host}" "${ports_delta}"

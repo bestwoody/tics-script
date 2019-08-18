@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source "${integrated}/_base/proc.sh"
-
 function ti_file_prop()
 {
 	if [ -z "${1+x}" ]; then
@@ -38,15 +36,15 @@ function ti_file_status()
 
 	local up_status="OK    "
 	if [ ! -d "${dir}" ]; then
-		up_status="MISSED"
+		local up_status="MISSED"
 	else
 		local conf_file=`abs_path "${dir}"`/${conf}
 		local pid_cnt=`print_proc_cnt "${conf_file}"`
 		if [ "${pid_cnt}" == "0" ]; then
-			up_status="DOWN  "
+			local up_status="DOWN  "
 		else
 			if [ "${pid_cnt}" != "1" ]; then
-				up_status="MULTI "
+				local up_status="MULTI "
 			fi
 		fi
 	fi
@@ -91,7 +89,7 @@ function ti_file_stop()
 		rngine_stop "${dir}" "${fast}"
 	fi
 
-	up_status=`ti_file_status "${loc}"`
+	local up_status=`ti_file_status "${loc}"`
 	local down=`echo "${up_status}" | grep ^DOWN`
 	if [ -z "${down}" ]; then
 		echo "${up_status}" | awk '{print "=> failed.. "$2,$3,$4,$1}'
