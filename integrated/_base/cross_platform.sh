@@ -76,7 +76,11 @@ function abs_path()
 
 	local src="${1}"
 	if [ `uname` == "Darwin" ]; then
-		local path=$(cd "$(dirname "${src}")"; pwd)
+		if [[ -d ${src} ]]; then
+		    local path=$(cd "${src}"; pwd)
+		elif [[ -f ${src} ]]; then
+		    local path=$(cd "$(dirname "${src}")"; pwd)
+		fi
 		echo ${path}
 	else
 		readlink -f "${src}"

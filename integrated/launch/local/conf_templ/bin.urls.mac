@@ -1,0 +1,5 @@
+# name \t md5sum \t bin_name \t url
+tidb	ec67531419b9b1e2473312614fd083ff	tidb-server	http://139.219.11.38:8000/wlbuh/tidb-server.tar.gz
+tikv	26b1659b3c332aa5fb565e236d7ee521	tikv-server	http://139.219.11.38:8000/8g3dU/tikv-server.tar.gz
+pd	6b79bd3c126d3eaa26de8da57e122ccb	pd-server	http://139.219.11.38:8000/LmJHu/pd-server.tar.gz
+rngine	989c08973f2f9bd82aa0e28766ab4055	tikv-server-rngine http://139.219.11.38:8000/Rfqfp/tikv-server-rngine.tar.gz

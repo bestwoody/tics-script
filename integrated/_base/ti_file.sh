@@ -154,7 +154,7 @@ function ti_file_exe()
 	fi
 
 	if [ "$cmd" == "stop" ] || [ "$cmd" == "fstop" ]; then
-		echo "${locations}" | while read loc; do
+		echo "${locations}" | tac | while read loc; do
 			if [ "$cmd" == "fstop" ]; then
 				ti_file_stop "${loc}" "true"
 			else
