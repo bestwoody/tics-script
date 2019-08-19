@@ -175,6 +175,31 @@ There are 3 things are involved when we using `ops/ti.sh`:
 * The `my.ti` file and the dirs used by modules in the file, these are the data we care.
     * Once a module is running, it doesn't rely on `conf templates` or `ops/ti.sh` any more.
 
+## `ops/ti.sh` command line help
+```
+ops/ti.sh [-c conf_templ_dir] [-a ti_file_kvs] [-m pd|tikv|...] ti_file_path mod_command(run|stop|...)
+ops/ti.sh [-c conf_templ_dir] [-a ti_file_kvs] -h ti_file_path host_command(uptime|free|...)
+    -c:
+        Specify the config template dir, will be `ops/../conf` if this arg is not provided
+    -a:
+        Specify the key-value(s) string, will be used as vars in the .ti file, format: k=v#k=v#...
+    -m:
+        The module name, could be one of pd|tikv|tidb|tiflash|rngine.
+        And could be multi modules like: `pd,tikv`.
+        If this arg is not provided, it means all modules.
+    -h:'
+        The host names, format: `host,host`
+        If this arg is not provided, it means all specified host names in the .ti file.
+    mod_command:
+        Execute this command on each module.
+        Could be one of run|stop|status|prop|fstop.
+        And could be one of `ops/ti.sh.cmds/mod/<command>.sh`
+        `up` and `down` are aliases of `run` and `stop`
+    host_command:
+        Execute this command on each host.
+        Could be one of `ops/ti.sh.cmds/host/<command>.sh`
+```
+
 ## Why we should use this tool
 * It's the easy to use, powerful, and robust, we need those in coding and testing and POC and any casual-use scenario.
 * Scripts are flexible, especially we are in the rapid-dev phase.

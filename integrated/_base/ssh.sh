@@ -63,7 +63,7 @@ function call_remote_func()
 		args_str="$args_str \"$it\""
 	done
 
-	ssh -o BatchMode=yes "${host}" "source \"${env_dir}/_env.sh\" && \"${func}\" ${args_str}" </dev/null
+	ssh -o BatchMode=yes "${host}" "source \"${env_dir}/_env.sh\" && \"${func}\" ${args_str}" </dev/null 2>&1 | awk '{print "['${host}' func '${func}'] " $0}'
 }
 export -f call_remote_func
 

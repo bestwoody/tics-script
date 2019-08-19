@@ -87,6 +87,11 @@ function cp_bin_to_dir_from_urls()
 	local bin_urls_file="${3}"
 	local cache_dir="${4}"
 
+	# TODO: This is not good
+	if [ `uname` == "Darwin" ]; then
+		local bin_urls_file="${bin_urls_file}.mac"
+	fi
+
 	local entry_str=`grep "^${name}" "${bin_urls_file}"`
 	if [ -z "$entry_str" ]; then
 		echo "[func cp_bin_to_dir] ${name} not found in ${bin_paths_file} or in ${bin_urls_file}" >&2

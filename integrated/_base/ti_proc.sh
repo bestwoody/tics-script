@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # TODO: Check if ip changed when run a module
+# TODO: ADD .file path to proc.info
 
 function tiflash_run()
 {
-	if [ -z "${2+x}" ]; then
+	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
 		echo "[func tiflash_run] usage: <func> tiflash_dir conf_templ_dir [daemon_mode] [pd_addr] [ports_delta] [listen_host]" >&2
 		return 1
 	fi
@@ -176,7 +177,7 @@ export -f tiflash_stop
 
 function pd_run()
 {
-	if [ -z "${2+x}" ]; then
+	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
 		echo "[func pd_run] usage: <func> pd_dir conf_templ_dir [name_ports_delta] [advertise_host] [pd_name] [initial_cluster]" >&2
 		return 1
 	fi
@@ -296,7 +297,7 @@ export -f pd_stop
 
 function tikv_run()
 {
-	if [ -z "${3+x}" ]; then
+	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
 		echo "[func tikv_run] usage: <func> tikv_dir conf_templ_dir pd_addr [advertise_host] [ports_delta]" >&2
 		return 1
 	fi
@@ -400,7 +401,7 @@ export -f tikv_stop
 
 function tidb_run()
 {
-	if [ -z "${3+x}" ]; then
+	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
 		echo "[func tidb_run] usage: <func> tidb_dir conf_templ_dir pd_addr [advertise_host] [ports_delta]" >&2
 		return 1
 	fi
@@ -506,7 +507,7 @@ export -f tidb_stop
 
 function rngine_run()
 {
-	if [ -z "${3+x}" ]; then
+	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
 		echo "[func rngine_run] usage: <func> rngine_dir conf_templ_dir pd_addr tiflash_addr [advertise_host] [ports_delta]" >&2
 		return 1
 	fi

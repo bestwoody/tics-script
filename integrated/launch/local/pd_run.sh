@@ -20,18 +20,6 @@ if [ -z "${pd_dir}" ]; then
 	exit 1
 fi
 
-if [ -z "${name_ports_delta}" ]; then
-	name_ports_delta="0"
-fi
-
-if [ -z "${advertise_host}" ]; then
-	advertise_host=""
-fi
-
-if [ -z "${initial_cluster}" ]; then
-	initial_cluster=""
-fi
-
 # Where is pd config template files
 conf_templ_dir="${integrated}/conf"
 cache_dir="/tmp/ti/integrated/master/bins"

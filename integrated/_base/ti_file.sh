@@ -3,14 +3,14 @@
 function ti_file_prop()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func ti_file_prop] usage <func> ti_module_location_info" >&2
+		echo "[func ti_file_prop] usage <func> ti_module_info" >&2
 		return 1
 	fi
 
-	local loc="${1}"
-	local index=`echo "$loc" | awk '{print $1}'`
-	local name=`echo "$loc" | awk '{print $2}'`
-	local dir=`echo "$loc" | awk '{print $3}'`
+	local info="${1}"
+	local index=`echo "${info}" | awk '{print $1}'`
+	local name=`echo "${info}" | awk '{print $2}'`
+	local dir=`echo "${info}" | awk '{print $3}'`
 
 	echo "${name} #${index} (${dir})"
 	if [ -f "${dir}/proc.info" ]; then
@@ -24,15 +24,15 @@ export -f ti_file_prop
 function ti_file_status()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func ti_file_status] usage <func> ti_module_location_info" >&2
+		echo "[func ti_file_status] usage <func> ti_module_info" >&2
 		return 1
 	fi
 
-	local loc="${1}"
-	local index=`echo "$loc" | awk '{print $1}'`
-	local name=`echo "$loc" | awk '{print $2}'`
-	local dir=`echo "$loc" | awk '{print $3}'`
-	local conf=`echo "$loc" | awk '{print $4}'`
+	local info="${1}"
+	local index=`echo "${info}" | awk '{print $1}'`
+	local name=`echo "${info}" | awk '{print $2}'`
+	local dir=`echo "${info}" | awk '{print $3}'`
+	local conf=`echo "${info}" | awk '{print $4}'`
 
 	local up_status="OK    "
 	if [ ! -d "${dir}" ]; then
@@ -55,14 +55,14 @@ export -f ti_file_status
 function ti_file_stop()
 {
 	if [ -z "${2+x}" ]; then
-		echo "[func ti_file_stop] usage <func> ti_module_location_info fast_mode" >&2
+		echo "[func ti_file_stop] usage <func> ti_module_info fast_mode" >&2
 		return 1
 	fi
 
-	local loc="${1}"
+	local info="${1}"
 	local fast="${2}"
 
-	local up_status=`ti_file_status "${loc}"`
+	local up_status=`ti_file_status "${info}"`
 	local ok=`echo "${up_status}" | grep ^OK`
 	if [ -z "${ok}" ]; then
 		echo "${up_status}" | awk '{print "=> skipped. "$2,$3,$4,$1}'
@@ -71,8 +71,8 @@ function ti_file_stop()
 
 	echo "${up_status}" | awk '{print "=> stopping "$2,$3,$4}'
 
-	local name=`echo "$loc" | awk '{print $2}'`
-	local dir=`echo "$loc" | awk '{print $3}'`
+	local name=`echo "${info}" | awk '{print $2}'`
+	local dir=`echo "${info}" | awk '{print $3}'`
 	if [ "${name}" == "pd" ]; then
 		pd_stop "${dir}" "${fast}"
 	fi
@@ -89,7 +89,7 @@ function ti_file_stop()
 		rngine_stop "${dir}" "${fast}"
 	fi
 
-	local up_status=`ti_file_status "${loc}"`
+	local up_status=`ti_file_status "${info}"`
 	local down=`echo "${up_status}" | grep ^DOWN`
 	if [ -z "${down}" ]; then
 		echo "${up_status}" | awk '{print "=> failed.. "$2,$3,$4,$1}'
@@ -100,7 +100,7 @@ export -f ti_file_stop
 
 function ti_file_exe()
 {
-	local help="[func ti_file_exe] usage: <func> cmd(run|stop|status|prop|fstop|dry) ti_file conf_templ_dir [args(k=v#k=v#..)]"
+	local help="[func ti_file_exe] usage: <func> cmd(run|stop|status|prop|fstop|dry) ti_file conf_templ_dir [ti_file_args(k=v#k=v#..)] [mod_names] [hosts] [cmd_args...]"
 	if [ -z "${3+x}" ]; then
 		echo "${help}" >&2
 		return 1
@@ -111,10 +111,25 @@ function ti_file_exe()
 	local conf_templ_dir="${3}"
 
 	if [ -z "${4+x}" ]; then
-		local args=""
+		local ti_args=""
 	else
-		local args="${4}"
+		local ti_args="${4}"
 	fi
+
+	if [ -z "${5+x}" ]; then
+		local mod_names=""
+	else
+		local mod_names="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local hosts=""
+	else
+		local hosts="${6}"
+	fi
+
+	shift 6
+	local cmd_args=("${@}")
 
 	if [ ! -f "${ti_file}" ]; then
 		if [ -d "${ti_file}" ]; then
@@ -127,7 +142,7 @@ function ti_file_exe()
 
 	if [ "$cmd" == "run" ] || [ "$cmd" == "dry" ]; then
 		python "${integrated}/_base/ti_file.py" 'render' "${ti_file}" \
-			"${integrated}" "${conf_templ_dir}" "${args}" > "${ti_file}.sh"
+			"${integrated}" "${conf_templ_dir}" "${mod_names}" "${hosts}" "${ti_args}" > "${ti_file}.sh"
 		chmod +x "${ti_file}.sh"
 		if [ "$cmd" == "run" ]; then
 			bash "${ti_file}.sh"
@@ -136,35 +151,40 @@ function ti_file_exe()
 		return 0
 	fi
 
-	local locations=`python "${integrated}/_base/ti_file.py" 'locate' \
-		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${args}"`
+	if [ "${mod_names}" == "hosts" ]; then
+		local hosts=`python "${integrated}/_base/ti_file.py" 'hosts' \
+			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${mod_names}" "${hosts}" "${ti_args}"`
+	else
+		local mods=`python "${integrated}/_base/ti_file.py" 'mods' \
+			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${mod_names}" "${hosts}" "${ti_args}"`
+	fi
 
 	if [ "$cmd" == "prop" ]; then
-		echo "${locations}" | while read loc; do
-			ti_file_prop "${loc}"
+		echo "${mods}" | while read mod; do
+			ti_file_prop "${mod}"
 		done
 		return
 	fi
 
 	if [ "$cmd" == "status" ]; then
-		echo "${locations}" | while read loc; do
-			ti_file_status "${loc}"
+		echo "${mods}" | while read mod; do
+			ti_file_status "${mod}"
 		done
 		return
 	fi
 
 	if [ "$cmd" == "stop" ] || [ "$cmd" == "fstop" ]; then
-		echo "${locations}" | tac | while read loc; do
+		echo "${mods}" | tac | while read mod; do
 			if [ "$cmd" == "fstop" ]; then
-				ti_file_stop "${loc}" "true"
+				ti_file_stop "${mod}" "true"
 			else
-				ti_file_stop "${loc}" "false"
+				ti_file_stop "${mod}" "false"
 			fi
 		done
 		return
 	fi
 
-	echo "[script ti.sh] usage: <script> cmd(run|stop|status|prop|fstop|dry) ti_file [conf_templ_dir] [args(k=v#k=v#..)]" >&2
+	echo "${help}" >&2
 	return 1
 }
 export -f ti_file_exe
