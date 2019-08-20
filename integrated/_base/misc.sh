@@ -1,5 +1,16 @@
 #!/bin/bash
 
+function func_exists()
+{
+	local has=`LC_ALL=C type ${1} 2>/dev/null | grep 'is a function'`
+	if [ -z "${has}" ]; then
+		echo 'false'
+	else
+		echo 'true'
+	fi
+}
+export -f func_exists
+
 function get_value()
 {
 	if [ -z "${2+x}" ]; then

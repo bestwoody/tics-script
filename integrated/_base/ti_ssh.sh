@@ -39,6 +39,9 @@ function cp_file_to_host()
 	local parent_dir=`dirname "${src_path}"`
 	local remote_path="${remote_dest_dir}/${file_name}"
 
+	rsync -qa "${src_path}" "${host}:${remote_dest_dir}" >/dev/null
+	return
+
 	if [ -z "${md5}" ]; then
 		local md5=`file_md5 "${src_path}"`
 	fi

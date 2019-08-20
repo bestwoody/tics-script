@@ -41,6 +41,24 @@ function echo_test()
 }
 export -f echo_test
 
+function script_exe()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func script_ext] usage: <func> script_path [args]" >&2
+		return 1
+	fi
+
+	local script="${1}"
+	local error_handle="$-"
+	set +u
+	local args=("${@}")
+	local args=("${args[@]:1}")
+	restore_error_handle_flags "${error_handle}"
+
+	bash "${script}" "${args[@]}"
+}
+export -f script_exe
+
 function call_remote_func()
 {
 	if [ -z "${3+x}" ]; then
@@ -63,7 +81,7 @@ function call_remote_func()
 		args_str="$args_str \"$it\""
 	done
 
-	ssh -o BatchMode=yes "${host}" "source \"${env_dir}/_env.sh\" && \"${func}\" ${args_str}" </dev/null 2>&1 | awk '{print "['${host}' func '${func}'] " $0}'
+	ssh -o BatchMode=yes "${host}" "source \"${env_dir}/_env.sh\" && \"${func}\" ${args_str}" </dev/null 2>&1 | awk '{print "['${host}'] " $0}'
 }
 export -f call_remote_func
 
@@ -83,8 +101,18 @@ function cp_dir_to_host()
 	local tar_file="${dir_name}.tar.gz"
 	local tar_path="${parent_dir}/${tar_file}"
 
+	rsync -qar "${src}" "${host}:${remote_dest_dir}"
+	return
+
 	`cd "${parent_dir}" && tar -czf "${tar_file}" "${dir_name}"`
+	local local_size=`wc -c "${tar_path}" 2>/dev/null | awk '{print $1}'`
+	local remote_size=`ssh_exe "${host}" "wc -c \"${remote_dest_dir}/${tar_file}\"" 2>/dev/null | awk '{print $1}'`
+	if [ ! -z "${remote_size}" ] && [ "${local_size}" == "${remote_size}" ]; then
+		return
+	fi
+
 	ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
+	#rsync -avh "${tar_path}" "${host}:${remote_dest_dir}" >/dev/null
 	scp "${tar_path}" "${host}:${remote_dest_dir}" >/dev/null
 	ssh_exe "${host}" "cd \"${remote_dest_dir}\" && tar --overwrite -xzf \"${tar_file}\""
 }

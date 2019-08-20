@@ -156,6 +156,26 @@ def parse_file(res, path, kvs):
                     error('bad args line: ' + origin)
                 kvs['{' + kv[0].strip() + '}'] = kv[1].strip()
 
+def check_is_valid(res):
+    dirs = set()
+    for mods in [res.pds, res.tikvs, res.tidbs, res.tiflashs, res.rngines]:
+        ports = set()
+        for i in range(0, len(mods)):
+            mod = mods[i]
+            setattr(mod, 'index', i)
+            if len(mod.dir) == 0:
+                error(mod.name + '[' + str(mod.index) + '].dir can\'t be empty')
+            if mod.dir in dirs:
+                error(mod.name + '[' + str(mod.index) + '].dir duplicated')
+            else:
+                dirs.add(mod.dir)
+            if len(mod.host) != 0 and mod.dir[0] != '/':
+                error('relative path can\'t use for remote deployment of ' + mod.name + '[' + str(mod.index) + ']: ' + mod.dir)
+            if mod.ports in ports:
+                error(mod.name + '[' + str(mod.index) + '].ports duplicated')
+            else:
+                ports.add(mod.ports)
+
 def print_sh_header(conf, kvs):
     print '#!/bin/bash'
     print ''
@@ -186,7 +206,6 @@ def render_pds(res, conf, hosts):
         return
     for i in range(0, len(pds)):
         setattr(pds[i], 'pd_name', 'pd' + str(i))
-        setattr(pds[i], 'index', i)
 
     cluster = []
     for i in range(0, len(pds)):
@@ -214,7 +233,6 @@ def render_pds(res, conf, hosts):
 def render_tikvs(res, conf, hosts):
     for i in range(0, len(res.tikvs)):
         tikv = res.tikvs[i]
-        setattr(tikv, 'index', i)
         if len(hosts) != 0 and len(tikv.host) != 0 and tikv.host not in hosts:
             continue
         print_mod_header(tikv)
@@ -228,7 +246,6 @@ def render_tikvs(res, conf, hosts):
 def render_tidbs(res, conf, hosts):
     for i in range(0, len(res.tidbs)):
         tidb = res.tidbs[i]
-        setattr(tidb, 'index', i)
         if len(hosts) != 0 and len(tidb.host) != 0 and tidb.host not in hosts:
             continue
         print_mod_header(tidb)
@@ -251,7 +268,6 @@ def render_tiflashs(res, conf, hosts):
 
     for i in range(0, len(res.tiflashs)):
         tiflash = res.tiflashs[i]
-        setattr(tiflash, 'index', i)
         if len(hosts) != 0 and len(tiflash.host) != 0 and tiflash.host not in hosts:
             continue
         print_mod_header(tiflash)
@@ -265,7 +281,6 @@ def render_tiflashs(res, conf, hosts):
 def render_rngines(res, conf, hosts):
     for i in range(0, len(res.rngines)):
         rngine = res.rngines[i]
-        setattr(rngine, 'index', i)
         if len(hosts) != 0 and len(rngine.host) != 0 and rngine.host not in hosts:
             continue
         print_mod_header(rngine)
@@ -304,7 +319,7 @@ def get_mods(res, mod_names, hosts):
             mod = mod_array[i]
             if len(hosts) == 0 or len(mod.host) == 0 or (mod.host in hosts):
                 if len(mod_names) == 0 or (mod.name in mod_names):
-                    print '\t'.join([str(i), mod.name, mod.dir, confs[mod.name]])
+                    print '\t'.join([str(i), mod.name, mod.dir, confs[mod.name], mod.host])
 
     output(res.pds)
     output(res.tikvs)
@@ -313,14 +328,16 @@ def get_mods(res, mod_names, hosts):
     output(res.rngines)
 
 def get_hosts(res, mod_names, hosts):
-    host_infos = []
+    host_infos = set()
     def output(mod_array):
         for i in range(0, len(mod_array)):
             mod = mod_array[i]
-            if len(hosts) == 0 or len(mod.host) == 0 or (mod.host in hosts):
+            if len(mod.host) == 0:
+                continue
+            if len(hosts) == 0 or (mod.host in hosts):
                 if len(mod_names) == 0 or (mod.name in mod_names):
                     if len(mod.host) != 0 and (mod.host not in host_infos):
-                        host_infos.add([mod.host, mod.dir])
+                        host_infos.add(mod.host)
 
     output(res.pds)
     output(res.tikvs)
@@ -328,8 +345,8 @@ def get_hosts(res, mod_names, hosts):
     output(res.tiflashs)
     output(res.rngines)
 
-    for info in host_infos:
-        print '\t'.join(info)
+    for host in host_infos:
+        print host
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:
@@ -360,6 +377,7 @@ if __name__ == '__main__':
     res = Ti()
     kvs = parse_kvs(kvs_str)
     parse_file(res, path, kvs)
+    check_is_valid(res)
 
     if cmd == 'render':
         render(res, conf, kvs, mod_names, hosts)
@@ -369,3 +387,5 @@ if __name__ == '__main__':
         get_hosts(res, mod_names, hosts)
     else:
         error('unknow cmd: ' + cmd)
+
+# TODO: Check duplicated mods

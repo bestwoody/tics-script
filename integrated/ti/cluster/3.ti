@@ -1,4 +1,4 @@
-import {hosts}
+import hosts.ti
 
 dir=/data
 
