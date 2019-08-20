@@ -7,7 +7,7 @@ function cmd_ti_burn()
 	local dir="${3}"
 	local conf_rel_path="${4}"
 
-	local doit="${6}"
+	local doit="${5}"
 
 	if [ "${dir}" == "/" ]; then
 		echo "=> DENIED: rm -f /" >&2
@@ -26,7 +26,7 @@ function cmd_ti_burn()
 		echo "=> Burning: ${dir}"
 		rm -rf "${dir}"
 	else
-		echo "=> Burning(dry run, append ' doit' to cmd to execute): ${dir}"
+		echo "=> Burning(dry run, append 'doit' to execute): ${dir}"
 	fi
 }
 

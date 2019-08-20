@@ -165,16 +165,18 @@ def check_is_valid(res):
             setattr(mod, 'index', i)
             if len(mod.dir) == 0:
                 error(mod.name + '[' + str(mod.index) + '].dir can\'t be empty')
-            if mod.dir in dirs:
+            path = mod.host + ':' + mod.dir
+            if path in dirs:
                 error(mod.name + '[' + str(mod.index) + '].dir duplicated')
             else:
-                dirs.add(mod.dir)
+                dirs.add(path)
             if len(mod.host) != 0 and mod.dir[0] != '/':
                 error('relative path can\'t use for remote deployment of ' + mod.name + '[' + str(mod.index) + ']: ' + mod.dir)
-            if mod.ports in ports:
+            addr = mod.host + ':' + mod.ports
+            if addr in ports:
                 error(mod.name + '[' + str(mod.index) + '].ports duplicated')
             else:
-                ports.add(mod.ports)
+                ports.add(addr)
 
 def print_sh_header(conf, kvs):
     print '#!/bin/bash'

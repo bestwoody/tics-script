@@ -81,6 +81,10 @@ function cmd_ti()
 	fi
 
 	auto_error_handle
-	ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${byhost}" "${cmd_args[@]}"
+	if [ -z "${cmd_args+x}" ]; then
+		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${byhost}"
+	else
+		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${byhost}" "${cmd_args[@]}"
+	fi
 }
 export -f cmd_ti
