@@ -229,9 +229,9 @@ function ti_file_exe()
 			if [ "${has_script}" == 'true' ]; then
 				if [ -z "${host}" ]; then
 					if [ -z "${cmd_args+x}" ]; then
-						bash "${cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}"
+						bash "${remote_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}"
 					else
-						bash "${cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${cmd_args[@]}"
+						bash "${remote_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${cmd_args[@]}"
 					fi
 				else
 					if [ -z "${cmd_args+x}" ]; then
@@ -278,9 +278,9 @@ function ti_file_exe()
 			local has_script=`ssh_exe "${host}" "test -f \"${remote_cmd_dir}/bynode/${cmd}.sh\" && echo true"`
 			if [ "${has_script}" == 'true' ]; then
 				if [ -z "${cmd_args+x}" ]; then
-					call_remote_func "${host}" "${remote_env}" script_exe "${cmd_dir}/bynode/${cmd}.sh" "${host}"
+					call_remote_func "${host}" "${remote_env}" script_exe "${remote_cmd_dir}/bynode/${cmd}.sh" "${host}"
 				else
-					call_remote_func "${host}" "${remote_env}" script_exe "${cmd_dir}/bynode/${cmd}.sh" \
+					call_remote_func "${host}" "${remote_env}" script_exe "${remote_cmd_dir}/bynode/${cmd}.sh" \
 						"${host}" "${cmd_args[@]}"
 				fi
 			else
