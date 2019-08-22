@@ -307,8 +307,7 @@ def render_tiflashs(res, conf, hosts):
             if len(tidb.host) == 0:
                 print 'wait_for_tidb "%s"' % tidb.dir
             else:
-                env_dir = conf.cache_dir + '/worker/integrated'
-                print 'wait_for_tidb_by_host "%s" "%s" 180 %s' % (tidb.host, tidb.ports, env_dir + '/conf/default.ports')
+                print 'wait_for_tidb_by_host "%s" "%s" 180 %s' % (tidb.host, tidb.ports, conf.integrated_dir + '/conf/default.ports')
 
     for i in range(0, len(res.tiflashs)):
         tiflash = res.tiflashs[i]

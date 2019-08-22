@@ -21,6 +21,11 @@ function get_value()
 	local file="${1}"
 	local key="${2}"
 
+	if [ ! -f "${file}" ]; then
+		echo "[func get_value] '${file}' not exists" >&2
+		return 1
+	fi
+
 	local value=`grep "${key}" "${file}" | awk '{print $2}'`
 	if [ -z "${value}" ]; then
 		return 1
