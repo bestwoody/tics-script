@@ -623,7 +623,6 @@ function wait_for_mysql()
 	fi
 
 	local host="${1}"
-	# TODO: Support '+n'
 	local port="${2}"
 	local timeout="${3}"
 	if [ -z "${4+x}" ]; then
@@ -678,6 +677,26 @@ function wait_for_tidb()
 	wait_for_mysql "${host}" "${port}" "${timeout}" "${tidb_dir}"
 }
 export -f wait_for_tidb
+
+function wait_for_tidb_by_host()
+{
+	if [ -z "${4+x}" ]; then
+		echo "[func wait_for_tidb_by_host] usage: <func> host port timeout default_ports_file" >&2
+		return 1
+	fi
+
+	local host="${1}"
+	local port="${2}"
+	local timeout="${3}"
+	local default_ports="${4}"
+
+	local default_tidb_port=`get_value "${default_ports}" 'tidb_port'`
+	local addr=`cal_addr ":${port}" '' "${default_tidb_port}"`
+	local port="${addr:1}"
+
+	wait_for_mysql "${host}" "${port}" "${timeout}"
+}
+export -f wait_for_tidb_by_host
 
 function get_tiflash_addr_from_dir()
 {

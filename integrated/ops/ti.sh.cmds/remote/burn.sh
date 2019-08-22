@@ -6,8 +6,8 @@ function cmd_ti_burn()
 	local mod_name="${2}"
 	local dir="${3}"
 	local conf_rel_path="${4}"
-
-	local doit="${5}"
+	local host="${5}"
+	local doit="${6}"
 
 	if [ "${dir}" == "/" ]; then
 		echo "=> DENIED: rm -f /" >&2

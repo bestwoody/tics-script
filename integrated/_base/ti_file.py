@@ -197,14 +197,18 @@ def print_mod_header(mod):
     print_sep()
     host = mod.host
     if len(mod.host) != 0:
-        host = mod.host + ':'
-    print 'echo "=> %s #%d (%s%s)"' % (mod.name, mod.index, host, mod.dir)
+        host = '[' + mod.host + '] '
+    print 'echo "%s=> %s #%d (%s)"' % (host, mod.name, mod.index, mod.dir)
     print ''
 
 def print_cp_bin(mod, conf):
     line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "%s/master/bins"'
     print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
     print ''
+
+def print_ssh_prepare(mod, conf, env_dir):
+    prepare = 'ssh_prepare_run "%s" ' + mod.name + ' "%s" "%s" "%s" "%s"'
+    print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir)
 
 def render_pds(res, conf, hosts):
     pds = res.pds
@@ -230,14 +234,21 @@ def render_pds(res, conf, hosts):
         if len(hosts) != 0 and (pd.host not in hosts):
             continue
         print_mod_header(pd)
+
         if len(pd.host) == 0:
+            ssh = ''
+            conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(pd, conf)
-            print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster'
-            print 'pd_run "%s" \\' % pd.dir
-            print '\t"%s" \\' % conf.conf_templ_dir
-            print '\t"%s" "%s" "%s" "%s"' % (pd.ports, pd.host, pd.pd_name, cluster)
         else:
-            print '# TODO: ssh pd'
+            env_dir = conf.cache_dir + '/worker/integrated'
+            ssh = 'call_remote_func "%s" "%s" ' % (pd.host, env_dir)
+            conf_templ_dir = env_dir + '/conf'
+            print_ssh_prepare(pd, conf, env_dir)
+
+        print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster'
+        print ssh + 'pd_run "%s" \\' % pd.dir
+        print '\t"%s" \\' % conf_templ_dir
+        print '\t"%s" "%s" "%s" "%s"' % (pd.ports, pd.host, pd.pd_name, cluster)
 
 def render_tikvs(res, conf, hosts):
     for i in range(0, len(res.tikvs)):
@@ -245,15 +256,22 @@ def render_tikvs(res, conf, hosts):
         if len(hosts) != 0 and tikv.host not in hosts:
             continue
         print_mod_header(tikv)
+
         if len(tikv.host) == 0:
+            ssh = ''
+            conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(tikv, conf)
-            print '# tikv_run dir conf_templ_dir pd_addr advertise_host ports_delta'
-            print 'tikv_run "%s" \\' % tikv.dir
-            print '\t"%s" \\' % conf.conf_templ_dir
-            pd_addr = tikv.pd or ','.join(res.pd_addr)
-            print '\t"%s" "%s" "%s"' % (pd_addr, tikv.host, tikv.ports)
         else:
-            print '# TODO: ssh tikv'
+            env_dir = conf.cache_dir + '/worker/integrated'
+            ssh = 'call_remote_func "%s" "%s" ' % (tikv.host, env_dir)
+            conf_templ_dir = env_dir + '/conf'
+            print_ssh_prepare(tikv, conf, env_dir)
+
+        print '# tikv_run dir conf_templ_dir pd_addr advertise_host ports_delta'
+        print ssh + 'tikv_run "%s" \\' % tikv.dir
+        print '\t"%s" \\' % conf_templ_dir
+        pd_addr = tikv.pd or ','.join(res.pd_addr)
+        print '\t"%s" "%s" "%s"' % (pd_addr, tikv.host, tikv.ports)
 
 def render_tidbs(res, conf, hosts):
     for i in range(0, len(res.tidbs)):
@@ -261,15 +279,22 @@ def render_tidbs(res, conf, hosts):
         if len(hosts) != 0 and tidb.host not in hosts:
             continue
         print_mod_header(tidb)
+
         if len(tidb.host) == 0:
+            ssh = ''
+            conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(tidb, conf)
-            print '# tidb_run dir conf_templ_dir pd_addr advertise_host ports_delta'
-            print 'tidb_run "%s" \\' % tidb.dir
-            print '\t"%s" \\' % conf.conf_templ_dir
-            pd_addr = tidb.pd or ','.join(res.pd_addr)
-            print '\t"%s" "%s" "%s"' % (pd_addr, tidb.host, tidb.ports)
         else:
-            print '# TODO: ssh tidb'
+            env_dir = conf.cache_dir + '/worker/integrated'
+            ssh = 'call_remote_func "%s" "%s" ' % (tidb.host, env_dir)
+            conf_templ_dir = env_dir + '/conf'
+            print_ssh_prepare(tidb, conf, env_dir)
+
+        print '# tidb_run dir conf_templ_dir pd_addr advertise_host ports_delta'
+        print ssh + 'tidb_run "%s" \\' % tidb.dir
+        print '\t"%s" \\' % conf_templ_dir
+        pd_addr = tidb.pd or ','.join(res.pd_addr)
+        print '\t"%s" "%s" "%s"' % (pd_addr, tidb.host, tidb.ports)
 
 def render_tiflashs(res, conf, hosts):
     if len(res.tiflashs) == 0:
@@ -282,7 +307,8 @@ def render_tiflashs(res, conf, hosts):
             if len(tidb.host) == 0:
                 print 'wait_for_tidb "%s"' % tidb.dir
             else:
-                print '# wait_for_mysql "%s" "%s" 180' % (tidb.host, tidb.ports)
+                env_dir = conf.cache_dir + '/worker/integrated'
+                print 'wait_for_tidb_by_host "%s" "%s" 180 %s' % (tidb.host, tidb.ports, env_dir + '/conf/default.ports')
 
     for i in range(0, len(res.tiflashs)):
         tiflash = res.tiflashs[i]
@@ -302,8 +328,7 @@ def render_tiflashs(res, conf, hosts):
             print_run_cmd('', conf.conf_templ_dir)
         else:
             env_dir = conf.cache_dir + '/worker/integrated'
-            prepare = 'bin_name=`ssh_prepare_run "%s" tiflash "%s" "%s" "%s" "%s"`'
-            print prepare % (tiflash.host, tiflash.dir, conf.conf_templ_dir, conf.cache_dir, env_dir)
+            print_ssh_prepare(tiflash, conf, env_dir)
             print_run_cmd('call_remote_func "%s" "%s" ' % (tiflash.host, env_dir), env_dir + '/conf')
 
 def render_rngines(res, conf, hosts):
@@ -312,16 +337,23 @@ def render_rngines(res, conf, hosts):
         if len(hosts) != 0 and rngine.host not in hosts:
             continue
         print_mod_header(rngine)
+
         if len(rngine.host) == 0:
+            ssh = ''
+            conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(rngine, conf)
-            print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta'
-            print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % rngine.tiflash
-            print 'rngine_run "%s" \\' % rngine.dir
-            print '\t"%s" \\' % conf.conf_templ_dir
-            pd_addr = rngine.pd or ','.join(res.pd_addr)
-            print '\t"%s" "${tiflash_addr}" "%s" "%s"' % (pd_addr, rngine.host, rngine.ports)
         else:
-            print '# TODO: ssh rngine'
+            env_dir = conf.cache_dir + '/worker/integrated'
+            ssh = 'call_remote_func "%s" "%s" ' % (rngine.host, env_dir)
+            conf_templ_dir = env_dir + '/conf'
+            print_ssh_prepare(rngine, conf, env_dir)
+
+        print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta'
+        print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % rngine.tiflash
+        print ssh + 'rngine_run "%s" \\' % rngine.dir
+        print '\t"%s" \\' % conf_templ_dir
+        pd_addr = rngine.pd or ','.join(res.pd_addr)
+        print '\t"%s" "${tiflash_addr}" "%s" "%s"' % (pd_addr, rngine.host, rngine.ports)
 
 def render(res, conf, kvs, mod_names, hosts):
     print_sh_header(conf, kvs)

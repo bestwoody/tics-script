@@ -2,11 +2,11 @@
 
 function help_cmd_ti()
 {
-	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] ti_file_path cmd(run|stop|fstop|status|..) [args]'
+	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|..) [args]'
 	echo '    -c:'
 	echo '        specify the config template dir, will be `ops/../conf` if this arg is not provided.'
 	echo '    -s:'
-	echo '        specify the sub-comand dir, will be `ops/ti.sh.cmds` if this arg is not provided.'
+	echo '        specify the sub-comand dir, will be `ops/local|remote/ti.sh.cmds` if this arg is not provided.'
 	echo '    -t:'
 	echo '        specify the cache dir for download bins and other things in all hosts.'
 	echo '        will be `/tmp/ti` if this arg is not provided.'
@@ -22,11 +22,13 @@ function help_cmd_ti()
 	echo '    -b:'
 	echo '        execute command on each host(node).'
 	echo '        if this arg is not provided, execute command on each module.'
+	echo '    -l:'
+	echo '        execute command on local mode instead of ssh executing.'
 	echo '    cmd:'
 	echo '        could be one of run|stop|fstop|status.'
 	echo '        (`up` and `down` are aliases of `run` and `stop`)'
-	echo '        and could be one of `ops/ti.sh.cmds/<command>.sh`'
-	echo '        (Could be one of `ops/ti.sh.cmds/byhost/<command>.sh` if `-b`)'
+	echo '        and could be one of `ops/local|remote/ti.sh.cmds/<command>.sh`'
+	echo '        (Could be one of `ops/local|remote/ti.sh.cmds/byhost/<command>.sh` if `-b`)'
 }
 export -f help_cmd_ti
 
@@ -39,8 +41,9 @@ function cmd_ti()
 	local hosts=""
 	local ti_args=""
 	local byhost="false"
+	local local="false"
 
-	while getopts ':k:c:m:s:h:t:b' OPT; do
+	while getopts ':k:c:m:s:h:t:bl' OPT; do
 		case ${OPT} in
 			c)
 				local conf_templ_dir="${OPTARG}";;
@@ -56,6 +59,8 @@ function cmd_ti()
 				local ti_args="${OPTARG}";;
 			b)
 				local byhost="true";;
+			l)
+				local local="true";;
 			?)
 				echo '[func cmd_ti] illegal option(s)' >&2
 				echo '' >&2
@@ -88,9 +93,9 @@ function cmd_ti()
 
 	auto_error_handle
 	if [ -z "${cmd_args+x}" ]; then
-		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${byhost}" "${cache_dir}"
+		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${byhost}" "${local}" "${cache_dir}"
 	else
-		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${byhost}" "${cache_dir}" "${cmd_args[@]}"
+		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${byhost}" ${local} "${cache_dir}" "${cmd_args[@]}"
 	fi
 }
 export -f cmd_ti

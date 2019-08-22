@@ -106,7 +106,7 @@ export -f ti_file_cmd_fstop
 
 function ti_file_exe()
 {
-	local help="[func ti_file_exe] usage: <func> cmd ti_file conf_templ_dir cmd_dir [ti_file_args(k=v#k=v#..)] [mod_names] [hosts] [byhost] [cache_dir] [cmd_args...]"
+	local help="[func ti_file_exe] usage: <func> cmd ti_file conf_templ_dir cmd_dir [ti_file_args(k=v#k=v#..)] [mod_names] [hosts] [byhost] [local] [cache_dir] [cmd_args...]"
 	if [ -z "${3+x}" ]; then
 		echo "${help}" >&2
 		return 1
@@ -142,12 +142,18 @@ function ti_file_exe()
 	fi
 
 	if [ -z "${9+x}" ]; then
-		local cache_dir="/tmp/ti"
+		local local=""
 	else
-		local cache_dir="${9}"
+		local local="${9}"
 	fi
 
-	shift 9
+	if [ -z "${10+x}" ]; then
+		local cache_dir="/tmp/ti"
+	else
+		local cache_dir="${10}"
+	fi
+
+	shift 10
 	local cmd_args=("${@}")
 
 	if [ ! -f "${ti_file}" ]; then
@@ -174,9 +180,15 @@ function ti_file_exe()
 	local remote_env="${remote_env_parent}/`basename ${local_cache_env}`"
 
 	# TODO: Pass paths from args
-	local remote_cmd_dir="${remote_env}/ops/ti.sh.cmds"
+	local real_cmd_dir="${cmd_dir}/local"
+	if [ "${local}" != 'true' ]; then
+		local real_cmd_dir="${remote_env}/ops/ti.sh.cmds/remote"
+	fi
+	if [ "${byhost}" == 'true' ]; then
+		local real_cmd_dir="${real_cmd_dir}/byhost"
+	fi
 
-	if [ "${cmd}" != "dry" ]; then
+	if [ "${local}" != 'true' ] && [ "${cmd}" != 'dry' ]; then
 		# TODO: Parallel ping and copy
 		echo "${hosts}" | while read host; do
 			if [ ! -z "${host}" ]; then
@@ -190,8 +202,8 @@ function ti_file_exe()
 		done
 	fi
 
-	if [ "${byhost}" != "true" ]; then
-		if [ "${cmd}" == "run" ] || [ "${cmd}" == "dry" ]; then
+	if [ "${byhost}" != 'true' ]; then
+		if [ "${cmd}" == 'run' ] || [ "${cmd}" == 'dry' ]; then
 			python "${integrated}/_base/ti_file.py" 'render' "${ti_file}" \
 				"${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}" > "${ti_file}.sh"
 			chmod +x "${ti_file}.sh"
@@ -217,29 +229,26 @@ function ti_file_exe()
 			local conf=`echo "${mod}" | awk -F '\t' '{print $4}'`
 			local host=`echo "${mod}" | awk -F '\t' '{print $5}'`
 
-			local has_script='false'
 			if [ -z "${host}" ]; then
-				if [ -f "${cmd_dir}/${cmd}.sh" ]; then
-					local has_script='true'
-				fi
+				local has_script=`test -f "${real_cmd_dir}/${cmd}.sh" && echo true`
 			else
-				local has_script=`ssh_exe "${host}" "test -f \"${remote_cmd_dir}/${cmd}.sh\" && echo true"`
+				local has_script=`ssh_exe "${host}" "test -f \"${real_cmd_dir}/${cmd}.sh\" && echo true"`
 			fi
 
 			if [ "${has_script}" == 'true' ]; then
-				if [ -z "${host}" ]; then
+				if [ -z "${host}" ] || [ "${local}" == 'true' ]; then
 					if [ -z "${cmd_args+x}" ]; then
-						bash "${cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}"
+						bash "${real_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else
-						bash "${cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${cmd_args[@]}"
+						bash "${real_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${host}" "${cmd_args[@]}"
 					fi
 				else
 					if [ -z "${cmd_args+x}" ]; then
-						call_remote_func "${host}" "${remote_env}" script_exe "${remote_cmd_dir}/${cmd}.sh" \
-							"${index}" "${name}" "${dir}" "${conf}"
+						call_remote_func "${host}" "${remote_env}" script_exe "${real_cmd_dir}/${cmd}.sh" \
+							"${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else
-						call_remote_func "${host}" "${remote_env}" script_exe "${remote_cmd_dir}/${cmd}.sh" \
-							"${index}" "${name}" "${dir}" "${conf}" "${cmd_args[@]}"
+						call_remote_func "${host}" "${remote_env}" script_exe "${real_cmd_dir}/${cmd}.sh" \
+							"${index}" "${name}" "${dir}" "${conf}" "${host}" "${cmd_args[@]}"
 					fi
 				fi
 				continue
@@ -247,25 +256,25 @@ function ti_file_exe()
 			if [ "${has_func}" == 'true' ]; then
 				if [ -z "${host}" ]; then
 					if [ -z "${cmd_args+x}" ]; then
-						"ti_file_cmd_${cmd}" "${index}" "${name}" "${dir}" "${conf}"
+						"ti_file_cmd_${cmd}" "${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else
-						"ti_file_cmd_${cmd}" "${index}" "${name}" "${dir}" "${conf}" "${cmd_args[@]}"
+						"ti_file_cmd_${cmd}" "${index}" "${name}" "${dir}" "${conf}" "${host}" "${cmd_args[@]}"
 					fi
 				else
 					if [ -z "${cmd_args+x}" ]; then
 						call_remote_func "${host}" "${remote_env}" "ti_file_cmd_${cmd}" "${index}" "${name}" \
-							"${dir}" "${conf}"
+							"${dir}" "${conf}" "${host}"
 					else
 						call_remote_func "${host}" "${remote_env}" "ti_file_cmd_${cmd}" "${index}" "${name}" \
-							"${dir}" "${conf}" "${cmd_args[@]}"
+							"${dir}" "${conf}" "${host}" "${cmd_args[@]}"
 					fi
 				fi
 				continue
 			else
 				if [ -z "${host}" ]; then
-					echo "script not found: ${cmd_dir}/${cmd}.sh" >&2
+					echo "script not found: ${real_cmd_dir}/${cmd}.sh" >&2
 				else
-					echo "script not found: ${host}:${remote_cmd_dir}/${cmd}.sh" >&2
+					echo "script not found: ${host}:${real_cmd_dir}/${cmd}.sh" >&2
 				fi
 				return 1
 			fi
@@ -275,17 +284,31 @@ function ti_file_exe()
 			if [ -z "${host}" ]; then
 				continue
 			fi
-			local has_script=`ssh_exe "${host}" "test -f \"${remote_cmd_dir}/bynode/${cmd}.sh\" && echo true"`
-			if [ "${has_script}" == 'true' ]; then
-				if [ -z "${cmd_args+x}" ]; then
-					call_remote_func "${host}" "${remote_env}" script_exe "${remote_cmd_dir}/bynode/${cmd}.sh" "${host}"
+			if [ "${local}" == 'true' ]; then
+				local has_script=`test -f "${real_cmd_dir}/${cmd}.sh" && echo true`
+				if [ "${has_script}" == 'true' ]; then
+					if [ -z "${cmd_args+x}" ]; then
+						bash "${real_cmd_dir}/${cmd}.sh" "${host}"
+					else
+						bash "${real_cmd_dir}/${cmd}.sh" "${host}" "${cmd_args[@]}"
+					fi
 				else
-					call_remote_func "${host}" "${remote_env}" script_exe "${remote_cmd_dir}/bynode/${cmd}.sh" \
-						"${host}" "${cmd_args[@]}"
+					echo "script not found: ${real_cmd_dir}/${cmd}.sh" >&2
+					return 1
 				fi
 			else
-				echo "script not found: ${host}:${remote_cmd_dir}/bynode/${cmd}.sh" >&2
-				return 1
+				local has_script=`ssh_exe "${host}" "test -f \"${real_cmd_dir}/${cmd}.sh\" && echo true"`
+				if [ "${has_script}" == 'true' ]; then
+					if [ -z "${cmd_args+x}" ]; then
+						call_remote_func "${host}" "${remote_env}" script_exe "${real_cmd_dir}/${cmd}.sh" "${host}"
+					else
+						call_remote_func "${host}" "${remote_env}" script_exe "${real_cmd_dir}/${cmd}.sh" \
+							"${host}" "${cmd_args[@]}"
+					fi
+				else
+					echo "script not found: ${host}:${real_cmd_dir}/${cmd}.sh" >&2
+					return 1
+				fi
 			fi
 		done
 	fi
