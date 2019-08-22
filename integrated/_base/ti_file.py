@@ -363,9 +363,12 @@ def render_rngines(res, conf, hosts):
         if len(tiflash_host) == 0:
             print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % tiflash_dir
         else:
-            get_addr_cmd = 'tiflash_addr="`call_remote_func "%s" "%s" get_tiflash_addr_from_dir %s`"'
+            print '# ' + str(tiflash_addr)
+            print '# ' + tiflash_host
+            print '# ' + tiflash_dir
+            get_addr_cmd = 'tiflash_addr="`call_remote_func_raw "%s" "%s" get_tiflash_addr_from_dir %s`"'
             env_dir = conf.cache_dir + '/worker/integrated'
-            print get_addr_cmd % (tiflash_host, env_dir, rngine.tiflash)
+            print get_addr_cmd % (tiflash_host, env_dir, tiflash_dir)
         print ssh + 'rngine_run "%s" \\' % rngine.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = rngine.pd or ','.join(res.pd_addr)

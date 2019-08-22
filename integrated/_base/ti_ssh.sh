@@ -43,7 +43,7 @@ function cp_file_to_host()
 		local md5=`file_md5 "${src_path}"`
 	fi
 
-	local old_md5=`call_remote_func "${host}" "${remote_env_dir}" file_md5 "${remote_path}"`
+	local old_md5=`call_remote_func_raw "${host}" "${remote_env_dir}" file_md5 "${remote_path}"`
 	if [ "$old_md5" == "${md5}" ]; then
 		return 0
 	fi

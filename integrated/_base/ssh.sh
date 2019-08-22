@@ -59,7 +59,7 @@ function script_exe()
 }
 export -f script_exe
 
-function call_remote_func()
+function call_remote_func_raw()
 {
 	if [ -z "${3+x}" ]; then
 		echo "[func call_remote_func] usage: <func> host remote_env_dir func [args]" >&2
@@ -81,7 +81,19 @@ function call_remote_func()
 		args_str="$args_str \"$it\""
 	done
 
-	ssh -o BatchMode=yes "${host}" "source \"${env_dir}/_env.sh\" && \"${func}\" ${args_str}" </dev/null 2>&1 | awk '{print "['${host}'] " $0}'
+	ssh -o BatchMode=yes "${host}" "source \"${env_dir}/_env.sh\" && \"${func}\" ${args_str}" </dev/null 2>&1
+}
+export -f call_remote_func_raw
+
+function call_remote_func()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func call_remote_func] usage: <func> host remote_env_dir func [args]" >&2
+		return 1
+	fi
+
+	local host="${1}"
+	call_remote_func_raw "${@}" | awk '{print "['${host}'] " $0}'
 }
 export -f call_remote_func
 
