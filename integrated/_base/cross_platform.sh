@@ -66,7 +66,6 @@ function replace_substr()
 }
 export -f replace_substr
 
-# TODO: Fix me in Mac OS
 function abs_path()
 {
 	if [ -z ${1+x} ]; then
@@ -76,12 +75,15 @@ function abs_path()
 
 	local src="${1}"
 	if [ `uname` == "Darwin" ]; then
-		if [[ -d ${src} ]]; then
+		if [ -d "${src}" ]; then
 		    local path=$(cd "${src}"; pwd)
-		elif [[ -f ${src} ]]; then
+		elif [ -f "${src}" ]; then
 		    local path=$(cd "$(dirname "${src}")"; pwd)
+		else
+			echo "${src}"
+			return 1
 		fi
-		echo ${path}
+		echo "${path}"
 	else
 		readlink -f "${src}"
 	fi

@@ -7,6 +7,7 @@ class Conf:
     def __init__(self):
         self.integrated_dir = "-"
         self.conf_templ_dir = "-"
+        self.cache_dir = "/tmp/ti"
 
 class Ti:
     def __init__(self):
@@ -194,12 +195,15 @@ def print_sep():
 
 def print_mod_header(mod):
     print_sep()
-    print 'echo "=> %s #%d (%s)"' % (mod.name, mod.index, mod.dir)
+    host = mod.host
+    if len(mod.host) != 0:
+        host = mod.host + ':'
+    print 'echo "=> %s #%d (%s%s)"' % (mod.name, mod.index, host, mod.dir)
     print ''
 
 def print_cp_bin(mod, conf):
-    line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "/tmp/ti/integrated/master/bins"'
-    print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir)
+    line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "%s/master/bins"'
+    print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
     print ''
 
 def render_pds(res, conf, hosts):
@@ -223,40 +227,49 @@ def render_pds(res, conf, hosts):
         cluster = ','.join(cluster)
 
     for pd in pds:
-        if len(hosts) != 0 and len(pd.host) != 0 and pd.host not in hosts:
+        if len(hosts) != 0 and (pd.host not in hosts):
             continue
         print_mod_header(pd)
-        print_cp_bin(pd, conf)
-        print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster'
-        print 'pd_run "%s" \\' % pd.dir
-        print '\t"%s" \\' % conf.conf_templ_dir
-        print '\t"%s" "%s" "%s" "%s"' % (pd.ports, pd.host, pd.pd_name, cluster)
+        if len(pd.host) == 0:
+            print_cp_bin(pd, conf)
+            print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster'
+            print 'pd_run "%s" \\' % pd.dir
+            print '\t"%s" \\' % conf.conf_templ_dir
+            print '\t"%s" "%s" "%s" "%s"' % (pd.ports, pd.host, pd.pd_name, cluster)
+        else:
+            print '# TODO: ssh pd'
 
 def render_tikvs(res, conf, hosts):
     for i in range(0, len(res.tikvs)):
         tikv = res.tikvs[i]
-        if len(hosts) != 0 and len(tikv.host) != 0 and tikv.host not in hosts:
+        if len(hosts) != 0 and tikv.host not in hosts:
             continue
         print_mod_header(tikv)
-        print_cp_bin(tikv, conf)
-        print '# tikv_run dir conf_templ_dir pd_addr advertise_host ports_delta'
-        print 'tikv_run "%s" \\' % tikv.dir
-        print '\t"%s" \\' % conf.conf_templ_dir
-        pd_addr = tikv.pd or ','.join(res.pd_addr)
-        print '\t"%s" "%s" "%s"' % (pd_addr, tikv.host, tikv.ports)
+        if len(tikv.host) == 0:
+            print_cp_bin(tikv, conf)
+            print '# tikv_run dir conf_templ_dir pd_addr advertise_host ports_delta'
+            print 'tikv_run "%s" \\' % tikv.dir
+            print '\t"%s" \\' % conf.conf_templ_dir
+            pd_addr = tikv.pd or ','.join(res.pd_addr)
+            print '\t"%s" "%s" "%s"' % (pd_addr, tikv.host, tikv.ports)
+        else:
+            print '# TODO: ssh tikv'
 
 def render_tidbs(res, conf, hosts):
     for i in range(0, len(res.tidbs)):
         tidb = res.tidbs[i]
-        if len(hosts) != 0 and len(tidb.host) != 0 and tidb.host not in hosts:
+        if len(hosts) != 0 and tidb.host not in hosts:
             continue
         print_mod_header(tidb)
-        print_cp_bin(tidb, conf)
-        print '# tidb_run dir conf_templ_dir pd_addr advertise_host ports_delta'
-        print 'tidb_run "%s" \\' % tidb.dir
-        print '\t"%s" \\' % conf.conf_templ_dir
-        pd_addr = tidb.pd or ','.join(res.pd_addr)
-        print '\t"%s" "%s" "%s"' % (pd_addr, tidb.host, tidb.ports)
+        if len(tidb.host) == 0:
+            print_cp_bin(tidb, conf)
+            print '# tidb_run dir conf_templ_dir pd_addr advertise_host ports_delta'
+            print 'tidb_run "%s" \\' % tidb.dir
+            print '\t"%s" \\' % conf.conf_templ_dir
+            pd_addr = tidb.pd or ','.join(res.pd_addr)
+            print '\t"%s" "%s" "%s"' % (pd_addr, tidb.host, tidb.ports)
+        else:
+            print '# TODO: ssh tidb'
 
 def render_tiflashs(res, conf, hosts):
     if len(res.tiflashs) == 0:
@@ -266,33 +279,48 @@ def render_tiflashs(res, conf, hosts):
         print_sep()
         print '# Wait for tidb to ready'
         for tidb in res.tidbs:
-            print 'wait_for_tidb "%s"' % tidb.dir
+            if len(tidb.host) == 0:
+                print 'wait_for_tidb "%s"' % tidb.dir
+            else:
+                print '# wait_for_mysql "%s" "%s" 180' % (tidb.host, tidb.ports)
 
     for i in range(0, len(res.tiflashs)):
         tiflash = res.tiflashs[i]
-        if len(hosts) != 0 and len(tiflash.host) != 0 and tiflash.host not in hosts:
+        if len(hosts) != 0 and tiflash.host not in hosts:
             continue
         print_mod_header(tiflash)
-        print_cp_bin(tiflash, conf)
-        print '# tiflash_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host'
-        print 'tiflash_run "%s" \\' % tiflash.dir
-        print '\t"%s" \\' % conf.conf_templ_dir
-        pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
-        print '\t"true" "%s" "%s" "%s"' % (pd_addr, tiflash.ports, tiflash.host)
+
+        def print_run_cmd(ssh):
+            print '# tiflash_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host'
+            print (ssh + 'tiflash_run "%s" \\') % tiflash.dir
+            print '\t"%s" \\' % conf.conf_templ_dir
+            pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
+            print '\t"true" "%s" "%s" "%s"' % (pd_addr, tiflash.ports, tiflash.host)
+
+        if len(tiflash.host) == 0:
+            print_cp_bin(tiflash, conf)
+            print_run_cmd('')
+        else:
+            prepare = 'bin_name=`ssh_prepare_run "%s" tiflash "%s" "%s" "%s" "%s/worker/integrated"`'
+            print prepare % (tiflash.host, tiflash.dir, conf.conf_templ_dir, conf.cache_dir, conf.cache_dir)
+            print_run_cmd('')
 
 def render_rngines(res, conf, hosts):
     for i in range(0, len(res.rngines)):
         rngine = res.rngines[i]
-        if len(hosts) != 0 and len(rngine.host) != 0 and rngine.host not in hosts:
+        if len(hosts) != 0 and rngine.host not in hosts:
             continue
         print_mod_header(rngine)
-        print_cp_bin(rngine, conf)
-        print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta'
-        print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % rngine.tiflash
-        print 'rngine_run "%s" \\' % rngine.dir
-        print '\t"%s" \\' % conf.conf_templ_dir
-        pd_addr = rngine.pd or ','.join(res.pd_addr)
-        print '\t"%s" "${tiflash_addr}" "%s" "%s"' % (pd_addr, rngine.host, rngine.ports)
+        if len(rngine.host) == 0:
+            print_cp_bin(rngine, conf)
+            print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta'
+            print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % rngine.tiflash
+            print 'rngine_run "%s" \\' % rngine.dir
+            print '\t"%s" \\' % conf.conf_templ_dir
+            pd_addr = rngine.pd or ','.join(res.pd_addr)
+            print '\t"%s" "${tiflash_addr}" "%s" "%s"' % (pd_addr, rngine.host, rngine.ports)
+        else:
+            print '# TODO: ssh rngine'
 
 def render(res, conf, kvs, mod_names, hosts):
     print_sh_header(conf, kvs)
@@ -319,7 +347,7 @@ def get_mods(res, mod_names, hosts):
     def output(mod_array):
         for i in range(0, len(mod_array)):
             mod = mod_array[i]
-            if len(hosts) == 0 or len(mod.host) == 0 or (mod.host in hosts):
+            if len(hosts) == 0 or (mod.host in hosts):
                 if len(mod_names) == 0 or (mod.name in mod_names):
                     print '\t'.join([str(i), mod.name, mod.dir, confs[mod.name], mod.host])
 
@@ -351,8 +379,8 @@ def get_hosts(res, mod_names, hosts):
         print host
 
 if __name__ == '__main__':
-    if len(sys.argv) < 5:
-        error('usage: <bin> file cmd(render|mods|hosts) integrated_dir conf_templ_dir [mod_nams] [hosts] [args_str(k=v#k=v#..)]')
+    if len(sys.argv) < 6:
+        error('usage: <bin> file cmd(render|mods|hosts) integrated_dir conf_templ_dir cache_dir [mod_nams] [hosts] [args_str(k=v#k=v#..)]')
 
     cmd = sys.argv[1]
     path = sys.argv[2]
@@ -360,21 +388,22 @@ if __name__ == '__main__':
     conf = Conf()
     conf.integrated_dir = sys.argv[3]
     conf.conf_templ_dir = sys.argv[4]
+    conf.cache_dir = sys.argv[5]
 
     mod_names = set()
-    if len(sys.argv) >= 5 and len(sys.argv[5]) != 0:
-        mod_names = set(sys.argv[5].split(','))
+    if len(sys.argv) >= 6 and len(sys.argv[6]) != 0:
+        mod_names = set(sys.argv[6].split(','))
     for name in mod_names:
         if not mods.has_key(name):
             error(name + 'is not a valid module name')
 
     hosts = set()
-    if len(sys.argv) >= 6 and len(sys.argv[6]) != 0:
-        hosts = set(sys.argv[6].split(','))
+    if len(sys.argv) >= 7 and len(sys.argv[7]) != 0:
+        hosts = set(sys.argv[7].split(','))
 
     kvs_str = ""
-    if len(sys.argv) >= 7:
-        kvs_str = sys.argv[7]
+    if len(sys.argv) >= 8:
+        kvs_str = sys.argv[8]
 
     res = Ti()
     kvs = parse_kvs(kvs_str)
@@ -389,5 +418,3 @@ if __name__ == '__main__':
         get_hosts(res, mod_names, hosts)
     else:
         error('unknow cmd: ' + cmd)
-
-# TODO: Check duplicated mods

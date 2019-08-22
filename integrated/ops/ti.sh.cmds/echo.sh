@@ -6,7 +6,7 @@ conf_rel_path="${4}"
 shift 4
 
 args=("${@}")
-args_str="[ "
+args_str="extra:[ "
 for it in "${args[@]}"; do
 	args_str="$args_str'$it' "
 done

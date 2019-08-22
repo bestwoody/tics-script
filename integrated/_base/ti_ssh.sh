@@ -39,9 +39,6 @@ function cp_file_to_host()
 	local parent_dir=`dirname "${src_path}"`
 	local remote_path="${remote_dest_dir}/${file_name}"
 
-	rsync -qa "${src_path}" "${host}:${remote_dest_dir}" >/dev/null
-	return
-
 	if [ -z "${md5}" ]; then
 		local md5=`file_md5 "${src_path}"`
 	fi
@@ -96,14 +93,23 @@ function cp_bin_to_host()
 	local bin_urls_file="${6}"
 	local cache_dir="${7}"
 
+	local host_os_type=`ssh_exe "${host}" "uname"`
+	if [ "${host_os_type}" == 'Darwin' ]; then
+		local bin_urls_file="${bin_urls_file}.mac"
+	fi
+	if [ "${host_os_type}" != `uname` ]; then
+		local bin_paths_file="/dev/null"
+	fi
+
 	local bin_name=`get_bin_name_from_conf "${name}" "${bin_paths_file}" "${bin_urls_file}"`
 	local md5=`get_bin_md5_from_conf "${name}" "${bin_urls_file}"`
 
 	local cache_bin_path="${cache_dir}/${bin_name}"
 
 	cp_bin_to_dir "${name}" "${cache_dir}" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}"
-	# TODO: path info -> move out
-	echo -e "${name}\t${bin_name}\t${cache_bin_path}" > "${remote_env_dir}/conf/bin.paths"
-	cp_file_to_host "${cache_bin_path}" "${host}" "${remote_env_dir}" "${remote_dest_dir}" "${md5}" "false"
+
+	#cp_file_to_host "${cache_bin_path}" "${host}" "${remote_env_dir}" "${remote_dest_dir}" "${md5}" "false"
+	ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
+	rsync -qa "${cache_bin_path}" "${host}:${remote_dest_dir}/${bin_name}" >/dev/null
 }
 export -f cp_bin_to_host

@@ -177,27 +177,32 @@ There are 3 things are involved when we using `ops/ti.sh`:
 
 ## `ops/ti.sh` command line help
 ```
-ops/ti.sh [-c conf_templ_dir] [-a ti_file_kvs] [-m pd|tikv|...] ti_file_path mod_command(run|stop|...)
-ops/ti.sh [-c conf_templ_dir] [-a ti_file_kvs] -h ti_file_path host_command(uptime|free|...)
+ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..]
+       [-h host,host] [-b] ti_file_path cmd(run|stop|fstop|status|..) [args]
     -c:
-        Specify the config template dir, will be `ops/../conf` if this arg is not provided
-    -a:
-        Specify the key-value(s) string, will be used as vars in the .ti file, format: k=v#k=v#...
+        specify the config template dir, will be `ops/../conf` if this arg is not provided.
+    -s:
+        specify the sub-comand dir, will be `ops/ti.sh.cmds` if this arg is not provided.
+    -t:
+        specify the cache dir for download bins and other things in all hosts.
+        will be `/tmp/ti` if this arg is not provided.
+    -k:
+        specify the key-value(s) string, will be used as vars in the .ti file, format: k=v#k=v#..
     -m:
-        The module name, could be one of pd|tikv|tidb|tiflash|rngine.
-        And could be multi modules like: `pd,tikv`.
-        If this arg is not provided, it means all modules.
-    -h:'
-        The host names, format: `host,host`
-        If this arg is not provided, it means all specified host names in the .ti file.
-    mod_command:
-        Execute this command on each module.
-        Could be one of run|stop|status|prop|fstop.
-        And could be one of `ops/ti.sh.cmds/mod/<command>.sh`
-        `up` and `down` are aliases of `run` and `stop`
-    host_command:
-        Execute this command on each host.
-        Could be one of `ops/ti.sh.cmds/host/<command>.sh`
+        the module name, could be one of pd|tikv|tidb|tiflash|rngine.
+        and could be multi modules like: `pd,tikv`.
+        if this arg is not provided, it means all modules.
+    -h:
+        the host names, format: `host,host,..`
+        if this arg is not provided, it means all specified host names in the .ti file.
+    -b:
+        execute command on each host(node).
+        if this arg is not provided, execute command on each module.
+    cmd:
+        could be one of run|stop|fstop|status.
+        (`up` and `down` are aliases of `run` and `stop`)
+        and could be one of `ops/ti.sh.cmds/<command>.sh`
+        (Could be one of `ops/ti.sh.cmds/byhost/<command>.sh` if `-b`)
 ```
 
 ## Why we should use this tool

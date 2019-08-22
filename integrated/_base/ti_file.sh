@@ -100,13 +100,13 @@ export -f ti_file_cmd_stop
 
 function ti_file_cmd_fstop()
 {
-	ti_file_mod_stop "${1}" "${2}" "${3}" "${4}" 'true'
+	ti_file_mod_stop "${1}" "${2}" "${3}" "${4}" 'true' | grep -v 'closing'
 }
 export -f ti_file_cmd_fstop
 
 function ti_file_exe()
 {
-	local help="[func ti_file_exe] usage: <func> cmd ti_file conf_templ_dir cmd_dir [ti_file_args(k=v#k=v#..)] [mod_names] [hosts] [byhost] [cmd_args...]"
+	local help="[func ti_file_exe] usage: <func> cmd ti_file conf_templ_dir cmd_dir [ti_file_args(k=v#k=v#..)] [mod_names] [hosts] [byhost] [cache_dir] [cmd_args...]"
 	if [ -z "${3+x}" ]; then
 		echo "${help}" >&2
 		return 1
@@ -130,9 +130,9 @@ function ti_file_exe()
 	fi
 
 	if [ -z "${7+x}" ]; then
-		local hosts=""
+		local cmd_hosts=""
 	else
-		local hosts="${7}"
+		local cmd_hosts="${7}"
 	fi
 
 	if [ -z "${8+x}" ]; then
@@ -141,7 +141,13 @@ function ti_file_exe()
 		local byhosts="${8}"
 	fi
 
-	shift 8
+	if [ -z "${9+x}" ]; then
+		local cache_dir="/tmp/ti"
+	else
+		local cache_dir="${9}"
+	fi
+
+	shift 9
 	local cmd_args=("${@}")
 
 	if [ ! -f "${ti_file}" ]; then
@@ -155,31 +161,36 @@ function ti_file_exe()
 
 	# For ti file checking
 	python "${integrated}/_base/ti_file.py" 'hosts' \
-		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${mod_names}" "${hosts}" "${ti_args}" 1>/dev/null
+		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}" 1>/dev/null
 
 	local hosts=`python "${integrated}/_base/ti_file.py" 'hosts' \
-		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${mod_names}" "${hosts}" "${ti_args}"`
+		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}"`
 
-	# TODO: From arg
-	local cache_root="/tmp/ti/integrated"
-	local remote_env="${cache_root}/worker/integrated"
+	# TODO: Pass paths from args
+	local remote_env_rel_dir='worker'
+	local local_cache_env="${cache_dir}/master/integrated"
 
-	# TODO: Parallel ping and copy
-	echo "${hosts}" | while read host; do
-		if [ ! -z "${host}" ]; then
-			ssh_ping "${host}"
-		fi
-	done
-	echo "${hosts}" | while read host; do
-		if [ ! -z "${host}" ]; then
-			cp_env_to_host "${integrated}" "${cache_root}/master/integrated" "${host}" "${cache_root}/worker"
-		fi
-	done
+	local remote_env_parent="${cache_dir}/${remote_env_rel_dir}"
+	local remote_env="${remote_env_parent}/`basename ${local_cache_env}`"
+
+	if [ "${cmd}" != "dry" ]; then
+		# TODO: Parallel ping and copy
+		echo "${hosts}" | while read host; do
+			if [ ! -z "${host}" ]; then
+				ssh_ping "${host}"
+			fi
+		done
+		echo "${hosts}" | while read host; do
+			if [ ! -z "${host}" ]; then
+				cp_env_to_host "${integrated}" "${local_cache_env}" "${host}" "${remote_env_parent}"
+			fi
+		done
+	fi
 
 	if [ "${byhost}" != "true" ]; then
 		if [ "${cmd}" == "run" ] || [ "${cmd}" == "dry" ]; then
 			python "${integrated}/_base/ti_file.py" 'render' "${ti_file}" \
-				"${integrated}" "${conf_templ_dir}" "${mod_names}" "${hosts}" "${ti_args}" > "${ti_file}.sh"
+				"${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}" > "${ti_file}.sh"
 			chmod +x "${ti_file}.sh"
 			if [ "${cmd}" == "run" ]; then
 				bash "${ti_file}.sh"
@@ -189,7 +200,7 @@ function ti_file_exe()
 		fi
 
 		local mods=`python "${integrated}/_base/ti_file.py" 'mods' \
-			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${mod_names}" "${hosts}" "${ti_args}"`
+			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}"`
 
 		local has_func=`func_exists "ti_file_cmd_${cmd}"`
 		local has_script='false'

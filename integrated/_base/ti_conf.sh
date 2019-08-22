@@ -41,6 +41,8 @@ function get_bin_name_from_conf()
 }
 export -f get_bin_name_from_conf
 
+# TODO: Pass integrated dir from args
+
 # bin_paths_file: name \t md5sum \t bin_name \t url
 function cp_bin_to_dir_from_paths()
 {
@@ -86,11 +88,6 @@ function cp_bin_to_dir_from_urls()
 	local dest_dir="${2}"
 	local bin_urls_file="${3}"
 	local cache_dir="${4}"
-
-	# TODO: This is not good
-	if [ `uname` == "Darwin" ]; then
-		local bin_urls_file="${bin_urls_file}.mac"
-	fi
 
 	local entry_str=`grep "^${name}" "${bin_urls_file}"`
 	if [ -z "$entry_str" ]; then
@@ -172,7 +169,7 @@ export -f cp_bin_to_dir_from_urls
 function cp_bin_to_dir()
 {
 	if [ -z "${5+x}" ]; then
-		echo "[func cp_bin_to_dir] usage: <func> name_of_bin_module dest_dir bin_paths_file bin_urls_file cache_dir" >&2
+		echo "[func cp_bin_to_dir] usage: <func> name_of_bin_module dest_dir bin_paths_file bin_urls_file cache_dir [check_os_type]" >&2
 		return 1
 	fi
 
@@ -182,8 +179,18 @@ function cp_bin_to_dir()
 	local bin_urls_file="${4}"
 	local cache_dir="${5}"
 
+	if [ -z "${6+x}" ]; then
+		local check_os_type='true'
+	else
+		local check_os_type="${6}"
+	fi
+
+	if [ "${check_os_type}" == 'true' ] && [ `uname` == 'Darwin' ]; then
+		local bin_urls_file="${bin_urls_file}.mac"
+	fi
+
 	local found=`cp_bin_to_dir_from_paths "${name}" "${dest_dir}" "${bin_paths_file}"`
-	if [ "${found}" != "true" ]; then
+	if [ "${found}" != 'true' ]; then
 		cp_bin_to_dir_from_urls "${name}" "${dest_dir}" "${bin_urls_file}" "${cache_dir}"
 	fi
 }

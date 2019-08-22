@@ -22,6 +22,9 @@ pkg
 # Python compile result
 *.pyc
 
+# ops/ti.sh tmp file
+*.ti.sh
+
 # Test data and result
 data
 db

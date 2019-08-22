@@ -2,7 +2,7 @@ host="${1}"
 shift 1
 
 args=("${@}")
-args_str="[ "
+args_str="extra:[ "
 for it in "${args[@]}"; do
 	args_str="$args_str'$it' "
 done

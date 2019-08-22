@@ -14,19 +14,19 @@ function cmd_ti_burn()
 		return 1
 	fi
 	if [ ! -d "${dir}" ]; then
-		echo "=> Skipped, not a dir: ${dir}" >&2
+		echo "=> skipped: ${dir}, not a dir" >&2
 		return
 	fi
 	if [ "${doit}" == "doit" ]; then
 		local up_status=`ti_file_mod_status "${dir}" "${conf_rel_path}"`
 		local ok=`echo "${up_status}" | grep ^OK`
 		if [ ! -z "${ok}" ]; then
-			ti_file_mod_stop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}" 'true'
+			ti_file_cmd_fstop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}"
 		fi
-		echo "=> Burning: ${dir}"
+		echo "=> burned:  ${dir}"
 		rm -rf "${dir}"
 	else
-		echo "=> Burning(dry run, append 'doit' to execute): ${dir}"
+		echo "=> dry run: ${dir}, append 'doit' to burn"
 	fi
 }
 

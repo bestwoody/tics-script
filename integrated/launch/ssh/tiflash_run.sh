@@ -9,8 +9,7 @@ ports_delta="${3}"
 # Where to find pd
 pd_addr="${4}"
 
-here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
-source "${here}/_env.sh"
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
 
 if [ -z "${host}" ] || [ -z "${tiflash_dir}" ]; then
@@ -18,16 +17,12 @@ if [ -z "${host}" ] || [ -z "${tiflash_dir}" ]; then
 	exit 1
 fi
 
-# Where is tiflash config template files
-conf_templ_dir=`dirname "${here}"`/local/conf_templ
-
-cache_root="/tmp/ti/integrated"
-cache_dir="${cache_root}/master/bins"
-remote_env="${cache_root}/worker/integrated"
+conf_templ_dir="${integrated}/conf"
+cache_dir="/tmp/ti"
+remote_env="${cache_dir}/worker/integrated"
 
 ssh_ping "${host}"
-cp_env_to_host "${integrated}" "${cache_root}/master/integrated" "${host}" "${cache_root}/worker"
-cp_bin_to_host "tiflash" "${host}" "${remote_env}" "${cache_root}/worker/bins" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls" "${cache_dir}"
+cp_env_to_host "${integrated}" "${cache_dir}/master/integrated" "${host}" "${cache_dir}/worker"
 
-call_remote_func "${host}" "${remote_env}" cp_bin_to_dir "tiflash" "${tiflash_dir}" "${remote_env}/conf/bin.paths" "${remote_env}/conf/bin.urls" "${cache_dir}"
+bin_name=`ssh_prepare_run "${host}" 'tiflash' "${tiflash_dir}" "${conf_templ_dir}" "${cache_dir}" "${remote_env}"`
 call_remote_func "${host}" "${remote_env}" tiflash_run "${tiflash_dir}" "${remote_env}/conf" "true" "${pd_addr}" "${ports_delta}" "${host}"

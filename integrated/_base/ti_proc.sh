@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # TODO: Check if ip changed when run a module
-# TODO: ADD .file path to proc.info
+# TODO: ADD .ti file path to proc.info
 
 function tiflash_run()
 {
@@ -615,29 +615,29 @@ function rngine_stop()
 }
 export -f rngine_stop
 
-function wait_for_tidb()
+function wait_for_mysql()
 {
-	if [ -z "${1+x}" ]; then
-		echo "[func wait_for_tidb] usage: <func> tidb_dir [timeout=180s]" >&2
+	if [ -z "${3+x}" ]; then
+		echo "[func wait_for_mysql] usage: <func> host port timeout [server_id]" >&2
 		return 1
 	fi
 
-	local tidb_dir="${1}"
-	local timeout=600
-	if [ ! -z "${2+x}" ]; then
-		timeout="${2}"
+	local host="${1}"
+	# TODO: Support '+n'
+	local port="${2}"
+	local timeout="${3}"
+	if [ -z "${4+x}" ]; then
+		local server_id="${host}:${port}"
+	else
+		local server_id="${4}"
 	fi
-
-	local tidb_info="${tidb_dir}/proc.info"
-	local host=`cat "${tidb_info}" | grep 'advertise_host' | awk '{print $2}'`
-	local port=`cat "${tidb_info}" | grep 'tidb_port' | awk '{print $2}'`
 
 	local error_handle="$-"
 	set +e
 
 	mysql --help 1>/dev/null 2>&1
 	if [ "$?" != "0" ]; then
-		echo "[func wait_for_tidb] run mysql client failed" >&2
+		echo "[func wait_for_mysql] run mysql client failed" >&2
 		return 1
 	fi
 
@@ -647,14 +647,35 @@ function wait_for_tidb()
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
-				echo "#${i} waiting for tidb at '${tidb_dir}'"
+				echo "#${i} waiting for mysql|tidb at '${server_id}'"
 			fi
-			# TODO: If PD/TiKV/TiDB down, do fast-failure
 			sleep 1
 		fi
 	done
 
 	restore_error_handle_flags "${error_handle}"
+}
+export -f wait_for_mysql
+
+# TODO: If PD/TiKV/TiDB down, do fast-failure
+function wait_for_tidb()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func wait_for_tidb] usage: <func> tidb_dir [timeout=180s]" >&2
+		return 1
+	fi
+
+	local tidb_dir="${1}"
+	local timeout=180
+	if [ ! -z "${2+x}" ]; then
+		timeout="${2}"
+	fi
+
+	local tidb_info="${tidb_dir}/proc.info"
+	local host=`cat "${tidb_info}" | grep 'advertise_host' | awk '{print $2}'`
+	local port=`cat "${tidb_info}" | grep 'tidb_port' | awk '{print $2}'`
+
+	wait_for_mysql "${host}" "${port}" "${timeout}" "${tidb_dir}"
 }
 export -f wait_for_tidb
 

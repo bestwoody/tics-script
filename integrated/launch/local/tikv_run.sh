@@ -19,7 +19,7 @@ fi
 
 # Where is tikv config template files
 conf_templ_dir="${integrated}/conf"
-cache_dir="/tmp/ti/integrated/master/bins"
+bin_cache_dir="/tmp/ti/master/bins"
 
-cp_bin_to_dir "tikv" "${tikv_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls" "${cache_dir}"
+cp_bin_to_dir "tikv" "${tikv_dir}" "${conf_templ_dir}/bin.paths" "${conf_templ_dir}/bin.urls" "${bin_cache_dir}"
 tikv_run "${tikv_dir}" "${conf_templ_dir}" "${pd_addr}" "${advertise_host}" "${ports_delta}"
