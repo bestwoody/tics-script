@@ -152,9 +152,9 @@ function ti_file_exe()
 
 	if [ ! -f "${ti_file}" ]; then
 		if [ -d "${ti_file}" ]; then
-			echo "[func ti_file_exe] '${ti_file}' is dir, not a file"
+			echo "[func ti_file_exe] '${ti_file}' is dir, not a file" >&2
 		else
-			echo "[func ti_file_exe] '${ti_file}' not exists"
+			echo "[func ti_file_exe] '${ti_file}' not exists" >&2
 		fi
 		return 1
 	fi
@@ -172,6 +172,9 @@ function ti_file_exe()
 
 	local remote_env_parent="${cache_dir}/${remote_env_rel_dir}"
 	local remote_env="${remote_env_parent}/`basename ${local_cache_env}`"
+
+	# TODO: Pass paths from args
+	local remote_cmd_dir="${remote_env}/ops/ti.sh.cmds"
 
 	if [ "${cmd}" != "dry" ]; then
 		# TODO: Parallel ping and copy
@@ -203,10 +206,6 @@ function ti_file_exe()
 			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}"`
 
 		local has_func=`func_exists "ti_file_cmd_${cmd}"`
-		local has_script='false'
-		if [ -f "${cmd_dir}/${cmd}.sh" ]; then
-			local has_script='true'
-		fi
 
 		echo "${mods}" | while read mod; do
 			if [ -z "${mod}" ]; then
@@ -217,6 +216,16 @@ function ti_file_exe()
 			local dir=`echo "${mod}" | awk -F '\t' '{print $3}'`
 			local conf=`echo "${mod}" | awk -F '\t' '{print $4}'`
 			local host=`echo "${mod}" | awk -F '\t' '{print $5}'`
+
+			local has_script='false'
+			if [ -z "${host}" ]; then
+				if [ -f "${cmd_dir}/${cmd}.sh" ]; then
+					local has_script='true'
+				fi
+			else
+				local has_script=`ssh_exe "${host}" "test -f \"${remote_cmd_dir}/${cmd}.sh\" && echo true"`
+			fi
+
 			if [ "${has_script}" == 'true' ]; then
 				if [ -z "${host}" ]; then
 					if [ -z "${cmd_args+x}" ]; then
@@ -252,29 +261,33 @@ function ti_file_exe()
 					fi
 				fi
 				continue
+			else
+				if [ -z "${host}" ]; then
+					echo "script not found: ${cmd_dir}/${cmd}.sh" >&2
+				else
+					echo "script not found: ${host}:${remote_cmd_dir}/${cmd}.sh" >&2
+				fi
+				return 1
 			fi
 		done
-		if [ "${has_func}" != 'true' ] && [ "${has_script}" != 'true' ]; then
-			echo "script not found: ${cmd_dir}/${cmd}.sh"
-			return 1
-		fi
 	else
-		if [ -f "${cmd_dir}/bynode/${cmd}.sh" ]; then
-			echo "${hosts}" | while read host; do
-				if [ -z "${host}" ]; then
-					continue
-				fi
+		echo "${hosts}" | while read host; do
+			if [ -z "${host}" ]; then
+				continue
+			fi
+			local has_script=`ssh_exe "${host}" "test -f \"${remote_cmd_dir}/bynode/${cmd}.sh\" && echo true"`
+			if [ "${has_script}" == 'true' ]; then
 				if [ -z "${cmd_args+x}" ]; then
 					call_remote_func "${host}" "${remote_env}" script_exe "${cmd_dir}/bynode/${cmd}.sh" "${host}"
 				else
 					call_remote_func "${host}" "${remote_env}" script_exe "${cmd_dir}/bynode/${cmd}.sh" \
 						"${host}" "${cmd_args[@]}"
 				fi
-			done
-		else
-			echo "script not found: ${cmd_dir}/bynode/${cmd}.sh"
-			return 1
-		fi
+			else
+				echo "script not found: ${host}:${remote_cmd_dir}/bynode/${cmd}.sh" >&2
+				return 1
+			fi
+		done
 	fi
 }
 export -f ti_file_exe

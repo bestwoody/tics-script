@@ -290,20 +290,21 @@ def render_tiflashs(res, conf, hosts):
             continue
         print_mod_header(tiflash)
 
-        def print_run_cmd(ssh):
+        def print_run_cmd(ssh, conf_templ_dir):
             print '# tiflash_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host'
             print (ssh + 'tiflash_run "%s" \\') % tiflash.dir
-            print '\t"%s" \\' % conf.conf_templ_dir
+            print '\t"%s" \\' % conf_templ_dir
             pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
             print '\t"true" "%s" "%s" "%s"' % (pd_addr, tiflash.ports, tiflash.host)
 
         if len(tiflash.host) == 0:
             print_cp_bin(tiflash, conf)
-            print_run_cmd('')
+            print_run_cmd('', conf.conf_templ_dir)
         else:
-            prepare = 'bin_name=`ssh_prepare_run "%s" tiflash "%s" "%s" "%s" "%s/worker/integrated"`'
-            print prepare % (tiflash.host, tiflash.dir, conf.conf_templ_dir, conf.cache_dir, conf.cache_dir)
-            print_run_cmd('')
+            env_dir = conf.cache_dir + '/worker/integrated'
+            prepare = 'bin_name=`ssh_prepare_run "%s" tiflash "%s" "%s" "%s" "%s"`'
+            print prepare % (tiflash.host, tiflash.dir, conf.conf_templ_dir, conf.cache_dir, env_dir)
+            print_run_cmd('call_remote_func "%s" "%s" ' % (tiflash.host, env_dir), env_dir + '/conf')
 
 def render_rngines(res, conf, hosts):
     for i in range(0, len(res.rngines)):

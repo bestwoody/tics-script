@@ -101,6 +101,8 @@ function cp_dir_to_host()
 	local tar_file="${dir_name}.tar.gz"
 	local tar_path="${parent_dir}/${tar_file}"
 
+	# TODO: rsync is good, discard other codes
+	ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
 	rsync -qar "${src}" "${host}:${remote_dest_dir}"
 	return
 
@@ -111,7 +113,7 @@ function cp_dir_to_host()
 		return
 	fi
 
-	ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
+	#ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
 	#rsync -avh "${tar_path}" "${host}:${remote_dest_dir}" >/dev/null
 	scp "${tar_path}" "${host}:${remote_dest_dir}" >/dev/null
 	ssh_exe "${host}" "cd \"${remote_dest_dir}\" && tar --overwrite -xzf \"${tar_file}\""

@@ -40,7 +40,7 @@ function cmd_ti()
 	local ti_args=""
 	local byhost="false"
 
-	while getopts ':k:c:m:s:h:b:t' OPT; do
+	while getopts ':k:c:m:s:h:t:b' OPT; do
 		case ${OPT} in
 			c)
 				local conf_templ_dir="${OPTARG}";;
