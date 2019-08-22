@@ -347,8 +347,23 @@ def render_rngines(res, conf, hosts):
             conf_templ_dir = env_dir + '/conf'
             print_ssh_prepare(rngine, conf, env_dir)
 
+        tiflash_host, tiflash_dir = '', ''
+        tiflash_addr = map(lambda x: x.strip(), rngine.tiflash.split(':'))
+        if len(tiflash_addr) == 2:
+            tiflash_host = tiflash_addr[0]
+            tiflash_dir = tiflash_addr[1]
+        elif len(tiflash_addr) == 1:
+            tiflash_dir = tiflash_addr[0]
+        else:
+            error('bad tiflash address in rngine: ' + rngine.tiflash)
+
         print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta'
-        print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % rngine.tiflash
+        if len(tiflash_host) == 0:
+            print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % tiflash_dir
+        else:
+            get_addr_cmd = 'tiflash_addr="`call_remote_func "%s" "%s" get_tiflash_addr_from_dir %s`"'
+            env_dir = conf.cache_dir + '/worker/integrated'
+            print get_addr_cmd % (tiflash_host, env_dir, rngine.tiflash)
         print ssh + 'rngine_run "%s" \\' % rngine.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = rngine.pd or ','.join(res.pd_addr)
