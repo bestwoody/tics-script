@@ -195,7 +195,16 @@ public class MemoryUtil {
     unsafe.putInt(address, l);
   }
 
-  public static void setDecimal(long address, Decimal v, int precision, int scale) {
+  public static void setDecimal(long address, Decimal v, int scale) {
+    BigDecimal bigDec = v.toJavaBigDecimal();
+    BigInteger bigInt = bigDec.scaleByPowerOfTen(scale).toBigInteger();
+    byte[] arr = bigInt.toByteArray();
+    for (int i = 0; i < arr.length; i++) {
+      unsafe.putByte(address + i, arr[arr.length - 1 - i]);
+    }
+  }
+
+  public static void setDecimal256(long address, Decimal v, int scale) {
     BigDecimal bigDec = v.toJavaBigDecimal();
     BigInteger bigInt = bigDec.scaleByPowerOfTen(scale).toBigInteger();
     int sign = 0;
@@ -217,8 +226,6 @@ public class MemoryUtil {
     }
     unsafe.putShort(address + 32, (short) limbs);
     unsafe.putShort(address + 34, (short) sign);
-    unsafe.putShort(address + 48, (short) precision);
-    unsafe.putChar(address + 50, (char) scale);
   }
 
   public static void setLong(long address, long l) {
@@ -245,7 +252,28 @@ public class MemoryUtil {
     return unsafe.getInt(address);
   }
 
-  public static Decimal getDecimal(long address) {
+  public static Decimal getDecimal32(long address, int scale) {
+    int n = getInt(address);
+    BigInteger dec = BigInteger.valueOf(n);
+    return Decimal.apply(new BigDecimal(dec, scale));
+  }
+
+  public static Decimal getDecimal64(long address, int scale) {
+    long n = getLong(address);
+    BigInteger dec = BigInteger.valueOf(n);
+    return Decimal.apply(new BigDecimal(dec, scale));
+  }
+
+  public static Decimal getDecimal128(long address, int scale) {
+    UnsignedLong n0 = UnsignedLong.fromLongBits(getLong(address));
+    long n1 = getLong(address + 8);
+
+    BigInteger dec = BigInteger.valueOf(n1);
+    dec = dec.shiftLeft(64).add(n0.bigIntegerValue());
+    return Decimal.apply(new BigDecimal(dec, scale));
+  }
+
+  public static Decimal getDecimal256(long address, int scale) {
     int limbs = (int) getShort(address + 32);
     BigInteger dec = BigInteger.ZERO;
     for (int i = limbs - 1; i >= 0; i--) {
@@ -253,7 +281,6 @@ public class MemoryUtil {
       dec = dec.shiftLeft(64).add(d.bigIntegerValue());
     }
     int sign = unsafe.getByte(address + 34);
-    int scale = (int) unsafe.getByte(address + 50);
     BigDecimal result = new BigDecimal(dec, scale);
     if (sign > 0) {
       return Decimal.apply(result.negate());
