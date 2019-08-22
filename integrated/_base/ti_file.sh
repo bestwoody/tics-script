@@ -229,16 +229,16 @@ function ti_file_exe()
 			if [ "${has_script}" == 'true' ]; then
 				if [ -z "${host}" ]; then
 					if [ -z "${cmd_args+x}" ]; then
-						bash "${remote_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}"
+						bash "${cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}"
 					else
-						bash "${remote_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${cmd_args[@]}"
+						bash "${cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${cmd_args[@]}"
 					fi
 				else
 					if [ -z "${cmd_args+x}" ]; then
-						call_remote_func "${host}" "${remote_env}" script_exe "${cmd_dir}/${cmd}.sh" \
+						call_remote_func "${host}" "${remote_env}" script_exe "${remote_cmd_dir}/${cmd}.sh" \
 							"${index}" "${name}" "${dir}" "${conf}"
 					else
-						call_remote_func "${host}" "${remote_env}" script_exe "${cmd_dir}/${cmd}.sh" \
+						call_remote_func "${host}" "${remote_env}" script_exe "${remote_cmd_dir}/${cmd}.sh" \
 							"${index}" "${name}" "${dir}" "${conf}" "${cmd_args[@]}"
 					fi
 				fi
