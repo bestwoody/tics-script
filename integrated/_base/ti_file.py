@@ -356,6 +356,8 @@ def render_rngines(res, conf, hosts):
             tiflash_dir = tiflash_addr[0]
         else:
             error('bad tiflash address in rngine: ' + rngine.tiflash)
+        if len(tiflash_host) == 0:
+            tiflash_host = rngine.host
 
         print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta'
         if len(tiflash_host) == 0:
