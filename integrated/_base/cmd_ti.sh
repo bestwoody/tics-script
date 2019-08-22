@@ -1,12 +1,34 @@
 #!/bin/bash
 
+function _list_cmd_cmd_ti()
+{
+	local dir="${1}"
+	ls "${dir}" | grep "sh$" | while read f; do
+		echo "    `basename "${f}" .sh`";
+	done
+}
+export -f _list_cmd_cmd_ti
+
+function list_cmds_cmd_ti()
+{
+	echo "remote, by module: (default)"
+	_list_cmd_cmd_ti "${integrated}/ops/ti.sh.cmds/remote"
+	echo "remote, by host: (-b)"
+	_list_cmd_cmd_ti "${integrated}/ops/ti.sh.cmds/remote/byhost"
+	echo "local, by module: (-l)"
+	_list_cmd_cmd_ti "${integrated}/ops/ti.sh.cmds/local"
+	echo "local, by host: (-l -b)"
+	_list_cmd_cmd_ti "${integrated}/ops/ti.sh.cmds/local/byhost"
+}
+export -f list_cmds_cmd_ti
+
 function help_cmd_ti()
 {
-	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|..) [args]'
+	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] [-l] ti_file_path cmd(help|list|echo|run|stop|fstop|status|..) [args]'
 	echo '    -c:'
 	echo '        specify the config template dir, will be `ops/../conf` if this arg is not provided.'
 	echo '    -s:'
-	echo '        specify the sub-comand dir, will be `ops/local|remote/ti.sh.cmds` if this arg is not provided.'
+	echo '        specify the sub-command dir, will be `ops/ti.sh.cmds/remote` if this arg is not provided.'
 	echo '    -t:'
 	echo '        specify the cache dir for download bins and other things in all hosts.'
 	echo '        will be `/tmp/ti` if this arg is not provided.'
@@ -23,12 +45,19 @@ function help_cmd_ti()
 	echo '        execute command on each host(node).'
 	echo '        if this arg is not provided, execute command on each module.'
 	echo '    -l:'
-	echo '        execute command on local mode instead of ssh executing.'
+	echo '        execute command on local(of master) mode instead of ssh executing.'
+	echo '        use `ops/local/ti.sh.cmds` as command dir instead of `ops/remote/ti.sh.cmds`'
 	echo '    cmd:'
 	echo '        could be one of run|stop|fstop|status.'
 	echo '        (`up` and `down` are aliases of `run` and `stop`)'
 	echo '        and could be one of `ops/local|remote/ti.sh.cmds/<command>.sh`'
-	echo '        (Could be one of `ops/local|remote/ti.sh.cmds/byhost/<command>.sh` if `-b`)'
+	echo '        (could be one of `ops/ti.sh.cmds/local|remote/byhost/<command>.sh` if `-b`)'
+	echo '    args:'
+	echo '        the args pass to the cmd script.'
+
+	echo
+	echo 'command list:'
+	list_cmds_cmd_ti | awk '{print "    "$0}'
 }
 export -f help_cmd_ti
 
