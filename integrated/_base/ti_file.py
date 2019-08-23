@@ -5,6 +5,7 @@ import os
 
 class Conf:
     def __init__(self):
+        self.ti_path = ""
         self.integrated_dir = "-"
         self.conf_templ_dir = "-"
         self.cache_dir = "/tmp/ti"
@@ -187,6 +188,9 @@ def print_sh_header(conf, kvs):
     print '# Setup base env (export functions)'
     print 'source "%s/_env.sh"' % conf.integrated_dir
     print 'auto_error_handle'
+    print ''
+    print 'id="`print_ip_or_host`:%s"' % conf.ti_path
+    print ''
 
 def print_sep():
     print ''
@@ -245,10 +249,11 @@ def render_pds(res, conf, hosts):
             conf_templ_dir = env_dir + '/conf'
             print_ssh_prepare(pd, conf, env_dir)
 
-        print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster'
+        print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster cluster_id'
         print ssh + 'pd_run "%s" \\' % pd.dir
         print '\t"%s" \\' % conf_templ_dir
-        print '\t"%s" "%s" "%s" "%s"' % (pd.ports, pd.host, pd.pd_name, cluster)
+        print '\t"%s" "%s" "%s" "%s" \\' % (pd.ports, pd.host, pd.pd_name, cluster)
+        print '\t ${id}'
 
 def render_tikvs(res, conf, hosts):
     for i in range(0, len(res.tikvs)):
@@ -267,11 +272,12 @@ def render_tikvs(res, conf, hosts):
             conf_templ_dir = env_dir + '/conf'
             print_ssh_prepare(tikv, conf, env_dir)
 
-        print '# tikv_run dir conf_templ_dir pd_addr advertise_host ports_delta'
+        print '# tikv_run dir conf_templ_dir pd_addr advertise_host ports_delta cluster_id'
         print ssh + 'tikv_run "%s" \\' % tikv.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = tikv.pd or ','.join(res.pd_addr)
-        print '\t"%s" "%s" "%s"' % (pd_addr, tikv.host, tikv.ports)
+        print '\t"%s" "%s" "%s" \\' % (pd_addr, tikv.host, tikv.ports)
+        print '\t ${id}'
 
 def render_tidbs(res, conf, hosts):
     for i in range(0, len(res.tidbs)):
@@ -290,11 +296,12 @@ def render_tidbs(res, conf, hosts):
             conf_templ_dir = env_dir + '/conf'
             print_ssh_prepare(tidb, conf, env_dir)
 
-        print '# tidb_run dir conf_templ_dir pd_addr advertise_host ports_delta'
+        print '# tidb_run dir conf_templ_dir pd_addr advertise_host ports_delta cluster_id'
         print ssh + 'tidb_run "%s" \\' % tidb.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = tidb.pd or ','.join(res.pd_addr)
-        print '\t"%s" "%s" "%s"' % (pd_addr, tidb.host, tidb.ports)
+        print '\t"%s" "%s" "%s" \\' % (pd_addr, tidb.host, tidb.ports)
+        print '\t ${id}'
 
 def render_tiflashs(res, conf, hosts):
     if len(res.tiflashs) == 0:
@@ -316,11 +323,12 @@ def render_tiflashs(res, conf, hosts):
         print_mod_header(tiflash)
 
         def print_run_cmd(ssh, conf_templ_dir):
-            print '# tiflash_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host'
+            print '# tiflash_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host cluster_id'
             print (ssh + 'tiflash_run "%s" \\') % tiflash.dir
             print '\t"%s" \\' % conf_templ_dir
             pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
-            print '\t"true" "%s" "%s" "%s"' % (pd_addr, tiflash.ports, tiflash.host)
+            print '\t"true" "%s" "%s" "%s" \\' % (pd_addr, tiflash.ports, tiflash.host)
+            print '\t ${id}'
 
         if len(tiflash.host) == 0:
             print_cp_bin(tiflash, conf)
@@ -359,7 +367,7 @@ def render_rngines(res, conf, hosts):
         if len(tiflash_host) == 0:
             tiflash_host = rngine.host
 
-        print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta'
+        print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta cluster_id'
         if len(tiflash_host) == 0:
             print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % tiflash_dir
         else:
@@ -372,7 +380,8 @@ def render_rngines(res, conf, hosts):
         print ssh + 'rngine_run "%s" \\' % rngine.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = rngine.pd or ','.join(res.pd_addr)
-        print '\t"%s" "${tiflash_addr}" "%s" "%s"' % (pd_addr, rngine.host, rngine.ports)
+        print '\t"%s" "${tiflash_addr}" "%s" "%s" \\' % (pd_addr, rngine.host, rngine.ports)
+        print '\t ${id}'
 
 def render(res, conf, kvs, mod_names, hosts):
     print_sh_header(conf, kvs)
@@ -438,6 +447,7 @@ if __name__ == '__main__':
     path = sys.argv[2]
 
     conf = Conf()
+    conf.ti_path = path
     conf.integrated_dir = sys.argv[3]
     conf.conf_templ_dir = sys.argv[4]
     conf.cache_dir = sys.argv[5]

@@ -36,11 +36,11 @@ function cmd_ti_log()
 	local log_file="${dir}/${log_file}"
 
 	if [ ! -f "${log_file}" ]; then
-		echo "${mod_name} #${index} (${dir}) NO LOG" >&2
+		echo "[${mod_name} #${index} ${dir}] NO LOG" >&2
 		return
 	fi
 
-	cat "${log_file}" | grep -i "${grep_str}" | tail -n "${cnt}" | awk '{print "['${mod_name}' #'${index}' ('${dir}')] "$0}'
+	cat "${log_file}" | grep -i "${grep_str}" | tail -n "${cnt}" | awk '{print "['${mod_name}' #'${index}' '${dir}'] "$0}'
 }
 
 cmd_ti_log "${@}"

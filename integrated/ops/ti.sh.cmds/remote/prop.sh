@@ -9,7 +9,7 @@ function cmd_ti_prop()
 
 	echo "${mod_name} #${index} (${dir})"
 	if [ -f "${dir}/proc.info" ]; then
-		cat "${dir}/proc.info" | awk '{print "    "$1": "$2}'
+		cat "${dir}/proc.info" | awk -F '\t' '{print "    "$1": "$2}'
 	else
 		echo "    MISSED"
 	fi

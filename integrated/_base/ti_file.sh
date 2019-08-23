@@ -172,9 +172,9 @@ function ti_file_exe()
 	local hosts=`python "${integrated}/_base/ti_file.py" 'hosts' \
 		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}"`
 
-	if [ -z "${hosts}" ]; then
-		local local='true'
-	fi
+	#if [ -z "${hosts}" ]; then
+	#	local local='true'
+	#fi
 
 	# TODO: Pass paths from args
 	local remote_env_rel_dir='worker'

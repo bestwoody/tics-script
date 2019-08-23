@@ -28,3 +28,14 @@ function must_print_ip()
 	fi
 }
 export -f must_print_ip
+
+function print_ip_or_host()
+{
+	local ip_cnt="`print_ip_cnt`"
+	if [ "${ip_cnt}" != "1" ]; then
+		hostname
+	else
+		print_ip
+	fi
+}
+export -f print_ip_or_host

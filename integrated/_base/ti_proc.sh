@@ -1,12 +1,11 @@
 #!/bin/bash
 
 # TODO: Check if ip changed when run a module
-# TODO: ADD .ti file path to proc.info
 
 function tiflash_run()
 {
 	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func tiflash_run] usage: <func> tiflash_dir conf_templ_dir [daemon_mode] [pd_addr] [ports_delta] [listen_host]" >&2
+		echo "[func tiflash_run] usage: <func> tiflash_dir conf_templ_dir [daemon_mode] [pd_addr] [ports_delta] [listen_host] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -35,6 +34,12 @@ function tiflash_run()
 		local listen_host=""
 	else
 		local listen_host="${6}"
+	fi
+
+	if [ -z "${7+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${7}"
 	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
@@ -110,19 +115,20 @@ function tiflash_run()
 	fi
 
 	local info="${tiflash_dir}/proc.info"
-	echo "listen_host ${listen_host}" > "${info}"
-	echo "interserver_http_port ${interserver_http_port}" >> "${info}"
-	echo "raft_port ${raft_port}" >> "${info}"
-	echo "http_port ${http_port}" >> "${info}"
-	echo "tcp_port ${tcp_port}" >> "${info}"
-	echo "pd_addr ${pd_addr}" >> "${info}"
+	echo "listen_host	${listen_host}" > "${info}"
+	echo "interserver_http_port	${interserver_http_port}" >> "${info}"
+	echo "raft_port	${raft_port}" >> "${info}"
+	echo "http_port	${http_port}" >> "${info}"
+	echo "tcp_port	${tcp_port}" >> "${info}"
+	echo "pd_addr	${pd_addr}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	echo "nohup \"${tiflash_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" > "${tiflash_dir}/run.sh"
 	chmod +x "${tiflash_dir}/run.sh"
 	bash "${tiflash_dir}/run.sh"
 
 	local pid=`print_pid "${conf_file}" "\-\-config"`
-	echo "pid ${pid}" >> "${info}"
+	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
 export -f tiflash_run
@@ -178,7 +184,7 @@ export -f tiflash_stop
 function pd_run()
 {
 	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func pd_run] usage: <func> pd_dir conf_templ_dir [name_ports_delta] [advertise_host] [pd_name] [initial_cluster]" >&2
+		echo "[func pd_run] usage: <func> pd_dir conf_templ_dir [name_ports_delta] [advertise_host] [pd_name] [initial_cluster] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -207,6 +213,12 @@ function pd_run()
 		local initial_cluster=""
 	else
 		local initial_cluster="${6}"
+	fi
+
+	if [ -z "${7+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${7}"
 	fi
 
 	if [ -z "${advertise_host}" ]; then
@@ -255,11 +267,12 @@ function pd_run()
 	cp_when_diff "${conf_templ_dir}/pd.toml" "${pd_dir}/pd.toml"
 
 	local info="${pd_dir}/proc.info"
-	echo "pd_name ${pd_name}" > "${info}"
-	echo "advertise_host ${advertise_host}" >> "${info}"
-	echo "pd_port ${pd_port}" >> "${info}"
-	echo "peer_port ${peer_port}" >> "${info}"
-	echo "initial_cluster ${initial_cluster}" >> "${info}"
+	echo "pd_name	${pd_name}" > "${info}"
+	echo "advertise_host	${advertise_host}" >> "${info}"
+	echo "pd_port	${pd_port}" >> "${info}"
+	echo "peer_port	${peer_port}" >> "${info}"
+	echo "initial_cluster	${initial_cluster}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	echo "nohup \"${pd_dir}/pd-server\" \
 		--name=\"${pd_name}\" \
@@ -276,7 +289,7 @@ function pd_run()
 	bash "${pd_dir}/run.sh"
 
 	local pid=`print_pid "${pd_dir}/pd.toml" "\-\-config"`
-	echo "pid ${pid}" >> "${info}"
+	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
 export -f pd_run
@@ -298,7 +311,7 @@ export -f pd_stop
 function tikv_run()
 {
 	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func tikv_run] usage: <func> tikv_dir conf_templ_dir pd_addr [advertise_host] [ports_delta]" >&2
+		echo "[func tikv_run] usage: <func> tikv_dir conf_templ_dir pd_addr [advertise_host] [ports_delta] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -316,6 +329,12 @@ function tikv_run()
 		local ports_delta="0"
 	else
 		local ports_delta="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${6}"
 	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
@@ -362,10 +381,11 @@ function tikv_run()
 	cp_when_diff "${conf_templ_dir}/tikv.toml" "${tikv_dir}/tikv.toml"
 
 	local info="${tikv_dir}/proc.info"
-	echo "listen_host ${listen_host}" > "${info}"
-	echo "tikv_port ${tikv_port}" >> "${info}"
-	echo "advertise_host ${advertise_host}" >> "${info}"
-	echo "pd_addr ${pd_addr}" >> "${info}"
+	echo "listen_host	${listen_host}" > "${info}"
+	echo "tikv_port	${tikv_port}" >> "${info}"
+	echo "advertise_host	${advertise_host}" >> "${info}"
+	echo "pd_addr	${pd_addr}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	echo "nohup \"${tikv_dir}/tikv-server\" \
 		--addr \"${listen_host}:${tikv_port}\" \
@@ -380,7 +400,7 @@ function tikv_run()
 	bash "${tikv_dir}/run.sh"
 
 	local pid=`print_pid "${tikv_dir}/tikv.toml" "\-\-config"`
-	echo "pid ${pid}" >> "${info}"
+	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
 export -f tikv_run
@@ -402,7 +422,7 @@ export -f tikv_stop
 function tidb_run()
 {
 	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func tidb_run] usage: <func> tidb_dir conf_templ_dir pd_addr [advertise_host] [ports_delta]" >&2
+		echo "[func tidb_run] usage: <func> tidb_dir conf_templ_dir pd_addr [advertise_host] [ports_delta] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -420,6 +440,12 @@ function tidb_run()
 		local ports_delta="0"
 	else
 		local ports_delta="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${6}"
 	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
@@ -468,10 +494,11 @@ function tidb_run()
 	render_templ "${conf_templ_dir}/tidb.toml" "${tidb_dir}/tidb.toml" "${render_str}"
 
 	local info="${tidb_dir}/proc.info"
-	echo "advertise_host ${advertise_host}" > "${info}"
-	echo "tidb_port ${tidb_port}" >> "${info}"
-	echo "status_port ${status_port}" >> "${info}"
-	echo "pd_addr ${pd_addr}" >> "${info}"
+	echo "advertise_host	${advertise_host}" > "${info}"
+	echo "tidb_port	${tidb_port}" >> "${info}"
+	echo "status_port	${status_port}" >> "${info}"
+	echo "pd_addr	${pd_addr}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	echo "nohup \"${tidb_dir}/tidb-server\" \
 		-P \"${tidb_port}\" \
@@ -486,7 +513,7 @@ function tidb_run()
 	bash "${tidb_dir}/run.sh"
 
 	local pid=`print_pid "${tidb_dir}/tidb.toml" "\-\-config"`
-	echo "pid ${pid}" >> "${info}"
+	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
 export -f tidb_run
@@ -508,7 +535,7 @@ export -f tidb_stop
 function rngine_run()
 {
 	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func rngine_run] usage: <func> rngine_dir conf_templ_dir pd_addr tiflash_addr [advertise_host] [ports_delta]" >&2
+		echo "[func rngine_run] usage: <func> rngine_dir conf_templ_dir pd_addr tiflash_addr [advertise_host] [ports_delta] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -527,6 +554,12 @@ function rngine_run()
 		local ports_delta="0"
 	else
 		local ports_delta="${6}"
+	fi
+
+	if [ -z "${7+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${7}"
 	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
@@ -577,11 +610,12 @@ function rngine_run()
 	render_templ "${conf_templ_dir}/rngine.toml" "${rngine_dir}/rngine.toml" "${render_str}"
 
 	local info="${rngine_dir}/proc.info"
-	echo "listen_host ${listen_host}" > "${info}"
-	echo "rngine_port ${rngine_port}" >> "${info}"
-	echo "advertise_host ${advertise_host}" >> "${info}"
-	echo "pd_addr ${pd_addr}" >> "${info}"
-	echo "tiflash_raft_addr ${tiflash_addr}" >> "${info}"
+	echo "listen_host	${listen_host}" > "${info}"
+	echo "rngine_port	${rngine_port}" >> "${info}"
+	echo "advertise_host	${advertise_host}" >> "${info}"
+	echo "pd_addr	${pd_addr}" >> "${info}"
+	echo "tiflash_raft_addr	${tiflash_addr}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	echo "nohup \"${rngine_dir}/tikv-server-rngine\" \
 		--addr \"${listen_host}:${rngine_port}\" \
@@ -596,7 +630,7 @@ function rngine_run()
 	bash "${rngine_dir}/run.sh"
 
 	local pid=`print_pid "${rngine_dir}/rngine.toml" "\-\-config"`
-	echo "pid ${pid}" >> "${info}"
+	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
 export -f rngine_run
@@ -671,8 +705,8 @@ function wait_for_tidb()
 	fi
 
 	local tidb_info="${tidb_dir}/proc.info"
-	local host=`cat "${tidb_info}" | grep 'advertise_host' | awk '{print $2}'`
-	local port=`cat "${tidb_info}" | grep 'tidb_port' | awk '{print $2}'`
+	local host=`cat "${tidb_info}" | grep 'advertise_host' | awk -F '\t' '{print $2}'`
+	local port=`cat "${tidb_info}" | grep 'tidb_port' | awk -F '\t' '{print $2}'`
 
 	wait_for_mysql "${host}" "${port}" "${timeout}" "${tidb_dir}"
 }
@@ -705,11 +739,23 @@ function get_tiflash_addr_from_dir()
 		return 1
 	fi
 	local dir="${1}"
-	local host=`grep 'listen_host' "${dir}/proc.info" | awk '{print $2}'`
-	local port=`grep 'raft_port' "${dir}/proc.info" | awk '{print $2}'`
+	local host=`grep 'listen_host' "${dir}/proc.info" | awk -F '\t' '{print $2}'`
+	local port=`grep 'raft_port' "${dir}/proc.info" | awk -F '\t' '{print $2}'`
 	echo "${host}:${port}"
 }
 export -f get_tiflash_addr_from_dir
+
+function _print_mod_info()
+{
+	local dir="${1}"
+	if [ -d "${dir}" ] && [ -f "${dir}/proc.info" ]; then
+		local cluster_id=`grep cluster_id "${dir}/proc.info" | awk -F '\t' '{print $2}'`
+		echo "   [deployed from ${cluster_id}] ${dir}"
+	else
+		echo "   [unmanaged by ops-ti] ${dir}"
+	fi
+}
+export -f _print_mod_info
 
 function ls_tiflash_proc()
 {
@@ -717,7 +763,7 @@ function ls_tiflash_proc()
 		grep -v grep | awk -F '--config-file' '{print $2}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_file_parent_dir "${conf}"
+			_print_mod_info `_print_file_dir "${conf}"`
 		done
 	fi
 }
@@ -729,7 +775,7 @@ function ls_pd_proc()
 		grep -v grep | awk -F '--config=' '{print $2}' | awk '{print $1}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_file_dir "${conf}"
+			_print_mod_info `_print_file_dir "${conf}"`
 		done
 	fi
 }
@@ -741,7 +787,7 @@ function ls_tikv_proc()
 		grep -v grep | awk -F '--config' '{print $2}' | awk '{print $1}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_file_dir "${conf}"
+			_print_mod_info `_print_file_dir "${conf}"`
 		done
 	fi
 }
@@ -753,7 +799,7 @@ function ls_tidb_proc()
 		grep -v grep | awk -F '--config=' '{print $2}' | awk '{print $1}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_file_dir "${conf}"
+			_print_mod_info `_print_file_dir "${conf}"`
 		done
 	fi
 }
@@ -765,7 +811,7 @@ function ls_rngine_proc()
 		grep -v grep | awk -F '--config' '{print $2}' | awk '{print $1}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_file_dir "${conf}"
+			_print_mod_info `_print_file_dir "${conf}"`
 		done
 	fi
 }

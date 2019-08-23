@@ -1,30 +1,30 @@
 #!/bin/bash
 
-function _list_cmd_cmd_ti()
+function _ti_file_cmd_list()
 {
 	local dir="${1}"
 	ls "${dir}" | grep "sh$" | while read f; do
 		echo "    `basename "${f}" .sh`";
 	done
 }
-export -f _list_cmd_cmd_ti
+export -f _ti_file_cmd_list
 
-function list_cmds_cmd_ti()
+function ti_file_cmd_list()
 {
 	echo "remote, by module: (default)"
-	_list_cmd_cmd_ti "${integrated}/ops/ti.sh.cmds/remote"
+	_ti_file_cmd_list "${integrated}/ops/ti.sh.cmds/remote"
 	echo "remote, by host: (-b)"
-	_list_cmd_cmd_ti "${integrated}/ops/ti.sh.cmds/remote/byhost"
+	_ti_file_cmd_list "${integrated}/ops/ti.sh.cmds/remote/byhost"
 	echo "local, by module: (-l)"
-	_list_cmd_cmd_ti "${integrated}/ops/ti.sh.cmds/local"
+	_ti_file_cmd_list "${integrated}/ops/ti.sh.cmds/local"
 	echo "local, by host: (-l -b)"
-	_list_cmd_cmd_ti "${integrated}/ops/ti.sh.cmds/local/byhost"
+	_ti_file_cmd_list "${integrated}/ops/ti.sh.cmds/local/byhost"
 }
-export -f list_cmds_cmd_ti
+export -f ti_file_cmd_list
 
-function help_cmd_ti()
+function ti_file_cmd_help()
 {
-	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] [-l] ti_file_path cmd(help|list|echo|run|stop|fstop|status|..) [args]'
+	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|..) [args]'
 	echo '    -c:'
 	echo '        specify the config template dir, will be `ops/../conf` if this arg is not provided.'
 	echo '    -s:'
@@ -57,9 +57,9 @@ function help_cmd_ti()
 
 	echo
 	echo 'command list:'
-	list_cmds_cmd_ti | awk '{print "    "$0}'
+	ti_file_cmd_list | awk '{print "    "$0}'
 }
-export -f help_cmd_ti
+export -f ti_file_cmd_help
 
 function cmd_ti()
 {
@@ -93,7 +93,7 @@ function cmd_ti()
 			?)
 				echo '[func cmd_ti] illegal option(s)' >&2
 				echo '' >&2
-				help_cmd_ti >&2
+				ti_file_cmd_help >&2
 				return 1;;
 		esac
 	done
@@ -106,7 +106,7 @@ function cmd_ti()
 	local cmd_args=("${@}")
 
 	if [ -z "${ti_file}" ]; then
-		help_cmd_ti >&2
+		ti_file_cmd_help >&2
 		return 1
 	fi
 
