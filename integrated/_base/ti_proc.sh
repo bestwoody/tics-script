@@ -750,6 +750,10 @@ function _print_mod_info()
 	local dir="${1}"
 	if [ -d "${dir}" ] && [ -f "${dir}/proc.info" ]; then
 		local cluster_id=`grep cluster_id "${dir}/proc.info" | awk -F '\t' '{print $2}'`
+	else
+		local cluster_id=''
+	fi
+	if [ ! -z "${cluster_id}" ]; then
 		echo "   [deployed from ${cluster_id}] ${dir}"
 	else
 		echo "   [unmanaged by ops-ti] ${dir}"
@@ -763,7 +767,7 @@ function ls_tiflash_proc()
 		grep -v grep | awk -F '--config-file' '{print $2}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir "${conf}"`
+			_print_mod_info `_print_file_dir_when_abs "${conf}"`
 		done
 	fi
 }
@@ -775,7 +779,7 @@ function ls_pd_proc()
 		grep -v grep | awk -F '--config=' '{print $2}' | awk '{print $1}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir "${conf}"`
+			_print_mod_info `_print_file_dir_when_abs "${conf}"`
 		done
 	fi
 }
@@ -787,7 +791,7 @@ function ls_tikv_proc()
 		grep -v grep | awk -F '--config' '{print $2}' | awk '{print $1}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir "${conf}"`
+			_print_mod_info `_print_file_dir_when_abs "${conf}"`
 		done
 	fi
 }
@@ -799,7 +803,7 @@ function ls_tidb_proc()
 		grep -v grep | awk -F '--config=' '{print $2}' | awk '{print $1}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir "${conf}"`
+			_print_mod_info `_print_file_dir_when_abs "${conf}"`
 		done
 	fi
 }
@@ -811,7 +815,7 @@ function ls_rngine_proc()
 		grep -v grep | awk -F '--config' '{print $2}' | awk '{print $1}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir "${conf}"`
+			_print_mod_info `_print_file_dir_when_abs "${conf}"`
 		done
 	fi
 }

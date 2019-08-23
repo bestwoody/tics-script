@@ -1,30 +1,15 @@
 #!/bin/bash
 
-# TODO: Test in Mac OS
-function _print_file_dir()
+function _print_file_dir_when_abs()
 {
 	local path="${1}"
-	local dir=$(dirname "${path}")
-	if [ -z "${dir}" ] || [ "${dir}" == '.' ]; then
-		echo "${path}"
+	if [ "${path:0:1}" == '/' ]; then
+		dirname "${path}"
 	else
-		echo "${dir}"
+		echo "${path}"
 	fi
 }
-export -f _print_file_dir
-
-# TODO: Test in Mac OS
-function _print_file_parent_dir()
-{
-	local path="${1}"
-	local dir=$(dirname $(dirname "${path}"))
-	if [ -z "${dir}" ] || [ "${dir}" == '.' ]; then
-		echo "${path}"
-	else
-		echo "${dir}"
-	fi
-}
-export -f _print_file_parent_dir
+export -f _print_file_dir_when_abs
 
 function print_file_ext()
 {
