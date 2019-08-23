@@ -136,24 +136,30 @@ function ti_file_exe()
 	fi
 
 	if [ -z "${8+x}" ]; then
-		local byhost=""
+		local indexes=""
 	else
-		local byhosts="${8}"
+		local indexes="${8}"
 	fi
 
 	if [ -z "${9+x}" ]; then
-		local local=""
+		local byhost=""
 	else
-		local local="${9}"
+		local byhosts="${9}"
 	fi
 
 	if [ -z "${10+x}" ]; then
-		local cache_dir="/tmp/ti"
+		local local=""
 	else
-		local cache_dir="${10}"
+		local local="${10}"
 	fi
 
-	shift 10
+	if [ -z "${11+x}" ]; then
+		local cache_dir="/tmp/ti"
+	else
+		local cache_dir="${11}"
+	fi
+
+	shift 11
 
 	local error_handle="$-"
 	set +u
@@ -171,10 +177,10 @@ function ti_file_exe()
 
 	# For ti file checking
 	python "${integrated}/_base/ti_file.py" 'hosts' \
-		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}" 1>/dev/null
+		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" 1>/dev/null
 
 	local hosts=`python "${integrated}/_base/ti_file.py" 'hosts' \
-		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}"`
+		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}"`
 
 	# TODO: Pass paths from args
 	local remote_env_rel_dir='worker'
@@ -212,7 +218,7 @@ function ti_file_exe()
 	if [ "${byhost}" != 'true' ]; then
 		if [ "${cmd}" == 'run' ] || [ "${cmd}" == 'dry' ]; then
 			python "${integrated}/_base/ti_file.py" 'render' "${ti_file}" \
-				"${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}" > "${ti_file}.sh"
+				"${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" > "${ti_file}.sh"
 			chmod +x "${ti_file}.sh"
 			if [ "${cmd}" == "run" ]; then
 				bash "${ti_file}.sh"
@@ -222,7 +228,7 @@ function ti_file_exe()
 		fi
 
 		local mods=`python "${integrated}/_base/ti_file.py" 'mods' \
-			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}"`
+			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}"`
 
 		local has_func=`func_exists "ti_file_cmd_${cmd}"`
 

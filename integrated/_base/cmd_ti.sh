@@ -24,7 +24,7 @@ export -f ti_file_cmd_list
 
 function ti_file_cmd_help()
 {
-	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|..) [args]'
+	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd,tikv,..] [-h host,host] [-i mod_index] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|..) [args]'
 	echo '    -c:'
 	echo '        specify the config template dir, will be `ops/../conf` if this arg is not provided.'
 	echo '    -s:'
@@ -41,6 +41,9 @@ function ti_file_cmd_help()
 	echo '    -h:'
 	echo '        the host names, format: `host,host,..`'
 	echo '        if this arg is not provided, it means all specified host names in the .ti file.'
+	echo '    -i:'
+	echo '        specify the module index. eg, 3 tikvs in a cluster, then we have tikv[0], [1], [2].'
+	echo '        if this arg is not provided, it means all.'
 	echo '    -b:'
 	echo '        execute command on each host(node).'
 	echo '        if this arg is not provided, execute command on each module.'
@@ -71,8 +74,9 @@ function cmd_ti()
 	local ti_args=""
 	local byhost="false"
 	local local="false"
+	local indexes=""
 
-	while getopts ':k:c:m:s:h:t:bl' OPT; do
+	while getopts ':k:c:m:s:h:i:t:bl' OPT; do
 		case ${OPT} in
 			c)
 				local conf_templ_dir="${OPTARG}";;
@@ -84,6 +88,8 @@ function cmd_ti()
 				local mods="${OPTARG}";;
 			h)
 				local hosts="${OPTARG}";;
+			i)
+				local indexes="${OPTARG}";;
 			k)
 				local ti_args="${OPTARG}";;
 			b)
@@ -122,9 +128,9 @@ function cmd_ti()
 
 	auto_error_handle
 	if [ -z "${cmd_args+x}" ]; then
-		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${byhost}" "${local}" "${cache_dir}"
+		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}"
 	else
-		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${byhost}" ${local} "${cache_dir}" "${cmd_args[@]}"
+		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}" "${cmd_args[@]}"
 	fi
 }
 export -f cmd_ti

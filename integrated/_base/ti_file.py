@@ -214,7 +214,7 @@ def print_ssh_prepare(mod, conf, env_dir):
     prepare = 'ssh_prepare_run "%s" ' + mod.name + ' "%s" "%s" "%s" "%s"'
     print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir)
 
-def render_pds(res, conf, hosts):
+def render_pds(res, conf, hosts, indexes):
     pds = res.pds
     if len(pds) == 0:
         return
@@ -234,8 +234,11 @@ def render_pds(res, conf, hosts):
     else:
         cluster = ','.join(cluster)
 
-    for pd in pds:
+    for i in range(0, len(pds)):
+        pd = pds[i]
         if len(hosts) != 0 and (pd.host not in hosts):
+            continue
+        if len(indexes) != 0 and (i not in indexes):
             continue
         print_mod_header(pd)
 
@@ -255,10 +258,12 @@ def render_pds(res, conf, hosts):
         print '\t"%s" "%s" "%s" "%s" \\' % (pd.ports, pd.host, pd.pd_name, cluster)
         print '\t ${id}'
 
-def render_tikvs(res, conf, hosts):
+def render_tikvs(res, conf, hosts, indexes):
     for i in range(0, len(res.tikvs)):
         tikv = res.tikvs[i]
         if len(hosts) != 0 and tikv.host not in hosts:
+            continue
+        if len(indexes) != 0 and (i not in indexes):
             continue
         print_mod_header(tikv)
 
@@ -279,10 +284,12 @@ def render_tikvs(res, conf, hosts):
         print '\t"%s" "%s" "%s" \\' % (pd_addr, tikv.host, tikv.ports)
         print '\t ${id}'
 
-def render_tidbs(res, conf, hosts):
+def render_tidbs(res, conf, hosts, indexes):
     for i in range(0, len(res.tidbs)):
         tidb = res.tidbs[i]
         if len(hosts) != 0 and tidb.host not in hosts:
+            continue
+        if len(indexes) != 0 and (i not in indexes):
             continue
         print_mod_header(tidb)
 
@@ -303,7 +310,7 @@ def render_tidbs(res, conf, hosts):
         print '\t"%s" "%s" "%s" \\' % (pd_addr, tidb.host, tidb.ports)
         print '\t ${id}'
 
-def render_tiflashs(res, conf, hosts):
+def render_tiflashs(res, conf, hosts, indexes):
     if len(res.tiflashs) == 0:
         return
 
@@ -319,6 +326,8 @@ def render_tiflashs(res, conf, hosts):
     for i in range(0, len(res.tiflashs)):
         tiflash = res.tiflashs[i]
         if len(hosts) != 0 and tiflash.host not in hosts:
+            continue
+        if len(indexes) != 0 and (i not in indexes):
             continue
         print_mod_header(tiflash)
 
@@ -338,10 +347,12 @@ def render_tiflashs(res, conf, hosts):
             print_ssh_prepare(tiflash, conf, env_dir)
             print_run_cmd('call_remote_func "%s" "%s" ' % (tiflash.host, env_dir), env_dir + '/conf')
 
-def render_rngines(res, conf, hosts):
+def render_rngines(res, conf, hosts, indexes):
     for i in range(0, len(res.rngines)):
         rngine = res.rngines[i]
         if len(hosts) != 0 and rngine.host not in hosts:
+            continue
+        if len(indexes) != 0 and (i not in indexes):
             continue
         print_mod_header(rngine)
 
@@ -383,20 +394,20 @@ def render_rngines(res, conf, hosts):
         print '\t"%s" "${tiflash_addr}" "%s" "%s" \\' % (pd_addr, rngine.host, rngine.ports)
         print '\t ${id}'
 
-def render(res, conf, kvs, mod_names, hosts):
+def render(res, conf, kvs, mod_names, hosts, indexes):
     print_sh_header(conf, kvs)
     if len(mod_names) == 0 or ('pd' in mod_names):
-        render_pds(res, conf, hosts)
+        render_pds(res, conf, hosts, indexes)
     if len(mod_names) == 0 or ('tikv' in mod_names):
-        render_tikvs(res, conf, hosts)
+        render_tikvs(res, conf, hosts, indexes)
     if len(mod_names) == 0 or ('tidb' in mod_names):
-        render_tidbs(res, conf, hosts)
+        render_tidbs(res, conf, hosts, indexes)
     if len(mod_names) == 0 or ('tiflash' in mod_names):
-        render_tiflashs(res, conf, hosts)
+        render_tiflashs(res, conf, hosts, indexes)
     if len(mod_names) == 0 or ('rngine' in mod_names):
-        render_rngines(res, conf, hosts)
+        render_rngines(res, conf, hosts, indexes)
 
-def get_mods(res, mod_names, hosts):
+def get_mods(res, mod_names, hosts, indexes):
     confs = {
         'pd' : 'pd.toml',
         'tikv': 'tikv.toml',
@@ -408,6 +419,8 @@ def get_mods(res, mod_names, hosts):
     def output(mod_array):
         for i in range(0, len(mod_array)):
             mod = mod_array[i]
+            if len(indexes) != 0 and (i not in indexes):
+                continue
             if len(hosts) == 0 or (mod.host in hosts):
                 if len(mod_names) == 0 or (mod.name in mod_names):
                     print '\t'.join([str(i), mod.name, mod.dir, confs[mod.name], mod.host])
@@ -418,12 +431,14 @@ def get_mods(res, mod_names, hosts):
     output(res.tiflashs)
     output(res.rngines)
 
-def get_hosts(res, mod_names, hosts):
+def get_hosts(res, mod_names, hosts, indexes):
     host_infos = set()
     def output(mod_array):
         for i in range(0, len(mod_array)):
             mod = mod_array[i]
             if len(mod.host) == 0:
+                continue
+            if len(indexes) != 0 and (i not in indexes):
                 continue
             if len(hosts) == 0 or (mod.host in hosts):
                 if len(mod_names) == 0 or (mod.name in mod_names):
@@ -441,7 +456,7 @@ def get_hosts(res, mod_names, hosts):
 
 if __name__ == '__main__':
     if len(sys.argv) < 6:
-        error('usage: <bin> file cmd(render|mods|hosts) integrated_dir conf_templ_dir cache_dir [mod_nams] [hosts] [args_str(k=v#k=v#..)]')
+        error('usage: <bin> file cmd(render|mods|hosts) integrated_dir conf_templ_dir cache_dir [mod_nams] [hosts] [indexes] [args_str(k=v#k=v#..)]')
 
     cmd = sys.argv[1]
     path = sys.argv[2]
@@ -463,9 +478,13 @@ if __name__ == '__main__':
     if len(sys.argv) >= 7 and len(sys.argv[7]) != 0:
         hosts = set(sys.argv[7].split(','))
 
+    indexes = set()
+    if len(sys.argv) >= 8 and len(sys.argv[8]) != 0:
+        indexes = set(map(lambda x: int(x), sys.argv[8].split(',')))
+
     kvs_str = ""
-    if len(sys.argv) >= 8:
-        kvs_str = sys.argv[8]
+    if len(sys.argv) >= 9:
+        kvs_str = sys.argv[9]
 
     res = Ti()
     kvs = parse_kvs(kvs_str)
@@ -473,10 +492,10 @@ if __name__ == '__main__':
     check_is_valid(res)
 
     if cmd == 'render':
-        render(res, conf, kvs, mod_names, hosts)
+        render(res, conf, kvs, mod_names, hosts, indexes)
     elif cmd == 'mods':
-        get_mods(res, mod_names, hosts)
+        get_mods(res, mod_names, hosts, indexes)
     elif cmd == 'hosts':
-        get_hosts(res, mod_names, hosts)
+        get_hosts(res, mod_names, hosts, indexes)
     else:
         error('unknow cmd: ' + cmd)
