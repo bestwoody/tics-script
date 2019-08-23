@@ -8,14 +8,28 @@ function cmd_ti_mysql()
 	local conf_rel_path="${4}"
 	local host="${5}"
 
-	shift 5
-
 	if [ "${mod_name}" != 'tidb' ]; then
 		return
 	fi
 
+	if [ -z "${6+x}" ]; then
+		echo '[cmd mysql] <cmd> query [database]' >&2
+		return
+	fi
+
+	local query="${6}"
+	if [ -z "${query}" ]; then
+		return
+	fi
+
+	if [ -z "${7+x}" ]; then
+		local db='mysql'
+	else
+		local db="${7}"
+	fi
+
 	local port=`get_value "${dir}/proc.info" 'tidb_port'`
-	mysql -h "${host}" -P "${port}" -u root "${@}"
+	mysql -h "${host}" -P "${port}" -u root --database="${db}" -e "${query}"
 }
 
 cmd_ti_mysql "${@}"
