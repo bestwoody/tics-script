@@ -1,3 +1,3 @@
 host="${1}"
 shift
-ssh "${host}" "${@}"
+ssh "${host}" "${@}" | awk '{print "['${host}'] "$0}'
