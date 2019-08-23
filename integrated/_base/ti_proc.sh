@@ -767,7 +767,9 @@ function ls_tiflash_proc()
 		grep -v grep | awk -F '--config-file' '{print $2}'`
 	if [ ! -z "${processes}" ]; then
 		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir_when_abs "${conf}"`
+			local path=`_print_file_dir_when_abs "${conf}"`
+			local path=`_print_file_dir_when_abs "${path}"`
+			_print_mod_info "${path}"
 		done
 	fi
 }
