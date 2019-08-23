@@ -41,14 +41,14 @@ function cp_when_diff()
 		return 0
 	fi
 
-	if [ `uname` == "Darwin" ]; then
-		local cp_cmd="gcp"
-	else
-		local cp_cmd="cp"
-	fi
-
 	mkdir -p `dirname "${dest}"`
-	${cp_cmd} -f -u "${src}" "${dest}"
+
+	if [ `uname` == "Darwin" ]; then
+		# TODO: Update mode
+		cp -f "${src}" "${dest}"
+	else
+		cp -f -u "${src}" "${dest}"
+	fi
 }
 export -f cp_when_diff
 

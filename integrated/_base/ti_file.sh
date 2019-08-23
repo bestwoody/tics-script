@@ -154,7 +154,11 @@ function ti_file_exe()
 	fi
 
 	shift 10
+
+	local error_handle="$-"
+	set +u
 	local cmd_args=("${@}")
+	restore_error_handle_flags "${error_handle}"
 
 	if [ ! -f "${ti_file}" ]; then
 		if [ -d "${ti_file}" ]; then
@@ -172,10 +176,6 @@ function ti_file_exe()
 	local hosts=`python "${integrated}/_base/ti_file.py" 'hosts' \
 		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${ti_args}"`
 
-	#if [ -z "${hosts}" ]; then
-	#	local local='true'
-	#fi
-
 	# TODO: Pass paths from args
 	local remote_env_rel_dir='worker'
 	local local_cache_env="${cache_dir}/master/integrated"
@@ -190,6 +190,9 @@ function ti_file_exe()
 	fi
 	if [ "${byhost}" == 'true' ]; then
 		local real_cmd_dir="${real_cmd_dir}/byhost"
+	fi
+	if [ -z "${hosts}" ]; then
+		local real_cmd_dir="${cmd_dir}/remote"
 	fi
 
 	if [ "${local}" != 'true' ] && [ "${cmd}" != 'dry' ]; then

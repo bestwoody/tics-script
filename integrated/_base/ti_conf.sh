@@ -139,7 +139,7 @@ function cp_bin_to_dir_from_urls()
 	local download_is_tar=`echo "${download_name}" | grep '.tar.gz'`
 
 	if [ ! -z "${download_is_tar}" ]; then
-		tar --overwrite -O -zxf "${cache_dir}/${download_name}" > "${cache_dir}/${bin_name}"
+		tar -O -zxf "${cache_dir}/${download_name}" > "${cache_dir}/${bin_name}"
 		rm -f "${cache_dir}/${download_name}"
 		chmod +x "${cache_dir}/${bin_name}"
 		mkdir -p "${dest_dir}"
