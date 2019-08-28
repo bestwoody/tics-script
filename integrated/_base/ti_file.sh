@@ -197,7 +197,7 @@ function ti_file_exe()
 	if [ "${byhost}" == 'true' ]; then
 		local real_cmd_dir="${real_cmd_dir}/byhost"
 	fi
-	if [ -z "${hosts}" ]; then
+	if [ -z "${hosts}" ] && [ "${local}" != 'true' ]; then
 		local real_cmd_dir="${cmd_dir}/remote"
 	fi
 
@@ -250,6 +250,9 @@ function ti_file_exe()
 
 			if [ "${has_script}" == 'true' ]; then
 				if [ -z "${host}" ] || [ "${local}" == 'true' ]; then
+				    if [ -z "${host}" ]; then
+				        local host=`must_print_ip`
+				    fi
 					if [ -z "${cmd_args+x}" ]; then
 						bash "${real_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else

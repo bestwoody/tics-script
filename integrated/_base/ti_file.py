@@ -209,6 +209,12 @@ def print_cp_bin(mod, conf):
     line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "%s/master/bins"'
     print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
     print ''
+    if mod.name == "pd":
+        print line % ("ctl-for-pd", mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
+        print ''
+    if mod.name == "tikv":
+        print line % ("ctl-for-tikv", mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
+        print ''
 
 def print_ssh_prepare(mod, conf, env_dir):
     prepare = 'ssh_prepare_run "%s" ' + mod.name + ' "%s" "%s" "%s" "%s"'
@@ -322,6 +328,16 @@ def render_tiflashs(res, conf, hosts, indexes):
                 print 'wait_for_tidb "%s"' % tidb.dir
             else:
                 print 'wait_for_tidb_by_host "%s" "%s" 180 %s' % (tidb.host, tidb.ports, conf.integrated_dir + '/conf/default.ports')
+
+    if len(res.pds) != 0:
+        print_sep()
+        print '# Wait for pd to ready'
+        for pd in res.pds:
+            if len(pd.host) == 0:
+                print 'wait_for_pd_local "%s"' % pd.dir
+            else:
+                bins_dir = conf.cache_dir + '/master/bins'
+                print 'wait_for_pd_by_host "%s" "%s" 180 %s %s' % (pd.host, pd.ports, bins_dir, conf.integrated_dir + '/conf/default.ports')
 
     for i in range(0, len(res.tiflashs)):
         tiflash = res.tiflashs[i]

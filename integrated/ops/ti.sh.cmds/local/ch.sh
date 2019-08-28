@@ -35,7 +35,7 @@ function cmd_ti_ch()
 	fi
 
 	local port=`get_value "${dir}/proc.info" 'tcp_port'`
-	"/tmp/ti/master/bins/tiflash" client --host="${host}" --port="${port}" "${format}" -d "${db}" --query="${query}"
+	"${dir}/tiflash" client --host="${host}" --port="${port}" "${format}" -d "${db}" --query="${query}"
 }
 
 cmd_ti_ch "${@}"
