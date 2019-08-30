@@ -96,10 +96,14 @@ object CHSql {
   def query(table: CHTableRef,
             chLogicalPlan: CHLogicalPlan,
             partitions: Array[String] = null,
-            useSelraw: Boolean = false): String =
-    s"${compileProject(chLogicalPlan.chProject, useSelraw)}${compileTable(table, partitions)}${compileFilter(
-      chLogicalPlan.chFilter
-    )}${compileAggregate(chLogicalPlan.chAggregate)}${compileTopN(chLogicalPlan.chTopN)}"
+            useSelraw: Boolean = false): String = {
+    val qualified = chLogicalPlan transformExpressions {
+      case attr @ AttributeReference(_, _, _, _) => attr.withQualifier(Some(table.table))
+    }
+    s"${compileProject(qualified.chProject, useSelraw)}${compileTable(table, partitions)}${compileFilter(
+      qualified.chFilter
+    )}${compileAggregate(qualified.chAggregate)}${compileTopN(qualified.chTopN)}"
+  }
 
   /**
    * Query partition list of a table
@@ -385,7 +389,10 @@ object CHSql {
       compileExpression(ce.children.head)
     }
 
-  def compileAttributeName(name: String): String = s"`${name.replace("`", "\\`")}`"
+  def compileIdentifierName(name: String): String = s"`${name.replace("`", "\\`")}`"
+
+  def compileAttributeReference(attr: AttributeReference): String =
+    s"${attr.qualifier.map(q => compileIdentifierName(q.toLowerCase) + ".").getOrElse("")}${compileIdentifierName(attr.name.toLowerCase)}"
 
   /**
    * Compile Spark Expressions into CH Expressions
@@ -416,18 +423,18 @@ object CHSql {
             case _ => value.toString
           }
         }
-      case AttributeReference(name, dataType, nullable, _) =>
-        dataType match {
+      case attr: AttributeReference =>
+        attr.dataType match {
           // Explicitly cast decimal attribute, as the underlying CH type may be UInt64.
           // See how method [[TypeMapping.chTypeToSparkType]] treats UInt64.
           case _: DecimalType =>
-            explicitCast(compileAttributeName(name.toLowerCase), dataType, nullable)
-          case _ => compileAttributeName(name.toLowerCase)
+            explicitCast(compileAttributeReference(attr), attr.dataType, attr.nullable)
+          case _ => compileAttributeReference(attr)
         }
       // case ns @ CreateNamedStruct(_) => ns.valExprs.map(compileExpression).mkString("(", ", ", ")")
       case cast @ Cast(child, dataType, _) =>
         explicitCast(compileExpression(child), dataType, cast.nullable)
-      case Alias(child, name) => s"${compileExpression(child)} AS ${compileAttributeName(name)}"
+      case Alias(child, name) => s"${compileExpression(child)} AS ${compileIdentifierName(name)}"
       case IsNotNull(child)   => s"${compileExpression(child)} IS NOT NULL"
       case IsNull(child)      => s"${compileExpression(child)} IS NULL"
       case UnaryMinus(child)  => s"(-${compileExpression(child)})"

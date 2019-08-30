@@ -145,9 +145,43 @@ class IssueTestSuite extends BaseClickHouseSuite {
     )
   }
 
+  test("FLASH-451 Alias mis-resolve") {
+    clickHouseStmt.execute("DROP TABLE IF EXISTS flash_451")
+    clickHouseStmt.execute(
+      """CREATE TABLE flash_451(i1 Int32, i2 Int32, i3 Int32) ENGINE = MutableMergeTree(i1, 8192)"""
+    )
+    clickHouseStmt.execute(
+      """INSERT INTO TABLE flash_451 VALUES(1, 1, 2), (2, 2, 3)"""
+    )
+    refreshConnections()
+
+    spark.sql("select * from flash_451").show(false)
+    runTest(
+      "select i1 as i3, i3 as i1 from flash_451 where i3 = 2",
+      skipJDBC = true,
+      rClickHouse = List(List(1, 2))
+    )
+    runTest(
+      "select i2 as i3, i3 as i2 from flash_451 where i3 = 2",
+      skipJDBC = true,
+      rClickHouse = List(List(1, 2))
+    )
+    runTest(
+      "select i1 as i3, i3 as i1 from flash_451 where i1 = 2",
+      skipJDBC = true,
+      rClickHouse = List(List(2, 3))
+    )
+    runTest(
+      "select i2 as i3, i3 as i2 from flash_451 where i2 = 2",
+      skipJDBC = true,
+      rClickHouse = List(List(2, 3))
+    )
+  }
+
   override def afterAll(): Unit =
     try {
       clickHouseStmt.execute("DROP TABLE IF EXISTS test")
+      clickHouseStmt.execute("DROP TABLE IF EXISTS flash_451")
     } finally {
       super.afterAll()
     }

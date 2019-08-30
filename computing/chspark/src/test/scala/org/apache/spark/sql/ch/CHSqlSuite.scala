@@ -275,7 +275,7 @@ class CHSqlSuite extends SparkFunSuite {
         Seq.empty,
         None
       ),
-      "SELECT `a`, `b`, `c` FROM `d`.`t`"
+      "SELECT `t`.`a`, `t`.`b`, `t`.`c` FROM `d`.`t`"
     )
   }
 
@@ -290,7 +290,7 @@ class CHSqlSuite extends SparkFunSuite {
         Seq.empty,
         None
       ),
-      "SELECT  FROM `d`.`t` WHERE ((`a` AND `b`) AND NULL IS NOT NULL)"
+      "SELECT  FROM `d`.`t` WHERE ((`t`.`a` AND `t`.`b`) AND NULL IS NOT NULL)"
     )
   }
 
@@ -305,7 +305,7 @@ class CHSqlSuite extends SparkFunSuite {
         Seq.empty,
         None
       ),
-      "SELECT `a`, `b`, SUM(`c`) FROM `d`.`t` GROUP BY `a`, `b`"
+      "SELECT `t`.`a`, `t`.`b`, SUM(`t`.`c`) FROM `d`.`t` GROUP BY `t`.`a`, `t`.`b`"
     )
   }
 
@@ -320,7 +320,7 @@ class CHSqlSuite extends SparkFunSuite {
         Seq(a desc, b asc),
         None
       ),
-      "SELECT  FROM `d`.`t` ORDER BY `a` DESC NULLS LAST, `b` ASC NULLS FIRST"
+      "SELECT  FROM `d`.`t` ORDER BY `t`.`a` DESC NULLS LAST, `t`.`b` ASC NULLS FIRST"
     )
     ignoreQuery(
       t,
@@ -332,7 +332,7 @@ class CHSqlSuite extends SparkFunSuite {
         Seq(a asc, CreateNamedStruct(Seq(b.name, b, "col1", a + b, "col2", b + c)) desc, c asc),
         None
       ),
-      "SELECT  FROM `d`.`t` ORDER BY `a` ASC NULLS FIRST, (`b`, (`a` + `b`), (`b` + `c`)) DESC NULLS LAST, `c` ASC NULLS FIRST"
+      "SELECT  FROM `d`.`t` ORDER BY `t`.`a` ASC NULLS FIRST, (`t`.`b`, (`t`.`a` + `t`.`b`), (`t`.`b` + `t`.`c`)) DESC NULLS LAST, `t`.`c` ASC NULLS FIRST"
     )
     testQuery(
       t,
@@ -356,7 +356,7 @@ class CHSqlSuite extends SparkFunSuite {
         Seq(a desc, b asc),
         Option(1)
       ),
-      "SELECT  FROM `d`.`t` ORDER BY `a` DESC NULLS LAST, `b` ASC NULLS FIRST LIMIT 1"
+      "SELECT  FROM `d`.`t` ORDER BY `t`.`a` DESC NULLS LAST, `t`.`b` ASC NULLS FIRST LIMIT 1"
     )
   }
 }

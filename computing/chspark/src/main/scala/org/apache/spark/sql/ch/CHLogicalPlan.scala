@@ -24,11 +24,22 @@ import org.apache.spark.sql.catalyst.util
  * This IR is hopefully backend independent, thus can be further compiled into
  * various physical representations.
  */
-class CHLogicalPlan(val chProject: CHProject,
-                    val chFilter: CHFilter,
-                    val chAggregate: CHAggregate,
-                    val chTopN: CHTopN) {
+case class CHLogicalPlan(chProject: CHProject,
+                         chFilter: CHFilter,
+                         chAggregate: CHAggregate,
+                         chTopN: CHTopN) {
   override def toString: String = s"CHLogicalPlan($chProject, $chFilter, $chAggregate, $chTopN)"
+
+  def transformExpressions(rule: PartialFunction[Expression, Expression]): CHLogicalPlan =
+    CHLogicalPlan(
+      CHProject(chProject.projectList.map(_.transform(rule))),
+      CHFilter(chFilter.predicates.map(_.transform(rule))),
+      CHAggregate(
+        chAggregate.groupingExpressions.map(_.transform(rule).asInstanceOf[NamedExpression]),
+        chAggregate.aggregateExpressions.map(_.transform(rule).asInstanceOf[AggregateExpression])
+      ),
+      CHTopN(chTopN.sortOrders.map(_.transform(rule).asInstanceOf[SortOrder]), chTopN.n)
+    )
 }
 
 object CHLogicalPlan {
@@ -44,25 +55,25 @@ object CHLogicalPlan {
         || !aggregateExpressions.forall(CHUtil.isSupportedAggregateExpression)) {
       throw new UnsupportedOperationException
     }
-    new CHLogicalPlan(
-      new CHProject(projectList),
-      new CHFilter(filterPredicates),
-      new CHAggregate(groupingExpressions, aggregateExpressions),
-      new CHTopN(sortOrders, limit)
+    CHLogicalPlan(
+      CHProject(projectList),
+      CHFilter(filterPredicates),
+      CHAggregate(groupingExpressions, aggregateExpressions),
+      CHTopN(sortOrders, limit)
     )
   }
 }
 
-class CHProject(val projectList: Seq[Expression]) {
+case class CHProject(projectList: Seq[Expression]) {
   override def toString: String = projectList.map(util.toPrettySQL).mkString("project=[", ", ", "]")
 }
 
-class CHFilter(val predicates: Seq[Expression]) {
+case class CHFilter(predicates: Seq[Expression]) {
   override def toString: String = predicates.map(util.toPrettySQL).mkString("filter=[", ", ", "]")
 }
 
-class CHAggregate(val groupingExpressions: Seq[NamedExpression],
-                  val aggregateExpressions: Seq[AggregateExpression]) {
+case class CHAggregate(groupingExpressions: Seq[NamedExpression],
+                       aggregateExpressions: Seq[AggregateExpression]) {
   override def toString: String =
     Seq(
       if (groupingExpressions.isEmpty) ""
@@ -79,7 +90,7 @@ class CHAggregate(val groupingExpressions: Seq[NamedExpression],
       .mkString("agg=[", ", ", "]")
 }
 
-class CHTopN(val sortOrders: Seq[SortOrder], val n: Option[Int]) {
+case class CHTopN(sortOrders: Seq[SortOrder], n: Option[Int]) {
   override def toString: String =
     Seq(
       if (sortOrders.isEmpty) "" else sortOrders.map(util.toPrettySQL).mkString("[", ", ", "]"),
