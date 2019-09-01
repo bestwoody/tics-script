@@ -105,3 +105,25 @@ function file_md5()
 	fi
 }
 export -f file_md5
+
+function file_mtime()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func file_mtime] usage: <func> file_path" >&2
+		return 1
+	fi
+
+	local file="$1"
+
+	if [ ! -f "${file}" ]; then
+		echo '0'
+		return
+	fi
+
+	if [ `uname` == "Darwin" ]; then
+		gstat -c %Y "${file}"
+	else
+		stat -c %Y "${file}"
+	fi
+}
+export -f file_mtime

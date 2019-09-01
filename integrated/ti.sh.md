@@ -99,7 +99,7 @@ ports=n            "+1" means all listening ports will increase 1 (from default 
                    "-n" is allowed.
                    use default port if this prop is not provided
 
-host=10.0.0.1   <- this module should be deployed to which host. (WIP)
+host=10.0.0.1   <- this module should be deployed to which host.
                    run on local host if this prop is not provided
 
 pd=ip           <- connect to which pd.
@@ -109,7 +109,6 @@ pd=ip:port         "port" can be real number or "+n" "-n" delta form.
 tiflash=dir     <- only used by rngine module,
 tiflash=ip:port    it means which tiflash instance rngine should connect,
 tiflash=ip:dir    "tiflash=host:dir" is used for support remote connect.
-                   (WIP)
 ```
 
 A little more complex case:
