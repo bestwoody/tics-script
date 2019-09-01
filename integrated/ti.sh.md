@@ -1,5 +1,5 @@
 # The ops/ti.sh tool
-The ops/ti.sh is design for fast testing, CI, or POCing, anyone can easily deploy and control a TiDB+TiFlash cluster in no time.
+The ops/ti.sh is designed for fast testing, CI, or POCing, anyone can easily deploy and control a TiDB+TiFlash cluster in no time.
 
 
 ## Quick start
