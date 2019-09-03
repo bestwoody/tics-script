@@ -26,7 +26,7 @@ function kp_mon_report
 
 	tail -n 80 "${log}" | grep 'START\|RUNNING\|ERROR' | \
 		awk '{if ($3 == "START") print "\033[36mR\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"}' | \
-		tr "\n" ' ' | sed 's/ //g' | awk '{print "\033[32m<\033[0m "$0}'
+		tr "\n" ' ' | sed 's/ //g' | awk '{print "\033[32m<<\033[0m"$0}'
 }
 export -f kp_mon_report
 
@@ -77,7 +77,10 @@ function cmd_kp()
 	elif [ "${cmd}" == 'stop' ]; then
 		echo "=> [monitor] ${file}"
 		if [ ! -z "${mon_pid}" ]; then
-			kill "${mon_pid}"
+			local error_handle="$-"
+			set +e
+			kill "${mon_pid}" 2>/dev/null
+			restore_error_handle_flags "${error_handle}"
 			echo '   stopping'
 		else
 			echo '   nor running, skipped'
@@ -86,11 +89,11 @@ function cmd_kp()
 	elif [ "${cmd}" == 'status' ]; then
 		local atime=`_kp_sh_last_active "${file}"`
 		local atime=", actived ${atime}s ago"
-		echo "=> [monitor] ${file}"
+		echo -e "\033[34m=>\033[0m \033[34m[monitor] ${file}\033[0m"
 		if [ ! -z "${mon_pid}" ]; then
 			echo "   running${atime}"
 		else
-			echo "   not running${atime}"
+			echo -e "   \033[31mnot running\033[0m${atime}"
 		fi
 		kp_mon_report "${file}" | awk '{print "   "$0}'
 		kp_file_status "${file}"

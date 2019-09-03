@@ -23,11 +23,11 @@ def report(std_log_path, err_log_path, color = True):
 
     n = '-'
     e = 'E'
-    u = '#'
+    u = '~'
     if color:
         n = '\033[32m-\033[0m'
         e = '\033[31mE\033[0m'
-        u = '\033[33m#\033[0m'
+        u = '\033[33m~\033[0m'
 
     result = [n for i in range(result_limit)]
     started = False

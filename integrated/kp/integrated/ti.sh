@@ -5,25 +5,28 @@ source "${here}/_env.sh"
 auto_error_handle
 
 ti="${integrated}/ops/ti.sh"
-ti_file="${integrated}/ti/1.ti"
-port="ports=+3"
+ti_file="${integrated}/ti/1_x.ti"
+args="ports=+3#dir=nodes/3"
 
-"${ti}" "${ti_file}" burn doit
+"${ti}" -k "${args}" "${ti_file}" burn doit
 
 start_time=`date +%s`
 
-"${ti}" -k "${port}" "${ti_file}" up
+"${ti}" -k "${args}" "${ti_file}" up
 
-ok=`"${ti}" "${ti_file}" | grep 'OK' | wc -l | awk '{print $1}'`
+ok=`"${ti}" -k "${args}" "${ti_file}" | grep 'OK' | wc -l | awk '{print $1}'`
 
-"${ti}" -k "${port}" "${ti_file}" down
+"${ti}" -k "${args}" "${ti_file}" down
 
 end_time=`date +%s`
 
 if [ "${ok}" != '5' ]; then
 	"${ti}" "${ti_file}" >&2
 else
-	echo "all up and down in "$((end_time - start_time))"s" > "${BASH_SOURCE[0]}.report"
+	echo $((end_time - start_time)) >> "${BASH_SOURCE[0]}.data"
+	tail -n 10 "${BASH_SOURCE[0]}.data" | tr '\n' ' ' | \
+		awk '{print "launch+stop elapsed(s): "$0}' > "${BASH_SOURCE[0]}.report"
 fi
+echo 'done'
 
-"${ti}" "${ti_file}" burn doit
+"${ti}" -k "${args}" "${ti_file}" burn doit

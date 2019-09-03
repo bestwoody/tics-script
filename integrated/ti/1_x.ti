@@ -1,4 +1,4 @@
-dir=nodes/4
+dir={dir}
 p={ports}
 
 pd: {dir}/pd ports{p}

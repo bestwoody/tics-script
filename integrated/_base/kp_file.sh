@@ -301,11 +301,14 @@ function kp_sh_stop()
 		echo "   stopping"
 	fi
 
+	local error_handle="$-"
+	set +e
 	kill "${pid}" 2>/dev/null
 	local pid=`_kp_file_pid "${file}"`
 	if [ ! -z "${pid}" ]; then
 		kill "${pid}" 2>/dev/null
 	fi
+	restore_error_handle_flags "${error_handle}"
 
 	if [ "${quiet}" != 'true' ]; then
 		stop_proc "bash ${file}"
@@ -405,33 +408,33 @@ function kp_file_status()
 		fi
 
 		local pid=`_kp_file_pid "${line}"`
-		echo "=> [task] ${line}"
+		echo -e "\033[34m=>\033[0m \033[34m[task] ${line}\033[0m"
 		if [ -z "${pid}" ]; then
-			echo "   not running, ${status}"
+			echo -e "   \033[31mnot running\033[0m, ${status}"
 		else
-			echo "   running, ${status}"
+			echo -e "   running, ${status}"
 		fi
 
 		if [ -f "${line}.report" ]; then
-			echo '   -- report --'
-			cat "${line}.report" | awk '{print "   "$0}'
+			# echo -e "   \033[36m-- report --\033[0m"
+			cat "${line}.report" | awk '{print "   \033[36m"$0"\033[0m"}'
 		fi
 
 		if [ ! -z "${start_time}" ] && [ -f "${line}.err.log" ]; then
 			local stderr=`tail -n 9999 "${line}.err.log" | grep "RUN ${start_time}" -A 9999 | grep -v "${start_time}"`
 			if [ ! -z "${stderr}" ]; then
-				echo '   -- stderr --'
+				# echo -e '   \033[33m-- stderr --\033[0m'
 				local err_cnt=`echo "${stderr}" | wc -l | awk '{print $1}'`
 				if [ "${err_cnt}" -gt '6' ]; then
 					local stderr=`echo "$stderr" | tail -n 6`
 					echo '   ..'
 				fi
-				echo "${stderr}" | awk '{print "   "$0}'
+				echo "${stderr}" | awk '{print "   \033[33m"$0"\033[0m"}'
 			fi
 		fi
 
 		python "${integrated}/_base/kp_log_report.py" "${line}.log" \
-			"${line}.err.log" color | awk '{print "   \033[32m<\033[0m "$0}'
+			"${line}.err.log" color | awk '{print "   \033[32m<<\033[0m"$0}'
 	done
 }
 export -f kp_file_status

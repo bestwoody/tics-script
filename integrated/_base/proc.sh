@@ -86,7 +86,7 @@ function stop_proc()
 	for ((i=0; i<600; i++)); do
 		if [ "${heaviest_kill}" == "true" ]; then
 			echo "#${i} pid ${pid} closing, using 'kill -9'..."
-			kill -9 "${pid}"
+			kill -9 "${pid}" 2>/dev/null
 		else
 			if [ "${heavy_kill}" == "true" ]; then
 				if [ $((${i} % 3)) = 0 ] && [ ${i} -ge 10 ]; then

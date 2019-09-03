@@ -221,7 +221,7 @@ function ti_file_exe()
 				local rendered="${ti_file}.sh"
 			else
 				local base_name=`basename "${ti_file}"`
-				local rendered="/tmp/${base_name}.`date +%s`.${RANDOM}.sh"
+				local rendered="/tmp/ti_file_rendered.${base_name}.`date +%s`.${RANDOM}.sh"
 			fi
 			python "${integrated}/_base/ti_file.py" 'render' "${ti_file}" \
 				"${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" > "${rendered}"

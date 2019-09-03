@@ -89,7 +89,7 @@ function tiflash_run()
 
 	local proc_cnt=`print_proc_cnt "${conf_file}" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped" >&2
+		echo "running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -154,7 +154,7 @@ function _ti_stop()
 
 	local proc_cnt=`print_proc_cnt "${conf_file}" "\-\-config"`
 	if [ "${proc_cnt}" == "0" ]; then
-		echo "[func ti_stop] ${ti_dir} is not running, skipping" >&2
+		echo "[func ti_stop] ${ti_dir} is not running, skipping"
 		return 0
 	fi
 
@@ -260,7 +260,7 @@ function pd_run()
 
 	local proc_cnt=`print_proc_cnt "${pd_dir}/pd.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped" >&2
+		echo "running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -374,7 +374,7 @@ function tikv_run()
 
 	local proc_cnt=`print_proc_cnt "${tikv_dir}/tikv.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped" >&2
+		echo "running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -486,7 +486,7 @@ function tidb_run()
 
 	local proc_cnt=`print_proc_cnt "${tidb_dir}/tidb.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped" >&2
+		echo "running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -602,7 +602,7 @@ function rngine_run()
 
 	local proc_cnt=`print_proc_cnt "${rngine_dir}/rngine.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped" >&2
+		echo "running(${proc_cnt}), skipped"
 		return 0
 	fi
 

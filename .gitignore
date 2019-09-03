@@ -30,6 +30,9 @@ data
 db
 db.idx
 origin
+*.mon
+*.data
+*.report
 
 # Java compile result
 target

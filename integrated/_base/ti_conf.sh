@@ -119,7 +119,7 @@ function cp_bin_to_dir_from_urls()
 	fi
 
 	local download_name="`basename ${url}`"
-	rm -f "${cache_dir}/${download_name}"
+	#rm -f "${cache_dir}/${download_name}"
 
 	local error_handle="$-"
 	set +e
@@ -141,7 +141,7 @@ function cp_bin_to_dir_from_urls()
 
 	if [ ! -z "${download_is_tar}" ]; then
 		tar -O -zxf "${cache_dir}/${download_name}" > "${cache_dir}/${bin_name}"
-		rm -f "${cache_dir}/${download_name}"
+		#rm -f "${cache_dir}/${download_name}"
 		chmod +x "${cache_dir}/${bin_name}"
 		mkdir -p "${dest_dir}"
 		cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
