@@ -265,7 +265,11 @@ function kp_file_run()
 		else
 			local line="${line:1}"
 		fi
-		kp_sh_stop "${line}" 'true'
+		local result=`kp_sh_stop "${line}"`
+		local skipped=`echo "${result}" | grep 'skipped'`
+		if [ -z "${skipped}" ]; then
+			echo "[`date +'%D %T'`] STOP ${line}" >> "${file}.log"
+		fi
 	done
 
 	kp_file_iter "${file}" | while read line; do
@@ -346,7 +350,11 @@ function kp_file_stop()
 	local error_handle="$-"
 	set +e
 	kp_file_iter "${file}" | while read line; do
-		kp_sh_stop "${line}"
+		local result=`kp_sh_stop "${line}"`
+		local skipped=`echo "${result}" | grep 'skipped'`
+		if [ -z "${skipped}" ]; then
+			echo "[`date +'%D %T'`] STOP ${line}" >> "${file}.log"
+		fi
 	done
 	restore_error_handle_flags "${error_handle}"
 }

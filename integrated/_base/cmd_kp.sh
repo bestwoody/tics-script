@@ -24,8 +24,8 @@ function kp_mon_report
 		fi
 	done
 
-	tail -n 80 "${log}" | grep 'START\|RUNNING\|ERROR' | \
-		awk '{if ($3 == "START") print "\033[34m+\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"}' | \
+	cat "${log}" | grep 'START\|RUNNING\|ERROR\|STOP' | tail -n 80 | \
+		awk '{if ($3 == "START") print "\033[36m+\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"; else if ($3 == "STOP") print "\033[36m!\033[0m"}' | \
 		tr "\n" ' ' | sed 's/ //g' | awk '{print "\033[32m<<\033[0m"$0}'
 }
 export -f kp_mon_report
