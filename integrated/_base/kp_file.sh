@@ -88,6 +88,9 @@ function keep_script_running()
 		fi
 		if [ "${proc_cnt}" != '0' ]; then
 			echo "[`date +'%D %T'`] ERROR ${script}${args_str}: more than 1 instance: ${proc_cnt}"
+			# TODO: for debug
+			echo "DUMP: bash ${script} ${args}"
+			ps -ef | grep "bash ${script}" | grep "${args}"
 			local backoff_i=0
 			sleep "${interval}"
 			continue
@@ -426,6 +429,9 @@ function kp_file_status()
 				echo "${stderr}" | awk '{print "   "$0}'
 			fi
 		fi
+
+		python "${integrated}/_base/kp_log_report.py" "${line}.log" \
+			"${line}.err.log" color | awk '{print "   \033[32m<\033[0m "$0}'
 	done
 }
 export -f kp_file_status

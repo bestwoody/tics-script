@@ -14,4 +14,4 @@ if [ -z "${interval}" ]; then
 	interval=5
 fi
 
-watch -n "${interval}" -t "COLUMNS= ${integrated}/ops/kp.sh \"${file}\""
+watch -c -n "${interval}" -t "COLUMNS= ${integrated}/ops/kp.sh \"${file}\""

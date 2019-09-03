@@ -217,12 +217,18 @@ function ti_file_exe()
 
 	if [ "${byhost}" != 'true' ]; then
 		if [ "${cmd}" == 'run' ] || [ "${cmd}" == 'dry' ]; then
+			if [ "${cmd}" == 'dry' ]; then
+				local rendered="${ti_file}.sh"
+			else
+				local base_name=`basename "${ti_file}"`
+				local rendered="/tmp/${base_name}.`date +%s`.${RANDOM}.sh"
+			fi
 			python "${integrated}/_base/ti_file.py" 'render' "${ti_file}" \
-				"${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" > "${ti_file}.sh"
-			chmod +x "${ti_file}.sh"
+				"${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" > "${rendered}"
+			chmod +x "${rendered}"
 			if [ "${cmd}" == "run" ]; then
-				bash "${ti_file}.sh"
-				rm -f "${ti_file}.sh"
+				bash "${rendered}"
+				rm -f "${rendered}"
 			fi
 			return 0
 		fi
