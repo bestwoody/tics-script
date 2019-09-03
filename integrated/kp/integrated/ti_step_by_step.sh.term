@@ -1,0 +1,6 @@
+#!/bin/bash
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+"${integrated}"/ops/ti.sh "${integrated}"/ti/1_x.ti burn doit
