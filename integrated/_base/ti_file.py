@@ -102,7 +102,13 @@ def parse_mod(obj, line, origin):
     return obj
 
 def pd(res, line, origin):
-    res.pds.append(parse_mod(Mod('pd'), line, origin))
+    new = parse_mod(Mod('pd'), line, origin)
+    i = len(res.pds)
+    setattr(new, 'pd_name', 'pd' + str(i))
+    res.pds.append(new)
+    if len(res.pd_addr) < 3:
+        res.pd_addr.append(new.host + ':' + new.ports)
+
 def tikv(res, line, origin):
     res.tikvs.append(parse_mod(Mod('tikv'), line, origin))
 def tidb(res, line, origin):
@@ -190,7 +196,6 @@ def print_sh_header(conf, kvs):
     print 'auto_error_handle'
     print ''
     print 'id="`print_ip_or_host`:%s"' % conf.ti_path
-    print ''
 
 def print_sep():
     print ''
@@ -224,9 +229,6 @@ def render_pds(res, conf, hosts, indexes):
     pds = res.pds
     if len(pds) == 0:
         return
-    for i in range(0, len(pds)):
-        setattr(pds[i], 'pd_name', 'pd' + str(i))
-
     cluster = []
     for i in range(0, len(pds)):
         if i >= 3:
@@ -234,7 +236,6 @@ def render_pds(res, conf, hosts, indexes):
         pd = pds[i]
         addr = pd.host + ':' + pd.ports
         cluster.append(pd.pd_name + '=http://' + addr)
-        res.pd_addr.append(addr)
     if len(pds) <= 1 and pds[0].host == '':
         cluster = ''
     else:

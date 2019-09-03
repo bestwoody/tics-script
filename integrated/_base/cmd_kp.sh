@@ -89,7 +89,6 @@ function cmd_kp()
 			echo "   not running${atime}"
 		fi
 		kp_mon_report "${file}" | awk '{print "   "$0}'
-		echo
 		kp_file_status "${file}"
 	elif [ "${cmd}" == 'list' ]; then
 		kp_file_iter "${file}"

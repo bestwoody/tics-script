@@ -14,7 +14,7 @@ function cmd_ti_burn()
 		return 1
 	fi
 	if [ ! -d "${dir}" ]; then
-		echo "=> skipped: ${dir}, not a dir" >&2
+		echo "=> skipped: ${dir}, not a dir"
 		return
 	fi
 	if [ "${doit}" == "doit" ]; then

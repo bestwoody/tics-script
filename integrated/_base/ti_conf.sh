@@ -99,6 +99,7 @@ function cp_bin_to_dir_from_urls()
 	local bin_name=`echo "${entry_str}" | awk '{print $3}'`
 	local url=`echo "${entry_str}" | awk '{print $4}'`
 
+	# TODO: support md5='-', means not checking md5
 	if [ -f "${dest_dir}/${bin_name}" ]; then
 		local old_md5=`file_md5 "${dest_dir}/${bin_name}"`
 		if [ "${old_md5}" == "${md5}" ]; then

@@ -78,7 +78,8 @@ function abs_path()
 		if [ -d "${src}" ]; then
 		    local path=$(cd "${src}"; pwd)
 		elif [ -f "${src}" ]; then
-		    local path=$(cd "$(dirname "${src}")"; pwd)
+		    local dir=$(cd "$(dirname "${src}")"; pwd)
+		    local path="${dir}/`basename ${src}`"
 		else
 			echo "${src}"
 			return 1

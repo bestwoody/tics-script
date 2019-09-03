@@ -426,7 +426,6 @@ function kp_file_status()
 				echo "${stderr}" | awk '{print "   "$0}'
 			fi
 		fi
-		echo
 	done
 }
 export -f kp_file_status
