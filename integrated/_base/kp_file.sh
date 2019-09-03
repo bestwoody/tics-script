@@ -355,6 +355,7 @@ function kp_file_stop()
 		if [ -z "${skipped}" ]; then
 			echo "[`date +'%D %T'`] STOP ${line}" >> "${file}.log"
 		fi
+		echo "${result}"
 	done
 	restore_error_handle_flags "${error_handle}"
 }
