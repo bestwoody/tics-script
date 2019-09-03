@@ -139,7 +139,7 @@ def parse_file(res, path, kvs):
             line = line.replace(k, v)
 
         if line.find('{') >= 0:
-            error('unsolved arg in line: ' + line)
+            error('unsolved arg in line: ' + line + ', in file: ' + path + ', args: ' + str(kvs))
 
         if line.startswith('import'):
             import_path = line[6:].strip()

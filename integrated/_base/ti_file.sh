@@ -59,6 +59,7 @@ function ti_file_mod_stop()
 	local fast="${5}"
 
 	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
+	local up_status=`echo "${up_status}"`
 	local ok=`echo "${up_status}" | grep ^OK`
 	if [ -z "${ok}" ]; then
 		echo "=> skipped. ${name} #${index} (${dir}) ${up_status}"

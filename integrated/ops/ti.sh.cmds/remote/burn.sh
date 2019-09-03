@@ -23,8 +23,12 @@ function cmd_ti_burn()
 		if [ ! -z "${ok}" ]; then
 			ti_file_cmd_fstop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}"
 		fi
+		local result=`rm -rf "${dir}" 2>&1`
+		if [ ! -z "${result}" ]; then
+			echo "=> error: ${result}"
+			echo "[func cmd_ti_burn] ${result}" >&2
+		fi
 		echo "=> burned:  ${dir}"
-		rm -rf "${dir}"
 	else
 		echo "=> dry run: ${dir}, append 'doit' to burn"
 	fi

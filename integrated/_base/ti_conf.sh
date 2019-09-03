@@ -119,20 +119,21 @@ function cp_bin_to_dir_from_urls()
 	fi
 
 	local download_name="`basename ${url}`"
-	#rm -f "${cache_dir}/${download_name}"
+	local download_path="/tmp/ti_download_cache.${download_name}.`date +%s`.${RANDOM}"
 
 	local error_handle="$-"
 	set +e
-	wget --quiet -nd -P "${cache_dir}" "${url}"
+	wget --quiet -nd -P "${cache_dir}" "${url}" -O "${download_path}"
 	local code="$?"
 	restore_error_handle_flags "${error_handle}"
 
 	if [ "${code}" != "0" ]; then
-		echo "[func cp_bin_to_dir_from_urls] wget --quiet -nd -P '${cache_dir}' '${url}' failed" >&2
+		echo "[func cp_bin_to_dir_from_urls] wget --quiet -nd -P '${cache_dir}' '${url}' -O '${download_path}' failed" >&2
+		rm -f "${download_path}"
 		return 1
 	fi
-	if [ ! -f "${cache_dir}/${download_name}" ]; then
-		echo "[func cp_bin_to_dir_from_urls] '${url}': wget to '${cache_dir}/${download_name}' file not found" >&2
+	if [ ! -f "${download_path}" ]; then
+		echo "[func cp_bin_to_dir_from_urls] '${url}': wget to '${download_path}' file not found" >&2
 		return 1
 	fi
 
@@ -140,8 +141,10 @@ function cp_bin_to_dir_from_urls()
 	local download_is_tar=`echo "${download_name}" | grep '.tar.gz'`
 
 	if [ ! -z "${download_is_tar}" ]; then
-		tar -O -zxf "${cache_dir}/${download_name}" > "${cache_dir}/${bin_name}"
-		#rm -f "${cache_dir}/${download_name}"
+		local target_tmp_path="${cache_dir}/${bin_name}.`date +%s`.${RANDOM}"
+		tar -O -zxf "${download_path}" > "${target_tmp_path}"
+		rm -f "${download_path}"
+		mv -f "${target_tmp_path}" "${cache_dir}/${bin_name}"
 		chmod +x "${cache_dir}/${bin_name}"
 		mkdir -p "${dest_dir}"
 		cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
@@ -150,7 +153,7 @@ function cp_bin_to_dir_from_urls()
 
 	if [ -z "${download_ext}" ]; then
 		if [ ! -f "${cache_dir}/${bin_name}" ]; then
-			mv -f "${cache_dir}/${download_name}" "${cache_dir}/${bin_name}"
+			mv -f "${download_path}" "${cache_dir}/${bin_name}"
 		fi
 		local new_md5=`file_md5 "${cache_dir}/${bin_name}"`
 		if [ "${new_md5}" == "${md5}" ]; then
@@ -162,6 +165,7 @@ function cp_bin_to_dir_from_urls()
 		fi
 	fi
 
+	rm -f "${download_path}"
 	echo "[func cp_bin_to_dir] TODO: support .${download_ext} file from url" >&2
 	return 1
 }

@@ -27,6 +27,6 @@ else
 	tail -n 10 "${BASH_SOURCE[0]}.data" | tr '\n' ' ' | \
 		awk '{print "launch+stop elapsed(s): "$0}' > "${BASH_SOURCE[0]}.report"
 fi
-echo 'done'
-
 "${ti}" -k "${args}" "${ti_file}" burn doit
+
+echo 'done'

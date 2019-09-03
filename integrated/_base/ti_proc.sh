@@ -705,6 +705,11 @@ function wait_for_tidb()
 	fi
 
 	local tidb_info="${tidb_dir}/proc.info"
+	if [ ! -f "${tidb_info}" ]; then
+		echo "[func wait_for_tidb] '${tidb_dir}' tidb not exists" >&2
+		return 1
+	fi
+
 	local host=`cat "${tidb_info}" | grep 'advertise_host' | awk -F '\t' '{print $2}'`
 	local port=`cat "${tidb_info}" | grep 'tidb_port' | awk -F '\t' '{print $2}'`
 
@@ -753,16 +758,20 @@ function wait_for_pd()
 	set +e
 	local key="6D536368656D615665FF7273696F6E4B6579FF0000000000000000F70000000000000073"
 	for ((i=0; i<${timeout}; i++)); do
-		local region=`"${bins_dir}/pd-ctl" -u "http://${host}:${port}" <<< "region key ${key}"`
-        if [ "${region}" != "null" ]; then
-            break
-        else
-            if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
-                echo "#${i} waiting for pd ready at '${server_id}'"
-            fi
-        fi
-        sleep 1
-    done
+		if [ ! -f "${bins_dir}/pd-ctl" ]; then
+			echo "[func wait_for_pd] '${bins_dir}/pd-ctl' not found" >&2
+			return 1
+		fi
+		local region=`"${bins_dir}/pd-ctl" -u "http://${host}:${port}" <<< "region key ${key}"` >/dev/null
+		if [ "${region}" != "null" ]; then
+			break
+		else
+			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
+				echo "#${i} waiting for pd ready at '${server_id}'"
+			fi
+		fi
+		sleep 1
+	done
 
 	restore_error_handle_flags "${error_handle}"
 }
@@ -782,6 +791,10 @@ function wait_for_pd_local()
 	fi
 
 	local pd_info="${pd_dir}/proc.info"
+	if [ ! -f "${pd_info}" ]; then
+		echo "[func wait_for_pd_local] '${pd_dir}' pd not exists" >&2
+		return 1
+	fi
 	local host=`get_value "${pd_info}" 'advertise_host'`
 	local port=`get_value "${pd_info}" 'pd_port'`
 	local server_id="${host}:${port}:${pd_dir}"

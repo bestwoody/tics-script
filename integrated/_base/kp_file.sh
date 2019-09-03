@@ -176,10 +176,19 @@ function kp_file_iter()
 	local file_abs=`abs_path "${file}"`
 	local file_dir=`dirname "${file_abs}"`
 
-	local rendered="/tmp/kv_file_iter.rendered.`date +%s`.${RANDOM}"
+	local rendered="/tmp/kp_file_iter.rendered.`date +%s`.${RANDOM}"
 	rm -f "${rendered}"
 
-	cat "${file_abs}" | grep -v '^#' | grep -v '^$' | sort | uniq | while read line; do
+	local lines=`cat "${file_abs}" | grep -v '^#' | grep -v '^$'`
+	local uniq_lines=`echo "${lines}" | sort | uniq`
+	local lines_cnt=`echo "${lines}" | wc -l | awk '{print $1}'`
+	local uniq_cnt=`echo "${uniq_lines}" | wc -l | awk '{print $1}'`
+	if [ "${uniq_cnt}" != "${lines_cnt}" ]; then
+		echo "[func kp_file_iter] ${file} has duplicated lines ${uniq_cnt} != ${lines_cnt}" >&2
+		return 1
+	fi
+
+	echo "${lines}" | while read line; do
 		if [ "${line:0:1}" == '!' ]; then
 			local ignored='true'
 			local line="${line:1}"
@@ -408,7 +417,7 @@ function kp_file_status()
 		fi
 
 		local pid=`_kp_file_pid "${line}"`
-		echo -e "\033[34m=>\033[0m \033[34m[task] ${line}\033[0m"
+		echo -e "\033[36m=>\033[0m \033[36m[task] ${line}\033[0m"
 		if [ -z "${pid}" ]; then
 			echo -e "   \033[31mnot running\033[0m, ${status}"
 		else
@@ -416,14 +425,12 @@ function kp_file_status()
 		fi
 
 		if [ -f "${line}.report" ]; then
-			# echo -e "   \033[36m-- report --\033[0m"
-			cat "${line}.report" | awk '{print "   \033[36m"$0"\033[0m"}'
+			cat "${line}.report" | awk '{print "   \033[34m"$0"\033[0m"}'
 		fi
 
 		if [ ! -z "${start_time}" ] && [ -f "${line}.err.log" ]; then
 			local stderr=`tail -n 9999 "${line}.err.log" | grep "RUN ${start_time}" -A 9999 | grep -v "${start_time}"`
 			if [ ! -z "${stderr}" ]; then
-				# echo -e '   \033[33m-- stderr --\033[0m'
 				local err_cnt=`echo "${stderr}" | wc -l | awk '{print $1}'`
 				if [ "${err_cnt}" -gt '6' ]; then
 					local stderr=`echo "$stderr" | tail -n 6`

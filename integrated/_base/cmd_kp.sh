@@ -25,7 +25,7 @@ function kp_mon_report
 	done
 
 	tail -n 80 "${log}" | grep 'START\|RUNNING\|ERROR' | \
-		awk '{if ($3 == "START") print "\033[36mR\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"}' | \
+		awk '{if ($3 == "START") print "\033[34m+\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"}' | \
 		tr "\n" ' ' | sed 's/ //g' | awk '{print "\033[32m<<\033[0m"$0}'
 }
 export -f kp_mon_report
@@ -37,7 +37,7 @@ function cmd_kp()
 
 	auto_error_handle
 
-	local help_str="[func cmd_kp] usage: <func> kp_file [cmd=run|stop|status|list]"
+	local help_str="[func cmd_kp] usage: <func> kp_file [cmd=run|stop|status|list|clean]"
 
 	if [ -z "${file}" ]; then
 		echo "${help_str}" >&2
@@ -89,7 +89,7 @@ function cmd_kp()
 	elif [ "${cmd}" == 'status' ]; then
 		local atime=`_kp_sh_last_active "${file}"`
 		local atime=", actived ${atime}s ago"
-		echo -e "\033[34m=>\033[0m \033[34m[monitor] ${file}\033[0m"
+		echo -e "\033[36m=>\033[0m \033[36m[monitor] ${file}\033[0m"
 		if [ ! -z "${mon_pid}" ]; then
 			echo "   running${atime}"
 		else
@@ -99,6 +99,15 @@ function cmd_kp()
 		kp_file_status "${file}"
 	elif [ "${cmd}" == 'list' ]; then
 		kp_file_iter "${file}"
+	elif [ "${cmd}" == 'clean' ]; then
+		rm -f "${file}.mon"
+		rm -f "${file}.log"
+		kp_file_iter "${file}" | while read line; do
+			rm -f "${line}.log"
+			rm -f "${line}.err.log"
+			rm -f "${line}.data"
+			rm -f "${line}.report"
+		done
 	else
 		echo "${cmd}: unknow command" >&2
 		echo "${help_str}" >&2
