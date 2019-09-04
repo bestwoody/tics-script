@@ -31,7 +31,7 @@ function cmd_ti_ch()
 	if [ -z "${8+x}" ]; then
 		local format='PrettyCompactNoEscapes'
 	else
-		local format="${78}"
+		local format="${8}"
 	fi
 
 	local port=`get_value "${dir}/proc.info" 'tcp_port'`

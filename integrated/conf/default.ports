@@ -12,3 +12,9 @@ tidb_port 10080
 tidb_status_port 12490
 
 rngine_port 20532
+
+spark_master_port 7077
+thriftserver_port 10000
+spark_master_webui_port 8080
+spark_worker_webui_port 8081
+jmxremote_port  8089

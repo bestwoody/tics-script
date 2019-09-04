@@ -17,6 +17,8 @@ class Ti:
         self.tidbs = []
         self.tiflashs = []
         self.rngines = []
+        self.spark_master = None
+        self.spark_workers = []
         self.pd_addr = []
 
     def dump(self):
@@ -40,23 +42,36 @@ class Ti:
             print 'Rngines'
         for it in self.rngines:
             print vars(it)
+        if self.spark_master is not None:
+            print 'Spark master'
+            print vars(self.spark_master)
+        if len(self.spark_workers):
+            print 'Spark workers'
+        for it in self.spark_workers:
+            print vars(it)
 
-class Mod:
+class Mod(object):
     def __init__(self, name):
         self.name = name
         self.dir = ""
         self.ports = "+0"
         self.host = ""
         self.pd = ""
+        self.extra_tools = []
 
-class ModRngine:
+    def is_remote(self):
+        return self.host == ""
+
+class ModRngine(Mod):
     def __init__(self):
-        self.name = "rngine"
-        self.dir = ""
-        self.ports = "+0"
-        self.host = ""
+        super(ModRngine, self).__init__("rngine")
         self.tiflash = ""
-        self.pd = ""
+
+class ModSparkWorker(Mod):
+    def __init__(self):
+        super(ModSparkWorker, self).__init__("spark_w")
+        self.cores = ""
+        self.mem = ""
 
 def error(msg):
     sys.stderr.write('[ti_file.py] ' + msg + '\n')
@@ -76,6 +91,14 @@ def parse_kvs(kvs_str, sep = '#'):
 
 def parse_mod(obj, line, origin):
     fields = map(lambda x: x.strip(), line.split())
+    mod_extra_tools = {
+        'pd': ['pd_ctl'],
+        'tikv': ['tikv_ctl'],
+        'spark_m': ['chspark'],
+        'spark_w': ['chspark']
+    }
+    if obj.name in mod_extra_tools:
+        obj.extra_tools = mod_extra_tools[obj.name]
     for field in fields:
         if field.startswith('ports'):
             setattr(obj, 'ports', field[5:].strip())
@@ -94,6 +117,16 @@ def parse_mod(obj, line, origin):
             if len(kv) != 2 or kv[0].strip() != 'pd':
                 error('bad pd prop: ' + origin)
             setattr(obj, 'pd', kv[1].strip())
+        elif field.startswith('cores'):
+            kv = field.split('=')
+            if len(kv) != 2 or kv[0].strip() != 'cores':
+                error('bad cores prop: ' + origin)
+            setattr(obj, 'cores', kv[1].strip())
+        elif field.startswith('mem'):
+            kv = field.split('=')
+            if len(kv) != 2 or kv[0].strip() != 'mem':
+                error('bad mem prop: ' + origin)
+            setattr(obj, 'mem', kv[1].strip())
         else:
             old_dir = str(getattr(obj, 'dir'))
             if len(old_dir) != 0:
@@ -117,13 +150,19 @@ def tiflash(res, line, origin):
     res.tiflashs.append(parse_mod(Mod('tiflash'), line, origin))
 def rngine(res, line, origin):
     res.rngines.append(parse_mod(ModRngine(), line, origin))
+def spark_master(res, line, origin):
+    res.spark_master = parse_mod(Mod('spark_m'), line, origin)
+def spark_worker(res, line, origin):
+    res.spark_workers.append(parse_mod(ModSparkWorker(), line, origin))
 
 mods = {
-    'pd' : pd,
+    'pd': pd,
     'tikv': tikv,
     'tidb': tidb,
     'tiflash': tiflash,
-    'rngine': rngine
+    'rngine': rngine,
+    'spark_m': spark_master,
+    'spark_w': spark_worker
 }
 
 def parse_file(res, path, kvs):
@@ -167,27 +206,32 @@ def parse_file(res, path, kvs):
                     error('bad args line: ' + origin)
                 kvs['{' + kv[0].strip() + '}'] = kv[1].strip()
 
+def check_mod_is_valid(mod, index, dirs, ports):
+    setattr(mod, 'index', index)
+    if len(mod.dir) == 0:
+        error(mod.name + '[' + str(mod.index) + '].dir can\'t be empty')
+    path = mod.host + ':' + mod.dir
+    if path in dirs:
+        error(mod.name + '[' + str(mod.index) + '].dir duplicated')
+    else:
+        dirs.add(path)
+    if len(mod.host) != 0 and mod.dir[0] != '/':
+        error('relative path can\'t use for remote deployment of ' + mod.name + '[' + str(mod.index) + ']: ' + mod.dir)
+    addr = mod.host + ':' + mod.ports
+    if addr in ports:
+        error(mod.name + '[' + str(mod.index) + '].ports duplicated')
+    else:
+        ports.add(addr)
+
 def check_is_valid(res):
     dirs = set()
-    for mods in [res.pds, res.tikvs, res.tidbs, res.tiflashs, res.rngines]:
+    for mods in [res.pds, res.tikvs, res.tidbs, res.tiflashs, res.rngines, res.spark_master, res.spark_workers]:
         ports = set()
-        for i in range(0, len(mods)):
-            mod = mods[i]
-            setattr(mod, 'index', i)
-            if len(mod.dir) == 0:
-                error(mod.name + '[' + str(mod.index) + '].dir can\'t be empty')
-            path = mod.host + ':' + mod.dir
-            if path in dirs:
-                error(mod.name + '[' + str(mod.index) + '].dir duplicated')
-            else:
-                dirs.add(path)
-            if len(mod.host) != 0 and mod.dir[0] != '/':
-                error('relative path can\'t use for remote deployment of ' + mod.name + '[' + str(mod.index) + ']: ' + mod.dir)
-            addr = mod.host + ':' + mod.ports
-            if addr in ports:
-                error(mod.name + '[' + str(mod.index) + '].ports duplicated')
-            else:
-                ports.add(addr)
+        if isinstance(mods, list):
+            for i in range(0, len(mods)):
+                check_mod_is_valid(mods[i], i, dirs, ports)
+        elif mods is not None:
+            check_mod_is_valid(mods, 0, dirs, ports)
 
 def print_sh_header(conf, kvs):
     print '#!/bin/bash'
@@ -217,16 +261,17 @@ def print_cp_bin(mod, conf):
     line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "%s/master/bins"'
     print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
     print ''
-    if mod.name == "pd":
-        print line % ("ctl-for-pd", mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
-        print ''
-    if mod.name == "tikv":
-        print line % ("ctl-for-tikv", mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
+    for bin_name in mod.extra_tools:
+        print line % (bin_name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
         print ''
 
 def print_ssh_prepare(mod, conf, env_dir):
     prepare = 'ssh_prepare_run "%s" ' + mod.name + ' "%s" "%s" "%s" "%s"'
     print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir)
+    for bin_name in mod.extra_tools:
+        prepare = 'ssh_prepare_run "%s" ' + bin_name + ' "%s" "%s" "%s" "%s"'
+        print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir)
+        print ''
 
 def render_pds(res, conf, hosts, indexes):
     pds = res.pds
@@ -252,7 +297,7 @@ def render_pds(res, conf, hosts, indexes):
             continue
         print_mod_header(pd)
 
-        if len(pd.host) == 0:
+        if pd.is_remote():
             ssh = ''
             conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(pd, conf)
@@ -277,7 +322,7 @@ def render_tikvs(res, conf, hosts, indexes):
             continue
         print_mod_header(tikv)
 
-        if len(tikv.host) == 0:
+        if tikv.is_remote():
             ssh = ''
             conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(tikv, conf)
@@ -303,7 +348,7 @@ def render_tidbs(res, conf, hosts, indexes):
             continue
         print_mod_header(tidb)
 
-        if len(tidb.host) == 0:
+        if tidb.is_remote():
             ssh = ''
             conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(tidb, conf)
@@ -359,7 +404,7 @@ def render_tiflashs(res, conf, hosts, indexes):
             print '\t"true" "%s" "%s" "%s" \\' % (pd_addr, tiflash.ports, tiflash.host)
             print '\t ${id}'
 
-        if len(tiflash.host) == 0:
+        if tiflash.is_remote():
             print_cp_bin(tiflash, conf)
             print_run_cmd('', conf.conf_templ_dir)
         else:
@@ -376,7 +421,7 @@ def render_rngines(res, conf, hosts, indexes):
             continue
         print_mod_header(rngine)
 
-        if len(rngine.host) == 0:
+        if rngine.is_remote():
             ssh = ''
             conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(rngine, conf)
@@ -414,18 +459,92 @@ def render_rngines(res, conf, hosts, indexes):
         print '\t"%s" "${tiflash_addr}" "%s" "%s" \\' % (pd_addr, rngine.host, rngine.ports)
         print '\t ${id}'
 
+def render_spark_master(res, conf, hosts, indexes):
+    spark_master = res.spark_master
+    if len(hosts) != 0 and spark_master.host not in hosts:
+        return
+    if len(indexes) != 0 and (0 not in indexes):
+        return
+    print_mod_header(spark_master)
+
+    tiflash_addr = []
+    for i in range(0, len(res.tiflashs)):
+        tiflash = res.tiflashs[i]
+        addr = tiflash.host + ':' + tiflash.ports
+        tiflash_addr.append(addr)
+
+    def print_run_cmd(ssh, conf_templ_dir):
+        print '# spark_master_run dir conf_templ_dir pd_addr tiflash_addr ports_delta listen_host'
+        print (ssh + 'spark_master_run "%s" \\') % spark_master.dir
+        print '\t"%s" "%s" "%s" \\' % (conf_templ_dir, ",".join(res.pd_addr), ",".join(tiflash_addr))
+        print '\t "%s" "%s"' % (spark_master.ports, spark_master.host)
+
+    if spark_master.is_remote():
+        print_cp_bin(spark_master, conf)
+        print_run_cmd('', conf.conf_templ_dir)
+    else:
+        env_dir = conf.cache_dir + '/worker/integrated'
+        print_ssh_prepare(spark_master, conf, env_dir)
+        print_run_cmd('call_remote_func "%s" "%s" ' % (spark_master.host, env_dir), env_dir + '/conf')
+
+def render_spark_workers(res, conf, hosts, indexes):
+    spark_workers = res.spark_workers
+    if len(spark_workers) == 0:
+        return
+    if res.spark_master is None:
+        error("spark master is not specified")
+    spark_master_addr = res.spark_master.host + ':' + res.spark_master.ports
+
+    for i in range(0, len(spark_workers)):
+        spark_worker = spark_workers[i]
+        if len(hosts) != 0 and spark_worker.host not in hosts:
+            continue
+        if len(indexes) != 0 and (i not in indexes):
+            continue
+        print_mod_header(spark_worker)
+
+        tiflash_addr = []
+        for i in range(0, len(res.tiflashs)):
+            tiflash = res.tiflashs[i]
+            addr = tiflash.host + ':' + tiflash.ports
+            tiflash_addr.append(addr)
+
+        def print_run_cmd(ssh, conf_templ_dir):
+            print '# spark_worker_run dir conf_templ_dir pd_addr tiflash_addr spark_master_addr [ports_delta] [cores] [memory]'
+            print (ssh + 'spark_worker_run "%s" \\') % spark_worker.dir
+            print '\t"%s" "%s" "%s" "%s" \\' % (conf_templ_dir, ",".join(res.pd_addr), ",".join(tiflash_addr), spark_master_addr)
+            print '\t"%s" "%s" "%s"' % (spark_worker.ports, spark_worker.cores, spark_worker.mem)
+
+        if spark_worker.is_remote():
+            print_cp_bin(spark_worker, conf)
+            print_run_cmd('', conf.conf_templ_dir)
+        else:
+            env_dir = conf.cache_dir + '/worker/integrated'
+            print_ssh_prepare(spark_worker, conf, env_dir)
+            print_run_cmd('call_remote_func "%s" "%s" ' % (spark_worker.host, env_dir), env_dir + '/conf')
+
 def render(res, conf, kvs, mod_names, hosts, indexes):
+    def should_render(mod_name):
+        if len(mod_names) == 0 or (mod_name in mod_names):
+            return True
+        else:
+            return False
+
     print_sh_header(conf, kvs)
-    if len(mod_names) == 0 or ('pd' in mod_names):
+    if should_render('pd'):
         render_pds(res, conf, hosts, indexes)
-    if len(mod_names) == 0 or ('tikv' in mod_names):
+    if should_render('tikv'):
         render_tikvs(res, conf, hosts, indexes)
-    if len(mod_names) == 0 or ('tidb' in mod_names):
+    if should_render('tidb'):
         render_tidbs(res, conf, hosts, indexes)
-    if len(mod_names) == 0 or ('tiflash' in mod_names):
+    if should_render('tiflash'):
         render_tiflashs(res, conf, hosts, indexes)
-    if len(mod_names) == 0 or ('rngine' in mod_names):
+    if should_render('rngine'):
         render_rngines(res, conf, hosts, indexes)
+    if should_render('spark_m') and res.spark_master is not None:
+        render_spark_master(res, conf, hosts, indexes)
+    if should_render('spark_w'):
+        render_spark_workers(res, conf, hosts, indexes)
 
 def get_mods(res, mod_names, hosts, indexes):
     confs = {
@@ -433,43 +552,57 @@ def get_mods(res, mod_names, hosts, indexes):
         'tikv': 'tikv.toml',
         'tidb': 'tidb.toml',
         'tiflash': 'conf/config.xml',
-        'rngine': 'rngine.toml'
+        'rngine': 'rngine.toml',
+        'spark_m': 'spark-defaults.conf',
+        'spark_w': 'spark-defaults.conf'
     }
+
+    def output_mod(mod, index):
+        if mod is None:
+            return
+        if len(indexes) != 0 and (index not in indexes):
+            return
+        if len(hosts) == 0 or (mod.host in hosts):
+            if len(mod_names) == 0 or (mod.name in mod_names):
+                print '\t'.join([str(index), mod.name, mod.dir, confs[mod.name], mod.host])
 
     def output(mod_array):
         for i in range(0, len(mod_array)):
-            mod = mod_array[i]
-            if len(indexes) != 0 and (i not in indexes):
-                continue
-            if len(hosts) == 0 or (mod.host in hosts):
-                if len(mod_names) == 0 or (mod.name in mod_names):
-                    print '\t'.join([str(i), mod.name, mod.dir, confs[mod.name], mod.host])
+            output_mod(mod_array[i], i)
 
     output(res.pds)
     output(res.tikvs)
     output(res.tidbs)
     output(res.tiflashs)
     output(res.rngines)
+    output_mod(res.spark_master, 0)
+    output(res.spark_workers)
 
 def get_hosts(res, mod_names, hosts, indexes):
     host_infos = set()
+    def output_mod(mod, index):
+        if mod is None:
+            return
+        if len(mod.host) == 0:
+            return
+        if len(indexes) != 0 and (index not in indexes):
+            return
+        if len(hosts) == 0 or (mod.host in hosts):
+            if len(mod_names) == 0 or (mod.name in mod_names):
+                if len(mod.host) != 0 and (mod.host not in host_infos):
+                    host_infos.add(mod.host)
+
     def output(mod_array):
         for i in range(0, len(mod_array)):
-            mod = mod_array[i]
-            if len(mod.host) == 0:
-                continue
-            if len(indexes) != 0 and (i not in indexes):
-                continue
-            if len(hosts) == 0 or (mod.host in hosts):
-                if len(mod_names) == 0 or (mod.name in mod_names):
-                    if len(mod.host) != 0 and (mod.host not in host_infos):
-                        host_infos.add(mod.host)
+            output_mod(mod_array[i], i)
 
     output(res.pds)
     output(res.tikvs)
     output(res.tidbs)
     output(res.tiflashs)
     output(res.rngines)
+    output_mod(res.spark_master, 0)
+    output(res.spark_workers)
 
     for host in host_infos:
         print host
@@ -518,4 +651,4 @@ if __name__ == '__main__':
     elif cmd == 'hosts':
         get_hosts(res, mod_names, hosts, indexes)
     else:
-        error('unknow cmd: ' + cmd)
+        error('unknown cmd: ' + cmd)

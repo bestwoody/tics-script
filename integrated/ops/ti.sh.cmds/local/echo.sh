@@ -1,3 +1,5 @@
+#!/bin/bash
+
 index="${1}"
 mod_name="${2}"
 dir="${3}"

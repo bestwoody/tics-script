@@ -1,0 +1,14 @@
+dir=/tmp/nodes/15
+p=+15
+h=127.0.0.1
+
+pd: {dir}/pd ports{p} host={h}
+tikv: {dir}/tikv ports{p} host={h}
+tidb: {dir}/tidb ports{p} host={h}
+
+tiflash: {dir}/tiflash ports{p} host={h}
+rngine: {dir}/rngine tiflash={dir}/tiflash ports{p} host={h}
+
+spark_m: {dir}/spark_m ports{p} host={h}
+
+spark_w: {dir}/spark_w ports{p} host={h} cores=1 mem=10G

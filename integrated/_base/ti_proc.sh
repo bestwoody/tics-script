@@ -649,6 +649,307 @@ function rngine_stop()
 }
 export -f rngine_stop
 
+function spark_file_prepare()
+{
+	if [ -z "${4+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ]; then
+		echo "[func spark_file_prepare] usage: <func> spark_mod_dir conf_templ_dir pd_addr tiflash_addr" >&2
+		return 1
+	fi
+
+	local spark_mod_dir="${1}"
+	local conf_templ_dir="${2}"
+	local pd_addr="${3}"
+	local tiflash_addr="${4}"
+	local jmxremote_port="${5}"
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func spark_master_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local default_tiflash_tcp_port=`get_value "${default_ports}" 'tiflash_tcp_port'`
+	if [ -z "${default_tiflash_tcp_port}" ]; then
+		echo "[func spark_master_run] get default tiflash_tcp_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
+	local tiflash_addr=$(cal_addr "${tiflash_addr}" `must_print_ip` "${default_tiflash_tcp_port}")
+
+	local render_str="pd_addresses=${pd_addr}"
+	local render_str="${render_str}#flash_addresses=${tiflash_addr}"
+	local render_str="${render_str}#spark_local_dir=${spark_mod_dir}/spark_local_dir"
+	local render_str="${render_str}#jmxremote_port=${jmxremote_port}"
+	render_templ "${conf_templ_dir}/spark-defaults.conf" "${spark_mod_dir}/spark-defaults.conf" "${render_str}"
+
+	if [ ! -d "${spark_mod_dir}/spark" ]; then
+		local spark_file="spark-2.3.3-bin-hadoop2.7"
+		local spark_file_name="${spark_file}.tgz"
+		if [ ! -f "${spark_mod_dir}/${spark_file_name}" ]; then
+			echo "[func spark_file_prepare] cannot find spark file"
+			return 1
+		fi
+		tar -zxf "${spark_mod_dir}/${spark_file_name}" -C ${spark_mod_dir} 1>/dev/null
+		rm -f "${spark_mod_dir}/${spark_file_name}"
+		mv "${spark_mod_dir}/${spark_file}" "${spark_mod_dir}/spark"
+	fi
+	mkdir -p "${spark_mod_dir}/pids"
+	if [ -f "${spark_mod_dir}/spark-defaults.conf" ]; then
+		mv "${spark_mod_dir}/spark-defaults.conf" "${spark_mod_dir}/spark/conf"
+	fi
+	if [ -f "${spark_mod_dir}/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" ]; then
+		mv "${spark_mod_dir}/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" "${spark_mod_dir}/spark/jars/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar"
+	fi
+	if [ ! -f "${spark_mod_dir}/spark/conf/spark-env.sh" ]; then
+		echo "SPARK_PID_DIR=\"${spark_mod_dir}/pids\"" > "${spark_mod_dir}/spark/conf/spark-env.sh"
+	fi
+}
+export -f spark_file_prepare
+
+function spark_master_run()
+{
+	if [ -z "${4+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ]; then
+		echo "[func spark_master_run] usage: <func> spark_master_dir conf_templ_dir pd_addr tiflash_addr [ports_delta] [advertise_host]" >&2
+		return 1
+	fi
+
+	local spark_master_dir="${1}"
+	local conf_templ_dir="${2}"
+	local pd_addr="${3}"
+	local tiflash_addr="${4}"
+
+	if [ -z "${5+x}" ]; then
+		local ports_delta="0"
+	else
+		local ports_delta="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local advertise_host="0"
+	else
+		local advertise_host="${6}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port'`
+	if [ -z "${default_spark_master_port}" ]; then
+		echo "[func spark_master_run] get default spark_master_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local default_thriftserver_port=`get_value "${default_ports}" 'thriftserver_port'`
+	if [ -z "${default_thriftserver_port}" ]; then
+		echo "[func spark_master_run] get default thriftserver_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local default_spark_master_webui_port=`get_value "${default_ports}" 'spark_master_webui_port'`
+	if [ -z "${default_spark_master_webui_port}" ]; then
+		echo "[func spark_master_run] get default spark_master_webui_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port'`
+	if [ -z "${default_jmxremote_port}" ]; then
+		echo "[func spark_master_run] get default jmxremote_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local spark_master_webui_port=$((${ports_delta} + ${default_spark_master_webui_port}))
+	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
+
+	local listen_host=""
+	if [ "${advertise_host}" != "127.0.0.1" ] && [ "${advertise_host}" != "localhost" ] && [ "${listen_host}" != "" ]; then
+		local listen_host="${advertise_host}"
+	else
+		local listen_host="`must_print_ip`"
+	fi
+
+	local spark_master_dir=`abs_path "${spark_master_dir}"`
+
+	local proc_cnt=`print_proc_cnt "${spark_master_dir}" "org.apache.spark.deploy.master.Master"`
+
+	if [ "${proc_cnt}" != "0" ]; then
+		echo "running(${proc_cnt}), skipped" >&2
+		return 0
+	fi
+
+	local spark_master_port=$((${ports_delta} + ${default_spark_master_port}))
+	local thriftserver_port=$((${ports_delta} + ${default_thriftserver_port}))
+
+	spark_file_prepare "${spark_master_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}"
+
+	if [ ! -f "${spark_master_dir}/run_master.sh" ]; then
+		echo "export SPARK_MASTER_HOST=${listen_host}" > "${spark_master_dir}/run_master_temp.sh"
+		echo "export SPARK_MASTER_PORT=${spark_master_port}" >> "${spark_master_dir}/run_master_temp.sh"
+		echo "${spark_master_dir}/spark/sbin/start-master.sh --webui-port ${spark_master_webui_port}" >> "${spark_master_dir}/run_master_temp.sh"
+		echo "${spark_master_dir}/spark/sbin/start-thriftserver.sh --hiveconf hive.server2.thrift.port=${thriftserver_port}" >> "${spark_master_dir}/run_master_temp.sh"
+		chmod +x "${spark_master_dir}/run_master_temp.sh"
+		mv "${spark_master_dir}/run_master_temp.sh" "${spark_master_dir}/run_master.sh"
+	fi
+	mkdir -p "${spark_master_dir}/logs"
+	bash "${spark_master_dir}/run_master.sh" 2>&1 1> "${spark_master_dir}/logs/spark_master.log"
+
+	local info="${spark_master_dir}/proc.info"
+	echo "thriftserver_port	${thriftserver_port}" > "${info}"
+
+	if [ ! -f "${spark_master_dir}/extra_str_to_find_proc" ]; then
+		echo "org.apache.spark.deploy.master.Master" > "${spark_master_dir}/extra_str_to_find_proc"
+	fi
+
+	local pid=`print_pid "${spark_master_dir}" "org.apache.spark.deploy.master.Master"`
+	echo "${pid}"
+}
+export -f spark_master_run
+
+function spark_worker_run()
+{
+	if [ -z "${5+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ]; then
+		echo "[func spark_worker_run] usage: <func> spark_worker_dir conf_templ_dir pd_addr tiflash_addr spark_master_addr [ports_delta] [cores] [memory]" >&2
+		return 1
+	fi
+
+	local spark_worker_dir="${1}"
+	local conf_templ_dir="${2}"
+	local pd_addr="${3}"
+	local tiflash_addr="${4}"
+	local spark_master_addr="${5}"
+
+	if [ -z "${6+x}" ]; then
+		local ports_delta="0"
+	else
+		local ports_delta="${6}"
+	fi
+
+	if [ -z "${7+x}" ]; then
+		local worker_cores=""
+	else
+		local worker_cores="${7}"
+	fi
+
+	if [ -z "${8+x}" ]; then
+		local worker_memory=""
+	else
+		local worker_memory="${8}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port'`
+	if [ -z "${default_spark_master_port}" ]; then
+		echo "[func spark_worker_run] get default spark_master_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local default_thriftserver_port=`get_value "${default_ports}" 'thriftserver_port'`
+	if [ -z "${default_thriftserver_port}" ]; then
+		echo "[func spark_worker_run] get default thriftserver_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local default_spark_worker_webui_port=`get_value "${default_ports}" 'spark_worker_webui_port'`
+	if [ -z "${default_spark_worker_webui_port}" ]; then
+		echo "[func spark_worker_run] get default spark_worker_webui_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port'`
+	if [ -z "${default_jmxremote_port}" ]; then
+		echo "[func spark_master_run] get default jmxremote_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local spark_worker_webui_port=$((${ports_delta} + ${default_spark_worker_webui_port}))
+    local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
+
+	local spark_worker_dir=`abs_path "${spark_worker_dir}"`
+
+	local proc_cnt=`print_proc_cnt "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker"`
+
+	if [ "${proc_cnt}" != "0" ]; then
+		echo "running(${proc_cnt}), skipped" >&2
+		return 0
+	fi
+
+	local spark_master_addr=$(cal_addr "${spark_master_addr}" `must_print_ip` "${default_spark_master_port}")
+
+	spark_file_prepare "${spark_worker_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}"
+
+	if [ ! -f "${spark_worker_dir}/run_worker.sh" ]; then
+		local run_worker_cmd="${spark_worker_dir}/spark/sbin/start-slave.sh ${spark_master_addr} --webui-port ${spark_worker_webui_port}"
+		if [ "${worker_cores}" != "" ]; then
+			local run_worker_cmd="${run_worker_cmd} --cores ${worker_cores}"
+		fi
+		if [ "${worker_memory}" != "" ]; then
+			local run_worker_cmd="${run_worker_cmd} --memory ${worker_memory}"
+		fi
+		echo "${run_worker_cmd}" > "${spark_worker_dir}/run_worker_temp.sh"
+		chmod +x "${spark_worker_dir}/run_worker_temp.sh"
+		mv "${spark_worker_dir}/run_worker_temp.sh" "${spark_worker_dir}/run_worker.sh"
+	fi
+	mkdir -p "${spark_worker_dir}/logs"
+	bash "${spark_worker_dir}/run_worker.sh" 2>&1 1> "${spark_worker_dir}/logs/spark_worker.log"
+
+	if [ ! -f "${spark_worker_dir}/extra_str_to_find_proc" ]; then
+		echo "org.apache.spark.deploy.worker.Worker" > "${spark_worker_dir}/extra_str_to_find_proc"
+	fi
+
+	local pid=`print_pid "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker"`
+	echo "${pid}"
+}
+export -f spark_worker_run
+
+function spark_stop()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func spark_stop] usage: <func> spark_mod_dir extra_str_to_find_proc [fast_mode=false]" >&2
+		return 1
+	fi
+	local spark_mod_dir="${1}"
+	local extra_str_to_find_proc="${2}"
+	local fast="false"
+	if [ ! -z "${3+x}" ]; then
+		local fast="${3}"
+	fi
+	stop_proc "${spark_mod_dir}/" "${extra_str_to_find_proc}" "${fast}"
+}
+export -f spark_stop
+
+function spark_master_stop()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func spark_master_stop] usage: <func> spark_master_dir [fast_mode=false]" >&2
+		return 1
+	fi
+	local spark_master_dir="${1}"
+	local fast="false"
+	if [ ! -z "${2+x}" ]; then
+		local fast="${2}"
+	fi
+	spark_stop "${spark_master_dir}" "org.apache.spark.deploy.master.Master" "${fast}"
+	spark_stop "${spark_master_dir}" "org.apache.spark.sql.hive.thriftserver.HiveThriftServer2" "${fast}"
+}
+export -f spark_master_stop
+
+function spark_worker_stop()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func spark_worker_stop] usage: <func> spark_worker_dir [fast_mode=false]" >&2
+		return 1
+	fi
+	local spark_worker_dir="${1}"
+	local fast="false"
+	if [ ! -z "${2+x}" ]; then
+		local fast="${2}"
+	fi
+	spark_stop "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker" "${fast}"
+}
+export -f spark_worker_stop
+
 function wait_for_mysql()
 {
 	if [ -z "${3+x}" ]; then
@@ -739,7 +1040,7 @@ export -f wait_for_tidb_by_host
 
 function wait_for_pd()
 {
-    if [ -z "${3+x}" ]; then
+	if [ -z "${3+x}" ]; then
 		echo "[func wait_for_pd] usage: <func> host port timeout [server_id]" >&2
 		return 1
 	fi

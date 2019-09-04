@@ -25,7 +25,7 @@
         <service_addr>{tiflash_listen_host}:{tiflash_raft_port}</service_addr>
         <kvstore_path>{tiflash_dir}/kvstore</kvstore_path>
         <pd_addr>{tiflash_pd_addr}</pd_addr>
-        <ignore_databases>system</ignore_databases>
+        <ignore_databases>system,default</ignore_databases>
     </raft>
 
     <!-- Don't exit if ipv6 or ipv4 unavailable, but listen_host with this protocol specified -->

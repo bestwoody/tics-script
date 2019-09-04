@@ -10,6 +10,8 @@ tikv: node0/tikv
 tidb: node0/tidb
 tiflash: node0/tiflash
 rngine: node0/rngine tiflash=node0/tiflash
+spark_m: node0/spark_m
+spark_w: node0/spark_w
 ```
 
 Then run `ops/ti.sh my.ti run`:
@@ -24,6 +26,10 @@ Then run `ops/ti.sh my.ti run`:
 18511
 => rngine #0 (node0/rngine)
 18647
+=> spark_m #0 (node0/spark_m)
+18278
+=> spark_w #0 (node0/spark_w)
+18531
 ```
 
 Now it works, we got a cluster running.
@@ -34,6 +40,8 @@ OK     tikv #0 (node0/tikv)
 OK     tidb #0 (node0/tidb)
 OK     tiflash #0 (node0/tiflash)
 OK     rngine #0 (node0/rngine)
+OK     spark_m #0 (node0/spark_m)
+OK     spark_w #0 (node0/spark_w)
 ```
 
 And use `ops/ti.sh my.ti prop` to check cluster config:
@@ -109,6 +117,14 @@ pd=ip:port         "port" can be real number or "+n" "-n" delta form.
 tiflash=dir     <- only used by rngine module,
 tiflash=ip:port    it means which tiflash instance rngine should connect,
 tiflash=ip:dir    "tiflash=host:dir" is used for support remote connect.
+
+cores=10        <- only used by spark_w module,
+                   total cpu cores to allow spark applications to use on the machine
+                    (default: all available)
+
+mem=10G         <- only used by spark_w module,
+                   total amount of memory to allow spark applications to use on the machine
+                   (default: your machine's total RAM minus 1 GB)
 ```
 
 A little more complex case:
@@ -124,6 +140,9 @@ tiflash: node1/tiflash ports+1
 tiflash: node2/tiflash ports+2
 rngine: node1/rngine tiflash=node1/tiflash ports+1
 rngine: node2/rngine tiflash=node2/tiflash ports+2
+spark_m: node1/spark_m ports+1
+spark_w: node1/spark_w ports+1 cores=10 mem=10G
+spark_w: node2/spark_w ports+2 cores=10 mem=10G
 ```
 
 ## Vars supporting
@@ -168,9 +187,9 @@ There are 3 things are involved when we using `ops/ti.sh`:
 * The conf templates: it stored in a dir.
     * The default dir located at `./conf`
     * You can pass args `conf-templ-dir`(`ops/ti.sh ti-file cmd [args] [conf-templ-dir]`) to use another one.
-    * `templates` means they'er not the real conf files, the real ones are in module dirs.
+    * `templates` means they're not the real conf files, the real ones are in module dirs.
     * Take a look at the `default.ports` will helps to avoid port-conflict when we modifys ports using `+n`
-    * `conf/bin.paths` and `conf/bin.urls` defined where we can get the module bins
+    * `conf/bin.paths` and `conf/bin.urls[.mac]` defined where we can get the module bins
 * The `my.ti` file and the dirs used by modules in the file, these are the data we care.
     * Once a module is running, it doesn't rely on `conf templates` or `ops/ti.sh` any more.
 

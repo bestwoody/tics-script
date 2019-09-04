@@ -1,0 +1,17 @@
+ti_mysql> drop table test.t
+ti_mysql> create table if not exists test.t(s varchar(256), i int)
+ti_mysql> insert into test.t values('Hello world', 666)
+ti_mysql> insert into test.t values('Hello world', 666)
+ti_mysql> insert into test.t values('Hello world', 666)
+
+
+ti_beeline> select s, i from test.t
++--------------+------+--+
+|      s       |  i   |
++--------------+------+--+
+| Hello world  | 666  |
+| Hello world  | 666  |
+| Hello world  | 666  |
++--------------+------+--+
+
+ti_mysql> delete from test.t

@@ -13,6 +13,16 @@ function ti_file_mod_status()
 	local up_status="OK    "
 	if [ ! -d "${dir}" ]; then
 		local up_status="MISSED"
+	elif [ -f "${dir}/extra_str_to_find_proc" ]; then
+		local extra_str_to_find_proc=`cat "${dir}/extra_str_to_find_proc"`
+		local pid_cnt=`print_proc_cnt "${dir}/" "${extra_str_to_find_proc}"`
+		if [ "${pid_cnt}" == "0" ]; then
+			local up_status="DOWN  "
+		else
+			if [ "${pid_cnt}" != "1" ]; then
+				local up_status="MULTI "
+			fi
+		fi
 	else
 		local conf_file=`abs_path "${dir}"`/${conf}
 		local pid_cnt=`print_proc_cnt "${conf_file}"`
@@ -31,7 +41,7 @@ export -f ti_file_mod_status
 function ti_file_cmd_status()
 {
 	if [ -z "${4+x}" ]; then
-		echo "[func ti_file_mod_status] usage <func> index name dir conf" >&2
+		echo "[func ti_file_cmd_status] usage <func> index name dir conf" >&2
 		return 1
 	fi
 
@@ -41,6 +51,7 @@ function ti_file_cmd_status()
 	local conf="${4}"
 
 	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
+
 	echo "${up_status} ${name} #${index} (${dir})"
 }
 export -f ti_file_cmd_status
@@ -82,6 +93,12 @@ function ti_file_mod_stop()
 	fi
 	if [ "${name}" == "rngine" ]; then
 		rngine_stop "${dir}" "${fast}"
+	fi
+	if [ "${name}" == "spark_m" ]; then
+		spark_master_stop "${dir}" "${fast}"
+	fi
+	if [ "${name}" == "spark_w" ]; then
+		spark_worker_stop "${dir}" "${fast}"
 	fi
 
 	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
@@ -249,7 +266,7 @@ function ti_file_exe()
 			local conf=`echo "${mod}" | awk -F '\t' '{print $4}'`
 			local host=`echo "${mod}" | awk -F '\t' '{print $5}'`
 
-			if [ -z "${host}" ]; then
+			if [ -z "${host}" ] || [ "${local}" == 'true' ]; then
 				local has_script=`test -f "${real_cmd_dir}/${cmd}.sh" && echo true`
 			else
 				local has_script=`ssh_exe "${host}" "test -f \"${real_cmd_dir}/${cmd}.sh\" && echo true"`
