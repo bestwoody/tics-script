@@ -410,47 +410,49 @@ function kp_file_status()
 	fi
 
 	kp_file_iter "${file}" | while read line; do
-		local status=''
-		local atime=`_kp_sh_last_active "${line}"`
 		if [ -f "${line}.log" ]; then
 			local start_time=`tail -n 99999 "${line}.log" | grep '!RUN' | tail -n 1 | awk '{print $2}'`
 		else
 			local start_time=''
 		fi
+
+		local atime=`_kp_sh_last_active "${line}"`
 		if [ ! -z "${start_time}" ]; then
 			local now=`date +%s`
 			local stime=$((now - start_time))
-			local status="started/actived (${stime}s/${atime}s) ago"
+			local time_status=" \033[34m${stime}s\033[0m:\033[35m${atime}s\033[0m"
 		elif [ ! -z "${atime}" ]; then
-			local status="actived ${atime}s ago"
+			local time_status=" \033[34m${atime}s\033[0m"
+		else
+			local time_status=''
 		fi
 
 		local pid=`_kp_file_pid "${line}"`
-		echo -e "\033[36m=>\033[0m \033[36m[task] ${line}\033[0m"
-		if [ -z "${pid}" ]; then
-			echo -e "   \033[31mnot running\033[0m, ${status}"
+		if [ ! -z "${pid}" ]; then
+			local run_status="\033[32m[+]\033[0m"
 		else
-			echo -e "   running, ${status}"
+			local run_status="\033[31m[!]\033[0m"
 		fi
 
+		echo -e "${run_status} \033[36m[task] ${line}\033[0m${time_status}"
+
 		if [ -f "${line}.report" ]; then
-			cat "${line}.report" | awk '{print "   \033[34m"$0"\033[0m"}'
+			cat "${line}.report" | awk '{print "    "$0}'
 		fi
 
 		if [ ! -z "${start_time}" ] && [ -f "${line}.err.log" ]; then
 			local stderr=`tail -n 9999 "${line}.err.log" | grep "RUN ${start_time}" -A 9999 | grep -v "${start_time}"`
 			if [ ! -z "${stderr}" ]; then
 				local err_cnt=`echo "${stderr}" | wc -l | awk '{print $1}'`
-				if [ "${err_cnt}" -gt '6' ]; then
-					local stderr=`echo "$stderr" | tail -n 6`
-					echo '   ..'
+				if [ "${err_cnt}" -gt '4' ]; then
+					local stderr=`echo "$stderr" | tail -n 4`
 				fi
-				echo "${stderr}" | awk '{print "   \033[33m"$0"\033[0m"}'
+				echo "${stderr}" | awk '{print "    \033[33m"$0"\033[0m"}'
 			fi
 		fi
 
 		python "${integrated}/_base/kp_log_report.py" "${line}.log" \
-			"${line}.err.log" color | awk '{print "   \033[32m<<\033[0m"$0}'
+			"${line}.err.log" color | awk '{print "    \033[32m<<\033[0m"$0}'
 	done
 }
 export -f kp_file_status

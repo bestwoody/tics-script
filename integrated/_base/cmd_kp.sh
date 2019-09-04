@@ -88,14 +88,14 @@ function cmd_kp()
 		kp_file_stop "${file}"
 	elif [ "${cmd}" == 'status' ]; then
 		local atime=`_kp_sh_last_active "${file}"`
-		local atime=", actived ${atime}s ago"
-		echo -e "\033[36m=>\033[0m \033[36m[monitor] ${file}\033[0m"
 		if [ ! -z "${mon_pid}" ]; then
-			echo "   running${atime}"
+			local run_status="\033[32m[+]\033[0m"
 		else
-			echo -e "   \033[31mnot running\033[0m${atime}"
+			local run_status="\033[31m[!]\033[0m"
 		fi
-		kp_mon_report "${file}" | awk '{print "   "$0}'
+		local mon_path=`abs_path "${file}"`
+		echo -e "${run_status}\033[36m [monitor] ${mon_path}\033[0m \033[35m${atime}s\033[0m"
+		kp_mon_report "${file}" | awk '{print "    "$0}'
 		kp_file_status "${file}"
 	elif [ "${cmd}" == 'list' ]; then
 		kp_file_iter "${file}"
