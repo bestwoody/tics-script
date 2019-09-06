@@ -122,9 +122,13 @@ In `cell-process` sections, we support operators as follow:
 ```
 avg       -- each table cell contains data from many source lines, `avg` calculate the avg value of each line.
 mid       -- calculate the mid value of each line. WIP
+nobig     -- don't calulate the value witch is too big than others. WIP
+nosmall   -- don't calulate the value witch is too small than others. WIP
+noextre   -- don't calulate the value witch is too big or to small than others. WIP
+~         -- shows the inflation of cell values, only could be used on number, so it can't follow `duration` or `bytes`.
+cnt       -- shows count of lines in this cell. WIP
 duration  -- cast cell value into duration format, the unit could be 's|m|h|y'.
 bytes     -- cast cell value into bytes format, the unit could be 'b|k|m|g'.
-~         -- shows the inflation of cell values, only could be used on number, so it can't follow `duration` or `bytes`.
 ```
 
 The `cols-defination` section is almost the same as `rows-defination`.
