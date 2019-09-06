@@ -1,5 +1,4 @@
-integrated/ti_step_by_step.sh
 integrated/ti_launch.sh
 
 # Out of date
-!integrated/ti.sh
+!integrated/ti_step_by_step.sh

@@ -8,6 +8,7 @@ source ${integrated}/_base/network.sh
 source ${integrated}/_base/ssh.sh
 source ${integrated}/_base/misc.sh
 source ${integrated}/_base/proc.sh
+source ${integrated}/_base/report.sh
 
 source ${integrated}/_base/ti_network.sh
 source ${integrated}/_base/ti_conf.sh

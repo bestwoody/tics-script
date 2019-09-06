@@ -441,7 +441,7 @@ function kp_file_status()
 		fi
 
 		if [ ! -z "${start_time}" ] && [ -f "${line}.err.log" ]; then
-			local stderr=`tail -n 9999 "${line}.err.log" | grep "RUN ${start_time}" -A 9999 | grep -v "${start_time}"`
+			local stderr=`tail -n 9999 "${line}.err.log" | grep "!RUN ${start_time}" -A 9999 | grep -v '!RUN' | grep -v "${start_time}"`
 			if [ ! -z "${stderr}" ]; then
 				local err_cnt=`echo "${stderr}" | wc -l | awk '{print $1}'`
 				if [ "${err_cnt}" -gt '4' ]; then

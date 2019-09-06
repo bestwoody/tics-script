@@ -1,0 +1,456 @@
+# -*- coding:utf-8 -*-
+
+import os
+import sys
+
+def error(msg):
+    sys.stderr.write('[to_table.py] ' + msg + '\n')
+    sys.exit(1)
+
+class Cell:
+    def __init__(self, lines = None):
+        self.lines = lines or []
+        self.vals = []
+        self.append = self.lines.append
+        self.__iter__ = self.lines.__iter__
+
+    def empty(self):
+        return len(self.lines) == 0
+
+    def __str__(self):
+        return ''.join(map(lambda x: (x != None) and str(x) or '', self.vals))
+
+    def first_number_val(self):
+        val = None
+        idx = -1
+        for i in range(0, len(self.vals)):
+            it = self.vals[i]
+            if isinstance(it, int) or isinstance(it, long):
+                val = it
+                idx = i
+                break
+        return val, idx
+
+
+class Table:
+    def __init__(self, rows_notitle, cols_notitle):
+        self.rows = {}
+        self.row_names = []
+        self.row_name_set = set()
+        self.col_names = []
+        self.col_name_set = set()
+        self.rows_notitle = rows_notitle
+        self.cols_notitle = cols_notitle
+
+    def add_line(self, row_tags, col_tags, line):
+        if row_tags:
+            row_name = []
+            for row_tag in row_tags:
+                row_name.append(row_tag + ':' + line.tags[row_tag])
+            row_name = ','.join(row_name)
+        else:
+            row_name = '*'
+
+        if col_tags:
+            col_name = []
+            for col_tag in col_tags:
+                col_name.append(col_tag + ':' + line.tags[col_tag])
+            col_name = ','.join(col_name)
+        else:
+            col_name = '*'
+
+        if not self.rows.has_key(row_name):
+            self.rows[row_name] = {}
+            if row_name not in self.row_name_set:
+                self.row_name_set.add(row_name)
+                self.row_names.append(row_name)
+        row = self.rows[row_name]
+        if not row.has_key(col_name):
+            row[col_name] = Cell()
+            if col_name not in self.col_name_set:
+                self.col_name_set.add(col_name)
+                self.col_names.append(col_name)
+        row[col_name].append(line)
+
+    def add_missed_cell(self):
+        for row_name, row in self.rows.iteritems():
+            for col_name in self.col_names:
+                if not row.has_key(col_name):
+                    row[col_name] = Cell()
+
+    def _limit_rows(self, rows_limit):
+        if rows_limit < 0 or rows_limit >= len(self.row_names):
+            return
+        del_cnt = len(self.row_names) - rows_limit
+        del_rows = set(self.row_names[0: del_cnt])
+        self.row_names = self.row_names[del_cnt:]
+        for row_name in del_rows:
+            self.row_name_set.remove(row_name)
+            self.rows.pop(row_name)
+
+    def _limit_cols(self, cols_limit):
+        if cols_limit < 0 or cols_limit >= len(self.col_names):
+            return
+        del_cnt = len(self.col_names) - cols_limit
+        del_cols = set(self.col_names[0: del_cnt])
+        self.col_names = self.col_names[del_cnt:]
+        for col_name in del_cols:
+            self.col_name_set.remove(col_name)
+            for row_name, row in self.rows.iteritems():
+                row.pop(col_name)
+
+    def limit(self, rows_limit, cols_limit):
+        if rows_limit < 0:
+            rows_limit = len(self.row_names)
+        if cols_limit < 0 or cols_limit >= len(self.col_names):
+            cols_limit = len(self.col_names)
+
+        def del_empty_rows():
+            del_rows = set()
+            for row_name in self.row_names:
+                row = self.rows[row_name]
+                empty = True
+                for col_name, cell in row.iteritems():
+                    if not cell.empty():
+                        empty = False
+                        break
+                if empty:
+                    del_rows.add(row_name)
+
+            for row_name in del_rows:
+                self.row_names.remove(row_name)
+                self.row_name_set.remove(row_name)
+                self.rows.pop(row_name)
+
+        def del_empty_cols():
+            del_cols = set()
+            for col_name in self.col_names:
+                empty = True
+                for row_name, row in self.rows.iteritems():
+                    cell = row[col_name]
+                    if not cell.empty():
+                        empty = False
+                        break
+                if empty:
+                    del_cols.add(col_name)
+
+            for col_name in del_cols:
+                self.col_names.remove(col_name)
+                self.col_name_set.remove(col_name)
+                for row_name, row in self.rows.iteritems():
+                    row.pop(col_name)
+
+        while len(self.col_names) > cols_limit or len(self.row_names) > rows_limit:
+            if len(self.col_names) > cols_limit:
+                self._limit_cols(len(self.col_names) - 1)
+                del_empty_rows()
+            if len(self.row_names) > rows_limit:
+                self._limit_rows(len(self.row_names) - 1)
+                del_empty_cols()
+
+    def output(self):
+        if self.cols_notitle:
+            rows = []
+        else:
+            if self.rows_notitle:
+                rows = [self.col_names]
+            else:
+                rows = [[''] + self.col_names]
+        for row_name in self.row_names:
+            row = self.rows[row_name]
+            cols = []
+            for col_name in self.col_names:
+                cols.append(row[col_name])
+            new_row = map(lambda x: str(x), cols)
+            if not self.rows_notitle:
+                new_row = [row_name] + new_row
+            rows.append(new_row)
+        return rows
+
+class Line:
+    def __init__(self, line, from_file, val, tags = []):
+        self.val = long(val)
+        self.tags = {}
+        for tag in tags:
+            fields = map(lambda x: x.strip(), tag.split(':'))
+            if len(fields) != 2:
+                #error('bad tag: ' + tag + ', in line: ' + line + ', in file: ' + from_file)
+                continue
+            self.tags[fields[0]] = fields[1]
+
+    def map_tag(self, old_tag, new_tag):
+        if self.tags.has_key(old_tag):
+            self.tags[new_tag] = self.tags[old_tag]
+
+class PreExe:
+    def __init__(self, op):
+        if len(op) == 0:
+            return
+        tag_mapper = op.split('=')
+        if len(tag_mapper) == 2:
+            new_tag = tag_mapper[0].strip()
+            old_tag = tag_mapper[1].strip()
+            self.__call__ = lambda line: (line.map_tag(old_tag, new_tag) and None)
+        else:
+            error('unknown pre-calculating op: ' + op)
+
+class ColsExp:
+    def __init__(self, ops):
+        self.limit = -1
+
+        segs = map(lambda x: x.strip(), ops.split(':'))
+
+        if len(segs[0]) > 0:
+            self.tags = map(lambda x: x.strip(), segs[0].split(','))
+            self.notitle = False
+        else:
+            self.tags = []
+            self.notitle = True
+
+        segs = segs[1:]
+        for seg in segs:
+            if len(seg) == 0:
+                continue
+            if seg.startswith('limit(') and seg.endswith(')'):
+                self.limit = int(seg[6:-1].strip())
+                continue
+            elif seg == 'notitle':
+                self.notitle = True
+                continue
+            error('unknown cols op: ' + seg)
+
+    def add_line(self, line, row_tags, table):
+        if len(self.tags) > 0:
+            for tag in self.tags:
+                if not line.tags.has_key(tag):
+                    return
+        table.add_line(row_tags, self.tags, line)
+
+class RowsExp:
+    def __init__(self, ops):
+        self.limit = -1
+
+        segs = map(lambda x: x.strip(), ops.split(':'))
+
+        if len(segs[0]) > 0:
+            self.tags = map(lambda x: x.strip(), segs[0].split(','))
+            self.notitle = False
+        else:
+            self.tags = []
+            self.notitle = True
+
+        segs = segs[1:]
+        for seg in segs:
+            if len(seg) == 0:
+                continue
+            if seg.startswith('limit(') and seg.endswith(')'):
+                self.limit = int(seg[6:-1].strip())
+                continue
+            elif seg == 'notitle':
+                self.notitle = True
+                continue
+            error('unknown rows op: ' + seg)
+
+    def add_line(self, line, cols_exp, table):
+        if len(self.tags) > 0:
+            for tag in self.tags:
+                if not line.tags.has_key(tag):
+                    return
+        cols_exp.add_line(line, self.tags, table)
+
+class CellExe:
+    def __init__(self, ops):
+        self._ops = []
+        for op in map(lambda x: x.strip(), ops.split(':')):
+            self._ops.append(self._parse_op(op))
+
+    def _parse_op(self, op):
+        if op == 'avg':
+            def avg(row_name, col_name, cell):
+                vals = map(lambda line: long(line.val), cell.lines)
+                val = None
+                if len(vals) > 0:
+                    val = sum(vals) / len(vals)
+                cell.vals.append(val)
+            return avg
+        if op == '~':
+            def mp(row_name, col_name, cell):
+                val, i = cell.first_number_val()
+                if val == None:
+                    return
+                x = 0
+                for line in cell.lines:
+                    x = max(x, abs(line.val - val))
+                x = (x != 0) and ('+-' + str(x) + '' + ' ') or ''
+                cell.vals.insert(i, x)
+            return mp
+        if op == 'duration':
+            def avg(row_name, col_name, cell):
+                val, i = cell.first_number_val()
+                if val == None:
+                    return
+                unit = 's'
+                if val > 999:
+                    val = val / 60
+                    unit = 'm'
+                if val > 999:
+                    val = val / 60
+                    unit = 'h'
+                if val > 999:
+                    val = val / 24
+                    unit = 'd'
+                cell.vals[i] = str(val) + unit
+            return avg
+        if op == 'bytes':
+            def avg(row_name, col_name, cell):
+                val, i = cell.first_number_val()
+                if val == None:
+                    return
+                unit = 'b'
+                if val > 999:
+                    val = val / 1024
+                    unit = 'k'
+                if val > 999:
+                    val = val / 1024
+                    unit = 'm'
+                if val > 999:
+                    val = val / 1024
+                    unit = 'g'
+                cell.vals[i] = str(val) + unit
+            return avg
+
+        error('unknown cell op: ' + op)
+
+    def __call__(self, row_name, col_name, cell):
+        for op in self._ops:
+            op(row_name, col_name, cell)
+
+class Render:
+    def __init__(self, ops_str):
+        self._pre_exe = []
+        self._cell = None
+        self._rows = None
+        self._cols = None
+        self._rendered = False
+
+        ops = map(lambda x: x.strip(), ops_str.split(';'))
+        for opt in ops:
+            if opt.startswith('rows:'):
+                if self._rows:
+                    error('too much rows definitions: ' + opt)
+                self._rows = RowsExp(opt[5:].strip())
+            elif opt.startswith('cols:'):
+                if self._cols:
+                    error('too much cols definitions: ' + opt)
+                self._cols = ColsExp(opt[5:].strip())
+            elif opt.startswith('cell:'):
+                if self._cell:
+                    error('too much cell definitions: ' + opt)
+                self._cell = CellExe(opt[5:].strip())
+            else:
+                for seg in map(lambda x: x.strip(), opt.split(':')):
+                    self._pre_exe.append(PreExe(seg))
+
+        if not self._rows:
+            error('no rows definitions: ' + ops_str)
+        if not self._cols:
+            error('no cols definitions: ' + ops_str)
+        if not self._cell:
+            error('no cell definitions: ' + ops_str)
+
+        self._table = Table(self._rows.notitle, self._cols.notitle)
+
+    def add_line(self, line):
+        assert not self._rendered, 'can\'t add line to Render when it\'s already rendered.'
+        for op in self._pre_exe:
+            line = op(line) or line
+        self._rows.add_line(line, self._cols, self._table)
+
+    def render(self):
+        self._table.add_missed_cell()
+        self._table.limit(self._rows.limit, self._cols.limit)
+        for row_name, row in self._table.rows.iteritems():
+            for col_name, lines in row.iteritems():
+                cell = Cell(lines)
+                self._cell(row_name, col_name, cell)
+                row[col_name] = cell
+        self._rendered = True
+
+    def get_table(self):
+        return self._table
+
+def parse_line(line, from_file):
+    segs = map(lambda x: x.strip(), line.split())
+    if len(segs) == 2:
+        return Line(line, from_file, segs[0], map(lambda x: x.strip(), segs[1].split(',')))
+    elif len(segs) == 1:
+        return Line(line, from_file, line)
+    elif len(segs) == 0:
+        return Line(line, from_file, 0)
+    else:
+        error('bad line: ' + line + ', in file: ' + from_file)
+
+# TODO: slow in reading big file
+def read_files(tail_cnt, paths):
+    total = []
+    for path in paths:
+        with open(path) as file:
+            lines = file.readlines()[-tail_cnt:]
+            lines = map(lambda x: x[:-1], lines)
+            lines = filter(lambda x: x, lines)
+            lines = map(lambda x: parse_line(x, path), lines)
+            total += lines
+    return total
+
+def padding_table(table, cols_notitle):
+    if not cols_notitle:
+        widths = []
+        for cols in table:
+            if len(cols) == 0:
+                error('bad table: ' + str(table))
+            tags = cols[0]
+            fields = tags.split(',')
+            while len(widths) < len(fields):
+                widths.append(0)
+            for i in range(0, len(fields)):
+                field = fields[i]
+                widths[i] = max(widths[i], len(field))
+        for cols in table:
+            tags = cols[0]
+            fields = tags.split(',')
+            for i in range(0, len(fields)):
+                field = fields[i]
+                field = field + (' ' * (widths[i] - len(field)))
+                fields[i] = field
+            cols[0] = ' '.join(fields)
+
+    widths = []
+    for cols in table:
+        for cell in cols:
+            widths.append(0)
+        break
+    for cols in table:
+        for i in range(0, len(cols)):
+            cell = cols[i]
+            widths[i] = max(widths[i], len(cell))
+    for cols in table:
+        for i in range(0, len(cols)):
+            cell = cols[i]
+            cols[i] = (i != 0 and ' ' or '') + ' ' * (widths[i] - len(cell)) + cell + ' '
+
+def to_table(render_str, tail_cnt, paths):
+    lines = read_files(tail_cnt, paths)
+    render = Render(render_str)
+    for line in lines:
+        render.add_line(line)
+    render.render()
+    table = render.get_table().output()
+    padding_table(table, render._cols.notitle)
+    for cols in table:
+        print '|'.join(cols + [''])
+
+# TODO: tag sorting: asc/desc
+if __name__ == '__main__':
+    if len(sys.argv) < 4:
+        error('usage: <bin> render_str, tail_limit_on_each_file, data_file1, [data_file2] [...]')
+    to_table(sys.argv[1], int(sys.argv[2]), sys.argv[3:])

@@ -25,7 +25,7 @@ function kp_mon_report
 	done
 
 	cat "${log}" | grep 'START\|RUNNING\|ERROR\|STOP' | tail -n 80 | \
-		awk '{if ($3 == "START") print "\033[36m+\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"; else if ($3 == "STOP") print "\033[36m!\033[0m"}' | \
+		awk '{if ($3 == "START") print "\033[32m+\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"; else if ($3 == "STOP") print "\033[35m!\033[0m"}' | \
 		tr "\n" ' ' | sed 's/ //g' | awk '{print "\033[32m<<\033[0m"$0}'
 }
 export -f kp_mon_report
@@ -62,20 +62,20 @@ function cmd_kp()
 
 	if [ "${cmd}" == 'run' ]; then
 		if [ ! -z "${mon_pid}" ]; then
-			echo "=> [monitor] ${file}"
+			echo "=> [^__^] ${file_abs}"
 			echo '   running, skipped'
 		else
 			echo "# This file is generated" >"${file_abs}.mon"
 			echo "kp_file_run \"${file_abs}\"" >>"${file_abs}.mon"
 			nohup bash "${integrated}"/_base/call_func.sh \
 				keep_script_running "${file_abs}.mon" 'false' '' 10 10 >/dev/null 2>&1 &
-			echo "=> [monitor] ${file}"
+			echo "=> [^__^] ${file_abs}"
 			echo '   starting'
 		fi
-		echo "=> [tasks]"
+		echo "=> [task] (s)"
 		kp_file_iter "${file}" | awk '{print "   "$0}'
 	elif [ "${cmd}" == 'stop' ]; then
-		echo "=> [monitor] ${file}"
+		echo "=> [^__^] ${file_abs}"
 		if [ ! -z "${mon_pid}" ]; then
 			local error_handle="$-"
 			set +e
@@ -93,8 +93,7 @@ function cmd_kp()
 		else
 			local run_status="\033[31m[!]\033[0m"
 		fi
-		local mon_path=`abs_path "${file}"`
-		echo -e "${run_status}\033[36m [monitor] ${mon_path}\033[0m \033[35m${atime}s\033[0m"
+		echo -e "${run_status}\033[36m [^__^] ${file_abs}\033[0m \033[35m${atime}s\033[0m"
 		kp_mon_report "${file}" | awk '{print "    "$0}'
 		kp_file_status "${file}"
 	elif [ "${cmd}" == 'list' ]; then
