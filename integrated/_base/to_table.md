@@ -67,7 +67,7 @@ mod:pd      ver:v3.0.0-alpha-152-gb65cecd4 |           33240 |     221 |
 mod:tikv    ver:3.0.2                      |             144 |     341 |
 ```
 
-Or, we can switch row-col using `to_table 'rows:op; cols:mod; cell:bytes' 9999 my.data`:
+Or, we can switch row-col using `to_table '' 'rows:op; cols:mod; cell:bytes' 9999 my.data`:
 ```
         | mod:tidb | mod:tiflash | mod:rngine | mod:pd | mod:tikv |
 op:run  |     171b |        117k |        22k |    32k |     144b |
@@ -77,7 +77,7 @@ op:stop |     330b |        133b |        22b |   221b |     341b |
 # The detail usage of `to_table`
 You could use `to_table.py` or bash function `to_table`, the args are:
 ```
-usage: <bin> render_str, tail_limit_on_each_file, data_file1, [data_file2] [...]
+usage: <bin> table_title, render_str, tail_limit_on_each_file, data_file1, [data_file2] [...]
 ```
 The `render_str` is the most important one, the others are plain to understand.
 
@@ -108,6 +108,7 @@ The order of operators is relevent, operators are executed one by one.
 
 In `rows-defination` sections, we support operators as follow:
 ```
+notag                -- hide tag name from row titile. eg: `op:tikv,ver:3.0.0` => `tikv,3.0.0`
 limit(n)             -- only show last `n` rows.
 limit(n, tag1, tag2) -- only calculate last `n` rows containing specified tags. WIP
 sort(tag1, tag2)     -- sort rows by tags' value. WIP
@@ -120,6 +121,7 @@ cell:op1:op2:op3;
 In `cell-process` sections, we support operators as follow:
 ```
 avg       -- each table cell contains data from many source lines, `avg` calculate the avg value of each line.
+mid       -- calculate the mid value of each line. WIP
 duration  -- cast cell value into duration format, the unit could be 's|m|h|y'.
 bytes     -- cast cell value into bytes format, the unit could be 'b|k|m|g'.
 ~         -- shows the inflation of cell values, only could be used on number, so it can't follow `duration` or `bytes`.

@@ -148,14 +148,14 @@ class Table:
                 self._limit_rows(len(self.row_names) - 1)
                 del_empty_cols()
 
-    def output(self):
+    def output(self, table_title):
         if self.cols_notitle:
             rows = []
         else:
             if self.rows_notitle:
                 rows = [self.col_names]
             else:
-                rows = [[''] + self.col_names]
+                rows = [[table_title] + self.col_names]
         for row_name in self.row_names:
             row = self.rows[row_name]
             cols = []
@@ -405,7 +405,8 @@ def read_files(tail_cnt, paths):
 def padding_table(table, cols_notitle):
     if not cols_notitle:
         widths = []
-        for cols in table:
+        for i in range(1, len(table)):
+            cols = table[i]
             if len(cols) == 0:
                 error('bad table: ' + str(table))
             tags = cols[0]
@@ -433,24 +434,29 @@ def padding_table(table, cols_notitle):
         for i in range(0, len(cols)):
             cell = cols[i]
             widths[i] = max(widths[i], len(cell))
-    for cols in table:
-        for i in range(0, len(cols)):
-            cell = cols[i]
-            cols[i] = (i != 0 and ' ' or '') + ' ' * (widths[i] - len(cell)) + cell + ' '
+    for i in range(0, len(table)):
+        cols = table[i]
+        for j in range(0, len(cols)):
+            cell = cols[j]
+            left_pad = (j != 0 and ' ' or '')
+            if i == 0 and j == 0:
+                cols[j] = cell + ' ' * (widths[j] - len(cell)) + ' '
+            else:
+                cols[j] = left_pad + ' ' * (widths[j] - len(cell)) + cell + ' '
 
-def to_table(render_str, tail_cnt, paths):
+def to_table(table_title, render_str, tail_cnt, paths):
     lines = read_files(tail_cnt, paths)
     render = Render(render_str)
     for line in lines:
         render.add_line(line)
     render.render()
-    table = render.get_table().output()
+    table = render.get_table().output(table_title)
     padding_table(table, render._cols.notitle)
     for cols in table:
         print '|'.join(cols + [''])
 
 # TODO: tag sorting: asc/desc
 if __name__ == '__main__':
-    if len(sys.argv) < 4:
-        error('usage: <bin> render_str, tail_limit_on_each_file, data_file1, [data_file2] [...]')
-    to_table(sys.argv[1], int(sys.argv[2]), sys.argv[3:])
+    if len(sys.argv) < 5:
+        error('usage: <bin> table_title, render_str, tail_limit_on_each_file, data_file1, [data_file2] [...]')
+    to_table(sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4:])

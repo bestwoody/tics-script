@@ -7,6 +7,8 @@ auto_error_handle
 ti="${integrated}/ops/ti.sh"
 ti_file="${integrated}/ti/1_x.ti"
 args="ports=+3#dir=nodes/3"
+
+title='<cluster run/stop elapsed>'
 data="${BASH_SOURCE[0]}.data"
 report="${BASH_SOURCE[0]}.report"
 
@@ -57,8 +59,7 @@ function test_mods()
 
 	"${ti}" -k "${args}" "${ti_file}" burn doit
 
-	echo 'ops/ti.sh run|stop elapsed time, local mode:' > "${report}"
-	to_table 'cols:op; rows:mod,ver; cell:avg:~:duration' 9999 "${data}" >> "${report}"
+	to_table "${title}" 'cols:op; rows:mod,ver; cell:avg:~:duration' 9999 "${data}" > "${report}"
 	echo 'done'
 }
 
