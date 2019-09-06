@@ -7,30 +7,54 @@ def error(msg):
     sys.stderr.write('[to_table.py] ' + msg + '\n')
     sys.exit(1)
 
+def duration(val):
+    unit = 's'
+    if val > 999:
+        val = val / 60
+        unit = 'm'
+    if val > 999:
+        val = val / 60
+        unit = 'h'
+    if val > 999:
+        val = val / 24
+        unit = 'd'
+    return val, unit
+
+def bytes(val):
+    unit = 'b'
+    if val > 999:
+        val = val / 1024
+        unit = 'k'
+    if val > 999:
+        val = val / 1024
+        unit = 'm'
+    if val > 999:
+        val = val / 1024
+        unit = 'g'
+    return val, unit
+
 class Cell:
     def __init__(self, lines = None):
         self.lines = lines or []
         self.vals = []
-        self.append = self.lines.append
-        self.__iter__ = self.lines.__iter__
+        self.vals_fmt = {}
+        self.vals_const = set()
+
+    def append(self, line):
+        self.lines.append(line)
 
     def empty(self):
         return len(self.lines) == 0
 
     def __str__(self):
-        return ''.join(map(lambda x: (x != None) and str(x) or '', self.vals))
-
-    def first_number_val(self):
-        val = None
-        idx = -1
+        res = []
         for i in range(0, len(self.vals)):
-            it = self.vals[i]
-            if isinstance(it, int) or isinstance(it, long):
-                val = it
-                idx = i
-                break
-        return val, idx
-
+            x = str(self.vals[i])
+            if self.vals_fmt.has_key(i):
+                prefix, suffix = self.vals_fmt[i]
+                x = prefix + x + suffix
+            res.insert(0, x)
+        return ' '.join(res)
 
 class Table:
     def __init__(self, rows_notitle, cols_notitle):
@@ -42,11 +66,11 @@ class Table:
         self.rows_notitle = rows_notitle
         self.cols_notitle = cols_notitle
 
-    def add_line(self, row_tags, col_tags, line):
+    def add_line(self, row_tags, row_notag, col_tags, col_notag, line):
         if row_tags:
             row_name = []
             for row_tag in row_tags:
-                row_name.append(row_tag + ':' + line.tags[row_tag])
+                row_name.append((not row_notag and (row_tag + ':') or '') + line.tags[row_tag])
             row_name = ','.join(row_name)
         else:
             row_name = '*'
@@ -54,7 +78,7 @@ class Table:
         if col_tags:
             col_name = []
             for col_tag in col_tags:
-                col_name.append(col_tag + ':' + line.tags[col_tag])
+                col_name.append((not col_notag and (col_tag + ':') or '') + line.tags[col_tag])
             col_name = ','.join(col_name)
         else:
             col_name = '*'
@@ -197,8 +221,9 @@ class PreExe:
 class ColsExp:
     def __init__(self, ops):
         self.limit = -1
+        self.notag = False
 
-        segs = map(lambda x: x.strip(), ops.split(':'))
+        segs = map(lambda x: x.strip(), ops.split('|'))
 
         if len(segs[0]) > 0:
             self.tags = map(lambda x: x.strip(), segs[0].split(','))
@@ -217,20 +242,24 @@ class ColsExp:
             elif seg == 'notitle':
                 self.notitle = True
                 continue
+            elif seg == 'notag':
+                self.notag = True
+                continue
             error('unknown cols op: ' + seg)
 
-    def add_line(self, line, row_tags, table):
+    def add_line(self, line, row_tags, row_notag, table):
         if len(self.tags) > 0:
             for tag in self.tags:
                 if not line.tags.has_key(tag):
                     return
-        table.add_line(row_tags, self.tags, line)
+        table.add_line(row_tags, row_notag, self.tags, self.notag, line)
 
 class RowsExp:
     def __init__(self, ops):
         self.limit = -1
+        self.notag = False
 
-        segs = map(lambda x: x.strip(), ops.split(':'))
+        segs = map(lambda x: x.strip(), ops.split('|'))
 
         if len(segs[0]) > 0:
             self.tags = map(lambda x: x.strip(), segs[0].split(','))
@@ -248,6 +277,9 @@ class RowsExp:
                 continue
             elif seg == 'notitle':
                 self.notitle = True
+                continue
+            elif seg == 'notag':
+                self.notag = True
                 continue
             error('unknown rows op: ' + seg)
 
@@ -256,15 +288,26 @@ class RowsExp:
             for tag in self.tags:
                 if not line.tags.has_key(tag):
                     return
-        cols_exp.add_line(line, self.tags, table)
+        cols_exp.add_line(line, self.tags, self.notag, table)
 
 class CellExe:
     def __init__(self, ops):
         self._ops = []
-        for op in map(lambda x: x.strip(), ops.split(':')):
+        for op in map(lambda x: x.strip(), ops.split('|')):
             self._ops.append(self._parse_op(op))
 
     def _parse_op(self, op):
+        def add_unit(cell, caster):
+            for i in range(0, len(cell.vals)):
+                val, unit = caster(cell.vals[i])
+                cell.vals[i] = val
+                if i in cell.vals_const:
+                    continue
+                prefix, suffix = '', ''
+                if cell.vals_fmt.has_key(i):
+                    prefix, suffix = cell.vals_fmt[i]
+                cell.vals_fmt[i] = (prefix, suffix and (unit + ' ' + suffix) or unit)
+
         if op == 'avg':
             def avg(row_name, col_name, cell):
                 vals = map(lambda line: long(line.val), cell.lines)
@@ -275,49 +318,29 @@ class CellExe:
             return avg
         if op == '~':
             def mp(row_name, col_name, cell):
-                val, i = cell.first_number_val()
+                if len(cell.vals) == 0:
+                    error('can\'t exe `~`, cause no value calcauted before')
+                val = cell.vals[0]
                 if val == None:
                     return
                 x = 0
                 for line in cell.lines:
                     x = max(x, abs(line.val - val))
-                x = (x != 0) and ('+-' + str(x) + '' + ' ') or ''
-                cell.vals.insert(i, x)
+                if x == 0:
+                    return
+                cell.vals.append(x)
+                cell.vals_fmt[len(cell.vals) - 1] = ('-+', '')
             return mp
+        if op == 'cnt':
+            def cnt(row_name, col_name, cell):
+                cell.vals.append(len(cell.lines))
+                cell.vals_fmt[len(cell.vals) - 1] = ('@', '')
+                cell.vals_const.add(len(cell.vals) - 1)
+            return cnt
         if op == 'duration':
-            def avg(row_name, col_name, cell):
-                val, i = cell.first_number_val()
-                if val == None:
-                    return
-                unit = 's'
-                if val > 999:
-                    val = val / 60
-                    unit = 'm'
-                if val > 999:
-                    val = val / 60
-                    unit = 'h'
-                if val > 999:
-                    val = val / 24
-                    unit = 'd'
-                cell.vals[i] = str(val) + unit
-            return avg
+            return lambda row_name, col_name, cell: add_unit(cell, duration)
         if op == 'bytes':
-            def avg(row_name, col_name, cell):
-                val, i = cell.first_number_val()
-                if val == None:
-                    return
-                unit = 'b'
-                if val > 999:
-                    val = val / 1024
-                    unit = 'k'
-                if val > 999:
-                    val = val / 1024
-                    unit = 'm'
-                if val > 999:
-                    val = val / 1024
-                    unit = 'g'
-                cell.vals[i] = str(val) + unit
-            return avg
+            return lambda row_name, col_name, cell: add_unit(cell, bytes)
 
         error('unknown cell op: ' + op)
 
@@ -348,7 +371,7 @@ class Render:
                     error('too much cell definitions: ' + opt)
                 self._cell = CellExe(opt[5:].strip())
             else:
-                for seg in map(lambda x: x.strip(), opt.split(':')):
+                for seg in map(lambda x: x.strip(), opt.split('|')):
                     self._pre_exe.append(PreExe(seg))
 
         if not self._rows:
@@ -370,8 +393,7 @@ class Render:
         self._table.add_missed_cell()
         self._table.limit(self._rows.limit, self._cols.limit)
         for row_name, row in self._table.rows.iteritems():
-            for col_name, lines in row.iteritems():
-                cell = Cell(lines)
+            for col_name, cell in row.iteritems():
                 self._cell(row_name, col_name, cell)
                 row[col_name] = cell
         self._rendered = True

@@ -47,7 +47,7 @@ mod:tikv    ver:3.0.2                      |    144 |     341 |
 ```
 
 Since this is about elapsed times, we add `duration` operator to each cell:
-Use command `totable 'cols:op; rows:mod,ver; cell:avg:duration' 9999 my.data`, we got:
+Use command `totable 'cols:op; rows:mod,ver; cell:avg|duration' 9999 my.data`, we got:
 ```
                                            | op:run | op:stop |
 mod:tidb    ver:v3.0.2                     |   171s |    330s |
@@ -90,7 +90,7 @@ Sections are seperated by `;`, the order of the sections are irrelevant.
 
 The `pre-process` sections will be applied on each line from input file, format:
 ```
-op1:op2:op3;
+op1|op2|op3;
 ```
 In `pre-process` sections, we support operators as follow:
 ```
@@ -101,7 +101,7 @@ tag2=to_day(tag1)    -- similer to `to_month`
 
 The `rows-defination` section defines the table rows, format:
 ```
-rows:tag1,tag2:op1:op2:op3;
+rows:tag1,tag2|op1|op2|op3;
 ```
 The tag set here defines which tags are used as rows, can be 1~many tags.
 The order of operators is relevent, operators are executed one by one.
@@ -116,7 +116,7 @@ sort(tag1, tag2)     -- sort rows by tags' value. WIP
 
 The `cell-process` sections format:
 ```
-cell:op1:op2:op3;
+cell:op1|op2|op3;
 ```
 In `cell-process` sections, we support operators as follow:
 ```
