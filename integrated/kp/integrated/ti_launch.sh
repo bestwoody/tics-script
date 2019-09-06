@@ -59,7 +59,7 @@ function test_mods()
 
 	"${ti}" -k "${args}" "${ti_file}" burn doit
 
-	to_table "${title}" 'cols:op; rows:mod,ver|notag; cell:avg|~|cnt|duration' 9999 "${data}" > "${report}"
+	to_table "${title}" 'cols:op; rows:mod,ver|notag; cell:limit(20)|avg|~|duration' 9999 "${data}" > "${report}"
 	echo 'done'
 }
 

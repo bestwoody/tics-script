@@ -308,6 +308,11 @@ class CellExe:
                     prefix, suffix = cell.vals_fmt[i]
                 cell.vals_fmt[i] = (prefix, suffix and (unit + ' ' + suffix) or unit)
 
+        if op.startswith('limit(') and op.endswith(')'):
+            limit = int(op[6:-1].strip())
+            def limiter(row_name, col_name, cell):
+                cell.lines = cell.lines[-limit:]
+            return limiter
         if op == 'avg':
             def avg(row_name, col_name, cell):
                 vals = map(lambda line: long(line.val), cell.lines)

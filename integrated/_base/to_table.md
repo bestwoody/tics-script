@@ -110,7 +110,6 @@ In `rows-defination` sections, we support operators as follow:
 ```
 notag                -- hide tag name from row titile. eg: `op:tikv,ver:3.0.0` => `tikv,3.0.0`
 limit(n)             -- only show last `n` rows.
-limit(n, tag1, tag2) -- only calculate last `n` rows containing specified tags. WIP
 sort(tag1, tag2)     -- sort rows by tags' value. WIP
 ```
 
@@ -120,6 +119,7 @@ cell:op1|op2|op3;
 ```
 In `cell-process` sections, we support operators as follow:
 ```
+limit(n)  -- only calculate last `n` rows in each cell.
 avg       -- each table cell contains data from many source lines, `avg` calculate the avg value of each line.
 mid       -- calculate the mid value of each line. WIP
 nobig     -- don't calulate the value witch is too big than others. WIP
@@ -129,6 +129,7 @@ noextre   -- don't calulate the value witch is too big or to small than others. 
 cnt       -- shows count of lines in this cell. WIP
 duration  -- cast cell value into duration format, the unit could be 's|m|h|y'.
 bytes     -- cast cell value into bytes format, the unit could be 'b|k|m|g'.
+etime     -- cast cell value into bytes format, the unit could be 'b|k|m|g'.
 ```
 
 The `cols-defination` section is almost the same as `rows-defination`.
