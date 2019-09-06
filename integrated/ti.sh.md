@@ -80,7 +80,7 @@ pd: node1/pd ports+1
 tikv: node1/tikv ports+1
 tidb: node1/tidb ports+1
 ```
-ghe address of `pd` will be used to other modules for connect.
+The address of `pd` will be used to other modules for connect.
 
 Although, we can use `pd` prop (and `tiflash` prop in rngine) to connect modules outside this file:
 ```

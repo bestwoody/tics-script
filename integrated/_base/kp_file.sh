@@ -48,6 +48,64 @@ function watch_files()
 }
 export -f watch_files
 
+function _print_ppid_if_pp()
+{
+	local processes="${1}"
+
+	if [ "${proc_cnt}" != '2' ]; then
+		return
+	fi
+
+	local pp=`echo "${processes}" | awk '{print $2, $3}'`
+	local l1c1=`echo "${pp}" | head -n 1 | awk '{print $1}'`
+	local l1c2=`echo "${pp}" | head -n 1 | awk '{print $2}'`
+	local l2c1=`echo "${pp}" | tail -n 1 | awk '{print $1}'`
+	local l2c2=`echo "${pp}" | tail -n 1 | awk '{print $2}'`
+	if [ "${l1c1}" == "${l2c2}" ]; then
+		echo "${l1c1}"
+	elif [ "${l2c1}" == "${l1c2}" ]; then
+		echo "${l2c1}"
+	fi
+}
+export -f _print_ppid_if_pp
+
+function print_kp_pid()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func print_kp_pid] usage: <func> str_for_finding_the_processes [str2]" >&2
+		return 1
+	fi
+
+	local find_str="${1}"
+	local str2=""
+	if [ ! -z "${2+x}" ]; then
+		local str2="${2}"
+	fi
+
+	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v grep`
+	if [ -z "${processes}" ]; then
+		return
+	fi
+
+	local proc_cnt=`echo "${processes}" | wc -l | awk '{print $1}'`
+	if [ "${proc_cnt}" == '1' ]; then
+		echo "${processes}" | awk '{print $2}'
+		return
+	fi
+
+	local ppid=`_print_ppid_if_pp "${processes}"`
+	if [ ! -z "${ppid}" ]; then
+		echo "${ppid}"
+		return
+	fi
+
+	echo "DUMP START --: ${find_str} ${str2}" >&2
+	echo "${processes}" >&2
+	echo "DUMP END   --: ${find_str} ${str2}" >&2
+	echo "${processes}" | awk '{print $2}'
+}
+export -f print_kp_pid
+
 function keep_script_running()
 {
 	if [ -z "${5+x}" ]; then
@@ -79,18 +137,22 @@ function keep_script_running()
 	fi
 
 	while true; do
-		local proc_cnt=`print_proc_cnt "bash ${script}" "${args}"`
+		local pid=`print_kp_pid "bash ${script}" "${args}"`
+		if [ -z "${pid}" ]; then
+			local proc_cnt='0'
+		else
+			local proc_cnt=`echo "${pid}" | wc -l | awk '{print $1}'`
+		fi
+
 		if [ "${proc_cnt}" == '1' ]; then
 			echo "[`date +'%D %T'`] RUNNING ${script}${args_str}"
 			local backoff_i=0
 			sleep "${interval}"
 			continue
 		fi
+
 		if [ "${proc_cnt}" != '0' ]; then
 			echo "[`date +'%D %T'`] ERROR ${script}${args_str}: more than 1 instance: ${proc_cnt}"
-			# TODO: for debug
-			echo "DUMP: bash ${script} ${args}"
-			ps -ef | grep "bash ${script}" | grep "${args}"
 			local backoff_i=0
 			sleep "${interval}"
 			continue
@@ -221,31 +283,19 @@ function _kp_file_pid()
 	fi
 
 	local file="${1}"
-	local pid=`ps -ef | grep "keep_script_running ${file}" | grep -v grep | awk '{if($3==1) print $2}'`
+	local processes=`ps -ef | grep "keep_script_running ${file}" | grep -v 'grep'`
+	local pid=`echo "${processes}" | awk '{if($3==1) print $2}'`
 	if [ ! -z "${pid}" ]; then
 		echo "${pid}"
 		return
 	fi
 
-	local processes=`ps -ef | grep "keep_script_running ${file}" | grep -v grep`
-	local processed=`ps -ef | grep "keep_script_running ${file}" | grep -v grep | awk '{print $2, $3}'`
-	local proc_cnt=`echo "${processed}" | wc -l | awk '{print $1}'`
+	local proc_cnt=`echo "${processes}" | wc -l | awk '{print $1}'`
 	if [ "${proc_cnt}" == '1' ]; then
-		echo "${processed}" | head -n 1 | awk '{print $1}'
-	fi
-	if [ "${proc_cnt}" != '2' ]; then
-		return
+		echo "${processes}" | head -n 1 | awk '{print $2}'
 	fi
 
-	local l1c1=`echo "${processed}" | head -n 1 | awk '{print $1}'`
-	local l1c2=`echo "${processed}" | head -n 1 | awk '{print $2}'`
-	local l2c1=`echo "${processed}" | tail -n 1 | awk '{print $1}'`
-	local l2c2=`echo "${processed}" | tail -n 1 | awk '{print $2}'`
-	if [ "${l1c1}" == "${l2c2}" ]; then
-		echo "${l1c1}"
-	elif [ "${l2c1}" == "${l1c2}" ]; then
-		echo "${l2c1}"
-	fi
+	_print_ppid_if_pp "${processes}"
 }
 export -f _kp_file_pid
 
