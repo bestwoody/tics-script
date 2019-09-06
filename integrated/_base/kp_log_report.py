@@ -24,15 +24,19 @@ def report(std_log_path, err_log_path, color = True):
     n = '-'
     e = 'E'
     u = '~'
+    p = '<'
     if color:
         n = '\033[32m-\033[0m'
         e = '\033[31mE\033[0m'
         u = '\033[33m~\033[0m'
+        p = '\033[32m<\033[0m'
 
     result = ['-' for i in range(result_limit)]
     started = False
     started_time = None
     err_log_i = 0
+
+    last_line = None
 
     for sline in std_log:
         if sline.startswith('!RUN '):
@@ -59,6 +63,10 @@ def report(std_log_path, err_log_path, color = True):
                 result.append(n)
             started = False
 
+        last_line = sline
+
+    if last_line and not sline.startswith('!END ') and not sline.startswith('!RUN '):
+        result.append(p)
     return result
 
 if __name__ == '__main__':

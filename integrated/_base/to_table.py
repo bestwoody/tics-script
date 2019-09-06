@@ -334,7 +334,7 @@ class CellExe:
         if op == 'cnt':
             def cnt(row_name, col_name, cell):
                 cell.vals.append(len(cell.lines))
-                cell.vals_fmt[len(cell.vals) - 1] = ('@', '')
+                cell.vals_fmt[len(cell.vals) - 1] = ('', ')')
                 cell.vals_const.add(len(cell.vals) - 1)
             return cnt
         if op == 'duration':
