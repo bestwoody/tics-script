@@ -13,7 +13,7 @@ function print_proc_cnt()
 		local str2="${2}"
 	fi
 
-	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v grep`
+	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v 'grep'`
 	if [ -z "${processes}" ]; then
 		echo "0"
 	else
@@ -35,7 +35,7 @@ function print_pid()
 		local str2="${2}"
 	fi
 
-	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v grep`
+	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v 'grep'`
 	if [ -z "${processes}" ]; then
 		return 1
 	fi

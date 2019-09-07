@@ -12,33 +12,41 @@ title='<cluster run/stop elapsed>'
 data="${BASH_SOURCE[0]}.data"
 report="${BASH_SOURCE[0]}.report"
 
-function test_mod()
+function get_ver()
 {
 	local mod="${1}"
-	local op="${2}"
-
-	local check_ok='true'
-	if [ "${op}" == 'stop' ]; then
-		local check_ok='false'
-	fi
-
-	local start_time=`date +%s`
-	"${ti}" -k "${args}" -m "${mod}" "${ti_file}" "${op}"
-	local end_time=`date +%s`
-
-	if [ "${check_ok}" == 'true' ]; then
-		local status=`"${ti}" -k "${args}" -m "${mod}" "${ti_file}" 'status'`
-		local ok=`echo "${status}" | grep 'OK'`
-		if [ -z "${ok}" ]; then
-			echo "${status}" >&2
-			return 1
-		fi
-	fi
-
 	local ver=`"${ti}" -k "${args}" -m "${mod}" "${ti_file}" ver ver | awk '{print "mod:"$1",ver:"$2}'`
+	local failed=`echo "${ver}" | grep 'unknown'`
+	if [ ! -z "${failed}" ]; then
+		return 1
+	fi
 	local git=`"${ti}" -k "${args}" -m "${mod}" "${ti_file}" ver githash | awk '{print "git:"$2}'`
+	echo "${ver},${git}"
+}
 
-	local tags="op:${op},ts:${end_time},${ver},${git}"
+function stop_mod()
+{
+	local mod="${1}"
+	local start_time=`date +%s`
+	"${ti}" -k "${args}" -m "${mod}" "${ti_file}" 'stop'
+	local end_time=`date +%s`
+	local tags="op:stop,start_ts:${start_time},end_ts:${end_time},`get_ver "${mod}"`"
+	echo "$((end_time - start_time)) ${tags}" >> "${data}"
+}
+
+function run_mod()
+{
+	local mod="${1}"
+	local start_time=`date +%s`
+	"${ti}" -k "${args}" -m "${mod}" "${ti_file}" 'run'
+	local end_time=`date +%s`
+	local status=`"${ti}" -k "${args}" -m "${mod}" "${ti_file}" 'status'`
+	local ok=`echo "${status}" | grep 'OK'`
+	if [ -z "${ok}" ]; then
+		echo "${status}" >&2
+		return 1
+	fi
+	local tags="op:run,start_ts:${start_time},end_ts:${end_time},`get_ver "${mod}"`"
 	echo "$((end_time - start_time)) ${tags}" >> "${data}"
 }
 
@@ -46,20 +54,21 @@ function test_mods()
 {
 	"${ti}" -k "${args}" "${ti_file}" burn doit
 
-	test_mod 'pd' 'run'
-	test_mod 'tikv' 'run'
-	test_mod 'tidb' 'run'
-	test_mod 'tiflash' 'run'
-	test_mod 'rngine' 'run'
-	test_mod 'pd' 'stop'
-	test_mod 'tikv' 'stop'
-	test_mod 'tidb' 'stop'
-	test_mod 'tiflash' 'stop'
-	test_mod 'rngine' 'stop'
+	run_mod 'pd'
+	run_mod 'tikv'
+	run_mod 'tidb'
+	run_mod 'tiflash'
+	run_mod 'rngine'
+	stop_mod 'pd'
+	stop_mod 'tikv'
+	stop_mod 'tidb'
+	stop_mod 'tiflash'
+	stop_mod 'rngine'
 
 	"${ti}" -k "${args}" "${ti_file}" burn doit
 
-	to_table "${title}" 'cols:op; rows:mod,ver|notag; cell:limit(20)|avg|~|duration' 9999 "${data}" > "${report}"
+	to_table "${title}" 'cols:op; rows:mod,ver|notag; cell:limit(20)|avg|~|duration' 9999 "${data}" > "${report}.tmp"
+	mv -f "${report}.tmp" "${report}"
 	echo 'done'
 }
 

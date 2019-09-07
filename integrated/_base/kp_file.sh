@@ -51,21 +51,7 @@ export -f watch_files
 function _print_ppid_if_pp()
 {
 	local processes="${1}"
-
-	if [ "${proc_cnt}" != '2' ]; then
-		return
-	fi
-
-	local pp=`echo "${processes}" | awk '{print $2, $3}'`
-	local l1c1=`echo "${pp}" | head -n 1 | awk '{print $1}'`
-	local l1c2=`echo "${pp}" | head -n 1 | awk '{print $2}'`
-	local l2c1=`echo "${pp}" | tail -n 1 | awk '{print $1}'`
-	local l2c2=`echo "${pp}" | tail -n 1 | awk '{print $2}'`
-	if [ "${l1c1}" == "${l2c2}" ]; then
-		echo "${l1c1}"
-	elif [ "${l2c1}" == "${l1c2}" ]; then
-		echo "${l2c1}"
-	fi
+	echo "${processes}" | awk '{print $2, $3}' | python "${integrated}/_base/print_root_pid.py"
 }
 export -f _print_ppid_if_pp
 
@@ -84,12 +70,6 @@ function print_kp_pid()
 
 	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v grep`
 	if [ -z "${processes}" ]; then
-		return
-	fi
-
-	local proc_cnt=`echo "${processes}" | wc -l | awk '{print $1}'`
-	if [ "${proc_cnt}" == '1' ]; then
-		echo "${processes}" | awk '{print $2}'
 		return
 	fi
 
@@ -290,11 +270,6 @@ function _kp_file_pid()
 		return
 	fi
 
-	local proc_cnt=`echo "${processes}" | wc -l | awk '{print $1}'`
-	if [ "${proc_cnt}" == '1' ]; then
-		echo "${processes}" | head -n 1 | awk '{print $2}'
-	fi
-
 	_print_ppid_if_pp "${processes}"
 }
 export -f _kp_file_pid
@@ -366,18 +341,32 @@ function kp_sh_stop()
 
 	local error_handle="$-"
 	set +e
-	kill "${pid}" 2>/dev/null
-	local pid=`_kp_file_pid "${file}"`
-	if [ ! -z "${pid}" ]; then
-		kill "${pid}" 2>/dev/null
-	fi
-	restore_error_handle_flags "${error_handle}"
 
-	if [ "${quiet}" != 'true' ]; then
-		stop_proc "bash ${file}"
-	else
-		stop_proc "bash ${file}" 1>/dev/null
-	fi
+	for ((i = 0; i < 99; i++)); do
+		kill "${pid}" 2>/dev/null
+		local killed=`ps -p "${pid}" | grep -v 'TTY'`
+		if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
+			echo "   stopped ${pid}"
+		fi
+		local pid=`_kp_file_pid "${file}"`
+		if [ -z "${pid}" ]; then
+			break
+		fi
+	done
+
+	for ((i = 0; i < 99; i++)); do
+		local pid=`ps -ef | grep "bash ${file}" | grep -v 'grep' | head -n 1 | awk '{print $2}'`
+		if [ -z "${pid}" ]; then
+			break
+		fi
+		kill "${pid}" 2>/dev/null
+		local killed=`ps -p "${pid}" | grep -v 'TTY'`
+		if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
+			echo "   stopped ${pid}"
+		fi
+	done
+
+	restore_error_handle_flags "${error_handle}"
 
 	local clear_script="${file}.term"
 	if [ -f "${clear_script}" ]; then
@@ -497,6 +486,7 @@ function kp_file_status()
 				if [ "${err_cnt}" -gt '4' ]; then
 					local stderr=`echo "$stderr" | tail -n 4`
 				fi
+				echo -e '    \033[33m-- stderr --\033[0m'
 				echo "${stderr}" | awk '{print "    \033[33m"$0"\033[0m"}'
 			fi
 		fi
