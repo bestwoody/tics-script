@@ -12,25 +12,13 @@ title='<cluster run/stop elapsed>'
 data="${BASH_SOURCE[0]}.data"
 report="${BASH_SOURCE[0]}.report"
 
-function get_ver()
-{
-	local mod="${1}"
-	local ver=`"${ti}" -k "${args}" -m "${mod}" "${ti_file}" ver ver | awk '{print "mod:"$1",ver:"$2}'`
-	local failed=`echo "${ver}" | grep 'unknown'`
-	if [ ! -z "${failed}" ]; then
-		return 1
-	fi
-	local git=`"${ti}" -k "${args}" -m "${mod}" "${ti_file}" ver githash | awk '{print "git:"$2}'`
-	echo "${ver},${git}"
-}
-
 function stop_mod()
 {
 	local mod="${1}"
 	local start_time=`date +%s`
 	"${ti}" -k "${args}" -m "${mod}" "${ti_file}" 'stop'
 	local end_time=`date +%s`
-	local tags="op:stop,start_ts:${start_time},end_ts:${end_time},`get_ver "${mod}"`"
+	local tags="op:stop,start_ts:${start_time},end_ts:${end_time},`get_mod_ver "${mod}" "${ti_file}" "${args}"`"
 	echo "$((end_time - start_time)) ${tags}" >> "${data}"
 }
 
@@ -46,7 +34,7 @@ function run_mod()
 		echo "${status}" >&2
 		return 1
 	fi
-	local tags="op:run,start_ts:${start_time},end_ts:${end_time},`get_ver "${mod}"`"
+	local tags="op:run,start_ts:${start_time},end_ts:${end_time},`get_mod_ver "${mod}" "${ti_file}" "${args}"`"
 	echo "$((end_time - start_time)) ${tags}" >> "${data}"
 }
 

@@ -16,3 +16,5 @@ source ${integrated}/_base/ti_proc.sh
 source ${integrated}/_base/ti_file.sh
 source ${integrated}/_base/ti_ssh.sh
 source ${integrated}/_base/ti_ssh_proc.sh
+
+source ${integrated}/_base/test_base_func.sh
