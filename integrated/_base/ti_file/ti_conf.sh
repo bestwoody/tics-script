@@ -41,8 +41,6 @@ function get_bin_name_from_conf()
 }
 export -f get_bin_name_from_conf
 
-# TODO: Pass integrated dir from args
-
 # bin_paths_file: name \t md5sum \t bin_name \t url
 function cp_bin_to_dir_from_paths()
 {
@@ -63,6 +61,7 @@ function cp_bin_to_dir_from_paths()
 	if [ ! -z "${paths_str}" ]; then
 		local paths=(${paths_str//:/ })
 		for path in ${paths[@]}; do
+			# TODO: Pass integrated dir from args
 			local path=`replace_substr "${path}" '{integrated}' "${integrated}"`
 			if [ -f "${path}" ]; then
 				cp_when_diff "${path}" "${dest_dir}/${bin_name}"
@@ -217,6 +216,7 @@ function render_templ()
 	local dest_dir=`dirname "${dest}"`
 	mkdir -p "${dest_dir}"
 
-	python "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/render_templ.py" "${kvs}" < "${src}" > "${dest}"
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	python "${here}/render_templ.py" "${kvs}" < "${src}" > "${dest}"
 }
 export -f render_templ

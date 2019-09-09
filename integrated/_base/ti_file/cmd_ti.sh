@@ -11,19 +11,22 @@ export -f _ti_file_cmd_list
 
 function ti_file_cmd_list()
 {
+	local cmd_dir="${1}"
 	echo "remote, by module: (default)"
-	_ti_file_cmd_list "${integrated}/ops/ti.sh.cmds/remote"
+	_ti_file_cmd_list "${cmd_dir}/remote"
 	echo "remote, by host: (-b)"
-	_ti_file_cmd_list "${integrated}/ops/ti.sh.cmds/remote/byhost"
+	_ti_file_cmd_list "${cmd_dir}/remote/byhost"
 	echo "local, by module: (-l)"
-	_ti_file_cmd_list "${integrated}/ops/ti.sh.cmds/local"
+	_ti_file_cmd_list "${cmd_dir}/local"
 	echo "local, by host: (-l -b)"
-	_ti_file_cmd_list "${integrated}/ops/ti.sh.cmds/local/byhost"
+	_ti_file_cmd_list "${cmd_dir}/local/byhost"
 }
 export -f ti_file_cmd_list
 
 function ti_file_cmd_help()
 {
+	local cmd_dir="${1}"
+
 	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd,tikv,..] [-h host,host] [-i mod_index] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|..) [args]'
 	echo '    -c:'
 	echo '        specify the config template dir, will be `ops/../conf` if this arg is not provided.'
@@ -60,7 +63,10 @@ function ti_file_cmd_help()
 
 	echo
 	echo 'command list:'
-	ti_file_cmd_list | awk '{print "    "$0}'
+
+	if [ -d "${cmd_dir}" ]; then
+		ti_file_cmd_list "${cmd_dir}" | awk '{print "    "$0}'
+	fi
 }
 export -f ti_file_cmd_help
 
@@ -99,7 +105,7 @@ function cmd_ti()
 			?)
 				echo '[func cmd_ti] illegal option(s)' >&2
 				echo '' >&2
-				ti_file_cmd_help >&2
+				ti_file_cmd_help "${cmd_dir}" >&2
 				return 1;;
 		esac
 	done
@@ -112,7 +118,7 @@ function cmd_ti()
 	local cmd_args=("${@}")
 
 	if [ -z "${ti_file}" ]; then
-		ti_file_cmd_help >&2
+		ti_file_cmd_help "${cmd_dir}" >&2
 		return 1
 	fi
 

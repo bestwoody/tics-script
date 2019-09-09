@@ -14,6 +14,8 @@ function cal_addr()
 	if [ ! -z "${4+x}" ]; then
 		local default_pd_name="${4}"
 	fi
-	python "${integrated}/_base/cal_addr.py" "${addr}" "${default_host}" "${default_port}" "${default_pd_name}"
+
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	python "${here}/cal_addr.py" "${addr}" "${default_host}" "${default_port}" "${default_pd_name}"
 }
 export -f cal_addr

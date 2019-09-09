@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# TODO: pass dir names by args
 function cp_env_to_dir()
 {
 	if [ -z "${2+x}" ]; then
@@ -108,7 +109,6 @@ function cp_bin_to_host()
 
 	cp_bin_to_dir "${name}" "${cache_dir}" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" false
 
-	#cp_file_to_host "${cache_bin_path}" "${host}" "${remote_env_dir}" "${remote_dest_dir}" "${md5}" "false"
 	ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
 	rsync -qa "${cache_bin_path}" "${host}:${remote_dest_dir}/${bin_name}" >/dev/null
 }

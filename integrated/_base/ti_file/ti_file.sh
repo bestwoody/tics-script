@@ -1,126 +1,17 @@
 #!/bin/bash
 
-function ti_file_mod_status()
+function get_tiflash_addr_from_dir()
 {
-	if [ -z "${2+x}" ]; then
-		echo "[func ti_file_mod_status] usage <func> dir conf" >&2
+	if [ -z "${1+x}" ]; then
+		echo "[func get_tiflash_addr_from_dir] usage: <func> tiflash_dir" >&2
 		return 1
 	fi
-
 	local dir="${1}"
-	local conf="${2}"
-
-	local up_status="OK    "
-	if [ ! -d "${dir}" ]; then
-		local up_status="MISSED"
-	elif [ -f "${dir}/extra_str_to_find_proc" ]; then
-		local extra_str_to_find_proc=`cat "${dir}/extra_str_to_find_proc"`
-		local pid_cnt=`print_proc_cnt "${dir}/" "${extra_str_to_find_proc}"`
-		if [ "${pid_cnt}" == "0" ]; then
-			local up_status="DOWN  "
-		else
-			if [ "${pid_cnt}" != "1" ]; then
-				local up_status="MULTI "
-			fi
-		fi
-	else
-		local conf_file=`abs_path "${dir}"`/${conf}
-		local pid_cnt=`print_proc_cnt "${conf_file}"`
-		if [ "${pid_cnt}" == "0" ]; then
-			local up_status="DOWN  "
-		else
-			if [ "${pid_cnt}" != "1" ]; then
-				local up_status="MULTI "
-			fi
-		fi
-	fi
-	echo "${up_status}"
+	local host=`grep 'listen_host' "${dir}/proc.info" | awk -F '\t' '{print $2}'`
+	local port=`grep 'raft_port' "${dir}/proc.info" | awk -F '\t' '{print $2}'`
+	echo "${host}:${port}"
 }
-export -f ti_file_mod_status
-
-function ti_file_cmd_status()
-{
-	if [ -z "${4+x}" ]; then
-		echo "[func ti_file_cmd_status] usage <func> index name dir conf" >&2
-		return 1
-	fi
-
-	local index="${1}"
-	local name="${2}"
-	local dir="${3}"
-	local conf="${4}"
-
-	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
-
-	echo "${up_status} ${name} #${index} (${dir})"
-}
-export -f ti_file_cmd_status
-
-function ti_file_mod_stop()
-{
-	if [ -z "${2+x}" ]; then
-		echo "[func ti_file_mod_stop] usage <func> index name dir conf fast_mode" >&2
-		return 1
-	fi
-
-	local index="${1}"
-	local name="${2}"
-	local dir="${3}"
-	local conf="${4}"
-	local fast="${5}"
-
-	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
-	local up_status=`echo ${up_status}`
-	local ok=`echo "${up_status}" | grep ^OK`
-	if [ -z "${ok}" ]; then
-		echo "=> skipped. ${name} #${index} (${dir}) ${up_status}"
-		return
-	fi
-
-	echo "=> stopping ${name} #${index} (${dir})"
-
-	if [ "${name}" == "pd" ]; then
-		pd_stop "${dir}" "${fast}"
-	fi
-	if [ "${name}" == "tikv" ]; then
-		tikv_stop "${dir}" "${fast}"
-	fi
-	if [ "${name}" == "tidb" ]; then
-		tidb_stop "${dir}" "${fast}"
-	fi
-	if [ "${name}" == "tiflash" ]; then
-		tiflash_stop "${dir}" "${fast}"
-	fi
-	if [ "${name}" == "rngine" ]; then
-		rngine_stop "${dir}" "${fast}"
-	fi
-	if [ "${name}" == "spark_m" ]; then
-		spark_master_stop "${dir}" "${fast}"
-	fi
-	if [ "${name}" == "spark_w" ]; then
-		spark_worker_stop "${dir}" "${fast}"
-	fi
-
-	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
-	local ok=`echo "${up_status}" | grep ^OK`
-	if [ ! -z "${ok}" ]; then
-		echo "failed.. ${name} #${index} (${dir}) ${up_status}"
-		return 1
-	fi
-}
-export -f ti_file_mod_stop
-
-function ti_file_cmd_stop()
-{
-	ti_file_mod_stop "${1}" "${2}" "${3}" "${4}" 'false'
-}
-export -f ti_file_cmd_stop
-
-function ti_file_cmd_fstop()
-{
-	ti_file_mod_stop "${1}" "${2}" "${3}" "${4}" 'true' | grep -v 'closing'
-}
-export -f ti_file_cmd_fstop
+export -f get_tiflash_addr_from_dir
 
 function ti_file_exe()
 {
@@ -193,11 +84,13 @@ function ti_file_exe()
 		return 1
 	fi
 
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+
 	# For ti file checking
-	python "${integrated}/_base/ti_file.py" 'hosts' \
+	python "${here}/ti_file.py" 'hosts' \
 		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" 1>/dev/null
 
-	local hosts=`python "${integrated}/_base/ti_file.py" 'hosts' \
+	local hosts=`python "${here}/ti_file.py" 'hosts' \
 		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}"`
 
 	# TODO: Pass paths from args
@@ -241,7 +134,7 @@ function ti_file_exe()
 				local base_name=`basename "${ti_file}"`
 				local rendered="/tmp/ti_file_rendered.${base_name}.`date +%s`.${RANDOM}.sh"
 			fi
-			python "${integrated}/_base/ti_file.py" 'render' "${ti_file}" \
+			python "${here}/ti_file.py" 'render' "${ti_file}" \
 				"${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" > "${rendered}"
 			chmod +x "${rendered}"
 			if [ "${cmd}" == "run" ]; then
@@ -251,7 +144,7 @@ function ti_file_exe()
 			return 0
 		fi
 
-		local mods=`python "${integrated}/_base/ti_file.py" 'mods' \
+		local mods=`python "${here}/ti_file.py" 'mods' \
 			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}"`
 
 		local has_func=`func_exists "ti_file_cmd_${cmd}"`

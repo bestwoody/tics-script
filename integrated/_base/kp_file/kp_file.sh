@@ -51,7 +51,8 @@ export -f watch_files
 function _print_ppid_if_pp()
 {
 	local processes="${1}"
-	echo "${processes}" | awk '{print $2, $3}' | python "${integrated}/_base/print_root_pid.py"
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	echo "${processes}" | awk '{print $2, $3}' | python "${here}/print_root_pid.py"
 }
 export -f _print_ppid_if_pp
 
@@ -491,7 +492,8 @@ function kp_file_status()
 			fi
 		fi
 
-		python "${integrated}/_base/kp_log_report.py" "${line}.log" \
+		local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+		python "${here}/kp_log_report.py" "${line}.log" \
 			"${line}.err.log" color | awk '{print "    \033[32m<<\033[0m"$0}'
 	done
 }

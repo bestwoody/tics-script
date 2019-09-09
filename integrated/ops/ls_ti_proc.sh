@@ -13,3 +13,5 @@ echo '=> tiflash:'
 ls_tiflash_proc
 echo '=> rngine:'
 ls_rngine_proc
+
+# TODO: list Spark proc

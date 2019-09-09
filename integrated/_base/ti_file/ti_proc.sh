@@ -2,6 +2,315 @@
 
 # TODO: Check if ip changed when run a module
 
+function pd_run()
+{
+	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
+		echo "[func pd_run] usage: <func> pd_dir conf_templ_dir [name_ports_delta] [advertise_host] [pd_name] [initial_cluster] [cluster_id]" >&2
+		return 1
+	fi
+
+	local pd_dir="${1}"
+	local conf_templ_dir="${2}"
+
+	if [ -z "${3+x}" ]; then
+		local name_ports_delta="0"
+	else
+		local name_ports_delta="${3}"
+	fi
+
+	if [ -z "${4+x}" ]; then
+		local advertise_host=""
+	else
+		local advertise_host="${4}"
+	fi
+
+	if [ -z "${5+x}" ]; then
+		local pd_name=""
+	else
+		local pd_name="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local initial_cluster=""
+	else
+		local initial_cluster="${6}"
+	fi
+
+	if [ -z "${7+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${7}"
+	fi
+
+	if [ -z "${advertise_host}" ]; then
+		local ip_cnt="`print_ip_cnt`"
+		if [ "${ip_cnt}" != "1" ]; then
+			local advertise_host="127.0.0.1"
+		else
+			local advertise_host="`print_ip`"
+		fi
+	fi
+
+	if [ -z "${pd_name}" ]; then
+		local pd_name="pd${name_ports_delta}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func pd_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_pd_peer_port=`get_value "${default_ports}" 'pd_peer_port'`
+	if [ -z "${default_pd_peer_port}" ]; then
+		echo "[func pd_run] get default pd_peer_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local pd_port=$((${name_ports_delta} + ${default_pd_port}))
+	local peer_port=$((${name_ports_delta} + ${default_pd_peer_port}))
+
+	if [ -z "${initial_cluster}" ]; then
+		local initial_cluster="${pd_name}=http://${advertise_host}:${peer_port}"
+	else
+		local initial_cluster=$(cal_addr "${initial_cluster}" "${advertise_host}" "${default_pd_peer_port}" "${pd_name}")
+	fi
+
+	local pd_dir=`abs_path "${pd_dir}"`
+
+	local proc_cnt=`print_proc_cnt "${pd_dir}/pd.toml" "\-\-config"`
+	if [ "${proc_cnt}" != "0" ]; then
+		echo "running(${proc_cnt}), skipped"
+		return 0
+	fi
+
+	cp_when_diff "${conf_templ_dir}/pd.toml" "${pd_dir}/pd.toml"
+
+	local info="${pd_dir}/proc.info"
+	echo "pd_name	${pd_name}" > "${info}"
+	echo "advertise_host	${advertise_host}" >> "${info}"
+	echo "pd_port	${pd_port}" >> "${info}"
+	echo "peer_port	${peer_port}" >> "${info}"
+	echo "initial_cluster	${initial_cluster}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
+
+	echo "nohup \"${pd_dir}/pd-server\" \
+		--name=\"${pd_name}\" \
+		--client-urls=\"http://${advertise_host}:${pd_port}\" \
+		--advertise-client-urls=\"http://${advertise_host}:${pd_port}\" \
+		--peer-urls=\"http://${advertise_host}:${peer_port}\" \
+		--advertise-peer-urls=\"http://${advertise_host}:${peer_port}\" \
+		--data-dir=\"${pd_dir}/data\" \
+		--initial-cluster=\"${initial_cluster}\" \
+		--config=\"${pd_dir}/pd.toml\" \
+		--log-file=\"${pd_dir}/pd.log\" 2>> \"${pd_dir}/pd_stderr.log\" 1>&2 &" > "${pd_dir}/run.sh"
+
+	chmod +x "${pd_dir}/run.sh"
+	bash "${pd_dir}/run.sh"
+
+	local pid=`print_pid "${pd_dir}/pd.toml" "\-\-config"`
+	echo "pid	${pid}" >> "${info}"
+	echo "${pid}"
+}
+export -f pd_run
+
+function tikv_run()
+{
+	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
+		echo "[func tikv_run] usage: <func> tikv_dir conf_templ_dir pd_addr [advertise_host] [ports_delta] [cluster_id]" >&2
+		return 1
+	fi
+
+	local tikv_dir="${1}"
+	local conf_templ_dir="${2}"
+	local pd_addr="${3}"
+
+	if [ -z "${4+x}" ]; then
+		local advertise_host=""
+	else
+		local advertise_host="${4}"
+	fi
+
+	if [ -z "${5+x}" ]; then
+		local ports_delta="0"
+	else
+		local ports_delta="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${6}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func tikv_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tikv_port=`get_value "${default_ports}" 'tikv_port'`
+	if [ -z "${default_tikv_port}" ]; then
+		echo "[func tikv_run] get default tikv_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
+
+	if [ -z "${advertise_host}" ]; then
+		local ip_cnt="`print_ip_cnt`"
+		if [ "${ip_cnt}" != "1" ]; then
+			local advertise_host="127.0.0.1"
+		else
+			local advertise_host="`print_ip`"
+		fi
+	fi
+
+	local listen_host=""
+	if [ "${advertise_host}" != "127.0.0.1" ] || [ "${advertise_host}" != "localhost" ]; then
+		local listen_host="${advertise_host}"
+	else
+		local listen_host="`must_print_ip`"
+	fi
+
+	local tikv_port=$((${ports_delta} + ${default_tikv_port}))
+
+	local tikv_dir=`abs_path "${tikv_dir}"`
+
+	local proc_cnt=`print_proc_cnt "${tikv_dir}/tikv.toml" "\-\-config"`
+	if [ "${proc_cnt}" != "0" ]; then
+		echo "running(${proc_cnt}), skipped"
+		return 0
+	fi
+
+	cp_when_diff "${conf_templ_dir}/tikv.toml" "${tikv_dir}/tikv.toml"
+
+	local info="${tikv_dir}/proc.info"
+	echo "listen_host	${listen_host}" > "${info}"
+	echo "tikv_port	${tikv_port}" >> "${info}"
+	echo "advertise_host	${advertise_host}" >> "${info}"
+	echo "pd_addr	${pd_addr}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
+
+	echo "nohup \"${tikv_dir}/tikv-server\" \
+		--addr \"${listen_host}:${tikv_port}\" \
+		--advertise-addr \"${advertise_host}:${tikv_port}\" \
+		--pd \"${pd_addr}\" \
+		--data-dir \"${tikv_dir}/data\" \
+		--log-level info \
+		--config \"${tikv_dir}/tikv.toml\" \
+		--log-file \"${tikv_dir}/tikv.log\" 2>> \"${tikv_dir}/tikv_stderr.log\" 1>&2 &" > "${tikv_dir}/run.sh"
+
+	chmod +x "${tikv_dir}/run.sh"
+	bash "${tikv_dir}/run.sh"
+
+	local pid=`print_pid "${tikv_dir}/tikv.toml" "\-\-config"`
+	echo "pid	${pid}" >> "${info}"
+	echo "${pid}"
+}
+export -f tikv_run
+
+function tidb_run()
+{
+	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
+		echo "[func tidb_run] usage: <func> tidb_dir conf_templ_dir pd_addr [advertise_host] [ports_delta] [cluster_id]" >&2
+		return 1
+	fi
+
+	local tidb_dir="${1}"
+	local conf_templ_dir="${2}"
+	local pd_addr="${3}"
+
+	if [ -z "${4+x}" ]; then
+		local advertise_host=""
+	else
+		local advertise_host="${4}"
+	fi
+
+	if [ -z "${5+x}" ]; then
+		local ports_delta="0"
+	else
+		local ports_delta="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${6}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func tidb_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tidb_port=`get_value "${default_ports}" 'tidb_port'`
+	if [ -z "${default_tidb_port}" ]; then
+		echo "[func tidb_run] get default tidb_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tidb_status_port=`get_value "${default_ports}" 'tidb_status_port'`
+	if [ -z "${default_tidb_status_port}" ]; then
+		echo "[func tidb_run] get default tidb_status_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
+
+	if [ -z "${advertise_host}" ]; then
+		local advertise_host="`must_print_ip`"
+	fi
+
+	local tidb_port=$((${ports_delta} + ${default_tidb_port}))
+	local status_port=$((${ports_delta} + ${default_tidb_status_port}))
+
+	local tidb_dir=`abs_path "${tidb_dir}"`
+
+	local listen_host=""
+	if [ "${advertise_host}" != "127.0.0.1" ] || [ "${advertise_host}" != "localhost" ]; then
+		local listen_host="${advertise_host}"
+	else
+		local listen_host="`must_print_ip`"
+	fi
+
+	local proc_cnt=`print_proc_cnt "${tidb_dir}/tidb.toml" "\-\-config"`
+	if [ "${proc_cnt}" != "0" ]; then
+		echo "running(${proc_cnt}), skipped"
+		return 0
+	fi
+
+	local render_str="tidb_listen_host=${listen_host}"
+	render_templ "${conf_templ_dir}/tidb.toml" "${tidb_dir}/tidb.toml" "${render_str}"
+
+	local info="${tidb_dir}/proc.info"
+	echo "advertise_host	${advertise_host}" > "${info}"
+	echo "tidb_port	${tidb_port}" >> "${info}"
+	echo "status_port	${status_port}" >> "${info}"
+	echo "pd_addr	${pd_addr}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
+
+	echo "nohup \"${tidb_dir}/tidb-server\" \
+		-P \"${tidb_port}\" \
+		--status=\"${status_port}\" \
+		--advertise-address=\"${advertise_host}\" \
+		--path=\"${pd_addr}\" \
+		--config=\"${tidb_dir}/tidb.toml\" \
+		--log-slow-query=\"${tidb_dir}/tidb_slow.log\" \
+		--log-file=\"${tidb_dir}/tidb.log\" 2>> \"${tidb_dir}/tidb_stderr.log\" 1>&2 &" > "${tidb_dir}/run.sh"
+
+	chmod +x "${tidb_dir}/run.sh"
+	bash "${tidb_dir}/run.sh"
+
+	local pid=`print_pid "${tidb_dir}/tidb.toml" "\-\-config"`
+	echo "pid	${pid}" >> "${info}"
+	echo "${pid}"
+}
+export -f tidb_run
+
 function tiflash_run()
 {
 	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
@@ -133,405 +442,6 @@ function tiflash_run()
 }
 export -f tiflash_run
 
-function _ti_stop()
-{
-	if [ -z "${2+x}" ]; then
-		echo "[func _ti_stop] usage: <func> module_dir conf_rel_path [fast=false]" >&2
-		return 1
-	fi
-
-	local ti_dir="${1}"
-	local conf_rel_path="${2}"
-
-	if [ -z "${3+x}" ]; then
-		local fast=""
-	else
-		local fast="${3}"
-	fi
-
-	local ti_dir=`abs_path "${ti_dir}"`
-	local conf_file="${ti_dir}/${conf_rel_path}"
-
-	local proc_cnt=`print_proc_cnt "${conf_file}" "\-\-config"`
-	if [ "${proc_cnt}" == "0" ]; then
-		echo "[func ti_stop] ${ti_dir} is not running, skipping"
-		return 0
-	fi
-
-	if [ "${proc_cnt}" != "1" ]; then
-		echo "[func ti_stop] ${ti_dir} has ${proc_cnt} instances, skipping" >&2
-		return 1
-	fi
-
-	stop_proc "${conf_file}" "\-\-config" "${fast}"
-}
-export -f _ti_stop
-
-function tiflash_stop()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func tiflash_stop] usage: <func> tiflash_dir [fast_mode=false]" >&2
-		return 1
-	fi
-	local fast="false"
-	if [ ! -z "${2+x}" ]; then
-		local fast="${2}"
-	fi
-	_ti_stop "${1}" "conf/config.xml" "${fast}"
-}
-export -f tiflash_stop
-
-function pd_run()
-{
-	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func pd_run] usage: <func> pd_dir conf_templ_dir [name_ports_delta] [advertise_host] [pd_name] [initial_cluster] [cluster_id]" >&2
-		return 1
-	fi
-
-	local pd_dir="${1}"
-	local conf_templ_dir="${2}"
-
-	if [ -z "${3+x}" ]; then
-		local name_ports_delta="0"
-	else
-		local name_ports_delta="${3}"
-	fi
-
-	if [ -z "${4+x}" ]; then
-		local advertise_host=""
-	else
-		local advertise_host="${4}"
-	fi
-
-	if [ -z "${5+x}" ]; then
-		local pd_name=""
-	else
-		local pd_name="${5}"
-	fi
-
-	if [ -z "${6+x}" ]; then
-		local initial_cluster=""
-	else
-		local initial_cluster="${6}"
-	fi
-
-	if [ -z "${7+x}" ]; then
-		local cluster_id="<none>"
-	else
-		local cluster_id="${7}"
-	fi
-
-	if [ -z "${advertise_host}" ]; then
-		local ip_cnt="`print_ip_cnt`"
-		if [ "${ip_cnt}" != "1" ]; then
-			local advertise_host="127.0.0.1"
-		else
-			local advertise_host="`print_ip`"
-		fi
-	fi
-
-	if [ -z "${pd_name}" ]; then
-		local pd_name="pd${name_ports_delta}"
-	fi
-
-	local default_ports="${conf_templ_dir}/default.ports"
-
-	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
-	if [ -z "${default_pd_port}" ]; then
-		echo "[func pd_run] get default pd_port from ${default_ports} failed" >&2
-		return 1
-	fi
-	local default_pd_peer_port=`get_value "${default_ports}" 'pd_peer_port'`
-	if [ -z "${default_pd_peer_port}" ]; then
-		echo "[func pd_run] get default pd_peer_port from ${default_ports} failed" >&2
-		return 1
-	fi
-
-	local pd_port=$((${name_ports_delta} + ${default_pd_port}))
-	local peer_port=$((${name_ports_delta} + ${default_pd_peer_port}))
-
-	if [ -z "${initial_cluster}" ]; then
-		local initial_cluster="${pd_name}=http://${advertise_host}:${peer_port}"
-	else
-		local initial_cluster=$(cal_addr "${initial_cluster}" "${advertise_host}" "${default_pd_peer_port}" "${pd_name}")
-	fi
-
-	local pd_dir=`abs_path "${pd_dir}"`
-
-	local proc_cnt=`print_proc_cnt "${pd_dir}/pd.toml" "\-\-config"`
-	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
-		return 0
-	fi
-
-	cp_when_diff "${conf_templ_dir}/pd.toml" "${pd_dir}/pd.toml"
-
-	local info="${pd_dir}/proc.info"
-	echo "pd_name	${pd_name}" > "${info}"
-	echo "advertise_host	${advertise_host}" >> "${info}"
-	echo "pd_port	${pd_port}" >> "${info}"
-	echo "peer_port	${peer_port}" >> "${info}"
-	echo "initial_cluster	${initial_cluster}" >> "${info}"
-	echo "cluster_id	${cluster_id}" >> "${info}"
-
-	echo "nohup \"${pd_dir}/pd-server\" \
-		--name=\"${pd_name}\" \
-		--client-urls=\"http://${advertise_host}:${pd_port}\" \
-		--advertise-client-urls=\"http://${advertise_host}:${pd_port}\" \
-		--peer-urls=\"http://${advertise_host}:${peer_port}\" \
-		--advertise-peer-urls=\"http://${advertise_host}:${peer_port}\" \
-		--data-dir=\"${pd_dir}/data\" \
-		--initial-cluster=\"${initial_cluster}\" \
-		--config=\"${pd_dir}/pd.toml\" \
-		--log-file=\"${pd_dir}/pd.log\" 2>> \"${pd_dir}/pd_stderr.log\" 1>&2 &" > "${pd_dir}/run.sh"
-
-	chmod +x "${pd_dir}/run.sh"
-	bash "${pd_dir}/run.sh"
-
-	local pid=`print_pid "${pd_dir}/pd.toml" "\-\-config"`
-	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
-}
-export -f pd_run
-
-function pd_stop()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func pd_stop] usage: <func> pd_dir [fast_mode=false]" >&2
-		return 1
-	fi
-	local fast="false"
-	if [ ! -z "${2+x}" ]; then
-		local fast="${2}"
-	fi
-	_ti_stop "${1}" "pd.toml" "${fast}"
-}
-export -f pd_stop
-
-function tikv_run()
-{
-	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func tikv_run] usage: <func> tikv_dir conf_templ_dir pd_addr [advertise_host] [ports_delta] [cluster_id]" >&2
-		return 1
-	fi
-
-	local tikv_dir="${1}"
-	local conf_templ_dir="${2}"
-	local pd_addr="${3}"
-
-	if [ -z "${4+x}" ]; then
-		local advertise_host=""
-	else
-		local advertise_host="${4}"
-	fi
-
-	if [ -z "${5+x}" ]; then
-		local ports_delta="0"
-	else
-		local ports_delta="${5}"
-	fi
-
-	if [ -z "${6+x}" ]; then
-		local cluster_id="<none>"
-	else
-		local cluster_id="${6}"
-	fi
-
-	local default_ports="${conf_templ_dir}/default.ports"
-
-	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
-	if [ -z "${default_pd_port}" ]; then
-		echo "[func tikv_run] get default pd_port from ${default_ports} failed" >&2
-		return 1
-	fi
-	local default_tikv_port=`get_value "${default_ports}" 'tikv_port'`
-	if [ -z "${default_tikv_port}" ]; then
-		echo "[func tikv_run] get default tikv_port from ${default_ports} failed" >&2
-		return 1
-	fi
-
-	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
-
-	if [ -z "${advertise_host}" ]; then
-		local ip_cnt="`print_ip_cnt`"
-		if [ "${ip_cnt}" != "1" ]; then
-			local advertise_host="127.0.0.1"
-		else
-			local advertise_host="`print_ip`"
-		fi
-	fi
-
-	local listen_host=""
-	if [ "${advertise_host}" != "127.0.0.1" ] || [ "${advertise_host}" != "localhost" ]; then
-		local listen_host="${advertise_host}"
-	else
-		local listen_host="`must_print_ip`"
-	fi
-
-	local tikv_port=$((${ports_delta} + ${default_tikv_port}))
-
-	local tikv_dir=`abs_path "${tikv_dir}"`
-
-	local proc_cnt=`print_proc_cnt "${tikv_dir}/tikv.toml" "\-\-config"`
-	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
-		return 0
-	fi
-
-	cp_when_diff "${conf_templ_dir}/tikv.toml" "${tikv_dir}/tikv.toml"
-
-	local info="${tikv_dir}/proc.info"
-	echo "listen_host	${listen_host}" > "${info}"
-	echo "tikv_port	${tikv_port}" >> "${info}"
-	echo "advertise_host	${advertise_host}" >> "${info}"
-	echo "pd_addr	${pd_addr}" >> "${info}"
-	echo "cluster_id	${cluster_id}" >> "${info}"
-
-	echo "nohup \"${tikv_dir}/tikv-server\" \
-		--addr \"${listen_host}:${tikv_port}\" \
-		--advertise-addr \"${advertise_host}:${tikv_port}\" \
-		--pd \"${pd_addr}\" \
-		--data-dir \"${tikv_dir}/data\" \
-		--log-level info \
-		--config \"${tikv_dir}/tikv.toml\" \
-		--log-file \"${tikv_dir}/tikv.log\" 2>> \"${tikv_dir}/tikv_stderr.log\" 1>&2 &" > "${tikv_dir}/run.sh"
-
-	chmod +x "${tikv_dir}/run.sh"
-	bash "${tikv_dir}/run.sh"
-
-	local pid=`print_pid "${tikv_dir}/tikv.toml" "\-\-config"`
-	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
-}
-export -f tikv_run
-
-function tikv_stop()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func tikv_stop] usage: <func> tikv_dir [fast_mode=false]" >&2
-		return 1
-	fi
-	local fast="false"
-	if [ ! -z "${2+x}" ]; then
-		local fast="${2}"
-	fi
-	_ti_stop "${1}" "tikv.toml" "${fast}"
-}
-export -f tikv_stop
-
-function tidb_run()
-{
-	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func tidb_run] usage: <func> tidb_dir conf_templ_dir pd_addr [advertise_host] [ports_delta] [cluster_id]" >&2
-		return 1
-	fi
-
-	local tidb_dir="${1}"
-	local conf_templ_dir="${2}"
-	local pd_addr="${3}"
-
-	if [ -z "${4+x}" ]; then
-		local advertise_host=""
-	else
-		local advertise_host="${4}"
-	fi
-
-	if [ -z "${5+x}" ]; then
-		local ports_delta="0"
-	else
-		local ports_delta="${5}"
-	fi
-
-	if [ -z "${6+x}" ]; then
-		local cluster_id="<none>"
-	else
-		local cluster_id="${6}"
-	fi
-
-	local default_ports="${conf_templ_dir}/default.ports"
-
-	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
-	if [ -z "${default_pd_port}" ]; then
-		echo "[func tidb_run] get default pd_port from ${default_ports} failed" >&2
-		return 1
-	fi
-	local default_tidb_port=`get_value "${default_ports}" 'tidb_port'`
-	if [ -z "${default_tidb_port}" ]; then
-		echo "[func tidb_run] get default tidb_port from ${default_ports} failed" >&2
-		return 1
-	fi
-	local default_tidb_status_port=`get_value "${default_ports}" 'tidb_status_port'`
-	if [ -z "${default_tidb_status_port}" ]; then
-		echo "[func tidb_run] get default tidb_status_port from ${default_ports} failed" >&2
-		return 1
-	fi
-
-	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
-
-	if [ -z "${advertise_host}" ]; then
-		local advertise_host="`must_print_ip`"
-	fi
-
-	local tidb_port=$((${ports_delta} + ${default_tidb_port}))
-	local status_port=$((${ports_delta} + ${default_tidb_status_port}))
-
-	local tidb_dir=`abs_path "${tidb_dir}"`
-
-	local listen_host=""
-	if [ "${advertise_host}" != "127.0.0.1" ] || [ "${advertise_host}" != "localhost" ]; then
-		local listen_host="${advertise_host}"
-	else
-		local listen_host="`must_print_ip`"
-	fi
-
-	local proc_cnt=`print_proc_cnt "${tidb_dir}/tidb.toml" "\-\-config"`
-	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
-		return 0
-	fi
-
-	local render_str="tidb_listen_host=${listen_host}"
-	render_templ "${conf_templ_dir}/tidb.toml" "${tidb_dir}/tidb.toml" "${render_str}"
-
-	local info="${tidb_dir}/proc.info"
-	echo "advertise_host	${advertise_host}" > "${info}"
-	echo "tidb_port	${tidb_port}" >> "${info}"
-	echo "status_port	${status_port}" >> "${info}"
-	echo "pd_addr	${pd_addr}" >> "${info}"
-	echo "cluster_id	${cluster_id}" >> "${info}"
-
-	echo "nohup \"${tidb_dir}/tidb-server\" \
-		-P \"${tidb_port}\" \
-		--status=\"${status_port}\" \
-		--advertise-address=\"${advertise_host}\" \
-		--path=\"${pd_addr}\" \
-		--config=\"${tidb_dir}/tidb.toml\" \
-		--log-slow-query=\"${tidb_dir}/tidb_slow.log\" \
-		--log-file=\"${tidb_dir}/tidb.log\" 2>> \"${tidb_dir}/tidb_stderr.log\" 1>&2 &" > "${tidb_dir}/run.sh"
-
-	chmod +x "${tidb_dir}/run.sh"
-	bash "${tidb_dir}/run.sh"
-
-	local pid=`print_pid "${tidb_dir}/tidb.toml" "\-\-config"`
-	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
-}
-export -f tidb_run
-
-function tidb_stop()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func tidb_stop] usage: <func> tidb_dir [fast_mode=false]" >&2
-		return 1
-	fi
-	local fast="false"
-	if [ ! -z "${2+x}" ]; then
-		local fast="${2}"
-	fi
-	_ti_stop "${1}" "tidb.toml" "true" "${fast}"
-}
-export -f tidb_stop
-
 function rngine_run()
 {
 	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
@@ -634,20 +544,6 @@ function rngine_run()
 	echo "${pid}"
 }
 export -f rngine_run
-
-function rngine_stop()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func rngine_stop] usage: <func> rngine_dir [fast_mode=false]" >&2
-		return 1
-	fi
-	local fast="false"
-	if [ ! -z "${2+x}" ]; then
-		local fast="${2}"
-	fi
-	_ti_stop "${1}" "rngine.toml" "${fast}"
-}
-export -f rngine_stop
 
 function spark_file_prepare()
 {
@@ -902,316 +798,3 @@ function spark_worker_run()
 	echo "${pid}"
 }
 export -f spark_worker_run
-
-function spark_stop()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func spark_stop] usage: <func> spark_mod_dir extra_str_to_find_proc [fast_mode=false]" >&2
-		return 1
-	fi
-	local spark_mod_dir="${1}"
-	local extra_str_to_find_proc="${2}"
-	local fast="false"
-	if [ ! -z "${3+x}" ]; then
-		local fast="${3}"
-	fi
-	stop_proc "${spark_mod_dir}/" "${extra_str_to_find_proc}" "${fast}"
-}
-export -f spark_stop
-
-function spark_master_stop()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func spark_master_stop] usage: <func> spark_master_dir [fast_mode=false]" >&2
-		return 1
-	fi
-	local spark_master_dir="${1}"
-	local fast="false"
-	if [ ! -z "${2+x}" ]; then
-		local fast="${2}"
-	fi
-	spark_stop "${spark_master_dir}" "org.apache.spark.deploy.master.Master" "${fast}"
-	spark_stop "${spark_master_dir}" "org.apache.spark.sql.hive.thriftserver.HiveThriftServer2" "${fast}"
-}
-export -f spark_master_stop
-
-function spark_worker_stop()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func spark_worker_stop] usage: <func> spark_worker_dir [fast_mode=false]" >&2
-		return 1
-	fi
-	local spark_worker_dir="${1}"
-	local fast="false"
-	if [ ! -z "${2+x}" ]; then
-		local fast="${2}"
-	fi
-	spark_stop "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker" "${fast}"
-}
-export -f spark_worker_stop
-
-function wait_for_mysql()
-{
-	if [ -z "${3+x}" ]; then
-		echo "[func wait_for_mysql] usage: <func> host port timeout [server_id]" >&2
-		return 1
-	fi
-
-	local host="${1}"
-	local port="${2}"
-	local timeout="${3}"
-	if [ -z "${4+x}" ]; then
-		local server_id="${host}:${port}"
-	else
-		local server_id="${4}"
-	fi
-
-	local error_handle="$-"
-	set +e
-
-	mysql --help 1>/dev/null 2>&1
-	if [ "$?" != "0" ]; then
-		echo "[func wait_for_mysql] run mysql client failed" >&2
-		return 1
-	fi
-
-	for ((i=0; i<${timeout}; i++)); do
-		mysql -h "${host}" -P "${port}" -u root -e 'show databases' 1>/dev/null 2>&1
-		if [ "$?" == "0" ]; then
-			break
-		else
-			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
-				echo "#${i} waiting for mysql|tidb at '${server_id}'"
-			fi
-			sleep 1
-		fi
-	done
-
-	restore_error_handle_flags "${error_handle}"
-}
-export -f wait_for_mysql
-
-# TODO: If PD/TiKV/TiDB down, do fast-failure
-function wait_for_tidb()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func wait_for_tidb] usage: <func> tidb_dir [timeout=180s]" >&2
-		return 1
-	fi
-
-	local tidb_dir="${1}"
-	local timeout=180
-	if [ ! -z "${2+x}" ]; then
-		timeout="${2}"
-	fi
-
-	local tidb_info="${tidb_dir}/proc.info"
-	if [ ! -f "${tidb_info}" ]; then
-		echo "[func wait_for_tidb] '${tidb_dir}' tidb not exists" >&2
-		return 1
-	fi
-
-	local host=`cat "${tidb_info}" | grep 'advertise_host' | awk -F '\t' '{print $2}'`
-	local port=`cat "${tidb_info}" | grep 'tidb_port' | awk -F '\t' '{print $2}'`
-
-	wait_for_mysql "${host}" "${port}" "${timeout}" "${tidb_dir}"
-}
-export -f wait_for_tidb
-
-function wait_for_tidb_by_host()
-{
-	if [ -z "${4+x}" ]; then
-		echo "[func wait_for_tidb_by_host] usage: <func> host port timeout default_ports_file" >&2
-		return 1
-	fi
-
-	local host="${1}"
-	local port="${2}"
-	local timeout="${3}"
-	local default_ports="${4}"
-
-	local default_tidb_port=`get_value "${default_ports}" 'tidb_port'`
-	local addr=`cal_addr ":${port}" '' "${default_tidb_port}"`
-	local port="${addr:1}"
-
-	wait_for_mysql "${host}" "${port}" "${timeout}"
-}
-export -f wait_for_tidb_by_host
-
-function wait_for_pd()
-{
-	if [ -z "${3+x}" ]; then
-		echo "[func wait_for_pd] usage: <func> host port timeout [server_id]" >&2
-		return 1
-	fi
-
-	local host="${1}"
-	local port="${2}"
-	local timeout="${3}"
-	local bins_dir="${4}"
-	if [ -z "${5+x}" ]; then
-		local server_id="${host}:${port}"
-	else
-		local server_id="${5}"
-	fi
-
-	local error_handle="$-"
-	set +e
-	local key="6D536368656D615665FF7273696F6E4B6579FF0000000000000000F70000000000000073"
-	for ((i=0; i<${timeout}; i++)); do
-		if [ ! -f "${bins_dir}/pd-ctl" ]; then
-			echo "[func wait_for_pd] '${bins_dir}/pd-ctl' not found" >&2
-			return 1
-		fi
-		local region=`"${bins_dir}/pd-ctl" -u "http://${host}:${port}" <<< "region key ${key}"` >/dev/null
-		if [ "${region}" != "null" ]; then
-			break
-		else
-			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
-				echo "#${i} waiting for pd ready at '${server_id}'"
-			fi
-		fi
-		sleep 1
-	done
-
-	restore_error_handle_flags "${error_handle}"
-}
-export -f wait_for_pd
-
-function wait_for_pd_local()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func wait_for_pd] usage: <func> pd_dir [timeout=180s]" >&2
-		return 1
-	fi
-
-	local pd_dir="${1}"
-	local timeout=180
-	if [ ! -z "${2+x}" ]; then
-		timeout="${2}"
-	fi
-
-	local pd_info="${pd_dir}/proc.info"
-	if [ ! -f "${pd_info}" ]; then
-		echo "[func wait_for_pd_local] '${pd_dir}' pd not exists" >&2
-		return 1
-	fi
-	local host=`get_value "${pd_info}" 'advertise_host'`
-	local port=`get_value "${pd_info}" 'pd_port'`
-	local server_id="${host}:${port}:${pd_dir}"
-
-	wait_for_pd "${host}" "${port}" "${timeout}" "${pd_dir}" "${server_id}"
-}
-export -f wait_for_pd_local
-
-function wait_for_pd_by_host()
-{
-	if [ -z "${4+x}" ]; then
-		echo "[func wait_for_pd_by_host] usage: <func> host port timeout default_ports_file" >&2
-		return 1
-	fi
-
-	local host="${1}"
-	local port="${2}"
-	local timeout="${3}"
-	local bins_dir="${4}"
-	local default_ports="${5}"
-
-	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
-	local addr=`cal_addr ":${port}" '' "${default_pd_port}"`
-	local port="${addr:1}"
-
-	wait_for_pd "${host}" "${port}" "${timeout}" "${bins_dir}"
-}
-export -f wait_for_pd_by_host
-
-function get_tiflash_addr_from_dir()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func get_tiflash_addr_from_dir] usage: <func> tiflash_dir" >&2
-		return 1
-	fi
-	local dir="${1}"
-	local host=`grep 'listen_host' "${dir}/proc.info" | awk -F '\t' '{print $2}'`
-	local port=`grep 'raft_port' "${dir}/proc.info" | awk -F '\t' '{print $2}'`
-	echo "${host}:${port}"
-}
-export -f get_tiflash_addr_from_dir
-
-function _print_mod_info()
-{
-	local dir="${1}"
-	if [ -d "${dir}" ] && [ -f "${dir}/proc.info" ]; then
-		local cluster_id=`grep cluster_id "${dir}/proc.info" | awk -F '\t' '{print $2}'`
-	else
-		local cluster_id=''
-	fi
-	if [ ! -z "${cluster_id}" ]; then
-		echo "   [deployed from ${cluster_id}] ${dir}"
-	else
-		echo "   [unmanaged by ops-ti] ${dir}"
-	fi
-}
-export -f _print_mod_info
-
-function ls_tiflash_proc()
-{
-	local processes=`ps -ef | grep 'tiflash' | grep "\-\-config\-file" | \
-		grep -v grep | awk -F '--config-file' '{print $2}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
-			local path=`_print_file_dir_when_abs "${conf}"`
-			local path=`_print_file_dir_when_abs "${path}"`
-			_print_mod_info "${path}"
-		done
-	fi
-}
-export -f ls_tiflash_proc
-
-function ls_pd_proc()
-{
-	local processes=`ps -ef | grep pd-server | grep "\-\-config" | \
-		grep -v grep | awk -F '--config=' '{print $2}' | awk '{print $1}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir_when_abs "${conf}"`
-		done
-	fi
-}
-export -f ls_pd_proc
-
-function ls_tikv_proc()
-{
-	local processes=`ps -ef | grep 'tikv-server' | grep -v tikv-server-rngine | grep "\-\-config" | \
-		grep -v grep | awk -F '--config' '{print $2}' | awk '{print $1}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir_when_abs "${conf}"`
-		done
-	fi
-}
-export -f ls_tikv_proc
-
-function ls_tidb_proc()
-{
-	local processes=`ps -ef | grep 'tidb-server' | grep "\-\-config" | \
-		grep -v grep | awk -F '--config=' '{print $2}' | awk '{print $1}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir_when_abs "${conf}"`
-		done
-	fi
-}
-export -f ls_tidb_proc
-
-function ls_rngine_proc()
-{
-	local processes=`ps -ef | grep 'tikv-server-rngine' | grep "\-\-config" | \
-		grep -v grep | awk -F '--config' '{print $2}' | awk '{print $1}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
-			_print_mod_info `_print_file_dir_when_abs "${conf}"`
-		done
-	fi
-}
-export -f ls_rngine_proc

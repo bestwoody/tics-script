@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source "${integrated}/_base/kp_file.sh"
-
 function kp_mon_report
 {
 	if [ -z "${1+x}" ]; then

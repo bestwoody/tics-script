@@ -14,6 +14,7 @@ function ssh_prepare_run()
 	local cache_dir="${5}"
 	local remote_env="${6}"
 
+	# TODO: Tidy up these paths
 	local bin_paths_file="${conf_templ_dir}/bin.paths"
 	local bin_urls_file="${conf_templ_dir}/bin.urls"
 	local bin_name=`get_bin_name_from_conf "${name}" "${bin_paths_file}" "${bin_urls_file}"`

@@ -27,20 +27,6 @@ function ssh_ping()
 }
 export -f ssh_ping
 
-function echo_test()
-{
-	local error_handle="$-"
-	set +u
-	local args=("${@}")
-	restore_error_handle_flags "${error_handle}"
-
-	echo "=> echo test start"
-	echo "args count: ${#args[@]}"
-	echo "args: ${args[@]}"
-	echo "=> echo test end"
-}
-export -f echo_test
-
 function script_exe()
 {
 	if [ -z "${1+x}" ]; then
@@ -113,21 +99,8 @@ function cp_dir_to_host()
 	local tar_file="${dir_name}.tar.gz"
 	local tar_path="${parent_dir}/${tar_file}"
 
-	# TODO: rsync is good, discard other codes
 	ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
 	rsync -qar "${src}" "${host}:${remote_dest_dir}"
 	return
-
-	`cd "${parent_dir}" && tar -czf "${tar_file}" "${dir_name}"`
-	local local_size=`wc -c "${tar_path}" 2>/dev/null | awk '{print $1}'`
-	local remote_size=`ssh_exe "${host}" "wc -c \"${remote_dest_dir}/${tar_file}\"" 2>/dev/null | awk '{print $1}'`
-	if [ ! -z "${remote_size}" ] && [ "${local_size}" == "${remote_size}" ]; then
-		return
-	fi
-
-	#ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
-	#rsync -avh "${tar_path}" "${host}:${remote_dest_dir}" >/dev/null
-	scp "${tar_path}" "${host}:${remote_dest_dir}" >/dev/null
-	ssh_exe "${host}" "cd \"${remote_dest_dir}\" && tar --overwrite -xzf \"${tar_file}\""
 }
 export -f cp_dir_to_host

@@ -6,7 +6,8 @@ function run_file()
 	local ti_sh_path="$2"
 	local ti_file_path="$3"
 
-	python tests/run-test.py "" "${target}" "${ti_sh_path}" "${ti_file_path}" "true"
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	python "${here}/run_test.py" "" "${target}" "${ti_sh_path}" "${ti_file_path}" "true"
 
 	if [ $? == 0 ]; then
 		echo "$target": OK
