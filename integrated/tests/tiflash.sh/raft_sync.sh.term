@@ -1,0 +1,7 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+"${integrated}/ops/ti.sh" -k "ports=+6#dir=nodes/6" "${integrated}/ti/1_x.ti" burn doit

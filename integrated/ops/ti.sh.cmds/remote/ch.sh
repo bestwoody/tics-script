@@ -8,34 +8,42 @@ function cmd_ti_ch()
 	local conf_rel_path="${4}"
 	local host="${5}"
 
+	shift 5
+
 	if [ "${mod_name}" != 'tiflash' ]; then
 		return
 	fi
 
-	if [ -z "${6+x}" ]; then
-		echo '[cmd ch] <cmd> query [database] [print-format]' >&2
+	if [ -z "${1+x}" ]; then
+		echo '[cmd ch] <cmd> query [database] [print-format] [ch-args]' >&2
 		return
 	fi
 
-	local query="${6}"
+	local query="${1}"
 	if [ -z "${query}" ]; then
 		return
 	fi
 
-	if [ -z "${7+x}" ]; then
-		local db='default'
+	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
+		local db="${2}"
 	else
-		local db="${7}"
+		local db='default'
 	fi
 
-	if [ -z "${8+x}" ]; then
-		local format='PrettyCompactNoEscapes'
+	if [ ! -z "${3+x}" ] && [ ! -z "${3}" ]; then
+		local format="${3}"
 	else
-		local format="${8}"
+		local format='PrettyCompactNoEscapes'
 	fi
+
+	shift 3
 
 	local port=`get_value "${dir}/proc.info" 'tcp_port'`
-	"${dir}/tiflash" client --host="${host}" --port="${port}" "${format}" -d "${db}" --query="${query}"
+	if [ -z "${1+x}" ]; then
+		"${dir}/tiflash" client --host="${host}" --port="${port}" -d "${db}" -f "${format}" --query="${query}"
+	else
+		"${dir}/tiflash" client --host="${host}" --port="${port}" -d "${db}" -f "${format}" --query="${query}" "${@}"
+	fi
 }
 
 cmd_ti_ch "${@}"
