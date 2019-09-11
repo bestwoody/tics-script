@@ -3,9 +3,9 @@ tidb	ec67531419b9b1e2473312614fd083ff	tidb-server	http://139.219.11.38:8000/wlbu
 tikv	e8c967284bc5c6b258952703894069df	tikv-server	http://139.219.11.38:8000/SZNuw/tikv-server.tar.gz
 pd	6b79bd3c126d3eaa26de8da57e122ccb	pd-server	http://139.219.11.38:8000/LmJHu/pd-server.tar.gz
 rngine	5556c715244ea7ac3bdd94de0232cb39	tikv-server-rngine http://139.219.11.38:8000/ISv3Q/tikv-server-rngine.tar.gz
-tiflash a54f18b56b15b7b13946a8a235b66444	tiflash http://139.219.11.38:8000/wtSK8/tiflash.tar.gz
-pd_ctl  483b85506806b835bbfa8b3abc1a38f4	pd-ctl  http://139.219.11.38:8000/TqEKY/pd-ctl.tar.gz
+tiflash	a54f18b56b15b7b13946a8a235b66444	tiflash	http://139.219.11.38:8000/wtSK8/tiflash.tar.gz
+pd_ctl	483b85506806b835bbfa8b3abc1a38f4	pd-ctl	http://139.219.11.38:8000/TqEKY/pd-ctl.tar.gz
 tikv_ctl	f858021402608024367ea6fd5054e5d7	tikv-ctl	http://139.219.11.38:8000/wF0fP/tikv-ctl.tar.gz
-chspark 03ccf3a03d4f7f603de6bb3c072ebb09	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar   http://139.219.11.38:8000/zFxPW/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
-spark_m   91158b8895c8581fef695ab8c437d16f	spark-2.3.3-bin-hadoop2.7.tgz   http://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.3/spark-2.3.3-bin-hadoop2.7.tgz
-spark_w   91158b8895c8581fef695ab8c437d16f	spark-2.3.3-bin-hadoop2.7.tgz   http://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.3/spark-2.3.3-bin-hadoop2.7.tgz
+chspark	03ccf3a03d4f7f603de6bb3c072ebb09	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/zFxPW/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
+spark_m	91158b8895c8581fef695ab8c437d16f	spark-2.3.3-bin-hadoop2.7.tgz	http://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.3/spark-2.3.3-bin-hadoop2.7.tgz
+spark_w	91158b8895c8581fef695ab8c437d16f	spark-2.3.3-bin-hadoop2.7.tgz	http://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.3/spark-2.3.3-bin-hadoop2.7.tgz

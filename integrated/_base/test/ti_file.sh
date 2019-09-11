@@ -20,7 +20,7 @@ function get_mod_ver()
 	if [ ! -z "${failed}" ]; then
 		return 1
 	fi
-	local git=`cmd_ti -k "${args}" -m "${mod}" "${ti_file}" ver githash | awk '{print "git:"$2}'`
+	local git=`"${integrated}/ops/ti.sh" -k "${args}" -m "${mod}" "${ti_file}" ver githash | awk '{print "git:"$2}'`
 	echo "${ver},${git}"
 }
 export -f get_mod_ver
@@ -44,7 +44,7 @@ function get_ti_cluster_mysql_host() {
 		local ti_file_args="${3}"
 	fi
 
-	cmd_ti -i "${index}" -k "${ti_file_args}" "${ti_file}" "mysql_host"
+	"${integrated}/ops/ti.sh" -i "${index}" -k "${ti_file_args}" "${ti_file}" "mysql_host"
 }
 export -f get_ti_cluster_mysql_host
 
@@ -67,7 +67,7 @@ function get_ti_cluster_mysql_port() {
 		local ti_file_args="${3}"
 	fi
 
-	cmd_ti -i "${index}" -k "${ti_file_args}" "${ti_file}" "mysql_port"
+	"${integrated}/ops/ti.sh" -i "${index}" -k "${ti_file_args}" "${ti_file}" "mysql_port"
 }
 export -f get_ti_cluster_mysql_port
 
