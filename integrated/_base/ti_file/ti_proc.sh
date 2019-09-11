@@ -564,7 +564,6 @@ function spark_file_prepare()
 	local render_str="${render_str}#flash_addresses=${tiflash_addr}"
 	local render_str="${render_str}#spark_local_dir=${spark_mod_dir}/spark_local_dir"
 	local render_str="${render_str}#jmxremote_port=${jmxremote_port}"
-	local render_str="${render_str}#spark_module_dir=${spark_mod_dir}"
 	render_templ "${conf_templ_dir}/spark-defaults.conf" "${spark_mod_dir}/spark-defaults.conf" "${render_str}"
 
 	if [ ! -d "${spark_mod_dir}/spark" ]; then
