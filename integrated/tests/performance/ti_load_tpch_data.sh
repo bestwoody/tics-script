@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
 source "${here}/_env.sh"
 auto_error_handle
