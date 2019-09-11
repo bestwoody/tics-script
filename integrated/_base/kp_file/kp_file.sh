@@ -88,7 +88,7 @@ function keep_script_running()
 			continue
 		fi
 
-		echo "[`date +'%D %T'`] ERROR ${script}${args_str}: exited too quick, retry in ${backoff} secs"
+		echo "[`date +'%D %T'`] WARNING ${script}${args_str}: exited too quick, retry in ${backoff} secs"
 		sleep "${backoff}"
 	done
 }
