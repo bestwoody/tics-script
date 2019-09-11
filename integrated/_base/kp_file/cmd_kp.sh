@@ -2,8 +2,8 @@
 
 function kp_mon_report
 {
-	if [ -z "${1+x}" ]; then
-		echo "[func kp_mon_report] usage: <func> kp_file" >&2
+	if [ -z "${2+x}" ]; then
+		echo "[func kp_mon_report] usage: <func> kp_file width" >&2
 		return 1
 	fi
 
@@ -12,6 +12,8 @@ function kp_mon_report
 	if [ ! -f "${file}" ] || [ ! -f "${log}" ]; then
 		return
 	fi
+
+	local width="${2}"
 
 	local logs=`tail -n 9999 "${log}" | grep -v 'RUNNING'`
 
@@ -24,9 +26,9 @@ function kp_mon_report
 
 	# TODO: Improve this: generate empty lines by `cat random-file`
 	local random=`cat "${BASH_SOURCE[0]}" | awk '{print "-"}'`
-	local lines=`cat "${log}" | grep 'START\|RUNNING\|ERROR\|STOP' | tail -n 800`
+	local lines=`cat "${log}" | grep 'START\|RUNNING\|ERROR\|STOP' | tail -n 999`
 	echo -e "${random}\n${lines}" | \
-		awk '{if ($3 == "START") print "\033[32m+\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"; else if ($3 == "STOP") print "\033[35m!\033[0m"; else print "-"}' | tail -n 80 | \
+		awk '{if ($3 == "START") print "\033[32m+\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"; else if ($3 == "STOP") print "\033[35m!\033[0m"; else print "-"}' | tail -n "${width}" | \
 		tr "\n" ' ' | sed 's/ //g' | awk '{print "\033[32m<<\033[0m"$0}'
 }
 export -f kp_mon_report
@@ -38,11 +40,17 @@ function cmd_kp()
 
 	auto_error_handle
 
-	local help_str="[func cmd_kp] usage: <func> kp_file [cmd=run|stop|status|list|clean]"
+	local help_str="[func cmd_kp] usage: <func> kp_file [cmd=run|stop|status|list|clean] [width=80]"
 
 	if [ -z "${file}" ]; then
 		echo "${help_str}" >&2
 		return 1
+	fi
+
+	if [ -z "${2+x}" ]; then
+		shift 1
+	else
+		shift 2
 	fi
 
 	if [ -z "${cmd}" ]; then
@@ -88,6 +96,11 @@ function cmd_kp()
 		fi
 		kp_file_stop "${file}"
 	elif [ "${cmd}" == 'status' ]; then
+		if [ ! -z "${1+x}" ] && [ ! -z "${1}" ]; then
+			local width="${1}"
+		else
+			local width='120'
+		fi
 		local atime=`_kp_sh_last_active "${file}"`
 		if [ ! -z "${mon_pid}" ]; then
 			local run_status="\033[32m[+]\033[0m"
@@ -95,8 +108,8 @@ function cmd_kp()
 			local run_status="\033[31m[!]\033[0m"
 		fi
 		echo -e "${run_status}\033[36m [^__^] ${file_abs}\033[0m \033[35m${atime}s\033[0m"
-		kp_mon_report "${file}" | awk '{print "    "$0}'
-		kp_file_status "${file}"
+		kp_mon_report "${file}" "${width}" | awk '{print "    "$0}'
+		kp_file_status "${file}" "${width}"
 	elif [ "${cmd}" == 'list' ]; then
 		kp_file_iter "${file}"
 	elif [ "${cmd}" == 'clean' ]; then

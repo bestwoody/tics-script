@@ -7,9 +7,8 @@ def error(msg):
     sys.stderr.write('[kp_log_report.py] ' + msg + '\n')
     sys.exit(1)
 
-def report(std_log_path, err_log_path, color = True):
+def report(std_log_path, err_log_path, result_limit, color = True):
     lines_limit = 99999
-    result_limit = 80
 
     # TODO: too slow
     std_log = []
@@ -29,7 +28,7 @@ def report(std_log_path, err_log_path, color = True):
         n = '\033[32m-\033[0m'
         e = '\033[31mE\033[0m'
         u = '\033[33m~\033[0m'
-        p = '\033[32m<\033[0m'
+        p = '\033[35m<\033[0m'
 
     result = ['-' for i in range(result_limit)]
     started = False
@@ -70,12 +69,17 @@ def report(std_log_path, err_log_path, color = True):
     return result
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        error('usage: <bin> std_log err_log')
+    if len(sys.argv) < 4:
+        error('usage: <bin> std_log err_logi [result_limit=120] [color=false]')
 
     if len(sys.argv) > 3:
-        color = (sys.argv[3].lower() == 'color' or (sys.argv[3].lower() == 'true'))
+        result_limit = int(sys.argv[3])
+    else:
+        result_limit = 120
+    if len(sys.argv) > 4:
+        color = (sys.argv[4].lower() == 'color' or (sys.argv[4].lower() == 'true'))
     else:
         color = False
-    result = report(sys.argv[1], sys.argv[2], color)[-80:]
+
+    result = report(sys.argv[1], sys.argv[2], result_limit, color)[-result_limit:]
     print ''.join(result)

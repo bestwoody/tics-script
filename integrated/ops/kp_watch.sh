@@ -13,4 +13,9 @@ if [ -z "${interval}" ]; then
 	interval=5
 fi
 
-watch -c -n "${interval}" -t "COLUMNS= ${integrated}/ops/kp.sh \"${file}\""
+width="${3}"
+if [ -z "${width}" ]; then
+	width=120
+fi
+
+watch -c -n "${interval}" -t "COLUMNS= ${integrated}/ops/kp.sh \"${file}\" status \"${width}\""

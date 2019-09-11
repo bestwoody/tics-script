@@ -438,12 +438,14 @@ export -f _kp_sh_last_active
 
 function kp_file_status()
 {
-	if [ -z "${1+x}" ]; then
-		echo "[func kp_file_status] usage: <func> kp_file" >&2
+	if [ -z "${2+x}" ]; then
+		echo "[func kp_file_status] usage: <func> kp_file width" >&2
 		return 1
 	fi
 
 	local file="${1}"
+	local width="${2}"
+
 	if [ ! -f "${file}" ]; then
 		echo "[func kp_file_status] ${file} is not a file" >&2
 		return 1
@@ -501,7 +503,7 @@ function kp_file_status()
 
 		local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
 		python "${here}/kp_log_report.py" "${line}.log" \
-			"${line}.err.log" color | awk '{print "    \033[32m<<\033[0m"$0}'
+			"${line}.err.log" "${width}" 'color' | awk '{print "    \033[32m<<\033[0m"$0}'
 	done
 }
 export -f kp_file_status
