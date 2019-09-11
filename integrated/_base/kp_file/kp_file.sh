@@ -299,6 +299,9 @@ function kp_file_run()
 	done
 
 	kp_file_iter "${file}" | while read line; do
+		if [ -z "${line}" ]; then
+			continue
+		fi
 		local pid=`_kp_file_pid "${line}"`
 		echo "=> [task] ${line}"
 		if [ ! -z "${pid}" ]; then
@@ -326,8 +329,8 @@ function kp_sh_stop()
 		local quiet="${2}"
 	fi
 
-	local pid=`_kp_file_pid "${file}"`
-	if [ -z "${pid}" ]; then
+	local pids=`_kp_file_pid "${file}"`
+	if [ -z "${pids}" ]; then
 		if [ "${quiet}" != 'true' ]; then
 			echo "=> [task] ${file}"
 			echo "   not running, skipped"
@@ -344,27 +347,31 @@ function kp_sh_stop()
 	set +e
 
 	for ((i = 0; i < 99; i++)); do
-		kill "${pid}" 2>/dev/null
-		local killed=`ps -p "${pid}" | grep -v 'TTY'`
-		if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
-			echo "   stopped ${pid}"
-		fi
-		local pid=`_kp_file_pid "${file}"`
-		if [ -z "${pid}" ]; then
+		echo "${pids}" | while read pid; do
+			kill "${pid}" 2>/dev/null
+			local killed=`ps -p "${pid}" | grep -v 'TTY'`
+			if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
+				echo "   stopped ${pid}"
+			fi
+		done
+		local pids=`_kp_file_pid "${file}"`
+		if [ -z "${pids}" ]; then
 			break
 		fi
 	done
 
 	for ((i = 0; i < 99; i++)); do
-		local pid=`ps -ef | grep "bash ${file}" | grep -v 'grep' | head -n 1 | awk '{print $2}'`
-		if [ -z "${pid}" ]; then
+		local pids=`ps -ef | grep "bash ${file}" | grep -v 'grep' | head -n 1 | awk '{print $2}'`
+		if [ -z "${pids}" ]; then
 			break
 		fi
-		kill "${pid}" 2>/dev/null
-		local killed=`ps -p "${pid}" | grep -v 'TTY'`
-		if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
-			echo "   stopped ${pid}"
-		fi
+		echo "${pids}" | while read pid; do
+			kill "${pid}" 2>/dev/null
+			local killed=`ps -p "${pid}" | grep -v 'TTY'`
+			if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
+				echo "   stopped ${pid}"
+			fi
+		done
 	done
 
 	restore_error_handle_flags "${error_handle}"
