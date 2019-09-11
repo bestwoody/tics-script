@@ -22,7 +22,7 @@ rngine: {dir}/rngine tiflash={ip1}:{dir}/tiflash ports+11 host={ip1}
 rngine: {dir}/rngine tiflash={ip2}:{dir}/tiflash ports+12 host={ip2}
 rngine: {dir}/rngine tiflash={ip3}:{dir}/tiflash ports+13 host={ip3}
 
-cpark_m: {dir}/spark_m ports+11 host={ip1}
+spark_m: {dir}/spark_m ports+11 host={ip1}
 
 spark_w: {dir}/spark_w ports+11 host={ip1} cores=10 mem=10G
 spark_w: {dir}/spark_w ports+12 host={ip2} cores=10 mem=10G

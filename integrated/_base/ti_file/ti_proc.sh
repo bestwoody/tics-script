@@ -560,29 +560,16 @@ function spark_file_prepare()
 
 	local default_ports="${conf_templ_dir}/default.ports"
 
-	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
-	if [ -z "${default_pd_port}" ]; then
-		echo "[func spark_master_run] get default pd_port from ${default_ports} failed" >&2
-		return 1
-	fi
-
-	local default_tiflash_tcp_port=`get_value "${default_ports}" 'tiflash_tcp_port'`
-	if [ -z "${default_tiflash_tcp_port}" ]; then
-		echo "[func spark_master_run] get default tiflash_tcp_port from ${default_ports} failed" >&2
-		return 1
-	fi
-
-	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
-	local tiflash_addr=$(cal_addr "${tiflash_addr}" `must_print_ip` "${default_tiflash_tcp_port}")
-
 	local render_str="pd_addresses=${pd_addr}"
 	local render_str="${render_str}#flash_addresses=${tiflash_addr}"
 	local render_str="${render_str}#spark_local_dir=${spark_mod_dir}/spark_local_dir"
 	local render_str="${render_str}#jmxremote_port=${jmxremote_port}"
+	local render_str="${render_str}#spark_module_dir=${spark_mod_dir}"
 	render_templ "${conf_templ_dir}/spark-defaults.conf" "${spark_mod_dir}/spark-defaults.conf" "${render_str}"
 
 	if [ ! -d "${spark_mod_dir}/spark" ]; then
-		local spark_file="spark-2.3.3-bin-hadoop2.7"
+	    # TODO: remove spark file name from this func
+		local spark_file="spark-2.3.4-bin-hadoop2.7"
 		local spark_file_name="${spark_file}.tgz"
 		if [ ! -f "${spark_mod_dir}/${spark_file_name}" ]; then
 			echo "[func spark_file_prepare] cannot find spark file"
@@ -608,7 +595,7 @@ export -f spark_file_prepare
 function spark_master_run()
 {
 	if [ -z "${4+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ]; then
-		echo "[func spark_master_run] usage: <func> spark_master_dir conf_templ_dir pd_addr tiflash_addr [ports_delta] [advertise_host]" >&2
+		echo "[func spark_master_run] usage: <func> spark_master_dir conf_templ_dir pd_addr tiflash_addr [ports_delta] [advertise_host] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -627,6 +614,12 @@ function spark_master_run()
 		local advertise_host="0"
 	else
 		local advertise_host="${6}"
+	fi
+
+	if [ -z "${7+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${7}"
 	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
@@ -655,8 +648,17 @@ function spark_master_run()
 		return 1
 	fi
 
-	local spark_master_webui_port=$((${ports_delta} + ${default_spark_master_webui_port}))
-	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func spark_master_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local default_tiflash_tcp_port=`get_value "${default_ports}" 'tiflash_tcp_port'`
+	if [ -z "${default_tiflash_tcp_port}" ]; then
+		echo "[func spark_master_run] get default tiflash_tcp_port from ${default_ports} failed" >&2
+		return 1
+	fi
 
 	local listen_host=""
 	if [ "${advertise_host}" != "127.0.0.1" ] && [ "${advertise_host}" != "localhost" ] && [ "${listen_host}" != "" ]; then
@@ -674,8 +676,13 @@ function spark_master_run()
 		return 0
 	fi
 
+	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
+	local tiflash_addr=$(cal_addr "${tiflash_addr}" `must_print_ip` "${default_tiflash_tcp_port}")
+
 	local spark_master_port=$((${ports_delta} + ${default_spark_master_port}))
 	local thriftserver_port=$((${ports_delta} + ${default_thriftserver_port}))
+	local spark_master_webui_port=$((${ports_delta} + ${default_spark_master_webui_port}))
+	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
 
 	spark_file_prepare "${spark_master_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}"
 
@@ -692,12 +699,19 @@ function spark_master_run()
 
 	local info="${spark_master_dir}/proc.info"
 	echo "thriftserver_port	${thriftserver_port}" > "${info}"
+	echo "listen_host	${listen_host}" >> "${info}"
+	echo "spark_master_port	${spark_master_port}" >> "${info}"
+	echo "pd_addr	${pd_addr}" >> "${info}"
+	echo "tiflash_addr	${tiflash_addr}" >> "${info}"
+	echo "spark_master_webui_port	${spark_master_webui_port}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	if [ ! -f "${spark_master_dir}/extra_str_to_find_proc" ]; then
 		echo "org.apache.spark.deploy.master.Master" > "${spark_master_dir}/extra_str_to_find_proc"
 	fi
 
 	local pid=`print_pid "${spark_master_dir}" "org.apache.spark.deploy.master.Master"`
+	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
 export -f spark_master_run
@@ -705,7 +719,7 @@ export -f spark_master_run
 function spark_worker_run()
 {
 	if [ -z "${5+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ]; then
-		echo "[func spark_worker_run] usage: <func> spark_worker_dir conf_templ_dir pd_addr tiflash_addr spark_master_addr [ports_delta] [cores] [memory]" >&2
+		echo "[func spark_worker_run] usage: <func> spark_worker_dir conf_templ_dir pd_addr tiflash_addr spark_master_addr [ports_delta] [advertise_host] [cores] [memory] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -722,15 +736,27 @@ function spark_worker_run()
 	fi
 
 	if [ -z "${7+x}" ]; then
-		local worker_cores=""
+		local advertise_host="0"
 	else
-		local worker_cores="${7}"
+		local advertise_host="${7}"
 	fi
 
 	if [ -z "${8+x}" ]; then
+		local worker_cores=""
+	else
+		local worker_cores="${8}"
+	fi
+
+	if [ -z "${9+x}" ]; then
 		local worker_memory=""
 	else
-		local worker_memory="${8}"
+		local worker_memory="${9}"
+	fi
+
+	if [ -z "${10+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${10}"
 	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
@@ -759,8 +785,27 @@ function spark_worker_run()
 		return 1
 	fi
 
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func spark_master_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local default_tiflash_tcp_port=`get_value "${default_ports}" 'tiflash_tcp_port'`
+	if [ -z "${default_tiflash_tcp_port}" ]; then
+		echo "[func spark_master_run] get default tiflash_tcp_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	local listen_host=""
+	if [ "${advertise_host}" != "127.0.0.1" ] && [ "${advertise_host}" != "localhost" ] && [ "${listen_host}" != "" ]; then
+		local listen_host="${advertise_host}"
+	else
+		local listen_host="`must_print_ip`"
+	fi
+
 	local spark_worker_webui_port=$((${ports_delta} + ${default_spark_worker_webui_port}))
-    local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
+	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
 
 	local spark_worker_dir=`abs_path "${spark_worker_dir}"`
 
@@ -771,9 +816,16 @@ function spark_worker_run()
 		return 0
 	fi
 
+	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
+	local tiflash_addr=$(cal_addr "${tiflash_addr}" `must_print_ip` "${default_tiflash_tcp_port}")
 	local spark_master_addr=$(cal_addr "${spark_master_addr}" `must_print_ip` "${default_spark_master_port}")
 
 	spark_file_prepare "${spark_worker_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}"
+
+	local info="${spark_worker_dir}/proc.info"
+	echo "listen_host	${listen_host}" > "${info}"
+	echo "spark_worker_webui_port	${spark_worker_webui_port}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	if [ ! -f "${spark_worker_dir}/run_worker.sh" ]; then
 		local run_worker_cmd="${spark_worker_dir}/spark/sbin/start-slave.sh ${spark_master_addr} --webui-port ${spark_worker_webui_port}"
@@ -795,6 +847,7 @@ function spark_worker_run()
 	fi
 
 	local pid=`print_pid "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker"`
+	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
 export -f spark_worker_run

@@ -18,11 +18,16 @@ function cmd_ti_burn()
 		return
 	fi
 	if [ "${doit}" == "doit" ]; then
-		local up_status=`ti_file_mod_status "${dir}" "${conf_rel_path}"`
-		local ok=`echo "${up_status}" | grep ^OK`
-		if [ ! -z "${ok}" ]; then
-			ti_file_cmd_fstop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}"
-		fi
+		while true; do
+			local up_status=`ti_file_mod_status "${dir}" "${conf_rel_path}"`
+			local ok=`echo "${up_status}" | grep ^OK`
+			if [ ! -z "${ok}" ]; then
+				ti_file_cmd_fstop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}"
+			else
+			    break
+			fi
+			sleep 0.5
+		done
 		local result=`rm -rf "${dir}" 2>&1`
 		if [ ! -z "${result}" ]; then
 			echo "=> error: ${result}"

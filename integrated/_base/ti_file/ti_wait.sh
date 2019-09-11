@@ -174,3 +174,84 @@ function wait_for_pd_by_host()
 	wait_for_pd "${host}" "${port}" "${timeout}" "${bins_dir}"
 }
 export -f wait_for_pd_by_host
+
+function wait_for_tiflash()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func wait_for_tiflash] usage: <func> host port timeout [server_id]" >&2
+		return 1
+	fi
+
+	local host="${1}"
+	local port="${2}"
+	local timeout="${3}"
+	if [ -z "${4+x}" ]; then
+		local server_id="${host}:${port}"
+	else
+		local server_id="${4}"
+	fi
+
+	local error_handle="$-"
+	set +e
+
+	for ((i=0; i<${timeout}; i++)); do
+		nc -z "${host}" "${port}" 1>/dev/null 2>&1
+		if [ "$?" == "0" ]; then
+			break
+		else
+			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
+				echo "#${i} waiting for tiflash raft port ready at '${server_id}'"
+			fi
+			sleep 1
+		fi
+	done
+
+	restore_error_handle_flags "${error_handle}"
+}
+export -f wait_for_tiflash
+
+function wait_for_tiflash_local()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func wait_for_tiflash_local] usage: <func> tiflash_dir [timeout=180s]" >&2
+		return 1
+	fi
+
+	local tiflash_dir="${1}"
+	local timeout=180
+	if [ ! -z "${2+x}" ]; then
+		timeout="${2}"
+	fi
+
+	local tiflash_info="${tiflash_dir}/proc.info"
+	if [ ! -f "${tiflash_info}" ]; then
+		echo "[func wait_for_tiflash_local] '${tiflash_dir}' tiflash not exists" >&2
+		return 1
+	fi
+
+	local host=`cat "${tiflash_info}" | grep 'listen_host' | awk -F '\t' '{print $2}'`
+	local port=`cat "${tiflash_info}" | grep 'raft_port' | awk -F '\t' '{print $2}'`
+
+	wait_for_tiflash "${host}" "${port}" "${timeout}" "${tiflash_dir}"
+}
+export -f wait_for_tiflash_local
+
+function wait_for_tiflash_by_host()
+{
+	if [ -z "${4+x}" ]; then
+		echo "[func wait_for_tiflash_by_host] usage: <func> host port timeout default_ports_file" >&2
+		return 1
+	fi
+
+	local host="${1}"
+	local port="${2}"
+	local timeout="${3}"
+	local default_ports="${4}"
+
+	local default_raft_port=`get_value "${default_ports}" 'raft_port'`
+	local addr=`cal_addr ":${port}" '' "${default_raft_port}"`
+	local port="${addr:1}"
+
+	wait_for_mysql "${host}" "${port}" "${timeout}"
+}
+export -f wait_for_tiflash_by_host

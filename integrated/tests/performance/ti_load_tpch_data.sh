@@ -16,15 +16,17 @@ report="${BASH_SOURCE[0]}.report"
 
 schema_dir="${integrated}/tests/schema/tpch/mysql"
 data_dir="${integrated}/data/tpch"
-db="tpch10"
+scale="1"
 table="lineitem"
 
 function load_tpch_data_test()
 {
 	local schema_dir="${1}"
 	local data_dir="${2}"
-	local db="${3}"
+	local scale="${3}"
 	local table="${4}"
+
+	local db="tpch${scale}"
 
 	if [ `uname` == "Darwin" ]; then
 		local tools_conf_file="${BASH_SOURCE[0]}.tools.mac"
@@ -47,7 +49,7 @@ function load_tpch_data_test()
 	local dists_dss_url=`echo "${dists_entry_str}" | awk '{print $2}'`
 
 	local dbgen_bin_dir="/tmp/ti/master/bins"
-	local scale="1"
+
 	local blocks="4"
 
 	generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${data_dir}/tpch${scale}_${blocks}/${table}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"

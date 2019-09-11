@@ -59,7 +59,7 @@ class Mod(object):
         self.pd = ""
         self.extra_tools = []
 
-    def is_remote(self):
+    def is_local(self):
         return self.host == ""
 
 class ModRngine(Mod):
@@ -297,7 +297,7 @@ def render_pds(res, conf, hosts, indexes):
             continue
         print_mod_header(pd)
 
-        if pd.is_remote():
+        if pd.is_local():
             ssh = ''
             conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(pd, conf)
@@ -322,7 +322,7 @@ def render_tikvs(res, conf, hosts, indexes):
             continue
         print_mod_header(tikv)
 
-        if tikv.is_remote():
+        if tikv.is_local():
             ssh = ''
             conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(tikv, conf)
@@ -348,7 +348,7 @@ def render_tidbs(res, conf, hosts, indexes):
             continue
         print_mod_header(tidb)
 
-        if tidb.is_remote():
+        if tidb.is_local():
             ssh = ''
             conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(tidb, conf)
@@ -373,7 +373,7 @@ def render_tiflashs(res, conf, hosts, indexes):
         print_sep()
         print '# Wait for tidb to ready'
         for tidb in res.tidbs:
-            if len(tidb.host) == 0:
+            if tidb.is_local():
                 print 'wait_for_tidb "%s"' % tidb.dir
             else:
                 print 'wait_for_tidb_by_host "%s" "%s" 180 %s' % (tidb.host, tidb.ports, conf.integrated_dir + '/conf/default.ports')
@@ -382,7 +382,7 @@ def render_tiflashs(res, conf, hosts, indexes):
         print_sep()
         print '# Wait for pd to ready'
         for pd in res.pds:
-            if len(pd.host) == 0:
+            if pd.is_local():
                 print 'wait_for_pd_local "%s"' % pd.dir
             else:
                 bins_dir = conf.cache_dir + '/master/bins'
@@ -404,7 +404,7 @@ def render_tiflashs(res, conf, hosts, indexes):
             print '\t"true" "%s" "%s" "%s" \\' % (pd_addr, tiflash.ports, tiflash.host)
             print '\t ${id}'
 
-        if tiflash.is_remote():
+        if tiflash.is_local():
             print_cp_bin(tiflash, conf)
             print_run_cmd('', conf.conf_templ_dir)
         else:
@@ -413,6 +413,16 @@ def render_tiflashs(res, conf, hosts, indexes):
             print_run_cmd('call_remote_func "%s" "%s" ' % (tiflash.host, env_dir), env_dir + '/conf')
 
 def render_rngines(res, conf, hosts, indexes):
+    if len(res.tiflashs) != 0:
+        print_sep()
+        print '# Wait for tiflash raft port ready'
+        for tiflash in res.tiflashs:
+            if tiflash.is_local():
+                print 'wait_for_tiflash_local "%s"' % tiflash.dir
+            else:
+                bins_dir = conf.cache_dir + '/master/bins'
+                print 'wait_for_tiflash_by_host "%s" "%s" 180 %s %s' % (tiflash.host, tiflash.ports, bins_dir, conf.integrated_dir + '/conf/default.ports')
+
     for i in range(0, len(res.rngines)):
         rngine = res.rngines[i]
         if len(hosts) != 0 and rngine.host not in hosts:
@@ -421,7 +431,7 @@ def render_rngines(res, conf, hosts, indexes):
             continue
         print_mod_header(rngine)
 
-        if rngine.is_remote():
+        if rngine.is_local():
             ssh = ''
             conf_templ_dir = conf.conf_templ_dir
             print_cp_bin(rngine, conf)
@@ -474,12 +484,13 @@ def render_spark_master(res, conf, hosts, indexes):
         tiflash_addr.append(addr)
 
     def print_run_cmd(ssh, conf_templ_dir):
-        print '# spark_master_run dir conf_templ_dir pd_addr tiflash_addr ports_delta listen_host'
+        print '# spark_master_run dir conf_templ_dir pd_addr tiflash_addr ports_delta listen_host cluster_id'
         print (ssh + 'spark_master_run "%s" \\') % spark_master.dir
         print '\t"%s" "%s" "%s" \\' % (conf_templ_dir, ",".join(res.pd_addr), ",".join(tiflash_addr))
-        print '\t "%s" "%s"' % (spark_master.ports, spark_master.host)
+        print '\t "%s" "%s" \\' % (spark_master.ports, spark_master.host)
+        print '\t ${id}'
 
-    if spark_master.is_remote():
+    if spark_master.is_local():
         print_cp_bin(spark_master, conf)
         print_run_cmd('', conf.conf_templ_dir)
     else:
@@ -510,12 +521,13 @@ def render_spark_workers(res, conf, hosts, indexes):
             tiflash_addr.append(addr)
 
         def print_run_cmd(ssh, conf_templ_dir):
-            print '# spark_worker_run dir conf_templ_dir pd_addr tiflash_addr spark_master_addr [ports_delta] [cores] [memory]'
+            print '# spark_worker_run dir conf_templ_dir pd_addr tiflash_addr spark_master_addr ports_delta listen_host cores memory cluster_id'
             print (ssh + 'spark_worker_run "%s" \\') % spark_worker.dir
             print '\t"%s" "%s" "%s" "%s" \\' % (conf_templ_dir, ",".join(res.pd_addr), ",".join(tiflash_addr), spark_master_addr)
-            print '\t"%s" "%s" "%s"' % (spark_worker.ports, spark_worker.cores, spark_worker.mem)
+            print '\t"%s" "%s" "%s" "%s" \\' % (spark_worker.ports, spark_worker.host, spark_worker.cores, spark_worker.mem)
+            print '\t ${id}'
 
-        if spark_worker.is_remote():
+        if spark_worker.is_local():
             print_cp_bin(spark_worker, conf)
             print_run_cmd('', conf.conf_templ_dir)
         else:

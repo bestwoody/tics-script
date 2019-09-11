@@ -5,6 +5,6 @@ auto_error_handle
 
 ti="${integrated}/ops/ti.sh"
 ti_file="${integrated}/ti/1_x.ti"
-args="ports=+45#dir=nodes/45"
+args="ports=+33#dir=nodes/33"
 
 "${ti}" -k "${args}" "${ti_file}" burn doit
