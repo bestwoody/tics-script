@@ -79,7 +79,7 @@ if [ -z "${ti_sh_path}" ]; then
 fi
 
 if [ -z "${ti_file_path}" ]; then
-	ti_file_path="${integrated}/ti/cluster/1.ti"
+	ti_file_path="${integrated}/ti/1.ti"
 fi
 
 run_path "$target" "$ti_sh_path" "$ti_file_path"

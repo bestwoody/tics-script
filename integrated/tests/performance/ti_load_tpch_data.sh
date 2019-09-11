@@ -75,4 +75,4 @@ function load_tpch_data_test()
 	echo 'done'
 }
 
-load_tpch_data_test "${schema_dir}" "${data_dir}" "${db}" "${table}"
+load_tpch_data_test "${schema_dir}" "${data_dir}" "${scale}" "${table}"
