@@ -46,8 +46,7 @@ function kp_mon_report
 		fi
 	done
 
-	# TODO: Improve this: generate empty lines by `cat random-file`
-	local random=`cat "${BASH_SOURCE[0]}" | awk '{print "-"}'`
+	local random=`yes '-' | head -n 999`
 	local lines=`cat "${log}" | grep 'START\|RUNNING\|ERROR\|STOP' | tail -n 999`
 	echo -e "${random}\n${lines}" | \
 		awk '{if ($3 == "START") print "\033[32m+\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"; else if ($3 == "STOP") print "\033[35m!\033[0m"; else print "-"}' | tail -n "${width}" | \
@@ -62,7 +61,7 @@ function cmd_kp()
 
 	auto_error_handle
 
-	local help_str="[func cmd_kp] usage: <func> kp_file [cmd=run|stop|status|list|clean] [width=80]"
+	local help_str="[func cmd_kp] usage: <func> kp_file [cmd=run|stop|status|list|clean|watch] [width=120]"
 
 	if [ -z "${file}" ]; then
 		echo "${help_str}" >&2
@@ -97,6 +96,7 @@ function cmd_kp()
 			echo '   running, skipped'
 		else
 			echo "# This file is generated" >"${file_abs}.mon"
+			echo "source \"${integrated}/_env.sh\"" >>"${file_abs}.mon"
 			echo "kp_file_run \"${file_abs}\"" >>"${file_abs}.mon"
 			nohup bash "${integrated}"/_base/call_func.sh \
 				keep_script_running "${file_abs}.mon" 'false' '' 10 10 >/dev/null 2>&1 &
@@ -108,11 +108,18 @@ function cmd_kp()
 	elif [ "${cmd}" == 'stop' ]; then
 		echo "=> [^__^] ${file_abs}"
 		if [ ! -z "${mon_pid}" ]; then
-			local error_handle="$-"
-			set +e
-			kill "${mon_pid}" 2>/dev/null
-			restore_error_handle_flags "${error_handle}"
-			echo '   stopping'
+			echo "${mon_pid}" | while read pid; do
+				local error_handle="$-"
+				set +e
+				kill "${pid}" 2>/dev/null
+				restore_error_handle_flags "${error_handle}"
+			done
+			local mon_pid=`_kp_file_pid ${file_abs}.mon`
+			if [ -z "${mon_pid}" ]; then
+				echo '   stopped'
+			else
+				echo '   stop failed'
+			fi
 		else
 			echo '   nor running, skipped'
 		fi
@@ -125,7 +132,12 @@ function cmd_kp()
 		fi
 		local atime=`_kp_sh_last_active "${file}"`
 		if [ ! -z "${mon_pid}" ]; then
-			local run_status="\033[32m[+]\033[0m"
+			local mon_proc_cnt=`echo "${mon_pid}" | wc -l | awk '{print $1}'`
+			if [ "${mon_proc_cnt}" == '1' ]; then
+				local run_status="\033[32m[+]\033[0m"
+			else
+				local run_status="\033[33m[?]\033[0m"
+			fi
 		else
 			local run_status="\033[31m[!]\033[0m"
 		fi

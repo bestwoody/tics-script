@@ -9,6 +9,7 @@ def error(msg):
 def run():
     pids = set()
     ppids = set()
+    pp2p = {}
 
     while True:
         line = sys.stdin.readline()
@@ -25,13 +26,22 @@ def run():
         if len(fields) != 2:
             error('bad "pid ppid" line: ' + line)
 
-        pids.add(fields[0])
-        ppids.add(fields[1])
+        pid, ppid = fields[0], fields[1]
+        pids.add(pid)
+        ppids.add(ppid)
+        if not pp2p.has_key(ppid):
+            pp2p[ppid] = set()
+        pp2p[ppid].add(pid)
 
-    pids -= ppids
+    removing = set()
+    for ppid in ppids:
+        if ppid in pids:
+            children = pp2p[ppid]
+            removing = removing.union(children)
 
-    if len(pids) == 1:
-        print pids.pop()
+    pids -= removing
+    for pid in pids:
+        print pid
 
 if __name__ == '__main__':
     run()

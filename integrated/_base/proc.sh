@@ -130,3 +130,35 @@ function stop_proc()
 	restore_error_handle_flags "${error_handle}"
 }
 export -f stop_proc
+
+function print_root_pids()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func print_root_pids] usage: <func> str_for_finding_the_processes [str2] [dump_if_not_uniq]" >&2
+		return 1
+	fi
+
+	local find_str="${1}"
+	local str2=""
+	if [ ! -z "${2+x}" ]; then
+		local str2="${2}"
+	fi
+	local dump='true'
+	if [ ! -z "${3+x}" ]; then
+		local dump="${3}"
+	fi
+
+	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v 'grep'`
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	local result=`echo "${processes}" | awk '{print $2, $3}' | python "${here}/print_root_pid.py"`
+	if [ "${dump}" == 'true' ] && [ ! -z "${result}" ]; then
+		local cnt=`echo "${result}" | wc -l | awk '{print $1}'`
+		if [ "${cnt}" != '1' ]; then
+			echo "DUMP START --(${find_str}, ${str2})" >&2
+			echo "${processes}" >&2
+			echo "DUMP END   --(${find_str}, ${str2})" >&2
+		fi
+	fi
+	echo "${result}"
+}
+export -f print_root_pids

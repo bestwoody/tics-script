@@ -1,13 +1,5 @@
 #!/bin/bash
 
-function _print_ppid_if_pp()
-{
-	local processes="${1}"
-	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
-	echo "${processes}" | awk '{print $2, $3}' | python "${here}/print_root_pid.py"
-}
-export -f _print_ppid_if_pp
-
 function _kp_file_pid()
 {
 	if [ -z "${1+x}" ]; then
@@ -16,47 +8,9 @@ function _kp_file_pid()
 	fi
 
 	local file="${1}"
-	local processes=`ps -ef | grep "keep_script_running ${file}" | grep -v 'grep'`
-	local pid=`echo "${processes}" | awk '{if($3==1) print $2}'`
-	if [ ! -z "${pid}" ]; then
-		echo "${pid}"
-		return
-	fi
-
-	_print_ppid_if_pp "${processes}"
+	print_root_pids "keep_script_running ${file}"
 }
 export -f _kp_file_pid
-
-function print_kp_pid()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func print_kp_pid] usage: <func> str_for_finding_the_processes [str2]" >&2
-		return 1
-	fi
-
-	local find_str="${1}"
-	local str2=""
-	if [ ! -z "${2+x}" ]; then
-		local str2="${2}"
-	fi
-
-	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v grep`
-	if [ -z "${processes}" ]; then
-		return
-	fi
-
-	local ppid=`_print_ppid_if_pp "${processes}"`
-	if [ ! -z "${ppid}" ]; then
-		echo "${ppid}"
-		return
-	fi
-
-	echo "DUMP START --: ${find_str} ${str2}" >&2
-	echo "${processes}" >&2
-	echo "DUMP END   --: ${find_str} ${str2}" >&2
-	echo "${processes}" | awk '{print $2}'
-}
-export -f print_kp_pid
 
 function keep_script_running()
 {
@@ -89,7 +43,7 @@ function keep_script_running()
 	fi
 
 	while true; do
-		local pid=`print_kp_pid "bash ${script}" "${args}"`
+		local pid=`print_root_pids "bash ${script}" "${args}" 'true'`
 		if [ -z "${pid}" ]; then
 			local proc_cnt='0'
 		else
@@ -257,7 +211,12 @@ function kp_file_run()
 		local pid=`_kp_file_pid "${line}"`
 		echo "=> [task] ${line}"
 		if [ ! -z "${pid}" ]; then
-			echo "   running, skipped"
+			local pid_cnt=`echo "${pid}" | wc -l | awk '{print $1}'`
+			if [ "${pid_cnt}" == '1' ]; then
+				echo "   running, skipped"
+			else
+				echo "   error: multi instance"
+			fi
 		else
 			nohup bash "${integrated}"/_base/call_func.sh \
 				keep_script_running "${line}" 'true' '' 9 1 2 3 4 8 16 32 >> "${file}.log" 2>&1 &
@@ -309,6 +268,8 @@ function kp_sh_stop()
 		local pids=`_kp_file_pid "${file}"`
 		if [ -z "${pids}" ]; then
 			break
+		else
+			sleep 0.1
 		fi
 	done
 
@@ -324,6 +285,7 @@ function kp_sh_stop()
 				echo "   stopped ${pid}"
 			fi
 		done
+		sleep 0.1
 	done
 
 	restore_error_handle_flags "${error_handle}"
@@ -430,7 +392,12 @@ function kp_file_status()
 
 		local pid=`_kp_file_pid "${line}"`
 		if [ ! -z "${pid}" ]; then
-			local run_status="\033[32m[+]\033[0m"
+			local pid_cnt=`echo "${pid}" | wc -l | awk '{print $1}'`
+			if [ "${pid_cnt}" == '1' ]; then
+				local run_status="\033[32m[+]\033[0m"
+			else
+				local run_status="\033[33m[?]\033[0m"
+			fi
 		else
 			local run_status="\033[31m[!]\033[0m"
 		fi
