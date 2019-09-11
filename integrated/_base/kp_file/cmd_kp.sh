@@ -1,5 +1,27 @@
 #!/bin/bash
 
+function kp_file_watch
+{
+	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
+		echo "[func kp_file_watch] usage: <func> kp_file [watch_interval=5] [display_width=120]" >&2
+		exit 1
+	fi
+
+	local file="${1}"
+	if [ -z "${2+x}" ]; then
+		local interval='5'
+	else
+		local interval="${2}"
+	fi
+	if [ -z "${3+x}" ]; then
+		local width='120'
+	else
+		local width="${3}"
+	fi
+
+	watch -c -n "${interval}" -t "COLUMNS= ${integrated}/ops/kp.sh \"${file}\" status \"${width}\""
+}
+
 function kp_mon_report
 {
 	if [ -z "${2+x}" ]; then
@@ -112,6 +134,8 @@ function cmd_kp()
 		kp_file_status "${file}" "${width}"
 	elif [ "${cmd}" == 'list' ]; then
 		kp_file_iter "${file}"
+	elif [ "${cmd}" == 'watch' ]; then
+		kp_file_watch "${file}" "${@}"
 	elif [ "${cmd}" == 'clean' ]; then
 		rm -f "${file}.mon"
 		rm -f "${file}.log"

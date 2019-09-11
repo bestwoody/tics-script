@@ -1,53 +1,5 @@
 #!/bin/bash
 
-# TODO: unused
-function watch_file()
-{
-	if [ -z "${2+x}" ]; then
-		echo "[func watch_file] usage: <func> file_path timeout" >&2
-		return 1
-	fi
-
-	local file="${1}"
-	local timeout="${2}"
-
-	local latest_mtime=`file_mtime "${file}"`
-
-	local unchanged_times='0'
-	for (( i = 0; i < "${timeout}"; i++ )); do
-		local mtime=`file_mtime "${file}"`
-		if [ "${latest_mtime}" != "${mtime}" ]; then
-			local unchanged_times='0'
-			local latest_mtime="${mtime}"
-			local i=0
-			echo "changed!! #${i} < ${timeout} ${file}"
-			continue
-		fi
-		local unchanged_times=$((unchanged_times + 1))
-		echo "unchanged #${i} < ${timeout} ${file}"
-		sleep 1
-	done
-
-	# TODO
-}
-export -f watch_file
-
-# TODO: unused
-function watch_files()
-{
-	if [ -z "${2+x}" ]; then
-		echo "[func watch_files] usage: <func> dir_path timeout" >&2
-		return 1
-	fi
-
-	local dir="${1}"
-	local timeout="${2}"
-	for file in "${dir}"; do
-		watch_file "${file}" "${timeout}"
-	done
-}
-export -f watch_files
-
 function _print_ppid_if_pp()
 {
 	local processes="${1}"
@@ -55,6 +7,25 @@ function _print_ppid_if_pp()
 	echo "${processes}" | awk '{print $2, $3}' | python "${here}/print_root_pid.py"
 }
 export -f _print_ppid_if_pp
+
+function _kp_file_pid()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func _kp_file_pid] usage: <func> kp_file" >&2
+		return 1
+	fi
+
+	local file="${1}"
+	local processes=`ps -ef | grep "keep_script_running ${file}" | grep -v 'grep'`
+	local pid=`echo "${processes}" | awk '{if($3==1) print $2}'`
+	if [ ! -z "${pid}" ]; then
+		echo "${pid}"
+		return
+	fi
+
+	_print_ppid_if_pp "${processes}"
+}
+export -f _kp_file_pid
 
 function print_kp_pid()
 {
@@ -255,25 +226,6 @@ function kp_file_iter()
 	rm -f "${rendered}"
 }
 export -f kp_file_iter
-
-function _kp_file_pid()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func _kp_file_pid] usage: <func> kp_file" >&2
-		return 1
-	fi
-
-	local file="${1}"
-	local processes=`ps -ef | grep "keep_script_running ${file}" | grep -v 'grep'`
-	local pid=`echo "${processes}" | awk '{if($3==1) print $2}'`
-	if [ ! -z "${pid}" ]; then
-		echo "${pid}"
-		return
-	fi
-
-	_print_ppid_if_pp "${processes}"
-}
-export -f _kp_file_pid
 
 function kp_file_run()
 {
