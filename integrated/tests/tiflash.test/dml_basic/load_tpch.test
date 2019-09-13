@@ -1,0 +1,12 @@
+ti_mysql> drop database tpch1
+ti_ch> DBGInvoke __refresh_schemas()
+ti_func> load_tpch 1 lineitem 4
+
+ti_beeline> select count(*) from tpch1.lineitem
++-----------+--+
+| count(1)  |
++-----------+--+
+| 6001215   |
++-----------+--+
+
+ti_mysql> drop database tpch1

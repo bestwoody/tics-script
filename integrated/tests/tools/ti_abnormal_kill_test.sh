@@ -22,12 +22,13 @@ function restart_tiflash() {
 		local error_time=`date +%s`
 		local error_time=`date -d "1970-01-01 ${error_time} seconds" +"%Y_%m_%d_%H_%m_%S"`
 		mkdir -p "${here}/failed_test_envs"
-		"${ti}" -k "${args}" "${ti_file}" > "${here}/failed_test_envs/${error_time}.log"
+		echo "${status}" > "${here}/failed_test_envs/${error_time}.log"
 		"${ti}" -k "${args}" -m pd "${ti_file}" log 100000 | awk '{ print "[pd] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
 		"${ti}" -k "${args}" -m tikv "${ti_file}" log 100000 | awk '{ print "[tikv] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
 		"${ti}" -k "${args}" -m tidb "${ti_file}" log 100000 | awk '{ print "[tidb] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
 		"${ti}" -k "${args}" -m tiflash "${ti_file}" log 100000 | awk '{ print "[tiflash] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
 		"${ti}" -k "${args}" -m rngine "${ti_file}" log 100000 | awk '{ print "[rngine] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
+		"${ti}" -k "${args}" "${ti_file}" 'down'
 		tar -czPf "${here}/failed_test_envs/${error_time}_env.tar.gz" "${integrated}/${dir}"
 		"${ti}" -k "${args}" "${ti_file}" burn doit
 		return 1

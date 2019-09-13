@@ -1,5 +1,6 @@
 ti_mysql> drop table test.t
 ti_mysql> create table if not exists test.t(s varchar(256), i int)
+ti_ch> DBGInvoke __refresh_schemas()
 ti_mysql> insert into test.t values('Hello world', 666)
 ti_mysql> insert into test.t values('Hello world', 666)
 ti_mysql> insert into test.t values('Hello world', 666)
@@ -14,4 +15,4 @@ ti_beeline> select s, i from test.t
 | Hello world  | 666  |
 +--------------+------+--+
 
-ti_mysql> delete from test.t
+ti_mysql> drop table test.t
