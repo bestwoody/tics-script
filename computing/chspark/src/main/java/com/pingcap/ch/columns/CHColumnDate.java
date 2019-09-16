@@ -7,8 +7,6 @@ import java.nio.ByteBuffer;
 public class CHColumnDate extends CHColumn {
   private ByteBuffer data; // We need to keep a reference here to prevent the memory from gc.
   private long dataAddr;
-  // In storage the date starts from 1400-01-01.
-  public static final int DATE_EPOCH_OFFSET = -208188;
 
   public CHColumnDate(int size, ByteBuffer data) {
     super(CHTypeDate.instance, size);
@@ -17,7 +15,7 @@ public class CHColumnDate extends CHColumn {
   }
 
   public CHColumnDate(int maxSize) {
-    this(0, MemoryUtil.allocateDirect(maxSize << 2));
+    this(0, MemoryUtil.allocateDirect(maxSize << 1));
   }
 
   public ByteBuffer data() {
@@ -26,24 +24,24 @@ public class CHColumnDate extends CHColumn {
 
   @Override
   public long byteCount() {
-    return size << 2;
+    return size << 1;
   }
 
   @Override
-  public int getInt(int rowId) {
-    return DATE_EPOCH_OFFSET + MemoryUtil.getInt(dataAddr + (rowId << 2));
+  public short getShort(int rowId) {
+    return MemoryUtil.getShort(dataAddr + (rowId << 1));
   }
 
   @Override
-  public void insertInt(int v) {
-    MemoryUtil.setInt(dataAddr + (size << 2), v - DATE_EPOCH_OFFSET);
+  public void insertShort(short v) {
+    MemoryUtil.setShort(dataAddr + (size << 1), v);
     size++;
   }
 
   @Override
   public CHColumn seal() {
     data.clear();
-    data.limit(size << 2);
+    data.limit(size << 1);
     return this;
   }
 

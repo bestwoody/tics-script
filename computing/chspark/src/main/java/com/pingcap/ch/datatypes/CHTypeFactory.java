@@ -35,6 +35,10 @@ public class CHTypeFactory {
         return CHTypeDate.instance;
       case "DateTime":
         return CHTypeDateTime.instance;
+      case "MyDateTime":
+        return CHTypeMyDateTime.instance;
+      case "MyDate":
+        return CHTypeMyDate.instance;
       case "String":
         return CHTypeString.instance;
     }
@@ -47,6 +51,9 @@ public class CHTypeFactory {
       } catch (NumberFormatException e) {
         throw new IOException("Illegal CH type: " + typeName);
       }
+    }
+    if (typeName.startsWith("MyDateTime")) {
+      return CHTypeMyDateTime.instance;
     }
     if (typeName.startsWith("Decimal")) {
       String remain = StringUtils.removeStart(typeName, "Decimal");

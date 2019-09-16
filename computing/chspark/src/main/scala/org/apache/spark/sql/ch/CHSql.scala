@@ -410,7 +410,7 @@ object CHSql {
             case StringType => "'" + escapeString(value.toString) + "'"
             case DateType   =>
               // Date in storage starts from 1400-01-01
-              (value.asInstanceOf[java.lang.Integer] - CHColumnDate.DATE_EPOCH_OFFSET).toString
+              (value.asInstanceOf[java.lang.Integer]).toString
             case TimestampType =>
               // DateTime in storage is stored as seconds rather than milliseconds
               (value.asInstanceOf[java.lang.Long] / 1000000).toString

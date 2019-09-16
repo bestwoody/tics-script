@@ -1,11 +1,6 @@
 package com.pingcap.theflash;
 
-import com.pingcap.ch.datatypes.CHType;
-import com.pingcap.ch.datatypes.CHTypeDate;
-import com.pingcap.ch.datatypes.CHTypeDateTime;
-import com.pingcap.ch.datatypes.CHTypeDecimal;
-import com.pingcap.ch.datatypes.CHTypeFixedString;
-import com.pingcap.ch.datatypes.CHTypeNullable;
+import com.pingcap.ch.datatypes.*;
 import com.pingcap.ch.datatypes.CHTypeNumber.CHTypeFloat32;
 import com.pingcap.ch.datatypes.CHTypeNumber.CHTypeFloat64;
 import com.pingcap.ch.datatypes.CHTypeNumber.CHTypeInt16;
@@ -16,7 +11,6 @@ import com.pingcap.ch.datatypes.CHTypeNumber.CHTypeUInt16;
 import com.pingcap.ch.datatypes.CHTypeNumber.CHTypeUInt32;
 import com.pingcap.ch.datatypes.CHTypeNumber.CHTypeUInt64;
 import com.pingcap.ch.datatypes.CHTypeNumber.CHTypeUInt8;
-import com.pingcap.ch.datatypes.CHTypeString;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -97,7 +91,11 @@ public class TypeMappingJava {
       return new DataTypeAndNullable(DataTypes.createDecimalType(p.precision, p.scale));
     } else if (chType == CHTypeDate.instance) {
       return new DataTypeAndNullable(DataTypes.DateType);
+    } else if (chType == CHTypeMyDate.instance) {
+      return new DataTypeAndNullable(DataTypes.DateType);
     } else if (chType == CHTypeDateTime.instance) {
+      return new DataTypeAndNullable(DataTypes.TimestampType);
+    } else if (chType == CHTypeMyDateTime.instance) {
       return new DataTypeAndNullable(DataTypes.TimestampType);
     } else if (chType == CHTypeInt8.instance) {
       return new DataTypeAndNullable(DataTypes.ByteType);

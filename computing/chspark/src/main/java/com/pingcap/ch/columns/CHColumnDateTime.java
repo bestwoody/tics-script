@@ -15,7 +15,7 @@ public class CHColumnDateTime extends CHColumn {
   }
 
   public CHColumnDateTime(int maxSize) {
-    this(0, MemoryUtil.allocateDirect(maxSize << 3));
+    this(0, MemoryUtil.allocateDirect(maxSize << 2));
   }
 
   public ByteBuffer data() {
@@ -24,24 +24,24 @@ public class CHColumnDateTime extends CHColumn {
 
   @Override
   public long byteCount() {
-    return size << 3;
+    return size << 2;
   }
 
   @Override
-  public long getLong(int rowId) {
-    return MemoryUtil.getLong(dataAddr + (rowId << 3));
+  public int getInt(int rowId) {
+    return MemoryUtil.getInt(dataAddr + (rowId << 2));
   }
 
   @Override
-  public void insertLong(long v) {
-    MemoryUtil.setLong(dataAddr + (size << 3), v);
+  public void insertInt(int v) {
+    MemoryUtil.setInt(dataAddr + (size << 2), v);
     size++;
   }
 
   @Override
   public CHColumn seal() {
     data.clear();
-    data.limit(size << 3);
+    data.limit(size << 2);
     return this;
   }
 

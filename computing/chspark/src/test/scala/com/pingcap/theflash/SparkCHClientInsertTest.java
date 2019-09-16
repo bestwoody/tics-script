@@ -137,20 +137,22 @@ public class SparkCHClientInsertTest {
 
         @Override
         public void accept(CHColumnBatch b) {
-            values[0] = new Date(b.column(0).getInt(0) * 1000L * 60 * 60 * 24);
-            values[1] = new Date(b.column(1).getInt(0) * 1000L * 60 * 60 * 24);
-            values[2] = new Timestamp(b.column(2).getLong(0) / 1000);
-            values[3] = b.column(3).getFloat(0);
-            values[4] = b.column(4).getDouble(0);
-            values[5] = b.column(5).getInt(0);
-            values[6] = b.column(6).getInt(0);
-            values[7] = b.column(7).getLong(0);
-            values[8] = b.column(8).getDecimal(0, 20, 0).toJavaBigDecimal();
-            values[9] = b.column(9).getByte(0);
-            values[10] = b.column(10).getShort(0);
-            values[11] = b.column(11).getInt(0);
-            values[12] = b.column(12).getLong(0);
-            values[13] = b.column(13).getUTF8String(0).toString();
+            values[0] = new Date(b.column(0).getShort(0) * 1000L * 60 * 60 * 24);
+            values[1] = new Date(b.column(1).getShort(0) * 1000L * 60 * 60 * 24);
+            values[2] = new Timestamp(b.column(2).getInt(0) * 1000L);
+            values[3] = new Date(b.column(3).getLong(0) * 1000L * 60 * 60 * 24);
+            values[4] = new Timestamp(b.column(4).getLong(0));
+            values[5] = b.column(5).getFloat(0);
+            values[6] = b.column(6).getDouble(0);
+            values[7] = b.column(7).getInt(0);
+            values[8] = b.column(8).getInt(0);
+            values[9] = b.column(9).getLong(0);
+            values[10] = b.column(10).getDecimal(0, 20, 0).toJavaBigDecimal();
+            values[11] = b.column(11).getByte(0);
+            values[12] = b.column(12).getShort(0);
+            values[13] = b.column(13).getInt(0);
+            values[14] = b.column(14).getLong(0);
+            values[15] = b.column(15).getUTF8String(0).toString();
         }
     }
 
@@ -161,6 +163,8 @@ public class SparkCHClientInsertTest {
                 "id_dt       Date,\n" +
                 "tp_date     Date,\n" +
                 "tp_datetime DateTime,\n" +
+                "tp_mydate     MyDate,\n" +
+                "tp_mydatetime MyDateTime,\n" +
                 "tp_float32  Float32,\n" +
                 "tp_float64  Float64,\n" +
                 "tp_uint8    UInt8,\n" +
@@ -177,6 +181,8 @@ public class SparkCHClientInsertTest {
 
         Object[] values = new Object[]{
                 new Date(365 * 1000L * 60 * 60 * 24),
+                new Date(365 * 1000L * 60 * 60 * 24),
+                new Timestamp(31536001000L),
                 new Date(365 * 1000L * 60 * 60 * 24),
                 new Timestamp(31536001000L),
                 new Float(3.14159),
@@ -197,11 +203,11 @@ public class SparkCHClientInsertTest {
             insert.insertSuffix();
         }
 
-        Object[] new_values = new Object[14];
+        Object[] new_values = new Object[16];
         ValueFetcher f = new ValueFetcher();
         f.values = new_values;
         selectSql("select * from default.spark_insert_test", f);
-        selectSql("drop table if exists default.spark_insert_test");
+        //selectSql("drop table if exists default.spark_insert_test");
 
         Assert.assertArrayEquals(values, new_values);
     }

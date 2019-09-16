@@ -7,14 +7,7 @@ import com.pingcap.ch.CHProtocol;
 import com.pingcap.ch.CHSetting;
 import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnWithTypeAndName;
-import com.pingcap.ch.datatypes.CHType;
-import com.pingcap.ch.datatypes.CHTypeDate;
-import com.pingcap.ch.datatypes.CHTypeDateTime;
-import com.pingcap.ch.datatypes.CHTypeDecimal;
-import com.pingcap.ch.datatypes.CHTypeFixedString;
-import com.pingcap.ch.datatypes.CHTypeNullable;
-import com.pingcap.ch.datatypes.CHTypeNumber;
-import com.pingcap.ch.datatypes.CHTypeString;
+import com.pingcap.ch.datatypes.*;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Date;
@@ -179,11 +172,11 @@ public class SparkCHClientInsert implements Closeable {
         }
       } else if (chType == CHTypeDate.instance) {
         Date v = row.getDate(i);
-        col.insertInt(DateTimeUtils.fromJavaDate(v));
+        col.insertShort((short) DateTimeUtils.fromJavaDate(v));
       } else if (chType == CHTypeDateTime.instance) {
         // java.sql.Timestamp as milliseconds, while ClickHouse as seconds.
         Timestamp ts = row.getTimestamp(i);
-        col.insertLong((ts.getTime() / 1000));
+        col.insertInt((int) (ts.getTime() / 1000));
       } else if (chType == CHTypeNumber.CHTypeInt8.instance) {
         col.insertByte((byte) row.getLong(i));
       } else if (chType == CHTypeNumber.CHTypeInt16.instance) {
@@ -242,11 +235,18 @@ public class SparkCHClientInsert implements Closeable {
         col.insertUTF8String(UTF8String.fromString(row.getString(i)));
       } else if (chType == CHTypeDate.instance) {
         Date v = row.getDate(i);
-        col.insertInt(DateTimeUtils.fromJavaDate(v));
+        col.insertShort((short) DateTimeUtils.fromJavaDate(v));
+      } else if (chType == CHTypeMyDate.instance) {
+        Date v = row.getDate(i);
+        col.insertLong(DateTimeUtils.fromJavaDate(v));
       } else if (chType == CHTypeDateTime.instance) {
         // java.sql.Timestamp as milliseconds, while ClickHouse as seconds.
         Timestamp ts = row.getTimestamp(i);
-        col.insertLong(ts.getTime() / 1000);
+        col.insertInt((int) (ts.getTime() / 1000));
+      } else if (chType == CHTypeMyDateTime.instance) {
+        // java.sql.Timestamp as milliseconds, while ClickHouse as seconds.
+        Timestamp ts = row.getTimestamp(i);
+        col.insertLong(ts.getTime());
       } else if (chType == CHTypeNumber.CHTypeInt8.instance) {
         col.insertByte(row.getByte(i));
       } else if (chType == CHTypeNumber.CHTypeInt16.instance) {

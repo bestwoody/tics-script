@@ -4,11 +4,7 @@ import com.pingcap.ch.columns.CHColumn;
 import com.pingcap.ch.columns.CHColumnNullable;
 import com.pingcap.ch.columns.CHColumnNumber;
 import com.pingcap.ch.columns.CHColumnWithTypeAndName;
-import com.pingcap.ch.datatypes.CHType;
-import com.pingcap.ch.datatypes.CHTypeDateTime;
-import com.pingcap.ch.datatypes.CHTypeDecimal;
-import com.pingcap.ch.datatypes.CHTypeNullable;
-import com.pingcap.ch.datatypes.CHTypeNumber;
+import com.pingcap.ch.datatypes.*;
 import com.pingcap.theflash.TypeMappingJava;
 import java.math.BigInteger;
 import org.apache.spark.sql.types.Decimal;
@@ -83,7 +79,11 @@ public class CHColumnVector extends ColumnVector {
 
   @Override
   public int getInt(int rowId) {
-    if (type == CHTypeNumber.CHTypeUInt8.instance) {
+    if (type == CHTypeDate.instance) {
+      return column.getShort(rowId);
+    } else if (type == CHTypeMyDate.instance) {
+      return (int) column.getLong(rowId);
+    } else if (type == CHTypeNumber.CHTypeUInt8.instance) {
       // CHTypeUInt8 -> Spark IntegerType
       return column.getByte(rowId) & 0x0FF;
       // CHTypeUInt16 -> Spark IntegerType
@@ -102,7 +102,7 @@ public class CHColumnVector extends ColumnVector {
   public long getLong(int rowId) {
     if (type == CHTypeDateTime.instance) {
       // Spark store Timestamp as microseconds, while ClickHosue as seconds.
-      return column.getLong(rowId) * 1000 * 1000;
+      return (long) column.getInt(rowId) * 1000 * 1000;
     } else if (type == CHTypeNumber.CHTypeUInt32.instance) {
       // CHTypeUInt32 -> Spark LongType
       return column.getInt(rowId) & 0x0FFFF_FFFFL;
