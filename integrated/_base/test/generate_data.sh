@@ -5,7 +5,7 @@ function download_dbgen()
 	local dbgen_url="${1}"
 	local dbgen_bin_dir="${2}"
 	if [ -z "${dbgen_url}" ] || [ -z "${dbgen_bin_dir}" ]; then
-		echo "[func download_dbgen] usage: <func> dbgen_url dbgen_bin_dir"
+		echo "[func download_dbgen] usage: <func> dbgen_url dbgen_bin_dir" >&2
 		return 1
 	fi
 	mkdir -p "${dbgen_bin_dir}"
@@ -24,7 +24,7 @@ function table_to_arguments()
 {
 	local table="${1}"
 	if [ -z "${table}" ]; then
-		echo "[func table_to_arguments] usage: <func> table_name"
+		echo "[func table_to_arguments] usage: <func> table_name" >&2
 		return 1
 	fi
 	if [ "${table}" == "lineitem" ]; then
@@ -62,10 +62,11 @@ function generate_tpch_data_to_dir()
 	local table="${4}"
 	local blocks="${5}"
 	if [ -z "${dbgen_bin_dir}" ] || [ -z "${data_dir}" ] || [ -z "${scale}" ] || [ -z "${table}" ] || [ -z "${blocks}" ]; then
-		echo "[func generate_tpch_data_to_dir] usage: <func> dbgen_bin_dir data_dir scale table blocks"
+		echo "[func generate_tpch_data_to_dir] usage: <func> dbgen_bin_dir data_dir scale table blocks" >&2
 		return 1
 	fi
 
+	# TODO: BUG: no data generated when blocks = 1
 	mkdir -p "${data_dir}"
 	(
 		cd "${data_dir}"
@@ -89,14 +90,13 @@ function generate_tpch_data()
 	local dists_dss_url="${7}"
 
 	if [ -z "${dbgen_url}" ] || [ -z "${dbgen_bin_dir}" ] || [ -z "${data_dir}" ] || [ -z "${scale}" ] || [ -z "${table}" ] || [ -z "${blocks}" ] || [ -z "${dists_dss_url}" ]; then
-		echo "[func generate_tpch_data] usage: <func> dbgen_url dbgen_bin_dir data_dir scale table blocks dists_dss_url"
+		echo "[func generate_tpch_data] usage: <func> dbgen_url dbgen_bin_dir data_dir scale table blocks dists_dss_url" >&2
 		return 1
 	fi
 
 	download_dbgen "${dbgen_url}" "${dbgen_bin_dir}"
 
 	if [ -d "${data_dir}" ]; then
-		echo "data dir ${data_dir} exists."
 		return 0
 	fi
 
@@ -108,7 +108,7 @@ function generate_tpch_data()
 	generate_tpch_data_to_dir "${dbgen_bin_dir}" "${temp_data_dir}" "${scale}" "${table}" "${blocks}"
 	local data_file_count=`ls "${temp_data_dir}" | { grep "${table}" || test $? = 1; } | wc -l`
 	if [ "${data_file_count}" <= 0 ]; then
-		echo "[func generate_tpch_data] generate data file failed"
+		echo "[func generate_tpch_data] generate data file failed" >&2
 		return 1
 	fi
 	mv "${temp_data_dir}" "${data_dir}"

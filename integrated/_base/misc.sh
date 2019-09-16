@@ -40,7 +40,7 @@ function get_value()
 		return 1
 	fi
 
-	local value=`cat "${file}" | { grep "${key}" || test $? = 1; } | awk '{print $2}'`
+	local value=`cat "${file}" | { grep "^${key}\b" || test $? = 1; } | awk '{print $2}'`
 	if [ -z "${value}" ]; then
 		return 1
 	fi

@@ -310,8 +310,7 @@ def render_pds(res, conf, hosts, indexes):
         print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster cluster_id'
         print ssh + 'pd_run "%s" \\' % pd.dir
         print '\t"%s" \\' % conf_templ_dir
-        print '\t"%s" "%s" "%s" "%s" \\' % (pd.ports, pd.host, pd.pd_name, cluster)
-        print '\t ${id}'
+        print '\t"%s" "%s" "%s" "%s" "${id}"' % (pd.ports, pd.host, pd.pd_name, cluster)
 
 def render_tikvs(res, conf, hosts, indexes):
     for i in range(0, len(res.tikvs)):
@@ -336,8 +335,7 @@ def render_tikvs(res, conf, hosts, indexes):
         print ssh + 'tikv_run "%s" \\' % tikv.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = tikv.pd or ','.join(res.pd_addr)
-        print '\t"%s" "%s" "%s" \\' % (pd_addr, tikv.host, tikv.ports)
-        print '\t ${id}'
+        print '\t"%s" "%s" "%s" "${id}"' % (pd_addr, tikv.host, tikv.ports)
 
 def render_tidbs(res, conf, hosts, indexes):
     for i in range(0, len(res.tidbs)):
@@ -362,8 +360,7 @@ def render_tidbs(res, conf, hosts, indexes):
         print ssh + 'tidb_run "%s" \\' % tidb.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = tidb.pd or ','.join(res.pd_addr)
-        print '\t"%s" "%s" "%s" \\' % (pd_addr, tidb.host, tidb.ports)
-        print '\t ${id}'
+        print '\t"%s" "%s" "%s" "${id}"' % (pd_addr, tidb.host, tidb.ports)
 
 def render_tiflashs(res, conf, hosts, indexes):
     if len(res.tiflashs) == 0:
@@ -401,8 +398,9 @@ def render_tiflashs(res, conf, hosts, indexes):
             print (ssh + 'tiflash_run "%s" \\') % tiflash.dir
             print '\t"%s" \\' % conf_templ_dir
             pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
-            print '\t"true" "%s" "%s" "%s" \\' % (pd_addr, tiflash.ports, tiflash.host)
-            print '\t ${id}'
+            print '\t"true" "%s" "%s" "%s" "${id}"' % (pd_addr, tiflash.ports, tiflash.host)
+            # TODO: remove this
+            print 'sleep 2'
 
         if tiflash.is_local():
             print_cp_bin(tiflash, conf)
@@ -463,8 +461,7 @@ def render_rngines(res, conf, hosts, indexes):
         print ssh + 'rngine_run "%s" \\' % rngine.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = rngine.pd or ','.join(res.pd_addr)
-        print '\t"%s" "${tiflash_addr}" "%s" "%s" \\' % (pd_addr, rngine.host, rngine.ports)
-        print '\t ${id}'
+        print '\t"%s" "${tiflash_addr}" "%s" "%s" "${id}"' % (pd_addr, rngine.host, rngine.ports)
 
 def render_spark_master(res, conf, hosts, indexes):
     spark_master = res.spark_master
@@ -484,8 +481,7 @@ def render_spark_master(res, conf, hosts, indexes):
         print '# spark_master_run dir conf_templ_dir pd_addr tiflash_addr ports_delta listen_host cluster_id'
         print (ssh + 'spark_master_run "%s" \\') % spark_master.dir
         print '\t"%s" "%s" "%s" \\' % (conf_templ_dir, ",".join(res.pd_addr), ",".join(tiflash_addr))
-        print '\t "%s" "%s" \\' % (spark_master.ports, spark_master.host)
-        print '\t ${id}'
+        print '\t "%s" "%s" "${id}"' % (spark_master.ports, spark_master.host)
 
     if spark_master.is_local():
         print_cp_bin(spark_master, conf)
@@ -521,8 +517,7 @@ def render_spark_workers(res, conf, hosts, indexes):
             print '# spark_worker_run dir conf_templ_dir pd_addr tiflash_addr spark_master_addr ports_delta listen_host cores memory cluster_id'
             print (ssh + 'spark_worker_run "%s" \\') % spark_worker.dir
             print '\t"%s" "%s" "%s" "%s" \\' % (conf_templ_dir, ",".join(res.pd_addr), ",".join(tiflash_addr), spark_master_addr)
-            print '\t"%s" "%s" "%s" "%s" \\' % (spark_worker.ports, spark_worker.host, spark_worker.cores, spark_worker.mem)
-            print '\t ${id}'
+            print '\t"%s" "%s" "%s" "%s" "${id}"' % (spark_worker.ports, spark_worker.host, spark_worker.cores, spark_worker.mem)
 
         if spark_worker.is_local():
             print_cp_bin(spark_worker, conf)
