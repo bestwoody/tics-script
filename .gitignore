@@ -79,6 +79,7 @@ benchmark/metastore_db
 .idea
 *.iml
 *.swp
+*.tmp
 tags
 .clang-format
 

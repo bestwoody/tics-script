@@ -1,0 +1,6 @@
+#!/bin/bash
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+test_cluster_burn 46
