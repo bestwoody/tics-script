@@ -37,17 +37,17 @@ function kp_mon_report
 
 	local width="${2}"
 
-	local logs=`tail -n 9999 "${log}" | grep -v 'RUNNING'`
+	local logs=`tail -n 9999 "${log}" | { grep -v 'RUNNING' || test $? = 1; }`
 
 	kp_file_iter "${file}" | while read line; do
-		local last_msg=`echo "${logs}" | grep "${line}" | tail -n 1 | grep 'ERROR'`
+		local last_msg=`echo "${logs}" | { grep "${line}" || test $? = 1; } | tail -n 1 | { grep 'ERROR' || test $? = 1; }`
 		if [ ! -z "${last_msg}" ]; then
 			echo "${last_msg}"
 		fi
 	done
 
 	local random=`yes '-' | head -n 999`
-	local lines=`cat "${log}" | grep 'START\|RUNNING\|ERROR\|STOP\|WARNING' | tail -n 999`
+	local lines=`cat "${log}" | { grep 'START\|RUNNING\|ERROR\|STOP\|WARNING' || test $? = 1; } | tail -n 999`
 	echo -e "${random}\n${lines}" | \
 		awk '{if ($3 == "START") print "\033[32m+\033[0m"; else if ($3 == "WARNING") print "\033[33m~\033[0m"; else if ($3 == "RUNNING") print "\033[32m-\033[0m"; else if ($3 == "ERROR") print "\033[31mE\033[0m"; else if ($3 == "STOP") print "\033[35m!\033[0m"; else print "-"}' | tail -n "${width}" | \
 		tr "\n" ' ' | sed 's/ //g' | awk '{print "\033[32m<<\033[0m"$0}'
@@ -88,7 +88,13 @@ function cmd_kp()
 	fi
 
 	local file_abs=`abs_path "${file}"`
-	local mon_pid=`_kp_file_pid ${file_abs}.mon`
+
+	local mon_pid=`_kp_file_pid "${file_abs}.mon"`
+	local is_running=`_kp_file_proc_exists "${file_abs}.mon"`
+	if [ "${is_running}" == 'true' ] && [ -z "${mon_pid}" ]; then
+		echo "[func cmd_kp] error: pid detecting failed: '${file_abs}.mon'"
+		return 1
+	fi
 
 	if [ "${cmd}" == 'run' ]; then
 		if [ ! -z "${mon_pid}" ]; then
@@ -97,7 +103,9 @@ function cmd_kp()
 		else
 			echo "# This file is generated" >"${file_abs}.mon"
 			echo "source \"${integrated}/_env.sh\"" >>"${file_abs}.mon"
+			echo 'auto_error_handle' >>"${file_abs}.mon"
 			echo "kp_file_run \"${file_abs}\"" >>"${file_abs}.mon"
+			chmod +x "${file_abs}.mon"
 			nohup bash "${integrated}"/_base/call_func.sh \
 				keep_script_running "${file_abs}.mon" 'false' '' 10 10 >/dev/null 2>&1 &
 			echo "=> [^__^] ${file_abs}"
@@ -147,7 +155,11 @@ function cmd_kp()
 	elif [ "${cmd}" == 'list' ]; then
 		kp_file_iter "${file}"
 	elif [ "${cmd}" == 'watch' ]; then
-		kp_file_watch "${file}" "${@}"
+		if [ -z "${1+x}" ]; then
+			kp_file_watch "${file}"
+		else
+			kp_file_watch "${file}" "${@}"
+		fi
 	elif [ "${cmd}" == 'clean' ]; then
 		rm -f "${file}.mon"
 		rm -f "${file}.log"

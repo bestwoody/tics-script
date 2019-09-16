@@ -16,7 +16,7 @@ function get_mod_ver()
 		local ti_file_args="${3}"
 	fi
 	local ver=`cmd_ti -k "${args}" -m "${mod}" "${ti_file}" ver ver | awk '{print "mod:"$1",ver:"$2}'`
-	local failed=`echo "${ver}" | grep 'unknown'`
+	local failed=`echo "${ver}" | { grep 'unknown' || test $? = 1; }`
 	if [ ! -z "${failed}" ]; then
 		return 1
 	fi

@@ -13,7 +13,7 @@ function print_proc_cnt()
 		local str2="${2}"
 	fi
 
-	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v 'grep'`
+	local processes=`ps -ef | { grep "${find_str}" || test $? = 1; } | { grep "${str2}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }`
 	if [ -z "${processes}" ]; then
 		echo "0"
 	else
@@ -35,7 +35,7 @@ function print_pid()
 		local str2="${2}"
 	fi
 
-	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v 'grep'`
+	local processes=`ps -ef | { grep "${find_str}" || test $? = 1; } | { grep "${str2}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }`
 	if [ -z "${processes}" ]; then
 		return 1
 	fi
@@ -148,7 +148,7 @@ function print_root_pids()
 		local dump="${3}"
 	fi
 
-	local processes=`ps -ef | grep "${find_str}" | grep "${str2}" | grep -v 'grep'`
+	local processes=`ps -ef | { grep "${find_str}" || test $? = 1; } | { grep "${str2}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }`
 	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
 	local result=`echo "${processes}" | awk '{print $2, $3}' | python "${here}/print_root_pid.py"`
 	if [ "${dump}" == 'true' ] && [ ! -z "${result}" ]; then

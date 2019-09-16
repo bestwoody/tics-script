@@ -40,7 +40,7 @@ function cmd_ti_log()
 		return
 	fi
 
-	cat "${log_file}" | grep -i "${grep_str}" | tail -n "${cnt}" | awk '{print "['${mod_name}' #'${index}' '${dir}'] "$0}'
+	cat "${log_file}" | { grep -i "${grep_str}" || test $? = 1; } | tail -n "${cnt}" | awk '{print "['${mod_name}' #'${index}' '${dir}'] "$0}'
 }
 
 cmd_ti_log "${@}"

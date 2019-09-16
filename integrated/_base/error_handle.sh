@@ -14,12 +14,12 @@ export -f auto_error_handle
 function restore_error_handle_flags()
 {
 	local flags="$1"
-	if [ ! -z "`echo ${flags} | grep 'e'`" ]; then
+	if [ ! -z "`echo ${flags} | { grep 'e' || test $? = 1; }`" ]; then
 		set -e
 	else
 		set +e
 	fi
-	if [ ! -z "`echo ${flags} | grep 'u'`" ]; then
+	if [ ! -z "`echo ${flags} | { grep 'u' || test $? = 1; }`" ]; then
 		set -u
 	else
 		set +u

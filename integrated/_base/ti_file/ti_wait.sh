@@ -61,8 +61,8 @@ function wait_for_tidb()
 		return 1
 	fi
 
-	local host=`cat "${tidb_info}" | grep 'advertise_host' | awk -F '\t' '{print $2}'`
-	local port=`cat "${tidb_info}" | grep 'tidb_port' | awk -F '\t' '{print $2}'`
+	local host=`cat "${tidb_info}" | { grep 'advertise_host' || test $? = 1; } | awk -F '\t' '{print $2}'`
+	local port=`cat "${tidb_info}" | { grep 'tidb_port' || test $? = 1; } | awk -F '\t' '{print $2}'`
 
 	wait_for_mysql "${host}" "${port}" "${timeout}" "${tidb_dir}"
 }
@@ -229,8 +229,8 @@ function wait_for_tiflash_local()
 		return 1
 	fi
 
-	local host=`cat "${tiflash_info}" | grep 'listen_host' | awk -F '\t' '{print $2}'`
-	local port=`cat "${tiflash_info}" | grep 'raft_port' | awk -F '\t' '{print $2}'`
+	local host=`cat "${tiflash_info}" | { grep 'listen_host' || test $? = 1; } | awk -F '\t' '{print $2}'`
+	local port=`cat "${tiflash_info}" | { grep 'raft_port' || test $? = 1; } | awk -F '\t' '{print $2}'`
 
 	wait_for_tiflash "${host}" "${port}" "${timeout}" "${tiflash_dir}"
 }

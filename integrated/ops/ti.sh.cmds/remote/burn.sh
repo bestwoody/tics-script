@@ -20,7 +20,7 @@ function cmd_ti_burn()
 	if [ "${doit}" == "doit" ]; then
 		while true; do
 			local up_status=`ti_file_mod_status "${dir}" "${conf_rel_path}"`
-			local ok=`echo "${up_status}" | grep ^OK`
+			local ok=`echo "${up_status}" | { grep ^OK || test $? = 1; }`
 			if [ ! -z "${ok}" ]; then
 				ti_file_cmd_fstop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}"
 			else

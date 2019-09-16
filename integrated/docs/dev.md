@@ -36,3 +36,5 @@ source `cd $(dirname ${BASH_SOURCE[0]}) && pwd`/../_env.sh
     * Use `"local args=`("${@}")`"` to store args as args, notice it embrace by '"'
 * Wrap all codes in functions as many as possible, use local when defining a var in a function.
 * Aways check the result of `\`...\`` or `$((...))` or other methods lauching sub-processes, it may(I don't know why) fail and `-e` can't catch the exception
+* Be carefull with `grep`, it returns 1 when no line matchs
+    * Use `ps -ef | grep bar | { grep -v grep || true; }` instead of `ps -ef | grep bar | grep -v grep`, this works when `-e` and `-o pipefail`

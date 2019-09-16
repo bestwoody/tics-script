@@ -15,7 +15,7 @@ function ti_file_mod_stop()
 
 	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
 	local up_status=`echo ${up_status}`
-	local ok=`echo "${up_status}" | grep ^OK`
+	local ok=`echo "${up_status}" | { grep ^OK || test $? = 1; }`
 	if [ -z "${ok}" ]; then
 		echo "=> skipped. ${name} #${index} (${dir}) ${up_status}"
 		return
@@ -46,7 +46,7 @@ function ti_file_mod_stop()
 	fi
 
 	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
-	local ok=`echo "${up_status}" | grep ^OK`
+	local ok=`echo "${up_status}" | { grep ^OK || test $? = 1; }`
 	if [ ! -z "${ok}" ]; then
 		echo "failed.. ${name} #${index} (${dir}) ${up_status}"
 		return 1
@@ -62,6 +62,6 @@ export -f ti_file_cmd_stop
 
 function ti_file_cmd_fstop()
 {
-	ti_file_mod_stop "${1}" "${2}" "${3}" "${4}" 'true' | grep -v 'closing'
+	ti_file_mod_stop "${1}" "${2}" "${3}" "${4}" 'true' | { grep -v 'closing' || test $? = 1; }
 }
 export -f ti_file_cmd_fstop

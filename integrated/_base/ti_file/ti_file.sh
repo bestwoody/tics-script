@@ -7,8 +7,8 @@ function get_tiflash_addr_from_dir()
 		return 1
 	fi
 	local dir="${1}"
-	local host=`grep 'listen_host' "${dir}/proc.info" | awk -F '\t' '{print $2}'`
-	local port=`grep 'raft_port' "${dir}/proc.info" | awk -F '\t' '{print $2}'`
+	local host=`cat "${dir}/proc.info" | { grep 'listen_host' || test $? = 1; } | awk -F '\t' '{print $2}'`
+	local port=`cat "${dir}/proc.info" | { grep 'raft_port' || test $? = 1; } | awk -F '\t' '{print $2}'`
 	echo "${host}:${port}"
 }
 export -f get_tiflash_addr_from_dir

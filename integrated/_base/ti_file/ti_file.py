@@ -421,7 +421,7 @@ def render_rngines(res, conf, hosts, indexes):
                 print 'wait_for_tiflash_local "%s"' % tiflash.dir
             else:
                 bins_dir = conf.cache_dir + '/master/bins'
-                print 'wait_for_tiflash_by_host "%s" "%s" 180 %s %s' % (tiflash.host, tiflash.ports, bins_dir, conf.integrated_dir + '/conf/default.ports')
+                print 'wait_for_tiflash_by_host "%s" "%s" 180 %s' % (tiflash.host, tiflash.ports, conf.integrated_dir + '/conf/default.ports')
 
     for i in range(0, len(res.rngines)):
         rngine = res.rngines[i]
@@ -457,9 +457,6 @@ def render_rngines(res, conf, hosts, indexes):
         if len(tiflash_host) == 0:
             print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % tiflash_dir
         else:
-            print '# ' + str(tiflash_addr)
-            print '# ' + tiflash_host
-            print '# ' + tiflash_dir
             get_addr_cmd = 'tiflash_addr="`call_remote_func_raw "%s" "%s" get_tiflash_addr_from_dir %s`"'
             env_dir = conf.cache_dir + '/worker/integrated'
             print get_addr_cmd % (tiflash_host, env_dir, tiflash_dir)

@@ -2,7 +2,7 @@
 
 function func_exists()
 {
-	local has=`LC_ALL=C type ${1} 2>/dev/null | grep 'is a function'`
+	local has=`LC_ALL=C type ${1} 2>/dev/null | { grep 'is a function' || test $? = 1; }`
 	if [ -z "${has}" ]; then
 		echo 'false'
 	else
@@ -40,7 +40,7 @@ function get_value()
 		return 1
 	fi
 
-	local value=`grep "${key}" "${file}" | awk '{print $2}'`
+	local value=`cat "${file}" | { grep "${key}" || test $? = 1; } | awk '{print $2}'`
 	if [ -z "${value}" ]; then
 		return 1
 	fi

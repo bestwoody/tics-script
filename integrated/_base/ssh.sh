@@ -19,7 +19,7 @@ function ssh_ping()
 		return 1
 	fi
 	local host="${1}"
-	local result=`ssh_exe "${host}" "echo \"hello\"" 2>/dev/null | grep 'hello'`
+	local result=`ssh_exe "${host}" "echo \"hello\"" 2>/dev/null | { grep 'hello' || test $? = 1; }`
 	if [ -z "${result}" ]; then
 		echo "[func ssh_ping] can't login to '${host}' by default auth" >&2
 		return 1

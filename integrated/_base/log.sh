@@ -30,7 +30,7 @@ function wait_for_log()
 			sleep 1
 			continue
 		fi
-		local found=`tail -n +${from_line_tail} "${file}" | grep -n "${str}" | head -n 1`
+		local found=`tail -n +${from_line_tail} "${file}" | { grep -n "${str}" || test $? = 1; } | head -n 1`
 		if [ -z "${found}" ]; then
 			sleep 1
 			continue

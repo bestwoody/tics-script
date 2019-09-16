@@ -28,35 +28,35 @@ function cmd_ti_ver()
 		if [ ! -f "${dir}/pd-server" ]; then
 			local res='MISSED'
 		else
-			local res=`"${dir}"/pd-server --version | grep "${grep_str}"`
+			local res=`"${dir}"/pd-server --version | { grep "${grep_str}" || test $? = 1; }`
 		fi
 	elif [ "${mod_name}" == 'tikv' ]; then
 		if [ ! -f "${dir}/tikv-server" ]; then
 			local res='MISSED'
 		else
-			local res=`"${dir}"/tikv-server --version | grep -v "^TiKV" | grep "${grep_str}"`
+			local res=`"${dir}"/tikv-server --version | { grep -v "^TiKV" || test $? = 1; } | { grep "${grep_str}" || test $? = 1; }`
 		fi
 	elif [ "${mod_name}" == 'tidb' ]; then
 		if [ ! -f "${dir}/tidb-server" ]; then
 			local res='MISSED'
 		else
-			local res=`"${dir}"/tidb-server -V | grep "${grep_str}"`
+			local res=`"${dir}"/tidb-server -V | { grep "${grep_str}" || test $? = 1; }`
 		fi
 	elif [ "${mod_name}" == 'tiflash' ]; then
 		if [ ! -f "${dir}/log/server.log" ]; then
 			local res='MISSED'
 		else
-			local res=`tail -n 99999 "${dir}"/log/server.log | grep 'TiFlash' | tail -n 1 | awk -F 'TiFlash version: TiFlash ' '{print $2}'`
+			local res=`tail -n 99999 "${dir}"/log/server.log | { grep 'TiFlash' || test $? = 1; } | tail -n 1 | awk -F 'TiFlash version: TiFlash ' '{print $2}'`
 			local ver=`echo "${res}" | awk '{print $1}'`
 			local git_hash=`echo "${res}" | awk '{print $2}'`
 			local git_hash="${git_hash#HEAD-}"
-			local res=`echo -e "Release Version:   ${ver}\nGit Commit Hash:   ${git_hash}" | grep "${grep_str}"`
+			local res=`echo -e "Release Version:   ${ver}\nGit Commit Hash:   ${git_hash}" | { grep "${grep_str}" || test $? = 1; }`
 		fi
 	elif [ "${mod_name}" == 'rngine' ]; then
 		if [ ! -f "${dir}/tikv-server-rngine" ]; then
 			local res='MISSED'
 		else
-			local res=`"${dir}"/tikv-server-rngine --version | grep "${grep_str}"`
+			local res=`"${dir}"/tikv-server-rngine --version | { grep "${grep_str}" || test $? = 1; }`
 		fi
 	else
 		local res="TODO: get ${mod_name} version"

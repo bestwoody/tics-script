@@ -106,7 +106,7 @@ function generate_tpch_data()
 		wget --quiet -nd "${dists_dss_url}" -O "${temp_data_dir}/dists.dss"
 	fi
 	generate_tpch_data_to_dir "${dbgen_bin_dir}" "${temp_data_dir}" "${scale}" "${table}" "${blocks}"
-	local data_file_count=`ls "${temp_data_dir}" | grep "${table}" | wc -l`
+	local data_file_count=`ls "${temp_data_dir}" | { grep "${table}" || test $? = 1; } | wc -l`
 	if [ "${data_file_count}" <= 0 ]; then
 		echo "[func generate_tpch_data] generate data file failed"
 		return 1

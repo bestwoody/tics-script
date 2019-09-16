@@ -9,7 +9,7 @@ function get_bin_md5_from_conf()
 	local name="${1}"
 	local bin_urls_file="${2}"
 
-	local entry_str=`grep "^${name}\b" "${bin_urls_file}"`
+	local entry_str=`cat "${bin_urls_file}" | { grep "^${name}\b" || test $? = 1; }`
 	if [ ! -z "$entry_str" ]; then
 		echo "${entry_str}" | awk '{print $2}'
 	fi
@@ -27,10 +27,10 @@ function get_bin_name_from_conf()
 	local bin_paths_file="${2}"
 	local bin_urls_file="${3}"
 
-	local entry_str=`grep "^${name}\b" "${bin_paths_file}"`
+	local entry_str=`cat "${bin_paths_file}" | { grep "^${name}\b" || test $? = 1; }`
 	local bin_name=`echo "${entry_str}" | awk '{print $2}'`
 	if [ -z "${bin_name}" ]; then
-		local entry_str=`grep "^${name}\b" "${bin_urls_file}"`
+		local entry_str=`cat "${bin_urls_file}" | { grep "^${name}\b" || test $? = 1; }`
 		local bin_name=`echo "${entry_str}" | awk '{print $3}'`
 		if [ -z "${bin_name}" ]; then
 			echo "[func get_bin_name_from_conf] ${name} not found in ${bin_paths_file} or in ${bin_urls_file}" >&2
@@ -53,7 +53,7 @@ function cp_bin_to_dir_from_paths()
 	local dest_dir="${2}"
 	local bin_paths_file="${3}"
 
-	local entry_str=`grep "^${name}\b" "${bin_paths_file}"`
+	local entry_str=`cat "${bin_paths_file}" | { grep "^${name}\b" || test $? = 1; }`
 
 	local bin_name=`echo "${entry_str}" | awk '{print $2}'`
 	local paths_str=`echo "${entry_str}" | awk '{print $3}'`
@@ -88,7 +88,7 @@ function cp_bin_to_dir_from_urls()
 	local bin_urls_file="${3}"
 	local cache_dir="${4}"
 
-	local entry_str=`grep "^${name}\b" "${bin_urls_file}"`
+	local entry_str=`cat "${bin_urls_file}" | { grep "^${name}\b" || test $? = 1; }`
 	if [ -z "$entry_str" ]; then
 		echo "[func cp_bin_to_dir] ${name} not found in ${bin_paths_file} or in ${bin_urls_file}" >&2
 		return 1
@@ -137,8 +137,8 @@ function cp_bin_to_dir_from_urls()
 	fi
 
 	local download_ext="`print_file_ext "${download_name}"`"
-	local download_is_tar=`echo "${download_name}" | grep '.tar.gz'`
-	local download_is_tgz=`echo "${download_name}" | grep '.tgz$'`
+	local download_is_tar=`echo "${download_name}" | { grep '.tar.gz' || test $? = 1; }`
+	local download_is_tgz=`echo "${download_name}" | { grep '.tgz$' || test $? = 1; }`
 
 	if [ ! -z "${download_is_tar}" ]; then
 		local target_tmp_path="${cache_dir}/${bin_name}.`date +%s`.${RANDOM}"

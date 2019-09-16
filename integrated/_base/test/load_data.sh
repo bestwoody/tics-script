@@ -14,7 +14,7 @@ function load_tpch_data_to_mysql()
 	local db="${5}"
 	local table="${6}"
 
-	local blocks=`ls "${data_dir}" | grep "${table}" | wc -l`
+	local blocks=`ls "${data_dir}" | { grep "${table}" || test $? = 1; } | wc -l`
 
 	local create_table_stmt=`cat "${schema_dir}/${table}.ddl" | tr -s "\n" " "`
 	mysql -u root -P "${mysql_port}" -h "${mysql_host}" -e "CREATE DATABASE IF NOT EXISTS ${db}"

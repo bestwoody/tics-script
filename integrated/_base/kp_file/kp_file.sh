@@ -1,5 +1,23 @@
 #!/bin/bash
 
+function _kp_file_proc_exists()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func _kp_file_proc_exists] usage: <func> kp_file" >&2
+		return 1
+	fi
+
+	local file="${1}"
+	local find_str="keep_script_running ${file}"
+	local processes=`ps -ef | { grep "${find_str}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }`
+	if [ -z "${processes}" ]; then
+		echo 'false'
+	else
+		echo 'true'
+	fi
+}
+export -f _kp_file_proc_exists
+
 function _kp_file_pid()
 {
 	if [ -z "${1+x}" ]; then
@@ -116,7 +134,7 @@ function _kp_iter()
 		abs_path "${path}"
 	elif [ -d "${path}" ]; then
 		for file in "${path}"/*; do
-			local ignored=`echo "${ignoreds}" | grep "${file}"`
+			local ignored=`echo "${ignoreds}" | { grep "${file}" || test $? = 1; }`
 			if [ ! -z "${ignored}" ] && [ "${ignored}" == "!${file}" ]; then
 				continue
 			fi
@@ -147,7 +165,7 @@ function kp_file_iter()
 	local rendered="/tmp/kp_file_iter.rendered.`date +%s`.${RANDOM}"
 	rm -f "${rendered}"
 
-	local lines=`cat "${file_abs}" | grep -v '^#' | grep -v '^$'`
+	local lines=`cat "${file_abs}" | { grep -v '^#' || test $? = 1; } | { grep -v '^$' || test $? = 1; }`
 	local uniq_lines=`echo "${lines}" | sort | uniq`
 	local lines_cnt=`echo "${lines}" | wc -l | awk '{print $1}'`
 	local uniq_cnt=`echo "${uniq_lines}" | wc -l | awk '{print $1}'`
@@ -172,8 +190,8 @@ function kp_file_iter()
 		echo "${line}" >> "${rendered}"
 	done
 
-	local ignoreds=`grep '^!' "${rendered}" | sort | uniq`
-	cat "${rendered}" | grep -v '^!' | while read line; do
+	local ignoreds=`cat "${rendered}" | { grep '^!' || test $? = 1; } | sort | uniq`
+	cat "${rendered}" | { grep -v '^!' || test $? = 1; } | while read line; do
 		_kp_iter "${line}" "${ignoreds}"
 	done
 
@@ -191,14 +209,14 @@ function kp_file_run()
 	local file="${1}"
 	local file_dir=$(dirname `abs_path "${file}"`)
 
-	grep '^!' "${file}" | sort | uniq | while read line; do
+	cat "${file}" | { grep '^!' || test $? = 1; } | sort | uniq | while read line; do
 		if [ "${line:0:1}" != '/' ]; then
 			local line="${file_dir}/${line:1}"
 		else
 			local line="${line:1}"
 		fi
 		local result=`kp_sh_stop "${line}"`
-		local skipped=`echo "${result}" | grep 'skipped'`
+		local skipped=`echo "${result}" | { grep 'skipped' || test $? = 1; }`
 		if [ -z "${skipped}" ]; then
 			echo "[`date +'%D %T'`] STOP ${line}" >> "${file}.log"
 		fi
@@ -218,9 +236,14 @@ function kp_file_run()
 				echo "   error: multi instance"
 			fi
 		else
-			nohup bash "${integrated}"/_base/call_func.sh \
-				keep_script_running "${line}" 'true' '' 9 1 2 3 4 8 16 32 >> "${file}.log" 2>&1 &
-			echo "   starting"
+			local is_running=`_kp_file_proc_exists "${line}"`
+			if [ "${is_running}" == 'false' ]; then
+				nohup bash "${integrated}"/_base/call_func.sh \
+					keep_script_running "${line}" 'true' '' 9 1 2 3 4 8 16 32 >> "${file}.log" 2>&1 &
+				echo "   starting"
+			else
+				echo "   error: pid detecting failed: '${line}'"
+			fi
 		fi
 	done
 }
@@ -260,7 +283,7 @@ function kp_sh_stop()
 	for ((i = 0; i < 99; i++)); do
 		echo "${pids}" | while read pid; do
 			kill "${pid}" 2>/dev/null
-			local killed=`ps -p "${pid}" | grep -v 'TTY'`
+			local killed=`ps -p "${pid}" | { grep -v 'TTY' || test $? = 1; }`
 			if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
 				echo "   stopped ${pid}"
 			fi
@@ -274,13 +297,13 @@ function kp_sh_stop()
 	done
 
 	for ((i = 0; i < 99; i++)); do
-		local pids=`ps -ef | grep "bash ${file}" | grep -v 'grep' | head -n 1 | awk '{print $2}'`
+		local pids=`ps -ef | { grep "bash ${file}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; } | head -n 1 | awk '{print $2}'`
 		if [ -z "${pids}" ]; then
 			break
 		fi
 		echo "${pids}" | while read pid; do
 			kill "${pid}" 2>/dev/null
-			local killed=`ps -p "${pid}" | grep -v 'TTY'`
+			local killed=`ps -p "${pid}" | { grep -v 'TTY' || test $? = 1; }`
 			if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
 				echo "   stopped ${pid}"
 			fi
@@ -312,7 +335,7 @@ function kp_file_stop()
 	set +e
 	kp_file_iter "${file}" | while read line; do
 		local result=`kp_sh_stop "${line}"`
-		local skipped=`echo "${result}" | grep 'skipped'`
+		local skipped=`echo "${result}" | { grep 'skipped' || test $? = 1; }`
 		if [ -z "${skipped}" ]; then
 			echo "[`date +'%D %T'`] STOP ${line}" >> "${file}.log"
 		fi
@@ -367,14 +390,14 @@ function kp_file_status()
 
 	local log="${file}.log"
 	if [ -f "${log}" ]; then
-		local logs=`tail -n 9999 "${log}" | grep -v 'RUNNING'`
+		local logs=`tail -n 9999 "${log}" | { grep -v 'RUNNING' || test $? = 1; }`
 	else
 		local logs=''
 	fi
 
 	kp_file_iter "${file}" | while read line; do
 		if [ -f "${line}.log" ]; then
-			local start_time=`tail -n 99999 "${line}.log" | grep '!RUN' | tail -n 1 | awk '{print $2}'`
+			local start_time=`tail -n 99999 "${line}.log" | { grep '!RUN' || test $? = 1; } | tail -n 1 | awk '{print $2}'`
 		else
 			local start_time=''
 		fi
@@ -409,7 +432,7 @@ function kp_file_status()
 		fi
 
 		if [ ! -z "${start_time}" ] && [ -f "${line}.err.log" ]; then
-			local stderr=`tail -n 9999 "${line}.err.log" | grep "!RUN ${start_time}" -A 9999 | grep -v '!RUN' | grep -v "${start_time}"`
+			local stderr=`tail -n 9999 "${line}.err.log" | { grep "!RUN ${start_time}" -A 9999 || test $? = 1; } | { grep -v '!RUN' || test $? = 1; } | { grep -v "${start_time}" || test $? = 1; }`
 			if [ ! -z "${stderr}" ]; then
 				local err_cnt=`echo "${stderr}" | wc -l | awk '{print $1}'`
 				if [ "${err_cnt}" -gt '4' ]; then
@@ -418,6 +441,10 @@ function kp_file_status()
 				echo -e '    \033[33m-- stderr --\033[0m'
 				echo "${stderr}" | awk '{print "    \033[33m"$0"\033[0m"}'
 			fi
+		fi
+
+		if [ ! -f "${line}.log" ]; then
+			continue
 		fi
 
 		local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"

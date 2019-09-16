@@ -3,7 +3,7 @@
 function _ti_file_cmd_list()
 {
 	local dir="${1}"
-	ls "${dir}" | grep "sh$" | while read f; do
+	ls "${dir}" | { grep "sh$" || test $? = 1; } | while read f; do
 		echo "    `basename "${f}" .sh`";
 	done
 }
