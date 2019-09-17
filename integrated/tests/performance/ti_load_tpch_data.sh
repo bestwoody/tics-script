@@ -8,9 +8,12 @@ ti="${integrated}/ops/ti.sh"
 ti_file="${integrated}/ti/1_x.ti"
 args="ports=+45#dir=nodes/45"
 
+entry_dir="${BASH_SOURCE[0]}.data"
+mkdir "${entry_dir}"
+
+data="${entry_dir}/data"
+report="${entry_dir}/report"
 title='<cluster load tpch data time>'
-data="${BASH_SOURCE[0]}.data"
-report="${BASH_SOURCE[0]}.report"
 
 schema_dir="${integrated}/resource/tpch/mysql/schema"
 data_dir="${integrated}/resource/tpch/data"

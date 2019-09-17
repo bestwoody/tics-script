@@ -199,14 +199,14 @@ function test_cluster_load_tpch_data()
 {
 	# TODO: args [blocks] [data_dir]
 	if [ -z "${4+x}" ]; then
-		echo "[func test_cluster_load_tpch_data] usage: <func> ports scale log_file vers" >&2
+		echo "[func test_cluster_load_tpch_data] usage: <func> ports scale log_file tags" >&2
 		return 1
 	fi
 
 	local ports="${1}"
 	local scale="${2}"
 	local log="${3}"
-	local vers="${4}"
+	local tags="${4}"
 
 	local tables=(customer lineitem nation orders part region supplier partsupp)
 	local result=''
@@ -218,7 +218,7 @@ function test_cluster_load_tpch_data()
 		else
 			echo "[func tpch_perf] loaded '${table}'"
 		fi
-		echo "${elapsed},${vers}" >> ${log}
+		echo "${elapsed},${tags}" >> ${log}
 	done
 }
 export -f test_cluster_load_tpch_data
@@ -226,14 +226,14 @@ export -f test_cluster_load_tpch_data
 function test_cluster_run_tpch()
 {
 	if [ -z "${4+x}" ]; then
-		echo "[func test_cluster_run_tpch] usage: <func> ports scale log_file vers"  >&2
+		echo "[func test_cluster_run_tpch] usage: <func> ports scale entry_dir tags"  >&2
 		return 1
 	fi
 
 	local ports="${1}"
 	local scale="${2}"
-	local log="${3}"
-	local vers="${4}"
+	local entry_dir="${3}"
+	local tags="${4}"
 
 	local db=`_db_name_from_scale "${scale}"`
 	local queries_dir="${integrated}/resource/tpch/mysql/queries"
@@ -249,6 +249,7 @@ function test_cluster_run_tpch()
 		fi
 	done
 
+	# TODO: remove this, use 'test_cluster_cmd ... mysql'
 	local mysql_host=`test_cluster_cmd "${ports}" '' 'mysql_host'`
 	local mysql_port=`test_cluster_cmd "${ports}" '' 'mysql_port'`
 	if [ -z "${mysql_host}" ] || [ -z "${mysql_port}" ]; then
@@ -257,14 +258,58 @@ function test_cluster_run_tpch()
 	fi
 
 	for ((i = 1; i < 23; ++i)); do
-		echo "=> tpch, scale ${scale}, query #${i}"
+		echo "=> tpch on tidb, scale ${scale}, query #${i}"
 		local start_time=`date +%s`
-		mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" < "${queries_dir}/${i}.sql"
+		mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" < "${queries_dir}/${i}.sql" > "${entry_dir}/tidb.q${i}.result"
 		local end_time=`date +%s`
 		local elapsed="$((end_time - start_time))"
 		local elapsed="${elapsed}	cat:tidb,scale:${scale},query:${i},start_ts:${start_time},end_ts:${end_time}"
-		# TODO: result checkt
-		echo "${elapsed},${vers}" >> "${log}"
+		# TODO: check result
+		echo "${elapsed},${tags}" >> "${entry_dir}/queries.data"
 	done
 }
 export -f test_cluster_run_tpch
+
+function test_cluster_spark_run_tpch()
+{
+	if [ -z "${4+x}" ]; then
+		echo "[func test_cluster_spark_run_tpch] usage: <func> ports scale entry_dir tags"  >&2
+		return 1
+	fi
+
+	local ports="${1}"
+	local scale="${2}"
+	local entry_dir="${3}"
+	local tags="${4}"
+
+	local db=`_db_name_from_scale "${scale}"`
+	local queries_dir="${integrated}/resource/tpch/spark/queries"
+
+	if [ ! -d "${queries_dir}" ]; then
+		echo "[func test_cluster_spark_run_tpch] '${queries_dir}' not a dir" >&2
+		return 1
+	fi
+	for ((i = 1; i < 23; ++i)); do
+		local sql_file="${queries_dir}/q${i}.sql"
+		if [ ! -f "${sql_file}" ]; then
+			echo "[func test_cluster_spark_run_tpch] '${sql_file}' not exists" >&2
+			return 1
+		fi
+		local new_file="${entry_dir}/${i}.sql"
+		echo "use ${db};" > "${new_file}"
+		echo '' >> "${new_file}"
+		cat "${sql_file}" >> "${new_file}"
+	done
+
+	for ((i = 1; i < 23; ++i)); do
+		echo "=> tpch on spark, scale ${scale}, query #${i}"
+		local start_time=`date +%s`
+		test_cluster_cmd "${ports}" '' beeline -f "${entry_dir}/${i}.sql" > "${entry_dir}/spark.q${i}.result"
+		local end_time=`date +%s`
+		local elapsed="$((end_time - start_time))"
+		local elapsed="${elapsed}	cat:spark,scale:${scale},query:${i},start_ts:${start_time},end_ts:${end_time}"
+		# TODO: check result
+		echo "${elapsed},${tags}" >> "${entry_dir}/queries.data"
+	done
+}
+export -f test_cluster_spark_run_tpch

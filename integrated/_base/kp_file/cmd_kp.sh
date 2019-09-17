@@ -164,10 +164,7 @@ function cmd_kp()
 		rm -f "${file}.mon"
 		rm -f "${file}.log"
 		kp_file_iter "${file}" | while read line; do
-			rm -f "${line}.log"
-			rm -f "${line}.err.log"
-			rm -f "${line}.data"
-			rm -f "${line}.report"
+			rm -rf "${line}.data"
 		done
 	else
 		echo "${cmd}: unknow command" >&2

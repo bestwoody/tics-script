@@ -10,15 +10,18 @@ function tpch_perf_report()
 	local test_entry_file="${1}"
 	local scale="${2}"
 
-	local report="${test_entry_file}.report"
+	local entry_dir="${test_entry_file}.data"
+	mkdir -p "${entry_dir}"
+
+	local report="${entry_dir}/report"
 	local title='            '
 
 	echo "<tpch ${scale} loading time>" > "${report}.tmp"
-	to_table "${title}" 'cols:; rows:table|notag; cell:limit(20)|avg|~|duration' 9999 "${test_entry_file}.load.data" >> "${report}.tmp"
+	to_table "${title}" 'cols:; rows:table|notag; cell:limit(20)|avg|~|duration' 9999 "${entry_dir}/load.data" >> "${report}.tmp"
 
 	echo '' >> "${report}.tmp"
 	echo "<tpch ${scale} execute time>" >> "${report}.tmp"
-	to_table "${title}" 'cols:cat|notag; rows:query; cell:limit(20)|avg|~|cnt|duration' 9999 "${test_entry_file}.queries.data" >> "${report}.tmp"
+	to_table "${title}" 'cols:cat,round; rows:query; cell:limit(20)|avg|~|cnt|duration' 9999 "${entry_dir}/queries.data" >> "${report}.tmp"
 
 	mv -f "${report}.tmp" "${report}"
 }
@@ -40,7 +43,9 @@ function tpch_perf()
 		local scale='1'
 	fi
 
-	local report="${test_entry_file}.report"
+	local entry_dir="${test_entry_file}.data"
+	mkdir -p "${entry_dir}"
+	local report="${entry_dir}/report"
 
 	test_cluster_prepare "${ports}" ''
 	local vers=`test_cluster_vers "${ports}"`
@@ -53,12 +58,28 @@ function tpch_perf()
 
 	echo '---'
 
-	test_cluster_load_tpch_data "${ports}" "${scale}" "${test_entry_file}.load.data" "${vers}"
+	test_cluster_load_tpch_data "${ports}" "${scale}" "${entry_dir}/load.data" "${vers}"
 	echo "[func tpch_perf] load tpch data to test cluster done"
 
 	echo '---'
 
-	test_cluster_run_tpch "${ports}" "${scale}" "${test_entry_file}.queries.data" "${vers}"
+	# TODO: remove this
+	test_cluster_cmd "${ports}" '' ch "DBGInvoke refresh_schemas()"
+
+	for ((r = 0; r < 3; ++r)); do
+		echo "=> tidb, round ${r}"
+		test_cluster_run_tpch "${ports}" "${scale}" "${entry_dir}" "round:${r},${vers}"
+		# TODO: calculate sleep-sec with scale
+		sleep 16
+	done
+
+	# TODO: BUG: no data
+	#for ((r = 0; r < 3; ++r)); do
+	#	echo "=> spark, round ${r}"
+	#	test_cluster_spark_run_tpch "${ports}" "${scale}" "${entry_dir}" "round:${r},${vers}"
+		# TODO: calculate sleep-sec with scale
+	#	sleep 16
+	#done
 
 	tpch_perf_report "${test_entry_file}" "${scale}"
 

@@ -61,7 +61,7 @@ function wait_load_data_ready() {
 function check_tiflash_and_tidb_result_consistency() {
 	"${ti}" -k "${args}" "${ti_file}" up
 	local mysql_result=`"${ti}" -k "${args}" "${ti_file}" "mysql" "select count(*) from ${db}.${table}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
-	local beeline_result=`"${ti}" -k "${args}" "${ti_file}" "beeline" "select count(*) from ${db}.${table}" 2>&1 | grep -A 2 "count" | tail -n 1 | awk -F '|' '{ print $2 }' | tr -d ' '`
+	local beeline_result=`"${ti}" -k "${args}" "${ti_file}" "beeline" -e "select count(*) from ${db}.${table}" 2>&1 | grep -A 2 "count" | tail -n 1 | awk -F '|' '{ print $2 }' | tr -d ' '`
 
 	if [ "${mysql_result}" != "${beeline_result}" ]; then
 		echo "mysql_result" ${mysql_result} >&2

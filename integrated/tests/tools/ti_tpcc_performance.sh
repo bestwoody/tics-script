@@ -8,8 +8,11 @@ ti="${integrated}/ops/ti.sh"
 ti_file="${integrated}/ti/1+spark_x.ti"
 args="ports=+33#dir=nodes/33"
 
-data="${BASH_SOURCE[0]}.data"
-report="${BASH_SOURCE[0]}.report"
+entry_dir="${BASH_SOURCE[0]}.data"
+mkdir "${entry_dir}"
+
+data="${entry_dir}/data"
+report="${entry_dir}/report"
 title='<tpcc performance test with/without tiflash>'
 
 function load_tpcc_data() {

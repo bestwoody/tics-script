@@ -44,8 +44,9 @@ function keep_script_running()
 	shift 4
 
 	if [ "${write_log}" == 'true' ]; then
-		local log="${script}.log"
-		local err_log="${script}.err.log"
+		mkdir -p "${script}.data"
+		local log="${script}.data/stdout.log"
+		local err_log="${script}.data/stderr.log"
 	else
 		local log="/dev/null"
 		local err_log="/dev/null"
@@ -317,7 +318,9 @@ function kp_sh_stop()
 	if [ -f "${clear_script}" ]; then
 		local result=`bash "${clear_script}" 2>&1`
 		if [ "$?" != 0 ] || [ ! -z "${result}" ]; then
-			echo "${result}" > "${clear_script}.log"
+			mkdir -p "${file}.data"
+			echo "!STOPPING" >> "${file}.data/term.log"
+			echo "${result}" >> "${file}.data/term.log"
 		fi
 	fi
 }
@@ -354,14 +357,20 @@ function _kp_sh_last_active()
 
 	local file="${1}"
 	local atime='0'
-	if [ -f "${file}.log" ]; then
+	local err_atime='0'
+	if [ -f "${file}.data/stdout.log" ]; then
+		local atime=`file_mtime "${file}.data/stdout.log"`
+	elif [ -f "${file}.log" ]; then
 		local atime=`file_mtime "${file}.log"`
 	fi
-	if [ -f "${file}.err.log" ]; then
+
+	if [ -f "${file}.data/stderr.log" ]; then
+		local err_atime=`file_mtime "${file}.data/stderr.log"`
+	elif [ -f "${file}.err.log" ]; then
 		local err_atime=`file_mtime "${file}.err.log"`
-		if [ ${err_atime} -gt ${atime} ]; then
-			local atime="${err_atime}"
-		fi
+	fi
+	if [ ${err_atime} -gt ${atime} ]; then
+		local atime="${err_atime}"
 	fi
 
 	local now=`date +%s`
@@ -388,16 +397,9 @@ function kp_file_status()
 		return 1
 	fi
 
-	local log="${file}.log"
-	if [ -f "${log}" ]; then
-		local logs=`tail -n 9999 "${log}" | { grep -v 'RUNNING' || test $? = 1; }`
-	else
-		local logs=''
-	fi
-
 	kp_file_iter "${file}" | while read line; do
-		if [ -f "${line}.log" ]; then
-			local start_time=`tail -n 99999 "${line}.log" | { grep '!RUN' || test $? = 1; } | tail -n 1 | awk '{print $2}'`
+		if [ -f "${line}.data/stdout.log" ]; then
+			local start_time=`tail -n 99999 "${line}.data/stdout.log" | { grep '!RUN' || test $? = 1; } | tail -n 1 | awk '{print $2}'`
 		else
 			local start_time=''
 		fi
@@ -427,12 +429,12 @@ function kp_file_status()
 
 		echo -e "${run_status} \033[36m[task] ${line}\033[0m${time_status}"
 
-		if [ -f "${line}.report" ]; then
-			cat "${line}.report" | awk '{print "    "$0}'
+		if [ -f "${line}.data/report" ]; then
+			cat "${line}.data/report" | awk '{print "    "$0}'
 		fi
 
-		if [ ! -z "${start_time}" ] && [ -f "${line}.err.log" ]; then
-			local stderr=`tail -n 9999 "${line}.err.log" | { grep "!RUN ${start_time}" -A 9999 || test $? = 1; } | { grep -v '!RUN' || test $? = 1; } | { grep -v "${start_time}" || test $? = 1; }`
+		if [ ! -z "${start_time}" ] && [ -f "${line}.data/stderr.log" ]; then
+			local stderr=`tail -n 9999 "${line}.data/stderr.log" | { grep "!RUN ${start_time}" -A 9999 || test $? = 1; } | { grep -v '!RUN' || test $? = 1; } | { grep -v "${start_time}" || test $? = 1; }`
 			if [ ! -z "${stderr}" ]; then
 				local err_cnt=`echo "${stderr}" | wc -l | awk '{print $1}'`
 				if [ "${err_cnt}" -gt '4' ]; then
@@ -443,12 +445,12 @@ function kp_file_status()
 			fi
 		fi
 
-		if [ ! -f "${line}.log" ]; then
+		if [ ! -f "${line}.data/stdout.log" ]; then
 			continue
 		fi
 
 		local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
-		python "${here}/kp_log_report.py" "${line}.log" \
+		python "${here}/kp_log_report.py" "${line}.data/stdout.log" \
 			"${line}.err.log" "${width}" 'color' | awk '{print "    \033[32m<<\033[0m"$0}'
 	done
 }

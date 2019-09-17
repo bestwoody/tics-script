@@ -81,7 +81,7 @@ class OpsExecutor:
         ops_cmd = ""
         blank_args = []
         if cmd_type.is_ti_beeline():
-            ops_cmd = "beeline"
+            ops_cmd = "beeline -e"
         elif cmd_type.is_ti_mysql():
             ops_cmd = "mysql"
             blank_args = ['""']
@@ -95,8 +95,8 @@ class OpsExecutor:
             return ""
         query = cmd_arr[0]
         args = map(lambda x: "--" + x.strip(), cmd_arr[1:])
-        return os.popen((self.ti_sh_path + ' -k "' + self.ti_file_args + '" "' + self.ti_file_path + '" "' + ops_cmd
-                         + '" "' + query + '" ' + " ".join(blank_args) + ' ' + " ".join(args)
+        return os.popen((self.ti_sh_path + ' -k "' + self.ti_file_args + '" "' + self.ti_file_path + '" ' + ops_cmd
+                         + ' "' + query + '" ' + " ".join(blank_args) + ' ' + " ".join(args)
                          + ' 2>&1').strip()).readlines()
 
 def parse_line(line):
