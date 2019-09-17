@@ -1,0 +1,10 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+
+source "${here}/_env.sh"
+source "${here}/../_base/test_cases.sh"
+
+auto_error_handle
+
+tpch_perf_report "${here}/tpch_perf_01.sh" 0.1

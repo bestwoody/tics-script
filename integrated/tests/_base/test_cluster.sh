@@ -18,13 +18,14 @@ function test_cluster_cmd()
 	local mods="${2}"
 	shift 2
 
-	if [ -z "${mods}" ]; then
-		local mods='pd,tikv,tidb,tiflash,rngine'
+	if [ -z "${test_cluster_data_dir+x}" ] || [ -z "${test_cluster_data_dir}" ]; then
+		echo "[func test_cluster_cmd] var 'test_cluster_data_dir' not defined" >&2
+		return 1
 	fi
 
 	local ti="${integrated}/ops/ti.sh"
-	local ti_file="${integrated}/ti/1_x.ti"
-	local args="ports=+${ports}#dir=${integrated}/data/nodes/${ports}"
+	local ti_file="${integrated}/tests/_base/local_templ.ti"
+	local args="ports=+${ports}#dir=${test_cluster_data_dir}/nodes/${ports}"
 
 	"${ti}" -m "${mods}" -k "${args}" "${ti_file}" "${@}"
 }
@@ -117,7 +118,7 @@ function test_cluster_burn()
 	fi
 
 	local ports="${1}"
-	test_cluster_cmd "${ports}" 'pd,tikv,tidb,tiflash,rngine,spark_m,spark_w' burn doit
+	test_cluster_cmd "${ports}" '' burn doit
 }
 export -f test_cluster_burn
 
@@ -176,7 +177,11 @@ function test_cluster_load_tpch_table()
 	if [ ! -z "${5+x}" ] && [ ! -z "${5}" ]; then
 		local data_dir="${5}"
 	else
-		local data_dir="${integrated}/data/tpch"
+		if [ -z "${test_cluster_data_dir+x}" ] || [ -z "${test_cluster_data_dir}" ]; then
+			echo "[func test_cluster_load_tpch_table] var 'test_cluster_data_dir' not defined" >&2
+			return 1
+		fi
+		local data_dir="${test_cluster_data_dir}"
 	fi
 
 	local db=`_db_name_from_scale "${scale}"`

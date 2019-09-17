@@ -222,15 +222,14 @@ class ColsExp:
     def __init__(self, ops):
         self.limit = -1
         self.notag = False
+        self.notitle = False
 
         segs = map(lambda x: x.strip(), ops.split('|'))
 
         if len(segs[0]) > 0:
             self.tags = map(lambda x: x.strip(), segs[0].split(','))
-            self.notitle = False
         else:
             self.tags = []
-            self.notitle = True
 
         segs = segs[1:]
         for seg in segs:
@@ -258,15 +257,14 @@ class RowsExp:
     def __init__(self, ops):
         self.limit = -1
         self.notag = False
+        self.notitle = False
 
         segs = map(lambda x: x.strip(), ops.split('|'))
 
         if len(segs[0]) > 0:
             self.tags = map(lambda x: x.strip(), segs[0].split(','))
-            self.notitle = False
         else:
             self.tags = []
-            self.notitle = True
 
         segs = segs[1:]
         for seg in segs:

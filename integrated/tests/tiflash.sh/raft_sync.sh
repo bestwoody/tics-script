@@ -58,4 +58,4 @@ function test_raft_sync()
 	"${ti}" -k "${args}" "${ti_file}" burn doit
 }
 
-test_raft_sync "${integrated}/ops/ti.sh" "${integrated}/ti/1_x.ti" "ports=+6#dir=nodes/6"
+test_raft_sync "${integrated}/ops/ti.sh" "${integrated}/tests/_base/local_templ.ti" "ports=+6#dir=nodes/6"

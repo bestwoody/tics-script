@@ -109,6 +109,7 @@ The order of operators is relevent, operators are executed one by one.
 In `rows-defination` sections, we support operators as follow:
 ```
 notag                -- hide tag name from row titile. eg: `op:tikv,ver:3.0.0` => `tikv,3.0.0`
+notitle              -- hide row titile.
 limit(n)             -- only show last `n` rows.
 sort(tag1, tag2)     -- sort rows by tags' value. WIP
 ```

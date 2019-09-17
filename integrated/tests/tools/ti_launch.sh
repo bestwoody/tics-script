@@ -5,7 +5,7 @@ source "${here}/_env.sh"
 auto_error_handle
 
 ti="${integrated}/ops/ti.sh"
-ti_file="${integrated}/ti/1_x.ti"
+ti_file="${integrated}/tests/_base/local_templ.ti"
 args="ports=+3#dir=nodes/3"
 
 title='<cluster run/stop elapsed>'
