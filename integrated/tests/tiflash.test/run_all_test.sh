@@ -16,13 +16,14 @@ function load_tpch()
 	local ti_file="${4}"
 	local ti_file_args="${5}"
 
-	local schema_dir="${integrated}/tests/schema/tpch/mysql"
-	local data_dir="${integrated}/data/tpch"
+	local schema_dir="${integrated}/resource/tpch/mysql/schema"
+	local data_dir="${integrated}/resource/tpch/data"
 
 	load_and_generate_tpch_data "${schema_dir}" "${data_dir}" "${scale}" "${table}" "${blocks}" "${ti_file}" "${ti_file_args}"
 }
 export -f load_tpch
 
+"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
 "${ti}" -k "${args}" "${ti_file}" "run"
 
 "${here}/run_test.sh" "${here}/sample.test" "${ti_file}" "${ti}" "${args}"

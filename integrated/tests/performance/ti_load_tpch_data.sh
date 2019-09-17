@@ -12,8 +12,8 @@ title='<cluster load tpch data time>'
 data="${BASH_SOURCE[0]}.data"
 report="${BASH_SOURCE[0]}.report"
 
-schema_dir="${integrated}/tests/schema/tpch/mysql"
-data_dir="${integrated}/data/tpch"
+schema_dir="${integrated}/resource/tpch/mysql/schema"
+data_dir="${integrated}/resource/tpch/data"
 scale="1"
 table="lineitem"
 

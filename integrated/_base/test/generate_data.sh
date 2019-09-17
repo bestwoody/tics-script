@@ -66,14 +66,17 @@ function generate_tpch_data_to_dir()
 		return 1
 	fi
 
-	# TODO: BUG: no data generated when blocks = 1
 	mkdir -p "${data_dir}"
 	(
 		cd "${data_dir}"
-		for ((i=1; i<${blocks}+1; ++i)); do
-			"${dbgen_bin_dir}/dbgen" -q -C "${blocks}" -T `table_to_arguments "${table}"` -s "${scale}" -S "${i}" -f &
-		done
-		wait
+		if [ "${blocks}" == 1 ]; then
+			"${dbgen_bin_dir}/dbgen" -q -C "${blocks}" -T `table_to_arguments "${table}"` -s "${scale}" -f
+		else
+			for ((i=1; i<${blocks}+1; ++i)); do
+				"${dbgen_bin_dir}/dbgen" -q -C "${blocks}" -T `table_to_arguments "${table}"` -s "${scale}" -S "${i}" -f &
+			done
+			wait
+		fi
 	)
 	wait
 }
