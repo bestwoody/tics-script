@@ -1,6 +1,3 @@
 tiflash.test/run_all_test.sh
 tiflash.sh/raft_sync.sh
-performance/tpch_perf.sh
-
-!performance/ti_load_tpch_data.sh
-!tools/ti_launch.sh
+performance/tpch_perf_10.sh
