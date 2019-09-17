@@ -71,7 +71,7 @@ function generate_tpch_data_to_dir()
 	(
 		cd "${data_dir}"
 		for ((i=1; i<${blocks}+1; ++i)); do
-			"${dbgen_bin_dir}/dbgen" -C "${blocks}" -T `table_to_arguments "${table}"` -s "${scale}" -S "${i}" -f &
+			"${dbgen_bin_dir}/dbgen" -q -C "${blocks}" -T `table_to_arguments "${table}"` -s "${scale}" -S "${i}" -f &
 		done
 		wait
 	)
@@ -107,7 +107,7 @@ function generate_tpch_data()
 	fi
 	generate_tpch_data_to_dir "${dbgen_bin_dir}" "${temp_data_dir}" "${scale}" "${table}" "${blocks}"
 	local data_file_count=`ls "${temp_data_dir}" | { grep "${table}" || test $? = 1; } | wc -l`
-	if [ "${data_file_count}" <= 0 ]; then
+	if [ "${data_file_count}" -le '0' ]; then
 		echo "[func generate_tpch_data] generate data file failed" >&2
 		return 1
 	fi

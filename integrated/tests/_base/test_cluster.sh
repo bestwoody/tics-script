@@ -1,5 +1,12 @@
 #!/bin/bash
 
+function _db_name_from_scale()
+{
+	local scale="${1}"
+	echo "tpch_${scale}" | tr '.' '_'
+}
+export -f _db_name_from_scale
+
 function test_cluster_cmd()
 {
 	if [ -z "${3+x}" ]; then
@@ -127,7 +134,7 @@ function _test_cluster_gen_and_load_tpch_table()
 	local blocks="${4}"
 	local data_dir="${5}"
 
-	local db="tpch${scale}"
+	local db=`_db_name_from_scale "${scale}"`
 	local schema_dir="${integrated}/resource/tpch/mysql/schema"
 	local dbgen_bin_dir="/tmp/ti/master/bins"
 
@@ -139,7 +146,7 @@ function _test_cluster_gen_and_load_tpch_table()
 	fi
 	local dists_dss_url="http://139.219.11.38:8000/v2TLJ/dists.dss"
 
-	local table_dir="${data_dir}/tpch_s${scale}_b${blocks}/${table}"
+	local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
 	generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
 
 	local mysql_host=`test_cluster_cmd "${ports}" '' 'mysql_host'`
@@ -172,7 +179,7 @@ function test_cluster_load_tpch_table()
 		local data_dir="${integrated}/data/tpch"
 	fi
 
-	local db="tpch${scale}"
+	local db=`_db_name_from_scale "${scale}"`
 
 	local start_time=`date +%s`
 	_test_cluster_gen_and_load_tpch_table "${ports}" "${table}" "${scale}" "${blocks}" "${data_dir}"
@@ -201,10 +208,10 @@ function test_cluster_load_tpch_data()
 	for table in ${tables[@]}; do
 		local elapsed=`test_cluster_load_tpch_table "${ports}" "${table}" "${scale}"`
 		if [ -z "${elapsed}" ]; then
-			echo "[func tpch_perf] load '${table}' to test cluster failed" >&2
+			echo "[func tpch_perf] failed to load '${table}'" >&2
 			return 1
 		else
-			echo "[func tpch_perf] load '${table}' to test cluster done" >&2
+			echo "[func tpch_perf] loaded '${table}'"
 		fi
 		echo "${elapsed},${vers}" >> ${log}
 	done
@@ -223,7 +230,7 @@ function test_cluster_run_tpch()
 	local log="${3}"
 	local vers="${4}"
 
-	local db="tpch${scale}"
+	local db=`_db_name_from_scale "${scale}"`
 	local queries_dir="${integrated}/resource/tpch/mysql/queries"
 
 	if [ ! -d "${queries_dir}" ]; then
@@ -250,7 +257,7 @@ function test_cluster_run_tpch()
 		mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" < "${queries_dir}/${i}.sql"
 		local end_time=`date +%s`
 		local elapsed="$((end_time - start_time))"
-		local elapsed="${elapsed}	scale:${scale},query:${i},start_ts:${start_time},end_ts:${end_time}"
+		local elapsed="${elapsed}	cat:tidb,scale:${scale},query:${i},start_ts:${start_time},end_ts:${end_time}"
 		# TODO: result checkt
 		echo "${elapsed},${vers}" >> "${log}"
 	done
