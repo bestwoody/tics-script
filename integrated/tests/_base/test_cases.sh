@@ -39,7 +39,7 @@ function tpch_perf()
 
 	test_cluster_run_tpch "${ports}" "${scale}" "${test_entry_file}.queries.data" "${vers}"
 
-	echo '---' >> "${report}.tmp"
+	echo '------------------------------------------------------------------' >> "${report}.tmp"
 	to_table "<tpch ${scale}>" 'cols:cat|notag; rows:query; cell:limit(20)|avg|~|duration' 9999 "${test_entry_file}.queries.data" >> "${report}.tmp"
 
 	mv -f "${report}.tmp" "${report}"
