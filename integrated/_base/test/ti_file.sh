@@ -15,12 +15,12 @@ function get_mod_ver()
 	else
 		local ti_file_args="${3}"
 	fi
-	local ver=`cmd_ti -k "${args}" -m "${mod}" "${ti_file}" ver ver | awk '{print "mod:"$1",ver:"$2}'`
+	local ver=`"${integrated}/ops/ti.sh" -k "${args}" -m "${mod}" "${ti_file}" ver ver | awk '{print "mod:"$1",ver:"$2}'`
 	local failed=`echo "${ver}" | { grep 'unknown' || test $? = 1; }`
 	if [ ! -z "${failed}" ]; then
 		return 1
 	fi
-	local git=`"${integrated}/ops/ti.sh" -k "${args}" -m "${mod}" "${ti_file}" ver githash | awk '{print "git:"$2}'`
+	local git=`"${integrated}/ops/ti.sh" -k "${ti_file_args}" -m "${mod}" "${ti_file}" ver githash | awk '{print "git:"$2}'`
 	echo "${ver},${git}"
 }
 export -f get_mod_ver

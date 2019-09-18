@@ -1,20 +1,21 @@
-tiflash_http_port 8123
-tiflash_tcp_port 9000
-tiflash_interserver_http_port 9109
-tiflash_raft_port 3930
+tiflash_http_port	8123
+tiflash_tcp_port	9000
+tiflash_interserver_http_port	9109
+tiflash_raft_port	3930
 
-pd_port 13579
-pd_peer_port 13680
+pd_port	13579
+pd_peer_port	13680
 
-tikv_port 20431
+tikv_port	20431
 
-tidb_port 10080
-tidb_status_port 12490
+tidb_port	10080
+tidb_status_port	12490
 
-rngine_port 20532
+rngine_port	20532
 
-spark_master_port 7077
-thriftserver_port 10000
-spark_master_webui_port 8080
-spark_worker_webui_port 8081
-jmxremote_port  8089
+spark_master_port	7077
+thriftserver_port	10000
+spark_master_webui_port	8080
+spark_worker_webui_port	8081
+jmxremote_port	8089
+jdwp_port	5005

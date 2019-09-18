@@ -6,17 +6,18 @@ auto_error_handle
 
 ti="${integrated}/ops/ti.sh"
 ti_file="${integrated}/ti/1+spark_x.ti"
-args="ports=+33#dir=nodes/33"
+ports=+33
+args="ports=${ports}#dir=nodes/33"
 
 entry_dir="${BASH_SOURCE[0]}.data"
-mkdir "${entry_dir}"
+mkdir -p "${entry_dir}"
 
 data="${entry_dir}/data"
 report="${entry_dir}/report"
 title='<tpcc performance test with/without tiflash>'
 
 function load_tpcc_data() {
-    local benchmark_dir="${1}"
+	local benchmark_dir="${1}"
 	local tidb_host=`${ti} -k "${args}" -m tidb "${ti_file}" mysql_host`
 	local tidb_port=`${ti} -k "${args}" -m tidb "${ti_file}" mysql_port`
 
@@ -42,12 +43,12 @@ function load_tpcc_data() {
 	echo "stockLevelWeight=4" >> "${prop_file}"
 	echo "resultDirectory=my_result_%tY-%tm-%td_%tH%tM%tS" >> "${prop_file}"
 
-    (
-        cd "${benchmark_dir}"
-	    ./runSQL.sh props.mysql sql.mysql/tableCreates.sql 2>&1 1>/dev/null
-	    ./runSQL.sh props.mysql sql.mysql/indexCreates.sql 2>&1 1>/dev/null
-	    ./runLoader.sh props.mysql 2>&1
-    )
+	(
+		cd "${benchmark_dir}"
+		./runSQL.sh props.mysql sql.mysql/tableCreates.sql 2>&1 1>/dev/null
+		./runSQL.sh props.mysql sql.mysql/indexCreates.sql 2>&1 1>/dev/null
+		./runLoader.sh props.mysql 2>&1
+	)
 	wait
 }
 
@@ -57,12 +58,12 @@ function run_benchmark_test() {
 
 	local start_time=`date +%s`
 	(
-	    cd "${benchmark_dir}"
-	    ./runBenchmark.sh props.mysql 2>&1 &> "${benchmark_dir}/test.log"
+		cd "${benchmark_dir}"
+		./runBenchmark.sh props.mysql 2>&1 &> "${benchmark_dir}/test.log"
 	)
-    wait
+	wait
 	local end_time=`date +%s`
-    local version="`get_mod_ver "pd" "${ti_file}" "${args}"`,`get_mod_ver "tikv" "${ti_file}" "${args}"`,`get_mod_ver "tidb" "${ti_file}" "${args}"`,`get_mod_ver "tiflash" "${ti_file}" "${args}"`,`get_mod_ver "rngine" "${ti_file}" "${args}"`"
+	local version="`test_cluster_vers ${ports}`"
 	local tags="type:${type},test:tpcc,start_ts:${start_time},end_ts:${end_time},${version}"
 	local result=`grep "Measured tpmC" "${benchmark_dir}/test.log" | awk -F '=' '{print $2}' | tr -d ' ' | awk -F '.' '{print $1}'`
 	echo "${result} ${tags}"
@@ -71,14 +72,16 @@ function run_benchmark_test() {
 function run_tpcc_test() {
 	"${ti}" -k "${args}" "${ti_file}" burn doit
 
-    local benchmark_repo="${here}/benchmarksql"
+	local benchmark_repo="${here}/benchmarksql"
 	if [ ! -d "${benchmark_repo}" ]; then
-		mkdir -p "${benchmark_repo}"
-		git clone -b 5.0-mysql-support-opt-2.1 https://github.com/pingcap/benchmarksql.git "${benchmark_dir}"
+		temp_benchmark_repo="${benchmark_repo}.`date +%s`.${RANDOM}"
+		mkdir -p "${temp_benchmark_repo}"
+		git clone -b 5.0-mysql-support-opt-2.1 https://github.com/pingcap/benchmarksql.git "${temp_benchmark_repo}"
 		(
-		    cd "${benchmark_repo}" && ant
+			cd "${temp_benchmark_repo}" && ant
 		)
 		wait
+		mv "${temp_benchmark_repo}" "${benchmark_repo}"
 	fi
 	local benchmark_dir="${benchmark_repo}/run"
 
@@ -104,7 +107,7 @@ function run_tpcc_test() {
 			sleep 1
 		fi
 	done
-	restore_error_handl_flags
+	restore_error_handle_flags "${error_handle}"
 
 	load_tpcc_data "${benchmark_dir}"
 	echo `run_benchmark_test "tidb_only" "${benchmark_dir}"` >> "${data}"
@@ -125,7 +128,7 @@ function run_tpcc_test() {
 	if [ "${ok}" != '5' ]; then
 		echo "${status}" >&2
 	else
-		to_table "${title}" 'cols:type; rows:test; cell:limit(20)|avg' 9999 "${data}" > "${report}.tmp"
+		to_table "${title}" 'cols:test; rows:type|notag; cell:limit(20)|avg|~|duration' 9999 "${data}" > "${report}.tmp"
 		mv -f "${report}.tmp" "${report}"
 	fi
 

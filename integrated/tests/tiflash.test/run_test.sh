@@ -14,6 +14,7 @@ function run_file()
 		echo "${target}": OK
 	else
 		echo "${target}": Failed >&2
+		return 1
 	fi
 }
 
@@ -27,6 +28,9 @@ function run_dir()
 	find "${target}" -maxdepth 1 -name "*.test" -type f | sort | while read file; do
 		if [ -f "${file}" ]; then
 			run_file "${file}" "${ti_file_path}" "${ti_sh_path}" "${ti_file_args}"
+			if [ "${?}" != 0 ]; then
+				return 1
+			fi
 		fi
 	done
 
@@ -37,6 +41,9 @@ function run_dir()
 	find "${target}" -maxdepth 1 -type d | sort -r | while read dir; do
 		if [ -d "${dir}" ] && [ "${dir}" != "${target}" ]; then
 			run_dir "${dir}" "${ti_file_path}" "${ti_sh_path}" "${ti_file_args}"
+			if [ "${?}" != 0 ]; then
+				return 1
+			fi
 		fi
 	done
 
@@ -54,9 +61,15 @@ function run_path()
 
 	if [ -f "${target}" ]; then
 		run_file "${target}" "${ti_file_path}" "${ti_sh_path}" "${ti_file_args}"
+		if [ "${?}" != 0 ]; then
+			return 1
+		fi
 	else
 		if [ -d "${target}" ]; then
 			run_dir "${target}" "${ti_file_path}" "${ti_sh_path}" "${ti_file_args}"
+			if [ "${?}" != 0 ]; then
+				return 1
+			fi
 		else
 			echo "error: ${target} not file nor dir." >&2
 			return 1
@@ -71,20 +84,15 @@ function run_test()
 	local ti_sh_path="${3}"
 	local ti_file_args="${4}"
 
-	if [ -z "${target}" ]; then
-		echo "[func run_test] target_test_file ti_sh_path ti_file_path ti_file_args"
+	if [ -z "${target}" ] || [ -z "${ti_file_path}" ] || [ -z "${ti_sh_path}" ]; then
+		echo "[func run_test] target_test_file ti_sh_path ti_file_path [ti_file_args]"
 		return 1
 	fi
 
-	if [ -z "${ti_file_path}" ]; then
-		ti_file_path="${integrated}/ti/1.ti"
-	fi
-
-	if [ -z "${ti_sh_path}" ]; then
-		ti_sh_path="${integrated}/ops/ti.sh"
-	fi
-
 	run_path "${target}" "${ti_file_path}" "${ti_sh_path}" "${ti_file_args}"
+	if [ "${?}" != 0 ]; then
+		return 1
+	fi
 }
 
 run_test "${@}"

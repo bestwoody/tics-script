@@ -6,7 +6,7 @@ auto_error_handle
 
 ti="${integrated}/ops/ti.sh"
 ti_file="${integrated}/ti/1+spark_x.ti"
-args="ports=+47#dir=nodes/47"
+args="ports=+97#dir=nodes/97"
 
 function load_tpch()
 {
@@ -23,11 +23,21 @@ function load_tpch()
 }
 export -f load_tpch
 
-"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
-"${ti}" -k "${args}" "${ti_file}" "run"
+function run_all_test()
+{
+    "${ti}" -k "${args}" "${ti_file}" "burn" "doit"
+    "${ti}" -k "${args}" "${ti_file}" "run"
 
-"${here}/run_test.sh" "${here}/sample.test" "${ti_file}" "${ti}" "${args}"
-"${here}/run_test.sh" "${here}/ddl_syntax" "${ti_file}" "${ti}" "${args}"
-"${here}/run_test.sh" "${here}/dml_basic" "${ti_file}" "${ti}" "${args}"
+    local error_handle="$-"
+    set +e
+    "${here}/run_test.sh" "${here}/test_cases" "${ti_file}" "${ti}" "${args}"
+    if [ "${?}" != 0 ]; then
+        "${ti}" -k "${args}" "${ti_file}" "burn" "doit"
+        exit 1
+    fi
+    restore_error_handle_flags "${error_handle}"
 
-"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
+    "${ti}" -k "${args}" "${ti_file}" "burn" "doit"
+}
+
+run_all_test

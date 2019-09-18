@@ -77,3 +77,30 @@ function ls_rngine_proc()
 	fi
 }
 export -f ls_rngine_proc
+
+function ls_sparkm_proc()
+{
+	local processes=`ps -ef | grep 'org.apache.spark.deploy.master.Master' | \
+		grep -v grep | awk -F '-cp' '{print $2}' | awk -F ':' '{print $1}' | \
+		awk -F 'spark/conf' '{print $1}' | sed 's/[ \t]*//g'`
+	if [ ! -z "${processes}" ]; then
+		echo "${processes}" | while read mod_dir; do
+			_print_mod_info "${mod_dir}"
+		done
+	fi
+}
+export -f ls_sparkm_proc
+
+function ls_sparkw_proc()
+{
+	local processes=`ps -ef | grep 'org.apache.spark.deploy.worker.Worker' | \
+		grep -v grep | awk -F '-cp' '{print $2}' | awk -F ':' '{print $1}' | \
+		awk -F 'spark/conf' '{print $1}' | sed 's/[ \t]*//g'`
+	if [ ! -z "${processes}" ]; then
+		echo "${processes}" | while read mod_dir; do
+			_print_mod_info "${mod_dir}"
+		done
+	fi
+}
+export -f ls_sparkw_proc
+

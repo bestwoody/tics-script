@@ -27,7 +27,7 @@ source `cd $(dirname ${BASH_SOURCE[0]}) && pwd`/../_env.sh
         * Call it after header if your script doesn't have optional args.
         * Fetch the optional args of the script, then call this function. Once you call the function, any undefined vars/args are not allowed to refer.
     * This make sure nothing goes wrong even if your scripts are sloppy.
-* If you want to check the return code of a command, you can call `set +e` to close auto error handling temporarily, then call the command and check `$?`, then call `restore_error_handl_flags` to re-enabled auto error handling.
+* If you want to check the return code of a command, you can call `set +e` to close auto error handling temporarily, then call the command and check `$?`, then call `restore_error_handle_flags` to re-enabled auto error handling.
 * If you want to check an arg(eg: `var`) are defined or not, use `if [ ! -z ${var+x} ]; then {var is defined} fi`
 * `${var}` is better than `$var`.
 * When a function or script is called, embrace all args with '"', eg: `./myscript.sh "arg1" "arg2"`.

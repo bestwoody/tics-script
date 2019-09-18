@@ -252,6 +252,6 @@ function wait_for_tiflash_by_host()
 	local addr=`cal_addr ":${port}" '' "${default_raft_port}"`
 	local port="${addr:1}"
 
-	wait_for_mysql "${host}" "${port}" "${timeout}"
+	wait_for_tiflash "${host}" "${port}" "${timeout}"
 }
 export -f wait_for_tiflash_by_host

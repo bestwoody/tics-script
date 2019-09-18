@@ -557,6 +557,7 @@ function spark_file_prepare()
 	local pd_addr="${3}"
 	local tiflash_addr="${4}"
 	local jmxremote_port="${5}"
+	local jdwp_port="${6}"
 
 	local default_ports="${conf_templ_dir}/default.ports"
 
@@ -564,6 +565,7 @@ function spark_file_prepare()
 	local render_str="${render_str}#flash_addresses=${tiflash_addr}"
 	local render_str="${render_str}#spark_local_dir=${spark_mod_dir}/spark_local_dir"
 	local render_str="${render_str}#jmxremote_port=${jmxremote_port}"
+	local render_str="${render_str}#jdwp_port=${jdwp_port}"
 	render_templ "${conf_templ_dir}/spark-defaults.conf" "${spark_mod_dir}/spark-defaults.conf" "${render_str}"
 
 	if [ ! -d "${spark_mod_dir}/spark" ]; then
@@ -647,6 +649,12 @@ function spark_master_run()
 		return 1
 	fi
 
+	local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port'`
+	if [ -z "${default_jdwp_port}" ]; then
+		echo "[func spark_master_run] get default jdwp_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
 		echo "[func spark_master_run] get default pd_port from ${default_ports} failed" >&2
@@ -671,7 +679,7 @@ function spark_master_run()
 	local proc_cnt=`print_proc_cnt "${spark_master_dir}" "org.apache.spark.deploy.master.Master"`
 
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped" >&2
+		echo "running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -682,14 +690,21 @@ function spark_master_run()
 	local thriftserver_port=$((${ports_delta} + ${default_thriftserver_port}))
 	local spark_master_webui_port=$((${ports_delta} + ${default_spark_master_webui_port}))
 	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
+	local jdwp_port=$((${ports_delta} + ${default_jdwp_port}))
 
-	spark_file_prepare "${spark_master_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}"
+	spark_file_prepare "${spark_master_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}" "${jdwp_port}"
 
 	if [ ! -f "${spark_master_dir}/run_master.sh" ]; then
 		echo "export SPARK_MASTER_HOST=${listen_host}" > "${spark_master_dir}/run_master_temp.sh"
 		echo "export SPARK_MASTER_PORT=${spark_master_port}" >> "${spark_master_dir}/run_master_temp.sh"
 		echo "${spark_master_dir}/spark/sbin/start-master.sh --webui-port ${spark_master_webui_port}" >> "${spark_master_dir}/run_master_temp.sh"
-		echo "${spark_master_dir}/spark/sbin/start-thriftserver.sh --hiveconf hive.server2.thrift.port=${thriftserver_port}" >> "${spark_master_dir}/run_master_temp.sh"
+		echo "(" >> "${spark_master_dir}/run_master_temp.sh"
+		echo "  cd ${spark_master_dir}" >> "${spark_master_dir}/run_master_temp.sh"
+		echo "  ${spark_master_dir}/spark/sbin/start-thriftserver.sh --hiveconf hive.server2.thrift.port=${thriftserver_port}" >> "${spark_master_dir}/run_master_temp.sh"
+		echo ")" >> "${spark_master_dir}/run_master_temp.sh"
+		echo "wait" >> "${spark_master_dir}/run_master_temp.sh"
+		# TODO: remove this sleep
+		echo "sleep 5" >> "${spark_master_dir}/run_master_temp.sh"
 		chmod +x "${spark_master_dir}/run_master_temp.sh"
 		mv "${spark_master_dir}/run_master_temp.sh" "${spark_master_dir}/run_master.sh"
 	fi
@@ -784,6 +799,12 @@ function spark_worker_run()
 		return 1
 	fi
 
+	local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port'`
+	if [ -z "${default_jdwp_port}" ]; then
+		echo "[func spark_master_run] get default jdwp_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
 		echo "[func spark_master_run] get default pd_port from ${default_ports} failed" >&2
@@ -805,13 +826,14 @@ function spark_worker_run()
 
 	local spark_worker_webui_port=$((${ports_delta} + ${default_spark_worker_webui_port}))
 	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
+	local jdwp_port=$((${ports_delta} + ${default_jdwp_port}))
 
 	local spark_worker_dir=`abs_path "${spark_worker_dir}"`
 
 	local proc_cnt=`print_proc_cnt "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker"`
 
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped" >&2
+		echo "running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -819,7 +841,7 @@ function spark_worker_run()
 	local tiflash_addr=$(cal_addr "${tiflash_addr}" `must_print_ip` "${default_tiflash_tcp_port}")
 	local spark_master_addr=$(cal_addr "${spark_master_addr}" `must_print_ip` "${default_spark_master_port}")
 
-	spark_file_prepare "${spark_worker_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}"
+	spark_file_prepare "${spark_worker_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}" "${jdwp_port}"
 
 	local info="${spark_worker_dir}/proc.info"
 	echo "listen_host	${listen_host}" > "${info}"

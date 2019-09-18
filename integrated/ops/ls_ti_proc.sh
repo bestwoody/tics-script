@@ -13,5 +13,10 @@ echo '=> tiflash:'
 ls_tiflash_proc
 echo '=> rngine:'
 ls_rngine_proc
+echo '=> spark_m:'
+ls_sparkm_proc
+echo '=> spark_w:'
+ls_sparkw_proc
+
 
 # TODO: list Spark proc
