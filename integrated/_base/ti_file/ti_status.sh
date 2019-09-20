@@ -18,10 +18,9 @@ export -f _print_mod_info
 
 function ls_tiflash_proc()
 {
-	local processes=`ps -ef | { grep 'tiflash' || test $? = 1; } | { grep "\-\-config\-file" || test $? = 1; } | \
-		{ grep -v grep || test $? = 1; } | awk -F '--config-file' '{print $2}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
+	local procs=`print_procs 'tiflash' "\-\-config\-file" | awk -F '--config-file' '{print $2}' | awk '{print $1}'`
+	if [ ! -z "${procs}" ]; then
+		echo "${procs}" | while read conf; do
 			local path=`_print_file_dir_when_abs "${conf}"`
 			local path=`_print_file_dir_when_abs "${path}"`
 			_print_mod_info "${path}"
@@ -32,10 +31,9 @@ export -f ls_tiflash_proc
 
 function ls_pd_proc()
 {
-	local processes=`ps -ef | { grep 'pd-server' || test $? = 1; } | { grep "\-\-config" || test $? = 1; } | \
-		{ grep -v grep || test $? = 1; } | awk -F '--config=' '{print $2}' | awk '{print $1}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
+	local procs=`print_procs 'pd-server' "\-\-config" | awk -F '--config=' '{print $2}' | awk '{print $1}'`
+	if [ ! -z "${procs}" ]; then
+		echo "${procs}" | while read conf; do
 			_print_mod_info `_print_file_dir_when_abs "${conf}"`
 		done
 	fi
@@ -44,10 +42,10 @@ export -f ls_pd_proc
 
 function ls_tikv_proc()
 {
-	local processes=`ps -ef | { grep 'tikv-server' || test $? = 1; } | { grep -v 'tikv-server-rngine' || test $? = 1; } | { grep "\-\-config" || test $? = 1; } | \
-		{ grep -v grep || test $? = 1; } | awk -F '--config' '{print $2}' | awk '{print $1}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
+	local procs=`print_procs 'tikv-server' "\-\-config" | { grep -v 'tikv-server-rngine' || test $? = 1; } | \
+		awk -F '--config' '{print $2}' | awk '{print $1}'`
+	if [ ! -z "${procs}" ]; then
+		echo "${procs}" | while read conf; do
 			_print_mod_info `_print_file_dir_when_abs "${conf}"`
 		done
 	fi
@@ -56,10 +54,9 @@ export -f ls_tikv_proc
 
 function ls_tidb_proc()
 {
-	local processes=`ps -ef | { grep 'tidb-server' || test $? = 1; } | { grep "\-\-config" || test $? = 1; } | \
-		{ grep -v grep || test $? = 1; } | awk -F '--config=' '{print $2}' | awk '{print $1}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
+	local procs=`print_procs 'tidb-server' "\-\-config" | awk -F '--config=' '{print $2}' | awk '{print $1}'`
+	if [ ! -z "${procs}" ]; then
+		echo "${procs}" | while read conf; do
 			_print_mod_info `_print_file_dir_when_abs "${conf}"`
 		done
 	fi
@@ -68,10 +65,9 @@ export -f ls_tidb_proc
 
 function ls_rngine_proc()
 {
-	local processes=`ps -ef | { grep 'tikv-server-rngine' || test $? = 1; } | { grep "\-\-config" || test $? = 1; } | \
-		{ grep -v grep || test $? = 1; } | awk -F '--config' '{print $2}' | awk '{print $1}'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read conf; do
+	local procs=`print_procs 'tikv-server-rngine' "\-\-config" | awk -F '--config' '{print $2}' | awk '{print $1}'`
+	if [ ! -z "${procs}" ]; then
+		echo "${procs}" | while read conf; do
 			_print_mod_info `_print_file_dir_when_abs "${conf}"`
 		done
 	fi
@@ -80,11 +76,11 @@ export -f ls_rngine_proc
 
 function ls_sparkm_proc()
 {
-	local processes=`ps -ef | grep 'org.apache.spark.deploy.master.Master' | \
-		grep -v grep | awk -F '-cp' '{print $2}' | awk -F ':' '{print $1}' | \
-		awk -F 'spark/conf' '{print $1}' | sed 's/[ \t]*//g'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read mod_dir; do
+	local procs=`print_procs 'org.apache.spark.deploy.master.Master' '/spark/conf' | \
+		awk -F '-cp' '{print $2}' | awk -F ':' '{print $1}' | \
+		awk -F '/spark/conf' '{print $1}' | sed 's/[ \t]*//g'`
+	if [ ! -z "${procs}" ]; then
+		echo "${procs}" | while read mod_dir; do
 			_print_mod_info "${mod_dir}"
 		done
 	fi
@@ -93,14 +89,13 @@ export -f ls_sparkm_proc
 
 function ls_sparkw_proc()
 {
-	local processes=`ps -ef | grep 'org.apache.spark.deploy.worker.Worker' | \
-		grep -v grep | awk -F '-cp' '{print $2}' | awk -F ':' '{print $1}' | \
-		awk -F 'spark/conf' '{print $1}' | sed 's/[ \t]*//g'`
-	if [ ! -z "${processes}" ]; then
-		echo "${processes}" | while read mod_dir; do
+	local procs=`print_procs 'org.apache.spark.deploy.worker.Worker' '/spark/conf' | \
+		awk -F '-cp' '{print $2}' | awk -F ':' '{print $1}' | \
+		awk -F '/spark/conf' '{print $1}' | sed 's/[ \t]*//g'`
+	if [ ! -z "${procs}" ]; then
+		echo "${procs}" | while read mod_dir; do
 			_print_mod_info "${mod_dir}"
 		done
 	fi
 }
 export -f ls_sparkw_proc
-

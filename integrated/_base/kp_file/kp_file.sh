@@ -9,8 +9,8 @@ function _kp_file_proc_exists()
 
 	local file="${1}"
 	local find_str="keep_script_running ${file}"
-	local processes=`ps -ef | { grep "${find_str}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }`
-	if [ -z "${processes}" ]; then
+	local procs=`print_procs "${find_str}"`
+	if [ -z "${procs}" ]; then
 		echo 'false'
 	else
 		echo 'true'

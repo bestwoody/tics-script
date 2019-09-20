@@ -1,9 +1,100 @@
 #!/bin/bash
 
-function print_proc_cnt()
+function print_procs()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func print_proc_cnt] usage: <func> str_for_finding_the_processes [str2]" >&2
+		echo "[func print_procs] usage: <func> str_for_finding_the_procs [str2]" >&2
+		return 1
+	fi
+
+	local find_str="${1}"
+	local str2=''
+	if [ ! -z "${2+x}" ]; then
+		local str2="${2}"
+	fi
+
+	ps -ef | { grep "${find_str}" || test $? = 1; } | { grep "${str2}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }
+}
+export -f print_procs
+
+function print_pids()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func print_pids] usage: <func> str_for_finding_the_procs [str2]" >&2
+		return 1
+	fi
+
+	local find_str="${1}"
+	local str2=''
+	if [ ! -z "${2+x}" ]; then
+		local str2="${2}"
+	fi
+
+	print_procs "${find_str}" "${str2}" | awk '{print $2}'
+}
+export -f print_pids
+
+function print_root_pids()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func print_root_pids] usage: <func> str_for_finding_the_procs [str2] [dump_if_not_uniq]" >&2
+		return 1
+	fi
+
+	local find_str="${1}"
+	local str2=""
+	if [ ! -z "${2+x}" ]; then
+		local str2="${2}"
+	fi
+	local dump='true'
+	if [ ! -z "${3+x}" ]; then
+		local dump="${3}"
+	fi
+
+	local procs=`print_procs "${find_str}" "${str2}"`
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	local result=`echo "${procs}" | awk '{print $2, $3}' | python "${here}/print_root_pid.py"`
+	if [ "${dump}" == 'true' ] && [ ! -z "${result}" ]; then
+		local cnt=`echo "${result}" | wc -l | awk '{print $1}'`
+		if [ "${cnt}" != '1' ]; then
+			echo "DUMP START --(${find_str}, ${str2})" >&2
+			echo "${procs}" >&2
+			echo "DUMP END   --(${find_str}, ${str2})" >&2
+		fi
+	fi
+	echo "${result}"
+}
+export -f print_root_pids
+
+function print_pids_by_ppid()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func print_pids_by_ppid] usage: <func> ppid" >&2
+		return 1
+	fi
+
+	local ppid="${1}"
+	local pids=`ps --ppid ${ppid} -f | awk '{print $2}'`
+	echo "${pids}" | while read pid; do
+		echo "${pid}"
+		print_pids_by_ppid "${pid}"
+	done
+}
+export -f print_pids_by_ppid
+
+function _print_sub_pids()
+{
+	local pids="${1}"
+	echo "${pids}" | while read pid; do
+		print_pids_by_ppid ${pid}
+	done
+}
+export -f _print_sub_pids
+
+function print_tree_pids
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func print_root_pids] usage: <func> str_for_finding_the_procs [str2]" >&2
 		return 1
 	fi
 
@@ -13,15 +104,43 @@ function print_proc_cnt()
 		local str2="${2}"
 	fi
 
-	local processes=`ps -ef | { grep "${find_str}" || test $? = 1; } | { grep "${str2}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }`
-	if [ -z "${processes}" ]; then
+	local pids=`print_pids "${find_str}" "${str2}"`
+	local sub_pids=`_print_sub_pids "${pids}"`
+
+	echo "${pids}" | while read pid; do
+		local is_in_sub=`echo "${sub_pids}" | { grep "^${pid}$" || test $? = 1; }`
+		if [ -z "${is_in_sub}" ]; then
+			echo "${pid}"
+		fi
+	done
+
+	echo "${sub_pids}"
+}
+export -f print_tree_pids
+
+function print_proc_cnt()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func print_proc_cnt] usage: <func> str_for_finding_the_procs [str2]" >&2
+		return 1
+	fi
+
+	local find_str="${1}"
+	local str2=""
+	if [ ! -z "${2+x}" ]; then
+		local str2="${2}"
+	fi
+
+	local procs=`print_procs "${find_str}" "${str2}"`
+	if [ -z "${procs}" ]; then
 		echo "0"
 	else
-		echo "${processes}" | wc -l | awk '{print $1}'
+		echo "${procs}" | wc -l | awk '{print $1}'
 	fi
 }
 export -f print_proc_cnt
 
+# TODO: remove this
 function print_pid()
 {
 	if [ -z "${1+x}" ]; then
@@ -35,16 +154,16 @@ function print_pid()
 		local str2="${2}"
 	fi
 
-	local processes=`ps -ef | { grep "${find_str}" || test $? = 1; } | { grep "${str2}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }`
-	if [ -z "${processes}" ]; then
+	local procs=`print_procs "${find_str}" "${str2}"`
+	if [ -z "${procs}" ]; then
 		return 1
 	fi
-	local pid_count=`echo "${processes}" | wc -l | awk '{print $1}'`
+	local pid_count=`echo "${procs}" | wc -l | awk '{print $1}'`
 	if [ "${pid_count}" != "1" ]; then
 		echo "[func print_pid] ${find_str} pid count: ${pid_count} != 1" >&2
 		return 1
 	fi
-	echo "${processes}" | awk '{print $2}'
+	echo "${procs}" | awk '{print $2}'
 }
 export -f print_pid
 
@@ -130,35 +249,3 @@ function stop_proc()
 	restore_error_handle_flags "${error_handle}"
 }
 export -f stop_proc
-
-function print_root_pids()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func print_root_pids] usage: <func> str_for_finding_the_processes [str2] [dump_if_not_uniq]" >&2
-		return 1
-	fi
-
-	local find_str="${1}"
-	local str2=""
-	if [ ! -z "${2+x}" ]; then
-		local str2="${2}"
-	fi
-	local dump='true'
-	if [ ! -z "${3+x}" ]; then
-		local dump="${3}"
-	fi
-
-	local processes=`ps -ef | { grep "${find_str}" || test $? = 1; } | { grep "${str2}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }`
-	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
-	local result=`echo "${processes}" | awk '{print $2, $3}' | python "${here}/print_root_pid.py"`
-	if [ "${dump}" == 'true' ] && [ ! -z "${result}" ]; then
-		local cnt=`echo "${result}" | wc -l | awk '{print $1}'`
-		if [ "${cnt}" != '1' ]; then
-			echo "DUMP START --(${find_str}, ${str2})" >&2
-			echo "${processes}" >&2
-			echo "DUMP END   --(${find_str}, ${str2})" >&2
-		fi
-	fi
-	echo "${result}"
-}
-export -f print_root_pids
