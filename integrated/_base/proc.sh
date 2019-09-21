@@ -62,7 +62,10 @@ function print_root_pids()
 			echo "DUMP END   --(${find_str}, ${str2})" >&2
 		fi
 	fi
-	echo "${result}"
+
+	if [ ! -z "${result}" ]; then
+		echo "${result}"
+	fi
 }
 export -f print_root_pids
 
@@ -74,8 +77,11 @@ function print_pids_by_ppid()
 	fi
 
 	local ppid="${1}"
-	local pids=`ps --ppid ${ppid} -f | awk '{print $2}'`
+	local pids=`ps -f --ppid "${ppid}" | { grep "${ppid}" || test $? = 1; } | awk '{print $2}'`
 	echo "${pids}" | while read pid; do
+		if [ -z "${pid}" ]; then
+			continue
+		fi
 		echo "${pid}"
 		print_pids_by_ppid "${pid}"
 	done
@@ -86,7 +92,9 @@ function _print_sub_pids()
 {
 	local pids="${1}"
 	echo "${pids}" | while read pid; do
-		print_pids_by_ppid ${pid}
+		if [ ! -z "${pid}" ]; then
+			print_pids_by_ppid "${pid}"
+		fi
 	done
 }
 export -f _print_sub_pids
@@ -108,13 +116,18 @@ function print_tree_pids
 	local sub_pids=`_print_sub_pids "${pids}"`
 
 	echo "${pids}" | while read pid; do
+		if [ -z "${pid}" ]; then
+			continue
+		fi
 		local is_in_sub=`echo "${sub_pids}" | { grep "^${pid}$" || test $? = 1; }`
 		if [ -z "${is_in_sub}" ]; then
 			echo "${pid}"
 		fi
 	done
 
-	echo "${sub_pids}"
+	if [ ! -z "${sub_pids}" ]; then
+		echo "${sub_pids}"
+	fi
 }
 export -f print_tree_pids
 
@@ -163,7 +176,9 @@ function print_pid()
 		echo "[func print_pid] ${find_str} pid count: ${pid_count} != 1" >&2
 		return 1
 	fi
-	echo "${procs}" | awk '{print $2}'
+	if [ ! -z "${procs}" ]; then
+		echo "${procs}" | awk '{print $2}'
+	fi
 }
 export -f print_pid
 

@@ -167,8 +167,14 @@ function kp_file_iter()
 	rm -f "${rendered}"
 
 	local lines=`cat "${file_abs}" | { grep -v '^#' || test $? = 1; } | { grep -v '^$' || test $? = 1; }`
-	local uniq_lines=`echo "${lines}" | sort | uniq`
+	if [ -z "${lines}" ]; then
+		return
+	fi
 	local lines_cnt=`echo "${lines}" | wc -l | awk '{print $1}'`
+	if [ "${lines_cnt}" == '0' ]; then
+		return
+	fi
+	local uniq_lines=`echo "${lines}" | sort | uniq`
 	local uniq_cnt=`echo "${uniq_lines}" | wc -l | awk '{print $1}'`
 	if [ "${uniq_cnt}" != "${lines_cnt}" ]; then
 		echo "[func kp_file_iter] ${file} has duplicated lines ${uniq_cnt} != ${lines_cnt}" >&2

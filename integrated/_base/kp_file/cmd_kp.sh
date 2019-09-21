@@ -3,7 +3,7 @@
 function kp_file_watch
 {
 	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
-		echo "[func kp_file_watch] usage: <func> kp_file [watch_interval=5] [display_width=120]" >&2
+		echo "[func kp_file_watch] usage: <func> kp_file [watch_interval=5] [display_width=80]" >&2
 		exit 1
 	fi
 
@@ -14,7 +14,7 @@ function kp_file_watch
 		local interval="${2}"
 	fi
 	if [ -z "${3+x}" ]; then
-		local width='120'
+		local width='80'
 	else
 		local width="${3}"
 	fi
@@ -61,7 +61,7 @@ function cmd_kp()
 
 	auto_error_handle
 
-	local help_str="[func cmd_kp] usage: <func> kp_file [cmd=run|stop|status|list|clean|watch] [width=120]"
+	local help_str="[func cmd_kp] usage: <func> kp_file [cmd=run|stop|status|list|clean|watch] [width=80]"
 
 	if [ -z "${file}" ]; then
 		echo "${help_str}" >&2
@@ -136,7 +136,7 @@ function cmd_kp()
 		if [ ! -z "${1+x}" ] && [ ! -z "${1}" ]; then
 			local width="${1}"
 		else
-			local width='120'
+			local width='80'
 		fi
 		local atime=`_kp_sh_last_active "${file}"`
 		if [ ! -z "${mon_pid}" ]; then
