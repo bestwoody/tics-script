@@ -313,3 +313,20 @@ function test_cluster_spark_run_tpch()
 	done
 }
 export -f test_cluster_spark_run_tpch
+
+function sleep_by_scale()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func sleep_by_scale] usage: <func> scale" >&2
+		return 1
+	fi
+
+	local scale="${1}"
+	local has_dot=`echo "${scale}" | grep '\.'`
+	if [ ! -z "${has_dot}" ]; then
+		local scale='0'
+	fi
+	local sec=$((scale * 5 + 3))
+	sleep "${sec}"
+}
+export -f sleep_by_scale
