@@ -270,7 +270,7 @@ function kp_sh_stop()
 		local quiet="${2}"
 	fi
 
-	local pids=`_kp_file_pid "${file}"`
+	local pids=`print_tree_pids "keep_script_running ${file}"`
 	if [ -z "${pids}" ]; then
 		if [ "${quiet}" != 'true' ]; then
 			echo "=> [task] ${file}"
@@ -281,44 +281,19 @@ function kp_sh_stop()
 
 	if [ "${quiet}" != 'true' ]; then
 		echo "=> [task] ${file}"
-		echo "   stopping"
+		stop_pids "${pids}" | awk '{print "   "$0}'
+	else
+		stop_pids "${pids}" >/dev/null 2>&1
 	fi
 
-	local error_handle="$-"
-	set +e
-
-	for ((i = 0; i < 99; i++)); do
-		echo "${pids}" | while read pid; do
-			kill "${pid}" 2>/dev/null
-			local killed=`ps -p "${pid}" | { grep -v 'TTY' || test $? = 1; }`
-			if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
-				echo "   stopped ${pid}"
-			fi
-		done
-		local pids=`_kp_file_pid "${file}"`
-		if [ -z "${pids}" ]; then
-			break
+	local pids=`print_tree_pids "bash ${file}"`
+	if [ ! -z "${pids}" ]; then
+		if [ "${quiet}" != 'true' ]; then
+			stop_pids "${pids}" | awk '{print "   "$0}'
 		else
-			sleep 0.1
+			stop_pids "${pids}" >/dev/null 2>&1
 		fi
-	done
-
-	for ((i = 0; i < 99; i++)); do
-		local pids=`ps -ef | { grep "bash ${file}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; } | head -n 1 | awk '{print $2}'`
-		if [ -z "${pids}" ]; then
-			break
-		fi
-		echo "${pids}" | while read pid; do
-			kill "${pid}" 2>/dev/null
-			local killed=`ps -p "${pid}" | { grep -v 'TTY' || test $? = 1; }`
-			if [ -z "${killed}" ] && [ "${quiet}" != 'true' ]; then
-				echo "   stopped ${pid}"
-			fi
-		done
-		sleep 0.1
-	done
-
-	restore_error_handle_flags "${error_handle}"
+	fi
 
 	local clear_script="${file}.term"
 	if [ -f "${clear_script}" ]; then
@@ -340,8 +315,6 @@ function kp_file_stop()
 	fi
 
 	local file="${1}"
-	local error_handle="$-"
-	set +e
 	kp_file_iter "${file}" | while read line; do
 		local result=`kp_sh_stop "${line}"`
 		local skipped=`echo "${result}" | { grep 'skipped' || test $? = 1; }`
@@ -350,7 +323,6 @@ function kp_file_stop()
 		fi
 		echo "${result}"
 	done
-	restore_error_handle_flags "${error_handle}"
 }
 export -f kp_file_stop
 

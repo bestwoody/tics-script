@@ -109,7 +109,7 @@ function pd_run()
 	chmod +x "${pd_dir}/run.sh"
 	bash "${pd_dir}/run.sh"
 
-	local pid=`print_pid "${pd_dir}/pd.toml" "\-\-config"`
+	local pid=`must_print_pid "${pd_dir}/pd.toml" "\-\-config"`
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -206,7 +206,7 @@ function tikv_run()
 	chmod +x "${tikv_dir}/run.sh"
 	bash "${tikv_dir}/run.sh"
 
-	local pid=`print_pid "${tikv_dir}/tikv.toml" "\-\-config"`
+	local pid=`must_print_pid "${tikv_dir}/tikv.toml" "\-\-config"`
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -305,7 +305,7 @@ function tidb_run()
 	chmod +x "${tidb_dir}/run.sh"
 	bash "${tidb_dir}/run.sh"
 
-	local pid=`print_pid "${tidb_dir}/tidb.toml" "\-\-config"`
+	local pid=`must_print_pid "${tidb_dir}/tidb.toml" "\-\-config"`
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -436,7 +436,7 @@ function tiflash_run()
 	chmod +x "${tiflash_dir}/run.sh"
 	bash "${tiflash_dir}/run.sh"
 
-	local pid=`print_pid "${conf_file}" "\-\-config"`
+	local pid=`must_print_pid "${conf_file}" "\-\-config"`
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -539,7 +539,7 @@ function rngine_run()
 	chmod +x "${rngine_dir}/run.sh"
 	bash "${rngine_dir}/run.sh"
 
-	local pid=`print_pid "${rngine_dir}/rngine.toml" "\-\-config"`
+	local pid=`must_print_pid "${rngine_dir}/rngine.toml" "\-\-config"`
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -724,7 +724,7 @@ function spark_master_run()
 		echo "org.apache.spark.deploy.master.Master" > "${spark_master_dir}/extra_str_to_find_proc"
 	fi
 
-	local pid=`print_pid "${spark_master_dir}" "org.apache.spark.deploy.master.Master"`
+	local pid=`must_print_pid "${spark_master_dir}" "org.apache.spark.deploy.master.Master"`
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -867,7 +867,7 @@ function spark_worker_run()
 		echo "org.apache.spark.deploy.worker.Worker" > "${spark_worker_dir}/extra_str_to_find_proc"
 	fi
 
-	local pid=`print_pid "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker"`
+	local pid=`must_print_pid "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker"`
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }

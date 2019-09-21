@@ -89,15 +89,16 @@ function cmd_kp()
 
 	local file_abs=`abs_path "${file}"`
 
-	local mon_pid=`_kp_file_pid "${file_abs}.mon"`
+	local mon_pids=`_kp_file_pid "${file_abs}.mon"`
+	# TODO: this is for zsh debug, remove it later
 	local is_running=`_kp_file_proc_exists "${file_abs}.mon"`
-	if [ "${is_running}" == 'true' ] && [ -z "${mon_pid}" ]; then
+	if [ "${is_running}" == 'true' ] && [ -z "${mon_pids}" ]; then
 		echo "[func cmd_kp] error: pid detecting failed: '${file_abs}.mon'"
 		return 1
 	fi
 
 	if [ "${cmd}" == 'run' ]; then
-		if [ ! -z "${mon_pid}" ]; then
+		if [ ! -z "${mon_pids}" ]; then
 			echo "=> [^__^] ${file_abs}"
 			echo '   running, skipped'
 		else
@@ -115,19 +116,8 @@ function cmd_kp()
 		kp_file_iter "${file}" | awk '{print "   "$0}'
 	elif [ "${cmd}" == 'stop' ]; then
 		echo "=> [^__^] ${file_abs}"
-		if [ ! -z "${mon_pid}" ]; then
-			echo "${mon_pid}" | while read pid; do
-				local error_handle="$-"
-				set +e
-				kill "${pid}" 2>/dev/null
-				restore_error_handle_flags "${error_handle}"
-			done
-			local mon_pid=`_kp_file_pid ${file_abs}.mon`
-			if [ -z "${mon_pid}" ]; then
-				echo '   stopped'
-			else
-				echo '   stop failed'
-			fi
+		if [ ! -z "${mon_pids}" ]; then
+			stop_pids "${mon_pids}" | awk '{print "   "$0}'
 		else
 			echo '   nor running, skipped'
 		fi
@@ -139,8 +129,8 @@ function cmd_kp()
 			local width='80'
 		fi
 		local atime=`_kp_sh_last_active "${file}"`
-		if [ ! -z "${mon_pid}" ]; then
-			local mon_proc_cnt=`echo "${mon_pid}" | wc -l | awk '{print $1}'`
+		if [ ! -z "${mon_pids}" ]; then
+			local mon_proc_cnt=`echo "${mon_pids}" | wc -l | awk '{print $1}'`
 			if [ "${mon_proc_cnt}" == '1' ]; then
 				local run_status="\033[32m[+]\033[0m"
 			else

@@ -30,7 +30,7 @@ function _ti_stop()
 		return 1
 	fi
 
-	stop_proc "${conf_file}" "\-\-config" "${fast}"
+	stop_procs "${conf_file}" "\-\-config" "${fast}"
 }
 export -f _ti_stop
 
@@ -116,7 +116,7 @@ function spark_stop()
 	if [ ! -z "${3+x}" ]; then
 		local fast="${3}"
 	fi
-	stop_proc "${spark_mod_dir}/" "${extra_str_to_find_proc}" "${fast}"
+	stop_procs "${spark_mod_dir}/" "${extra_str_to_find_proc}" "${fast}"
 }
 export -f spark_stop
 
