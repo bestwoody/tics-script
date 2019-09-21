@@ -7,6 +7,30 @@ function _db_name_from_scale()
 }
 export -f _db_name_from_scale
 
+function test_cluster_tmpl()
+{
+	echo "${integrated}/tests/_base/local_templ.ti"
+}
+export -f test_cluster_tmpl
+
+function test_cluster_args()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func test_cluster_args] usage: <func> ports" >&2
+		return 1
+	fi
+
+	local ports="${1}"
+
+	if [ -z "${test_cluster_data_dir+x}" ] || [ -z "${test_cluster_data_dir}" ]; then
+		echo "[func test_cluster_cmd] var 'test_cluster_data_dir' not defined" >&2
+		return 1
+	fi
+
+	echo "ports=+${ports}#dir=${test_cluster_data_dir}/nodes/${ports}"
+}
+export -f test_cluster_args
+
 function test_cluster_cmd()
 {
 	if [ -z "${3+x}" ]; then
@@ -18,14 +42,9 @@ function test_cluster_cmd()
 	local mods="${2}"
 	shift 2
 
-	if [ -z "${test_cluster_data_dir+x}" ] || [ -z "${test_cluster_data_dir}" ]; then
-		echo "[func test_cluster_cmd] var 'test_cluster_data_dir' not defined" >&2
-		return 1
-	fi
-
 	local ti="${integrated}/ops/ti.sh"
-	local ti_file="${integrated}/tests/_base/local_templ.ti"
-	local args="ports=+${ports}#dir=${test_cluster_data_dir}/nodes/${ports}"
+	local ti_file=`test_cluster_tmpl`
+	local args=`test_cluster_args "${ports}"`
 
 	"${ti}" -m "${mods}" -k "${args}" "${ti_file}" "${@}"
 }
@@ -86,18 +105,40 @@ export -f test_cluster_vers
 
 function test_cluster_prepare()
 {
-	if [ -z "${2+x}" ]; then
-		echo "[func test_cluster_prepare] usage: <func> ports mods" >&2
+	if [ -z "${3+x}" ]; then
+		echo "[func test_cluster_prepare] usage: <func> ports mods [rendered_file_path]" >&2
 		return 1
 	fi
 
 	local ports="${1}"
 	local mods="${2}"
-	shift 2
 
-	test_cluster_cmd "${ports}" "${mods}" burn doit
-	echo '---'
-	test_cluster_cmd "${ports}" "${mods}" run
+	local rendered_file_path=''
+	if [ ! -z "${3+x}" ]; then
+		local rendered_file_path="${3}"
+		local rendered_file_dir=`dirname "${rendered_file_path}"`
+		local rendered_file_dir=`abs_path "${rendered_file_dir}"`
+		local rendered_file_path=`basename "${rendered_file_path}"`
+		local rendered_file_path="${rendered_file_dir}/${rendered_file_path}"
+	fi
+
+	if [ ! -z "${rendered_file_path}" ]; then
+		local args=`test_cluster_args "${ports}"`
+		local ti_file=`test_cluster_tmpl`
+		split_ti_args "${args}" > "${rendered_file_path}"
+		echo '' >> "${rendered_file_path}"
+		cat "${ti_file}" >> "${rendered_file_path}"
+
+		local ti="${integrated}/ops/ti.sh"
+		test_cluster_cmd "${ports}" "${mods}" burn doit
+		"${ti}" -m "${mods}" "${rendered_file_path}" burn doit
+		echo '---'
+		"${ti}" -m "${mods}" "${rendered_file_path}" run
+	else
+		test_cluster_cmd "${ports}" "${mods}" burn doit
+		echo '---'
+		test_cluster_cmd "${ports}" "${mods}" run
+	fi
 
 	local status=`test_cluster_cmd "${ports}" "${mods}" status`
 	local status_cnt=`echo "${status}" | wc -l | awk '{print $1}'`

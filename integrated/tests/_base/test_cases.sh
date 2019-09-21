@@ -54,7 +54,7 @@ function tpch_perf()
 	mkdir -p "${entry_dir}"
 	local report="${entry_dir}/report"
 
-	test_cluster_prepare "${ports}" ''
+	test_cluster_prepare "${ports}" '' "${entry_dir}/test.ti"
 	local vers=`test_cluster_vers "${ports}"`
 	if [ -z "${vers}" ]; then
 		echo "[func tpch_perf] test cluster prepare failed" >&2

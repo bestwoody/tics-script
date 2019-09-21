@@ -399,8 +399,6 @@ def render_tiflashs(res, conf, hosts, indexes):
             print '\t"%s" \\' % conf_templ_dir
             pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
             print '\t"true" "%s" "%s" "%s" "${id}"' % (pd_addr, tiflash.ports, tiflash.host)
-            # TODO: remove this
-            print 'sleep 2'
 
         if tiflash.is_local():
             print_cp_bin(tiflash, conf)

@@ -248,7 +248,7 @@ function stop_pid()
 		return
 	fi
 
-	local failed_timeout=$((timeout * 2))
+	local fail_timeout=$((timeout * 2))
 
 	local heavy_kill="false"
 	local heaviest_kill="false"
@@ -258,16 +258,16 @@ function stop_pid()
 	fi
 
 	for ((i = 0; i < 9999; i++)); do
-		if [ "${heaviest_kill}" == "true" ]; then
+		if [ "${heaviest_kill}" == 'true' ]; then
 			echo "${pid} closing, using 'kill -9'..."
 			kill_pid "${pid}" 'true'
 		else
-			if [ "${heavy_kill}" == "true" ]; then
-				if [ $((${i} % 3)) = 0 ] && [ ${i} -ge 10 ]; then
+			if [ "${heavy_kill}" == 'true' ]; then
+				if [ "$((${i} % 3))" == '0' ] && [ "${i}" -ge '10' ]; then
 					echo "${pid} closing..."
 				fi
 			else
-				if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
+				if [ "$((${i} % 10))" == '0' ] && [ "${i}" -ge '10' ]; then
 					echo "${pid} closing..."
 				fi
 			fi
@@ -286,14 +286,14 @@ function stop_pid()
 
 		sleep 0.5
 
-		if [ ${i} -ge 21 ]; then
+		if [ "${i}" -ge '21' ]; then
 			local heavy_kill="true"
 		fi
-		if [ ${i} -ge ${timeout} ]; then
+		if [ "${i}" -ge "${timeout}" ]; then
 			local heaviest_kill="true"
 		fi
 
-		if [ ${i} -ge ${fail_timeout} ]; then
+		if [ "${i}" -ge "${fail_timeout}" ]; then
 			echo "${pid} close failed" >&2
 			return 1
 		fi

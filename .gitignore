@@ -32,7 +32,9 @@ db.idx
 origin
 *.mon
 *.data
+*.dat
 *.report
+metastore_db
 
 # Java compile result
 target

@@ -38,6 +38,9 @@ function wait_for_mysql()
 	done
 
 	restore_error_handle_flags "${error_handle}"
+
+	# TODO: remove this!
+	sleep 5
 }
 export -f wait_for_mysql
 
@@ -125,6 +128,9 @@ function wait_for_pd()
 	done
 
 	restore_error_handle_flags "${error_handle}"
+
+	# TODO: remove this!
+	sleep 5
 }
 export -f wait_for_pd
 

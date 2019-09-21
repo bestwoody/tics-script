@@ -247,3 +247,18 @@ function ti_file_exe()
 	fi
 }
 export -f ti_file_exe
+
+function split_ti_args()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func split_ti_args] usage: <func> args" >&2
+		return 1
+	fi
+
+	local args_str="${1}"
+	local args=(${args_str//#/ })
+	for arg in "${args[@]}"; do
+		echo "${arg}"
+	done
+}
+export -f split_ti_args
