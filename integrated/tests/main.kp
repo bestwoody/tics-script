@@ -2,7 +2,6 @@ tiflash.test/run_all_test.sh
 tiflash.sh/raft_sync.sh
 !cluster_ops/ti_restart_test.sh
 performance/ti_tpcc_performance.sh
-performance/tpch_perf_01.sh
 performance/tpch_perf_10.sh
 
 !performance/ti_load_tpch_data.sh

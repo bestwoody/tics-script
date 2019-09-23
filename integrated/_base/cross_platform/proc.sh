@@ -54,7 +54,7 @@ function ps_ppid()
 	if [ `uname` == "Darwin" ]; then
 		ps -ef | awk '{if ($3 == '${ppid}') print $0}' | grep -v 'ps_ppid'
 	else
-		ps -f -ppid "${ppid}" | { grep "${ppid}" || test $? = 1; }
+		ps -f --ppid "${ppid}" | { grep "${ppid}" || test $? = 1; }
 	fi
 }
 export -f ps_ppid
