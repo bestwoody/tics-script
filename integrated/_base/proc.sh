@@ -24,39 +24,22 @@ function kill_pid()
 }
 export -f kill_pid
 
-function print_procs()
+function pid_exists()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func print_procs] usage: <func> str_for_finding_the_procs [str2]" >&2
+		echo "[func pid_exists] usage: <func> pid" >&2
 		return 1
 	fi
 
-	local find_str="${1}"
-	local str2=''
-	if [ ! -z "${2+x}" ]; then
-		local str2="${2}"
+	local pid="${1}"
+	local exists=`ps -fp "${pid}" | { grep "${pid}" || test $? = 1; } | awk '{print $2}'`
+	if [ -z "${exists}" ]; then
+		echo 'false'
+	else
+		echo 'true'
 	fi
-
-	ps -ef | { grep "${find_str}" || test $? = 1; } | { grep "${str2}" || test $? = 1; } | { grep -v 'grep' || test $? = 1; }
 }
-export -f print_procs
-
-function print_pids()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func print_pids] usage: <func> str_for_finding_the_procs [str2]" >&2
-		return 1
-	fi
-
-	local find_str="${1}"
-	local str2=''
-	if [ ! -z "${2+x}" ]; then
-		local str2="${2}"
-	fi
-
-	print_procs "${find_str}" "${str2}" | awk '{print $2}'
-}
-export -f print_pids
+export -f pid_exists
 
 function print_root_pids()
 {
@@ -93,23 +76,6 @@ function print_root_pids()
 }
 export -f print_root_pids
 
-function pid_exists()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func pid_exists] usage: <func> pid" >&2
-		return 1
-	fi
-
-	local pid="${1}"
-	local exists=`ps -fp "${pid}" | { grep "${pid}" || test $? = 1; } | awk '{print $2}'`
-	if [ -z "${exists}" ]; then
-		echo 'false'
-	else
-		echo 'true'
-	fi
-}
-export -f pid_exists
-
 function print_pids_by_ppid()
 {
 	if [ -z "${1+x}" ]; then
@@ -118,7 +84,7 @@ function print_pids_by_ppid()
 	fi
 
 	local ppid="${1}"
-	local pids=`ps -f --ppid "${ppid}" | { grep "${ppid}" || test $? = 1; } | awk '{print $2}'`
+	local pids=`ps_ppid "${ppid}" | awk '{print $2}'`
 	echo "${pids}" | while read pid; do
 		if [ -z "${pid}" ]; then
 			continue
