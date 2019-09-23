@@ -3,8 +3,22 @@
 function _ti_file_cmd_list()
 {
 	local dir="${1}"
-	ls "${dir}" | { grep "sh$" || test $? = 1; } | while read f; do
-		echo "    `basename "${f}" .sh`";
+	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
+		local parent="${2}/"
+	else
+		local parent=''
+	fi
+
+	ls "${dir}" | while read f; do
+		local has_sh_ext=`echo "${f}" | { grep "sh$" || test $? = 1; }`
+		if [ ! -z "${has_sh_ext}" ] && [ -f "${dir}/${f}" ]; then
+			echo "    ${parent}`basename "${f}" .sh`";
+			continue
+		fi
+		if [ -d "${dir}/${f}" ] && [ "${f}" != 'byhost' ]; then
+			_ti_file_cmd_list "${dir}/${f}" "${f}"
+			continue
+		fi
 	done
 }
 export -f _ti_file_cmd_list

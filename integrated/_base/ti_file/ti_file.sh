@@ -161,15 +161,25 @@ function ti_file_exe()
 
 			if [ -z "${host}" ] || [ "${local}" == 'true' ]; then
 				local has_script=`test -f "${real_cmd_dir}/${cmd}.sh" && echo true`
+				if [ "${has_script}" != 'true' ] && [ "${local}" != 'true' ]; then
+					local local_has_script=`test -f "${cmd_dir}/local/${cmd}.sh" && echo true`
+					if [ "${local_has_script}" == 'true' ]; then
+						echo "<auto add '-l': script ${cmd}.sh not found in remote mode, but found in local mode>" >&2
+						local local='true'
+						local real_cmd_dir="${cmd_dir}/local"
+						local has_script='true'
+					fi
+				fi
 			else
 				local has_script=`ssh_exe "${host}" "test -f \"${real_cmd_dir}/${cmd}.sh\" && echo true"`
 			fi
 
 			if [ "${has_script}" == 'true' ]; then
 				if [ -z "${host}" ] || [ "${local}" == 'true' ]; then
-				    if [ -z "${host}" ]; then
-				        local host=`must_print_ip`
-				    fi
+					if [ -z "${host}" ]; then
+						local host=`must_print_ip`
+					fi
+					local dir=`abs_path "${dir}"`
 					if [ -z "${cmd_args+x}" ]; then
 						bash "${real_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else
