@@ -79,6 +79,7 @@ function generate_tpch_data_to_dir()
 		fi
 	)
 	wait
+	chmod 644 "${data_dir}"/*
 }
 export -f generate_tpch_data_to_dir
 

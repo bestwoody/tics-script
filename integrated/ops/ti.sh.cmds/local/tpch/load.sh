@@ -35,6 +35,8 @@ function ti_cmd_tpch_load
 	fi
 
 	local schema_dir="${integrated}/resource/tpch/mysql/schema"
+	local dbgen_bin_dir="/tmp/ti/master/bins"
+
 	local db=`echo "tpch_${scale}" | tr '.' '_'`
 
 	local info_file="${dir}/proc.info"
@@ -50,19 +52,28 @@ function ti_cmd_tpch_load
 		return 1
 	fi
 
-	if [ "${table}" == 'all' ]; then
-		local tables=(customer nation orders part region supplier partsupp lineitem)
-		for table in ${tables[@]}; do
-			local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
-			echo "=> loading ${table}"
-			load_tpch_data_to_mysql "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
-			echo "   done"
-		done
+	if [ "${table}" != 'all' ]; then
+		local tables=("${table}")
 	else
-		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
-		load_tpch_data_to_mysql "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
-		echo 'done'
+		local tables=(customer nation orders part region supplier partsupp lineitem)
 	fi
+
+	# TODO: remove hard code url
+	if [ `uname` == "Darwin" ]; then
+		local dbgen_url="http://139.219.11.38:8000/3GdrI/dbgen.tar.gz"
+	else
+		local dbgen_url="http://139.219.11.38:8000/fCROr/dbgen.tar.gz"
+	fi
+	local dists_dss_url="http://139.219.11.38:8000/v2TLJ/dists.dss"
+
+	for table in ${tables[@]}; do
+		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
+		echo "=> [$host] loading ${table}"
+		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
+		echo '   generated'
+		load_tpch_data_to_mysql "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
+		echo "   loaded"
+	done
 }
 
 ti_cmd_tpch_load "${@}"
