@@ -137,6 +137,8 @@ public class TypeMappingJava {
       PrecisionAndScale p =
           PrecisionAndScale.fromCHToSpark(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
       return new DataTypeAndNullable(DataTypes.createDecimalType(p.precision, p.scale));
+    } else if (name.startsWith("MyDateTime")) {
+      return new DataTypeAndNullable(DataTypes.TimestampType);
     } else {
       switch (name) {
         case "String":
@@ -144,6 +146,7 @@ public class TypeMappingJava {
         case "DateTime":
           return new DataTypeAndNullable(DataTypes.TimestampType);
         case "Date":
+        case "MyDate":
           return new DataTypeAndNullable(DataTypes.DateType);
         case "Int8":
           return new DataTypeAndNullable(DataTypes.ByteType);
