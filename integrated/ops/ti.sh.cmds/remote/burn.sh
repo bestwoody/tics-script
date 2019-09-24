@@ -13,30 +13,37 @@ function cmd_ti_burn()
 		echo "=> DENIED: rm -f /" >&2
 		return 1
 	fi
-	if [ ! -d "${dir}" ]; then
-		echo "=> skipped: ${dir}, not a dir"
-		return
-	fi
+
+	echo "=> burning: ${dir}"
 	if [ "${doit}" == "doit" ]; then
 		while true; do
 			local up_status=`ti_file_mod_status "${dir}" "${conf_rel_path}"`
 			local ok=`echo "${up_status}" | { grep ^OK || test $? = 1; }`
 			if [ ! -z "${ok}" ]; then
 				ti_file_cmd_fstop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}" 2>&1 | \
-					awk '{if ($1 != "=>") print "   "$0; else print "   "$2,$3}'
+					awk '{if ($1 != "=>") print "   "$0}'
 			else
 			    break
 			fi
 			sleep 0.5
 		done
-		local result=`rm -rf "${dir}" 2>&1`
-		if [ ! -z "${result}" ]; then
-			echo "=> error: ${result}"
-			echo "[func cmd_ti_burn] ${result}" >&2
+		if [ ! -d "${dir}" ]; then
+			echo "   missed"
+		else
+			local result=`rm -rf "${dir}" 2>&1`
+			if [ ! -z "${result}" ]; then
+				echo "   error: ${result}"
+				echo "[func cmd_ti_burn] ${result}" >&2
+			else
+				echo "   burned"
+			fi
 		fi
-		echo "=> burned:  ${dir}"
 	else
-		echo "=> dry run: ${dir}, append 'doit' to burn"
+		if [ ! -d "${dir}" ]; then
+			echo "   MISSED"
+		else
+			echo "   dry run, append 'doit' to erase data"
+		fi
 	fi
 }
 

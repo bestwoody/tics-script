@@ -2,7 +2,7 @@
 An OLAP project of TiDB
 
 ## Quick start guide
-* (Deploy and) Launch a cluster: (1 PD, 1 TiKV, 1 TiDB, 1 TiFlash Storage, 1 Spark Master, 1 Spark Worker)
+* (Deploy and) Launch a cluster defined by `1+spark.ti`:
 ```
 tiflash/integrated> ops/ti.sh ti/1+spark.ti up
 => pd #0 (nodes/4/pd)
@@ -33,7 +33,7 @@ OK     spark_m #0 (nodes/4/spark_m)
 OK     spark_w #0 (nodes/4/spark_w)
 ```
 
-* Load tpch data (scale = 0.01, tables = all):
+* Load tpch data into the cluster (scale = 0.01, tables = all):
 ```
 tiflash/integrated> ops/ti.sh ti/1+spark.ti tpch/load 0.01 all
 => loading customer
@@ -102,4 +102,4 @@ Closing: 0: jdbc:hive2://127.0.0.1:10004
 
 ## Docs
 * [Design docs on confluence](https://internal.pingcap.net/confluence/pages/viewpage.action?pageId=14451924)
- [Earlier docs](./deprecated/docs)
+* [Earlier docs](./deprecated/docs)
