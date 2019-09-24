@@ -40,4 +40,5 @@ function run_all_test()
     "${ti}" -k "${args}" "${ti_file}" "burn" "doit"
 }
 
+python "${here}/generate-fullstack-test.py" "test" "t" "${here}/test_cases/gen_tests/"
 run_all_test

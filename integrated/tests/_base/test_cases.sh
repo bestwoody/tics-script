@@ -96,3 +96,91 @@ function tpch_perf()
 	echo '[func tpch_perf] done'
 }
 export -f tpch_perf
+
+function tidb_tpcc_perf_report()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func tidb_tpcc_perf_report] usage: <func> test_entry_file" >&2
+		return 1
+	fi
+
+	local test_entry_file="${1}"
+
+	local entry_dir="${test_entry_file}.data"
+	mkdir -p "${entry_dir}"
+
+	local report="${entry_dir}/report"
+	local title='<tpcc performance test with/without tiflash>'
+
+	rm -f "${report}.tmp"
+
+	if [ -f "${entry_dir}/results.data" ]; then
+		to_table "${title}" 'cols:test; rows:type|notag; cell:limit(20)|avg|~' 9999 "${entry_dir}/results.data" > "${report}.tmp"
+	fi
+
+	if [ -f "${report}.tmp" ]; then
+		mv -f "${report}.tmp" "${report}"
+	fi
+}
+export -f tidb_tpcc_perf_report
+
+function tidb_tpcc_perf()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func tidb_tpcc_perf] usage: <func> test_entry_file ports [warehouses] [minutes]" >&2
+		return 1
+	fi
+
+	local test_entry_file="${1}"
+	local ports="${2}"
+
+	if [ ! -z "${3+x}" ]; then
+		local warehouses="${3}"
+	else
+		local warehouses='1'
+	fi
+
+	if [ ! -z "${4+x}" ]; then
+		local minutes="${4}"
+	else
+		local minutes='1'
+	fi
+
+	local entry_dir="${test_entry_file}.data"
+	mkdir -p "${entry_dir}"
+	local report="${entry_dir}/report"
+
+	test_cluster_prepare "${ports}" 'pd,tikv,tidb' "${entry_dir}/test.ti"
+	local vers=`test_cluster_vers "${ports}"`
+	if [ -z "${vers}" ]; then
+		echo "[func tidb_tpcc_perf] test cluster prepare failed" >&2
+		return 1
+	else
+		echo "[func tidb_tpcc_perf] test cluster prepared: ${vers}"
+	fi
+
+	echo '---'
+
+	local benchmark_repo="${entry_dir}/benchmarksql"
+	if [ ! -d "${benchmark_repo}" ]; then
+		temp_benchmark_repo="${benchmark_repo}.`date +%s`.${RANDOM}"
+		mkdir -p "${temp_benchmark_repo}"
+		git clone -b 5.0-mysql-support-opt-2.1 https://github.com/pingcap/benchmarksql.git "${temp_benchmark_repo}"
+		(
+			cd "${temp_benchmark_repo}" && ant
+		)
+		wait
+		mv "${temp_benchmark_repo}" "${benchmark_repo}"
+	fi
+	local benchmark_dir="${benchmark_repo}/run"
+
+	load_tpcc_data "${benchmark_dir}" "${ports}" "${warehouses}" "${minutes}"
+	test_cluster_run_tpcc "tidb_only" "${benchmark_dir}" "${entry_dir}" "${vers}"
+	test_cluster_cmd "${ports}" 'pd,tikv,tidb,tiflash,rngine' "run"
+	test_cluster_run_tpcc "with_tiflash" "${benchmark_dir}" "${entry_dir}" "${vers}"
+	tidb_tpcc_perf_report "${test_entry_file}"
+
+	test_cluster_burn "${ports}"
+	echo '[func tidb_tpcc_perf] done'
+}
+export -f tidb_tpcc_perf

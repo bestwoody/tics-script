@@ -7,6 +7,7 @@ source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_proc.sh"
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_wait.sh"
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_stop.sh"
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_status.sh"
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_safe_proc.sh"
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_ssh.sh"
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_ssh_proc.sh"

@@ -7,7 +7,7 @@ ti_ch> select count(*) from tpch1.region
 │       5 │
 └─────────┘
 
-ti_func> load_tpch 1 lineitem 4
+ti_func> load_tpch 1 lineitem 16
 ti_ch> DBGInvoke __refresh_schemas()
 ti_beeline> select count(*) from tpch1.lineitem
 +-----------+--+

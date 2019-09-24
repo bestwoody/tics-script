@@ -1,74 +1,46 @@
 #!/bin/bash
 
-here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-source "${here}/_env.sh"
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
 
-ti="${integrated}/ops/ti.sh"
-ti_file="${integrated}/ti/1+spark_x.ti"
-dir="nodes/32"
-args="ports=+32#dir=${dir}"
-
-db="tpch10"
-table="lineitem"
-schema_dir="/data1/data/tpch/schema"
-data_dir="/data1/data/tpch/tpch10_16"
-
-function restart_tiflash() {
-	local status=`"${ti}" -k "${args}" "${ti_file}" 'status'`
-	local ok=`echo "${status}" | grep 'OK' | wc -l | awk '{print $1}'`
-	if [ "${ok}" != '5' ]; then
-		echo "${status}" >&2
-		local error_time=`date +%s`
-		local error_time=`date -d "1970-01-01 ${error_time} seconds" +"%Y_%m_%d_%H_%m_%S"`
-		mkdir -p "${here}/failed_test_envs"
-		echo "${status}" > "${here}/failed_test_envs/${error_time}.log"
-		"${ti}" -k "${args}" -m pd "${ti_file}" log 100000 | awk '{ print "[pd] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
-		"${ti}" -k "${args}" -m tikv "${ti_file}" log 100000 | awk '{ print "[tikv] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
-		"${ti}" -k "${args}" -m tidb "${ti_file}" log 100000 | awk '{ print "[tidb] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
-		"${ti}" -k "${args}" -m tiflash "${ti_file}" log 100000 | awk '{ print "[tiflash] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
-		"${ti}" -k "${args}" -m rngine "${ti_file}" log 100000 | awk '{ print "[rngine] " $0 }' >> "${here}/failed_test_envs/${error_time}.log"
-		"${ti}" -k "${args}" "${ti_file}" 'down'
-		tar -czPf "${here}/failed_test_envs/${error_time}_env.tar.gz" "${integrated}/${dir}"
-		"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
+function wait_load_data_ready() 
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func wait_load_data_ready] usage: <func> ports db table" >&2
 		return 1
 	fi
 
-	sleep $((100 + (${RANDOM} % 100)))
-	"${ti}" -k "${args}" -m tiflash,rngine "${ti_file}" "stop"
+	local ports="${1}"
+	local db="${2}"
+	local table="${3}"
 
-	"${ti}" -k "${args}" -m tiflash,rngine "${ti_file}" "up"
-	sleep $((10 + (${RANDOM} % 10)))
-}
-
-function wait_load_data_ready() {
-	local target_result=`cat ${data_dir}/${table}* | wc -l`
+	local prev_mysql_result=""
 	while true; do
-		local completed="true"
-		local status=`"${ti}" -k "${args}" "${ti_file}" 'status'`
-		local ok=`echo "${status}" | grep 'OK' | wc -l | awk '{print $1}'`
-		if [ "${ok}" != '5' ]; then
-			echo "${status}" >&2
-			"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
-			return 1
-		fi
-		local mysql_result=`"${ti}" -k "${args}" "${ti_file}" "mysql" "select count(*) from ${db}.${table}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
-		if [ "${mysql_result}" == "${target_result}" ]; then
+		local mysql_result=`test_cluster_cmd "${ports}" "" "mysql" "select count(*) from ${db}.${table}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
+		if [ ! -z "${prev_mysql_result}" ] && [ "${mysql_result}" == "${prev_mysql_result}" ]; then
 			break
-		else
-			echo "waiting for load data completed"
-			echo "current: " "${mysql_result}"
-			echo "target: " "${target_result}"
 		fi
+		local prev_mysql_result="${mysql_result}"
 		sleep $((5 + (${RANDOM} % 5)))
 	done
 }
 
-function check_tiflash_and_tidb_result_consistency() {
-	"${ti}" -k "${args}" "${ti_file}" up
-	local mysql_result=`"${ti}" -k "${args}" "${ti_file}" "mysql" "select count(*) from ${db}.${table}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
+function check_tiflash_and_tidb_result_consistency() 
+{
+	if [ -z "${4+x}" ]; then
+		echo "[func check_tiflash_and_tidb_result_consistency] usage: <func> ports db table entry_dir" >&2
+		return 1
+	fi
+
+	local ports="${1}"
+	local db="${2}"
+	local table="${3}"
+	local entry_dir="${4}"
+
+	test_cluster_cmd "${ports}" "spark_m,spark_w" "run"
+	local mysql_result=`test_cluster_cmd "${ports}" "" "mysql" "select count(*) from ${db}.${table}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
 	for (( i=0; i<100; i++ )); do
-		local beeline_result_orig=`"${ti}" -k "${args}" "${ti_file}" "beeline" -e "select count(*) from ${db}.${table}" 2>&1`
+		local beeline_result_orig=`test_cluster_cmd "${ports}" "" "beeline" -e "select count(*) from ${db}.${table}" 2>&1`
 		local beeline_result=`echo "${beeline_result_orig}" | grep -A 2 "count" | tail -n 1 | awk -F '|' '{ print $2 }' | tr -d ' '`
 		if [ "${beeline_result}" != "" ]; then
 			break
@@ -77,49 +49,88 @@ function check_tiflash_and_tidb_result_consistency() {
 	done
 
 	if [ "${mysql_result}" != "${beeline_result}" ]; then
-		echo "mysql_result" ${mysql_result}
-		echo "beeline_result" ${beeline_result_orig}
-		mkdir -p "${here}/failed_test_envs"
 		local error_time=`date +%s`
 		local error_time=`date -d "1970-01-01 ${error_time} seconds" +"%Y_%m_%d_%H_%m_%S"`
-		"${ti}" -k "${args}" "${ti_file}" "down"
-		tar -czPf "${here}/failed_test_envs/result_not_match.${error_time}_env.tar.gz" "${integrated}/${dir}"
-		"${ti}" -k "${args}" -m pd,tikv,tidb,tiflash,rngine "${ti_file}" log 100000 > "${here}/failed_test_envs/result_not_match.${error_time}.log"
+		echo "mysql_result" ${mysql_result} >&2
+		echo "beeline_result" ${beeline_result_orig} >&2
+		echo "${error_time}" >&2
+		local failed_test_envs="${entry_dir}/failed_test_envs"
+		mkdir -p "${failed_test_envs}"
+		test_cluster_cmd "${ports}" "" "down"
+		local cluster_dir=`test_cluster_args | awk -F '#' '{ print $2 }' | awk -F '=' '{ print $2 }'`
+		tar -czPf "${failed_test_envs}/${error_time}_env.tar.gz" "${cluster_dir}"
+		test_cluster_cmd "${ports}" "pd,tikv,tidb,tiflash,rngine" log 100000 > "${failed_test_envs}/${error_time}.log"
 		return 1
+	else
+		echo "mysql_result" ${mysql_result}
+		echo "beeline_result" ${beeline_result}
 	fi
 }
 
-function test_restart_tiflash() {
-	"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
-	"${ti}" -k "${args}" -m pd,tikv,tidb,tiflash,rngine "${ti_file}" "up"
-
-	local status=`"${ti}" -k "${args}" "${ti_file}" 'status'`
-	local ok=`echo "${status}" | grep 'OK' | wc -l | awk '{print $1}'`
-	if [ "${ok}" != '5' ]; then
-		echo "${status}" >&2
-		"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
+function restart_tiflash_test() 
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func restart_tiflash_test] usage: <func> test_entry_file ports [load_tpch_scale] [restart_times] [restart_interval]" >&2
 		return 1
 	fi
 
-	load_tpch_data_to_ti_cluster "${ti_file}" "${schema_dir}" "${data_dir}" "${db}" "${table}" "${args}" 1>/dev/null &
-	for i in {1..2}; do
-		restart_tiflash
+	local test_entry_file="${1}"
+	local ports="${2}"
+
+	if [ ! -z "${3+x}" ]; then
+		local load_tpch_scale="${3}"
+	else
+		local load_tpch_scale='1'
+	fi
+
+	if [ ! -z "${4+x}" ]; then
+		local restart_times="${4}"
+	else
+		local restart_times='1'
+	fi
+
+	if [ ! -z "${5+x}" ]; then
+		local restart_interval="${5}"
+	else
+		local restart_interval='120'
+	fi
+
+	local entry_dir="${test_entry_file}.data"
+	mkdir -p "${entry_dir}"
+
+	test_cluster_prepare "${ports}" "pd,tikv,tidb,tiflash,rngine" "${entry_dir}/test.ti"
+	local vers=`test_cluster_vers "${ports}"`
+	if [ -z "${vers}" ]; then
+		echo "[func restart_tiflash_test] test cluster prepare failed" >&2
+		return 1
+	else
+		echo "[func restart_tiflash_test] test cluster prepared: ${vers}"
+	fi
+
+	echo '---'
+
+	local table="lineitem"
+	local blocks="4"
+	local data_dir="${entry_dir}/load_data"
+
+	_test_cluster_gen_and_load_tpch_table "${ports}" "${table}" "${load_tpch_scale}" "${blocks}" "${data_dir}" 1>/dev/null &
+
+	for i in {1..${restart_times}}; do
+		sleep ${restart_interval}
+		test_cluster_restart_tiflash "${ports}" "${entry_dir}"
 	done
+	wait_load_data_ready "${ports}" `_db_name_from_scale ${load_tpch_scale}` "${table}"
+
 	local error_handle="$-"
 	set +e
-	wait_load_data_ready
+	check_tiflash_and_tidb_result_consistency "${ports}" `_db_name_from_scale ${load_tpch_scale}` "${table}" "${entry_dir}"
 	if [ "${?}" != 0 ]; then
-		"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
-		return 1
-	fi
-	check_tiflash_and_tidb_result_consistency
-	if [ "${?}" != 0 ]; then
-		"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
+		test_cluster_burn "${ports}"
 		return 1
 	fi
 	restore_error_handle_flags "${error_handle}"
-	"${ti}" -k "${args}" "${ti_file}" "burn" "doit"
+	test_cluster_burn "${ports}"
 	echo 'done'
 }
 
-test_restart_tiflash
+restart_tiflash_test "${BASH_SOURCE[0]}" 32 1 2 120

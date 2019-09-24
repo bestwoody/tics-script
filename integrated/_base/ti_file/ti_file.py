@@ -356,8 +356,8 @@ def render_tidbs(res, conf, hosts, indexes):
             conf_templ_dir = env_dir + '/conf'
             print_ssh_prepare(tidb, conf, env_dir)
 
-        print '# tidb_run dir conf_templ_dir pd_addr advertise_host ports_delta cluster_id'
-        print ssh + 'tidb_run "%s" \\' % tidb.dir
+        print '# tidb_safe_run dir conf_templ_dir pd_addr advertise_host ports_delta cluster_id'
+        print ssh + 'tidb_safe_run "%s" \\' % tidb.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = tidb.pd or ','.join(res.pd_addr)
         print '\t"%s" "%s" "%s" "${id}"' % (pd_addr, tidb.host, tidb.ports)
@@ -365,15 +365,6 @@ def render_tidbs(res, conf, hosts, indexes):
 def render_tiflashs(res, conf, hosts, indexes):
     if len(res.tiflashs) == 0:
         return
-
-    if len(res.tidbs) != 0:
-        print_sep()
-        print '# Wait for tidb to ready'
-        for tidb in res.tidbs:
-            if tidb.is_local():
-                print 'wait_for_tidb "%s"' % tidb.dir
-            else:
-                print 'wait_for_tidb_by_host "%s" "%s" 180 %s' % (tidb.host, tidb.ports, conf.integrated_dir + '/conf/default.ports')
 
     if len(res.pds) != 0:
         print_sep()
@@ -394,8 +385,8 @@ def render_tiflashs(res, conf, hosts, indexes):
         print_mod_header(tiflash)
 
         def print_run_cmd(ssh, conf_templ_dir):
-            print '# tiflash_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host cluster_id'
-            print (ssh + 'tiflash_run "%s" \\') % tiflash.dir
+            print '# tiflash_safe_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host cluster_id'
+            print (ssh + 'tiflash_safe_run "%s" \\') % tiflash.dir
             print '\t"%s" \\' % conf_templ_dir
             pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
             print '\t"true" "%s" "%s" "%s" "${id}"' % (pd_addr, tiflash.ports, tiflash.host)
@@ -409,16 +400,6 @@ def render_tiflashs(res, conf, hosts, indexes):
             print_run_cmd('call_remote_func "%s" "%s" ' % (tiflash.host, env_dir), env_dir + '/conf')
 
 def render_rngines(res, conf, hosts, indexes):
-    if len(res.tiflashs) != 0:
-        print_sep()
-        print '# Wait for tiflash raft port ready'
-        for tiflash in res.tiflashs:
-            if tiflash.is_local():
-                print 'wait_for_tiflash_local "%s"' % tiflash.dir
-            else:
-                bins_dir = conf.cache_dir + '/master/bins'
-                print 'wait_for_tiflash_by_host "%s" "%s" 180 %s' % (tiflash.host, tiflash.ports, conf.integrated_dir + '/conf/default.ports')
-
     for i in range(0, len(res.rngines)):
         rngine = res.rngines[i]
         if len(hosts) != 0 and rngine.host not in hosts:

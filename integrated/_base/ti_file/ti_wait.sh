@@ -117,7 +117,7 @@ function wait_for_pd()
 			return 1
 		fi
 		local region=`"${bins_dir}/pd-ctl" -u "http://${host}:${port}" <<< "region key ${key}"` >/dev/null
-		if [ "${region}" != "null" ]; then
+		if [ "${region}" != "null" ] && [ `echo "${region}" | { grep "Failed" || test $? = 1; } | wc -l` == 0 ]; then
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
