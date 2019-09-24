@@ -46,7 +46,7 @@ function abs_path()
 
 	local src="${1}"
 
-	if [ "${path:0:1}" == '/' ]; then
+	if [ "${src:0:1}" == '/' ]; then
 		echo "${src}"
 		return
 	fi
