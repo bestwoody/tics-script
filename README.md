@@ -1,55 +1,105 @@
 # The Flash
 An OLAP project of TiDB
 
-## Design Docs
-* [Docs on confluence](https://internal.pingcap.net/confluence/pages/viewpage.action?pageId=14451924)
-* [Earlier docs](./deprecated/docs)
-
-
 ## Quick start guide
-* Build
-    * `theflash> git submodule update --init --recursive`: fetch all submodule
-    * Build CH:
-        * `theflash/storage> ./build.sh`: build CH (use `./build_clang.sh` if it's on Mac)
-    * Build Spark and CHSpark
-        * `theflash/computing/spark> follow the build method of Spark`: build Spark
-        * `theflash/computing> ./build.sh`: build CHSpark
-* Play around
-    * With Patched CH
-        * `theflash/benchmark> ./storage-server-start.sh`: run CH server
-        * `theflash/benchmark> ./storage-client.sh`: play with CH in intereactive mode
-        * `theflash/benchmark> ./storage-client.sh <sql>`: play with CH in command mode
-        * `theflash/storage> ./storage-import-data.sh <name>`: import table data `storage/running/data/<name>` to CH
-        * Look around
-            * `theflash/storage> vim _env.sh`: check the config, IMPORTANT: `storage_db`
-            * `theflash/benchmark> vim _env.sh`: each `_env.sh` ONLY affect the current dir
-            * `theflash/benchmark> vim /data/theflash/server.log`: check server log
-            * `theflash/benchmark> ls /data/theflash/db`: check database files
-            * `theflash/benchmark> vim storage-server/config/*.xml`: check server configs
-    * With Spark
-        * `theflash/computing> ./spark-start-all.sh 127.0.0.1`: run Spark master and workers
-        * `theflash/computing> ./spark-shell.sh`: play with Spark
-        * `theflash/benchmark> ./spark-shell.sh`: play with Spark
-    * With Spark connecting to CH
-        * Command mode
-            * `theflash/benchmark> ./spark-q.sh <sql>`: can access CH tables in your sql
-        * Intereactive mode
-            * `theflash/benchmark> ./spark-shell.sh`: start Spark as usual
-            * `scala> val ch = new org.apache.spark.sql.CHContext(spark)`: create CH context
-            * `scala> ch.mapCHClusterTable(database=<database>, table=<table>)`: map a CH table to Spark
-            * `scala> ch.sql("select count(*) from <table>")`: use the mapped table in Spark
-* TPCH benchmark
-    * Load data
-        * `theflash/benchmark/tpch-dbgen> make`: build TPCH dbgen
-        * `theflash/benchmark/tpch-load> vim _env.sh`: check the loading config, IMPORTANT: `tpch_scale`
-        * `theflash/benchmark/tpch-load> ./load-all.sh`: generate - transform - load data, make sure you have enough disk space
-    * Run TPCH benchmark
-        * `theflash/benchmark/tpch-load> vim _env.sh`: check the config
-        * `theflash/benchmark> ./tpch-spark-q.sh 1`: run TPCH Q1
-        * Loop running
-            * `theflash/benchmark> ./stable-test-ch-stable.sh`: loop running TPCH Q1-Q22
-            * `theflash/benchmark> vim tpch.log`: check log
-            * `theflash/benchmark> vim tpch.log.md`: check report
-* Deployment
-    * Binary packing for development
-        * `theflash/deployment/publish> ./publish.sh`: packing binary in a compiling server
+* (Deploy and) Launch a cluster: (1 PD, 1 TiKV, 1 TiDB, 1 TiFlash Storage, 1 Spark Master, 1 Spark Worker)
+```
+tiflash/integrated> ops/ti.sh ti/1+spark.ti up
+=> pd #0 (nodes/4/pd)
+25239
+=> tikv #0 (nodes/4/tikv)
+25429
+=> tidb #0 (nodes/4/tidb)
+25581
+=> tiflash #0 (nodes/4/tiflash)
+25961
+=> rngine #0 (nodes/4/rngine)
+26180
+=> spark_m #0 (nodes/4/spark_m)
+26535
+=> spark_w #0 (nodes/4/spark_w)
+27057
+```
+
+* Check the cluster status:
+```
+tiflash/integrated> ops/ti.sh ti/1+spark.ti
+OK     pd #0 (nodes/4/pd)
+OK     tikv #0 (nodes/4/tikv)
+OK     tidb #0 (nodes/4/tidb)
+OK     tiflash #0 (nodes/4/tiflash)
+OK     rngine #0 (nodes/4/rngine)
+OK     spark_m #0 (nodes/4/spark_m)
+OK     spark_w #0 (nodes/4/spark_w)
+```
+
+* Load tpch data (scale = 0.01, tables = all):
+```
+tiflash/integrated> ops/ti.sh ti/1+spark.ti tpch/load 0.01 all
+=> loading customer
+   loaded
+=> loading nation
+   loaded
+=> loading orders
+   loaded
+=> loading part
+   loaded
+=> loading region
+   loaded
+=> loading supplier
+   loaded
+=> loading partsupp
+   loaded
+=> loading lineitem
+   loaded
+```
+
+* Execute a query on TiDB:
+```
+tiflash/integrated> ops/ti.sh ti/1+spark.ti mysql "select count(*) from tpch_0_01.lineitem"
+count(*)
+60175
+```
+
+* Execute a query directly on TiFlash Storage:
+```
+tiflash/integrated> ops/ti.sh ti/1+spark.ti ch "select count(*) from tpch_0_01.lineitem"
+┌─count()─┐
+│   60175 │
+└─────────┘
+```
+
+* Execute a query from Spark to TiFlash Storage:
+```
+tiflash/integrated> ops/ti.sh ti/1+spark.ti beeline "select count(*) from tpch_0_01.lineitem"
+Connecting to jdbc:hive2://127.0.0.1:10004
++-----------+
+| count(1)  |
++-----------+
+| 60175     |
++-----------+
+1 row selected (2.399 seconds)
+Closing: 0: jdbc:hive2://127.0.0.1:10004
+```
+
+### More usage
+* The cluster managing tool: ops/ti.sh
+    * `tiflash/integrated> ops/ti.sh`: run it without args to get help and the cmd set
+    * `tiflash/integrated> ops/ti.sh foo.ti some-cmd`: run a cmd without args to get help
+    * [Doc](./integrated/docs/ti.sh.md)
+
+### How To Build binaries
+* `tiflash> git submodule update --init --recursive`: fetch all submodule
+* Build TiFlash storage module:
+    * `tiflash/storage> ./build.sh`: build CH (use `./build_clang.sh` if it's on Mac)
+* Build CHSpark, a TiFlash connector for Spark:
+    * `tiflash/computing> ./build.sh`: build CHSpark
+* Put the built result into usage:
+    * Put binary's path into `tiflash/integrated/conf/bin.paths`
+        * TiFlash storage module built result: `tiflash/storage/build/dbms/src/Server/tiflash`
+        * CHSpark built result: `tiflash/chspark/target/chspark-*.jar`
+    * Launch cluster as above.
+
+## Docs
+* [Design docs on confluence](https://internal.pingcap.net/confluence/pages/viewpage.action?pageId=14451924)
+ [Earlier docs](./deprecated/docs)
