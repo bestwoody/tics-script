@@ -45,6 +45,12 @@ function abs_path()
 	fi
 
 	local src="${1}"
+
+	if [ "${path:0:1}" == '/' ]; then
+		echo "${src}"
+		return
+	fi
+
 	if [ `uname` == "Darwin" ]; then
 		if [ -d "${src}" ]; then
 		    local path=$(cd "${src}"; pwd)
@@ -52,7 +58,7 @@ function abs_path()
 		    local dir=$(cd "$(dirname "${src}")"; pwd)
 		    local path="${dir}/`basename ${src}`"
 		else
-			echo "${src}"
+			echo "`pwd`/${src}"
 			return 1
 		fi
 		echo "${path}"

@@ -22,7 +22,8 @@ function cmd_ti_burn()
 			local up_status=`ti_file_mod_status "${dir}" "${conf_rel_path}"`
 			local ok=`echo "${up_status}" | { grep ^OK || test $? = 1; }`
 			if [ ! -z "${ok}" ]; then
-				ti_file_cmd_fstop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}"
+				ti_file_cmd_fstop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}" 2>&1 | \
+					awk '{if ($1 != "=>") print "   "$0; else print "   "$2,$3}'
 			else
 			    break
 			fi

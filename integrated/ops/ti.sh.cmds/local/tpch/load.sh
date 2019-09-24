@@ -39,14 +39,7 @@ function ti_cmd_tpch_load
 
 	local db=`echo "tpch_${scale}" | tr '.' '_'`
 
-	local info_file="${dir}/proc.info"
-	local has_info=`ssh_exe "${host}" "test -f \"${info_file}\" && echo true"`
-	if [ "${has_info}" != 'true' ]; then
-		echo "[${host}] ${dir}/proc.info missed, skipped" >&2
-		return
-	fi
-
-	local port=`ssh_exe "${host}" "grep tidb_port \"${info_file}\"" | awk '{print $2}'`
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
 	if [ -z "${port}" ]; then
 		echo "[${host}] ${dir}: getting tidb port failed" >&2
 		return 1

@@ -13,7 +13,7 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -z "${6+x}" ]; then
-		echo '[cmd mysql] <cmd> query [database]' >&2
+		echo '[cmd mysql] <cmd> query-str-or-file-path [database]' >&2
 		return
 	fi
 
@@ -29,7 +29,12 @@ function cmd_ti_mysql()
 	fi
 
 	local port=`get_value "${dir}/proc.info" 'tidb_port'`
-	mysql -h "${host}" -P "${port}" -u root --database="${db}" -e "${query}"
+
+	if [ -f "${query}" ]; then
+		mysql -h "${host}" -P "${port}" -u root --database="${db}" < "${query}"
+	else
+		mysql -h "${host}" -P "${port}" -u root --database="${db}" -e "${query}"
+	fi
 }
 
 cmd_ti_mysql "${@}"

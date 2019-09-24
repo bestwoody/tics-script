@@ -149,6 +149,7 @@ function ti_file_exe()
 
 		local has_func=`func_exists "ti_file_cmd_${cmd}"`
 
+		# TODO: loop without sub-process
 		echo "${mods}" | while read mod; do
 			if [ -z "${mod}" ]; then
 				continue

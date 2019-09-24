@@ -17,3 +17,4 @@ source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_file_stop.sh"
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_file.sh"
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/cmd_ti.sh"
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_ops_cmd.sh"
