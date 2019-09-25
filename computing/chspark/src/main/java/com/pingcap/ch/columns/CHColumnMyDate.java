@@ -32,7 +32,7 @@ public class CHColumnMyDate extends CHColumn {
   @Override
   public long getLong(int rowId) {
     long v = MemoryUtil.getLong(dataAddr + (rowId << 3));
-    long ymd = v >> 31;
+    long ymd = v >> 41;
     int year = (int) ((ymd >> 5) / 13) - 1900;
     int month = (int) ((ymd >> 5) % 13) - 1;
     int day = (int) (ymd & ((1 << 5) - 1));
@@ -47,7 +47,7 @@ public class CHColumnMyDate extends CHColumn {
     int day = date.getDate();
     int month = date.getMonth() + 1;
     long ymd = ((year * 13 + month) << 5) | day;
-    MemoryUtil.setLong(dataAddr + (size << 3), ymd << 31);
+    MemoryUtil.setLong(dataAddr + (size << 3), ymd << 41);
     size++;
   }
 
