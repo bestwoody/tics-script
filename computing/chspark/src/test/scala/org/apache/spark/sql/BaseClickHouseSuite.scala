@@ -355,7 +355,7 @@ class BaseClickHouseSuite extends CHQueryTest with CHSharedSQLContext {
 
     val comp12 = compResult(r1, r2, isOrdered)
 
-    val query: String = convertSparkSQLToCHSQL(qClickHouse.getOrElse(qSpark))
+    val query: String = qClickHouse.getOrElse(convertSparkSQLToCHSQL(qSpark))
 
     if (skipJDBC || !comp12) {
       if (!skipClickHouse && r3 == null) {

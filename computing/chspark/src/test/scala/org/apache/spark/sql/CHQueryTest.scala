@@ -61,8 +61,10 @@ abstract class CHQueryTest extends PlanTest {
       case d: Byte   => d.toLong
     }
 
-    def toString(value: Any): String =
-      new SimpleDateFormat("yy-MM-dd HH:mm:ss", Locale.CHINA).format(value)
+    def toString(value: Any): String = value match {
+      case s: String => s
+      case _         => new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(value)
+    }
 
     def compNull(l: Any, r: Any): Boolean = {
       if (l == null) {
@@ -155,7 +157,10 @@ abstract class CHQueryTest extends PlanTest {
       } catch {
         // TODO:Remove this temporary exception handling
         //      case _:RuntimeException => false
-        case e: Throwable => false
+        case e: Throwable => {
+          e.printStackTrace()
+          false
+        }
       }
     } else {
       false

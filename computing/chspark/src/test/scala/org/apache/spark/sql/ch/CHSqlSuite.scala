@@ -146,8 +146,8 @@ class CHSqlSuite extends SparkFunSuite {
     testCompileExpression(booleanLiteral.cast(LongType), "CAST(CAST(1 AS UInt8) AS Int64)")
 
     // Comment it for hack. Will add it back after we support true date type in CH.
-    // testCompileExpression(a.cast(DateType), "CAST(`a` AS Nullable(Date))")
-    testCompileExpression(b.withNullability(false).cast(TimestampType), "CAST(`b` AS DateTime)")
+    // testCompileExpression(a.cast(MyDateType), "CAST(`a` AS Nullable(MyDate))")
+    testCompileExpression(b.withNullability(false).cast(TimestampType), "CAST(`b` AS MyDateTime)")
 
     testCompileExpression(
       (a + b).cast(FloatType),
@@ -230,7 +230,7 @@ class CHSqlSuite extends SparkFunSuite {
       Some(64),
       Array("I am"),
       8192,
-      "CREATE TABLE `test`.`test` (`i am` Int32, `d` Nullable(Float64), `s` Nullable(String), `dt` Nullable(Date), `dt_nn` Date) ENGINE = MutableMergeTree(64, (`i am`), 8192)"
+      "CREATE TABLE `test`.`test` (`i am` Int32, `d` Nullable(Float64), `s` Nullable(String), `dt` Nullable(MyDate), `dt_nn` MyDate) ENGINE = MutableMergeTree(64, (`i am`), 8192)"
     )
     testCreateTable(
       "Test",

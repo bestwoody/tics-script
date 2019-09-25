@@ -29,9 +29,7 @@ public class CHColumnMyDate extends CHColumn {
     return size << 3;
   }
 
-  @Override
-  public long getLong(int rowId) {
-    long v = MemoryUtil.getLong(dataAddr + (rowId << 3));
+  public static int toSparkValue(long v) {
     long ymd = v >> 41;
     int year = (int) ((ymd >> 5) / 13) - 1900;
     int month = (int) ((ymd >> 5) % 13) - 1;
@@ -40,13 +38,23 @@ public class CHColumnMyDate extends CHColumn {
     return DateTimeUtils.fromJavaDate(dt);
   }
 
-  @Override
-  public void insertLong(long v) {
+  public static long fromSparkValue(int v) {
     Date date = DateTimeUtils.toJavaDate((int) v);
     int year = date.getYear() + 1900;
     int day = date.getDate();
     int month = date.getMonth() + 1;
-    long ymd = ((year * 13 + month) << 5) | day;
+    return ((year * 13 + month) << 5) | day;
+  }
+
+  @Override
+  public long getLong(int rowId) {
+    long v = MemoryUtil.getLong(dataAddr + (rowId << 3));
+    return toSparkValue(v);
+  }
+
+  @Override
+  public void insertLong(long v) {
+    long ymd = fromSparkValue((int) v);
     MemoryUtil.setLong(dataAddr + (size << 3), ymd << 41);
     size++;
   }

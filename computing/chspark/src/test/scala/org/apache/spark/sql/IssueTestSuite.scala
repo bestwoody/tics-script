@@ -135,7 +135,11 @@ class IssueTestSuite extends BaseClickHouseSuite {
 
   test("#235 Comparison incorrect when TimeStamp cast to Date in predicates") {
     explainAndRunTest(
-      "SELECT cast(tp_datetime as date) cast_datetime, date(tp_datetime) date_datetime, tp_datetime FROM full_data_type_table WHERE date(tp_datetime) > date('2009-01-02')"
+      qSpark =
+        "SELECT cast(tp_datetime as date) cast_datetime, date(tp_datetime) date_datetime, tp_datetime FROM full_data_type_table WHERE date(tp_datetime) > date('2009-01-02')",
+      qClickHouse = Some(
+        "SELECT cast(tp_datetime as Nullable(MyDate)) cast_datetime, cast(tp_datetime as Nullable(MyDate)) date_datetime, tp_datetime FROM full_data_type_table WHERE cast(tp_datetime as Nullable(MyDate)) > cast('2009-01-02' as MyDate)"
+      )
     )
   }
 

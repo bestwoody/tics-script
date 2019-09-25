@@ -185,10 +185,10 @@ public class TypeMappingJava {
     sparkTypeToCHTypeNullableMap.put(IntegerType$.class, CHTypeInt32.nullableInstance);
     sparkTypeToCHTypeMap.put(LongType$.class, CHTypeInt64.instance);
     sparkTypeToCHTypeNullableMap.put(LongType$.class, CHTypeInt64.nullableInstance);
-    sparkTypeToCHTypeMap.put(DateType$.class, CHTypeDate.instance);
-    sparkTypeToCHTypeNullableMap.put(DateType$.class, CHTypeDate.nullableInstance);
-    sparkTypeToCHTypeMap.put(TimestampType$.class, CHTypeDateTime.instance);
-    sparkTypeToCHTypeNullableMap.put(TimestampType$.class, CHTypeDateTime.nullableInstance);
+    sparkTypeToCHTypeMap.put(DateType$.class, CHTypeMyDate.instance);
+    sparkTypeToCHTypeNullableMap.put(DateType$.class, CHTypeMyDate.nullableInstance);
+    sparkTypeToCHTypeMap.put(TimestampType$.class, CHTypeMyDateTime.instance);
+    sparkTypeToCHTypeNullableMap.put(TimestampType$.class, CHTypeMyDateTime.nullableInstance);
     sparkTypeToCHTypeMap.put(FloatType$.class, CHTypeFloat32.instance);
     sparkTypeToCHTypeNullableMap.put(FloatType$.class, CHTypeFloat32.nullableInstance);
     sparkTypeToCHTypeMap.put(DoubleType$.class, CHTypeFloat64.instance);

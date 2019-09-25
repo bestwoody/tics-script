@@ -4,6 +4,7 @@ import com.pingcap.ch.datatypes.CHTypeMyDateTime;
 import com.pingcap.common.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
+import org.apache.spark.sql.catalyst.util.DateTimeUtils;
 
 public class CHColumnMyDateTime extends CHColumn {
   private ByteBuffer data; // Keep a reference here to prevent the memory from gc.
@@ -28,10 +29,8 @@ public class CHColumnMyDateTime extends CHColumn {
     return size << 3;
   }
 
-  @Override
-  public long getLong(int rowId) {
-    long packed = MemoryUtil.getLong(dataAddr + (rowId << 3));
-    long ymdhms = packed >> 24;
+  public static long toSparkValue(long v) {
+    long ymdhms = v >> 24;
     long ymd = ymdhms >> 17;
     int day = (int) (ymd & ((1 << 5) - 1));
     long ym = ymd >> 5;
@@ -43,15 +42,14 @@ public class CHColumnMyDateTime extends CHColumn {
     int minute = (int) ((hms >> 6) & ((1 << 6) - 1));
     int hour = (int) (hms >> 12);
 
-    int nano = (int) (packed % (1 << 24));
+    int nano = (int) (v % (1 << 24));
 
     Timestamp ts = new Timestamp(year - 1900, month - 1, day, hour, minute, second, nano);
-    return ts.getTime();
+    return DateTimeUtils.fromJavaTimestamp(ts);
   }
 
-  @Override
-  public void insertLong(long v) {
-    Timestamp ts = new Timestamp(v);
+  public static long fromSparkValue(long v) {
+    Timestamp ts = DateTimeUtils.toJavaTimestamp(v);
     int year = ts.getYear() + 1900;
     int month = ts.getMonth() + 1;
     int day = ts.getDate();
@@ -61,7 +59,18 @@ public class CHColumnMyDateTime extends CHColumn {
     int micro_seconds = ts.getNanos();
     long ymd = ((year * 13 + month) << 5) | day;
     long hms = hour << 12 | minute << 6 | seconds;
-    long packed = (ymd << 17 | hms) << 24 | micro_seconds;
+    return (ymd << 17 | hms) << 24 | micro_seconds;
+  }
+
+  @Override
+  public long getLong(int rowId) {
+    long v = MemoryUtil.getLong(dataAddr + (rowId << 3));
+    return toSparkValue(v);
+  }
+
+  @Override
+  public void insertLong(long v) {
+    long packed = fromSparkValue(v);
     MemoryUtil.setLong(dataAddr + (size << 3), packed);
     size++;
   }

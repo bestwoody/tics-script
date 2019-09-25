@@ -15,7 +15,6 @@
 
 package org.apache.spark.sql.ch
 
-import com.pingcap.ch.columns.CHColumnDate
 import com.pingcap.ch.datatypes._
 import com.pingcap.ch.datatypes.CHTypeNumber.{CHTypeInt32, CHTypeUInt16, CHTypeUInt8, _}
 import com.pingcap.theflash.TypeMappingJava
@@ -23,6 +22,7 @@ import com.pingcap.tikv.meta.{TiColumnInfo, TiTableInfo}
 import com.pingcap.tikv.types.MySQLType
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Abs, Add, Alias, And, AttributeReference, BinaryArithmetic, CaseWhen, Cast, CheckOverflow, Coalesce, CreateNamedStruct, Divide, EqualTo, Expression, GreaterThan, GreaterThanOrEqual, IfNull, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Literal, Multiply, Not, Or, PromotePrecision, Remainder, StringLPad, StringRPad, StringTrim, StringTrimLeft, StringTrimRight, Subtract, UnaryMinus}
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
@@ -193,10 +193,10 @@ object CHSql {
       case MySQLType.TypeNewDecimal | MySQLType.TypeDecimal =>
         val tidbDecimalType = dataType.asInstanceOf[TiDBDecimalType]
         new CHTypeDecimal(tidbDecimalType.getLength.toInt, tidbDecimalType.getDecimal)
-      case MySQLType.TypeTimestamp | MySQLType.TypeDatetime => CHTypeDateTime.instance
+      case MySQLType.TypeTimestamp | MySQLType.TypeDatetime => CHTypeMyDateTime.instance
       case MySQLType.TypeDuration                           => CHTypeInt64.instance
       case MySQLType.TypeLonglong                           => if (isUnsigned) CHTypeUInt64.instance else CHTypeInt64.instance
-      case MySQLType.TypeDate | MySQLType.TypeNewDate       => CHTypeDate.instance
+      case MySQLType.TypeDate | MySQLType.TypeNewDate       => CHTypeMyDate.instance
       case MySQLType.TypeString | MySQLType.TypeVarchar | MySQLType.TypeTinyBlob |
           MySQLType.TypeMediumBlob | MySQLType.TypeLongBlob | MySQLType.TypeBlob |
           MySQLType.TypeVarString =>
@@ -408,12 +408,9 @@ object CHSql {
         } else {
           dataType match {
             case StringType => "'" + escapeString(value.toString) + "'"
-            case DateType   =>
-              // Date in storage starts from 1400-01-01
-              (value.asInstanceOf[java.lang.Integer]).toString
+            case DateType   => "'" + DateTimeUtils.dateToString(value.asInstanceOf[Int]) + "'"
             case TimestampType =>
-              // DateTime in storage is stored as seconds rather than milliseconds
-              (value.asInstanceOf[java.lang.Long] / 1000000).toString
+              "'" + DateTimeUtils.timestampToString(value.asInstanceOf[Long]) + "'"
             case b: BooleanType =>
               val isTrue = if (value.toString.equalsIgnoreCase("TRUE")) 1 else 0
               explicitCast(s"$isTrue", b, nullable = false)
