@@ -29,6 +29,10 @@ function cmd_ti_mysql()
 	fi
 
 	local port=`get_value "${dir}/proc.info" 'tidb_port'`
+	if [ -z "${port}" ]; then
+		echo '[cmd mysql] get port failed' >&2
+		return 1
+	fi
 
 	if [ -f "${query}" ]; then
 		mysql -h "${host}" -P "${port}" -u root --database="${db}" < "${query}"
