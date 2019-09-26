@@ -51,13 +51,9 @@ function ti_cmd_tpch_load
 		local tables=(customer nation orders part region supplier partsupp lineitem)
 	fi
 
-	# TODO: remove hard code url
-	if [ `uname` == "Darwin" ]; then
-		local dbgen_url="http://139.219.11.38:8000/3GdrI/dbgen.tar.gz"
-	else
-		local dbgen_url="http://139.219.11.38:8000/fCROr/dbgen.tar.gz"
-	fi
-	local dists_dss_url="http://139.219.11.38:8000/v2TLJ/dists.dss"
+	local file="${integrated}/conf/tools.kv"
+	local dbgen_url=`cross_platform_get_value "${file}" "dbgen_url"`
+	local dists_dss_url=`cross_platform_get_value "${file}" "dists_dss_url"`
 
 	for table in ${tables[@]}; do
 		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"

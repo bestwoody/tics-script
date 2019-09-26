@@ -66,17 +66,14 @@ class Executor:
         return os.popen((self.dbc + ' "' + query + '" ' + " ".join(args) + ' 2>&1').strip()).readlines()
 
 class ShellFuncExecutor:
-    def __init__(self, ti_file_path, ti_file_args):
-        self.ti_file_path = ti_file_path
-        self.ti_file_args = ti_file_args
+    def __init__(self, test_ti_file):
+        self.test_ti_file = test_ti_file
     def exe(self, cmd):
-        return os.popen((cmd + ' ' + self.ti_file_path + ' ' + self.ti_file_args + ' 2>&1').strip()).readlines()
+        return os.popen((cmd + ' ' + self.test_ti_file + ' 2>&1').strip()).readlines()
 
 class OpsExecutor:
-    def __init__(self, ti_sh_path, ti_file_path, ti_file_args):
-        self.ti_sh_path = ti_sh_path
-        self.ti_file_path = ti_file_path
-        self.ti_file_args = ti_file_args
+    def __init__(self, test_ti_file):
+        self.test_ti_file = test_ti_file
     def exe(self, cmd_type, cmd):
         ops_cmd = ""
         blank_args = []
@@ -95,7 +92,7 @@ class OpsExecutor:
             return ""
         query = cmd_arr[0]
         args = map(lambda x: "--" + x.strip(), cmd_arr[1:])
-        return os.popen((self.ti_sh_path + ' -k "' + self.ti_file_args + '" "' + self.ti_file_path + '" ' + ops_cmd
+        return os.popen(('test_cluster_cmd "' + self.test_ti_file + '" "" ' + ops_cmd
                          + ' "' + query + '" ' + " ".join(blank_args) + ' ' + " ".join(args)
                          + ' 2>&1').strip()).readlines()
 
@@ -338,19 +335,17 @@ def parse_exe_match(path, executor, executor_func, executor_ops, fuzz):
         return True, matcher, todos
 
 def run():
-    if len(sys.argv) != 7:
-        print 'usage: <bin> tiflash-client-cmd test-file-path ti-file-path ti-sh-path ti-file-args fuzz-check'
+    if len(sys.argv) != 5:
+        print 'usage: <bin> tiflash-client-cmd test-file-path test-ti-file fuzz-check'
         sys.exit(1)
 
     dbc = sys.argv[1]
     test_file_path = sys.argv[2]
-    ti_file_path = sys.argv[3]
-    ti_sh_path = sys.argv[4]
-    ti_file_args = sys.argv[5]
-    fuzz = (sys.argv[6] == 'true')
+    test_ti_file = sys.argv[3]
+    fuzz = (sys.argv[4] == 'true')
 
-    matched, matcher, todos = parse_exe_match(test_file_path, Executor(dbc), ShellFuncExecutor(ti_file_path, ti_file_args),
-                                              OpsExecutor(ti_sh_path, ti_file_path, ti_file_args), fuzz)
+    matched, matcher, todos = parse_exe_match(test_file_path, Executor(dbc), ShellFuncExecutor(test_ti_file),
+                                              OpsExecutor(test_ti_file), fuzz)
 
     def display(lines):
         if len(lines) == 0:

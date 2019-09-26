@@ -1,5 +1,5 @@
-dir=nodes/4
-p=+4
+dir=nodes/5
+p=+5
 
 pd: {dir}/pd ports{p}
 tikv: {dir}/tikv ports{p}

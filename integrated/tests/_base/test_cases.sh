@@ -54,8 +54,9 @@ function tpch_perf()
 	mkdir -p "${entry_dir}"
 	local report="${entry_dir}/report"
 
-	test_cluster_prepare "${ports}" '' "${entry_dir}/test.ti"
-	local vers=`test_cluster_vers "${ports}"`
+	local test_ti_file="${entry_dir}/test.ti"
+	test_cluster_prepare "${ports}" '' "${test_ti_file}"
+	local vers=`test_cluster_vers "${test_ti_file}"`
 	if [ -z "${vers}" ]; then
 		echo "[func tpch_perf] test cluster prepare failed" >&2
 		return 1
@@ -65,7 +66,7 @@ function tpch_perf()
 
 	echo '---'
 
-	test_cluster_load_tpch_data "${ports}" "${scale}" "${entry_dir}/load.data" "${vers}" | while read line; do
+	test_cluster_load_tpch_data "${test_ti_file}" "${scale}" "${entry_dir}/load.data" "${vers}" | while read line; do
 		tpch_perf_report "${test_entry_file}" "${scale}"
 		echo "${line}"
 	done
@@ -74,25 +75,25 @@ function tpch_perf()
 	echo '---'
 
 	# TODO: remove this
-	test_cluster_cmd "${ports}" '' ch "DBGInvoke refresh_schemas()"
+	"${integrated}/ops/ti.sh" "${test_ti_file}" "ch" "DBGInvoke refresh_schemas()"
 
 	for ((r = 0; r < 3; ++r)); do
 		echo "=> tidb, round ${r}"
-		test_cluster_run_tpch "${ports}" "${scale}" "${entry_dir}" "round:${r},${vers}"
+		test_cluster_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}"
 		tpch_perf_report "${test_entry_file}" "${scale}"
 		sleep_by_scale "${scale}"
 	done
 
 	for ((r = 0; r < 3; ++r)); do
 		echo "=> spark, round ${r}"
-		test_cluster_spark_run_tpch "${ports}" "${scale}" "${entry_dir}" "round:${r},${vers}"
+		test_cluster_spark_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}"
 		tpch_perf_report "${test_entry_file}" "${scale}"
 		sleep_by_scale "${scale}"
 	done
 
 	tpch_perf_report "${test_entry_file}" "${scale}"
 
-	test_cluster_burn "${ports}"
+	"${integrated}/ops/ti.sh" "${test_ti_file}" "burn" "doit"
 	echo '[func tpch_perf] done'
 }
 export -f tpch_perf
@@ -150,8 +151,9 @@ function tidb_tpcc_perf()
 	mkdir -p "${entry_dir}"
 	local report="${entry_dir}/report"
 
-	test_cluster_prepare "${ports}" 'pd,tikv,tidb' "${entry_dir}/test.ti"
-	local vers=`test_cluster_vers "${ports}"`
+	local test_ti_file="${entry_dir}/test.ti"
+	test_cluster_prepare "${ports}" 'pd,tikv,tidb' "${test_ti_file}"
+	local vers=`test_cluster_vers "${test_ti_file}"`
 	if [ -z "${vers}" ]; then
 		echo "[func tidb_tpcc_perf] test cluster prepare failed" >&2
 		return 1
@@ -174,13 +176,13 @@ function tidb_tpcc_perf()
 	fi
 	local benchmark_dir="${benchmark_repo}/run"
 
-	load_tpcc_data "${benchmark_dir}" "${ports}" "${warehouses}" "${minutes}"
+	load_tpcc_data "${benchmark_dir}" "${test_ti_file}" "${warehouses}" "${minutes}"
 	test_cluster_run_tpcc "tidb_only" "${benchmark_dir}" "${entry_dir}" "${vers}"
-	test_cluster_cmd "${ports}" 'pd,tikv,tidb,tiflash,rngine' "run"
+	"${integrated}/ops/ti.sh" -m 'pd,tikv,tidb,tiflash,rngine' "${test_ti_file}" "run"
 	test_cluster_run_tpcc "with_tiflash" "${benchmark_dir}" "${entry_dir}" "${vers}"
 	tidb_tpcc_perf_report "${test_entry_file}"
 
-	test_cluster_burn "${ports}"
+	"${integrated}/ops/ti.sh" -m 'pd,tikv,tidb,tiflash,rngine' "${test_ti_file}" "burn" "doit"
 	echo '[func tidb_tpcc_perf] done'
 }
 export -f tidb_tpcc_perf

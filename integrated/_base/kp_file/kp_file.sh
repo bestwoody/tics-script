@@ -96,6 +96,8 @@ function keep_script_running()
 
 		local error_handle="$-"
 		set +e
+		#TODO: remove "false" arg
+		nohup bash "${script}.clean" "false" >> "${log}" 2>> "${err_log}"
 		nohup bash "${script}" ${args} >> "${log}" 2>> "${err_log}" && \
 			echo "!END ${ts} [`date +'%D %T'`]" >> "${log}" &
 		sleep 0.05

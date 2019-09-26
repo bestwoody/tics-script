@@ -95,3 +95,29 @@ function watch_files()
 	done
 }
 export -f watch_files
+
+function cross_platform_get_value()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func cross_platform_get_value] usage: <func> file key"
+		return 1
+	fi
+
+	local file="${1}"
+	local key="${2}"
+	if [ `uname` == "Darwin" ]; then
+		local key="${key}_mac"
+	fi
+
+	if [ ! -f "${file}" ]; then
+		echo "[func cross_platform_get_value] '${file}' not exists" >&2
+		return 1
+	fi
+
+	local value=`cat "${file}" | { grep "^${key}\b" || test $? = 1; } | awk '{print $2}'`
+	if [ -z "${value}" ]; then
+		return 1
+	fi
+	echo "${value}"
+}
+export -f cross_platform_get_value

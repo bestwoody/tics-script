@@ -23,7 +23,7 @@ function test_cluster_args()
 	local ports="${1}"
 
 	if [ -z "${test_cluster_data_dir+x}" ] || [ -z "${test_cluster_data_dir}" ]; then
-		echo "[func test_cluster_cmd] var 'test_cluster_data_dir' not defined" >&2
+		echo "[func test_cluster_args] var 'test_cluster_data_dir' not defined" >&2
 		return 1
 	fi
 
@@ -34,30 +34,28 @@ export -f test_cluster_args
 function test_cluster_cmd()
 {
 	if [ -z "${3+x}" ]; then
-		echo "[func test_cluster_cmd] usage: <func> ports mods ops-ti-args" >&2
+		echo "[func test_cluster_cmd] usage: <func> test_ti_file mods ops-ti-args" >&2
 		return 1
 	fi
 
-	local ports="${1}"
+	local test_ti_file="${1}"
 	local mods="${2}"
 	shift 2
 
 	local ti="${integrated}/ops/ti.sh"
-	local ti_file=`test_cluster_tmpl`
-	local args=`test_cluster_args "${ports}"`
 
-	"${ti}" -m "${mods}" -k "${args}" "${ti_file}" "${@}"
+	"${ti}" -m "${mods}" "${test_ti_file}" "${@}"
 }
 export -f test_cluster_cmd
 
 function test_cluster_ver()
 {
 	if [ -z "${2+x}" ]; then
-		echo "[func test_cluster_ver] usage: <func> ports mod [mod_name_as_prefix=true]" >&2
+		echo "[func test_cluster_ver] usage: <func> test_ti_file mod [mod_name_as_prefix=true]" >&2
 		return 1
 	fi
 
-	local ports="${1}"
+	local test_ti_file="${1}"
 	local mod="${2}"
 	if [ ! -z "${3+x}" ]; then
 		local mod_name_prefix="${3}"
@@ -65,7 +63,9 @@ function test_cluster_ver()
 		local mod_name_prefix='true'
 	fi
 
-	local ver=`test_cluster_cmd "${ports}" "${mod}" ver ver`
+	local ti="${integrated}/ops/ti.sh"
+
+	local ver=`"${ti}" -m "${mod}" "${test_ti_file}"  ver ver`
 	local failed=`echo "${ver}" | { grep 'unknown' || test $? = 1; }`
 	if [ ! -z "${failed}" ]; then
 		return 1
@@ -77,7 +77,7 @@ function test_cluster_ver()
 		local ver=`echo "${ver}" | awk '{print "mod:"$1",ver:"$2}'`
 	fi
 
-	local githash=`test_cluster_cmd "${ports}" "${mod}" ver githash`
+	local githash=`"${ti}" -m "${mod}" "${test_ti_file}" ver githash`
 	if [ "${mod_name_prefix}" == 'true' ]; then
 		local githash=`echo "${githash}" | awk '{print $1"_git:"$2}'`
 	else
@@ -91,14 +91,14 @@ export -f test_cluster_ver
 function test_cluster_vers()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func test_cluster_vers] usage: <func> ports" >&2
+		echo "[func test_cluster_vers] usage: <func> test_ti_file" >&2
 		return 1
 	fi
 
-	local ports="${1}"
+	local test_ti_file="${1}"
 
 	# TODO: can be faster
-	local version="`test_cluster_ver "${ports}" "pd"`,`test_cluster_ver "${ports}" "tikv"`,`test_cluster_ver "${ports}" "tidb"`,`test_cluster_ver "${ports}" "tiflash"`,`test_cluster_ver "${ports}" "rngine"`"
+	local version="`test_cluster_ver "${test_ti_file}" "pd"`,`test_cluster_ver "${test_ti_file}" "tikv"`,`test_cluster_ver "${test_ti_file}" "tidb"`,`test_cluster_ver "${test_ti_file}" "tiflash"`,`test_cluster_ver "${test_ti_file}" "rngine"`"
 	echo "${version}"
 }
 export -f test_cluster_vers
@@ -130,17 +130,17 @@ function test_cluster_prepare()
 		cat "${ti_file}" >> "${rendered_file_path}"
 
 		local ti="${integrated}/ops/ti.sh"
-		test_cluster_cmd "${ports}" "${mods}" burn doit
+		test_cluster_cmd "${rendered_file_path}" "${mods}" burn doit
 		"${ti}" -m "${mods}" "${rendered_file_path}" burn doit
 		echo '---'
 		"${ti}" -m "${mods}" "${rendered_file_path}" run
 	else
-		test_cluster_cmd "${ports}" "${mods}" burn doit
+		test_cluster_cmd "${rendered_file_path}" "${mods}" burn doit
 		echo '---'
-		test_cluster_cmd "${ports}" "${mods}" run
+		test_cluster_cmd "${rendered_file_path}" "${mods}" run
 	fi
 
-	local status=`test_cluster_cmd "${ports}" "${mods}" status`
+	local status=`test_cluster_cmd "${rendered_file_path}" "${mods}" status`
 	local status_cnt=`echo "${status}" | wc -l | awk '{print $1}'`
 	local ok_cnt=`echo "${status}" | { grep 'OK' || test $? = 1; } | wc -l | awk '{print $1}'`
 	if [ "${status_cnt}" != "${ok_cnt}" ]; then
@@ -154,23 +154,23 @@ export -f test_cluster_prepare
 function test_cluster_burn()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func test_cluster_burn] usage: <func> ports" >&2
+		echo "[func test_cluster_burn] usage: <func> test_ti_file" >&2
 		return 1
 	fi
 
-	local ports="${1}"
-	test_cluster_cmd "${ports}" '' burn doit
+	local test_ti_file="${1}"
+	test_cluster_cmd "${test_ti_file}" '' burn doit
 }
 export -f test_cluster_burn
 
 function _test_cluster_gen_and_load_tpch_table()
 {
 	if [ -z "${5+x}" ]; then
-		echo "[func test_cluster_gen_and_load_tpch_table] usage: <func> ports table scale blocks data_dir" >&2
+		echo "[func test_cluster_gen_and_load_tpch_table] usage: <func> test_ti_file table scale blocks data_dir" >&2
 		return 1
 	fi
 
-	local ports="${1}"
+	local test_ti_file="${1}"
 	local table="${2}"
 	local scale="${3}"
 	local blocks="${4}"
@@ -180,19 +180,15 @@ function _test_cluster_gen_and_load_tpch_table()
 	local schema_dir="${integrated}/resource/tpch/mysql/schema"
 	local dbgen_bin_dir="/tmp/ti/master/bins"
 
-	# TODO: remove hard code url
-	if [ `uname` == "Darwin" ]; then
-		local dbgen_url="http://139.219.11.38:8000/3GdrI/dbgen.tar.gz"
-	else
-		local dbgen_url="http://139.219.11.38:8000/fCROr/dbgen.tar.gz"
-	fi
-	local dists_dss_url="http://139.219.11.38:8000/v2TLJ/dists.dss"
+	local file="${integrated}/conf/tools.kv"
+	local dbgen_url=`cross_platform_get_value "${file}" "dbgen_url"`
+	local dists_dss_url=`cross_platform_get_value "${file}" "dists_dss_url"`
 
 	local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
 	generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
 
-	local mysql_host=`test_cluster_cmd "${ports}" '' 'mysql_host'`
-	local mysql_port=`test_cluster_cmd "${ports}" '' 'mysql_port'`
+	local mysql_host=`test_cluster_cmd "${test_ti_file}" '' 'mysql/host'`
+	local mysql_port=`test_cluster_cmd "${test_ti_file}" '' 'mysql/port'`
 
 	load_tpch_data_to_mysql "${mysql_host}" "${mysql_port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
 }
@@ -201,11 +197,11 @@ export -f _test_cluster_gen_and_load_tpch_table
 function test_cluster_load_tpch_table()
 {
 	if [ -z "${3+x}" ]; then
-		echo "[func test_cluster_load_tpch_table] usage: <func> ports table scale [blocks] [data_dir]" >&2
+		echo "[func test_cluster_load_tpch_table] usage: <func> test_ti_file table scale [blocks] [data_dir]" >&2
 		return 1
 	fi
 
-	local ports="${1}"
+	local test_ti_file="${1}"
 	local table="${2}"
 	local scale="${3}"
 
@@ -228,7 +224,7 @@ function test_cluster_load_tpch_table()
 	local db=`_db_name_from_scale "${scale}"`
 
 	local start_time=`date +%s`
-	_test_cluster_gen_and_load_tpch_table "${ports}" "${table}" "${scale}" "${blocks}" "${data_dir}"
+	_test_cluster_gen_and_load_tpch_table "${test_ti_file}" "${table}" "${scale}" "${blocks}" "${data_dir}"
 	local end_time=`date +%s`
 	local elapsed="$((end_time - start_time))"
 
@@ -240,11 +236,11 @@ function test_cluster_load_tpch_data()
 {
 	# TODO: args [blocks] [data_dir]
 	if [ -z "${4+x}" ]; then
-		echo "[func test_cluster_load_tpch_data] usage: <func> ports scale log_file tags" >&2
+		echo "[func test_cluster_load_tpch_data] usage: <func> test_ti_file scale log_file tags" >&2
 		return 1
 	fi
 
-	local ports="${1}"
+	local test_ti_file="${1}"
 	local scale="${2}"
 	local log="${3}"
 	local tags="${4}"
@@ -252,7 +248,7 @@ function test_cluster_load_tpch_data()
 	local tables=(customer lineitem nation orders part region supplier partsupp)
 	local result=''
 	for table in ${tables[@]}; do
-		local elapsed=`test_cluster_load_tpch_table "${ports}" "${table}" "${scale}"`
+		local elapsed=`test_cluster_load_tpch_table "${test_ti_file}" "${table}" "${scale}"`
 		if [ -z "${elapsed}" ]; then
 			echo "[func tpch_perf] failed to load '${table}'" >&2
 			return 1
@@ -267,11 +263,11 @@ export -f test_cluster_load_tpch_data
 function test_cluster_run_tpch()
 {
 	if [ -z "${4+x}" ]; then
-		echo "[func test_cluster_run_tpch] usage: <func> ports scale entry_dir tags"  >&2
+		echo "[func test_cluster_run_tpch] usage: <func> test_ti_file scale entry_dir tags"  >&2
 		return 1
 	fi
 
-	local ports="${1}"
+	local test_ti_file="${1}"
 	local scale="${2}"
 	local entry_dir="${3}"
 	local tags="${4}"
@@ -291,8 +287,8 @@ function test_cluster_run_tpch()
 	done
 
 	# TODO: remove this, use 'test_cluster_cmd ... mysql'
-	local mysql_host=`test_cluster_cmd "${ports}" '' 'mysql_host'`
-	local mysql_port=`test_cluster_cmd "${ports}" '' 'mysql_port'`
+	local mysql_host=`test_cluster_cmd "${test_ti_file}" '' 'mysql/host'`
+	local mysql_port=`test_cluster_cmd "${test_ti_file}" '' 'mysql/port'`
 	if [ -z "${mysql_host}" ] || [ -z "${mysql_port}" ]; then
 		echo "[func test_cluster_run_tpch] get mysql address failed(${mysql_host}:${mysql_port})" >&2
 		return 1
@@ -314,11 +310,11 @@ export -f test_cluster_run_tpch
 function test_cluster_spark_run_tpch()
 {
 	if [ -z "${4+x}" ]; then
-		echo "[func test_cluster_spark_run_tpch] usage: <func> ports scale entry_dir tags"  >&2
+		echo "[func test_cluster_spark_run_tpch] usage: <func> test_ti_file scale entry_dir tags"  >&2
 		return 1
 	fi
 
-	local ports="${1}"
+	local test_ti_file="${1}"
 	local scale="${2}"
 	local entry_dir="${3}"
 	local tags="${4}"
@@ -345,7 +341,7 @@ function test_cluster_spark_run_tpch()
 	for ((i = 1; i < 23; ++i)); do
 		echo "=> tpch on spark, scale ${scale}, query #${i}"
 		local start_time=`date +%s`
-		test_cluster_cmd "${ports}" '' beeline -f "${entry_dir}/${i}.sql" > "${entry_dir}/spark.q${i}.result"
+		test_cluster_cmd "${test_ti_file}" '' beeline -f "${entry_dir}/${i}.sql" > "${entry_dir}/spark.q${i}.result"
 		local end_time=`date +%s`
 		local elapsed="$((end_time - start_time))"
 		local elapsed="${elapsed}	cat:spark,scale:${scale},query:${i},start_ts:${start_time},end_ts:${end_time}"
@@ -375,15 +371,17 @@ export -f sleep_by_scale
 function load_tpcc_data() 
 {
 	local benchmark_dir="${1}"
-	local ports="${2}"
+	local test_ti_file="${2}"
 	local warehouses="${3}"
 	local minutes="${4}"
 
-	local tidb_host=`test_cluster_cmd "${ports}" 'tidb' mysql_host`
-	local tidb_port=`test_cluster_cmd "${ports}" 'tidb' mysql_port`
+	local ti="${integrated}/ops/ti.sh"
+
+	local tidb_host=`"${ti}" "${test_ti_file}" "mysql/host"`
+	local tidb_port=`"${ti}" "${test_ti_file}" "mysql/port"`
 	local prop_file="${benchmark_dir}/props.mysql"
 
-	test_cluster_cmd "${ports}" '' "mysql" "create database tpcc"
+	"${ti}" "${test_ti_file}" "mysql" "create database tpcc"
 	echo "db=mysql" > "${prop_file}"
 	echo "driver=com.mysql.jdbc.Driver" >> "${prop_file}"
 	echo "conn=jdbc:mysql://${tidb_host}:${tidb_port}/tpcc?useSSL=false&useServerPrepStmts=true&useConfigs=maxPerformance" >> "${prop_file}"
@@ -413,7 +411,7 @@ function load_tpcc_data()
 }
 export -f load_tpcc_data
 
-function test_cluster_run_tpcc() 
+function test_cluster_run_tpcc()
 {
 	local type="${1}"
 	local benchmark_dir="${2}"
@@ -436,11 +434,11 @@ export -f test_cluster_run_tpcc
 function test_cluster_restart_tiflash() 
 {
 	if [ -z "${2+x}" ]; then
-		echo "[func test_cluster_restart_tiflash] usage: <func> ports entry_dir [interval_between_stop_and_start]"  >&2
+		echo "[func test_cluster_restart_tiflash] usage: <func> test_ti_file entry_dir [interval_between_stop_and_start]"  >&2
 		return 1
 	fi
 
-	local ports="${1}"
+	local test_ti_file="${1}"
 	local entry_dir="${2}"
 
 	if [ ! -z "${3+x}" ]; then
@@ -449,30 +447,18 @@ function test_cluster_restart_tiflash()
 		local interval="10"
 	fi
 
-	test_cluster_cmd "${ports}" "tiflash,rngine" "stop"
+	local ti="${integrated}/ops/ti.sh"
+
+	"${ti}" -m "tiflash,rngine" "${test_ti_file}" "stop"
 	sleep ${interval}
-	test_cluster_cmd "${ports}" "tiflash,rngine" "run"
+	"${ti}" -m "tiflash,rngine" "${test_ti_file}" "run"
 	sleep $((5 + (${RANDOM} % 5)))
-	local status=`test_cluster_cmd "${ports}" "" "status"`
+	local status=`"${ti}" "${test_ti_file}" "status"`
 	local ok=`echo "${status}" | grep 'OK' | wc -l | awk '{print $1}'`
 	if [ "${ok}" != '5' ]; then
 		echo "${status}" >&2
-		local error_time=`date +%s`
-		local error_time=`date -d "1970-01-01 ${error_time} seconds" +"%Y_%m_%d_%H_%m_%S"`
-		local failed_test_envs="${entry_dir}/failed_test_envs"
-		mkdir -p "${failed_test_envs}"
-		local error_log="${failed_test_envs}/${error_time}.log"
-		echo "${status}" > "${error_log}"
-		"${ti}" -k "${args}" -m pd "${ti_file}" log 100000 | awk '{ print "[pd] " $0 }' >> "${error_log}"
-		"${ti}" -k "${args}" -m tikv "${ti_file}" log 100000 | awk '{ print "[tikv] " $0 }' >> "${error_log}"
-		"${ti}" -k "${args}" -m tidb "${ti_file}" log 100000 | awk '{ print "[tidb] " $0 }' >> "${error_log}"
-		"${ti}" -k "${args}" -m tiflash "${ti_file}" log 100000 | awk '{ print "[tiflash] " $0 }' >> "${error_log}"
-		"${ti}" -k "${args}" -m rngine "${ti_file}" log 100000 | awk '{ print "[rngine] " $0 }' >> "${error_log}"
-		test_cluster_cmd "${ports}" "" "down"
-		local cluster_dir=`test_cluster_args | awk -F '#' '{ print $2 }' | awk -F '=' '{ print $2 }'`
-		tar -czPf "${failed_test_envs}/${error_time}_env.tar.gz" "${cluster_dir}"
-		test_cluster_cmd "${ports}" "" "burn" "doit"
+		echo `date +"%Y-%m-%d %H:%m:%S"` >&2
 		return 1
-	fi	
+	fi
 }
 export -f test_cluster_restart_tiflash

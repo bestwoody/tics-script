@@ -15,7 +15,7 @@ function get_mod_ver()
 	else
 		local ti_file_args="${3}"
 	fi
-	local ver=`"${integrated}/ops/ti.sh" -k "${args}" -m "${mod}" "${ti_file}" ver ver | awk '{print "mod:"$1",ver:"$2}'`
+	local ver=`"${integrated}/ops/ti.sh" -k "${ti_file_args}" -m "${mod}" "${ti_file}" ver ver | awk '{print "mod:"$1",ver:"$2}'`
 	local failed=`echo "${ver}" | { grep 'unknown' || test $? = 1; }`
 	if [ ! -z "${failed}" ]; then
 		return 1
@@ -44,7 +44,7 @@ function get_ti_cluster_mysql_host() {
 		local ti_file_args="${3}"
 	fi
 
-	"${integrated}/ops/ti.sh" -i "${index}" -k "${ti_file_args}" "${ti_file}" "mysql_host"
+	"${integrated}/ops/ti.sh" -i "${index}" -k "${ti_file_args}" "${ti_file}" "mysql/host"
 }
 export -f get_ti_cluster_mysql_host
 

@@ -1,19 +1,19 @@
-ti_mysql> drop database tpch1
+ti_mysql> drop database tpch_1
 
 ti_func> load_tpch 1 region 1
 ti_ch> DBGInvoke __refresh_schemas()
-ti_ch> select count(*) from tpch1.region
+ti_ch> select count(*) from tpch_1.region
 ┌─count()─┐
 │       5 │
 └─────────┘
 
 ti_func> load_tpch 1 lineitem 16
 ti_ch> DBGInvoke __refresh_schemas()
-ti_beeline> select count(*) from tpch1.lineitem
+ti_beeline> select count(*) from tpch_1.lineitem
 +-----------+--+
 | count(1)  |
 +-----------+--+
 | 6001215   |
 +-----------+--+
 
-ti_mysql> drop database tpch1
+ti_mysql> drop database tpch_1

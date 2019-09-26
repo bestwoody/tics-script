@@ -1,0 +1,13 @@
+#!/bin/bash
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+ti="${integrated}/ops/ti.sh"
+test_entry_dir=`get_test_entry_dir "${BASH_SOURCE[0]}"`
+
+ti_file="${test_entry_dir}/test.ti"
+
+if [ -f "${ti_file}" ]; then
+	"${ti}" "${ti_file}" burn doit
+fi

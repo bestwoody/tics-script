@@ -719,6 +719,8 @@ function spark_master_run()
 	echo "pd_addr	${pd_addr}" >> "${info}"
 	echo "tiflash_addr	${tiflash_addr}" >> "${info}"
 	echo "spark_master_webui_port	${spark_master_webui_port}" >> "${info}"
+	echo "jmxremote_port	${jmxremote_port}" >> "${info}"
+	echo "jdwp_port	${jdwp_port}" >> "${info}"
 	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	if [ ! -f "${spark_master_dir}/extra_str_to_find_proc" ]; then

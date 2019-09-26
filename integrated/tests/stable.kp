@@ -1,0 +1,6 @@
+tiflash.test/run_all_test.sh
+tiflash.sh/raft_sync.sh
+cluster_ops/ti_restart_test.sh
+
+performance/tpch_perf_01.sh
+!cluster_ops/ti_launch.sh

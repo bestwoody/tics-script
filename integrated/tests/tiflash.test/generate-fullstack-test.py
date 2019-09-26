@@ -261,6 +261,8 @@ def run():
     database = sys.argv[1]
     table = sys.argv[2]
     test_target_dir = sys.argv[3]
+    if test_target_dir[-1] != '/':
+        test_target_dir = test_target_dir + '/'
 
     primary_key_candidates = ["tinyint", "smallint", "mediumint", "int", "bigint",
              "tinyint unsigned", "smallint unsigned", "mediumint unsigned", "int unsigned", "bigint unsigned", ]
