@@ -14,13 +14,20 @@ function cmd_ti_beeline()
 		return
 	fi
 
-	if [ -z "${1+x}" ]; then
-		echo '[cmd beeline] <cmd> beeline-args' >&2
+	if [ -z "${2+x}" ]; then
+		echo '[cmd beeline] <cmd> database beeline-args' >&2
+		return
+	fi
+	local db="${1}"
+	if [ "${db}" == "-e" ]; then
+		echo '[cmd beeline] <cmd> database beeline-args' >&2
 		return
 	fi
 
+	shift 1
+
 	local port=`get_value "${dir}/proc.info" 'thriftserver_port'`
-	${dir}/spark/bin/beeline -u "jdbc:hive2://${host}:${port}" "${@}"
+	${dir}/spark/bin/beeline -u "jdbc:hive2://${host}:${port}/${db}" "${@}"
 }
 
 cmd_ti_beeline "${@}"

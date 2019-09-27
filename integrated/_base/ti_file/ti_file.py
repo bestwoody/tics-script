@@ -307,8 +307,8 @@ def render_pds(res, conf, hosts, indexes):
             conf_templ_dir = env_dir + '/conf'
             print_ssh_prepare(pd, conf, env_dir)
 
-        print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster cluster_id'
-        print ssh + 'pd_run "%s" \\' % pd.dir
+        print '# pd_safe_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster cluster_id'
+        print ssh + 'pd_safe_run "%s" \\' % pd.dir
         print '\t"%s" \\' % conf_templ_dir
         print '\t"%s" "%s" "%s" "%s" "${id}"' % (pd.ports, pd.host, pd.pd_name, cluster)
 
@@ -331,8 +331,8 @@ def render_tikvs(res, conf, hosts, indexes):
             conf_templ_dir = env_dir + '/conf'
             print_ssh_prepare(tikv, conf, env_dir)
 
-        print '# tikv_run dir conf_templ_dir pd_addr advertise_host ports_delta cluster_id'
-        print ssh + 'tikv_run "%s" \\' % tikv.dir
+        print '# tikv_safe_run dir conf_templ_dir pd_addr advertise_host ports_delta cluster_id'
+        print ssh + 'tikv_safe_run "%s" \\' % tikv.dir
         print '\t"%s" \\' % conf_templ_dir
         pd_addr = tikv.pd or ','.join(res.pd_addr)
         print '\t"%s" "%s" "%s" "${id}"' % (pd_addr, tikv.host, tikv.ports)

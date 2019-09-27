@@ -91,10 +91,70 @@ function wait_for_tidb_by_host()
 }
 export -f wait_for_tidb_by_host
 
-function wait_for_pd()
+function wait_for_pd_port_ready()
 {
 	if [ -z "${3+x}" ]; then
-		echo "[func wait_for_pd] usage: <func> host port timeout [server_id]" >&2
+		echo "[func wait_for_pd_port_ready] usage: <func> host port timeout [server_id]" >&2
+		return 1
+	fi
+
+	local host="${1}"
+	local port="${2}"
+	local timeout="${3}"
+	if [ -z "${4+x}" ]; then
+		local server_id="${host}:${port}"
+	else
+		local server_id="${4}"
+	fi
+
+	local error_handle="$-"
+	set +e
+	for ((i=0; i<${timeout}; i++)); do
+		nc -zv "${host}" "${port}" >/dev/null 2>&1
+		if [ "${?}" == "0" ] && [ `curl "${host}:${port}/health" 2>/dev/null` == '{"health":"true"}' ]; then
+			break
+		else
+			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
+				echo "#${i} waiting for pd client port ready at '${server_id}'"
+			fi
+		fi
+		sleep 1
+	done
+
+	restore_error_handle_flags "${error_handle}"
+}
+export -f wait_for_pd_port_ready
+
+function wait_for_pd_port_ready_local()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func wait_for_pd_port_ready_local] usage: <func> pd_dir [timeout=180s]" >&2
+		return 1
+	fi
+
+	local pd_dir="${1}"
+	local timeout=60
+	if [ ! -z "${2+x}" ]; then
+		timeout="${2}"
+	fi
+
+	local pd_info="${pd_dir}/proc.info"
+	if [ ! -f "${pd_info}" ]; then
+		echo "[func wait_for_pd_port_ready_local] '${pd_dir}' pd not exists" >&2
+		return 1
+	fi
+	local host=`get_value "${pd_info}" 'advertise_host'`
+	local port=`get_value "${pd_info}" 'pd_port'`
+	local server_id="${host}:${port}:${pd_dir}"
+
+	wait_for_pd_port_ready "${host}" "${port}" "${timeout}" "${server_id}"
+}
+export -f wait_for_pd_port_ready_local
+
+function wait_for_pd()
+{
+	if [ -z "${4+x}" ]; then
+		echo "[func wait_for_pd] usage: <func> host port timeout bins_dir [server_id]" >&2
 		return 1
 	fi
 
@@ -180,6 +240,66 @@ function wait_for_pd_by_host()
 	wait_for_pd "${host}" "${port}" "${timeout}" "${bins_dir}"
 }
 export -f wait_for_pd_by_host
+
+function wait_for_tikv_port_ready()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func wait_for_tikv_port_ready] usage: <func> host port timeout [server_id]" >&2
+		return 1
+	fi
+
+	local host="${1}"
+	local port="${2}"
+	local timeout="${3}"
+	if [ -z "${4+x}" ]; then
+		local server_id="${host}:${port}"
+	else
+		local server_id="${4}"
+	fi
+
+	local error_handle="$-"
+	set +e
+	for ((i=0; i<${timeout}; i++)); do
+		nc -zv "${host}" "${port}" >/dev/null 2>&1
+		if [ "${?}" == "0" ]; then
+			break
+		else
+			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
+				echo "#${i} waiting for tikv client port ready at '${server_id}'"
+			fi
+		fi
+		sleep 1
+	done
+
+	restore_error_handle_flags "${error_handle}"
+}
+export -f wait_for_tikv_port_ready
+
+function wait_for_tikv_port_ready_local()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func wait_for_tikv_port_ready_local] usage: <func> tikv_dir [timeout=180s]" >&2
+		return 1
+	fi
+
+	local tikv_dir="${1}"
+	local timeout=60
+	if [ ! -z "${2+x}" ]; then
+		timeout="${2}"
+	fi
+
+	local tikv_info="${tikv_dir}/proc.info"
+	if [ ! -f "${tikv_info}" ]; then
+		echo "[func wait_for_tikv_port_ready_local] '${tikv_dir}' not exists" >&2
+		return 1
+	fi
+	local host=`get_value "${tikv_info}" 'advertise_host'`
+	local port=`get_value "${tikv_info}" 'tikv_port'`
+	local server_id="${host}:${port}:${tikv_dir}"
+
+	wait_for_tikv_port_ready "${host}" "${port}" "${timeout}" "${server_id}"
+}
+export -f wait_for_tikv_port_ready_local
 
 function wait_for_tiflash()
 {

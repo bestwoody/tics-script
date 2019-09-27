@@ -27,7 +27,7 @@ function load_tpch_data_to_mysql()
 
 	if [ -f "${data_dir}/${table}.tbl" ]; then
 		local data_file="${data_dir}/${table}.tbl"
-		mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" \
+		mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" --local-infile=1 \
 			-e "load data local infile '${data_file}' into table ${table} fields terminated by '|' lines terminated by '|\n';"
 	else
 		for (( i = 1; i < ${blocks} + 1; ++i)); do
@@ -39,7 +39,7 @@ function load_tpch_data_to_mysql()
 		done
 		for ((i=1; i<${blocks}+1; ++i)); do
 			local data_file="${data_dir}/${table}.tbl.${i}"
-			mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" \
+			mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" --local-infile=1 \
 				-e "load data local infile '${data_file}' into table ${table} fields terminated by '|' lines terminated by '|\n';" &
 		done
 		wait
