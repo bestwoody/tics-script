@@ -122,25 +122,23 @@ function test_cluster_prepare()
 		local rendered_file_path="${rendered_file_dir}/${rendered_file_path}"
 	fi
 
+	local ti="${integrated}/ops/ti.sh"
+	local args=`test_cluster_args "${ports}"`
+	local ti_file=`test_cluster_tmpl`
 	if [ ! -z "${rendered_file_path}" ]; then
-		local args=`test_cluster_args "${ports}"`
-		local ti_file=`test_cluster_tmpl`
 		split_ti_args "${args}" > "${rendered_file_path}"
 		echo '' >> "${rendered_file_path}"
 		cat "${ti_file}" >> "${rendered_file_path}"
-
-		local ti="${integrated}/ops/ti.sh"
-		test_cluster_cmd "${rendered_file_path}" "${mods}" burn doit
 		"${ti}" -m "${mods}" "${rendered_file_path}" burn doit
 		echo '---'
 		"${ti}" -m "${mods}" "${rendered_file_path}" run
 	else
-		test_cluster_cmd "${rendered_file_path}" "${mods}" burn doit
+		"${ti}" -m "${mods}" -k "${args}" "${ti_file}" burn doit
 		echo '---'
-		test_cluster_cmd "${rendered_file_path}" "${mods}" run
+		"${ti}" -m "${mods}" -k "${args}" "${ti_file}" run
 	fi
 
-	local status=`test_cluster_cmd "${rendered_file_path}" "${mods}" status`
+	local status=`"${ti}" -m "${mods}" "${rendered_file_path}" status`
 	local status_cnt=`echo "${status}" | wc -l | awk '{print $1}'`
 	local ok_cnt=`echo "${status}" | { grep 'OK' || test $? = 1; } | wc -l | awk '{print $1}'`
 	if [ "${status_cnt}" != "${ok_cnt}" ]; then
@@ -159,7 +157,8 @@ function test_cluster_burn()
 	fi
 
 	local test_ti_file="${1}"
-	test_cluster_cmd "${test_ti_file}" '' burn doit
+	local ti="${integrated}/ops/ti.sh"
+	"${ti}" "${test_ti_file}" burn doit
 }
 export -f test_cluster_burn
 
@@ -187,8 +186,9 @@ function _test_cluster_gen_and_load_tpch_table()
 	local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
 	generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
 
-	local mysql_host=`test_cluster_cmd "${test_ti_file}" '' 'mysql/host'`
-	local mysql_port=`test_cluster_cmd "${test_ti_file}" '' 'mysql/port'`
+	local ti="${integrated}/ops/ti.sh"
+	local mysql_host=`"${ti}" "${test_ti_file}" 'mysql/host'`
+	local mysql_port=`"${ti}" "${test_ti_file}" 'mysql/port'`
 
 	load_tpch_data_to_mysql "${mysql_host}" "${mysql_port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
 }
@@ -286,9 +286,9 @@ function test_cluster_run_tpch()
 		fi
 	done
 
-	# TODO: remove this, use 'test_cluster_cmd ... mysql'
-	local mysql_host=`test_cluster_cmd "${test_ti_file}" '' 'mysql/host'`
-	local mysql_port=`test_cluster_cmd "${test_ti_file}" '' 'mysql/port'`
+	local ti="${integrated}/ops/ti.sh"
+	local mysql_host=`"${ti}" "${test_ti_file}" 'mysql/host'`
+	local mysql_port=`"${ti}" "${test_ti_file}" 'mysql/port'`
 	if [ -z "${mysql_host}" ] || [ -z "${mysql_port}" ]; then
 		echo "[func test_cluster_run_tpch] get mysql address failed(${mysql_host}:${mysql_port})" >&2
 		return 1
@@ -338,10 +338,11 @@ function test_cluster_spark_run_tpch()
 		cat "${sql_file}" >> "${new_file}"
 	done
 
+	local ti="${integrated}/ops/ti.sh"
 	for ((i = 1; i < 23; ++i)); do
 		echo "=> tpch on spark, scale ${scale}, query #${i}"
 		local start_time=`date +%s`
-		test_cluster_cmd "${test_ti_file}" '' beeline -f "${entry_dir}/${i}.sql" > "${entry_dir}/spark.q${i}.result"
+		"${ti}" "${test_ti_file}" beeline "" -f "${entry_dir}/${i}.sql" > "${entry_dir}/spark.q${i}.result"
 		local end_time=`date +%s`
 		local elapsed="$((end_time - start_time))"
 		local elapsed="${elapsed}	cat:spark,scale:${scale},query:${i},start_ts:${start_time},end_ts:${end_time}"

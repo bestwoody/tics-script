@@ -11,7 +11,7 @@ function load_tpch()
 	local blocks="${3}"
 	local test_ti_file="${4}"
 
-	"{integrated}/ops/ti.sh" "${test_ti_file}" "tpch/load" "${scale}" "${table}" "" "${blocks}"
+	"${integrated}/ops/ti.sh" "${test_ti_file}" "tpch/load" "${scale}" "${table}" "" "${blocks}"
 }
 export -f load_tpch
 
@@ -21,7 +21,7 @@ function run_file()
 	local test_ti_file="${2}"
 	local run_test_entry="${3}"
 
-	python "${run_test_entry}" "" "${target}" "${test_ti_file}" "true"
+	python "${run_test_entry}" "" "${target}" "${integrated}/ops/ti.sh" "${test_ti_file}" "true"
 
 	if [ "${?}" == 0 ]; then
 		echo "${target}": OK

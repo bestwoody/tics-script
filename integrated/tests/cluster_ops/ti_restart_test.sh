@@ -42,7 +42,7 @@ function check_tiflash_and_tidb_result_consistency()
 	"${ti}" -m "spark_m,spark_w" "${test_ti_file}" "run"
 	local mysql_result=`"${ti}" "${test_ti_file}" "mysql" "select count(*) from ${db}.${table}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
 	for (( i=0; i<100; i++ )); do
-		local beeline_raw_result=`"${ti}" "${test_ti_file}" "beeline" -e "select count(*) from ${db}.${table}" 2>&1`
+		local beeline_raw_result=`"${ti}" "${test_ti_file}" "beeline" "" -e "select count(*) from ${db}.${table}" 2>&1`
 		local beeline_result=`echo "${beeline_raw_result}" | grep -A 2 "count" | tail -n 1 | awk -F '|' '{ print $2 }' | tr -d ' '`
 		if [ "${beeline_result}" != "" ]; then
 			break

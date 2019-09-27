@@ -297,13 +297,13 @@ function kp_sh_stop()
 		fi
 	fi
 
-	local clear_script="${file}.term"
+	local clear_script="${file}.clean"
 	if [ -f "${clear_script}" ]; then
 		local result=`bash "${clear_script}" 2>&1`
 		if [ "$?" != 0 ] || [ ! -z "${result}" ]; then
 			mkdir -p "${file}.data"
-			echo "!STOPPING" >> "${file}.data/term.log"
-			echo "${result}" >> "${file}.data/term.log"
+			echo "!STOPPING" >> "${file}.data/clean.log"
+			echo "${result}" >> "${file}.data/clean.log"
 		fi
 	fi
 }
