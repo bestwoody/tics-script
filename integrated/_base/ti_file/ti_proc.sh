@@ -109,7 +109,12 @@ function pd_run()
 	chmod +x "${pd_dir}/run.sh"
 	bash "${pd_dir}/run.sh"
 
+	sleep 0.1
 	local pid=`must_print_pid "${pd_dir}/pd.toml" "\-\-config"`
+	if [ -z "${pid}" ]; then
+		echo "[func pd_run] pid not found, failed" >&2
+		return 1
+	fi
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -206,7 +211,12 @@ function tikv_run()
 	chmod +x "${tikv_dir}/run.sh"
 	bash "${tikv_dir}/run.sh"
 
+	sleep 0.1
 	local pid=`must_print_pid "${tikv_dir}/tikv.toml" "\-\-config"`
+	if [ -z "${pid}" ]; then
+		echo "[func tikv_run] pid not found, failed" >&2
+		return 1
+	fi
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -305,7 +315,12 @@ function tidb_run()
 	chmod +x "${tidb_dir}/run.sh"
 	bash "${tidb_dir}/run.sh"
 
+	sleep 0.1
 	local pid=`must_print_pid "${tidb_dir}/tidb.toml" "\-\-config"`
+	if [ -z "${pid}" ]; then
+		echo "[func tidb_run] pid not found, failed" >&2
+		return 1
+	fi
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -433,10 +448,16 @@ function tiflash_run()
 	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	echo "nohup \"${tiflash_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" > "${tiflash_dir}/run.sh"
+
 	chmod +x "${tiflash_dir}/run.sh"
 	bash "${tiflash_dir}/run.sh"
 
+	sleep 0.1
 	local pid=`must_print_pid "${conf_file}" "\-\-config"`
+	if [ -z "${pid}" ]; then
+		echo "[func tiflash_run] pid not found, failed" >&2
+		return 1
+	fi
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -539,7 +560,12 @@ function rngine_run()
 	chmod +x "${rngine_dir}/run.sh"
 	bash "${rngine_dir}/run.sh"
 
+	sleep 0.1
 	local pid=`must_print_pid "${rngine_dir}/rngine.toml" "\-\-config"`
+	if [ -z "${pid}" ]; then
+		echo "[func rngine_run] pid not found, failed" >&2
+		return 1
+	fi
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -727,7 +753,12 @@ function spark_master_run()
 		echo "org.apache.spark.deploy.master.Master" > "${spark_master_dir}/extra_str_to_find_proc"
 	fi
 
+	sleep 0.1
 	local pid=`must_print_pid "${spark_master_dir}" "org.apache.spark.deploy.master.Master"`
+	if [ -z "${pid}" ]; then
+		echo "[func spark_master_run] pid not found, failed" >&2
+		return 1
+	fi
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }
@@ -871,7 +902,12 @@ function spark_worker_run()
 		echo "org.apache.spark.deploy.worker.Worker" > "${spark_worker_dir}/extra_str_to_find_proc"
 	fi
 
+	sleep 0.1
 	local pid=`must_print_pid "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker"`
+	if [ -z "${pid}" ]; then
+		echo "[func spark_worker_run] pid not found, failed" >&2
+		return 1
+	fi
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
 }

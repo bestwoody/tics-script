@@ -78,16 +78,12 @@ function tpch_perf()
 	"${integrated}/ops/ti.sh" "${test_ti_file}" "ch" "DBGInvoke refresh_schemas()"
 
 	for ((r = 0; r < 3; ++r)); do
-		echo "=> tidb, round ${r}"
-		test_cluster_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}"
-		tpch_perf_report "${test_entry_file}" "${scale}"
-		sleep_by_scale "${scale}"
-	done
-
-	for ((r = 0; r < 3; ++r)); do
-		echo "=> spark, round ${r}"
-		test_cluster_spark_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}"
-		tpch_perf_report "${test_entry_file}" "${scale}"
+		for ((i = 1; i < 23; ++i)); do
+			test_cluster_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}" "${i}"
+			tpch_perf_report "${test_entry_file}" "${scale}"
+			test_cluster_spark_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}" "${i}"
+			tpch_perf_report "${test_entry_file}" "${scale}"
+		done
 		sleep_by_scale "${scale}"
 	done
 

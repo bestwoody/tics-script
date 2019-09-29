@@ -175,12 +175,12 @@ function must_print_pid()
 
 	local pids=`print_pids "${find_str}" "${str2}"`
 	if [ -z "${pids}" ]; then
-		echo "[func must_print_pid] '${find_str}(${str2})' process not exists " >&2
+		echo "[func must_print_pid] '${find_str}' process not exists " >&2
 		return 1
 	fi
 	local pid_count=`echo "${pids}" | wc -l | awk '{print $1}'`
 	if [ "${pid_count}" != "1" ]; then
-		echo "[func must_print_pid] '${find_str}(${str2})' pid count: ${pid_count} != 1" >&2
+		echo "[func must_print_pid] '${find_str}' pid count: ${pid_count} != 1" >&2
 		return 1
 	fi
 	echo "${pids}"
@@ -210,7 +210,6 @@ function stop_pid()
 
 	local pid_exists=`pid_exists "${pid}"`
 	if [ "${pid_exists}" == "false" ]; then
-		# echo "${pid} not exists"
 		return
 	fi
 
