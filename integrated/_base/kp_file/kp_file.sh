@@ -96,8 +96,7 @@ function keep_script_running()
 
 		local error_handle="$-"
 		set +e
-		#TODO: remove "false" arg
-		nohup bash "${script}.clean" "false" >> "${log}" 2>> "${err_log}"
+		nohup bash "${script}.clean" 'false' >> "${log}" 2>> "${err_log}"
 		nohup bash "${script}" ${args} >> "${log}" 2>> "${err_log}" && \
 			echo "!END ${ts} [`date +'%D %T'`]" >> "${log}" &
 		sleep 0.05
@@ -297,11 +296,15 @@ function kp_sh_stop()
 		fi
 	fi
 
+	mkdir -p "${file}.data"
+	local ts=`date +%s`
+	echo "!STOPPING ${ts} [`date +'%D %T'`]" >> "${file}.data/stdout.log"
+	echo "!END ${ts} [`date +'%D %T'`]" >> "${file}.data/stdout.log"
+
 	local clear_script="${file}.clean"
 	if [ -f "${clear_script}" ]; then
-		local result=`bash "${clear_script}" 2>&1`
+		local result=`bash "${clear_script}" 'true' 2>&1`
 		if [ "$?" != 0 ] || [ ! -z "${result}" ]; then
-			mkdir -p "${file}.data"
 			echo "!STOPPING" >> "${file}.data/clean.log"
 			echo "${result}" >> "${file}.data/clean.log"
 		fi
