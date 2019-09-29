@@ -49,6 +49,8 @@ class Cell:
     def __str__(self):
         res = []
         for i in range(0, len(self.vals)):
+            if self.vals[i] == None:
+                continue
             x = str(self.vals[i])
             if self.vals_fmt.has_key(i):
                 prefix, suffix = self.vals_fmt[i]
@@ -336,6 +338,8 @@ class CellExe:
             return mp
         if op == 'cnt':
             def cnt(row_name, col_name, cell):
+                if len(cell.lines) == 0:
+                    return
                 cell.vals.append(len(cell.lines))
                 cell.vals_fmt[len(cell.vals) - 1] = ('', ')')
                 cell.vals_const.add(len(cell.vals) - 1)
@@ -469,6 +473,23 @@ def padding_table(table, cols_notitle):
             else:
                 cols[j] = left_pad + ' ' * (widths[j] - len(cell)) + cell + ' '
 
+def align_cells(table):
+    for i in range(0, len(table)):
+        cols = table[i]
+        for j in range(0, len(cols)):
+            if i == 0 and j == j:
+                continue
+            cell = cols[j]
+            width = len(cell)
+            fields = cell.split()
+            if len(fields) <= 1:
+                continue
+            aligned = ' '.join(fields[0:-1])
+            padding = width - len(aligned) - len(fields[-1]) - 2
+            if padding <= 0:
+                continue
+            cols[j] = ' ' + aligned + ' ' * padding + fields[-1] + ' '
+
 def to_table(table_title, render_str, tail_cnt, paths):
     lines = read_files(tail_cnt, paths)
     render = Render(render_str)
@@ -477,6 +498,7 @@ def to_table(table_title, render_str, tail_cnt, paths):
     render.render()
     table = render.get_table().output(table_title)
     padding_table(table, render._cols.notitle)
+    align_cells(table)
     for cols in table:
         print '|'.join(cols + [''])
 
