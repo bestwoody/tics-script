@@ -60,10 +60,12 @@ function assert_prev_test_finished()
 	local entry_dir=`get_test_entry_dir "${test_clean_file}"`
 
 	if [ "${force_clean}" == "true" ] && [ -f "${entry_dir}/RUNNING" ]; then
+		echo "[func assert_prev_test_finished] execute force clean" >&2
 		rm -f "${entry_dir}/RUNNING"
 	fi
 
 	if [ -f "${entry_dir}/RUNNING" ]; then
+		echo "[func assert_prev_test_finished] prev test failed" >&2
 		return 1
 	else
 		return 0
