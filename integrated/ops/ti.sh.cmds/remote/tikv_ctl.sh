@@ -11,6 +11,9 @@ function cmd_ti_tikv_ctl()
 	if [ "${mod_name}" != 'tikv' ]; then
 		return
 	fi
+	if [ "${index}" != '0' ]; then
+		return
+	fi
 
 	if [ -z "${6+x}" ]; then
 		echo '[cmd tikv_ctl] <cmd> command' >&2

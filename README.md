@@ -71,7 +71,7 @@ tiflash/integrated> ops/ti.sh ti/1+spark.ti ch "select count(*) from tpch_0_01.l
 
 * Execute a query from Spark to TiFlash Storage:
 ```
-tiflash/integrated> ops/ti.sh ti/1+spark.ti beeline "select count(*) from tpch_0_01.lineitem"
+tiflash/integrated> ops/ti.sh ti/1+spark.ti beeline "tpch_0_01" -e "select count(*) from lineitem"
 Connecting to jdbc:hive2://127.0.0.1:10004
 +-----------+
 | count(1)  |

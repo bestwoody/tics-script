@@ -11,6 +11,9 @@ function cmd_ti_pd_ctl()
 	if [ "${mod_name}" != 'pd' ]; then
 		return
 	fi
+	if [ "${index}" != '0' ]; then
+		return
+	fi
 
 	if [ -z "${6+x}" ]; then
 		echo '[cmd pd-ctl] <cmd> command' >&2

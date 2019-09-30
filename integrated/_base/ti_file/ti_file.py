@@ -307,10 +307,16 @@ def render_pds(res, conf, hosts, indexes):
             conf_templ_dir = env_dir + '/conf'
             print_ssh_prepare(pd, conf, env_dir)
 
-        print '# pd_safe_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster cluster_id'
-        print ssh + 'pd_safe_run "%s" \\' % pd.dir
-        print '\t"%s" \\' % conf_templ_dir
-        print '\t"%s" "%s" "%s" "%s" "${id}"' % (pd.ports, pd.host, pd.pd_name, cluster)
+        if i == len(pds) - 1:
+            print '# pd_safe_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster cluster_id'
+            print ssh + 'pd_safe_run "%s" \\' % pd.dir
+            print '\t"%s" \\' % conf_templ_dir
+            print '\t"%s" "%s" "%s" "%s" "${id}"' % (pd.ports, pd.host, pd.pd_name, cluster)
+        else:
+            print '# pd_run dir conf_templ_dir ports_delta advertise_host pd_name initial_cluster cluster_id'
+            print ssh + 'pd_run "%s" \\' % pd.dir
+            print '\t"%s" \\' % conf_templ_dir
+            print '\t"%s" "%s" "%s" "%s" "${id}"' % (pd.ports, pd.host, pd.pd_name, cluster)
 
 def render_tikvs(res, conf, hosts, indexes):
     for i in range(0, len(res.tikvs)):

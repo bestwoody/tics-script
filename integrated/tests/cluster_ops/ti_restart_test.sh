@@ -3,7 +3,7 @@
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
 
-function wait_load_data_ready() 
+function wait_load_data_ready()
 {
 	if [ -z "${3+x}" ]; then
 		echo "[func wait_load_data_ready] usage: <func> test_ti_file db table" >&2
@@ -25,7 +25,7 @@ function wait_load_data_ready()
 	done
 }
 
-function check_tiflash_and_tidb_result_consistency() 
+function check_tiflash_and_tidb_result_consistency()
 {
 	if [ -z "${4+x}" ]; then
 		echo "[func check_tiflash_and_tidb_result_consistency] usage: <func> test_ti_file db table entry_dir" >&2
@@ -59,7 +59,7 @@ function check_tiflash_and_tidb_result_consistency()
 	fi
 }
 
-function restart_tiflash_test() 
+function restart_tiflash_test()
 {
 	if [ -z "${2+x}" ]; then
 		echo "[func restart_tiflash_test] usage: <func> test_entry_file ports [load_tpch_scale] [restart_times] [restart_interval]" >&2

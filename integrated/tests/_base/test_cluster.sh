@@ -13,6 +13,12 @@ function test_cluster_tmpl()
 }
 export -f test_cluster_tmpl
 
+function test_cluster_multi_host_tmpl()
+{
+	echo "${integrated}/tests/_base/multi_host_templ.ti"
+}
+export -f test_cluster_multi_host_tmpl
+
 function test_cluster_args()
 {
 	if [ -z "${1+x}" ]; then
@@ -30,6 +36,29 @@ function test_cluster_args()
 	echo "ports=+${ports}#dir=${test_cluster_data_dir}/nodes/${ports}"
 }
 export -f test_cluster_args
+
+function test_cluster_multi_host_args()
+{
+	if [ -z "${6+x}" ]; then
+		echo "[func test_cluster_multi_host_args] usage: <func> ip1 ip2 ip3 ports1 ports2 ports3" >&2
+		return 1
+	fi
+
+	local ip1="${1}"
+	local ip2="${2}"
+	local ip3="${3}"
+	local ports1="${4}"
+	local ports2="${5}"
+	local ports3="${6}"
+
+	if [ -z "${test_cluster_data_dir+x}" ] || [ -z "${test_cluster_data_dir}" ]; then
+		echo "[func test_cluster_multi_host_args] var 'test_cluster_data_dir' not defined" >&2
+		return 1
+	fi
+
+	echo "ports1=+${ports1}#ports2=+${ports2}#ports3=+${ports3}#ip1=${ip1}#ip2=${ip2}#ip3=${ip3}#dir1=${test_cluster_data_dir}/nodes/${ports1}#dir2=${test_cluster_data_dir}/nodes/${ports2}#dir3=${test_cluster_data_dir}/nodes/${ports3}"
+}
+export -f test_cluster_multi_host_args
 
 function test_cluster_cmd()
 {
@@ -129,11 +158,11 @@ function test_cluster_prepare()
 		split_ti_args "${args}" > "${rendered_file_path}"
 		echo '' >> "${rendered_file_path}"
 		cat "${ti_file}" >> "${rendered_file_path}"
-		"${ti}" -m "${mods}" "${rendered_file_path}" burn doit
+		"${ti}" "${rendered_file_path}" burn doit
 		echo '---'
 		"${ti}" -m "${mods}" "${rendered_file_path}" run
 	else
-		"${ti}" -m "${mods}" -k "${args}" "${ti_file}" burn doit
+		"${ti}" -k "${args}" "${ti_file}" burn doit
 		echo '---'
 		"${ti}" -m "${mods}" -k "${args}" "${ti_file}" run
 	fi
@@ -148,6 +177,57 @@ function test_cluster_prepare()
 	fi
 }
 export -f test_cluster_prepare
+
+function test_cluster_multi_host_prepare()
+{
+	if [ -z "${8+x}" ]; then
+		echo "[func test_cluster_multi_host_prepare] usage: <func> ip1 ip2 ip3 ports1 ports2 ports3 mods [rendered_file_path]" >&2
+		return 1
+	fi
+
+	local ip1="${1}"
+	local ip2="${2}"
+	local ip3="${3}"
+	local ports1="${4}"
+	local ports2="${5}"
+	local ports3="${6}"
+	local mods="${7}"
+
+	local rendered_file_path=''
+	if [ ! -z "${8+x}" ]; then
+		local rendered_file_path="${8}"
+		local rendered_file_dir=`dirname "${rendered_file_path}"`
+		local rendered_file_dir=`abs_path "${rendered_file_dir}"`
+		local rendered_file_path=`basename "${rendered_file_path}"`
+		local rendered_file_path="${rendered_file_dir}/${rendered_file_path}"
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+	local args=`test_cluster_multi_host_args "${ip1}" "${ip2}" "${ip3}" "${ports1}" "${ports2}" "${ports3}"`
+	local ti_file=`test_cluster_multi_host_tmpl`
+	if [ ! -z "${rendered_file_path}" ]; then
+		split_ti_args "${args}" > "${rendered_file_path}"
+		echo '' >> "${rendered_file_path}"
+		cat "${ti_file}" >> "${rendered_file_path}"
+		"${ti}" "${rendered_file_path}" burn doit
+		echo '---'
+		"${ti}" -m "${mods}" "${rendered_file_path}" run
+	else
+		"${ti}" -k "${args}" "${ti_file}" burn doit
+		echo '---'
+		"${ti}" -m "${mods}" -k "${args}" "${ti_file}" run
+	fi
+
+	local status=`"${ti}" -m "${mods}" "${rendered_file_path}" status`
+	local status_cnt=`echo "${status}" | wc -l | awk '{print $1}'`
+	local ok_cnt=`echo "${status}" | { grep 'OK' || test $? = 1; } | wc -l | awk '{print $1}'`
+	if [ "${status_cnt}" != "${ok_cnt}" ]; then
+		echo "test cluster prepare failed, status:" >&2
+		echo "${status}" >&2
+		return 1
+	fi
+}
+export -f test_cluster_multi_host_prepare
 
 function test_cluster_burn()
 {
@@ -468,11 +548,104 @@ function test_cluster_restart_tiflash()
 	"${ti}" -m "tiflash,rngine" "${test_ti_file}" "run"
 	sleep $((5 + (${RANDOM} % 5)))
 	local status=`"${ti}" "${test_ti_file}" "status"`
-	local ok=`echo "${status}" | grep 'OK' | wc -l | awk '{print $1}'`
-	if [ "${ok}" != '5' ]; then
+	local ok_cnt=`echo "${status}" | { grep 'OK' || test $? = 1; } | wc -l | awk '{print $1}'`
+	if [ "${ok_cnt}" != "5" ]; then
 		echo "${status}" >&2
 		echo `date +"%Y-%m-%d %H:%m:%S"` >&2
 		return 1
 	fi
 }
 export -f test_cluster_restart_tiflash
+
+function test_cluster_get_normal_store_count()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func test_cluster_get_normal_store_count] usage: <func> test_ti_file"  >&2
+		return 1
+	fi
+	local test_ti_file="${1}"
+
+	local store_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store" | { grep '"role": "normal"' || test $? = 1; } | wc -l`
+	if [ -z "${store_count}" ]; then 
+		echo "[func test_cluster_get_normal_store_count] get store count failed" >&2
+		return 1
+	fi
+	echo "${store_count}"
+}
+export -f test_cluster_get_normal_store_count
+
+function test_cluster_get_learner_store_count()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func test_cluster_get_learner_store_count] usage: <func> test_ti_file"  >&2
+		return 1
+	fi
+	local test_ti_file="${1}"
+
+	local store_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store" | { grep '"role": "slave"' || test $? = 1; } | wc -l`
+	if [ -z "${store_count}" ]; then 
+		echo "[func test_cluster_get_learner_store_count] get store count failed" >&2
+		return 1
+	fi
+	echo "${store_count}"
+}
+export -f test_cluster_get_learner_store_count
+
+function test_cluster_get_store_id()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func test_cluster_get_store_id] usage: <func> test_ti_file store_ip store_port"  >&2
+		return 1
+	fi
+	local test_ti_file="${1}"
+	local store_ip="${2}"
+	local store_port="${3}"
+
+	local store_address="${store_ip}:${store_port}"
+	local store_id=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store" | { grep -B 2 "${store_address}" || test $? = 1; } | { grep "id" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
+	if [ -z "${store_id}" ]; then 
+		echo "[func test_cluster_get_store_id] cannot get store ${store_address} store id" >&2
+		return 1
+	fi
+	echo "${store_id}"
+}
+export -f test_cluster_get_store_id
+
+function test_cluster_get_store_region_count()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func test_cluster_get_store_region_count] usage: <func> test_ti_file store_ip store_port"  >&2
+		return 1
+	fi
+	local test_ti_file="${1}"
+	local store_ip="${2}"
+	local store_port="${3}"
+
+	local store_id=`test_cluster_get_store_id "${test_ti_file}" "${store_ip}" "${store_port}"`
+	local region_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store ${store_id}" | { grep "region_count" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
+	if [ -z "${region_count}" ]; then 
+		echo "[func test_cluster_get_store_region_count] cannot get store ${store_ip}:${store_port} store_id ${store_id} region count" >&2
+		return 1
+	fi
+	echo "${region_count}"
+}
+export -f test_cluster_get_store_region_count
+
+function test_cluster_remove_store()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func test_cluster_remove_store] usage: <func> test_ti_file store_ip store_port"  >&2
+		return 1
+	fi
+	local test_ti_file="${1}"
+	local store_ip="${2}"
+	local store_port="${3}"
+
+	local store_id=`test_cluster_get_store_id "${test_ti_file}" "${store_ip}" "${store_port}"`
+	local op_response=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store delete ${store_id}" | tr -d '\[\][0-9] \.'`
+	if [ "${op_response}" != "Success!" ]; then
+		echo "[func test_cluster_remove_store] remove store ${store_ip}:${store_port} failed"
+		return 1
+	fi
+}
+export -f test_cluster_remove_store
