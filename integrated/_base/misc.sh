@@ -124,6 +124,6 @@ export -f cross_platform_get_value
 
 function terminal_width()
 {
-	stty size|awk '{print $2}'
+	stty size | awk '{print $2}'
 }
 export -f terminal_width

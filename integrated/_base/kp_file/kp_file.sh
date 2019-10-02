@@ -71,7 +71,7 @@ function keep_script_running()
 		fi
 
 		if [ "${proc_cnt}" == '1' ]; then
-			echo "[`date +'%D %T'`] RUNNING ${script}${args_str}"
+			# echo "[`date +'%D %T'`] RUNNING ${script}${args_str}"
 			local backoff_i=0
 			sleep "${interval}"
 			continue
@@ -469,3 +469,12 @@ function kp_file_status()
 	done
 }
 export -f kp_file_status
+
+function kp_print_line()
+{
+	local width=`terminal_width 2>/dev/null`
+	local width=$((width - 4))
+	local line=`yes '-' | head -n "${width}"`
+	echo "${line}" | tr "\n" ' ' | sed 's/ //g' | awk '{print "    "$0}'
+}
+export -f kp_print_line
