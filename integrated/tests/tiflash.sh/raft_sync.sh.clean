@@ -1,7 +1,0 @@
-#!/bin/bash
-
-here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-source "${here}/_env.sh"
-auto_error_handle
-
-"${integrated}/ops/ti.sh" -k "ports=+7#dir=nodes/7" "${integrated}/tests/_base/local_templ.ti" burn doit

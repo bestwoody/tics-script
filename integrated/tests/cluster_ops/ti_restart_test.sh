@@ -111,9 +111,7 @@ function restart_tiflash_test()
 function test_main()
 {
 	local test_entry_file="${1}"
-	set_is_running "${test_entry_file}"
 	restart_tiflash_test "${test_entry_file}" 32 1 2 120
-	clean_is_running "${test_entry_file}"
 }
 
 test_main "${BASH_SOURCE[0]}"

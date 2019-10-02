@@ -13,10 +13,15 @@ function kp_file_watch
 	else
 		local interval="${2}"
 	fi
-	if [ -z "${3+x}" ]; then
+	if [ ! -z "${3+x}" ]; then
+		local width="${3}"
+	else
+		local width=`terminal_width 2>/dev/null`
+	fi
+	if [ -z "${width}" ]; then
 		local width='80'
 	else
-		local width="${3}"
+		local width=$((width - 6))
 	fi
 
 	watch -c -n "${interval}" -t "COLUMNS= ${integrated}/ops/kp.sh \"${file}\" status \"${width}\""
@@ -98,6 +103,11 @@ function cmd_kp()
 	fi
 
 	if [ "${cmd}" == 'run' ]; then
+		if [ -z "${1+x}" ]; then
+			echo "[func cmd_kp] usage: <func> kp_file run continue_on_error(true|false)"
+			return 1
+		fi
+		local continue_on_err="${1}"
 		if [ ! -z "${mon_pids}" ]; then
 			echo "=> [^__^] ${file_abs}"
 			echo '   running, skipped'
@@ -105,10 +115,10 @@ function cmd_kp()
 			echo "# This file is generated" >"${file_abs}.mon"
 			echo "source \"${integrated}/_env.sh\"" >>"${file_abs}.mon"
 			echo 'auto_error_handle' >>"${file_abs}.mon"
-			echo "kp_file_run \"${file_abs}\"" >>"${file_abs}.mon"
+			echo "kp_file_run \"${file_abs}\" \"${continue_on_err}\"" >>"${file_abs}.mon"
 			chmod +x "${file_abs}.mon"
 			nohup bash "${integrated}"/_base/call_func.sh \
-				keep_script_running "${file_abs}.mon" 'false' '' 10 10 >/dev/null 2>&1 &
+				keep_script_running "${file_abs}.mon" 'false' '' 'true' 10 10 >/dev/null 2>&1 &
 			echo "=> [^__^] ${file_abs}"
 			echo '   starting'
 		fi
@@ -121,12 +131,17 @@ function cmd_kp()
 		else
 			echo '   nor running, skipped'
 		fi
-		kp_file_stop "${file}"
+		kp_file_stop "${file}" 'false'
 	elif [ "${cmd}" == 'status' ]; then
 		if [ ! -z "${1+x}" ] && [ ! -z "${1}" ]; then
 			local width="${1}"
 		else
-			local width='80'
+			local width=`terminal_width 2>/dev/null`
+			if [ -z "${width}" ]; then
+				local width='80'
+			else
+				local width=$((width - 6))
+			fi
 		fi
 		local atime=`_kp_sh_last_active "${file}"`
 		if [ ! -z "${mon_pids}" ]; then
@@ -151,6 +166,13 @@ function cmd_kp()
 			kp_file_watch "${file}" "${@}"
 		fi
 	elif [ "${cmd}" == 'clean' ]; then
+		echo "=> [^__^] ${file_abs}"
+		if [ ! -z "${mon_pids}" ]; then
+			stop_pids "${mon_pids}" | awk '{print "   "$0}'
+		else
+			echo '   nor running, skipped'
+		fi
+		kp_file_stop "${file}" 'true'
 		rm -f "${file}.mon"
 		rm -f "${file}.log"
 		kp_file_iter "${file}" | while read line; do

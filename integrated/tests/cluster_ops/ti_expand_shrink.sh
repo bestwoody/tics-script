@@ -137,9 +137,8 @@ function expand_shrink_test()
 function test_main()
 {
 	local test_entry_file="${1}"
-	set_is_running "${test_entry_file}"
+	# TODO: move ips to config, or just juse one node with multipy tiflashs
 	expand_shrink_test "172.16.5.82" "172.16.5.81" "172.16.5.85" "101" "101" "101" "${test_entry_file}" "1"
-	clean_is_running "${test_entry_file}"
 }
 
 test_main "${BASH_SOURCE[0]}"

@@ -20,15 +20,18 @@ def report(std_log_path, err_log_path, result_limit, color = True):
         with open(err_log_path) as file:
             err_log = file.readlines()[-lines_limit:]
 
-    n = '-'
-    e = 'E'
-    u = '~'
-    p = '<'
     if color:
-        n = '\033[32m-\033[0m'
-        e = '\033[31mE\033[0m'
-        u = '\033[33m~\033[0m'
-        p = '\033[35m<\033[0m'
+        s_ok = '\033[32m-\033[0m'
+        s_err = '\033[31mE\033[0m'
+        s_warn = '\033[33m~\033[0m'
+        s_arrow = '\033[35m<\033[0m'
+        s_stop = '\033[35m!\033[0m'
+    else:
+        s_ok = '-'
+        s_err = 'E'
+        s_warn = '~'
+        s_arrow = '<'
+        s_stop = '!'
 
     result = ['-' for i in range(result_limit)]
     started = False
@@ -40,7 +43,7 @@ def report(std_log_path, err_log_path, result_limit, color = True):
     for sline in std_log:
         if sline.startswith('!RUN '):
             if started:
-                result.append(e)
+                result.append(s_err)
             else:
                 if started_time:
                     mark = '!RUN ' + started_time
@@ -57,15 +60,22 @@ def report(std_log_path, err_log_path, result_limit, color = True):
                 started_time = fields[1]
         elif sline.startswith('!END '):
             if err_log_i < len(err_log) and not err_log[err_log_i].startswith('!RUN '):
-                result.append(u)
+                result.append(s_warn)
             else:
-                result.append(n)
+                result.append(s_ok)
+            started = False
+        elif sline.startswith('!STOPPED '):
+            result.append(s_stop)
+            started = False
+        elif sline.startswith('!ERR '):
+            result.append(s_err)
             started = False
 
         last_line = sline
 
-    if last_line and not sline.startswith('!END ') and not sline.startswith('!RUN '):
-        result.append(p)
+    if last_line and not sline.startswith('!'):
+        result.append(s_arrow)
+
     return result
 
 if __name__ == '__main__':

@@ -32,16 +32,17 @@ export -f _kp_file_pid
 
 function keep_script_running()
 {
-	if [ -z "${5+x}" ]; then
-		echo "[func keep_script_running] usage: <func> script write_log args_string check_interval backoffs" >&2
+	if [ -z "${6+x}" ]; then
+		echo "[func keep_script_running] usage: <func> script write_log args_string continue_on_err check_interval backoffs" >&2
 		return 1
 	fi
 
 	local script="${1}"
 	local write_log="${2}"
 	local args="${3}"
-	local interval="${4}"
-	shift 4
+	local continue_on_err="${4}"
+	local interval="${5}"
+	shift 5
 
 	if [ "${write_log}" == 'true' ]; then
 		mkdir -p "${script}.data"
@@ -91,12 +92,27 @@ function keep_script_running()
 
 		local ts=`date +%s`
 		local time=`date +'%D %T'`
+
+		if [ "${continue_on_err}" != 'true' ] && [ -f "${log}" ]; then
+			local grace_end=`tail -n 1 "${log}" | grep '!END\|!STOP'`
+			if [ -z "${grace_end}" ]; then
+				local sys_end=`tail -n 1 "${log}" | grep '^!'`
+				if [ -z "${sys_end}" ]; then
+					echo "!ERR ${ts} [${time}]" >> "${log}"
+				fi
+				sleep "${backoff}"
+				continue
+			fi
+		fi
+
 		echo "!RUN ${ts} [${time}]" >> "${log}"
 		echo "!RUN ${ts} [${time}]" >> "${err_log}"
 
 		local error_handle="$-"
 		set +e
-		nohup bash "${script}.clean" 'false' >> "${log}" 2>> "${err_log}"
+		if [ -f "${script}.stop" ]; then
+			nohup bash "${script}.stop" 'false' >> "${log}" 2>> "${err_log}"
+		fi
 		nohup bash "${script}" ${args} >> "${log}" 2>> "${err_log}" && \
 			echo "!END ${ts} [`date +'%D %T'`]" >> "${log}" &
 		sleep 0.05
@@ -209,12 +225,14 @@ export -f kp_file_iter
 
 function kp_file_run()
 {
-	if [ -z "${1+x}" ]; then
-		echo "[func kp_file_run] usage: <func> kp_file" >&2
+	if [ -z "${2+x}" ]; then
+		echo "[func kp_file_run] usage: <func> kp_file continue_on_err" >&2
 		return 1
 	fi
 
 	local file="${1}"
+	local continue_on_err="${2}"
+
 	local file_dir=$(dirname `abs_path "${file}"`)
 
 	cat "${file}" | { grep '^!' || test $? = 1; } | sort | uniq | while read line; do
@@ -223,7 +241,7 @@ function kp_file_run()
 		else
 			local line="${line:1}"
 		fi
-		local result=`kp_sh_stop "${line}"`
+		local result=`kp_sh_stop "${line}" 'true'`
 		local skipped=`echo "${result}" | { grep 'skipped' || test $? = 1; }`
 		if [ -z "${skipped}" ]; then
 			echo "[`date +'%D %T'`] STOP ${line}" >> "${file}.log"
@@ -247,7 +265,7 @@ function kp_file_run()
 			local is_running=`_kp_file_proc_exists "${line}"`
 			if [ "${is_running}" == 'false' ]; then
 				nohup bash "${integrated}"/_base/call_func.sh \
-					keep_script_running "${line}" 'true' '' 9 1 2 3 4 8 16 32 >> "${file}.log" 2>&1 &
+					keep_script_running "${line}" 'true' '' "${continue_on_err}" 9 1 2 3 4 8 16 32 >> "${file}.log" 2>&1 &
 				echo "   starting"
 			else
 				echo "   error: pid detecting failed: '${line}'"
@@ -260,15 +278,20 @@ export -f kp_file_run
 function kp_sh_stop()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func kp_sh_stop] usage: <func> sh_file [quiet]" >&2
+		echo "[func kp_sh_stop] usage: <func> sh_file [clean] [quiet]" >&2
 		return 1
 	fi
 
 	local file="${1}"
 	if [ -z "${2+x}" ]; then
+		local clean='false'
+	else
+		local clean="${2}"
+	fi
+	if [ -z "${3+x}" ]; then
 		local quiet='false'
 	else
-		local quiet="${2}"
+		local quiet="${3}"
 	fi
 
 	local pids=`print_tree_pids "keep_script_running ${file}"`
@@ -298,15 +321,17 @@ function kp_sh_stop()
 
 	mkdir -p "${file}.data"
 	local ts=`date +%s`
-	echo "!STOPPING ${ts} [`date +'%D %T'`]" >> "${file}.data/stdout.log"
-	echo "!END ${ts} [`date +'%D %T'`]" >> "${file}.data/stdout.log"
+	local sys_end=`tail -n 1 "${file}.data/stdout.log" | grep '^!'`
+	if [ -z "${sys_end}" ]; then
+		echo "!STOPPED ${ts} [`date +'%D %T'`]" >> "${file}.data/stdout.log"
+	fi
 
-	local clear_script="${file}.clean"
-	if [ -f "${clear_script}" ]; then
-		local result=`bash "${clear_script}" 'true' 2>&1`
+	local stop_script="${file}.stop"
+	if [ -f "${stop_script}" ]; then
+		local result=`bash "${stop_script}" "${clean}" 2>&1`
 		if [ "$?" != 0 ] || [ ! -z "${result}" ]; then
-			echo "!STOPPING" >> "${file}.data/clean.log"
-			echo "${result}" >> "${file}.data/clean.log"
+			echo "!STOPPING" >> "${file}.data/stop.log"
+			echo "${result}" >> "${file}.data/stop.log"
 		fi
 	fi
 }
@@ -315,13 +340,19 @@ export -f kp_sh_stop
 function kp_file_stop()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func kp_file_stop] usage: <func> kp_file" >&2
+		echo "[func kp_file_stop] usage: <func> kp_file [clean]" >&2
 		return 1
 	fi
 
 	local file="${1}"
+	if [ -z "${2+x}" ]; then
+		local clean='false'
+	else
+		local clean="${2}"
+	fi
+
 	kp_file_iter "${file}" | while read line; do
-		local result=`kp_sh_stop "${line}"`
+		local result=`kp_sh_stop "${line}" "${clean}"`
 		local skipped=`echo "${result}" | { grep 'skipped' || test $? = 1; }`
 		if [ -z "${skipped}" ]; then
 			echo "[`date +'%D %T'`] STOP ${line}" >> "${file}.log"
