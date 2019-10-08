@@ -70,6 +70,8 @@
     <!-- Path to data directory, with trailing slash. -->
     <path>{tiflash_dir}/db</path>
 
+    <!-- fast_path>{tiflash_dir}/db_fast;{tiflash_dir}/db_fast2;{tiflash_dir}/db_fast3</fast_path -->
+
     <!-- Path to temporary data for processing hard queries. -->
     <tmp_path>{tiflash_dir}/tmp</tmp_path>
 

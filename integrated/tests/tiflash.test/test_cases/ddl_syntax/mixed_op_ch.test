@@ -1,0 +1,67 @@
+ti_mysql> drop database tpch_0_1
+
+ti_ch> DBGInvoke __set_flush_threshold(50, 0)
+ti_func> load_tpch 0.01 lineitem 4
+ti_ch> DBGInvoke __refresh_schemas()
+ti_ch> select count(*) from tpch_0_01.lineitem
+┌─count()─┐
+│   60175 │
+└─────────┘
+
+ti_mysql> rename table tpch_0_01.lineitem to tpch_0_01.not_lineitem
+ti_ch> DBGInvoke __refresh_schemas()
+ti_ch> select count(*) from tpch_0_01.not_lineitem
+┌─count()─┐
+│   60175 │
+└─────────┘
+
+ti_mysql> rename table tpch_0_01.not_lineitem to tpch_0_01.lineitem1000
+ti_ch> DBGInvoke __refresh_schemas()
+ti_ch> select count(*) from tpch_0_01.lineitem1000
+┌─count()─┐
+│   60175 │
+└─────────┘
+
+ti_mysql> rename table tpch_0_01.lineitem1000 to tpch_0_01.lineitem
+ti_ch> DBGInvoke __refresh_schemas()
+ti_ch> select count(*) from tpch_0_01.lineitem
+┌─count()─┐
+│   60175 │
+└─────────┘
+
+ti_mysql> alter table tpch_0_01.lineitem drop column L_QUANTITY
+ti_ch> DBGInvoke __refresh_schemas()
+ti_ch> select count(*) from tpch_0_01.lineitem
+┌─count()─┐
+│   60175 │
+└─────────┘
+
+ti_mysql> alter table tpch_0_01.lineitem drop column L_EXTENDEDPRICE
+ti_ch> DBGInvoke __refresh_schemas()
+ti_ch> select count(*) from tpch_0_01.lineitem
+┌─count()─┐
+│   60175 │
+└─────────┘
+
+ti_mysql> alter table tpch_0_01.lineitem drop column L_QUANTITY
+ti_ch> DBGInvoke __refresh_schemas()
+ti_ch> select count(*) from tpch_0_01.lineitem
+┌─count()─┐
+│   60175 │
+└─────────┘
+
+ti_mysql> alter table tpch_0_01.lineitem add column c3 int
+ti_ch> DBGInvoke __refresh_schemas()
+ti_ch> select count(*) from tpch_0_01.lineitem
+┌─count()─┐
+│   60175 │
+└─────────┘
+
+ti_mysql> alter table tpch_0_01.lineitem modify c3 bigint
+ti_ch> DBGInvoke __refresh_schemas()
+ti_ch> select count(*) from tpch_0_01.lineitem
+┌─count()─┐
+│   60175 │
+└─────────┘
+
+ti_mysql> drop database tpch_0_1
