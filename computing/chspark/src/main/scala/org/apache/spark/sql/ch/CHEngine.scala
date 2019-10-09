@@ -5,6 +5,7 @@ import java.net.InetAddress
 import com.pingcap.tikv.TiSession
 import com.pingcap.tikv.expression.visitor.{MetaResolver, PrunedPartitionBuilder}
 import com.pingcap.tikv.meta.{SchemaState, TiTableInfo}
+import com.pingcap.tikv.region.TiRegion
 import com.pingcap.tispark.BasicExpression
 import org.apache.spark.sql.catalyst.catalog.{CHCatalogConst, CatalogTable}
 import org.apache.spark.sql.types.{Metadata, MetadataBuilder, StructField}
@@ -16,7 +17,7 @@ import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
 object CHEngine extends Enumeration {
-  val MutableMergeTree, TxnMergeTree, MergeTree, Log = Value
+  val MutableMergeTree, TxnMergeTree, MergeTree, Log, DeltaMerge = Value
 
   val TIDB_ROWID = "_tidb_rowid"
 
@@ -28,6 +29,8 @@ object CHEngine extends Enumeration {
         TxnMergeTreeEngine(None, Seq.empty[String], -1, "")
       case CHEngine.Log =>
         LogEngine()
+      case CHEngine.DeltaMerge =>
+        DeltaMergeEngine(None, Seq.empty[String], "")
     }
 
   def fromCatalogTable(tableDesc: CatalogTable): CHEngine = {
@@ -358,6 +361,162 @@ case class TxnMergeTreeEngine(var partitionNum: Option[Int],
     tableRegionMap
       .flatMap(p => {
         val regionList = p._2
+        val table = CHTableRef(p._1.node, p._1.database, tableName)
+        val query = CHSql.query(table, chLogicalPlan, null, chRelation.useSelraw)
+        regionList
+          .grouped(chRelation.partitionsPerSplit)
+          .map(
+            regionGroup =>
+              CHPhysicalPlan(
+                table,
+                query,
+                chRelation.ts,
+                chRelation.tableInfo.engine.getSchemaVersion(),
+                Some(regionGroup)
+            )
+          )
+      })
+      .toArray
+  }
+
+  override def getPhysicalPlans(chRelation: CHRelation,
+                                chLogicalPlan: CHLogicalPlan,
+                                tiSession: TiSession): Array[CHPhysicalPlan] = {
+    val tiTableInfo =
+      tiSession.getCatalog.getTable(chRelation.tables(0).database, chRelation.tables(0).table)
+
+    if (tiTableInfo.isPartitionEnabled) {
+      type TiExpression = com.pingcap.tikv.expression.Expression
+      val tiFilters: Seq[TiExpression] = chLogicalPlan.chFilter.predicates.collect {
+        case BasicExpression(expr) => expr
+      }
+      MetaResolver.resolve(tiFilters, tiTableInfo)
+      val prunedPartBuilder = new PrunedPartitionBuilder()
+      val prunedParts = prunedPartBuilder.prune(tiTableInfo, tiFilters)
+      prunedParts
+        .flatMap(partition => {
+          val tableName = tiTableInfo.getName + "_" + partition.getId
+          getPhysicalPlansByTableID(
+            partition.getId,
+            tableName,
+            chRelation,
+            chLogicalPlan,
+            tiSession
+          )
+        })
+        .toArray
+    } else {
+      getPhysicalPlansByTableID(tableID, tiTableInfo.getName, chRelation, chLogicalPlan, tiSession)
+    }
+  }
+}
+
+case class DeltaMergeEngine(var partitionNum: Option[Int],
+                            var pkList: Seq[String],
+                            var tableInfo: String)
+    extends CHEngine(CHEngine.DeltaMerge) {
+  private val DM_TAB_META_TABLE_INFO = "dm_table_info"
+  private val DM_HIDDEN_COL_NAME_VERSION = "_INTERNAL_VERSION"
+  private val DM_HIDDEN_COL_NAME_DELMARK = "_INTERNAL_DELMARK"
+
+  private lazy val parsedTableInfo = parse(tableInfo)
+
+  override def sql: String =
+    s"DeltaMerge(${partitionNum.map(_.toString + ", ").getOrElse("")}, '$tableInfo')"
+
+  override def toProperties: mutable.Map[String, String] = {
+    val properties = mutable.Map[String, String](
+      (CHCatalogConst.TAB_META_ENGINE, name.toString),
+      (DM_TAB_META_TABLE_INFO, tableInfo)
+    )
+    properties
+  }
+
+  override def fromCatalogTable(tableDesc: CatalogTable): Unit = {
+    pkList = tableDesc.schema
+      .filter(
+        f =>
+          f.metadata.contains(CHCatalogConst.COL_META_PRIMARY_KEY) && f.metadata
+            .getBoolean(CHCatalogConst.COL_META_PRIMARY_KEY)
+      )
+      .map(_.name)
+    tableInfo = tableDesc.properties(DM_TAB_META_TABLE_INFO)
+  }
+
+  override def fromTiTableInfo(tiTable: TiTableInfo, properties: Map[String, String]): Unit = {
+    pkList = tiTable.getColumns.filter(_.isPrimaryKey).map(_.getName)
+    tableInfo = properties(DM_TAB_META_TABLE_INFO)
+  }
+
+  override def fromCreateStatement(stmt: String): Unit = {
+    val args = CHEngine.getTableEngineArgs(stmt)
+    partitionNum = None
+    pkList = args.head.split(" *, *").map(_.replaceAll("`", "").trim)
+    if (args.size == 2) {
+      tableInfo = args(1)
+    }
+  }
+
+  override def mapFields(fields: Array[StructField]): Array[StructField] = {
+    val buildMetadata = (name: String, metadata: Metadata) => {
+      val builder = new MetadataBuilder()
+        .withMetadata(metadata)
+      if (pkList.contains(name)) {
+        builder.putBoolean(CHCatalogConst.COL_META_PRIMARY_KEY, value = true)
+      }
+      builder.build()
+    }
+
+    val colInfos = (for {
+      JObject(child) <- parsedTableInfo
+      JField("cols", JArray(cols)) <- child
+      JObject(col) <- cols
+      JField("name", JObject(ciName)) <- col
+      JField("L", JString(name)) <- ciName
+      JField("state", JInt(state)) <- col
+    } yield (name, SchemaState.fromValue(state.intValue()))).toMap
+
+    fields
+      .filter(
+        (field: StructField) =>
+          field.name == CHEngine.TIDB_ROWID
+            || field.name == DM_HIDDEN_COL_NAME_VERSION
+            || field.name == DM_HIDDEN_COL_NAME_DELMARK
+            || colInfos(field.name) == SchemaState.StatePublic
+      )
+      .map(field => field.copy(metadata = buildMetadata(field.name, field.metadata)))
+  }
+
+  override lazy val getSchemaVersion: Option[java.lang.Long] = {
+    implicit val formats: DefaultFormats.type = DefaultFormats
+    Some((parsedTableInfo \ "schema_version").extract[Long])
+  }
+
+  private lazy val tableID: Long = {
+    implicit val formats: DefaultFormats.type = DefaultFormats
+    (parsedTableInfo \ "id").extract[Long]
+  }
+
+  private def getPhysicalPlansByTableID(tableID: Long,
+                                        tableName: String,
+                                        chRelation: CHRelation,
+                                        chLogicalPlan: CHLogicalPlan,
+                                        tiSession: TiSession): Array[CHPhysicalPlan] = {
+    // TODO: Doesn't support multiple TiFlash instances on single node with separate ports.
+    // We'll need a decent way to identify a TiFlash instance, i.e. store ID or so.
+    // Now hack by finding by host name only.
+    val regionMap: Map[String, Array[TiRegion]] =
+      CHUtil.getTableLearnerPeerRegionMap(tableID, tiSession)
+    val hostRegionMap: Map[String, Array[TiRegion]] =
+      regionMap.map(p => (InetAddress.getByName(p._1).getHostAddress, p._2))
+    val hostTableMap =
+      chRelation.tables.map(t => (InetAddress.getByName(t.node.host).getHostAddress, t)).toMap
+    // Filter out (node, regions)s that don't have the table. Regions in such nodes would be all empty.
+    val tableRegionMap =
+      hostRegionMap.filter(p => hostTableMap.contains(p._1)).map(p => (hostTableMap(p._1), p._2))
+    tableRegionMap
+      .flatMap(p => {
+        val regionList: Array[TiRegion] = p._2
         val table = CHTableRef(p._1.node, p._1.database, tableName)
         val query = CHSql.query(table, chLogicalPlan, null, chRelation.useSelraw)
         regionList
