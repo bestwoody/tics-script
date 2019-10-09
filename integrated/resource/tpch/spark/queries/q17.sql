@@ -1,17 +1,20 @@
-SELECT
-	SUM(L_EXTENDEDPRICE) / 7.0 AS AVG_YEARLY
-FROM
+-- using 1365545250 as a seed to the RNG
+
+
+select
+	sum(l_extendedprice) / 7.0 as avg_yearly
+from
 	lineitem,
 	part
-WHERE
-	P_PARTKEY = L_PARTKEY
-	AND P_BRAND = 'Brand#23'
-	AND P_CONTAINER = 'MED BAG'
-	AND L_QUANTITY < (
-		SELECT
-			0.2 * AVG(L_QUANTITY)
-		FROM
+where
+	p_partkey = l_partkey
+	and p_brand = 'Brand#44'
+	and p_container = 'WRAP PKG'
+	and l_quantity < (
+		select
+			0.2 * avg(l_quantity)
+		from
 			lineitem
-		WHERE
-			L_PARTKEY = P_PARTKEY
-	)
+		where
+			l_partkey = p_partkey
+	);
