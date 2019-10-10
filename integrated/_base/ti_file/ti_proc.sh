@@ -571,6 +571,21 @@ function rngine_run()
 }
 export -f rngine_run
 
+function check_java_installation()
+{
+	local error_handle="$-"
+	set +e
+	java -version 1>/dev/null 2>&1
+	if [ "${?}" != 0 ]; then
+		echo "false"
+	else
+		echo "true"
+	fi
+
+	restore_error_handle_flags "${error_handle}"
+}
+export -f check_java_installation
+
 function spark_file_prepare()
 {
 	if [ -z "${4+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ]; then
@@ -638,7 +653,7 @@ function spark_master_run()
 	fi
 
 	if [ -z "${6+x}" ]; then
-		local advertise_host="0"
+		local advertise_host=""
 	else
 		local advertise_host="${6}"
 	fi
@@ -647,6 +662,12 @@ function spark_master_run()
 		local cluster_id="<none>"
 	else
 		local cluster_id="${7}"
+	fi
+
+	local java_installed=`check_java_installation`
+	if [ "${java_installed}" == "false" ]; then
+		echo "java not installed" >&2
+		return 1
 	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
@@ -694,15 +715,16 @@ function spark_master_run()
 	fi
 
 	local listen_host=""
-	if [ "${advertise_host}" != "127.0.0.1" ] && [ "${advertise_host}" != "localhost" ] && [ "${listen_host}" != "" ]; then
+	if [ "${advertise_host}" != "127.0.0.1" ] && [ "${advertise_host}" != "localhost" ] && [ "${advertise_host}" != "" ]; then
 		local listen_host="${advertise_host}"
 	else
 		local listen_host="`must_print_ip`"
 	fi
 
 	local spark_master_dir=`abs_path "${spark_master_dir}"`
+	local str_for_finding_spark_master="${spark_master_dir}/spark/jars/"
 
-	local proc_cnt=`print_proc_cnt "${spark_master_dir}" "org.apache.spark.deploy.master.Master"`
+	local proc_cnt=`print_proc_cnt "${str_for_finding_spark_master}" "org.apache.spark.deploy.master.Master"`
 
 	if [ "${proc_cnt}" != "0" ]; then
 		echo "running(${proc_cnt}), skipped"
@@ -735,8 +757,8 @@ function spark_master_run()
 		chmod +x "${spark_master_dir}/run_master_temp.sh"
 		mv "${spark_master_dir}/run_master_temp.sh" "${spark_master_dir}/run_master.sh"
 	fi
-	mkdir -p "${spark_master_dir}/logs"
-	bash "${spark_master_dir}/run_master.sh" 2>&1 1> "${spark_master_dir}/logs/spark_master.log"
+	
+	bash "${spark_master_dir}/run_master.sh" 2>&1 1>/dev/null
 
 	local info="${spark_master_dir}/proc.info"
 	echo "thriftserver_port	${thriftserver_port}" > "${info}"
@@ -753,8 +775,18 @@ function spark_master_run()
 		echo "org.apache.spark.deploy.master.Master" > "${spark_master_dir}/extra_str_to_find_proc"
 	fi
 
+	local spark_master_log_name=`ls -tr "${spark_master_dir}/spark/logs" | { grep "org.apache.spark.deploy.master.Master" || test $? = 1; } | tail -n 1`
+	if [ -z "${spark_master_log_name}" ]; then
+		echo "[func spark_master_run] spark master logs not found, failed" >&2
+		return 1
+	fi
+	mkdir -p "${spark_master_dir}/logs"
+	if [ ! -f "${spark_master_dir}/logs/spark_master.log" ]; then
+		ln "${spark_master_dir}/spark/logs/${spark_master_log_name}" "${spark_master_dir}/logs/spark_master.log"
+	fi
+
 	sleep 0.1
-	local pid=`must_print_pid "${spark_master_dir}" "org.apache.spark.deploy.master.Master"`
+	local pid=`must_print_pid "${str_for_finding_spark_master}" "org.apache.spark.deploy.master.Master"`
 	if [ -z "${pid}" ]; then
 		echo "[func spark_master_run] pid not found, failed" >&2
 		return 1
@@ -784,7 +816,7 @@ function spark_worker_run()
 	fi
 
 	if [ -z "${7+x}" ]; then
-		local advertise_host="0"
+		local advertise_host=""
 	else
 		local advertise_host="${7}"
 	fi
@@ -805,6 +837,12 @@ function spark_worker_run()
 		local cluster_id="<none>"
 	else
 		local cluster_id="${10}"
+	fi
+
+	local java_installed=`check_java_installation`
+	if [ "${java_installed}" == "false" ]; then
+		echo "java not installed" >&2
+		return 1
 	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
@@ -852,7 +890,7 @@ function spark_worker_run()
 	fi
 
 	local listen_host=""
-	if [ "${advertise_host}" != "127.0.0.1" ] && [ "${advertise_host}" != "localhost" ] && [ "${listen_host}" != "" ]; then
+	if [ "${advertise_host}" != "127.0.0.1" ] && [ "${advertise_host}" != "localhost" ] && [ "${advertise_host}" != "" ]; then
 		local listen_host="${advertise_host}"
 	else
 		local listen_host="`must_print_ip`"
@@ -863,8 +901,9 @@ function spark_worker_run()
 	local jdwp_port=$((${ports_delta} + ${default_jdwp_port}))
 
 	local spark_worker_dir=`abs_path "${spark_worker_dir}"`
+	local str_for_finding_spark_worker="${spark_worker_dir}/spark/jars/"
 
-	local proc_cnt=`print_proc_cnt "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker"`
+	local proc_cnt=`print_proc_cnt "${str_for_finding_spark_worker}" "org.apache.spark.deploy.worker.Worker"`
 
 	if [ "${proc_cnt}" != "0" ]; then
 		echo "running(${proc_cnt}), skipped"
@@ -896,14 +935,25 @@ function spark_worker_run()
 		mv "${spark_worker_dir}/run_worker_temp.sh" "${spark_worker_dir}/run_worker.sh"
 	fi
 	mkdir -p "${spark_worker_dir}/logs"
-	bash "${spark_worker_dir}/run_worker.sh" 2>&1 1> "${spark_worker_dir}/logs/spark_worker.log"
+	bash "${spark_worker_dir}/run_worker.sh" 2>&1 1>/dev/null
 
 	if [ ! -f "${spark_worker_dir}/extra_str_to_find_proc" ]; then
 		echo "org.apache.spark.deploy.worker.Worker" > "${spark_worker_dir}/extra_str_to_find_proc"
 	fi
 
+	local spark_worker_log_name=`ls -tr "${spark_worker_dir}/spark/logs" | { grep "org.apache.spark.deploy.worker.Worker" || test $? = 1; } | tail -n 1`
+	if [ -z "${spark_worker_log_name}" ]; then
+		echo "[func spark_worker_run] spark worker logs not found, failed" >&2
+		return 1
+	fi
+
+	mkdir -p "${spark_worker_dir}/logs"
+	if [ ! -f "${spark_worker_dir}/logs/spark_worker.log" ]; then
+		ln "${spark_worker_dir}/spark/logs/${spark_worker_log_name}" "${spark_worker_dir}/logs/spark_worker.log"
+	fi
+
 	sleep 0.1
-	local pid=`must_print_pid "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker"`
+	local pid=`must_print_pid "${str_for_finding_spark_worker}" "org.apache.spark.deploy.worker.Worker"`
 	if [ -z "${pid}" ]; then
 		echo "[func spark_worker_run] pid not found, failed" >&2
 		return 1

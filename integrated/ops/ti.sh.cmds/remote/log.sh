@@ -32,6 +32,10 @@ function cmd_ti_log()
 		local log_file='log/server.log'
 	elif [ "${mod_name}" == 'rngine' ]; then
 		local log_file='rngine.log'
+	elif [ "${mod_name}" == 'spark_m' ]; then
+		local log_file='logs/spark_master.log'
+	elif [ "${mod_name}" == 'spark_w' ]; then
+		local log_file='logs/spark_worker.log'
 	fi
 	local log_file="${dir}/${log_file}"
 
