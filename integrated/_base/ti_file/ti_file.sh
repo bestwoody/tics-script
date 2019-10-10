@@ -115,12 +115,12 @@ function ti_file_exe()
 	if [ "${local}" != 'true' ] && [ "${cmd}" != 'dry' ]; then
 		# TODO: Parallel ping and copy
 		echo "${hosts}" | while read host; do
-			if [ ! -z "${host}" ]; then
+			if [ ! -z "${host}" ] && [ "${host}" != '127.0.0.1' ] && [ "${host}" != 'localhost' ]; then
 				ssh_ping "${host}"
 			fi
 		done
 		echo "${hosts}" | while read host; do
-			if [ ! -z "${host}" ]; then
+			if [ ! -z "${host}" ] && [ "${host}" != '127.0.0.1' ] && [ "${host}" != 'localhost' ]; then
 				cp_env_to_host "${integrated}" "${local_cache_env}" "${host}" "${remote_env_parent}"
 			fi
 		done
@@ -160,7 +160,7 @@ function ti_file_exe()
 			local conf=`echo "${mod}" | awk -F '\t' '{print $4}'`
 			local host=`echo "${mod}" | awk -F '\t' '{print $5}'`
 
-			if [ -z "${host}" ] || [ "${local}" == 'true' ]; then
+			if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ] || [ "${local}" == 'true' ]; then
 				local has_script=`test -f "${real_cmd_dir}/${cmd}.sh" && echo true`
 				if [ "${has_script}" != 'true' ] && [ "${local}" != 'true' ]; then
 					local local_has_script=`test -f "${cmd_dir}/local/${cmd}.sh" && echo true`
@@ -176,7 +176,7 @@ function ti_file_exe()
 			fi
 
 			if [ "${has_script}" == 'true' ]; then
-				if [ -z "${host}" ] || [ "${local}" == 'true' ]; then
+				if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ] || [ "${local}" == 'true' ]; then
 					if [ -z "${host}" ]; then
 						local host=`must_print_ip`
 					fi
@@ -198,7 +198,7 @@ function ti_file_exe()
 				continue
 			fi
 			if [ "${has_func}" == 'true' ]; then
-				if [ -z "${host}" ]; then
+				if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ]; then
 					if [ -z "${cmd_args+x}" ]; then
 						"ti_file_cmd_${cmd}" "${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else
@@ -215,7 +215,7 @@ function ti_file_exe()
 				fi
 				continue
 			else
-				if [ -z "${host}" ]; then
+				if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ]; then
 					echo "script not found: ${real_cmd_dir}/${cmd}.sh" >&2
 				else
 					echo "script not found: ${host}:${real_cmd_dir}/${cmd}.sh" >&2

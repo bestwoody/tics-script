@@ -60,7 +60,7 @@ class Mod(object):
         self.extra_tools = []
 
     def is_local(self):
-        return self.host == ""
+        return self.host == "" or self.host == '127.0.0.1' or self.host == 'localhost'
 
 class ModRngine(Mod):
     def __init__(self):
@@ -208,14 +208,18 @@ def parse_file(res, path, kvs):
 
 def check_mod_is_valid(mod, index, dirs, ports):
     setattr(mod, 'index', index)
+
     if len(mod.dir) == 0:
         error(mod.name + '[' + str(mod.index) + '].dir can\'t be empty')
+    if mod.dir[0] != '/' and mod.is_local():
+        mod.dir = os.getcwd() + '/' + mod.dir
+
     path = mod.host + ':' + mod.dir
     if path in dirs:
         error(mod.name + '[' + str(mod.index) + '].dir duplicated')
     else:
         dirs.add(path)
-    if len(mod.host) != 0 and mod.dir[0] != '/':
+    if not mod.is_local() and mod.dir[0] != '/':
         error('relative path can\'t use for remote deployment of ' + mod.name + '[' + str(mod.index) + ']: ' + mod.dir)
     addr = mod.host + ':' + mod.ports
     if addr in ports:
@@ -251,9 +255,10 @@ def print_sep():
 
 def print_mod_header(mod):
     print_sep()
-    host = mod.host
-    if len(mod.host) != 0:
+    if not mod.is_local():
         host = '[' + mod.host + '] '
+    else:
+        host = ''
     print 'echo "%s=> %s #%d (%s)"' % (host, mod.name, mod.index, mod.dir)
     print ''
 
@@ -437,7 +442,7 @@ def render_rngines(res, conf, hosts, indexes):
             tiflash_host = rngine.host
 
         print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta cluster_id'
-        if len(tiflash_host) == 0:
+        if len(tiflash_host) == 0 or tiflash_host == '127.0.0.1' or tiflash_host == 'localhost':
             print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % tiflash_dir
         else:
             get_addr_cmd = 'tiflash_addr="`call_remote_func_raw "%s" "%s" get_tiflash_addr_from_dir %s`"'
@@ -578,7 +583,7 @@ def get_hosts(res, mod_names, hosts, indexes):
             return
         if len(hosts) == 0 or (mod.host in hosts):
             if len(mod_names) == 0 or (mod.name in mod_names):
-                if len(mod.host) != 0 and (mod.host not in host_infos):
+                if mod.host not in host_infos:
                     host_infos.add(mod.host)
 
     def output(mod_array):
