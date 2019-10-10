@@ -1,9 +1,9 @@
 # name \t md5sum \t bin_name \t url
-tidb	ec67531419b9b1e2473312614fd083ff	tidb-server	http://139.219.11.38:8000/wlbuh/tidb-server.tar.gz
+tidb	ee484b48ed1ba1220a2e822ed0ec2ed7	tidb-server	http://139.219.11.38:8000/11JwRW/tidb-server.tar.gz
 tikv	08194c59c8efb93b3960eb726dc76e77	tikv-server	http://139.219.11.38:8000/6Tpvv/tikv-server.tar.gz
 pd	6b79bd3c126d3eaa26de8da57e122ccb	pd-server	http://139.219.11.38:8000/LmJHu/pd-server.tar.gz
 rngine	2d45ea5560fd7f55629f640b8dc8d814	tikv-server-rngine http://139.219.11.38:8000/10JHDF/tikv-server-rngine.tar.gz
-tiflash	41cdb88d25ce533f3adc2f462bca2db4	tiflash	http://139.219.11.38:8000/qGgEa/tiflash.tar.gz
+tiflash	93d884b1c8ce87cf74f7a0279015e657	tiflash	http://139.219.11.38:8000/119yZc/tiflash.tar.gz
 pd_ctl	483b85506806b835bbfa8b3abc1a38f4	pd-ctl	http://139.219.11.38:8000/TqEKY/pd-ctl.tar.gz
 tikv_ctl	f858021402608024367ea6fd5054e5d7	tikv-ctl	http://139.219.11.38:8000/wF0fP/tikv-ctl.tar.gz
 chspark	3fcc384ca38db67babe17d455aa05baa	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/wQslP/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz

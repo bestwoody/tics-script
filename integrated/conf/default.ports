@@ -1,7 +1,6 @@
 tiflash_http_port	4500
 tiflash_tcp_port	5000
 tiflash_interserver_http_port	5500
-tiflash_raft_port	6000
 
 pd_port	6500
 pd_peer_port	7000
@@ -12,6 +11,9 @@ tidb_port	8000
 tidb_status_port	8500
 
 rngine_port	9000
+
+# TODO: tiflash_raft_and_cop_port must be rngine_port plus 1, this dependency may be removed in the future
+tiflash_raft_and_cop_port	9001
 
 spark_master_port	9500
 thriftserver_port	10000

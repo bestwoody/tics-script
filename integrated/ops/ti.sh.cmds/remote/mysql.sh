@@ -35,9 +35,9 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -f "${query}" ]; then
-		mysql -h "${host}" -P "${port}" -u root --database="${db}" < "${query}"
+		mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments < "${query}"
 	else
-		mysql -h "${host}" -P "${port}" -u root --database="${db}" -e "${query}"
+		mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${query}"
 	fi
 }
 

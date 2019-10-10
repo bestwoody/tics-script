@@ -388,9 +388,9 @@ function tiflash_run()
 		echo "[func tiflash_run] get default tiflash_interserver_http_port from ${default_ports} failed" >&2
 		return 1
 	fi
-	local default_tiflash_raft_port=`get_value "${default_ports}" 'tiflash_raft_port'`
-	if [ -z "${default_tiflash_raft_port}" ]; then
-		echo "[func tiflash_run] get default tiflash_raft_port from ${default_ports} failed" >&2
+	local default_tiflash_raft_and_cop_port=`get_value "${default_ports}" 'tiflash_raft_and_cop_port'`
+	if [ -z "${default_tiflash_raft_and_cop_port}" ]; then
+		echo "[func tiflash_run] get default tiflash_raft_and_cop_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -420,7 +420,7 @@ function tiflash_run()
 	local http_port=$((${ports_delta} + ${default_tiflash_http_port}))
 	local tcp_port=$((${ports_delta} + ${default_tiflash_tcp_port}))
 	local interserver_http_port=$((${ports_delta} + ${default_tiflash_interserver_http_port}))
-	local raft_port=$((${ports_delta} + ${default_tiflash_raft_port}))
+	local tiflash_raft_and_cop_port=$((${ports_delta} + ${default_tiflash_raft_and_cop_port}))
 
 	local render_str="tiflash_dir=${tiflash_dir}"
 	local render_str="${render_str}#tiflash_pd_addr=${pd_addr}"
@@ -428,7 +428,7 @@ function tiflash_run()
 	local render_str="${render_str}#tiflash_http_port=${http_port}"
 	local render_str="${render_str}#tiflash_tcp_port=${tcp_port}"
 	local render_str="${render_str}#tiflash_interserver_http_port=${interserver_http_port}"
-	local render_str="${render_str}#tiflash_raft_port=${raft_port}"
+	local render_str="${render_str}#tiflash_raft_and_cop_port=${tiflash_raft_and_cop_port}"
 
 	render_templ "${conf_templ_dir}/tiflash/config.xml" "${conf_file}" "${render_str}"
 	cp_when_diff "${conf_templ_dir}/tiflash/users.xml" "${tiflash_dir}/conf/users.xml"
@@ -441,7 +441,7 @@ function tiflash_run()
 	local info="${tiflash_dir}/proc.info"
 	echo "listen_host	${listen_host}" > "${info}"
 	echo "interserver_http_port	${interserver_http_port}" >> "${info}"
-	echo "raft_port	${raft_port}" >> "${info}"
+	echo "raft_and_cop_port	${tiflash_raft_and_cop_port}" >> "${info}"
 	echo "http_port	${http_port}" >> "${info}"
 	echo "tcp_port	${tcp_port}" >> "${info}"
 	echo "pd_addr	${pd_addr}" >> "${info}"
@@ -505,14 +505,14 @@ function rngine_run()
 		echo "[func rngine_run] get default rngine_port from ${default_ports} failed" >&2
 		return 1
 	fi
-	local default_tiflash_raft_port=`get_value "${default_ports}" 'tiflash_raft_port'`
-	if [ -z "${default_tiflash_raft_port}" ]; then
-		echo "[func rngine_run] get default tiflash_raft_port from ${default_ports} failed" >&2
+	local default_tiflash_raft_and_cop_port=`get_value "${default_ports}" 'tiflash_raft_and_cop_port'`
+	if [ -z "${default_tiflash_raft_and_cop_port}" ]; then
+		echo "[func rngine_run] get default tiflash_raft_and_cop_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
 	if [ -z "${tiflash_addr}" ]; then
-		tiflash_addr="`must_print_ip`:${default_tiflash_raft_port}"
+		tiflash_addr="`must_print_ip`:${default_tiflash_raft_and_cop_port}"
 	fi
 
 	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")

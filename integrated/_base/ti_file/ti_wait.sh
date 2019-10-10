@@ -326,7 +326,7 @@ function wait_for_tiflash()
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
-				echo "#${i} waiting for tiflash raft port ready at '${server_id}'"
+				echo "#${i} waiting for tiflash raft port ${host}:${port} ready at '${server_id}'"
 			fi
 			sleep 1
 		fi
@@ -356,7 +356,7 @@ function wait_for_tiflash_local()
 	fi
 
 	local host=`cat "${tiflash_info}" | { grep 'listen_host' || test $? = 1; } | awk -F '\t' '{print $2}'`
-	local port=`cat "${tiflash_info}" | { grep 'raft_port' || test $? = 1; } | awk -F '\t' '{print $2}'`
+	local port=`cat "${tiflash_info}" | { grep 'raft_and_cop_port' || test $? = 1; } | awk -F '\t' '{print $2}'`
 
 	wait_for_tiflash "${host}" "${port}" "${timeout}" "${tiflash_dir}"
 }
@@ -374,8 +374,8 @@ function wait_for_tiflash_by_host()
 	local timeout="${3}"
 	local default_ports="${4}"
 
-	local default_raft_port=`get_value "${default_ports}" 'raft_port'`
-	local addr=`cal_addr ":${port}" '' "${default_raft_port}"`
+	local default_tiflash_raft_and_cop_port=`get_value "${default_ports}" 'tiflash_raft_and_cop_port'`
+	local addr=`cal_addr ":${port}" '' "${default_tiflash_raft_and_cop_port}"`
 	local port="${addr:1}"
 
 	wait_for_tiflash "${host}" "${port}" "${timeout}"
