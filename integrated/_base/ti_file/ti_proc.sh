@@ -625,9 +625,6 @@ function spark_file_prepare()
 	if [ -f "${spark_mod_dir}/spark-defaults.conf" ]; then
 		mv "${spark_mod_dir}/spark-defaults.conf" "${spark_mod_dir}/spark/conf"
 	fi
-	if [ -f "${spark_mod_dir}/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" ]; then
-		mv "${spark_mod_dir}/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" "${spark_mod_dir}/spark/jars/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar"
-	fi
 	if [ ! -f "${spark_mod_dir}/spark/conf/spark-env.sh" ]; then
 		echo "SPARK_PID_DIR=\"${spark_mod_dir}/pids\"" > "${spark_mod_dir}/spark/conf/spark-env.sh"
 	fi
@@ -749,7 +746,7 @@ function spark_master_run()
 		echo "${spark_master_dir}/spark/sbin/start-master.sh" >> "${spark_master_dir}/run_master_temp.sh"
 		echo "(" >> "${spark_master_dir}/run_master_temp.sh"
 		echo "  cd ${spark_master_dir}" >> "${spark_master_dir}/run_master_temp.sh"
-		echo "  ${spark_master_dir}/spark/sbin/start-thriftserver.sh --hiveconf hive.server2.thrift.port=${thriftserver_port}" >> "${spark_master_dir}/run_master_temp.sh"
+		echo "  ${spark_master_dir}/spark/sbin/start-thriftserver.sh --hiveconf hive.server2.thrift.port=${thriftserver_port} --jars ${spark_master_dir}/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" >> "${spark_master_dir}/run_master_temp.sh"
 		echo ")" >> "${spark_master_dir}/run_master_temp.sh"
 		echo "wait" >> "${spark_master_dir}/run_master_temp.sh"
 		# TODO: remove this sleep
@@ -922,7 +919,7 @@ function spark_worker_run()
 	echo "cluster_id	${cluster_id}" >> "${info}"
 
 	if [ ! -f "${spark_worker_dir}/run_worker.sh" ]; then
-		local run_worker_cmd="${spark_worker_dir}/spark/sbin/start-slave.sh ${spark_master_addr}"
+		local run_worker_cmd="${spark_worker_dir}/spark/sbin/start-slave.sh ${spark_master_addr} --host ${listen_host}"
 		if [ "${worker_cores}" != "" ]; then
 			local run_worker_cmd="${run_worker_cmd} --cores ${worker_cores}"
 		fi
