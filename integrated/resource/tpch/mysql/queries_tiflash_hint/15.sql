@@ -1,8 +1,6 @@
 -- using 1365545250 as a seed to the RNG
 
-drop table if exists revenue0;
-
-create table revenue0 (supplier_no, total_revenue) as
+create view revenue0 (supplier_no, total_revenue) as
 	select /*+ read_from_storage(tiflash[lineitem]) */
 		l_suppkey,
 		sum(l_extendedprice * (1 - l_discount))
@@ -27,7 +25,7 @@ from
 where
 	s_suppkey = supplier_no
 	and total_revenue = (
-		select /**/
+		select /*+ read_from_storage(tiflash[revenue0]) */
 			max(total_revenue)
 		from
 			revenue0
@@ -35,4 +33,4 @@ where
 order by
 	s_suppkey;
 
-drop table if exists revenue0;
+drop view revenue0;

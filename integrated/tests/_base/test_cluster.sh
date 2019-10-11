@@ -343,7 +343,7 @@ export -f test_cluster_load_tpch_data
 function test_cluster_run_tpch()
 {
 	if [ -z "${4+x}" ]; then
-		echo "[func test_cluster_run_tpch] usage: <func> test_ti_file scale entry_dir tags [query_number=all]"  >&2
+		echo "[func test_cluster_run_tpch] usage: <func> test_ti_file scale entry_dir tags [query_number=all] [use_tiflash_storage]"  >&2
 		return 1
 	fi
 
@@ -358,8 +358,21 @@ function test_cluster_run_tpch()
 		local query_number=''
 	fi
 
+	if [ ! -z "${6+x}" ]; then
+		local use_tiflash_storage="${6}"
+	else
+		local use_tiflash_storage='false'
+	fi
+
+
 	local db=`_db_name_from_scale "${scale}"`
-	local queries_dir="${integrated}/resource/tpch/mysql/queries"
+	if [ "${use_tiflash_storage}" != 'true' ]; then
+		local queries_dir="${integrated}/resource/tpch/mysql/queries"
+		local cat_tag='tidb_tikv'
+	else
+		local queries_dir="${integrated}/resource/tpch/mysql/queries_tiflash_hint"
+		local cat_tag='tidb_flash'
+	fi
 
 	if [ ! -d "${queries_dir}" ]; then
 		echo "[func test_cluster_run_tpch] '${queries_dir}' not a dir" >&2
@@ -376,10 +389,10 @@ function test_cluster_run_tpch()
 
 	if [ -z "${query_number}" ]; then
 		for ((i = 1; i < 23; ++i)); do
-			test_cluster_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "${tags}" "${i}"
+			test_cluster_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "${tags}" "${i}" "${use_tiflash_storage}"
 		done
 	else
-		echo "=> tpch on tidb, scale ${scale}, query #${query_number}"
+		echo "=> ${cat_tag}, scale ${scale}, query #${query_number}"
 		local sql_file="${queries_dir}/${query_number}.sql"
 		if [ ! -f "${sql_file}" ]; then
 			echo "[func test_cluster_run_tpch] '${sql_file}' not exists" >&2
@@ -389,7 +402,7 @@ function test_cluster_run_tpch()
 		mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" < "${sql_file}" > "${entry_dir}/tidb.q${query_number}.result"
 		local end_time=`date +%s`
 		local elapsed="$((end_time - start_time))"
-		local elapsed="${elapsed}	cat:tidb,scale:${scale},query:${query_number},start_ts:${start_time},end_ts:${end_time}"
+		local elapsed="${elapsed}	cat:${cat_tag},scale:${scale},query:${query_number},start_ts:${start_time},end_ts:${end_time}"
 		# TODO: check result
 		echo "${elapsed},${tags}" >> "${entry_dir}/queries.data"
 	fi
@@ -399,7 +412,7 @@ export -f test_cluster_run_tpch
 function test_cluster_spark_run_tpch()
 {
 	if [ -z "${4+x}" ]; then
-		echo "[func test_cluster_spark_run_tpch] usage: <func> test_ti_file scale entry_dir tags [query_number]"  >&2
+		echo "[func test_cluster_spark_run_tpch] usage: <func> test_ti_file scale entry_dir tags [query_number=all]"  >&2
 		return 1
 	fi
 
@@ -566,7 +579,7 @@ function test_cluster_get_normal_store_count()
 	local test_ti_file="${1}"
 
 	local store_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store" | { grep '"role": "normal"' || test $? = 1; } | wc -l`
-	if [ -z "${store_count}" ]; then 
+	if [ -z "${store_count}" ]; then
 		echo "[func test_cluster_get_normal_store_count] get store count failed" >&2
 		return 1
 	fi
@@ -583,7 +596,7 @@ function test_cluster_get_learner_store_count()
 	local test_ti_file="${1}"
 
 	local store_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store" | { grep '"role": "slave"' || test $? = 1; } | wc -l`
-	if [ -z "${store_count}" ]; then 
+	if [ -z "${store_count}" ]; then
 		echo "[func test_cluster_get_learner_store_count] get store count failed" >&2
 		return 1
 	fi
@@ -603,7 +616,7 @@ function test_cluster_get_store_id()
 
 	local store_address="${store_ip}:${store_port}"
 	local store_id=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store" | { grep -B 2 "${store_address}" || test $? = 1; } | { grep "id" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
-	if [ -z "${store_id}" ]; then 
+	if [ -z "${store_id}" ]; then
 		echo "[func test_cluster_get_store_id] cannot get store ${store_address} store id" >&2
 		return 1
 	fi
@@ -623,7 +636,7 @@ function test_cluster_get_store_region_count()
 
 	local store_id=`test_cluster_get_store_id "${test_ti_file}" "${store_ip}" "${store_port}"`
 	local region_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store ${store_id}" | { grep "region_count" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
-	if [ -z "${region_count}" ]; then 
+	if [ -z "${region_count}" ]; then
 		echo "[func test_cluster_get_store_region_count] cannot get store ${store_ip}:${store_port} store_id ${store_id} region count" >&2
 		return 1
 	fi

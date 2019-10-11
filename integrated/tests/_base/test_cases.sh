@@ -18,14 +18,17 @@ function tpch_perf_report()
 
 	rm -f "${report}.tmp"
 
-	if [ -f "${entry_dir}/queries.data" ]; then
+	if [ -f "${entry_dir}/load.data" ]; then
 		echo "<tpch ${scale} loading time>" >> "${report}.tmp"
 		to_table "${title}" 'rows:; cols:table|notag; cell:limit(20)|avg|~|cnt|duration' 9999 "${entry_dir}/load.data" >> "${report}.tmp"
 	fi
 
 	if [ -f "${entry_dir}/queries.data" ]; then
+		if [ -f "${entry_dir}/load.data" ]; then
+			echo '' >> "${report}.tmp"
+		fi
 		echo "<tpch ${scale} execute time>" >> "${report}.tmp"
-		to_table "${title}" 'cols:cat,round; rows:query; cell:limit(20)|avg|~|cnt|duration' 9999 "${entry_dir}/queries.data" >> "${report}.tmp"
+		to_table "${title}" 't=cat|r=round; cols:t,r; rows:query; cell:limit(20)|avg|~|cnt|duration' 9999 "${entry_dir}/queries.data" >> "${report}.tmp"
 	fi
 
 	if [ -f "${report}.tmp" ]; then
@@ -79,7 +82,9 @@ function tpch_perf()
 
 	for ((r = 0; r < 3; ++r)); do
 		for ((i = 1; i < 23; ++i)); do
-			test_cluster_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}" "${i}"
+			test_cluster_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}" "${i}" 'false'
+			tpch_perf_report "${test_entry_file}" "${scale}"
+			test_cluster_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}" "${i}" 'true'
 			tpch_perf_report "${test_entry_file}" "${scale}"
 			test_cluster_spark_run_tpch "${test_ti_file}" "${scale}" "${entry_dir}" "round:${r},${vers}" "${i}"
 			tpch_perf_report "${test_entry_file}" "${scale}"
