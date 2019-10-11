@@ -3,7 +3,10 @@ tidb	3b2781517bc95f2aa74f15df8ad78275	tidb-server	http://139.219.11.38:8000/436G
 tikv	06a7050e3deb0101030f63a1a802df58	tikv-server	http://139.219.11.38:8000/rF8oP/tikv-server.tar.gz
 pd	bc6a10c977db252d826d1330a2890164	pd-server	http://139.219.11.38:8000/e4WF9/pd-server.tar.gz
 rngine	d45d57ff54dfd2cac0467cf4ca0eadcd	tikv-server-rngine http://139.219.11.38:8000/QRoWC/tikv-server-rngine.tar.gz
-tiflash	ef2dd22cd1549a5f8e2c9c2453f220d6	tiflash	http://139.219.11.38:8000/vrGqo/tiflash.tar.gz
+
+# cop - 22ad2d32141925e258a14ca6fe81780b641c6a33
+tiflash	258d7fd504b89301c8208ec95c857084	tiflash	http://139.219.11.38:8000/fmorI/tiflash.tar.gz
+
 pd_ctl	2a3189be9475e70b54a08bc074d6eeb4	pd-ctl	http://139.219.11.38:8000/Rkn5Z/pd-ctl.tar.gz
 tikv_ctl	6b06ba19db7d910dc5c2373b271ab4ff	tikv-ctl	http://139.219.11.38:8000/15VaJK/tikv-ctl.tar.gz
 chspark	830b1fd8f4da1738a05d90594ec2bfaf	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/UTd9k/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
