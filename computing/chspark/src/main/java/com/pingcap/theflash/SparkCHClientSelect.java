@@ -254,7 +254,10 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
 
         long storeId =
             CHUtil.getRegionLearnerPeerByLabel(
-                    region, tiSession.getRegionManager(), "zone", "engine")
+                    region,
+                    tiSession.getRegionManager(),
+                    CHUtil.LearnerLabelKey(),
+                    CHUtil.LearnerLabelValue())
                 .get()
                 .getStoreId();
         tiSession.getRegionManager().onRequestFail(region.getId(), storeId);
@@ -280,7 +283,10 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
                   .getRegionManager()
                   .getStoreById(
                       CHUtil.getRegionLearnerPeerByLabel(
-                              region, tiSession.getRegionManager(), "zone", "engine")
+                              region,
+                              tiSession.getRegionManager(),
+                              CHUtil.LearnerLabelKey(),
+                              CHUtil.LearnerLabelValue())
                           .get()
                           .getStoreId())
                   .getAddress()
