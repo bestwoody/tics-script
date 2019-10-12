@@ -44,5 +44,7 @@ function load_tpch_data_to_mysql()
 		done
 		wait
 	fi
+
+	mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" -e "analyze table ${table};"
 }
 export -f load_tpch_data_to_mysql
