@@ -57,11 +57,14 @@ function ti_cmd_tpch_load
 
 	for table in ${tables[@]}; do
 		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
-		echo "=> [$host] loading ${table}"
+		local start_time=`date +%s`
+		echo "=> [$host] loading ${db}.${table}"
 		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
 		echo '   generated'
 		load_tpch_data_to_mysql "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
-		echo "   loaded"
+		local finish_time=`date +%s`
+        local duration=$((finish_time-start_time))
+        echo "   loaded in ${duration}s"
 	done
 }
 
