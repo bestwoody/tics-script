@@ -41,10 +41,6 @@ import org.tikv.kvproto.Metapb.Peer
 import scala.collection.mutable
 
 object CHUtil extends Logging {
-
-  def LearnerLabelKey: String = "engine"
-  def LearnerLabelValue: String = "tiflash"
-
   case class PrimaryKey(column: StructField, index: Int) {}
 
   object PrimaryKey {
@@ -607,14 +603,9 @@ object CHUtil extends Logging {
     while (curKey.compareTo(endKey) < 0) {
       val region =
         regionManager.getRegionByKey(curKey.toByteString)
-      val peer = getRegionLearnerPeerByLabel(
-        region,
-        regionManager,
-        CHUtil.LearnerLabelKey,
-        CHUtil.LearnerLabelValue
-      ).getOrElse(
+      val peer = getRegionLearnerPeerByLabel(region, regionManager, "zone", "engine").getOrElse(
         throw new RuntimeException(
-          s"Couldn't find learner peer by label '$LearnerLabelKey:$LearnerLabelValue' for region $region"
+          s"Couldn't find learner peer by label 'zone:engine' for region $region"
         )
       )
       val storeID = peer.getStoreId
