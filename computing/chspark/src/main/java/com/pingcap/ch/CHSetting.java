@@ -28,7 +28,6 @@ public abstract class CHSetting {
 
     public SettingInt(String name, long value) {
       super(name);
-      Preconditions.checkArgument(value >= 0);
       this.value = value;
     }
 
