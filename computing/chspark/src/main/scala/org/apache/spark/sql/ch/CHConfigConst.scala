@@ -25,4 +25,5 @@ object CHConfigConst {
   val STORAGE_BATCH_ROWS: String = "spark.flash.storage.batch.rows"
   val STORAGE_BATCH_BYTES: String = "spark.flash.storage.batch.bytes"
   val CLIENT_BATCH_SIZE: String = "spark.flash.client.batch.size"
+  val _IN_TEST: String = "spark.flash.intest"
 }

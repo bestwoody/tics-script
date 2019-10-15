@@ -65,11 +65,20 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
   private static final Logger logger = Logger.getLogger(SparkCHClientSelect.class);
 
   public SparkCHClientSelect(String query, String host, int port) {
-    this(CHUtil.genQueryId("G"), query, host, port);
+    this(CHUtil.genQueryId("G"), query, host, port, null);
   }
 
   public SparkCHClientSelect(String queryId, String query, String host, int port) {
-    this(queryId, query, host, port, 0, 0, false, null, null, null, null);
+    this(queryId, query, host, port, 0, 0, false, null, null, null, null, null);
+  }
+
+  public SparkCHClientSelect(
+      String queryId,
+      String query,
+      String host,
+      int port,
+      Function<CacheInvalidateEvent, Void> callBack) {
+    this(queryId, query, host, port, 0, 0, false, null, null, null, null, callBack);
   }
 
   public SparkCHClientSelect(
@@ -79,7 +88,8 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
       TiSession tiSession,
       TiTimestamp startTs,
       Long schemaVersion,
-      TiRegion[] region) {
+      TiRegion[] region,
+      Function<CacheInvalidateEvent, Void> callBack) {
     this(
         CHUtil.genQueryId("G"),
         query,
@@ -91,7 +101,8 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
         tiSession,
         startTs,
         schemaVersion,
-        region);
+        region,
+        callBack);
   }
 
   public SparkCHClientSelect(
@@ -105,7 +116,8 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
       TiSession tiSession,
       TiTimestamp startTs,
       Long schemaVersion,
-      TiRegion[] regions) {
+      TiRegion[] regions,
+      Function<CacheInvalidateEvent, Void> callBack) {
     this.queryId = queryId;
     this.query = query;
     this.clientCount = clientCount;
@@ -115,8 +127,7 @@ public class SparkCHClientSelect implements Closeable, Iterator<CHColumnBatch> {
     this.startTs = startTs;
     this.schemaVersion = schemaVersion;
     this.sessionQ = new ArrayQueue<>();
-    this.cacheInvalidateCallBack =
-        tiSession == null ? null : tiSession.getCacheInvalidateCallback();
+    this.cacheInvalidateCallBack = callBack;
     // null regions is used to get data from system table (e.g., fetch schema information)
     // regions won't be null when reading data from TxnMergeTree engine
     if (regions == null) {

@@ -23,6 +23,8 @@ import com.pingcap.tispark.TiSessionCache
 import com.pingcap.tispark.listener.CacheInvalidateListener
 import org.apache.spark.Partition
 
+import scala.util.Try
+
 case class CHPhysicalPlan(table: CHTableRef,
                           query: String,
                           ts: Option[TiTimestamp],
@@ -31,9 +33,15 @@ case class CHPhysicalPlan(table: CHTableRef,
   override def toString: String =
     s"{${table.node}, query='$query', ts=${ts.map(_.getVersion).orNull}, regions=${regions.map(_.mkString("[", ",", "]"))}}"
 
+  private val callBackFunc =
+    if (Try(System.getProperty(CHConfigConst._IN_TEST).toBoolean).getOrElse(false)) {
+      null
+    } else {
+      CacheInvalidateListener.getInstance()
+    }
+
   def createCHClient(tiConf: TiConfiguration): SparkCHClientSelect = {
     val tiSession = TiSessionCache.getSession(tiConf)
-    tiSession.injectCallBackFunc(CacheInvalidateListener.getInstance())
     new SparkCHClientSelect(
       query,
       table.node.host,
@@ -41,7 +49,8 @@ case class CHPhysicalPlan(table: CHTableRef,
       tiSession,
       ts.orNull,
       schemaVersion.orNull,
-      regions.orNull
+      regions.orNull,
+      callBackFunc
     )
   }
 }

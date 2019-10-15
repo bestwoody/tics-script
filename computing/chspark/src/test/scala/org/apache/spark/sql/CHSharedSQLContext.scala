@@ -23,7 +23,7 @@ import java.util.Properties
 import com.pingcap.tispark.TiConfigConst
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.util.resourceToString
-import org.apache.spark.sql.ch.CHApplyTimestampStrategy
+import org.apache.spark.sql.ch.{CHApplyTimestampStrategy, CHConfigConst}
 import org.apache.spark.sql.test.TestConstants._
 import org.apache.spark.sql.test.Utils._
 import org.apache.spark.sql.test.{TestSQLContext, TestSparkSession}
@@ -42,6 +42,8 @@ import ru.yandex.clickhouse.settings.ClickHouseProperties
  * `clickhouse_config.properties` must be provided in test resources folder
  */
 trait CHSharedSQLContext extends SparkFunSuite with Eventually with BeforeAndAfterAll with Logging {
+  System.setProperty(CHConfigConst._IN_TEST, "true")
+
   protected val logger: Logger = log
 
   protected def spark: SparkSession = CHSharedSQLContext.spark
