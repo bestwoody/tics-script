@@ -9,11 +9,8 @@ ti_ch> select count(*) from tpch_1.region
 
 ti_func> load_tpch 1 lineitem 16
 ti_ch> DBGInvoke __refresh_schemas()
-ti_beeline> select count(*) from tpch_1.lineitem
-+-----------+--+
-| count(1)  |
-+-----------+--+
-| 6001215   |
-+-----------+--+
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ count(*) from tpch_1.lineitem t
+count(*)
+6001215
 
 ti_mysql> drop database tpch_1

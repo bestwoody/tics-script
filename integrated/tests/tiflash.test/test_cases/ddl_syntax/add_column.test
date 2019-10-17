@@ -1,30 +1,24 @@
-ti_mysql> drop table test.t
+ti_mysql> drop table if exists test.t
 ti_mysql> create table if not exists test.t(c1 varchar(256), c2 int)
 ti_ch> DBGInvoke __refresh_schemas()
 ti_mysql> insert into test.t values('Hello world', 666)
 ti_mysql> insert into test.t values('Hello world', 666)
 
-ti_beeline> select c1, c2 from test.t
-+--------------+------+--+
-|      c1      |  c2  |
-+--------------+------+--+
-| Hello world  | 666  |
-| Hello world  | 666  |
-+--------------+------+--+
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ c1, c2 from test.t
+c1	c2
+Hello world	666
+Hello world	666
 
 ti_mysql> alter table test.t add column c3 decimal(5, 2)
 ti_mysql> insert into test.t values('Hello world2', 777, '999.99')
 ti_mysql> insert into test.t values('Hello world2', 777, '-999.99')
 
 ti_ch> DBGInvoke __refresh_schemas()
-ti_beeline> select c1, c2, c3 from test.t
-+---------------+------+----------+--+
-|      c1       |  c2  |    c3    |
-+---------------+------+----------+--+
-| Hello world   | 666  | NULL     |
-| Hello world   | 666  | NULL     |
-| Hello world2  | 777  | 999.99   |
-| Hello world2  | 777  | -999.99  |
-+---------------+------+----------+--+
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ c1, c2, c3 from test.t
+c1	c2	c3
+Hello world	666	NULL
+Hello world	666	NULL
+Hello world2	777	999.99
+Hello world2	777	-999.99
 
-ti_mysql> drop table test.t
+ti_mysql> drop table if exists test.t

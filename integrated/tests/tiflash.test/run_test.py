@@ -212,6 +212,16 @@ def ch_matched(outputs, matches, fuzz):
                 return False
         return True
 
+def mysql_matched(outputs, matches, fuzz):
+    outputs.sort()
+    matches.sort()
+    if len(outputs) != len(matches):
+        return False
+    for i in range(0, len(outputs)):
+        if not compare_line(outputs[i], matches[i]):
+            return False
+    return True
+
 
 def matched(outputs, matches, fuzz, query_type):
     if len(outputs) == 0 and len(matches) == 0:
@@ -223,6 +233,8 @@ def matched(outputs, matches, fuzz, query_type):
         return ch_matched(outputs, matches, fuzz)
     elif query_type.is_ch():
         return ch_matched(outputs, matches, fuzz)
+    elif query_type.is_ti_mysql():
+        return mysql_matched(outputs, matches, fuzz)
     else:
         raise Exception("Unknown query type", str(query_type))
 
@@ -255,9 +267,11 @@ class Matcher:
             self.query_line_number = line_number
             self.query = line[len(CMD_PREFIX_TI_MYSQL):]
             self.query_type = QueryType.ti_mysql()
-            self.executor_ops.exe(self.query_type, self.query)
-            self.outputs = None
+            self.outputs = self.executor_ops.exe(self.query_type, self.query)
+            self.outputs = map(lambda x: x.strip(), self.outputs)
+            self.outputs = filter(lambda x: len(x) != 0, self.outputs)
             self.extra_outputs = None
+            self.matches = []
         elif line.startswith(CMD_PREFIX_TI_BEELINE):
             if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
                 return False

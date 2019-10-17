@@ -104,7 +104,7 @@ function run_all_test()
 	mkdir -p "${entry_dir}"
 
 	local test_ti_file="${entry_dir}/test.ti"
-	test_cluster_prepare "${ports}" "" "${test_ti_file}"
+	#test_cluster_prepare "${ports}" "pd,tikv,tidb,tiflash,rngine" "${test_ti_file}"
 
 	echo '---'
 

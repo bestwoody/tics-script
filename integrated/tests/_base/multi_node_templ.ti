@@ -27,9 +27,3 @@ tiflash: {dir3}/tiflash ports{p3} host={ip3}
 rngine: {dir1}/rngine tiflash={ip1}:{dir1}/tiflash ports{p1} host={ip1}
 rngine: {dir2}/rngine tiflash={ip2}:{dir2}/tiflash ports{p2} host={ip2}
 rngine: {dir3}/rngine tiflash={ip3}:{dir3}/tiflash ports{p3} host={ip3}
-
-spark_m: {dir1}/spark_m ports{p1} host={ip1}
-
-spark_w: {dir1}/spark_w ports{p1} host={ip1} cores=10 mem=10G
-spark_w: {dir2}/spark_w ports{p2} host={ip2} cores=10 mem=10G
-spark_w: {dir3}/spark_w ports{p3} host={ip3} cores=10 mem=10G

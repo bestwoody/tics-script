@@ -15,18 +15,23 @@ function cmd_ti_tikv_ctl()
 		return
 	fi
 
-	if [ -z "${6+x}" ]; then
-		echo '[cmd tikv_ctl] <cmd> command' >&2
+	if [ -z "${6+x}" ] || [ -z "${7+x}" ]; then
+		echo '[cmd tikv_ctl] <cmd> online(true|false) command' >&2
+		return
+	fi
+	local cmd_type="${6}"
+	if [ "${cmd_type}" != "true" ] && [ "${cmd_type}" != "false" ]; then
+		echo '[cmd tikv_ctl] <cmd> online(true|false) command' >&2
 		return
 	fi
 
-	local command="${6}"
-	if [ -z "${command}" ]; then
-		return
-	fi
-
-	local port=`get_value "${dir}/proc.info" 'tikv_port'`
-	"${dir}/tikv-ctl" --host "http://${host}:${port}" "${command}"
+	shift 6
+	if [ "${cmd_type}" == "true" ]; then
+		local port=`get_value "${dir}/proc.info" 'tikv_port'`
+		"${dir}/tikv-ctl" --host "${host}:${port}" "${@}"
+	else
+		"${dir}/tikv-ctl" --db "${dir}/data/db" "${@}"
+	fi	
 }
 
 cmd_ti_tikv_ctl "${@}"

@@ -13,11 +13,11 @@ function test_cluster_tmpl()
 }
 export -f test_cluster_tmpl
 
-function test_cluster_multi_host_tmpl()
+function test_cluster_multi_node_tmpl()
 {
-	echo "${integrated}/tests/_base/multi_host_templ.ti"
+	echo "${integrated}/tests/_base/multi_node_templ.ti"
 }
-export -f test_cluster_multi_host_tmpl
+export -f test_cluster_multi_node_tmpl
 
 function test_cluster_args()
 {
@@ -37,10 +37,10 @@ function test_cluster_args()
 }
 export -f test_cluster_args
 
-function test_cluster_multi_host_args()
+function test_cluster_multi_node_args()
 {
 	if [ -z "${6+x}" ]; then
-		echo "[func test_cluster_multi_host_args] usage: <func> ip1 ip2 ip3 ports1 ports2 ports3" >&2
+		echo "[func test_cluster_multi_node_args] usage: <func> ip1 ip2 ip3 ports1 ports2 ports3" >&2
 		return 1
 	fi
 
@@ -52,13 +52,13 @@ function test_cluster_multi_host_args()
 	local ports3="${6}"
 
 	if [ -z "${test_cluster_data_dir+x}" ] || [ -z "${test_cluster_data_dir}" ]; then
-		echo "[func test_cluster_multi_host_args] var 'test_cluster_data_dir' not defined" >&2
+		echo "[func test_cluster_multi_node_args] var 'test_cluster_data_dir' not defined" >&2
 		return 1
 	fi
 
 	echo "ports1=+${ports1}#ports2=+${ports2}#ports3=+${ports3}#ip1=${ip1}#ip2=${ip2}#ip3=${ip3}#dir1=${test_cluster_data_dir}/nodes/${ports1}#dir2=${test_cluster_data_dir}/nodes/${ports2}#dir3=${test_cluster_data_dir}/nodes/${ports3}"
 }
-export -f test_cluster_multi_host_args
+export -f test_cluster_multi_node_args
 
 function test_cluster_cmd()
 {
@@ -178,10 +178,10 @@ function test_cluster_prepare()
 }
 export -f test_cluster_prepare
 
-function test_cluster_multi_host_prepare()
+function test_cluster_multi_node_prepare()
 {
 	if [ -z "${8+x}" ]; then
-		echo "[func test_cluster_multi_host_prepare] usage: <func> ip1 ip2 ip3 ports1 ports2 ports3 mods [rendered_file_path]" >&2
+		echo "[func test_cluster_multi_node_prepare] usage: <func> ip1 ip2 ip3 ports1 ports2 ports3 mods [rendered_file_path]" >&2
 		return 1
 	fi
 
@@ -203,8 +203,8 @@ function test_cluster_multi_host_prepare()
 	fi
 
 	local ti="${integrated}/ops/ti.sh"
-	local args=`test_cluster_multi_host_args "${ip1}" "${ip2}" "${ip3}" "${ports1}" "${ports2}" "${ports3}"`
-	local ti_file=`test_cluster_multi_host_tmpl`
+	local args=`test_cluster_multi_node_args "${ip1}" "${ip2}" "${ip3}" "${ports1}" "${ports2}" "${ports3}"`
+	local ti_file=`test_cluster_multi_node_tmpl`
 	if [ ! -z "${rendered_file_path}" ]; then
 		split_ti_args "${args}" > "${rendered_file_path}"
 		echo '' >> "${rendered_file_path}"
@@ -227,7 +227,7 @@ function test_cluster_multi_host_prepare()
 		return 1
 	fi
 }
-export -f test_cluster_multi_host_prepare
+export -f test_cluster_multi_node_prepare
 
 function test_cluster_burn()
 {
@@ -538,38 +538,6 @@ function test_cluster_run_tpcc()
 }
 export -f test_cluster_run_tpcc
 
-function test_cluster_restart_tiflash()
-{
-	if [ -z "${2+x}" ]; then
-		echo "[func test_cluster_restart_tiflash] usage: <func> test_ti_file entry_dir [interval_between_stop_and_start]"  >&2
-		return 1
-	fi
-
-	local test_ti_file="${1}"
-	local entry_dir="${2}"
-
-	if [ ! -z "${3+x}" ]; then
-		local interval="${3}"
-	else
-		local interval="10"
-	fi
-
-	local ti="${integrated}/ops/ti.sh"
-
-	"${ti}" -m "tiflash,rngine" "${test_ti_file}" "stop"
-	sleep ${interval}
-	"${ti}" -m "tiflash,rngine" "${test_ti_file}" "run"
-	sleep $((5 + (${RANDOM} % 5)))
-	local status=`"${ti}" "${test_ti_file}" "status"`
-	local ok_cnt=`echo "${status}" | { grep 'OK' || test $? = 1; } | wc -l | awk '{print $1}'`
-	if [ "${ok_cnt}" != "5" ]; then
-		echo "${status}" >&2
-		echo `date +"%Y-%m-%d %H:%m:%S"` >&2
-		return 1
-	fi
-}
-export -f test_cluster_restart_tiflash
-
 function test_cluster_get_normal_store_count()
 {
 	if [ -z "${1+x}" ]; then
@@ -638,7 +606,7 @@ function test_cluster_get_store_region_count()
 	local region_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store ${store_id}" | { grep "region_count" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
 	if [ -z "${region_count}" ]; then
 		echo "[func test_cluster_get_store_region_count] cannot get store ${store_ip}:${store_port} store_id ${store_id} region count" >&2
-		return 1
+		local region_count=0
 	fi
 	echo "${region_count}"
 }

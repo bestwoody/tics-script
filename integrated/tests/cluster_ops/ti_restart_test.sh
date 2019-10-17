@@ -3,6 +3,37 @@
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
 
+function restart_tiflash()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func restart_tiflash] usage: <func> test_ti_file entry_dir [interval_between_stop_and_start]"  >&2
+		return 1
+	fi
+
+	local test_ti_file="${1}"
+	local entry_dir="${2}"
+
+	if [ ! -z "${3+x}" ]; then
+		local interval="${3}"
+	else
+		local interval="10"
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+
+	"${ti}" -m "tiflash" "${test_ti_file}" "fstop"
+	sleep ${interval}
+	"${ti}" -m "tiflash,rngine" "${test_ti_file}" "run"
+	sleep $((5 + (${RANDOM} % 5)))
+	local status=`"${ti}" "${test_ti_file}" "status"`
+	local ok_cnt=`echo "${status}" | { grep 'OK' || test $? = 1; } | wc -l | awk '{print $1}'`
+	if [ "${ok_cnt}" != "5" ]; then
+		echo "${status}" >&2
+		echo `date +"%Y-%m-%d %H:%m:%S"` >&2
+		return 1
+	fi
+}
+
 function wait_load_data_ready()
 {
 	if [ -z "${3+x}" ]; then
@@ -23,6 +54,7 @@ function wait_load_data_ready()
 		local prev_mysql_result="${mysql_result}"
 		sleep $((10 + (${RANDOM} % 5)))
 	done
+	echo "load data for ${db}.${table} complete"
 }
 
 function check_tiflash_and_tidb_result_consistency()
@@ -39,22 +71,13 @@ function check_tiflash_and_tidb_result_consistency()
 
 	local ti="${integrated}/ops/ti.sh"
 
-	"${ti}" -m "spark_m,spark_w" "${test_ti_file}" "run"
-	local mysql_result=`"${ti}" "${test_ti_file}" "mysql" "select count(*) from ${db}.${table}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
-	for (( i=0; i<100; i++ )); do
-		local beeline_raw_result=`"${ti}" "${test_ti_file}" "beeline" "" -e "select count(*) from ${db}.${table}" 2>&1`
-		local beeline_result=`echo "${beeline_raw_result}" | grep -A 2 "count" | tail -n 1 | awk -F '|' '{ print $2 }' | tr -d ' '`
-		if [ "${beeline_result}" != "" ]; then
-			break
-		fi
-		sleep 1
-	done
+	local tikv_result=`"${ti}" "${test_ti_file}" "mysql" "select count(*) from ${db}.${table}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
+	local tiflash_result=`"${ti}" "${test_ti_file}" "mysql" "select /*+ read_from_storage(tiflash[${table}]) */ count(*) from ${table}" "${db}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
 
 	if [ "${mysql_result}" != "${beeline_result}" ]; then
 		echo `date +"%Y-%m-%d %H:%m:%S"` >&2
-		echo "mysql_result" "${mysql_result}" >&2
-		echo "beeline_result" "${beeline_result}" >&2
-		echo "beeline_raw_result" "${beeline_raw_result}" >&2
+		echo "tikv_result" "${tikv_result}" >&2
+		echo "tiflash_result" "${tiflash_result}" >&2
 		return 1
 	fi
 }
@@ -96,24 +119,18 @@ function restart_tiflash_test()
 	echo '---'
 
 	local table="lineitem"
+	local ti="${integrated}/ops/ti.sh"
+	
+	"${ti}" "${test_ti_file}" 'pd_ctl' "config set learner-schedule-limit 256"
+	"${ti}" -l "${test_ti_file}" "tpch/load" "${load_tpch_scale}" "${table}" &
 
-	"${integrated}/ops/ti.sh" -l "${test_ti_file}" "tpch/load" "${load_tpch_scale}" "${table}" &
-
-	for i in {1..${restart_times}}; do
+	for (( i = 0; i < "${restart_times}"; i++ )); do
 		sleep ${restart_interval}
-		test_cluster_restart_tiflash "${test_ti_file}" "${entry_dir}"
+		restart_tiflash "${test_ti_file}" "${entry_dir}"
 	done
 
 	wait_load_data_ready "${test_ti_file}" `_db_name_from_scale "${load_tpch_scale}"` "${table}"
 	check_tiflash_and_tidb_result_consistency "${test_ti_file}" `_db_name_from_scale "${load_tpch_scale}"` "${table}" "${entry_dir}"
 }
 
-function test_main()
-{
-	local test_entry_file="${1}"
-	restart_tiflash_test "${test_entry_file}" 32 1 2 120
-}
-
-test_main "${BASH_SOURCE[0]}"
-
-
+restart_tiflash_test "${BASH_SOURCE[0]}" 32 20 15 120

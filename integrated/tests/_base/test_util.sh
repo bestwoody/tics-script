@@ -18,7 +18,7 @@ function get_test_entry_dir()
 }
 export -f get_test_entry_dir
 
-function stop_test_cluster
+function stop_test_cluster()
 {
 	if [ -z "${1+x}" ]; then
 		echo "[stop_test_cluster] usage: <func> stop_script_file clean" >&2

@@ -108,8 +108,10 @@ function ti_file_exe()
 	if [ "${byhost}" == 'true' ]; then
 		local real_cmd_dir="${real_cmd_dir}/byhost"
 	fi
-	if [ -z "${hosts}" ] && [ "${local}" != 'true' ]; then
-		local real_cmd_dir="${cmd_dir}/remote"
+	if [ "${local}" != 'true' ]; then
+		if [ -z "${hosts}" ] || [ "${hosts}" == "127.0.0.1" ] || [ "${hosts}" == "localhost" ]; then
+			local real_cmd_dir="${cmd_dir}/remote"
+		fi
 	fi
 
 	if [ "${local}" != 'true' ] && [ "${cmd}" != 'dry' ]; then

@@ -35,14 +35,14 @@ function wait_learner_count_to_target()
 		local learner_count=`test_cluster_get_learner_store_count "${test_ti_file}"`
 		echo "wait learner count to target: ${target}"
 		echo "current learner count: ${learner_count}"
-		if [ "${learner_count}" == "${target}" ]; then
+		if [ "${learner_count}" -eq "${target}" ]; then
 			break
 		fi
-		if [ "${direction}" == "down" ] && [ ${learner_count} -lt ${target} ]; then
+		if [ "${direction}" == "down" ] && [ "${learner_count}" -lt "${target}" ]; then
 			echo "learner less than expected num" >&2
 			return 1
 		fi
-		if [ "${direction}" == "up" ] && [ ${learner_count} -gt ${target} ]; then
+		if [ "${direction}" == "up" ] && [ "${learner_count}" -gt "${target}" ]; then
 			echo "learner greater than expected num" >&2
 			return 1
 		fi
@@ -52,9 +52,9 @@ function wait_learner_count_to_target()
 
 function get_learner_store_region_count()
 {
-	local index="${1}"
+	local learner_index="${1}"
 	local test_ti_file="${2}"
-	local prop=`"${ti}" -i "${index}" -m "rngine" "${test_ti_file}" 'prop'`
+	local prop=`"${ti}" -i "${learner_index}" -m "rngine" "${test_ti_file}" 'prop'`
 	local host=`echo "${prop}" | grep "listen_host" | awk -F 'listen_host:' '{print $2}' | tr -d ' '`
 	local port=`echo "${prop}" | grep "rngine_port" | awk -F 'rngine_port:' '{print $2}' | tr -d ' '`
 	echo `test_cluster_get_store_region_count "${test_ti_file}" "${host}" "${port}"`
@@ -86,40 +86,69 @@ function wait_region_balance_complete()
 	done
 }
 
+function get_query_result()
+{
+	local test_ti_file="${1}"
+	local query="${2}"
+	local db="${3}"
+
+	echo `"${ti}" "${test_ti_file}" "mysql" "${query}" "${db}" | tail -n 1 | tr -d ' '`
+}
+
 function expand_shrink_test()
 {
-	local ip1="${1}"
-	local ip2="${2}"
-	local ip3="${3}"
-	local ports1="${4}"
-	local ports2="${5}"
-	local ports3="${6}"
-	local test_entry_file="${7}"
-	local expand_shrink_times="${8}"
-
-	local entry_dir="${test_entry_file}.data"
+	local test_entry_file="${1}"
+	local expand_shrink_times="${2}"
+	local ports1="${3}"
+	local ports2="${4}"
+	local ports3="${5}"
+	
+	local entry_dir=`get_test_entry_dir "${test_entry_file}"`
 	mkdir -p "${entry_dir}"
-	local report="${entry_dir}/report"
-
 	local test_ti_file="${entry_dir}/test.ti"
-	test_cluster_multi_host_prepare "${ip1}" "${ip2}" "${ip3}" "${ports1}" "${ports2}" "${ports3}" '' "${test_ti_file}"
+	test_cluster_multi_node_prepare "127.0.0.1" "127.0.0.1" "127.0.0.1" "${ports1}" "${ports2}" "${ports3}" '' "${test_ti_file}"
 
 	local ti="${integrated}/ops/ti.sh"
 	"${ti}" -l -i 0 "${test_ti_file}" tpch/load 0.1 lineitem
 
-	local result=`"${ti}" "${test_ti_file}" "beeline" "tpch_0_1" -e "select count(*) from lineitem" | grep -A 2 "count" | tail -n 1 | awk -F '|' '{ print $2 }' | tr -d ' '`
+	local query="select /*+ read_from_storage(tiflash[t]) */ count(*) from lineitem"
+	local db="tpch_0_1"
+	local target=`get_query_result "${test_ti_file}" "${query}" "${db}"`
 
+	local query_times="10"
 	for ((i=0; i<${expand_shrink_times}; i++)); do
-		remove_store 0 "${test_ti_file}"
-		wait_learner_count_to_target 2 "${test_ti_file}" "down"
-		add_store 0 "${test_ti_file}"
-		wait_learner_count_to_target 3 "${test_ti_file}" "up"
-		wait_region_balance_complete "${test_ti_file}"
+		for ((j=0; j<3; j++)); do
+			remove_store "${j}" "${test_ti_file}"
+			for ((k=0; k<${query_times}; k++)); do
+				local result=`get_query_result "${test_ti_file}" "${query}" "${db}"`
+				if [ ! -z "${result}" ] && [ "${result}" != "${target}" ]; then
+					echo "result error when shrink cluster" >&2
+					echo "result: ${result}" >&2
+					echo "target: ${target}" >&2
+					return 1
+				fi
+				sleep 1
+			done
+			wait_learner_count_to_target 2 "${test_ti_file}" "down"
+			add_store "${j}" "${test_ti_file}"
+			for ((k=0; k<${query_times}; k++)); do
+				local result=`get_query_result "${test_ti_file}" "${query}" "${db}"`
+				if [ ! -z "${result}" ] && [ "${result}" != "${target}" ]; then
+					echo "result error when expand cluseter" >&2
+					echo "result: ${result}" >&2
+					echo "target: ${target}" >&2
+					return 1
+				fi
+				sleep 1
+			done
+			wait_learner_count_to_target 3 "${test_ti_file}" "up"
+			wait_region_balance_complete "${test_ti_file}"
+		done
 	done
 
 	local timeout=180
 	for ((i=0; i<${timeout}; i++)); do
-		local final_result=`"${ti}" "${test_ti_file}" "beeline" "tpch_0_1" -e "select count(*) from lineitem" | grep -A 2 "count" | tail -n 1 | awk -F '|' '{ print $2 }' | tr -d ' '`
+		local final_result=`"${ti}" "${test_ti_file}" "mysql" "select /*+ read_from_storage(tiflash[t]) */ count(*) from lineitem" "tpch_0_1" | tail -n 1 | tr -d ' '`
 		if [ ! -z "${final_result}" ]; then
 			break
 		fi
@@ -128,17 +157,11 @@ function expand_shrink_test()
 
 	if [ "${result}" != "${final_result}" ]; then
 		echo "expand_shrink_test failed" >&2
-		echo "result ${result}" >&2
-		echo "final_result ${final_result}" >&2
+		echo "target result: ${target}" >&2
+		echo "final result: ${final_result}" >&2
 		return 1
 	fi
+	echo "final result: ${final_result}"
 }
 
-function test_main()
-{
-	local test_entry_file="${1}"
-	# TODO: move ips to config, or just juse one node with multipy tiflashs
-	expand_shrink_test "172.16.5.82" "172.16.5.81" "172.16.5.85" "101" "101" "101" "${test_entry_file}" "1"
-}
-
-test_main "${BASH_SOURCE[0]}"
+expand_shrink_test "${BASH_SOURCE[0]}" "5" "104" "106" "108" 
