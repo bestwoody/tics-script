@@ -170,13 +170,19 @@ function wait_for_pd()
 
 	local error_handle="$-"
 	set +e
+
+	local pd_ctl_path="${bins_dir}/pd-ctl"
+	if [ ! -f "${pd_ctl_path}" ]; then
+		echo "[func wait_for_pd] '${pd_ctl_path}' not found" >&2
+		return 1
+	fi
+
+	# TODO: for the purpose to running components from different version, remove it later
+	"${pd_ctl_path}" -u "http://${host}:${port}" <<< "config set cluster-version 3.0.0-alpha"
+
 	local key="6D536368656D615665FF7273696F6E4B6579FF0000000000000000F70000000000000073"
 	for ((i=0; i<${timeout}; i++)); do
-		if [ ! -f "${bins_dir}/pd-ctl" ]; then
-			echo "[func wait_for_pd] '${bins_dir}/pd-ctl' not found" >&2
-			return 1
-		fi
-		local region=`"${bins_dir}/pd-ctl" -u "http://${host}:${port}" <<< "region key ${key}"` >/dev/null
+		local region=`"${pd_ctl_path}" -u "http://${host}:${port}" <<< "region key ${key}"` >/dev/null
 		if [ "${region}" != "null" ] && [ `echo "${region}" | { grep "Failed" || test $? = 1; } | wc -l` == 0 ]; then
 			break
 		else

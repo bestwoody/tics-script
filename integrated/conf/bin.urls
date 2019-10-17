@@ -1,17 +1,23 @@
 # name \t md5sum \t bin_name \t url
-tidb	3b2781517bc95f2aa74f15df8ad78275	tidb-server	http://139.219.11.38:8000/436G0/tidb-server.tar.gz
-tikv	06a7050e3deb0101030f63a1a802df58	tikv-server	http://139.219.11.38:8000/rF8oP/tikv-server.tar.gz
+
+# release/support_access_from_flash_offer_dezhu - bfc2830e85c3f10e829f7271ef3e41eb79155cd0
+tidb	9a28d9168b36098bb2009aa4cc5e4273	tidb-server	http://139.219.11.38:8000/gmUhU/tidb-server.tar.gz
+
+# master - 6f4bc8cc29f6bdcaac8f4c2b975ef994abfb3fac
+tikv	fd391aee40255d09661aba1b40b83480	tikv-server	http://139.219.11.38:8000/yBCI5/tikv-server.tar.gz
+
 pd	bc6a10c977db252d826d1330a2890164	pd-server	http://139.219.11.38:8000/e4WF9/pd-server.tar.gz
+
+# rngine-fix - 3bd483792cee075228a9fadae4537ecc77db4e16
 rngine	d45d57ff54dfd2cac0467cf4ca0eadcd	tikv-server-rngine http://139.219.11.38:8000/QRoWC/tikv-server-rngine.tar.gz
 
-# cop - 22ad2d32141925e258a14ca6fe81780b641c6a33
-tiflash	258d7fd504b89301c8208ec95c857084	tiflash	http://139.219.11.38:8000/fmorI/tiflash.tar.gz
-
-pd_ctl	2a3189be9475e70b54a08bc074d6eeb4	pd-ctl	http://139.219.11.38:8000/Rkn5Z/pd-ctl.tar.gz
-tikv_ctl	6b06ba19db7d910dc5c2373b271ab4ff	tikv-ctl	http://139.219.11.38:8000/15VaJK/tikv-ctl.tar.gz
+# arrow_encode - 87955d1d43fd569dca65912dcf9478d5b7343e10
+tiflash	806653f6c742015e41bd258ba7bd7876	tiflash	http://139.219.11.38:8000/AOzar/tiflash.tar.gz
 
 # master - dd35e25c4b47c430f15167e885156760d24c47de
 chspark	913b2789dfdf0fcabbe85ebdd1762f10	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/Dlve3/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
 
+pd_ctl	2a3189be9475e70b54a08bc074d6eeb4	pd-ctl	http://139.219.11.38:8000/Rkn5Z/pd-ctl.tar.gz
+tikv_ctl	6b06ba19db7d910dc5c2373b271ab4ff	tikv-ctl	http://139.219.11.38:8000/15VaJK/tikv-ctl.tar.gz
 spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
