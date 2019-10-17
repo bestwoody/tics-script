@@ -7,6 +7,7 @@ import com.pingcap.tikv.expression.visitor.{MetaResolver, PrunedPartitionBuilder
 import com.pingcap.tikv.meta.{SchemaState, TiTableInfo}
 import com.pingcap.tikv.region.TiRegion
 import com.pingcap.tispark.BasicExpression
+import org.apache.commons.lang3.StringEscapeUtils
 import org.apache.spark.sql.catalyst.catalog.{CHCatalogConst, CatalogTable}
 import org.apache.spark.sql.types.{Metadata, MetadataBuilder, StructField}
 import org.json4s.JsonAST.{JField, JInt, JObject}
@@ -303,7 +304,7 @@ case class TxnMergeTreeEngine(var partitionNum: Option[Int],
     i += 1
     bucketNum = args(i).toInt
     i += 1
-    tableInfo = args(i)
+    tableInfo = StringEscapeUtils.unescapeJson(args(i))
   }
 
   override def mapFields(fields: Array[StructField]): Array[StructField] = {
@@ -453,7 +454,7 @@ case class DeltaMergeEngine(var partitionNum: Option[Int],
     partitionNum = None
     pkList = args.head.split(" *, *").map(_.replaceAll("`", "").trim)
     if (args.size == 2) {
-      tableInfo = args(1)
+      tableInfo = StringEscapeUtils.unescapeJson(args(1))
     }
   }
 
