@@ -412,6 +412,17 @@ def render_tiflashs(res, conf, hosts, indexes):
 
 def render_rngines(res, conf, hosts, indexes):
     for i in range(0, len(res.rngines)):
+        # TODO: set cluster version before every rngine run, it seems wierd, remove it later
+        if len(res.pds) != 0:
+            print_sep()
+            print '# Set cluster version'
+            pd = res.pds[0]
+            if pd.is_local():
+                print 'set_cluster_version_local "%s"' % pd.dir
+            else:
+                bins_dir = conf.cache_dir + '/master/bins'
+                print 'set_cluster_version_by_host "%s" "%s" %s %s' % (pd.host, pd.ports, bins_dir, conf.integrated_dir + '/conf/default.ports')
+
         rngine = res.rngines[i]
         if len(hosts) != 0 and rngine.host not in hosts:
             continue
