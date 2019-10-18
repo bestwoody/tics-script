@@ -16,11 +16,14 @@
     <display_name>the flash</display_name>
 
     <raft>
-        <service_addr>0.0.0.0:3930</service_addr>
         <kvstore_path>/tmp/tiflash/kvstore</kvstore_path>
         <pd_addr>127.0.0.1:2379</pd_addr>
         <ignore_databases>system</ignore_databases>
     </raft>
+
+    <flash>
+        <service_addr>0.0.0.0:3930</service_addr>
+    </flash>
 
     <http_port>8123</http_port>
     <tcp_port>9000</tcp_port>
