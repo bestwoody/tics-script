@@ -433,7 +433,28 @@ function tiflash_run()
 	render_templ "${conf_templ_dir}/tiflash/config.xml" "${conf_file}" "${render_str}"
 	cp_when_diff "${conf_templ_dir}/tiflash/users.xml" "${tiflash_dir}/conf/users.xml"
 
+	# TODO: remove hard code file name from this func
+	local target_lib_dir="tiflash_lib"
+	if [ ! -d "${tiflash_dir}/${target_lib_dir}" ]; then
+		local lib_file_name="tiflash_lib.tgz"
+		if [ ! -f "${tiflash_dir}/${lib_file_name}" ]; then
+			echo "[func tiflash_run] cannot find lib file"
+			return 1
+		fi
+		tar -zxf "${tiflash_dir}/${lib_file_name}" -C ${tiflash_dir} 1>/dev/null
+		rm -f "${tiflash_dir}/${lib_file_name}"
+	fi
+
 	if [ "${daemon_mode}" == "false" ]; then
+		if [ `uname` != "Darwin" ]; then
+			# TODO: check whether the following path exists before use it
+			local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${tiflash_dir}/${target_lib_dir}"
+			if [ -z "${LD_LIBRARY_PATH+x}" ]; then
+				export LD_LIBRARY_PATH="$lib_path"
+			else
+				export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$lib_path"
+			fi
+		fi
 		"${tiflash_dir}/tiflash" server --config-file "${conf_file}"
 		return $?
 	fi
@@ -447,7 +468,18 @@ function tiflash_run()
 	echo "pd_addr	${pd_addr}" >> "${info}"
 	echo "cluster_id	${cluster_id}" >> "${info}"
 
-	echo "nohup \"${tiflash_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" > "${tiflash_dir}/run.sh"
+	if [ `uname` != "Darwin" ]; then
+		# TODO: check whether the following path exists before use it
+		local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${tiflash_dir}/${target_lib_dir}"
+		if [ -z "${LD_LIBRARY_PATH+x}" ]; then
+			echo "export LD_LIBRARY_PATH=\"$lib_path\"" > "${tiflash_dir}/run.sh"
+		else
+			echo "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$lib_path\"" > "${tiflash_dir}/run.sh"
+		fi
+		echo "nohup \"${tiflash_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" >> "${tiflash_dir}/run.sh"
+	else
+		echo "nohup \"${tiflash_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" > "${tiflash_dir}/run.sh"
+	fi
 
 	chmod +x "${tiflash_dir}/run.sh"
 	bash "${tiflash_dir}/run.sh"

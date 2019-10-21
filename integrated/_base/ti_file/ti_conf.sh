@@ -153,9 +153,7 @@ function cp_bin_to_dir_from_urls()
 
 	# TODO: extract tgz is cache dir
 	if [ -z "${download_ext}" ] || [ ! -z "${download_is_tgz}" ]; then
-		if [ ! -f "${cache_dir}/${bin_name}" ]; then
-			mv -f "${download_path}" "${cache_dir}/${bin_name}"
-		fi
+		mv -f "${download_path}" "${cache_dir}/${bin_name}"
 		local new_md5=`file_md5 "${cache_dir}/${bin_name}"`
 		if [ "${new_md5}" == "${md5}" ]; then
 			cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"

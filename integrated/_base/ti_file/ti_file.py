@@ -95,7 +95,8 @@ def parse_mod(obj, line, origin):
         'pd': ['pd_ctl'],
         'tikv': ['tikv_ctl'],
         'spark_m': ['chspark'],
-        'spark_w': ['chspark']
+        'spark_w': ['chspark'],
+        'tiflash': ['tiflash_lib']
     }
     if obj.name in mod_extra_tools:
         obj.extra_tools = mod_extra_tools[obj.name]

@@ -21,3 +21,4 @@ pd_ctl	2a3189be9475e70b54a08bc074d6eeb4	pd-ctl	http://139.219.11.38:8000/Rkn5Z/p
 tikv_ctl	6b06ba19db7d910dc5c2373b271ab4ff	tikv-ctl	http://139.219.11.38:8000/15VaJK/tikv-ctl.tar.gz
 spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
+tiflash_lib	3ac44389d03d42bbe9c1a16be176dcff	tiflash_lib.tgz	http://139.219.11.38:8000/12xdQB/tiflash_lib.tgz
