@@ -99,3 +99,27 @@ function ls_sparkw_proc()
 	fi
 }
 export -f ls_sparkw_proc
+
+function _ls_ti_proc()
+{
+	local name="$1"
+	local res=`"ls_${name}_proc"`
+	if [ -z "${res}" ]; then
+		return
+	fi
+	echo "=> ${name}:"
+	echo "${res}"
+}
+export -f _ls_ti_proc
+
+function ls_ti_procs()
+{
+	_ls_ti_proc 'pd'
+	_ls_ti_proc 'tikv'
+	_ls_ti_proc 'tidb'
+	_ls_ti_proc 'tiflash'
+	_ls_ti_proc 'rngine'
+	_ls_ti_proc 'sparkm'
+	_ls_ti_proc 'sparkw'
+}
+export -f ls_ti_procs

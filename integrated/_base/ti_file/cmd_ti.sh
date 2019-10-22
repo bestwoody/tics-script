@@ -37,10 +37,37 @@ function ti_file_cmd_list()
 }
 export -f ti_file_cmd_list
 
-function ti_file_cmd_help()
+function ti_file_cmd_default_help()
 {
+	echo "ti.sh cmds"
+	echo "    - list global cmds"
+	echo "ti.sh help"
+	echo "    - detail usage of selectors"
+	echo "ti.sh [selectors] cmds"
+	echo "    - list cmds, the cmds list would be different under different selectors"
+	echo "ti.sh example"
+	echo "    - shows a simple example about how to use this tool"
+}
+export -f ti_file_cmd_default_help
+
+function ti_file_global_cmd_cmds()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func ti_file_global_cmd_cmds] usage: <func> cmd_dir" >&2
+		return
+	fi
+
 	local cmd_dir="${1}"
 
+	if [ -d "${cmd_dir}" ]; then
+		echo 'command list:'
+		ti_file_cmd_list "${cmd_dir}" | awk '{print "    "$0}'
+	fi
+}
+export -f ti_file_global_cmd_cmds
+
+function ti_file_global_cmd_help()
+{
 	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd,tikv,..] [-h host,host] [-i mod_index] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|..) [args]'
 	echo '    -c:'
 	echo '        specify the config template dir, will be `ops/../conf` if this arg is not provided.'
@@ -74,18 +101,59 @@ function ti_file_cmd_help()
 	echo '        (could be one of `ops/ti.sh.cmds/local|remote/byhost/<command>.sh` if `-b`)'
 	echo '    args:'
 	echo '        the args pass to the cmd script.'
-
-	echo
-	echo 'command list:'
-
-	if [ -d "${cmd_dir}" ]; then
-		ti_file_cmd_list "${cmd_dir}" | awk '{print "    "$0}'
-	fi
 }
-export -f ti_file_cmd_help
+export -f ti_file_global_cmd_help
+
+function ti_file_exe_global_cmd()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func ti_file_exe_global_cmd] usage: <func> cmd cmd_dir" >&2
+		return
+	fi
+
+	local cmd="${1}"
+	local cmd_dir="${2}"
+	shift 2
+
+	if [ "${cmd}" == 'cmds' ]; then
+		ti_file_global_cmd_cmds "${cmd_dir}"
+		return
+	fi
+
+	local has_func=`func_exists "ti_file_global_cmd_${cmd}"`
+	if [ "${has_func}" == 'true' ]; then
+		if [ -z "${1+x}" ]; then
+			"ti_file_global_cmd_${cmd}"
+		else
+			local cmd_args=("${@}")
+			"ti_file_global_cmd_${cmd}" "${cmd_args[@]}"
+		fi
+		return
+	fi
+
+	if [ -f "${cmd_dir}/global/${cmd}.sh" ]; then
+		if [ -z "${1+x}" ]; then
+			bash "${cmd_dir}/global/${cmd}.sh"
+		else
+			local cmd_args=("${@}")
+			bash "${cmd_dir}/global/${cmd}.sh" "${cmd_args[@]}"
+		fi
+		return
+	fi
+
+	echo "error: unknown cmd '${cmd}', usage: "
+	ti_file_cmd_default_help | awk '{print "    "$0}'
+	return 1
+}
+export -f ti_file_exe_global_cmd
 
 function cmd_ti()
 {
+	if [ -z "${1+x}" ]; then
+		ti_file_cmd_default_help
+		return
+	fi
+
 	local conf_templ_dir="${integrated}/conf"
 	local cmd_dir="${integrated}/ops/ti.sh.cmds"
 	local cache_dir="/tmp/ti"
@@ -119,20 +187,35 @@ function cmd_ti()
 			?)
 				echo '[func cmd_ti] illegal option(s)' >&2
 				echo '' >&2
-				ti_file_cmd_help "${cmd_dir}" >&2
+				ti_file_cmd_default_help >&2
 				return 1;;
 		esac
 	done
 	shift $((${OPTIND} - 1))
 
-	local ti_file="${1}"
-	local cmd="${2}"
-	shift 2
+	local ext=`print_file_ext "${1}"`
+	if [ "${ext}" != 'ti' ]; then
+		cmd="${1}"
+		shift 1
+	else
+		local ti_file="${1}"
+		local cmd="${2}"
+		shift 2
+	fi
 
 	local cmd_args=("${@}")
 
+	if [ -z "${ti_file}" ] && [ ! -z "${cmd}" ]; then
+		if [ -z "${cmd_args+x}" ]; then
+			ti_file_exe_global_cmd "${cmd}" "${cmd_dir}"
+		else
+			ti_file_exe_global_cmd "${cmd}" "${cmd_dir}" "${cmd_args[@]}"
+		fi
+		return
+	fi
+
 	if [ -z "${ti_file}" ]; then
-		ti_file_cmd_help "${cmd_dir}" >&2
+		ti_file_cmd_default_help "${cmd_dir}" >&2
 		return 1
 	fi
 
