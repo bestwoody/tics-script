@@ -61,8 +61,8 @@ function sysbench_perf_report()
 
 function sysbench_test()
 {
-	if [ -z "${5+x}" ]; then
-		echo "[func sysbench_test] usage: <func> test_entry_file ports table_num table_size test_time" >&2
+	if [ -z "${6+x}" ]; then
+		echo "[func sysbench_test] usage: <func> test_entry_file ports table_num table_size test_time thread_num" >&2
 		return 1
 	fi
 
@@ -71,7 +71,7 @@ function sysbench_test()
 	local table_num="${3}"
 	local table_size="${4}"
 	local test_time="${5}"
-	local threads="${6}"
+	local thread_num="${6}"
 
 	local entry_dir=`get_test_entry_dir "${test_entry_file}"`
 	mkdir -p "${entry_dir}"
@@ -82,7 +82,7 @@ function sysbench_test()
 
 	local ti="${integrated}/ops/ti.sh"
 	local sysbench_config_file="${entry_dir}/config"
-	generate_sysbench_config "${entry_dir}" "${test_ti_file}" "${sysbench_config_file}" "${test_time}" "${threads}"
+	generate_sysbench_config "${entry_dir}" "${test_ti_file}" "${sysbench_config_file}" "${test_time}" "${thread_num}"
 
 	"${ti}" "${test_ti_file}" "mysql" "create database sbtest;"
 	sysbench --config-file="${sysbench_config_file}" oltp_point_select --tables=${table_num} --table-size=${table_size} prepare
@@ -96,10 +96,4 @@ function sysbench_test()
 	sysbench_perf_report "${entry_dir}"
 }
 
-function test_main()
-{
-	local test_entry_file="${1}"
-	sysbench_test "${test_entry_file}" "102" "32" "100000" "300" "8"
-}
-
-test_main "${BASH_SOURCE[0]}"
+sysbench_test "${BASH_SOURCE[0]}" "102" "32" "100000" "300" "8"
