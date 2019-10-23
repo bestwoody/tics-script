@@ -15,13 +15,14 @@ function cmd_ti_tikv_ctl()
 		return
 	fi
 
+	local help='[cmd tikv_ctl] usage: <cmd> online(true|false) command'
 	if [ -z "${6+x}" ] || [ -z "${7+x}" ]; then
-		echo '[cmd tikv_ctl] <cmd> online(true|false) command' >&2
+		echo "${help}" >&2
 		return
 	fi
 	local cmd_type="${6}"
 	if [ "${cmd_type}" != "true" ] && [ "${cmd_type}" != "false" ]; then
-		echo '[cmd tikv_ctl] <cmd> online(true|false) command' >&2
+		echo "${help}" >&2
 		return
 	fi
 

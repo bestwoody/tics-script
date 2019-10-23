@@ -1,0 +1,26 @@
+# create a cluster defination file
+>> ops/ti.sh new my.ti
+
+# checkout the .ti file
+>> vim my.ti
+
+# run the cluster
+>> ops/ti.sh my.ti run
+
+# checkout cluster status
+>> ops/ti.sh my.ti status
+
+# checkout cluster deployment info
+>> ops/ti.sh my.ti prop
+
+# checkout cluster deployment info
+>> ops/ti.sh my.ti prop
+
+# run queries on tikv over tidb
+>> ops/ti.sh my.ti mysql "create table my_table..."
+
+# run queries on tiflash over tidb
+>> ops/ti.sh my.ti mysql "select /*+ read_from_storage(tiflash[my_table]) */ from my_table..."
+
+# close and destory cluster
+>> ops/ti.sh my.ti burn doit

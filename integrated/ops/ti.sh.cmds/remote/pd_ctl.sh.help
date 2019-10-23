@@ -1,0 +1,2 @@
+run 'pd-ctl' on pd in a cluster
+usage: <cmd> command

@@ -53,6 +53,7 @@ function cmd_ti_log()
 		cat "${log_file}" | { grep -i "${grep_str}" || test $? = 1; } | tail -n "${cnt}" | awk '{print "['${mod_name}' #'${index}' '${dir}'] "$0}'
 	else
 		local file_name=`basename "${log_file}"`
+		# TODO: move this to a new cmd
 		curl --upload-file "${log_file}" "http://139.219.11.38:8000/${file_name}" "http://139.219.11.38:8000/66nb8/${file_name}"
 	fi
 }

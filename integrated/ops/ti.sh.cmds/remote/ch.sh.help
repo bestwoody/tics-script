@@ -1,0 +1,2 @@
+run queries using tiflash-storage-client(aka: CH) on tiflash-storage in a cluster
+usage: <cmd> query-str-or-file-path [database] [print-format] [ch-args]

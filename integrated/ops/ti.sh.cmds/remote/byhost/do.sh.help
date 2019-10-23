@@ -1,0 +1,2 @@
+run a command on remote host
+usage: <cmd> [cmd-and-args]

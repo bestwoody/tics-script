@@ -1,0 +1,40 @@
+#!/bin/bash
+
+function cmd_ti_mysql_raw()
+{
+	local mods="${1}"
+	shift 1
+
+	local mod=`echo "${mods}"| grep "tidb.toml"`
+	if [ -z "${mod}" ]; then
+		echo "[cmd mysql/raw] no tidb selected" >&2
+		return 1
+	fi
+
+	local tidb_cnt=`echo "${mod}" | wc -l | awk '{print $1}'`
+	if [ "${tidb_cnt}" != '1' ]; then
+		echo "[cmd mysql/raw] more than one selected tidb" >&2
+		return 1
+	fi
+
+	local index=`echo "${mod}" | awk -F '\t' '{print $1}'`
+	local name=`echo "${mod}" | awk -F '\t' '{print $2}'`
+	local dir=`echo "${mod}" | awk -F '\t' '{print $3}'`
+	local conf=`echo "${mod}" | awk -F '\t' '{print $4}'`
+	local host=`echo "${mod}" | awk -F '\t' '{print $5}'`
+
+	if [ -z "${host}" ]; then
+		local port=`get_value "${dir}/proc.info" 'tidb_port'`
+		local host=`must_print_ip`
+	else
+		local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
+	fi
+
+	if [ -z "${port}" ]; then
+		echo "[cmd mysql/raw] getting tidb port failed from ${host}:${dir}" >&2
+		return 1
+	fi
+
+	mysql -h "${host}" -P "${port}" -u root "${@}"
+}
+cmd_ti_mysql_raw "${@}"

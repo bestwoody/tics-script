@@ -1,0 +1,2 @@
+show module's version
+usage: <cmd> ver [mod=(normal|full|ver|githash)]

@@ -103,15 +103,15 @@ function ti_file_exe()
 	# TODO: Pass paths from args
 	local real_cmd_dir="${cmd_dir}/local"
 	if [ "${local}" != 'true' ]; then
-		local real_cmd_dir="${remote_env}/ops/ti.sh.cmds/remote"
-	fi
-	if [ "${byhost}" == 'true' ]; then
-		local real_cmd_dir="${real_cmd_dir}/byhost"
+		local real_cmd_dir="${cmd_dir}/remote"
 	fi
 	if [ "${local}" != 'true' ]; then
 		if [ -z "${hosts}" ] || [ "${hosts}" == "127.0.0.1" ] || [ "${hosts}" == "localhost" ]; then
 			local real_cmd_dir="${cmd_dir}/remote"
 		fi
+	fi
+	if [ "${byhost}" == 'true' ]; then
+		local real_cmd_dir="${real_cmd_dir}/byhost"
 	fi
 
 	if [ "${local}" != 'true' ] && [ "${cmd}" != 'dry' ]; then
@@ -216,7 +216,8 @@ function ti_file_exe()
 					fi
 				fi
 				continue
-			else
+			fi
+			if [ ! -f "${real_cmd_dir}/${cmd}.sh.summary" ]; then
 				if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ]; then
 					echo "script not found: ${real_cmd_dir}/${cmd}.sh" >&2
 				else
@@ -225,10 +226,19 @@ function ti_file_exe()
 				return 1
 			fi
 		done
+		# summary always run on local mode
+		local summary="${real_cmd_dir}/${cmd}.sh.summary"
+		if [ -f "${summary}" ]; then
+			if [ -z "${cmd_args+x}" ]; then
+				bash "${summary}" "${mods}"
+			else
+				bash "${summary}" "${mods}" "${cmd_args[@]}"
+			fi
+		fi
 	else
 		echo "${hosts}" | while read host; do
 			if [ -z "${host}" ]; then
-				continue
+				local host='127.0.0.1'
 			fi
 			if [ "${local}" == 'true' ]; then
 				local has_script=`test -f "${real_cmd_dir}/${cmd}.sh" && echo true`
@@ -238,7 +248,7 @@ function ti_file_exe()
 					else
 						bash "${real_cmd_dir}/${cmd}.sh" "${host}" "${cmd_args[@]}"
 					fi
-				else
+				elif [ ! -f "${real_cmd_dir}/${cmd}.sh.summary" ]; then
 					echo "script not found: ${real_cmd_dir}/${cmd}.sh" >&2
 					return 1
 				fi
@@ -251,12 +261,21 @@ function ti_file_exe()
 						call_remote_func "${host}" "${remote_env}" script_exe "${real_cmd_dir}/${cmd}.sh" \
 							"${host}" "${cmd_args[@]}"
 					fi
-				else
+				elif [ ! -f "${real_cmd_dir}/${cmd}.sh.summary" ]; then
 					echo "script not found: ${host}:${real_cmd_dir}/${cmd}.sh" >&2
 					return 1
 				fi
 			fi
 		done
+		# summary always run on local mode
+		local summary="${real_cmd_dir}/${cmd}.sh.summary"
+		if [ -f "${summary}" ]; then
+			if [ -z "${cmd_args+x}" ]; then
+				bash "${summary}" "${hosts}"
+			else
+				bash "${summary}" "${hosts}" "${cmd_args[@]}"
+			fi
+		fi
 	fi
 }
 export -f ti_file_exe

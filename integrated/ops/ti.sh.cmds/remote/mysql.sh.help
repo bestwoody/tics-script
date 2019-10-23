@@ -1,0 +1,2 @@
+run queries on tidb in a cluster
+usage: <cmd> query-str-or-file-path [database]

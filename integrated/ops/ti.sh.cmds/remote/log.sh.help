@@ -1,0 +1,2 @@
+fetch or grep log from mod
+usage: <cmd> count-of-matched-log [grep-string] [upload]

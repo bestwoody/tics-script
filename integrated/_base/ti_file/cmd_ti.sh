@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function _ti_file_cmd_list()
+function ti_file_cmd_list()
 {
 	local dir="${1}"
 	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
@@ -10,30 +10,32 @@ function _ti_file_cmd_list()
 	fi
 
 	ls "${dir}" | while read f; do
-		local has_sh_ext=`echo "${f}" | { grep "sh$" || test $? = 1; }`
-		if [ ! -z "${has_sh_ext}" ] && [ -f "${dir}/${f}" ]; then
-			echo "    ${parent}`basename "${f}" .sh`";
+		if [ "${f:0:1}" == '_' ]; then
 			continue
+		fi
+		if [ "${f}" == 'echo.sh' ] || [ "${f}" == 'cmds.sh.summary' ]; then
+			continue
+		fi
+		local has_sh_ext=`echo "${f}" | { grep "sh$" || test $? = 1; }`
+		local has_summary_ext=`echo "${f}" | { grep "summary$" || test $? = 1; }`
+		if [ ! -z "${has_sh_ext}" ] || [ ! -z "${has_summary_ext}" ]; then
+			if [ -f "${dir}/${f}" ]; then
+				local name=`basename "${f}" .summary`
+				local name=`basename "${name}" .sh`
+				echo "${parent}${name}"
+				if [ -f "${dir}/${f}.help" ]; then
+					cat "${dir}/${f}.help" | awk '{print "    "$0}'
+				fi
+				continue
+			fi
 		fi
 		if [ -d "${dir}/${f}" ] && [ "${f}" != 'byhost' ]; then
-			_ti_file_cmd_list "${dir}/${f}" "${f}"
-			continue
+			echo "${f}/*"
+			if [ -f "${dir}/${f}/help" ]; then
+				cat "${dir}/${f}/help" | awk '{print "    "$0}'
+			fi
 		fi
 	done
-}
-export -f _ti_file_cmd_list
-
-function ti_file_cmd_list()
-{
-	local cmd_dir="${1}"
-	echo "remote, by module: (default)"
-	_ti_file_cmd_list "${cmd_dir}/remote"
-	echo "remote, by host: (-b)"
-	_ti_file_cmd_list "${cmd_dir}/remote/byhost"
-	echo "local, by module: (-l)"
-	_ti_file_cmd_list "${cmd_dir}/local"
-	echo "local, by host: (-l -b)"
-	_ti_file_cmd_list "${cmd_dir}/local/byhost"
 }
 export -f ti_file_cmd_list
 
@@ -61,7 +63,7 @@ function ti_file_global_cmd_cmds()
 
 	if [ -d "${cmd_dir}" ]; then
 		echo 'command list:'
-		ti_file_cmd_list "${cmd_dir}" | awk '{print "    "$0}'
+		ti_file_cmd_list_all "${cmd_dir}" | awk '{print "    "$0}'
 	fi
 }
 export -f ti_file_global_cmd_cmds
@@ -116,7 +118,7 @@ function ti_file_exe_global_cmd()
 	shift 2
 
 	if [ "${cmd}" == 'cmds' ]; then
-		ti_file_global_cmd_cmds "${cmd_dir}"
+		ti_file_cmd_list "${cmd_dir}/global"
 		return
 	fi
 
