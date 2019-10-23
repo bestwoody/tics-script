@@ -1,4 +1,4 @@
-ti_mysql> drop database tpch_1
+ti_mysql> drop database if exists tpch_1
 
 ti_func> load_tpch 1 region 1
 ti_ch> DBGInvoke __refresh_schemas()

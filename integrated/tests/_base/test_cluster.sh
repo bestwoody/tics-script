@@ -546,7 +546,7 @@ function test_cluster_get_normal_store_count()
 	fi
 	local test_ti_file="${1}"
 
-	local store_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store" | { grep '"role": "normal"' || test $? = 1; } | wc -l`
+	local store_count=`"${integrated}/ops/ti.sh" -i 0 "${test_ti_file}" "pd_ctl" "store" | { grep '"role": "normal"' || test $? = 1; } | wc -l`
 	if [ -z "${store_count}" ]; then
 		echo "[func test_cluster_get_normal_store_count] get store count failed" >&2
 		return 1
@@ -563,7 +563,7 @@ function test_cluster_get_learner_store_count()
 	fi
 	local test_ti_file="${1}"
 
-	local store_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store" | { grep '"role": "slave"' || test $? = 1; } | wc -l`
+	local store_count=`"${integrated}/ops/ti.sh" -i 0 "${test_ti_file}" "pd_ctl" "store" | { grep '"role": "slave"' || test $? = 1; } | wc -l`
 	if [ -z "${store_count}" ]; then
 		echo "[func test_cluster_get_learner_store_count] get store count failed" >&2
 		return 1
@@ -583,7 +583,7 @@ function test_cluster_get_store_id()
 	local store_port="${3}"
 
 	local store_address="${store_ip}:${store_port}"
-	local store_id=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store" | { grep -B 2 "${store_address}" || test $? = 1; } | { grep "id" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
+	local store_id=`"${integrated}/ops/ti.sh" -i 0 "${test_ti_file}" "pd_ctl" "store" | { grep -B 2 "${store_address}" || test $? = 1; } | { grep "id" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
 	if [ -z "${store_id}" ]; then
 		echo "[func test_cluster_get_store_id] cannot get store ${store_address} store id" >&2
 		return 1
@@ -591,6 +591,51 @@ function test_cluster_get_store_id()
 	echo "${store_id}"
 }
 export -f test_cluster_get_store_id
+
+function test_cluster_get_store_id_by_index()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func test_cluster_get_store_id_by_index] usage: <func> test_ti_file index module"  >&2
+		return 1
+	fi
+	local test_ti_file="${1}"
+	local index="${2}"
+	local module="${3}"
+
+	local prop=`"${ti}" -i "${index}" -m "${module}" "${test_ti_file}" 'prop'`
+	local host=`echo "${prop}" | grep "listen_host" | awk -F 'listen_host:' '{print $2}' | tr -d ' '`
+	if [ "${module}" == "rngine" ]; then
+		local port=`echo "${prop}" | grep "rngine_port" | awk -F 'rngine_port:' '{print $2}' | tr -d ' '`
+	else
+		local port=`echo "${prop}" | grep "tikv_port" | awk -F 'tikv_port:' '{print $2}' | tr -d ' '`
+	fi
+
+	local store_id=`test_cluster_get_store_id "${test_ti_file}" "${host}" "${port}"`
+	if [ -z "${store_id}" ]; then
+		echo "[func test_cluster_get_store_id_by_index] cannot get ${index} of ${module} store id" >&2
+		return 1
+	fi
+	echo "${store_id}"
+}
+export -f test_cluster_get_store_id_by_index
+
+function test_cluster_get_learner_store_id_by_index()
+{
+	local test_ti_file="${1}"
+	local index="${2}"
+	
+	echo `test_cluster_get_store_id_by_index "${test_ti_file}" "${index}" "rngine"`
+}
+export -f test_cluster_get_learner_store_id_by_index
+
+function test_cluster_get_normal_store_id_by_index()
+{
+	local test_ti_file="${1}"
+	local index="${2}"
+	
+	echo `test_cluster_get_store_id_by_index "${test_ti_file}" "${index}" "tikv"`
+}
+export -f test_cluster_get_normal_store_id_by_index
 
 function test_cluster_get_store_region_count()
 {
@@ -603,7 +648,7 @@ function test_cluster_get_store_region_count()
 	local store_port="${3}"
 
 	local store_id=`test_cluster_get_store_id "${test_ti_file}" "${store_ip}" "${store_port}"`
-	local region_count=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store ${store_id}" | { grep "region_count" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
+	local region_count=`"${integrated}/ops/ti.sh" -i 0 "${test_ti_file}" "pd_ctl" "store ${store_id}" | { grep "region_count" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
 	if [ -z "${region_count}" ]; then
 		echo "[func test_cluster_get_store_region_count] cannot get store ${store_ip}:${store_port} store_id ${store_id} region count" >&2
 		local region_count=0
@@ -611,6 +656,29 @@ function test_cluster_get_store_region_count()
 	echo "${region_count}"
 }
 export -f test_cluster_get_store_region_count
+
+function test_cluster_get_cluster_region_count()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func test_cluster_get_cluster_region_count] usage: <func> test_ti_file"  >&2
+		return 1
+	fi
+	local test_ti_file="${1}"
+
+	local ti="${integrated}/ops/ti.sh"
+	local store_count=`test_cluster_get_normal_store_count "${test_ti_file}"`
+	local cluster_region_count=0
+	for ((index=0; index<${store_count}; index++)); do
+		local prop=`"${ti}" -i "${index}" -m "tikv" "${test_ti_file}" 'prop'`
+		local host=`echo "${prop}" | grep "listen_host" | awk -F 'listen_host:' '{print $2}' | tr -d ' '`
+		local port=`echo "${prop}" | grep "tikv_port" | awk -F 'tikv_port:' '{print $2}' | tr -d ' '`
+		local store_region_count=`test_cluster_get_store_region_count "${test_ti_file}" "${host}" "${port}"`
+		local cluster_region_count=$(( cluster_region_count + store_region_count ))
+	done
+
+	echo "${cluster_region_count}"
+}
+export -f test_cluster_get_cluster_region_count
 
 function test_cluster_remove_store()
 {
@@ -623,7 +691,7 @@ function test_cluster_remove_store()
 	local store_port="${3}"
 
 	local store_id=`test_cluster_get_store_id "${test_ti_file}" "${store_ip}" "${store_port}"`
-	local op_response=`"${integrated}/ops/ti.sh" "${test_ti_file}" "pd_ctl" "store delete ${store_id}" | tr -d '\[\][0-9] \.'`
+	local op_response=`"${integrated}/ops/ti.sh" -i 0 "${test_ti_file}" "pd_ctl" "store delete ${store_id}" | tr -d '\[\][0-9] \.'`
 	if [ "${op_response}" != "Success!" ]; then
 		echo "[func test_cluster_remove_store] remove store ${store_ip}:${store_port} failed"
 		return 1

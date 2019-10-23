@@ -92,16 +92,17 @@ function get_query_result()
 	local query="${2}"
 	local db="${3}"
 
-	echo `"${ti}" "${test_ti_file}" "mysql" "${query}" "${db}" | tail -n 1 | tr -d ' '`
+	echo `"${ti}" -i 0 "${test_ti_file}" "mysql" "${query}" "${db}" | tail -n 1 | tr -d ' '`
 }
 
 function expand_shrink_test()
 {
 	local test_entry_file="${1}"
-	local expand_shrink_times="${2}"
-	local ports1="${3}"
-	local ports2="${4}"
-	local ports3="${5}"
+	local load_tpch_scale="${2}"
+	local expand_shrink_times="${3}"
+	local ports1="${4}"
+	local ports2="${5}"
+	local ports3="${6}"
 	
 	local entry_dir=`get_test_entry_dir "${test_entry_file}"`
 	mkdir -p "${entry_dir}"
@@ -109,10 +110,10 @@ function expand_shrink_test()
 	test_cluster_multi_node_prepare "127.0.0.1" "127.0.0.1" "127.0.0.1" "${ports1}" "${ports2}" "${ports3}" '' "${test_ti_file}"
 
 	local ti="${integrated}/ops/ti.sh"
-	"${ti}" -l -i 0 "${test_ti_file}" tpch/load 0.1 lineitem
+	"${ti}" -l -i 0 "${test_ti_file}" 'tpch/load' "${load_tpch_scale}" 'lineitem'
 
 	local query="select /*+ read_from_storage(tiflash[t]) */ count(*) from lineitem"
-	local db="tpch_0_1"
+	local db=`_db_name_from_scale "${load_tpch_scale}"`
 	local target=`get_query_result "${test_ti_file}" "${query}" "${db}"`
 
 	local query_times="10"
@@ -148,7 +149,7 @@ function expand_shrink_test()
 
 	local timeout=180
 	for ((i=0; i<${timeout}; i++)); do
-		local final_result=`"${ti}" "${test_ti_file}" "mysql" "select /*+ read_from_storage(tiflash[t]) */ count(*) from lineitem" "tpch_0_1" | tail -n 1 | tr -d ' '`
+		local final_result=`"${ti}" -i 0 "${test_ti_file}" "mysql" "${query}" "${db}" | tail -n 1 | tr -d ' '`
 		if [ ! -z "${final_result}" ]; then
 			break
 		fi
@@ -164,4 +165,4 @@ function expand_shrink_test()
 	echo "final result: ${final_result}"
 }
 
-expand_shrink_test "${BASH_SOURCE[0]}" "5" "104" "106" "108" 
+expand_shrink_test "${BASH_SOURCE[0]}" "5" "10" "104" "106" "108" 

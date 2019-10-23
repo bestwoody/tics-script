@@ -74,7 +74,7 @@ function check_tiflash_and_tidb_result_consistency()
 	local tikv_result=`"${ti}" "${test_ti_file}" "mysql" "select count(*) from ${db}.${table}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
 	local tiflash_result=`"${ti}" "${test_ti_file}" "mysql" "select /*+ read_from_storage(tiflash[${table}]) */ count(*) from ${table}" "${db}" | tail -n 1 | awk '{ print $1 }' | tr -d ' '`
 
-	if [ "${mysql_result}" != "${beeline_result}" ]; then
+	if [ "${tikv_result}" != "${tiflash_result}" ]; then
 		echo `date +"%Y-%m-%d %H:%m:%S"` >&2
 		echo "tikv_result" "${tikv_result}" >&2
 		echo "tiflash_result" "${tiflash_result}" >&2
@@ -133,4 +133,4 @@ function restart_tiflash_test()
 	check_tiflash_and_tidb_result_consistency "${test_ti_file}" `_db_name_from_scale "${load_tpch_scale}"` "${table}" "${entry_dir}"
 }
 
-restart_tiflash_test "${BASH_SOURCE[0]}" 32 20 15 120
+restart_tiflash_test "${BASH_SOURCE[0]}" 32 10 15 120
