@@ -44,9 +44,9 @@ function ti_file_cmd_default_help()
 	echo "ti.sh cmds"
 	echo "    - list global cmds"
 	echo "ti.sh help"
-	echo "    - detail usage of selectors"
-	echo "ti.sh [selectors] my.ti cmds"
-	echo "    - list cmds, the cmds list would be different under different selectors"
+	echo "    - detail usage of flags"
+	echo "ti.sh [flags] my.ti cmds"
+	echo "    - list cmds, the cmds list would be different under different flags"
 	echo "    - eg: ti.sh -l my.ti cmds"
 	echo "    - eg: ti.sh -h my.ti cmds"
 	echo "ti.sh example"
@@ -72,39 +72,51 @@ export -f ti_file_global_cmd_cmds
 
 function ti_file_global_cmd_help()
 {
-	echo 'ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd,tikv,..] [-h host,host] [-i mod_index] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|..) [args]'
-	echo '    -c:'
-	echo '        specify the config template dir, will be `ops/../conf` if this arg is not provided.'
-	echo '    -s:'
-	echo '        specify the sub-command dir, will be `ops/ti.sh.cmds/remote` if this arg is not provided.'
-	echo '    -t:'
-	echo '        specify the cache dir for download bins and other things in all hosts.'
-	echo '        will be `/tmp/ti` if this arg is not provided.'
-	echo '    -k:'
-	echo '        specify the key-value(s) string, will be used as vars in the .ti file, format: k=v#k=v#..'
+	echo 'usage: ops/ti.sh [mods-selector] [run-mode] ti_file_path cmd [args]'
+	echo
+	echo 'example: ops/ti.sh my.ti run'
+	echo '    cmd:'
+	echo '        could be one of run|stop|fstop|status|...'
+	echo '        (`up` and `down` are aliases of `run` and `stop`)'
+	echo '        and could be one of `{integrated}/ops/local|remote/ti.sh.cmds/<command>.sh`'
+	echo '        (could be one of `{integrated}/ops/ti.sh.cmds/local|remote/byhost/<command>.sh` if `-b`)'
+	echo '    args:'
+	echo '        the args pass to the cmd script.'
+	echo
+	echo 'the selecting flags below are for selecting mods from the .ti file defined a cluster.'
+	echo 'example: ops/ti.sh -m pd -i 0,2 my.ti stop'
 	echo '    -m:'
-	echo '        the module name, could be one of pd|tikv|tidb|tiflash|rngine.'
+	echo '        the module name, could be one of pd|tikv|tidb|tiflash|rngine|sparkm|sparkw.'
 	echo '        and could be multi modules like: `pd,tikv`.'
 	echo '        if this arg is not provided, it means all modules.'
 	echo '    -h:'
 	echo '        the host names, format: `host,host,..`'
 	echo '        if this arg is not provided, it means all specified host names in the .ti file.'
 	echo '    -i:'
-	echo '        specify the module index. eg, 3 tikvs in a cluster, then we have tikv[0], [1], [2].'
+	echo '        specify the module index, format: `1,4,3`.'
+	echo '        eg, 3 tikvs in a cluster, then we have tikv[0], tikv[1], tikv[2].'
 	echo '        if this arg is not provided, it means all.'
+	echo
+	echo 'the mode flags below decide where and how to execute the command.'
+	echo 'example: ops/ti.sh -b -l my.ti top'
 	echo '    -b:'
 	echo '        execute command on each host(node).'
 	echo '        if this arg is not provided, execute command on each module.'
 	echo '    -l:'
 	echo '        execute command on local(of master) mode instead of ssh executing.'
-	echo '        use `ops/local/ti.sh.cmds` as command dir instead of `ops/remote/ti.sh.cmds`'
-	echo '    cmd:'
-	echo '        could be one of run|stop|fstop|status.'
-	echo '        (`up` and `down` are aliases of `run` and `stop`)'
-	echo '        and could be one of `ops/local|remote/ti.sh.cmds/<command>.sh`'
-	echo '        (could be one of `ops/ti.sh.cmds/local|remote/byhost/<command>.sh` if `-b`)'
-	echo '    args:'
-	echo '        the args pass to the cmd script.'
+	echo '        use `{integrated}/ops/local/ti.sh.cmds` as command dir instead of `{integrated}/ops/remote/ti.sh.cmds`'
+	echo
+	echo 'the configuring flags below are rarely used.'
+	echo 'example: ops/ti.sh -c /data/my_templ_dir -s /data/my_cmd_dir -t /tmp/my_cache_dir -k foo=bar my.ti status'
+	echo '    -k:'
+	echo '        specify the key-value(s) string, will be used as vars in the .ti file, format: k=v#k=v#..'
+	echo '    -c:'
+	echo '        specify the config template dir, will be `{integrated}/conf` if this arg is not provided.'
+	echo '    -s:'
+	echo '        specify the sub-command dir, will be `{integrated}/ops/ti.sh.cmds/remote` if this arg is not provided.'
+	echo '    -t:'
+	echo '        specify the cache dir for download bins and other things in all hosts.'
+	echo '        will be `/tmp/ti` if this arg is not provided.'
 }
 export -f ti_file_global_cmd_help
 
