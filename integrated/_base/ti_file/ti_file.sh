@@ -82,6 +82,8 @@ function ti_file_exe()
 			echo "[func ti_file_exe] '${ti_file}' not exists" >&2
 		fi
 		return 1
+	else
+		local ti_file=`abs_path "${ti_file}"`
 	fi
 
 	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
@@ -230,9 +232,9 @@ function ti_file_exe()
 		local summary="${real_cmd_dir}/${cmd}.sh.summary"
 		if [ -f "${summary}" ]; then
 			if [ -z "${cmd_args+x}" ]; then
-				bash "${summary}" "${mods}"
+				bash "${summary}" "${ti_file}" "${ti_args}" "${mods}"
 			else
-				bash "${summary}" "${mods}" "${cmd_args[@]}"
+				bash "${summary}" "${ti_file}" "${ti_args}" "${mods}" "${cmd_args[@]}"
 			fi
 		fi
 	else
@@ -271,9 +273,9 @@ function ti_file_exe()
 		local summary="${real_cmd_dir}/${cmd}.sh.summary"
 		if [ -f "${summary}" ]; then
 			if [ -z "${cmd_args+x}" ]; then
-				bash "${summary}" "${hosts}"
+				bash "${summary}" "${ti_file}" "${ti_args}" "${hosts}"
 			else
-				bash "${summary}" "${hosts}" "${cmd_args[@]}"
+				bash "${summary}" "${ti_file}" "${ti_args}" "${hosts}" "${cmd_args[@]}"
 			fi
 		fi
 	fi

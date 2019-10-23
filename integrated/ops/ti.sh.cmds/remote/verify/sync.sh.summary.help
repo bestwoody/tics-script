@@ -1,0 +1,2 @@
+verify data syncing between 'pd+tikv+tidb' and 'tiflash+rngine'
+usage: <cmd> (no args)
