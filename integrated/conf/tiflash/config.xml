@@ -5,6 +5,7 @@
     </application>
 
     <logger>
+        <!-- level is one of "fatal/critical/error/warning/notice/information/debug/trace" -->
         <level>trace</level>
         <log>{tiflash_dir}/log/server.log</log>
         <errorlog>{tiflash_dir}/log/error.log</errorlog>

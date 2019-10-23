@@ -15,7 +15,7 @@ function ti_cmd_tpch_load
 	fi
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd tpch/load.sh] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [blocks=4]" >&2
+		echo "[cmd tpch/load.sh] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [blocks=4] [db_suffix=\"\"] [decimal_or_double=(decimal|double)]" >&2
 		return
 	fi
 
@@ -28,16 +28,40 @@ function ti_cmd_tpch_load
 		local data_dir="${integrated}/data/tpch"
 	fi
 
-	if [ ! -z "${3+x}" ] && [ ! -z "${3}" ]; then
+	if [ ! -z "${4+x}" ] && [ ! -z "${4}" ]; then
 		local blocks="${4}"
 	else
 		local blocks='4'
 	fi
 
-	local schema_dir="${integrated}/resource/tpch/mysql/schema"
-	local dbgen_bin_dir="/tmp/ti/master/bins"
+	# Append db_suffix to `db` if not empty
+	if [ ! -z "${5+x}" ] && [ ! -z "${5}" ]; then
+		local db=`echo "tpch_${scale}_${5}" | tr '.' '_'`
+	else
+		local db=`echo "tpch_${scale}" | tr '.' '_'`
+	fi
 
-	local db=`echo "tpch_${scale}" | tr '.' '_'`
+	# Use Decimal or Double
+	if [ ! -z "${6+x}" ] && [ ! -z "${6}" ]; then
+		local field_type="${6}"
+	else
+		local field_type="decimal"
+	fi
+
+	if [ "${field_type}" == "decimal" ]; then
+		local schema_dir="${integrated}/resource/tpch/mysql/schema"
+	elif [ "${field_type}" == "double" ]; then
+		local ori_schema_dir="${integrated}/resource/tpch/mysql/schema"
+		local schema_dir="${ori_schema_dir}_double"
+		# Replace fields from `DECIMAL(..,..)` to `DOUBLE`
+		trans_schema_fields_decimal_to_double "${ori_schema_dir}" "${schema_dir}"
+	else
+		echo "unknown field_type: ${field_type}" >&2
+		echo "[cmd tpch/load.sh] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [blocks=4] [db_suffix=\"\"] [decimal_or_double=(decimal|double)]" >&2
+		return
+	fi
+
+	local dbgen_bin_dir="/tmp/ti/master/bins"
 
 	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
 	if [ -z "${port}" ]; then
@@ -56,9 +80,11 @@ function ti_cmd_tpch_load
 	local dists_dss_url=`cross_platform_get_value "${file}" "dists_dss_url"`
 
 	for table in ${tables[@]}; do
-		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
 		local start_time=`date +%s`
+		echo "=> [$host] creating ${db}.${table}"
+		create_tpch_table_to_mysql "${host}" "${port}" "${schema_dir}" "${db}" "${table}"
 		echo "=> [$host] loading ${db}.${table}"
+		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
 		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
 		echo '   generated'
 		load_tpch_data_to_mysql "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"

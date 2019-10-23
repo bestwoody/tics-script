@@ -15,6 +15,21 @@ function sed_inplace()
 }
 export -f sed_inplace
 
+function sed_eres()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func sed_eres] usage: <func> is an alias of 'sed -r ...' for using Extended Regular Expression instead of Basic Regular Expression" >&2
+		return 1
+	fi
+
+	if [ `uname` == "Darwin" ]; then
+		sed -E "${@}"
+	else
+		sed -r "${@}"
+	fi
+}
+export -f sed_eres
+
 function replace_substr()
 {
 	if [ -z "${3+x}" ]; then

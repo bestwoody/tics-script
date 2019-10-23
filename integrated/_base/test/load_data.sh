@@ -1,5 +1,66 @@
 #!/bin/bash
 
+function trans_schema_fields_decimal_to_double()
+{
+	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] ; then
+		echo "[func trans_schema_fields_decimal_to_double] cmd src_schema_dir dst_schema_dir" >&2
+		return 1
+	fi
+
+	local src_schema_dir="${1}"
+	local dst_schema_dir="${2}"
+
+	# Replace fields from `DECIMAL(..,..)` to `DOUBLE`
+	if [ -d "${dst_schema_dir}" ]; then
+		local num_ori_schemas=`ls "${src_schema_dir}" | grep "ddl" | wc -l | awk '{print $1}'`
+		local num_schemas=`ls "${dst_schema_dir}" | grep "ddl" | wc -l | awk '{print $1}'`
+		if [ "${num_schemas}" == "${num_ori_schemas}" ]; then
+			echo "schema with double fields are already exist in \"${dst_schema_dir}\""
+		else
+			# Not complete, clean and creating them again
+			echo "preparing schema with double fields.."
+			rm -r "${dst_schema_dir}"
+			mkdir -p "${dst_schema_dir}"
+			for f in $(ls "${src_schema_dir}" | grep "ddl"); do
+				sed_eres 's/DECIMAL\([0-9]+,[0-9]+\)/DOUBLE/g' "${src_schema_dir}/${f}" > "${dst_schema_dir}/${f}"
+			done
+			echo "schema with double fields generated in \"${dst_schema_dir}\""
+		fi
+	else
+		mkdir -p "${dst_schema_dir}"
+		for f in $(ls "${src_schema_dir}" | grep "ddl"); do
+			sed_eres 's/DECIMAL\([0-9]+,[0-9]+\)/DOUBLE/g' "${src_schema_dir}/${f}" > "${dst_schema_dir}/${f}"
+		done
+		echo "schema with double fields generated in \"${dst_schema_dir}\""
+	fi
+}
+export -f trans_schema_fields_decimal_to_double
+
+function create_tpch_table_to_mysql()
+{
+	if [ -z "${5+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ]; then
+		echo "[func create_tpch_table_to_mysql] cmd mysql_host mysql_port schema_dir db table" >&2
+		return 1
+	fi
+
+	local mysql_host="${1}"
+	local mysql_port="${2}"
+	local schema_dir="${3}"
+	local db="${4}"
+	local table="${5}"
+
+	local schema_file="${schema_dir}/${table}.ddl"
+	if [ ! -f "${schema_file}" ]; then
+		echo "[func create_tpch_table_to_mysql] ${schema_file} not exists" >&2
+		return 1
+	fi
+
+	local create_table_stmt=`cat "${schema_file}" | tr -s "\n" " "`
+	mysql -u root -P "${mysql_port}" -h "${mysql_host}" -e "CREATE DATABASE IF NOT EXISTS ${db}"
+	mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" -e "${create_table_stmt}"
+}
+export -f create_tpch_table_to_mysql
+
 function load_tpch_data_to_mysql()
 {
 	if [ -z "${6+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ] || [ -z "${6}" ]; then
@@ -15,10 +76,6 @@ function load_tpch_data_to_mysql()
 	local table="${6}"
 
 	local blocks=`ls "${data_dir}" | { grep "${table}.tbl" || test $? = 1; } | wc -l`
-
-	local create_table_stmt=`cat "${schema_dir}/${table}.ddl" | tr -s "\n" " "`
-	mysql -u root -P "${mysql_port}" -h "${mysql_host}" -e "CREATE DATABASE IF NOT EXISTS ${db}"
-	mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" -e "${create_table_stmt}"
 
 	if [ -f "${data_dir}/${table}.tbl" ] && [ -f "${data_dir}/${table}.tbl.1" ]; then
 		echo "[func load_tpch_data_to_mysql] '${data_dir}' not data dir" >&2
