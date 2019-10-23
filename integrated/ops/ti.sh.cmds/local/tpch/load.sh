@@ -14,6 +14,11 @@ function ti_cmd_tpch_load
 		return
 	fi
 
+	# TODO: load to multiple tidb
+	if [ "${index}" != '0' ]; then
+		return
+	fi
+
 	if [ -z "${2+x}" ]; then
 		echo "[cmd tpch/load.sh] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [blocks=4] [db_suffix=\"\"] [decimal_or_double=(decimal|double)]" >&2
 		return
@@ -89,8 +94,8 @@ function ti_cmd_tpch_load
 		echo '   generated'
 		load_tpch_data_to_mysql "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
 		local finish_time=`date +%s`
-        local duration=$((finish_time-start_time))
-        echo "   loaded in ${duration}s"
+		local duration=$((finish_time-start_time))
+		echo "   loaded in ${duration}s"
 	done
 }
 

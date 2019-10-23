@@ -2,67 +2,72 @@
 
 function ti_cmd_tpch_load_no_raft
 {
-    local index="${1}"
-    local mod_name="${2}"
-    local dir="${3}"
-    local conf_rel_path="${4}"
-    local host="${5}"
+	local index="${1}"
+	local mod_name="${2}"
+	local dir="${3}"
+	local conf_rel_path="${4}"
+	local host="${5}"
 
-    shift 5
+	shift 5
 
-    if [ "${mod_name}" != 'tiflash' ]; then
-        return
-    fi
+	if [ "${mod_name}" != 'tiflash' ]; then
+		return
+	fi
 
-    if [ -z "${3+x}" ]; then
-        echo "[cmd tpch/load_no_raft.sh] usage: <cmd> scale table(all|lineitem|...) engine(tmt|dm) [data_dir={integrated}/data/tpch] [blocks=4]" >&2
-        return
-    fi
+	# TODO: load to multiple tiflash
+	if [ "${index}" != '0' ]; then
+		return
+	fi
 
-    local scale="${1}"
-    local table="${2}"
-    local engine="${3}"
+	if [ -z "${3+x}" ]; then
+		echo "[cmd tpch/load_no_raft.sh] usage: <cmd> scale table(all|lineitem|...) engine(tmt|dm) [data_dir={integrated}/data/tpch] [blocks=4]" >&2
+		return
+	fi
 
-    if [ ! -z "${4+x}" ] && [ ! -z "${4}" ]; then
-        local data_dir="${4}"
-    else
-        local data_dir="${integrated}/data/tpch"
-    fi
+	local scale="${1}"
+	local table="${2}"
+	local engine="${3}"
 
-    if [ ! -z "${5+x}" ] && [ ! -z "${5}" ]; then
-        local blocks="${5}"
-    else
-        local blocks='4'
-    fi
+	if [ ! -z "${4+x}" ] && [ ! -z "${4}" ]; then
+		local data_dir="${4}"
+	else
+		local data_dir="${integrated}/data/tpch"
+	fi
 
-    local schema_dir="${integrated}/resource/tpch/ch/schema/${engine}"
-    local dbgen_bin_dir="/tmp/ti/master/bins"
+	if [ ! -z "${5+x}" ] && [ ! -z "${5}" ]; then
+		local blocks="${5}"
+	else
+		local blocks='4'
+	fi
 
-    local db=`echo "tpch_${scale}_${engine}_no_raft" | tr '.' '_'`
+	local schema_dir="${integrated}/resource/tpch/ch/schema/${engine}"
+	local dbgen_bin_dir="/tmp/ti/master/bins"
 
-    if [ "${table}" != 'all' ]; then
-        local tables=("${table}")
-    else
-        local tables=(customer nation orders part region supplier partsupp lineitem)
-    fi
+	local db=`echo "tpch_${scale}_${engine}_no_raft" | tr '.' '_'`
 
-    local file="${integrated}/conf/tools.kv"
-    local dbgen_url=`cross_platform_get_value "${file}" "dbgen_url"`
-    local dists_dss_url=`cross_platform_get_value "${file}" "dists_dss_url"`
-    local ch_bin="${dir}/tiflash"
-    local port=`get_value "${dir}/proc.info" 'tcp_port'`
+	if [ "${table}" != 'all' ]; then
+		local tables=("${table}")
+	else
+		local tables=(customer nation orders part region supplier partsupp lineitem)
+	fi
 
-    for table in ${tables[@]}; do
-        local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
-        local start_time=`date +%s`
-        echo "=> [$host] loading ${db}.${table} to CH directly"
-        generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
-        echo '   generated'
-        load_tpch_data_to_ch "${ch_bin}" "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
-        local finish_time=`date +%s`
-        local duration=$((finish_time-start_time))
-        echo "   loaded in ${duration}s"
-    done
+	local file="${integrated}/conf/tools.kv"
+	local dbgen_url=`cross_platform_get_value "${file}" "dbgen_url"`
+	local dists_dss_url=`cross_platform_get_value "${file}" "dists_dss_url"`
+	local ch_bin="${dir}/tiflash"
+	local port=`get_value "${dir}/proc.info" 'tcp_port'`
+
+	for table in ${tables[@]}; do
+		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
+		local start_time=`date +%s`
+		echo "=> [$host] loading ${db}.${table} to CH directly"
+		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
+		echo '   generated'
+		load_tpch_data_to_ch "${ch_bin}" "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
+		local finish_time=`date +%s`
+		local duration=$((finish_time-start_time))
+		echo "   loaded in ${duration}s"
+	done
 }
 
 ti_cmd_tpch_load_no_raft "${@}"
