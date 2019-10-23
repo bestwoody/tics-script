@@ -45,8 +45,10 @@ function ti_file_cmd_default_help()
 	echo "    - list global cmds"
 	echo "ti.sh help"
 	echo "    - detail usage of selectors"
-	echo "ti.sh [selectors] cmds"
+	echo "ti.sh [selectors] my.ti cmds"
 	echo "    - list cmds, the cmds list would be different under different selectors"
+	echo "    - eg: ti.sh -l my.ti cmds"
+	echo "    - eg: ti.sh -h my.ti cmds"
 	echo "ti.sh example"
 	echo "    - shows a simple example about how to use this tool"
 }
