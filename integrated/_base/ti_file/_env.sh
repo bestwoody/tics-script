@@ -3,7 +3,7 @@
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_network.sh"
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_conf.sh"
 
-source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_proc.sh"
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/mods/_env.sh"
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_wait.sh"
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_stop.sh"
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/ti_status.sh"

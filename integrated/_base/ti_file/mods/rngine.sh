@@ -1,0 +1,110 @@
+#!/bin/bash
+
+function rngine_run()
+{
+	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
+		echo "[func rngine_run] usage: <func> rngine_dir conf_templ_dir pd_addr tiflash_addr [advertise_host] [ports_delta] [cluster_id]" >&2
+		return 1
+	fi
+
+	local rngine_dir="${1}"
+	local conf_templ_dir="${2}"
+	local pd_addr="${3}"
+	local tiflash_addr="${4}"
+
+	if [ -z "${5+x}" ]; then
+		local advertise_host=""
+	else
+		local advertise_host="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local ports_delta="0"
+	else
+		local ports_delta="${6}"
+	fi
+
+	if [ -z "${7+x}" ]; then
+		local cluster_id="<none>"
+	else
+		local cluster_id="${7}"
+	fi
+
+	local default_ports="${conf_templ_dir}/default.ports"
+
+	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
+	if [ -z "${default_pd_port}" ]; then
+		echo "[func rngine_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_rngine_port=`get_value "${default_ports}" 'rngine_port'`
+	if [ -z "${default_rngine_port}" ]; then
+		echo "[func rngine_run] get default rngine_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tiflash_raft_and_cop_port=`get_value "${default_ports}" 'tiflash_raft_and_cop_port'`
+	if [ -z "${default_tiflash_raft_and_cop_port}" ]; then
+		echo "[func rngine_run] get default tiflash_raft_and_cop_port from ${default_ports} failed" >&2
+		return 1
+	fi
+
+	if [ -z "${tiflash_addr}" ]; then
+		tiflash_addr="`must_print_ip`:${default_tiflash_raft_and_cop_port}"
+	fi
+
+	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
+
+	if [ -z "${advertise_host}" ]; then
+		local advertise_host="`must_print_ip`"
+	fi
+
+	local rngine_port=$((${ports_delta} + ${default_rngine_port}))
+
+	rngine_dir=`abs_path "${rngine_dir}"`
+
+	if [ "${advertise_host}" != "127.0.0.1" ] || [ "${advertise_host}" != "localhost" ]; then
+		local listen_host="${advertise_host}"
+	else
+		local listen_host="`must_print_ip`"
+	fi
+
+	local proc_cnt=`print_proc_cnt "${rngine_dir}/rngine.toml" "\-\-config"`
+	if [ "${proc_cnt}" != "0" ]; then
+		echo "running(${proc_cnt}), skipped"
+		return 0
+	fi
+
+	local render_str="tiflash_raft_addr=${tiflash_addr}"
+	render_templ "${conf_templ_dir}/rngine.toml" "${rngine_dir}/rngine.toml" "${render_str}"
+
+	local info="${rngine_dir}/proc.info"
+	echo "listen_host	${listen_host}" > "${info}"
+	echo "rngine_port	${rngine_port}" >> "${info}"
+	echo "advertise_host	${advertise_host}" >> "${info}"
+	echo "pd_addr	${pd_addr}" >> "${info}"
+	echo "tiflash_raft_addr	${tiflash_addr}" >> "${info}"
+	echo "cluster_id	${cluster_id}" >> "${info}"
+
+	echo "nohup \"${rngine_dir}/tikv-server-rngine\" \\" > "${rngine_dir}/run.sh"
+	echo "	--addr \"${listen_host}:${rngine_port}\" \\" >> "${rngine_dir}/run.sh"
+	echo "	--advertise-addr \"${advertise_host}:${rngine_port}\" \\" >> "${rngine_dir}/run.sh"
+	echo "	--pd \"${pd_addr}\" \\" >> "${rngine_dir}/run.sh"
+	echo "	--data-dir \"${rngine_dir}/data\" \\" >> "${rngine_dir}/run.sh"
+	echo "	--config \"${rngine_dir}/rngine.toml\" \\" >> "${rngine_dir}/run.sh"
+	echo "	--log-level info \\" >> "${rngine_dir}/run.sh"
+	echo "	--log-file \"${rngine_dir}/rngine.log\" \\" >> "${rngine_dir}/run.sh"
+	echo "	2>> \"${rngine_dir}/rngine_stderr.log\" 1>&2 &" >> "${rngine_dir}/run.sh"
+
+	chmod +x "${rngine_dir}/run.sh"
+	bash "${rngine_dir}/run.sh"
+
+	sleep 0.1
+	local pid=`must_print_pid "${rngine_dir}/rngine.toml" "\-\-config"`
+	if [ -z "${pid}" ]; then
+		echo "[func rngine_run] pid not found, failed" >&2
+		return 1
+	fi
+	echo "pid	${pid}" >> "${info}"
+	echo "${pid}"
+}
+export -f rngine_run
