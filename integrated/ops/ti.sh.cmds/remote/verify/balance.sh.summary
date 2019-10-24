@@ -1,0 +1,32 @@
+#!/bin/bash
+
+ti_file="${1}"
+ti_args="${2}"
+cmd_mod_names="${3}"
+cmd_hosts="${4}"
+cmd_indexes="${5}"
+mods="${6}"
+shift 6
+
+table="${1}"
+selraw="${2}"
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+if [ -z "${table}" ]; then
+	echo "[cmd verify/balance] usage: <cmd> [database.]table"
+	exit 1
+fi
+if [ -z "${selraw}" ]; then
+	selraw='false'
+fi
+
+select='select'
+if [ "${selraw}" == 'true' ] || [ "${selraw}" == 'raw' ] || [ "${selraw}" == 'selraw' ]; then
+	select='selraw'
+fi
+
+"${integrated}/ops/ti.sh" -k "${ti_args}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -h "${cmd_hosts}" "${ti_file}" \
+	'ch' "${select} count(1) from ${table}" 'default' 'TabSeparated' | sort -rnk 1

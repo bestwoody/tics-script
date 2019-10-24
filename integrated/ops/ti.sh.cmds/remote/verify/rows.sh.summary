@@ -1,0 +1,34 @@
+#!/bin/bash
+
+ti_file="${1}"
+ti_args="${2}"
+cmd_mod_names="${3}"
+cmd_hosts="${4}"
+cmd_indexes="${5}"
+mods="${6}"
+shift 6
+
+table="${1}"
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+if [ -z "${table}" ]; then
+	echo "[cmd verify/rows] usage: <cmd> [database.]table"
+	exit 1
+fi
+
+tiflash_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" "${ti_file}" 'ch' "select count(1) from ${table}" 'default' 'TabSeparated' | awk '{sum+=$1}END{print sum}'`
+tikv_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i 0 -k "${ti_args}" "${ti_file}" 'mysql' "select count(1) from ${table}" | grep -v 'count'`
+
+if [ -z "${tiflash_rows}" ]; then
+	echo "[cmd verify/rows] execute query on tiflash failed"
+	exit 1
+fi
+
+if [ "${tiflash_rows}" == "${tikv_rows}" ]; then
+	echo "${tiflash_rows}(tiflash) == ${tikv_rows}(tikv) OK"
+else
+	echo "${tiflash_rows}(tiflash) != ${tikv_rows}(tikv) FAILED"
+fi

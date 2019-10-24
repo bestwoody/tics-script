@@ -10,17 +10,29 @@ function cmd_ti_top()
 
 	shift 5
 
-	echo "=> ${mod_name} #${index} ${dir}"
+	local show_title='false'
+	if [ ! -z "${1}" ]; then
+		local show_title="${1}"
+	fi
+	if [ "${show_title}" == 'title' ]; then
+		local show_title='true'
+	fi
+
+	local indent=''
+	if [ "${show_title}" == 'true' ]; then
+		echo "=> ${mod_name} #${index} ${dir}"
+		local indent='    '
+	fi
 
 	local info_file="${dir}/proc.info"
 	if [ ! -f "${info_file}" ]; then
-		echo "   missed"
+		echo "${indent}missed"
 		return
 	fi
 
 	local pid=`get_value "${dir}/proc.info" 'pid'`
 	if [ -z "${pid}" ]; then
-		echo "   not running"
+		echo "${indent}not running"
 		return
 	fi
 
@@ -31,9 +43,9 @@ function cmd_ti_top()
 	fi
 
 	if [ -z "${result}" ]; then
-		echo "   not running"
+		echo "${indent}not running"
 	else
-		echo "   ${result}"
+		echo "${indent}${result}"
 	fi
 }
 

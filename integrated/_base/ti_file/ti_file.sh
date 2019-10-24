@@ -232,9 +232,9 @@ function ti_file_exe()
 		local summary="${real_cmd_dir}/${cmd}.sh.summary"
 		if [ -f "${summary}" ]; then
 			if [ -z "${cmd_args+x}" ]; then
-				bash "${summary}" "${ti_file}" "${ti_args}" "${mods}"
+				bash "${summary}" "${ti_file}" "${ti_args}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${mods}"
 			else
-				bash "${summary}" "${ti_file}" "${ti_args}" "${mods}" "${cmd_args[@]}"
+				bash "${summary}" "${ti_file}" "${ti_args}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${mods}" "${cmd_args[@]}"
 			fi
 		fi
 	else
@@ -273,9 +273,9 @@ function ti_file_exe()
 		local summary="${real_cmd_dir}/${cmd}.sh.summary"
 		if [ -f "${summary}" ]; then
 			if [ -z "${cmd_args+x}" ]; then
-				bash "${summary}" "${ti_file}" "${ti_args}" "${hosts}"
+				bash "${summary}" "${ti_file}" "${ti_args}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${hosts}"
 			else
-				bash "${summary}" "${ti_file}" "${ti_args}" "${hosts}" "${cmd_args[@]}"
+				bash "${summary}" "${ti_file}" "${ti_args}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${hosts}" "${cmd_args[@]}"
 			fi
 		fi
 	fi

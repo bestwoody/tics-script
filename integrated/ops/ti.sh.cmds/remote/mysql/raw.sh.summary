@@ -4,8 +4,10 @@ function cmd_ti_mysql_raw()
 {
 	local ti_file="${1}"
 	local ti_args="${2}"
-	local mods="${3}"
-	shift 3
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
 
 	local mod=`echo "${mods}"| grep "tidb.toml"`
 	if [ -z "${mod}" ]; then

@@ -32,9 +32,9 @@ function verify_raft_sync()
 	"${ti}" -k "${args}" "${ti_file}" 'mysql' "create table if not exists test.hello (col varchar(10))"
 	local create_ok=`"${ti}" -k "${args}" "${ti_file}" 'mysql' "show create table test.hello" 2>&1 | grep 'InnoDB'`
 	if [ ! -z "${create_ok}" ]; then
-		echo "OK     create table"
+		echo "OK     create table 'hello'"
 	else
-		echo "FAILED create table: ${create_ok}"
+		echo "FAILED create table 'hello': ${create_ok}"
 		return 1
 	fi
 
@@ -47,11 +47,23 @@ function verify_raft_sync()
 		return 1
 	fi
 
-	local read_err=`"${ti}" -k "${args}" "${ti_file}" 'ch' "select col from hello" 'test' '' --schema_version 10000000 2>&1 | grep 'Exception'`
-	if [ -z "${read_err}" ]; then
-		echo "OK     read from tiflash directly"
-	else
+	local read_res=`"${ti}" -k "${args}" "${ti_file}" 'ch' "select col from hello" 'test' '' --schema_version 10000000 2>&1`
+	local read_err=`echo "${read_res}" | grep 'Exception'`
+	local read_ok=`echo "${read_res}" | grep 'world'`
+	if [ ! -z "${read_err}" ]; then
 		echo "FAILED read from tiflash directly: ${read_err}"
+		return 1
+	elif [ -z "${read_ok}" ]; then
+		echo "FAILED rows are not synced to tiflash yet"
+	else
+		echo "OK     read from tiflash directly"
+	fi
+
+	local drop_err=`"${ti}" -k "${args}" "${ti_file}" 'mysql' "drop table if exists test.hello"`
+	if [ -z "${drop_err}" ]; then
+		echo "OK     drop table 'hello' from tidb"
+	else
+		echo "FAILED drop table 'hello' from tidb: ${create_ok}"
 		return 1
 	fi
 }

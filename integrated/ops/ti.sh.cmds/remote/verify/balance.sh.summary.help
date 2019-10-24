@@ -1,0 +1,2 @@
+shows table rows on each tiflash storage node
+usage: <cmd> [database.]table [selraw=false]
