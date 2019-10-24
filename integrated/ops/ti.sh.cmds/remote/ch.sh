@@ -33,6 +33,9 @@ function cmd_ti_ch()
 	if [ ! -z "${3+x}" ] && [ ! -z "${3}" ]; then
 		local format="${3}"
 	else
+		local format='TabSeparatedWithNames'
+	fi
+	if [ "${format}" == 'pretty' ]; then
 		local format='PrettyCompactNoEscapes'
 	fi
 

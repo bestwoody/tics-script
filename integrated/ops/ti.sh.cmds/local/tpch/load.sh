@@ -20,7 +20,7 @@ function ti_cmd_tpch_load
 	fi
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd tpch/load.sh] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [blocks=4] [db_suffix=\"\"] [decimal_or_double=(decimal|double)]" >&2
+		echo "[cmd tpch/load.sh] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [threads=4] [db_suffix=\"\"] [decimal_or_double=(decimal|double)]" >&2
 		return
 	fi
 
@@ -33,6 +33,7 @@ function ti_cmd_tpch_load
 		local data_dir="${integrated}/data/tpch"
 	fi
 
+	# blocks == threads
 	if [ ! -z "${4+x}" ] && [ ! -z "${4}" ]; then
 		local blocks="${4}"
 	else

@@ -14,13 +14,13 @@ function ti_cmd_tpch_load_no_raft
 		return
 	fi
 
-	# TODO: load to multiple tiflash
+	# TODO: load to multiple tiflash instances
 	if [ "${index}" != '0' ]; then
 		return
 	fi
 
 	if [ -z "${3+x}" ]; then
-		echo "[cmd tpch/load_no_raft.sh] usage: <cmd> scale table(all|lineitem|...) engine(tmt|dm) [data_dir={integrated}/data/tpch] [blocks=4]" >&2
+		echo "[cmd tpch/load_no_raft.sh] usage: <cmd> scale table(all|lineitem|...) engine(tmt|dm) [data_dir={integrated}/data/tpch] [threads=4]" >&2
 		return
 	fi
 
@@ -34,6 +34,7 @@ function ti_cmd_tpch_load_no_raft
 		local data_dir="${integrated}/data/tpch"
 	fi
 
+	# blocks == threads
 	if [ ! -z "${5+x}" ] && [ ! -z "${5}" ]; then
 		local blocks="${5}"
 	else
