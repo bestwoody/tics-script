@@ -1,2 +1,2 @@
 create a simple cluster file (.ti)
-usage: <cmd> file-path-to-be-created.ti
+usage: <cmd> file-path-to-be-created.ti [tiflash_num=1] [tikv_num=1]
