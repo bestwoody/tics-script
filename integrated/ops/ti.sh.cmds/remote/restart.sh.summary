@@ -1,0 +1,29 @@
+#!/bin/bash
+
+ti_file="${1}"
+ti_args="${2}"
+cmd_mod_names="${3}"
+cmd_hosts="${4}"
+cmd_indexes="${5}"
+mods="${6}"
+
+fast="${7}"
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+stop_cmd='stop'
+if [ "${fast}" == 'fast' ] || [ "${fast}" == 'true' ]; then
+	stop_cmd='fstop'
+fi
+
+echo "------------"
+echo "stop cluster"
+echo "------------"
+"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${stop}"
+
+echo "------------"
+echo "run cluster"
+echo "------------"
+"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" run

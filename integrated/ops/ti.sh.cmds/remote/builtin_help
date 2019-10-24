@@ -7,6 +7,6 @@ stop (alais: down)
 fstop
     same as 'stop' but using 'kill -9'
     usage: <cmd> (no args)
-status (alais: run this cmd when no cmd provided)
+status (alais: '')
     show status of modules
     usage: <cmd> (no args)
