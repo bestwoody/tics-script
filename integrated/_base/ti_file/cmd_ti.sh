@@ -29,9 +29,14 @@ function ti_file_cmd_list()
 		local has_help_ext=`echo "${f}" | { grep "help$" || test $? = 1; }`
 		if [ ! -z "${has_help_ext}" ] && [ -f "${dir}/${f}" ]; then
 			local name=`basename "${f}" .help`
+			local has_sum_ext=`echo "${name}" | { grep "summary$" || test $? = 1; }`
 			local name=`basename "${name}" .summary`
 			local name=`basename "${name}" .sh`
-			echo "${parent}${name}"
+			if [ -z "${has_sum_ext}" ]; then
+				echo "${parent}${name}"
+			else
+				echo "${parent}${name} (summary cmd)"
+			fi
 			cat "${dir}/${f}" | awk '{print "    "$0}'
 			continue
 		fi
@@ -47,42 +52,20 @@ export -f ti_file_cmd_list
 
 function ti_file_cmd_default_help()
 {
-	echo "ti.sh cmds"
-	echo "    - list global cmds [cmd-matching-string]"
-	echo "ti.sh help"
+	echo "ti.sh help [matching-string]"
+	echo "    - list global cmds"
+	echo "ti.sh flags"
 	echo "    - detail usage of flags"
-	echo "ti.sh [flags] my.ti cmds [cmd-matching-string]"
+	echo "ti.sh [flags] my.ti help [matching-string]"
 	echo "    - list cmds, the cmds list would be different under different flags"
-	echo "    - eg: ti.sh -l my.ti cmds"
-	echo "    - eg: ti.sh -h my.ti cmds"
+	echo "    - eg: ti.sh -l my.ti help"
+	echo "    - eg: ti.sh -h my.ti help"
 	echo "ti.sh example"
 	echo "    - shows a simple example about how to use this tool"
 }
 export -f ti_file_cmd_default_help
 
-# TODO: remove
-function ti_file_global_cmd_cmds()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func ti_file_global_cmd_cmds] usage: <func> cmd_dir [matching]" >&2
-		return
-	fi
-
-	local cmd_dir="${1}"
-	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
-		local matching="${2}"
-	else
-		local matching=''
-	fi
-
-	if [ -d "${cmd_dir}" ]; then
-		echo 'command list:'
-		ti_file_cmd_list_all "${matching}" "${cmd_dir}" | awk '{print "    "$0}'
-	fi
-}
-export -f ti_file_global_cmd_cmds
-
-function ti_file_global_cmd_help()
+function ti_file_global_cmd_flags()
 {
 	echo 'usage: ops/ti.sh [mods-selector] [run-mode] ti_file_path cmd [args]'
 	echo
@@ -118,6 +101,8 @@ function ti_file_global_cmd_help()
 	echo '    -l:'
 	echo '        execute command on local(of master) mode instead of ssh executing.'
 	echo '        use `{integrated}/ops/local/ti.sh.cmds` as command dir instead of `{integrated}/ops/remote/ti.sh.cmds`'
+	echo 'specially, some commands are run on `summary` mode, it only execute on local mode, and only execute once,'
+	echo '    even there are more than one host and more than one module in the cluster'
 	echo
 	echo 'the configuring flags below are rarely used.'
 	echo 'example: ops/ti.sh -c /data/my_templ_dir -s /data/my_cmd_dir -t /tmp/my_cache_dir -k foo=bar my.ti status'
@@ -131,7 +116,7 @@ function ti_file_global_cmd_help()
 	echo '        specify the cache dir for download bins and other things in all hosts.'
 	echo '        will be `/tmp/ti` if this arg is not provided.'
 }
-export -f ti_file_global_cmd_help
+export -f ti_file_global_cmd_flags
 
 function ti_file_exe_global_cmd()
 {
@@ -144,7 +129,7 @@ function ti_file_exe_global_cmd()
 	local cmd_dir="${2}"
 	shift 2
 
-	if [ "${cmd}" == 'cmds' ]; then
+	if [ "${cmd}" == 'help' ]; then
 		if [ -z "${1+x}" ]; then
 			ti_file_cmd_list "${cmd_dir}/global"
 		else

@@ -13,8 +13,8 @@
 # checkout cluster deployment info
 >> ops/ti.sh my.ti prop
 
-# checkout cluster deployment info
->> ops/ti.sh my.ti prop
+# restart cluster, then checkout cluster status
+>> ops/ti.sh my.ti stop:run:status
 
 # run queries on tikv over tidb
 >> ops/ti.sh my.ti mysql "create table my_table..."
