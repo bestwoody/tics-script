@@ -1,5 +1,8 @@
 #!/bin/bash
 
+FLASH_HOME="$(dirname `cd $(dirname ${BASH_SOURCE[0]}) && pwd`)"
+cd $FLASH_HOME/storage
+
 type="$1"
 
 set -eu
@@ -18,5 +21,9 @@ else
 	build_type="$type"
 fi
 
+cd $FLASH_HOME/storage/ch/contrib/kvproto
+./generate_cpp.sh
+
+cd $FLASH_HOME/storage
 source ./_build.sh
 build_ch "ch" "theflash" "true" "$build_type"
