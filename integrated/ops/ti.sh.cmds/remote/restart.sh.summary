@@ -21,7 +21,7 @@ fi
 echo "------------"
 echo "stop cluster"
 echo "------------"
-"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${stop}"
+"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${stop_cmd}"
 
 echo "------------"
 echo "run cluster"
