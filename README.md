@@ -64,9 +64,8 @@ count(*)
 * Execute a query directly on TiFlash Storage:
 ```
 tiflash/integrated> ops/ti.sh ti/1+spark.ti ch "select count(*) from tpch_0_01.lineitem"
-┌─count()─┐
-│   60175 │
-└─────────┘
+count()
+60175
 ```
 
 * Execute a query from Spark to TiFlash Storage:
