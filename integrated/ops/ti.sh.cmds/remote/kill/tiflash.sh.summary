@@ -1,0 +1,25 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+ti_file="${1}"
+ti_args="${2}"
+cmd_mod_names="${3}"
+cmd_hosts="${4}"
+cmd_indexes="${5}"
+mods="${6}"
+shift 6
+
+tiflashs=`echo "${mods}" | grep $'\t''tiflash'`
+if [ -z "${tiflashs}" ]; then
+	return
+fi
+count=`echo "${tiflashs}" | wc -l | awk '{print $1}'`
+
+index="${RANDOM}"
+index=$((index % count + 1))
+index=`echo "${tiflashs}" | head -n "${index}" | tail -n 1 | awk '{print $1}'`
+
+"${integrated}/ops/ti.sh" -m tiflash -i "${index}" -k "${ti_args}" "${ti_file}" fstop

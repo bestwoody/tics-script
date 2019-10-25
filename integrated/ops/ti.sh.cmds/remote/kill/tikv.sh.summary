@@ -1,0 +1,25 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+ti_file="${1}"
+ti_args="${2}"
+cmd_mod_names="${3}"
+cmd_hosts="${4}"
+cmd_indexes="${5}"
+mods="${6}"
+shift 6
+
+tikvs=`echo "${mods}" | grep $'\t''tikv'`
+if [ -z "${tikvs}" ]; then
+	return
+fi
+count=`echo "${tikvs}" | wc -l | awk '{print $1}'`
+
+index="${RANDOM}"
+index=$((index % count + 1))
+index=`echo "${tikvs}" | head -n "${index}" | tail -n 1 | awk '{print $1}'`
+
+"${integrated}/ops/ti.sh" -m tikv -i "${index}" -k "${ti_args}" "${ti_file}" fstop

@@ -1,0 +1,9 @@
+shift 6
+
+if [ -z "${1+x}" ]; then
+	echo "[cmd sleep] usage: <cmd> sec"
+	exit 1
+fi
+
+sleep "${1}"
+echo "waked up"

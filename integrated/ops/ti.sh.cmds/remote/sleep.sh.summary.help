@@ -1,0 +1,2 @@
+sleep specific seconds, it's useful on sequent command format: "cmd1:sleep 5:cmd2"
+usage: <cmd> sec

@@ -17,7 +17,7 @@ function ti_file_cmd_list()
 	fi
 
 	ls "${dir}" | while read f; do
-		if [ "${f:0:1}" == '_' ]; then
+		if [ "${f:0:1}" == '_' ] || [ "${f}" == 'help' ]; then
 			continue
 		fi
 		if [ ! -z "${matching}" ]; then
