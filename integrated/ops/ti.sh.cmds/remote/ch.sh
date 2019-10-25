@@ -15,7 +15,7 @@ function cmd_ti_ch()
 	fi
 
 	if [ -z "${1+x}" ]; then
-		echo '[cmd ch] <cmd> query-str-or-file-path [database] [print-format] [ch-args]' >&2
+		echo '[cmd ch] <cmd> query-str-or-file-path [database] [print-format=(tab|title|pretty)] [ch-args]' >&2
 		return
 	fi
 
@@ -37,6 +37,10 @@ function cmd_ti_ch()
 	fi
 	if [ "${format}" == 'pretty' ]; then
 		local format='PrettyCompactNoEscapes'
+	elif [ "${format}" == 'tab' ]; then
+		local format='TabSeparated'
+	elif [ "${format}" == 'title' ]; then
+		local format='TabSeparatedWithNames'
 	fi
 
 	shift 3
