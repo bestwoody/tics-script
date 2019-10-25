@@ -195,7 +195,7 @@ There are 3 things are involved when we using `ops/ti.sh`:
 
 ## `ops/ti.sh` command line help
 ```
-ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|..) [args]
+ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|burn|..) [args]
     -c:
         specify the config template dir, will be `ops/../conf` if this arg is not provided.
     -s:
@@ -219,9 +219,9 @@ ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd
         execute command on local(of master) mode instead of ssh executing.
         use `ops/local/ti.sh.cmds` as command dir instead of `ops/remote/ti.sh.cmds`
     cmd:
-        could be one of run|stop|fstop|status.
+        could be one of run|stop|fstop|status|burn.
         (`up` and `down` are aliases of `run` and `stop`)
-        and could be one of `ops/local|remote/ti.sh.cmds/<command>.sh`
+        and could be one of `ops/ti.sh.cmds/local|remote/<command>.sh`
         (could be one of `ops/ti.sh.cmds/local|remote/byhost/<command>.sh` if `-b`)
     args:
         the args pass to the cmd script.

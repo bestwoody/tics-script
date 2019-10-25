@@ -88,9 +88,9 @@ function ti_file_global_cmd_help()
 	echo
 	echo 'example: ops/ti.sh my.ti run'
 	echo '    cmd:'
-	echo '        could be one of run|stop|fstop|status|...'
+	echo '        could be one of run|stop|fstop|status|burn|...'
 	echo '        (`up` and `down` are aliases of `run` and `stop`)'
-	echo '        and could be one of `{integrated}/ops/local|remote/ti.sh.cmds/<command>.sh`'
+	echo '        and could be one of `{integrated}/ops/ti.sh.cmds/local|remote/<command>.sh`'
 	echo '        (could be one of `{integrated}/ops/ti.sh.cmds/local|remote/byhost/<command>.sh` if `-b`)'
 	echo '    args:'
 	echo '        the args pass to the command script.'
