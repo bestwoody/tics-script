@@ -70,6 +70,13 @@ function ti_file_exe()
 
 	shift 11
 
+	if [ "${cmd}" == "up" ]; then
+		local cmd="run"
+	fi
+	if [ "${cmd}" == "down" ]; then
+		local cmd="stop"
+	fi
+
 	local error_handle="$-"
 	set +u
 	local cmd_args=("${@}")

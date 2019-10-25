@@ -1,0 +1,3 @@
+stop processes of defined and selected modules using 'kill'
+alais: down
+usage: <cmd> (no args)

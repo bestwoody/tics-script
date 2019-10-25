@@ -1,0 +1,2 @@
+same as 'stop' but using 'kill -9'
+usage: <cmd> (no args)

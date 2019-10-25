@@ -1,0 +1,3 @@
+show status of modules
+alias: '' (run status if cmd is empty)
+usage: <cmd> (no args)

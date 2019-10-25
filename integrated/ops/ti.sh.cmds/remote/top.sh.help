@@ -1,2 +1,2 @@
-show 'top' result of module's process
+show the result of bash command 'top' of module's process
 usage: <cmd> (no args)

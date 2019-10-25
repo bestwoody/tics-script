@@ -3,8 +3,15 @@
 function ti_file_cmd_list()
 {
 	local dir="${1}"
+
 	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
-		local parent="${2}/"
+		local matching="${2}"
+	else
+		local matching=''
+	fi
+
+	if [ ! -z "${3+x}" ] && [ ! -z "${3}" ]; then
+		local parent="${3}/"
 	else
 		local parent=''
 	fi
@@ -13,21 +20,20 @@ function ti_file_cmd_list()
 		if [ "${f:0:1}" == '_' ]; then
 			continue
 		fi
-		if [ "${f}" == 'echo.sh' ] || [ "${f}" == 'cmds.sh.summary' ]; then
-			continue
-		fi
-		local has_sh_ext=`echo "${f}" | { grep "sh$" || test $? = 1; }`
-		local has_summary_ext=`echo "${f}" | { grep "summary$" || test $? = 1; }`
-		if [ ! -z "${has_sh_ext}" ] || [ ! -z "${has_summary_ext}" ]; then
-			if [ -f "${dir}/${f}" ]; then
-				local name=`basename "${f}" .summary`
-				local name=`basename "${name}" .sh`
-				echo "${parent}${name}"
-				if [ -f "${dir}/${f}.help" ]; then
-					cat "${dir}/${f}.help" | awk '{print "    "$0}'
-				fi
+		if [ ! -z "${matching}" ]; then
+			local matched=`echo "${f}" | grep "${matching}"`
+			if [ -z "${matched}" ]; then
 				continue
 			fi
+		fi
+		local has_help_ext=`echo "${f}" | { grep "help$" || test $? = 1; }`
+		if [ ! -z "${has_help_ext}" ] && [ -f "${dir}/${f}" ]; then
+			local name=`basename "${f}" .help`
+			local name=`basename "${name}" .summary`
+			local name=`basename "${name}" .sh`
+			echo "${parent}${name}"
+			cat "${dir}/${f}" | awk '{print "    "$0}'
+			continue
 		fi
 		if [ -d "${dir}/${f}" ] && [ "${f}" != 'byhost' ]; then
 			echo "${f}/*"
@@ -42,10 +48,10 @@ export -f ti_file_cmd_list
 function ti_file_cmd_default_help()
 {
 	echo "ti.sh cmds"
-	echo "    - list global cmds"
+	echo "    - list global cmds [cmd-matching-string]"
 	echo "ti.sh help"
 	echo "    - detail usage of flags"
-	echo "ti.sh [flags] my.ti cmds"
+	echo "ti.sh [flags] my.ti cmds [cmd-matching-string]"
 	echo "    - list cmds, the cmds list would be different under different flags"
 	echo "    - eg: ti.sh -l my.ti cmds"
 	echo "    - eg: ti.sh -h my.ti cmds"
@@ -54,18 +60,24 @@ function ti_file_cmd_default_help()
 }
 export -f ti_file_cmd_default_help
 
+# TODO: remove
 function ti_file_global_cmd_cmds()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func ti_file_global_cmd_cmds] usage: <func> cmd_dir" >&2
+		echo "[func ti_file_global_cmd_cmds] usage: <func> cmd_dir [matching]" >&2
 		return
 	fi
 
 	local cmd_dir="${1}"
+	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
+		local matching="${2}"
+	else
+		local matching=''
+	fi
 
 	if [ -d "${cmd_dir}" ]; then
 		echo 'command list:'
-		ti_file_cmd_list_all "${cmd_dir}" | awk '{print "    "$0}'
+		ti_file_cmd_list_all "${matching}" "${cmd_dir}" | awk '{print "    "$0}'
 	fi
 }
 export -f ti_file_global_cmd_cmds
@@ -81,7 +93,8 @@ function ti_file_global_cmd_help()
 	echo '        and could be one of `{integrated}/ops/local|remote/ti.sh.cmds/<command>.sh`'
 	echo '        (could be one of `{integrated}/ops/ti.sh.cmds/local|remote/byhost/<command>.sh` if `-b`)'
 	echo '    args:'
-	echo '        the args pass to the cmd script.'
+	echo '        the args pass to the command script.'
+	echo '        format `cmd1:cmd2:cmd3` can be used to execute commands sequently, if all args are empty.'
 	echo
 	echo 'the selecting flags below are for selecting mods from the .ti file defined a cluster.'
 	echo 'example: ops/ti.sh -m pd -i 0,2 my.ti stop'
@@ -132,7 +145,12 @@ function ti_file_exe_global_cmd()
 	shift 2
 
 	if [ "${cmd}" == 'cmds' ]; then
-		ti_file_cmd_list "${cmd_dir}/global"
+		if [ -z "${1+x}" ]; then
+			ti_file_cmd_list "${cmd_dir}/global"
+		else
+			local cmd_args=("${@}")
+			ti_file_cmd_list "${cmd_dir}/global" "${cmd_args[@]}"
+		fi
 		return
 	fi
 
@@ -211,7 +229,8 @@ function cmd_ti()
 
 	local ext=`print_file_ext "${1}"`
 	if [ "${ext}" != 'ti' ]; then
-		cmd="${1}"
+		local ti_file=''
+		local cmd="${1}"
 		shift 1
 	else
 		local ti_file="${1}"
@@ -220,6 +239,7 @@ function cmd_ti()
 	fi
 
 	local cmd_args=("${@}")
+	auto_error_handle
 
 	if [ -z "${ti_file}" ] && [ ! -z "${cmd}" ]; then
 		if [ -z "${cmd_args+x}" ]; then
@@ -238,16 +258,26 @@ function cmd_ti()
 	if [ -z "${cmd}" ]; then
 		local cmd="status"
 	fi
-	if [ "${cmd}" == "up" ]; then
-		local cmd="run"
-	fi
-	if [ "${cmd}" == "down" ]; then
-		local cmd="stop"
-	fi
 
-	auto_error_handle
 	if [ -z "${cmd_args+x}" ]; then
-		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}"
+		if [ ! -z "`echo ${cmd} | grep ':'`" ]; then
+			local cmds=`echo "${cmd}" | awk -F ':' '{for ( i=1; i<=NF; i++ ) print $i}'`
+			echo "${cmds}" | while read cmd; do
+				echo "------------"
+				echo "${cmd}"
+				echo "------------"
+				local cmd_and_args=(${cmd})
+				if [ "${#cmd_and_args[@]}" == '1' ]; then
+					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}"
+				else
+					local cmd="${cmd_and_args[0]}"
+					local cmd_args=${cmd_and_args[@]:1}
+					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}" "${cmd_args[@]}"
+				fi
+			done
+		else
+			ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}"
+		fi
 	else
 		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}" "${cmd_args[@]}"
 	fi
