@@ -91,10 +91,8 @@ function ti_file_exe()
 		"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}"`
 
 	# TODO: Pass paths from args
-	local remote_env_rel_dir='worker'
 	local local_cache_env="${cache_dir}/master/integrated"
-
-	local remote_env_parent="${cache_dir}/${remote_env_rel_dir}"
+	local remote_env_parent="${cache_dir}/worker"
 	local remote_env="${remote_env_parent}/`basename ${local_cache_env}`"
 
 	local script=''
@@ -130,6 +128,15 @@ function ti_file_exe()
 		return 1
 	fi
 
+	if [ ! -z "${script}" ]; then
+		local cmd_dir=`abs_path "${cmd_dir}"`
+		# TODO: assert ${cmd_dir} must under ${integrated}
+		local cmd_dir_rel="${cmd_dir:${#integrated}}"
+		local script=`abs_path "${script}"`
+		local remote_script="${script:${#cmd_dir}}"
+		local remote_script="${remote_env}${cmd_dir_rel}${remote_script}"
+	fi
+
 	if [ "${local}" != 'true' ] && [ "${cmd}" != 'dry' ]; then
 		# TODO: Parallel ping and copy
 		echo "${hosts}" | while read host; do
@@ -152,8 +159,8 @@ function ti_file_exe()
 				local base_name=`basename "${ti_file}"`
 				local rendered="/tmp/ti_file_rendered.${base_name}.`date +%s`.${RANDOM}.sh"
 			fi
-			python "${here}/ti_file.py" 'render' "${ti_file}" \
-				"${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" > "${rendered}"
+			python "${here}/ti_file.py" 'render' "${ti_file}" "${integrated}" "${conf_templ_dir}" \
+				"${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" > "${rendered}"
 			chmod +x "${rendered}"
 			if [ "${cmd}" == "run" ]; then
 				bash "${rendered}"
@@ -162,8 +169,8 @@ function ti_file_exe()
 			return 0
 		fi
 
-		local mods=`python "${here}/ti_file.py" 'mods' \
-			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}"`
+		local mods=`python "${here}/ti_file.py" 'mods' "${ti_file}" "${integrated}" "${conf_templ_dir}" \
+			"${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}"`
 
 		echo "${mods}" | while read mod; do
 			if [ -z "${mod}" ]; then
@@ -192,10 +199,10 @@ function ti_file_exe()
 					fi
 				else
 					if [ -z "${cmd_args+x}" ]; then
-						call_remote_func "${host}" "${remote_env}" script_exe "${script}" \
+						call_remote_func "${host}" "${remote_env}" script_exe "${remote_script}" \
 							"${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else
-						call_remote_func "${host}" "${remote_env}" script_exe "${script}" \
+						call_remote_func "${host}" "${remote_env}" script_exe "${remote_script}" \
 							"${index}" "${name}" "${dir}" "${conf}" "${host}" "${cmd_args[@]}"
 					fi
 				fi
@@ -244,9 +251,9 @@ function ti_file_exe()
 				fi
 			else
 				if [ -z "${cmd_args+x}" ]; then
-					call_remote_func "${host}" "${remote_env}" script_exe "${script}" "${host}"
+					call_remote_func "${host}" "${remote_env}" script_exe "${remote_script}" "${host}"
 				else
-					call_remote_func "${host}" "${remote_env}" script_exe "${script}" "${host}" "${cmd_args[@]}"
+					call_remote_func "${host}" "${remote_env}" script_exe "${remote_script}" "${host}" "${cmd_args[@]}"
 				fi
 			fi
 		done
