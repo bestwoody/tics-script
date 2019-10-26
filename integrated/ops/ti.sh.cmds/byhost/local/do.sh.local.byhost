@@ -1,5 +1,18 @@
 #!/bin/bash
 
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+
 host="${1}"
 shift
-ssh "${host}" "${@}" | awk '{print "['${host}'] "$0}'
+
+error_handle="$-"
+set +u
+args=("${@}")
+restore_error_handle_flags "${error_handle}"
+
+args_str=""
+for it in "${args[@]}"; do
+	args_str="$args_str \"$it\""
+done
+
+ssh_exe "${host}" "${args_str}" | awk '{print "['${host}'] "$0}'
