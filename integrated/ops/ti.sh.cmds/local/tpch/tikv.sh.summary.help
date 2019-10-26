@@ -1,0 +1,3 @@
+run tpch queries on tikv over tidb
+query_index format can be: 'all', '14', '2,4,3'
+usage: <cmd> [query_index=all] [database=''] [head_lines_of_result=5]

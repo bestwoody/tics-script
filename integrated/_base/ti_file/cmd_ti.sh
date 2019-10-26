@@ -257,7 +257,7 @@ function cmd_ti()
 				else
 					local cmd="${cmd_and_args[0]}"
 					local cmd_args=${cmd_and_args[@]:1}
-					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}" "${cmd_args[@]}"
+					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}" ${cmd_args[@]}
 				fi
 			done
 		else
@@ -268,3 +268,25 @@ function cmd_ti()
 	fi
 }
 export -f cmd_ti
+
+function random_mod()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func rando_mod] usage: <func> mods_info_lines candidate_type" >&2
+		return 1
+	fi
+
+	local mods="${1}"
+	local type="${2}"
+
+	local instances=`echo "${mods}" | grep $'\t'"${type}"`
+	if [ -z "${instances}" ]; then
+		return
+	fi
+	local count=`echo "${instances}" | wc -l | awk '{print $1}'`
+
+	local index="${RANDOM}"
+	local index_base_1=$((index % count + 1))
+	echo "${instances}" | head -n "${index_base_1}" | tail -n 1 | awk '{print $1}'
+}
+export -f random_mod
