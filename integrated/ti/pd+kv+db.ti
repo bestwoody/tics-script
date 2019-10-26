@@ -1,4 +1,0 @@
-dir=nodes
-pd: {dir}/0/pd
-tikv: {dir}/0/tikv
-tidb: {dir}/0/tidb

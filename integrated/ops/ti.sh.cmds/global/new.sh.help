@@ -1,2 +1,6 @@
-create a simple cluster file (.ti)
-usage: <cmd> file_path_to_be_created.ti [tiflash_num=1] [tikv_num=1]
+create a cluster define file (.ti) by specify modules' numbers
+usage: <cmd> file_path_to_be_created.ti [pd=n] [tikv=n] [tidb=n] [tiflash=n] [spark=n] [nodes=n]
+default: pd=1 tikv=1 tidb=1 tiflash=1 spark=0 nodes=1
+eg: ti.sh new my.ti
+eg: ti.sh new my.ti tikv=2 tiflash=3 spark=3
+eg: ti.sh new my.ti tikv=2 tiflash=3 spark=3 nodes=3

@@ -2,9 +2,14 @@
 An OLAP project of TiDB
 
 ## Quick start guide
-* (Deploy and) Launch a cluster defined by `1+spark.ti`:
+* Create a cluster define file:
 ```
-tiflash/integrated> ops/ti.sh ti/1+spark.ti up
+tiflash/integrated> ti.sh new my.ti spark=1
+```
+
+* (Deploy and) Launch a cluster defined by `my.ti`:
+```
+tiflash/integrated> ops/ti.sh my.ti up
 => pd #0 (nodes/4/pd)
 25239
 => tikv #0 (nodes/4/tikv)
@@ -23,7 +28,7 @@ tiflash/integrated> ops/ti.sh ti/1+spark.ti up
 
 * Check the cluster status:
 ```
-tiflash/integrated> ops/ti.sh ti/1+spark.ti
+tiflash/integrated> ops/ti.sh my.ti
 OK     pd #0 (nodes/4/pd)
 OK     tikv #0 (nodes/4/tikv)
 OK     tidb #0 (nodes/4/tidb)
@@ -35,7 +40,7 @@ OK     spark_w #0 (nodes/4/spark_w)
 
 * Load tpch data into the cluster (scale = 0.01, tables = all):
 ```
-tiflash/integrated> ops/ti.sh ti/1+spark.ti tpch/load 0.01 all
+tiflash/integrated> ops/ti.sh my.ti tpch/load 0.01 all
 => loading customer
    loaded
 => loading nation
@@ -56,21 +61,21 @@ tiflash/integrated> ops/ti.sh ti/1+spark.ti tpch/load 0.01 all
 
 * Execute a query on TiDB:
 ```
-tiflash/integrated> ops/ti.sh ti/1+spark.ti mysql "select count(*) from tpch_0_01.lineitem"
+tiflash/integrated> ops/ti.sh my.ti mysql "select count(*) from tpch_0_01.lineitem"
 count(*)
 60175
 ```
 
 * Execute a query directly on TiFlash Storage:
 ```
-tiflash/integrated> ops/ti.sh ti/1+spark.ti ch "select count(*) from tpch_0_01.lineitem"
+tiflash/integrated> ops/ti.sh my.ti ch "select count(*) from tpch_0_01.lineitem"
 count()
 60175
 ```
 
 * Execute a query from Spark to TiFlash Storage:
 ```
-tiflash/integrated> ops/ti.sh ti/1+spark.ti beeline "tpch_0_01" -e "select count(*) from lineitem"
+tiflash/integrated> ops/ti.sh my.ti beeline "tpch_0_01" -e "select count(*) from lineitem"
 Connecting to jdbc:hive2://127.0.0.1:10004
 +-----------+
 | count(1)  |

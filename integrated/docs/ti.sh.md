@@ -3,15 +3,14 @@ The ops/ti.sh is designed for fast testing, CI, or POCing, anyone can easily dep
 
 
 ## Quick start
-Edit a file `my.ti` like this(or copy from: `./ti/*.ti`), you can put it anywhere you want:
+Create a cluster define file `my.ti` by command `ops/ti.sh new my.ti spark=1`, this file will be like:
 ```
-pd: node0/pd
 tikv: node0/tikv
 tidb: node0/tidb
 tiflash: node0/tiflash
-rngine: node0/rngine tiflash=node0/tiflash
+rngine: node0/rngine tiflash={dir}/tiflash
 spark_m: node0/spark_m
-spark_w: node0/spark_w
+spark_w: node0/spark_w cores=1 mem=1G
 ```
 
 Then run `ops/ti.sh my.ti run`:

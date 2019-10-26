@@ -1,9 +1,0 @@
-dir={dir}
-p={ports}
-
-pd: {dir}/pd ports{p}
-tikv: {dir}/tikv ports{p}
-tidb: {dir}/tidb ports{p}
-
-tiflash: {dir}/tiflash ports{p}
-rngine: {dir}/rngine tiflash={dir}/tiflash ports{p}
