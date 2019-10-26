@@ -11,7 +11,7 @@ function cmd_ti_log()
 	shift 5
 
 	if [ -z "${1+x}" ]; then
-		echo "[cmd log] usage: <cmd> count-of-matched-log [grep-string] [upload]" >&2
+		echo "[cmd log] usage: <cmd> count_of_matched_log [grep_string] [upload]" >&2
 		return
 	fi
 	local cnt="${1}"

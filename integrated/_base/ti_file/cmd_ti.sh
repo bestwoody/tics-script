@@ -67,7 +67,7 @@ export -f ti_file_cmd_default_help
 
 function ti_file_global_cmd_flags()
 {
-	echo 'usage: ops/ti.sh [mods-selector] [run-mode] ti_file_path cmd [args]'
+	echo 'usage: ops/ti.sh [mods_selector] [run_mode] ti_file_path cmd [args]'
 	echo
 	echo 'example: ops/ti.sh my.ti run'
 	echo '    cmd:'

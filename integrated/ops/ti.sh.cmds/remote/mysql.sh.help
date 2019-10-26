@@ -1,2 +1,2 @@
 run queries on tidb in a cluster
-usage: <cmd> query-str-or-file-path [database]
+usage: <cmd> query_str_or_file_path [database]

@@ -1,2 +1,2 @@
 connect to tidb in interacting mode
-usage: <cmd> [mysql-connecting-args-without-host-or-port-or-user]
+usage: <cmd> [mysql_connecting_args_without_host_or_port_or_user]

@@ -13,7 +13,7 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -z "${6+x}" ]; then
-		echo '[cmd mysql] usage: <cmd> query-str-or-file-path [database]' >&2
+		echo '[cmd mysql] usage: <cmd> query_str_or_file_path [database]' >&2
 		return
 	fi
 

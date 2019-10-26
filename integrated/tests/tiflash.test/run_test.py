@@ -351,7 +351,7 @@ def parse_exe_match(path, executor, executor_func, executor_ops, fuzz):
 
 def run():
     if len(sys.argv) != 6:
-        print 'usage: <bin> tiflash-client-cmd test-file-path ti-sh test-ti-file fuzz-check'
+        print 'usage: <bin> tiflash_client_cmd test_file_path ti_sh test_ti_file fuzz_check'
         sys.exit(1)
 
     dbc = sys.argv[1]

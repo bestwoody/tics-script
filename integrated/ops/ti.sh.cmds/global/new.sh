@@ -10,7 +10,7 @@ source "${here}/_env.sh"
 auto_error_handle
 
 if [ -z "${path}" ]; then
-	echo "[cmd new] usage: <cmd> file-path-to-be-created.ti [tiflash_num=1] [tikv_num=1] [data_dir=nodes/n0]"
+	echo "[cmd new] usage: <cmd> file_path_to_be_created.ti [tiflash_num=1] [tikv_num=1] [data_dir=nodes/n0]"
 	exit 1
 fi
 if [ -z "${tiflash_num}" ]; then

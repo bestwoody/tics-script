@@ -118,7 +118,7 @@ function generate_test()
 		return 0
 	fi
 	local temp_target_dir="${target_dir}.`date +%s`.${RANDOM}"
-	python "${here}/generate-fullstack-test.py" "test" "t" "${temp_target_dir}"
+	python "${here}/generate_fullstack_test.py" "test" "t" "${temp_target_dir}"
 	mv "${temp_target_dir}" "${target_dir}"
 }
 

@@ -80,12 +80,12 @@ function verify_raft_sync()
 		'mysql' "${sql}" 'test' 2>&1`
 	local read_ok=`echo "${read_res}" | grep 'world'`
 	if [ -z "${read_ok}" ]; then
-		echo "FAILED can't read data from tidb over tiflash, result:"
+		echo "FAILED can't read data from tiflash over tidb, result:"
 		echo "${read_res}"
 		echo "sql: ${sql}"
 		return 1
 	else
-		echo "OK     read data from tidb over tiflash"
+		echo "OK     read data from tiflash over tidb"
 	fi
 
 	local drop_err=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \

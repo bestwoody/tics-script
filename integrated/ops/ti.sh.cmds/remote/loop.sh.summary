@@ -15,7 +15,7 @@ source "${here}/_env.sh"
 auto_error_handle
 
 if [ -z "${cmd}" ]; then
-	echo "[cmd loop] usage: ti.sh [flags] ti-file-path loop cmd [args]"
+	echo "[cmd loop] usage: ti.sh [flags] ti_file_path loop cmd [args]"
 	exit 1
 fi
 

@@ -20,7 +20,7 @@ function ti_cmd_tpch_load
 	fi
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd tpch/load.sh] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [threads=4] [db_suffix=\"\"] [decimal_or_double=(decimal|double)]" >&2
+		echo "[cmd tpch/load] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [threads=4] [db_suffix=\"\"] [decimal_or_double=decimal|double]" >&2
 		return
 	fi
 
@@ -63,7 +63,7 @@ function ti_cmd_tpch_load
 		trans_schema_fields_decimal_to_double "${ori_schema_dir}" "${schema_dir}"
 	else
 		echo "unknown field_type: ${field_type}" >&2
-		echo "[cmd tpch/load.sh] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [blocks=4] [db_suffix=\"\"] [decimal_or_double=(decimal|double)]" >&2
+		echo "[cmd tpch/load] usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [blocks=4] [db_suffix=\"\"] [decimal_or_double=decimal|double]" >&2
 		return
 	fi
 

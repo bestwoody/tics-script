@@ -1,2 +1,2 @@
 create tpch tables
-usage: <cmd> scale table(all|lineitem|...) [db_suffix=""] [decimal_or_double=(decimal|double)]
+usage: <cmd> scale table(all|lineitem|...) [db_suffix=""] [decimal_or_double=decimal|double]

@@ -15,7 +15,7 @@ function ti_cmd_tpch_create
 	fi
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd tpch/create.sh] usage: <cmd> scale table(all|lineitem|...) [db_suffix=\"\"] [decimal_or_double=(decimal|double)]" >&2
+		echo "[cmd tpch/create] usage: <cmd> scale table(all|lineitem|...) [db_suffix=\"\"] [decimal_or_double=decimal|double]" >&2
 		return
 	fi
 
@@ -45,7 +45,7 @@ function ti_cmd_tpch_create
 		trans_schema_fields_decimal_to_double "${ori_schema_dir}" "${schema_dir}"
 	else
 		echo "unknown field_type: ${field_type}" >&2
-		echo "[cmd tpch/create.sh] usage: <cmd> scale table(all|lineitem|...) [db_suffix=\"\"] [decimal_or_double=(decimal|double)]" >&2
+		echo "[cmd tpch/create] usage: <cmd> scale table(all|lineitem|...) [db_suffix=\"\"] [decimal_or_double=decimal|double]" >&2
 		return
 	fi
 

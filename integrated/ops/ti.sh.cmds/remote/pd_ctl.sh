@@ -16,7 +16,7 @@ function cmd_ti_pd_ctl()
 	fi
 
 	if [ -z "${6+x}" ]; then
-		echo '[cmd pd-ctl] usage: <cmd> command' >&2
+		echo '[cmd pd_ctl] usage: <cmd> command' >&2
 		return
 	fi
 
