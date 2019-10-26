@@ -194,37 +194,11 @@ There are 3 things are involved when we using `ops/ti.sh`:
     * Once a module is running, it doesn't rely on `conf templates` or `ops/ti.sh` any more.
 
 ## `ops/ti.sh` command line help
+These commands output responsive help:
 ```
-ops/ti [-c conf_templ_dir] [-s cmd =_dir] [-t cache_dir] [-k ti_file_kvs] [-m pd|tikv|..] [-h host,host] [-b] [-l] ti_file_path cmd(run|stop|fstop|status|burn|..) [args]
-    -c:
-        specify the config template dir, will be `ops/../conf` if this arg is not provided.
-    -s:
-        specify the sub-command dir, will be `ops/ti.sh.cmds/remote` if this arg is not provided.
-    -t:
-        specify the cache dir for download bins and other things in all hosts.
-        will be `/tmp/ti` if this arg is not provided.
-    -k:'
-        specify the key-value(s) string, will be used as vars in the .ti file, format: k=v#k=v#..
-    -m:'
-        the module name, could be one of pd|tikv|tidb|tiflash|rngine.
-        and could be multi modules like: `pd,tikv`.
-        if this arg is not provided, it means all modules.
-    -h:
-        the host names, format: `host,host,..`
-        if this arg is not provided, it means all specified host names in the .ti file.
-    -b:
-        execute command on each host(node).
-        if this arg is not provided, execute command on each module.
-    -l:
-        execute command on local(of master) mode instead of ssh executing.
-        use `ops/local/ti.sh.cmds` as command dir instead of `ops/remote/ti.sh.cmds`
-    cmd:
-        could be one of run|stop|fstop|status|burn.
-        (`up` and `down` are aliases of `run` and `stop`)
-        and could be one of `ops/ti.sh.cmds/local|remote/<command>.sh`
-        (could be one of `ops/ti.sh.cmds/local|remote/byhost/<command>.sh` if `-b`)
-    args:
-        the args pass to the cmd script.
+ops/ti.sh help
+ops/ti.sh flags
+ops/ti.sh my.ti flags
 ```
 
 ## Why we should use this tool

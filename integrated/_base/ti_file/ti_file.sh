@@ -51,24 +51,12 @@ function ti_file_exe()
 	fi
 
 	if [ -z "${9+x}" ]; then
-		local byhost=""
-	else
-		local byhosts="${9}"
-	fi
-
-	if [ -z "${10+x}" ]; then
-		local local=""
-	else
-		local local="${10}"
-	fi
-
-	if [ -z "${11+x}" ]; then
 		local cache_dir="/tmp/ti"
 	else
-		local cache_dir="${11}"
+		local cache_dir="${9}"
 	fi
 
-	shift 11
+	shift 9
 
 	if [ "${cmd}" == "up" ]; then
 		local cmd="run"
@@ -109,18 +97,37 @@ function ti_file_exe()
 	local remote_env_parent="${cache_dir}/${remote_env_rel_dir}"
 	local remote_env="${remote_env_parent}/`basename ${local_cache_env}`"
 
-	# TODO: Pass paths from args
-	local real_cmd_dir="${cmd_dir}/local"
-	if [ "${local}" != 'true' ]; then
-		local real_cmd_dir="${cmd_dir}/remote"
+	local script=''
+	local local='false'
+	local byhost='false'
+	if [ -f "${cmd_dir}/${cmd}.sh" ]; then
+		local script="${cmd_dir}/${cmd}.sh"
+	elif [ -f "${cmd_dir}/${cmd}.sh.local" ]; then
+		local local='true'
+		local script="${cmd_dir}/${cmd}.sh.local"
+	elif [ -f "${cmd_dir}/${cmd}.sh.byhost" ]; then
+		local byhost='true'
+		local script="${cmd_dir}/${cmd}.sh.byhost"
+	elif [ -f "${cmd_dir}/${cmd}.sh.local.byhost" ]; then
+		local local='true'
+		local byhost='true'
+		local script="${cmd_dir}/${cmd}.sh.local.byhost"
 	fi
-	if [ "${local}" != 'true' ]; then
-		if [ -z "${hosts}" ] || [ "${hosts}" == "127.0.0.1" ] || [ "${hosts}" == "localhost" ]; then
-			local real_cmd_dir="${cmd_dir}/remote"
-		fi
+
+	local summary="${cmd_dir}/${cmd}.sh.summary"
+	if [ ! -f "${cmd_dir}/${cmd}.sh.summary" ]; then
+		local summary=''
 	fi
-	if [ "${byhost}" == 'true' ]; then
-		local real_cmd_dir="${real_cmd_dir}/byhost"
+
+	local has_func=`func_exists "ti_file_cmd_${cmd}"`
+	if [ -z "${script}" ] && [ -z "${summary}" ] && [ "${has_func}" != 'true' ] && [ "${cmd}" != 'run' ]; then
+		echo "none of this scripts can be found:" >&2
+		echo "  ${cmd_dir}/${cmd}.sh" >&2
+		echo "  ${cmd_dir}/${cmd}.sh.summary" >&2
+		echo "  ${cmd_dir}/${cmd}.sh.local" >&2
+		echo "  ${cmd_dir}/${cmd}.sh.byhost" >&2
+		echo "  ${cmd_dir}/${cmd}.sh.local.byhost" >&2
+		return 1
 	fi
 
 	if [ "${local}" != 'true' ] && [ "${cmd}" != 'dry' ]; then
@@ -158,9 +165,6 @@ function ti_file_exe()
 		local mods=`python "${here}/ti_file.py" 'mods' \
 			"${ti_file}" "${integrated}" "${conf_templ_dir}" "${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}"`
 
-		local has_func=`func_exists "ti_file_cmd_${cmd}"`
-
-		# TODO: loop without sub-process
 		echo "${mods}" | while read mod; do
 			if [ -z "${mod}" ]; then
 				continue
@@ -171,45 +175,34 @@ function ti_file_exe()
 			local conf=`echo "${mod}" | awk -F '\t' '{print $4}'`
 			local host=`echo "${mod}" | awk -F '\t' '{print $5}'`
 
-			if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ] || [ "${local}" == 'true' ]; then
-				local has_script=`test -f "${real_cmd_dir}/${cmd}.sh" && echo true`
-				if [ "${has_script}" != 'true' ] && [ "${local}" != 'true' ]; then
-					local local_has_script=`test -f "${cmd_dir}/local/${cmd}.sh" && echo true`
-					if [ "${local_has_script}" == 'true' ]; then
-						echo "<auto add '-l': script ${cmd}.sh not found in remote mode, but found in local mode>" >&2
-						local local='true'
-						local real_cmd_dir="${cmd_dir}/local"
-						local has_script='true'
-					fi
-				fi
-			else
-				local has_script=`ssh_exe "${host}" "test -f \"${real_cmd_dir}/${cmd}.sh\" && echo true"`
+			if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ]; then
+				local local='true'
 			fi
 
-			if [ "${has_script}" == 'true' ]; then
-				if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ] || [ "${local}" == 'true' ]; then
+			if [ ! -z "${script}" ]; then
+				if [ "${local}" == 'true' ]; then
 					if [ -z "${host}" ]; then
 						local host=`must_print_ip`
 					fi
 					local dir=`abs_path "${dir}"`
 					if [ -z "${cmd_args+x}" ]; then
-						bash "${real_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${host}"
+						bash "${script}" "${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else
-						bash "${real_cmd_dir}/${cmd}.sh" "${index}" "${name}" "${dir}" "${conf}" "${host}" "${cmd_args[@]}"
+						bash "${script}" "${index}" "${name}" "${dir}" "${conf}" "${host}" "${cmd_args[@]}"
 					fi
 				else
 					if [ -z "${cmd_args+x}" ]; then
-						call_remote_func "${host}" "${remote_env}" script_exe "${real_cmd_dir}/${cmd}.sh" \
+						call_remote_func "${host}" "${remote_env}" script_exe "${script}" \
 							"${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else
-						call_remote_func "${host}" "${remote_env}" script_exe "${real_cmd_dir}/${cmd}.sh" \
+						call_remote_func "${host}" "${remote_env}" script_exe "${script}" \
 							"${index}" "${name}" "${dir}" "${conf}" "${host}" "${cmd_args[@]}"
 					fi
 				fi
 				continue
 			fi
 			if [ "${has_func}" == 'true' ]; then
-				if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ]; then
+				if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ] || [ "${local}" == 'true' ]; then
 					if [ -z "${cmd_args+x}" ]; then
 						"ti_file_cmd_${cmd}" "${index}" "${name}" "${dir}" "${conf}" "${host}"
 					else
@@ -226,18 +219,9 @@ function ti_file_exe()
 				fi
 				continue
 			fi
-			if [ ! -f "${real_cmd_dir}/${cmd}.sh.summary" ]; then
-				if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ]; then
-					echo "script not found: ${real_cmd_dir}/${cmd}.sh" >&2
-				else
-					echo "script not found: ${host}:${real_cmd_dir}/${cmd}.sh" >&2
-				fi
-				return 1
-			fi
 		done
-		# summary always run on local mode
-		local summary="${real_cmd_dir}/${cmd}.sh.summary"
-		if [ -f "${summary}" ]; then
+
+		if [ ! -z "${summary}" ]; then
 			if [ -z "${cmd_args+x}" ]; then
 				bash "${summary}" "${ti_file}" "${ti_args}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${mods}"
 			else
@@ -249,36 +233,25 @@ function ti_file_exe()
 			if [ -z "${host}" ]; then
 				local host='127.0.0.1'
 			fi
+			if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ]; then
+				local local='true'
+			fi
 			if [ "${local}" == 'true' ]; then
-				local has_script=`test -f "${real_cmd_dir}/${cmd}.sh" && echo true`
-				if [ "${has_script}" == 'true' ]; then
-					if [ -z "${cmd_args+x}" ]; then
-						bash "${real_cmd_dir}/${cmd}.sh" "${host}"
-					else
-						bash "${real_cmd_dir}/${cmd}.sh" "${host}" "${cmd_args[@]}"
-					fi
-				elif [ ! -f "${real_cmd_dir}/${cmd}.sh.summary" ]; then
-					echo "script not found: ${real_cmd_dir}/${cmd}.sh" >&2
-					return 1
+				if [ -z "${cmd_args+x}" ]; then
+					bash "${script}" "${host}"
+				else
+					bash "${script}" "${host}" "${cmd_args[@]}"
 				fi
 			else
-				local has_script=`ssh_exe "${host}" "test -f \"${real_cmd_dir}/${cmd}.sh\" && echo true"`
-				if [ "${has_script}" == 'true' ]; then
-					if [ -z "${cmd_args+x}" ]; then
-						call_remote_func "${host}" "${remote_env}" script_exe "${real_cmd_dir}/${cmd}.sh" "${host}"
-					else
-						call_remote_func "${host}" "${remote_env}" script_exe "${real_cmd_dir}/${cmd}.sh" \
-							"${host}" "${cmd_args[@]}"
-					fi
-				elif [ ! -f "${real_cmd_dir}/${cmd}.sh.summary" ]; then
-					echo "script not found: ${host}:${real_cmd_dir}/${cmd}.sh" >&2
-					return 1
+				if [ -z "${cmd_args+x}" ]; then
+					call_remote_func "${host}" "${remote_env}" script_exe "${script}" "${host}"
+				else
+					call_remote_func "${host}" "${remote_env}" script_exe "${script}" "${host}" "${cmd_args[@]}"
 				fi
 			fi
 		done
-		# summary always run on local mode
-		local summary="${real_cmd_dir}/${cmd}.sh.summary"
-		if [ -f "${summary}" ]; then
+
+		if [ ! -z "${summary}" ]; then
 			if [ -z "${cmd_args+x}" ]; then
 				bash "${summary}" "${ti_file}" "${ti_args}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${hosts}"
 			else

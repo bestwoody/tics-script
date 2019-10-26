@@ -4,5 +4,5 @@ here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
 source "${here}/_env.sh"
 auto_error_handle
 
-source "${here}/run.sh"
+source "${here}/_run.sh"
 cmd_tpch_run_query "${integrated}/resource/tpch/mysql/queries_tiflash_hint" "${@}"

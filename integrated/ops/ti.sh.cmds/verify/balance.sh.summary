@@ -28,5 +28,5 @@ if [ "${selraw}" == 'true' ] || [ "${selraw}" == 'raw' ] || [ "${selraw}" == 'se
 	select='selraw'
 fi
 
-"${integrated}/ops/ti.sh" -k "${ti_args}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -h "${cmd_hosts}" "${ti_file}" \
+"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" -m "${cmd_mod_names}" -i "${cmd_indexes}" "${ti_file}" \
 	'ch' "${select} count(1) from ${table}" 'default' 'TabSeparated' | sort -rnk 1

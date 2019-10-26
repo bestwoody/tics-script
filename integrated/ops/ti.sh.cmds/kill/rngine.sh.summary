@@ -13,5 +13,5 @@ mods="${6}"
 
 index=`random_mod "${mods}" 'rngine'`
 if [ ! -z "${index}" ]; then
-	"${integrated}/ops/ti.sh" -m 'rngine' -i "${index}" -k "${ti_args}" "${ti_file}" 'fstop'
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'rngine' -i "${index}" -k "${ti_args}" "${ti_file}" 'fstop'
 fi

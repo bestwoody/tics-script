@@ -31,13 +31,30 @@ function ti_file_cmd_list()
 			local name=`basename "${f}" .help`
 			local has_sum_ext=`echo "${name}" | { grep "summary$" || test $? = 1; }`
 			local name=`basename "${name}" .summary`
+			local has_byhost_ext=`echo "${name}" | { grep "byhost$" || test $? = 1; }`
+			local name=`basename "${name}" .byhost`
+			local has_local_ext=`echo "${name}" | { grep "local$" || test $? = 1; }`
+			local name=`basename "${name}" .local`
 			local name=`basename "${name}" .sh`
-			if [ -z "${has_sum_ext}" ]; then
-				echo "${parent}${name}"
-			else
-				echo "${parent}${name} (summary cmd)"
+
+			local cmd_type=''
+			if [ ! -z "${has_sum_ext}" ]; then
+				local cmd_type="cmd type: summary"
+			elif [ ! -z "${has_byhost_ext}" ]; then
+				if [ ! -z "${has_local_ext}" ]; then
+					local cmd_type="cmd type: byhost, local"
+				else
+					local cmd_type="cmd type: byhost"
+				fi
+			elif [ ! -z "${has_local_ext}" ]; then
+				local cmd_type="cmd type: local"
 			fi
+
+			echo "${parent}${name}"
 			cat "${dir}/${f}" | awk '{print "    "$0}'
+			if [ ! -z "${cmd_type}" ]; then
+				echo "    ${cmd_type}"
+			fi
 			continue
 		fi
 		if [ -d "${dir}/${f}" ] && [ "${f}" != 'byhost' ]; then
@@ -54,12 +71,10 @@ function ti_file_cmd_default_help()
 {
 	echo "ti.sh help [matching-string]"
 	echo "    - list global cmds"
+	echo "ti.sh [flags] my.ti help [matching-string]"
+	echo "    - list the cmds can be used on the cluster defined by my.ti"
 	echo "ti.sh flags"
 	echo "    - detail usage of flags"
-	echo "ti.sh [flags] my.ti help [matching-string]"
-	echo "    - list cmds, the cmds list would be different under different flags"
-	echo "    - eg: ti.sh -l my.ti help"
-	echo "    - eg: ti.sh -h my.ti help"
 	echo "ti.sh example"
 	echo "    - shows a simple example about how to use this tool"
 }
@@ -67,14 +82,16 @@ export -f ti_file_cmd_default_help
 
 function ti_file_global_cmd_flags()
 {
-	echo 'usage: ops/ti.sh [mods_selector] [run_mode] ti_file_path cmd [args]'
+	echo 'usage: ops/ti.sh [mods_selector] [conf_flags] ti_file_path cmd [args]'
 	echo
 	echo 'example: ops/ti.sh my.ti run'
 	echo '    cmd:'
 	echo '        could be one of run|stop|fstop|status|burn|...'
 	echo '        (`up` and `down` are aliases of `run` and `stop`)'
-	echo '        and could be one of `{integrated}/ops/ti.sh.cmds/local|remote/<command>.sh`'
-	echo '        (could be one of `{integrated}/ops/ti.sh.cmds/local|remote/byhost/<command>.sh` if `-b`)'
+	echo '        and could be one script of `{integrated}/ops/ti.sh.cmds/<command>.sh[.summary][.local][.byhost]`'
+	echo '        the ext name `.byhost` means execute script on each host(node), instead of on each module.'
+	echo '        the ext name `.local` means execute script on current host, instead of on remote host.'
+	echo '        the ext name `.summary` means only execute script once on current host, instead of once of each module/host.'
 	echo '    args:'
 	echo '        the args pass to the command script.'
 	echo '        format `cmd1:cmd2:cmd3` can be used to execute commands sequently, if all args are empty.'
@@ -92,17 +109,6 @@ function ti_file_global_cmd_flags()
 	echo '        specify the module index, format: `1,4,3`.'
 	echo '        eg, 3 tikvs in a cluster, then we have tikv[0], tikv[1], tikv[2].'
 	echo '        if this arg is not provided, it means all.'
-	echo
-	echo 'the mode flags below decide where and how to execute the command.'
-	echo 'example: ops/ti.sh -b -l my.ti top'
-	echo '    -b:'
-	echo '        execute command on each host(node).'
-	echo '        if this arg is not provided, execute command on each module.'
-	echo '    -l:'
-	echo '        execute command on local(of master) mode instead of ssh executing.'
-	echo '        use `{integrated}/ops/local/ti.sh.cmds` as command dir instead of `{integrated}/ops/remote/ti.sh.cmds`'
-	echo 'specially, some commands are run on `summary` mode, it only execute on local mode, and only execute once,'
-	echo '    even there are more than one host and more than one module in the cluster'
 	echo
 	echo 'the configuring flags below are rarely used.'
 	echo 'example: ops/ti.sh -c /data/my_templ_dir -s /data/my_cmd_dir -t /tmp/my_cache_dir -k foo=bar my.ti status'
@@ -179,8 +185,6 @@ function cmd_ti()
 	local mods=""
 	local hosts=""
 	local ti_args=""
-	local byhost="false"
-	local local="false"
 	local indexes=""
 
 	while getopts ':k:c:m:s:h:i:t:bl' OPT; do
@@ -199,10 +203,6 @@ function cmd_ti()
 				local indexes="${OPTARG}";;
 			k)
 				local ti_args="${OPTARG}";;
-			b)
-				local byhost="true";;
-			l)
-				local local="true";;
 			?)
 				echo '[func cmd_ti] illegal option(s)' >&2
 				echo '' >&2
@@ -253,18 +253,22 @@ function cmd_ti()
 				echo "------------"
 				local cmd_and_args=(${cmd})
 				if [ "${#cmd_and_args[@]}" == '1' ]; then
-					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}"
+					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
+						"${mods}" "${hosts}" "${indexes}" "${cache_dir}"
 				else
 					local cmd="${cmd_and_args[0]}"
 					local cmd_args=${cmd_and_args[@]:1}
-					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}" ${cmd_args[@]}
+					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
+						"${mods}" "${hosts}" "${indexes}" "${cache_dir}" ${cmd_args[@]}
 				fi
 			done
 		else
-			ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}"
+			ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
+				"${mods}" "${hosts}" "${indexes}" "${cache_dir}"
 		fi
 	else
-		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" "${mods}" "${hosts}" "${indexes}" "${byhost}" "${local}" "${cache_dir}" "${cmd_args[@]}"
+		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
+			"${mods}" "${hosts}" "${indexes}" "${cache_dir}" "${cmd_args[@]}"
 	fi
 }
 export -f cmd_ti
