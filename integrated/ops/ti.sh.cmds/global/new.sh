@@ -5,6 +5,7 @@ shift 1
 
 here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
 source "${here}/_env.sh"
+cmd_args=("${@}")
 auto_error_handle
 
 if [ -z "${path}" ]; then
@@ -18,6 +19,10 @@ if [ "${ext}" != 'ti' ]; then
 	exit 1
 fi
 
-python "${here}"/new.py "${@}" > "${path}"
+if [ -z "${cmd_args+x}" ]; then
+	python "${here}"/new.py > "${path}"
+else
+	python "${here}"/new.py "${cmd_args[@]}" > "${path}"
+fi
 
 echo "${path} created"
