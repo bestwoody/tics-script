@@ -1,2 +1,2 @@
-shows table rows on each tiflash storage node
+verify table rows over tidb: sum(tikv) vs sum(tiflash)
 usage: <cmd> [database.]table
