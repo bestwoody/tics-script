@@ -1,0 +1,31 @@
+#!/bin/bash
+
+ti_file="${1}"
+ti_args="${2}"
+cmd_mod_names="${3}"
+cmd_hosts="${4}"
+cmd_indexes="${5}"
+mods="${6}"
+shift 6
+
+cmd="${1}"
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+
+if [ -z "${cmd}" ]; then
+	echo "[cmd loop] usage: ti.sh [flags] ti_file_path loop cmd [args]"
+	exit 1
+fi
+
+for ((; 0 == 0; )); do
+	if [ -z "`echo ${cmd} | grep ':'`" ]; then
+		echo "------------"
+		echo "${cmd}"
+		echo "------------"
+	fi
+	res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}" 1>&2 && echo 'true'`
+	if [ "${res}" == 'true' ]; then
+		break
+	fi
+done
