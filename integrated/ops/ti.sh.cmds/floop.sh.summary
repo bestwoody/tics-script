@@ -20,8 +20,8 @@ fi
 
 for ((; 0 == 0; )); do
 	if [ -z "`echo ${cmd} | grep ':'`" ]; then
-		echo "------------"
-		echo "${cmd}"
+		echo "============"
+		echo "floop> ${@}"
 		echo "------------"
 	fi
 	for ((; 0 == 0; )); do

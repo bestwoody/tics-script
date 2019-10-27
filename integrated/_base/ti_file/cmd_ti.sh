@@ -248,16 +248,18 @@ function cmd_ti()
 		if [ ! -z "`echo ${cmd} | grep ':'`" ]; then
 			local cmds=`echo "${cmd}" | awk -F ':' '{for ( i=1; i<=NF; i++ ) print $i}'`
 			echo "${cmds}" | while read cmd; do
-				echo "------------"
-				echo "${cmd}"
-				echo "------------"
+				echo "============"
 				local cmd_and_args=(${cmd})
 				if [ "${#cmd_and_args[@]}" == '1' ]; then
+					echo "${cmd}"
+					echo "------------"
 					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
 						"${mods}" "${hosts}" "${indexes}" "${cache_dir}"
 				else
 					local cmd="${cmd_and_args[0]}"
 					local cmd_args=${cmd_and_args[@]:1}
+					echo "${cmd} ${cmd_args}"
+					echo "------------"
 					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
 						"${mods}" "${hosts}" "${indexes}" "${cache_dir}" ${cmd_args[@]}
 				fi

@@ -75,7 +75,7 @@ def render(mods):
             if name == 'spark_w':
                 head += ' cores=1 mem=1G'
             if nodes != 1:
-                tail += ' host=h' + str(i % nodes)
+                tail += ' host={h' + str(i % nodes) + '}'
             print head + tail
 
     out('pd')

@@ -21,8 +21,8 @@ fi
 
 for ((; 0 == 0; )); do
 	if [ -z "`echo ${cmd} | grep ':'`" ]; then
-		echo "------------"
-		echo "${cmd}"
+		echo "============"
+		echo "loop> ${@}"
 		echo "------------"
 	fi
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
