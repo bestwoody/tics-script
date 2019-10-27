@@ -24,6 +24,7 @@ for ((; 0 == 0; )); do
 		echo "${cmd}"
 		echo "------------"
 	fi
+	set +e
 	res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}" 1>&2 && echo 'true'`
 	if [ "${res}" == 'true' ]; then
 		break

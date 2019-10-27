@@ -25,6 +25,7 @@ for ((; 0 == 0; )); do
 		echo "------------"
 	fi
 	for ((; 0 == 0; )); do
+		set +e
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
 		break
 	done
