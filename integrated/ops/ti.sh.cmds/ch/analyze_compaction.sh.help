@@ -1,0 +1,3 @@
+DO NOT run this on a very busy tiflash module
+analyze compaction status of tiflash storage
+usage: <cmd> database table
