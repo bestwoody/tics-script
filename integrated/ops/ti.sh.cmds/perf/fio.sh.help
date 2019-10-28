@@ -1,0 +1,2 @@
+execute fio on each module
+usage: <cmd> [fio_args_without_target_file_path]

@@ -1,0 +1,2 @@
+drop page cache on each node
+usage: <cmd> (no args)

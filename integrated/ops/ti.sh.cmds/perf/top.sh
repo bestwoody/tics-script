@@ -21,7 +21,7 @@ function cmd_ti_top()
 	local indent=''
 	if [ "${show_title}" == 'true' ]; then
 		echo "=> ${mod_name} #${index} ${dir}"
-		local indent='    '
+		local indent='   '
 	fi
 
 	local info_file="${dir}/proc.info"

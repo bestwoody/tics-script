@@ -1,0 +1,2 @@
+show the result of bash command 'top' of each module process
+usage: <cmd> (no args)

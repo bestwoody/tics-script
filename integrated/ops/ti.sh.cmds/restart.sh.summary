@@ -13,17 +13,9 @@ here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
 source "${here}/_env.sh"
 auto_error_handle
 
-stop_cmd='stop'
-if [ "${fast}" == 'fast' ] || [ "${fast}" == 'true' ]; then
-	stop_cmd='fstop'
+stop_cmd='fstop'
+if [ ! -z "${fast}" ] && [ "${fast}" != 'fast' ] && [ "${fast}" != 'true' ]; then
+	stop_cmd='stop'
 fi
 
-echo "------------"
-echo "stop cluster"
-echo "------------"
-"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${stop_cmd}"
-
-echo "------------"
-echo "run cluster"
-echo "------------"
-"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" run
+"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${stop_cmd}:run"

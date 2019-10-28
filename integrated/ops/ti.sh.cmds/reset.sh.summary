@@ -11,12 +11,4 @@ here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
 source "${here}/_env.sh"
 auto_error_handle
 
-echo "------------"
-echo "burn cluster"
-echo "------------"
-"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" burn doit
-
-echo "------------"
-echo "run cluster"
-echo "------------"
-"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" run
+"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "burn doit:run"

@@ -1,2 +1,2 @@
-burn => run
+alias of 'burn doit:run'
 usage: <cmd> (no args)
