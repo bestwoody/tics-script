@@ -71,4 +71,5 @@ function ti_cmd_tpch_load_no_raft
 	done
 }
 
+set -euo pipefail
 ti_cmd_tpch_load_no_raft "${@}"

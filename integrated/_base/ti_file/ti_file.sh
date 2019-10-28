@@ -118,7 +118,7 @@ function ti_file_exe()
 	fi
 
 	local has_func=`func_exists "ti_file_cmd_${cmd}"`
-	if [ -z "${script}" ] && [ -z "${summary}" ] && [ "${has_func}" != 'true' ] && [ "${cmd}" != 'run' ]; then
+	if [ -z "${script}" ] && [ -z "${summary}" ] && [ "${has_func}" != 'true' ] && [ "${cmd}" != 'run' ] && [ "${cmd}" != 'dry' ]; then
 		echo "none of this scripts can be found:" >&2
 		echo "  ${cmd_dir}/${cmd}.sh" >&2
 		echo "  ${cmd_dir}/${cmd}.sh.summary" >&2
@@ -157,7 +157,9 @@ function ti_file_exe()
 				local rendered="${ti_file}.sh"
 			else
 				local base_name=`basename "${ti_file}"`
-				local rendered="/tmp/ti_file_rendered.${base_name}.`date +%s`.${RANDOM}.sh"
+				local render_dir="/tmp/ti/cache/run"
+				mkdir -p "${render_dir}"
+				local rendered="${render_dir}/${base_name}.`date +%s`.${RANDOM}.sh"
 			fi
 			python "${here}/ti_file.py" 'render' "${ti_file}" "${integrated}" "${conf_templ_dir}" \
 				"${cache_dir}" "${mod_names}" "${cmd_hosts}" "${indexes}" "${ti_args}" > "${rendered}"

@@ -118,10 +118,13 @@ function cp_bin_to_dir_from_urls()
 	fi
 
 	local download_name="`basename ${url}`"
-	local download_path="/tmp/ti_download_cache.${download_name}.`date +%s`.${RANDOM}"
+	local download_dir="/tmp/ti/cache/download"
+	mkdir -p "${download_dir}"
+	local download_path="${download_dir}/${download_name}.`date +%s`.${RANDOM}"
 
 	local error_handle="$-"
 	set +e
+	#wget -nv -nd --show-progress --progress=bar:force:noscroll -P "${cache_dir}" "${url}" -O "${download_path}" 2>&1
 	wget --quiet -nd -P "${cache_dir}" "${url}" -O "${download_path}"
 	local code="$?"
 	restore_error_handle_flags "${error_handle}"

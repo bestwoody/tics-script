@@ -100,4 +100,5 @@ function ti_cmd_tpch_load
 	done
 }
 
+set -euo pipefail
 ti_cmd_tpch_load "${@}"
