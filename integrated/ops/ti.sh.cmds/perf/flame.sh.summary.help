@@ -1,0 +1,2 @@
+create module's flame graph
+usage: <cmd> [sampling_sec=20] [graph_result_dir_path="{my.ti}.flame/"]

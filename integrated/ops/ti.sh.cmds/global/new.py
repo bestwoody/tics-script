@@ -94,8 +94,6 @@ def new(argv):
         'tidb': 1,
         'tiflash': 1,
         'spark': 0,
-        'spark_m': 0,
-        'spark_w': 0,
     }
 
     # legacy compatibility
@@ -112,6 +110,10 @@ def new(argv):
     if mods['spark'] != 0:
         mods['spark_m'] = 1
         mods['spark_w'] = mods['spark']
+    else:
+        mods['spark_m'] = 0
+        mods['spark_w'] = 0
+    del mods['spark']
 
     render(mods)
 
