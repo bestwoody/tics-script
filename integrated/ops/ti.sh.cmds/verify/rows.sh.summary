@@ -21,7 +21,9 @@ fi
 
 tiflash_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" "${ti_file}" \
 	'ch' "select count(1) from ${table}" 'default' 'TabSeparated' | awk '{sum+=$1}END{print sum}'`
-tikv_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i 0 -k "${ti_args}" "${ti_file}" \
+
+tidb_idx=`from_mods_random_mod "${mods}" 'tidb'`
+tikv_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i "${tidb_idx}" -k "${ti_args}" "${ti_file}" \
 	'mysql' "select count(1) from ${table}" | grep -v 'count'`
 
 if [ -z "${tiflash_rows}" ]; then

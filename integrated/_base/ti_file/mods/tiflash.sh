@@ -181,8 +181,9 @@ function tiflash_run()
 		echo "[func tiflash_run] pid not found, failed" >&2
 		return 1
 	fi
+
 	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
 	cluster_manager_run "${tiflash_dir}"
+	echo "${pid}"
 }
 export -f tiflash_run

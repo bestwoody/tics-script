@@ -6,11 +6,11 @@ function cmd_mod_flame_linux()
 	local mod="${2}"
 	local result_dir="${3}"
 
-	local index=`echo "${mod}" | awk -F '\t' '{print $1}'`
-	local name=`echo "${mod}" | awk -F '\t' '{print $2}'`
-	local dir=`echo "${mod}" | awk -F '\t' '{print $3}'`
-	local conf=`echo "${mod}" | awk -F '\t' '{print $4}'`
-	local host=`echo "${mod}" | awk -F '\t' '{print $5}'`
+	local index=`from_mod_get_index "${mod}"`
+	local name=`from_mod_get_name "${mod}"`
+	local dir=`from_mod_get_dir "${mod}"`
+	local conf=`from_mod_get_conf "${mod}"`
+	local host=`from_mod_get_host "${mod}"`
 
 	local local_mode=`is_local_host "${host}"`
 	local gen_dir="${dir}/tmp/flame"
@@ -32,6 +32,7 @@ function cmd_mod_flame_linux()
 			return
 		fi
 		mkdir -p "${gen_dir}"
+		rm -f "${data_file}"
 		local record_res=`perf record -F 400 -p "${pid}" -g -o "${data_file}" -- sleep "${sampling_sec}" 2>&1`
 		if [ ! -f "${data_file}" ]; then
 			echo "   error: perf record failed: ${record_res}"
@@ -45,7 +46,7 @@ function cmd_mod_flame_linux()
 			echo "   error: fetch pid from ${host}:${dir}/proc.info failed"
 			return
 		fi
-		local record_res=`ssh_exe "${host}" "mkdir -p "${gen_dir}" && perf record -F 200 -p \"${pid}\" -g -o \"${data_file}\" -- sleep \"${sampling_sec}\" 2>&1"`
+		local record_res=`ssh_exe "${host}" "mkdir -p \"${gen_dir}\" && rm -f \"${data_file}\" && perf record -F 200 -p \"${pid}\" -g -o \"${data_file}\" -- sleep \"${sampling_sec}\" 2>&1"`
 		local has_data=`ssh_exe "${host}" "test -f \"${data_file}\" && echo true"`
 		if [ "${has_data}" != 'true' ]; then
 			echo "   error: perf record failed: ${record_res} on ${host}"

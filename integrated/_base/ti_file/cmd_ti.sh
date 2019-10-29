@@ -21,7 +21,7 @@ function ti_file_cmd_list()
 			continue
 		fi
 		if [ ! -z "${matching}" ]; then
-			local matched=`echo "${f}" | grep "${matching}"`
+			local matched=`echo "${f}" | { grep "${matching}" || test $? = 1; }`
 			if [ -z "${matched}" ]; then
 				continue
 			fi
@@ -245,7 +245,7 @@ function cmd_ti()
 	fi
 
 	if [ -z "${cmd_args+x}" ]; then
-		if [ ! -z "`echo ${cmd} | grep ':'`" ]; then
+		if [ ! -z "`echo ${cmd} | { grep ':' || test $? = 1; }`" ]; then
 			local cmds=`echo "${cmd}" | awk -F ':' '{for ( i=1; i<=NF; i++ ) print $i}'`
 			echo "${cmds}" | while read cmd; do
 				echo "============"
@@ -274,25 +274,3 @@ function cmd_ti()
 	fi
 }
 export -f cmd_ti
-
-function random_mod()
-{
-	if [ -z "${2+x}" ]; then
-		echo "[func rando_mod] usage: <func> mods_info_lines candidate_type" >&2
-		return 1
-	fi
-
-	local mods="${1}"
-	local type="${2}"
-
-	local instances=`echo "${mods}" | grep $'\t'"${type}"`
-	if [ -z "${instances}" ]; then
-		return
-	fi
-	local count=`echo "${instances}" | wc -l | awk '{print $1}'`
-
-	local index="${RANDOM}"
-	local index_base_1=$((index % count + 1))
-	echo "${instances}" | head -n "${index_base_1}" | tail -n 1 | awk '{print $1}'
-}
-export -f random_mod

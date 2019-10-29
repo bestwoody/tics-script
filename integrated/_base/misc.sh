@@ -127,19 +127,3 @@ function terminal_width()
 	stty size | awk '{print $2}'
 }
 export -f terminal_width
-
-function is_local_host()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func is_local_host] usage: <func> host"
-		return 1
-	fi
-
-	local host="${1}"
-	if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ]; then
-		echo 'true'
-	else
-		echo 'false'
-	fi
-}
-export -f is_local_host

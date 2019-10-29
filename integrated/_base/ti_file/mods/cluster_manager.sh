@@ -10,7 +10,7 @@ function cluster_manager_run()
 	local tiflash_dir="${1}"
 
 	if [ -z "${2+x}" ]; then
-		local timeout="180"
+		local timeout='180'
 	else
 		local timeout="${2}"
 	fi
@@ -50,11 +50,11 @@ function cluster_manager_run()
 		return 1
 	fi
 
-	local http_port_ready="false"
+	local http_port_ready='false'
 	for ((i=0; i<${timeout}; i++)); do
 		nc -z "${listen_host}" "${http_port}" 1>/dev/null 2>&1
-		if [ "$?" == "0" ]; then
-			local http_port_ready="true"
+		if [ "${?}" == '0' ]; then
+			local http_port_ready='true'
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
@@ -63,7 +63,7 @@ function cluster_manager_run()
 			sleep 1
 		fi
 	done
-	if [ "${http_port_ready}" == "false" ]; then
+	if [ "${http_port_ready}" == 'false' ]; then
 		echo "[func cluster_manager_run] tiflash http port ${listen_host}:${http_port} not ready" >&2
 		return 1
 	fi

@@ -1,2 +1,0 @@
-load tpch data to tidb using mysql client
-usage: <cmd> scale table(all|lineitem|...) [data_dir={integrated}/data/tpch] [threads=4] [db_suffix=""] [decimal_or_double=decimal|double]

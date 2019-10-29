@@ -58,6 +58,18 @@ function verify_raft_sync()
 		return 1
 	fi
 
+	local enable_sync_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		-k "${ti_args}" "${ti_file}" 'enable_sync' 'test' 'hello' 2>&1 | grep 'syncing'`
+	if [ ! -z "${enable_sync_ok}" ]; then
+		echo "OK     keep syncing test.hello to tiflash"
+	else
+		echo "FAILED set syncing failed: ${enable_sync_ok}"
+		return 1
+	fi
+
+	# TODO: remove this
+	sleep 15
+
 	local sql="select col from test.hello"
 	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
 		'ch' "${sql}" '' 'TabSeparated' --schema_version 10000000 2>&1`

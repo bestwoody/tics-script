@@ -38,21 +38,23 @@ function cmd_tpch_run_query()
 		return
 	fi
 
-	local tidb=`random_mod "${mods}" 'tidb'`
+	local tidb=`from_mods_random_mod "${mods}" 'tidb'`
 	if [ -z "${tidb}" ]; then
-		echo "[cmd tpch/ch] tidb not found in cluster" >&2
+		echo "[cmd tpch/run] tidb not found in cluster" >&2
 		return 1
 	fi
 
 	if [ -z "${db}" ] || [ "${db}" == 'auto' ]; then
 		local db=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'tidb' -i "${tidb}" -k "${ti_args}" "${ti_file}" 'mysql' "show databases" | grep 'tpch'`
 		if [ -z "${db}" ]; then
-			echo "[cmd tpch/ch] database with 'tpch' prefix not found" >&2
+			echo "[cmd tpch/run] database with 'tpch' prefix not found" >&2
 			return 1
 		fi
 		local db_cnt=`echo "${db}" | wc -l | awk '{print $1}'`
 		if [ "${db_cnt}" != '1' ]; then
-			echo "[cmd tpch/ch] more than one database with 'tpch' prefix in cluster, can't auto select it" >&2
+			echo "[cmd tpch/run] more than one database with 'tpch' prefix in cluster, need to specify in args:" >&2
+			echo "${db}" | awk '{print "  "$0}' >&2
+			echo "[cmd tpch/run] usage: <cmd> [query_index=all] [database=auto] [head_lines_of_result=5]" >&2
 			return 1
 		fi
 	fi

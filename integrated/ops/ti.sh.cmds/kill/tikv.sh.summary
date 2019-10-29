@@ -11,7 +11,7 @@ cmd_hosts="${4}"
 cmd_indexes="${5}"
 mods="${6}"
 
-index=`random_mod "${mods}" 'tikv'`
+index=`from_mods_random_mod "${mods}" 'tikv'`
 if [ ! -z "${index}" ]; then
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'tikv' -i "${index}" -k "${ti_args}" "${ti_file}" 'fstop'
 fi

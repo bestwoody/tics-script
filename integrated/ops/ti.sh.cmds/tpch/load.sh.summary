@@ -1,0 +1,118 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+function ti_cmd_tpch_load()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+
+	shift 6
+
+	local help="[cmd tpch/load] usage: <cmd> scale table(all|lineitem|..) sync_to_tiflash(true|false) [threads=auto] [db_suffix=''] [float_type=decimal|double] [data_dir={integrated}/data/tpch]"
+	if [ -z "${2+x}" ]; then
+		echo "${help}" >&2
+		return 1
+	fi
+
+	local scale="${1}"
+	local table="${2}"
+
+	local sync_to_tiflash='true'
+	if [ ! -z "${3+x}" ] && [ ! -z "${3}" ]; then
+		local sync_to_tiflash="${3}"
+	fi
+
+	local tidbs=`from_mods_by_type "${mods}" 'tidb'`
+	if [ -z "${tidbs}" ]; then
+		echo "[cmd tpch/load] not tidb module found"
+		return 1
+	fi
+
+	if [ ! -z "${4+x}" ] && [ ! -z "${4}" ]; then
+		local blocks="${4}"
+	else
+		local blocks='4'
+	fi
+
+	if [ ! -z "${5+x}" ] && [ ! -z "${5}" ]; then
+		local db_suffix="_${5}"
+	else
+		local db_suffix=''
+	fi
+
+	if [ ! -z "${6+x}" ] && [ ! -z "${6}" ]; then
+		local float_type="${6}"
+	else
+		local float_type="decimal"
+	fi
+
+	if [ ! -z "${7+x}" ] && [ ! -z "${7}" ]; then
+		local data_dir="${7}"
+	else
+		local data_dir="${integrated}/data/tpch"
+	fi
+
+	if [ "${float_type}" == "decimal" ]; then
+		local schema_dir="${integrated}/resource/tpch/mysql/schema"
+	elif [ "${float_type}" == "double" ]; then
+		local ori_schema_dir="${integrated}/resource/tpch/mysql/schema"
+		local schema_dir="${ori_schema_dir}_double"
+		# Replace fields from `DECIMAL(..,..)` to `DOUBLE`
+		trans_schema_fields_decimal_to_double "${ori_schema_dir}" "${schema_dir}"
+	else
+		echo "[cmd tpch/load] unknown float type: ${float_type}, should be 'decimal' or 'double'" >&2
+		return 1
+	fi
+
+	local db=`echo "tpch_${scale}${db_suffix}" | tr '.' '_'`
+	local dbgen_bin_dir="/tmp/ti/master/bins"
+
+	if [ "${table}" != 'all' ]; then
+		local tables=("${table}")
+	else
+		local tables=(customer nation orders part region supplier partsupp lineitem)
+	fi
+
+	local conf_file="${integrated}/conf/tools.kv"
+	local dbgen_url=`cross_platform_get_value "${conf_file}" "dbgen_url"`
+	local dists_dss_url=`cross_platform_get_value "${conf_file}" "dists_dss_url"`
+
+	for table in ${tables[@]}; do
+		local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+		local host=`from_mod_get_host "${mod}"`
+		local port=`from_mod_get_tidb_port "${mod}"`
+		if [ -z "${mod}" ] || [ -z "${host}" ] || [ -z "${port}" ]; then
+			echo "[cmd tpch/load] getting tidb address from random instance failed" >&2
+			return 1
+		fi
+
+		local start_time=`date +%s`
+		echo "=> [${host}] creating ${db}.${table}"
+		create_tpch_table_to_mysql "${host}" "${port}" "${schema_dir}" "${db}" "${table}"
+
+		echo "=> [${host}] loading ${db}.${table}"
+		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
+		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
+		echo '   generated'
+
+		if [ "${sync_to_tiflash}" == 'true' ]; then
+			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+				"${ti_file}" 'enable_sync' "${db}" "${table}" | awk '{print "   "$0}'
+		fi
+
+		load_tpch_data_to_mysql "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
+
+		local finish_time=`date +%s`
+		local duration=$((finish_time-start_time))
+		echo "   loaded in ${duration}s"
+	done
+}
+
+ti_cmd_tpch_load "${@}"

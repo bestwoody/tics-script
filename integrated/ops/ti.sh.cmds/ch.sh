@@ -15,7 +15,7 @@ function cmd_ti_ch()
 	fi
 
 	if [ -z "${1+x}" ]; then
-		echo '[cmd ch] <cmd> query-str-or-file-path [database] [print-format=(tab|title|pretty)] [ch-args]' >&2
+		echo '[cmd ch] <cmd> query_str_or_file_path [database] [print_format=(tab|title|pretty)] [ch_args]' >&2
 		return
 	fi
 

@@ -39,3 +39,20 @@ function print_ip_or_host()
 	fi
 }
 export -f print_ip_or_host
+
+function is_local_host()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func is_local_host] usage: <func> host"
+		return 1
+	fi
+
+	local host="${1}"
+	local local_host="`must_print_ip`"
+	if [ -z "${host}" ] || [ "${host}" == '127.0.0.1' ] || [ "${host}" == 'localhost' ] || [ "${host}" == "${local_host}" ]; then
+		echo 'true'
+	else
+		echo 'false'
+	fi
+}
+export -f is_local_host

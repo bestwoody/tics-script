@@ -64,7 +64,7 @@ export -f create_tpch_table_to_mysql
 function load_tpch_data_to_mysql()
 {
 	if [ -z "${6+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ] || [ -z "${6}" ]; then
-		echo "[func load_tpch_data_to_mysql] cmd mysql_host mysql_port schema_dir data_dir db table" >&2
+		echo "[func load_tpch_data_to_mysql] cmd mysql_host mysql_port schema_dir data_dir db table [block_index]" >&2
 		return 1
 	fi
 
@@ -75,6 +75,11 @@ function load_tpch_data_to_mysql()
 	local db="${5}"
 	local table="${6}"
 
+	local block=''
+	if [ ! -z "${7+x}" ] && [ ! -z "${7}" ]; then
+		local block="${7}"
+	fi
+
 	local blocks=`ls "${data_dir}" | { grep "${table}.tbl" || test $? = 1; } | wc -l`
 
 	if [ -f "${data_dir}/${table}.tbl" ] && [ -f "${data_dir}/${table}.tbl.1" ]; then
@@ -83,26 +88,31 @@ function load_tpch_data_to_mysql()
 	fi
 
 	if [ -f "${data_dir}/${table}.tbl" ]; then
-		local data_file="${data_dir}/${table}.tbl"
-		mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" --local-infile=1 \
-			-e "load data local infile '${data_file}' into table ${table} fields terminated by '|' lines terminated by '|\n';"
+		if [ -z "${block}" ] || [ "${block}" == '0' ]; then
+			local data_file="${data_dir}/${table}.tbl"
+			mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" --local-infile=1 \
+				-e "load data local infile '${data_file}' into table ${table} fields terminated by '|' lines terminated by '|\n';"
+		fi
 	else
 		for (( i = 1; i < ${blocks} + 1; ++i)); do
+			if [ ! -z "${block}" ] && [ "${block}" != "${i}" ]; then
+				continue
+			fi
 			local data_file="${data_dir}/${table}.tbl.${i}"
 			if [ ! -f "${data_file}" ]; then
 				echo "[func load_tpch_data_to_mysql] ${data_file} not exists" >&2
 				return 1
 			fi
-		done
-		for ((i=1; i<${blocks}+1; ++i)); do
-			local data_file="${data_dir}/${table}.tbl.${i}"
 			mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" --local-infile=1 \
 				-e "load data local infile '${data_file}' into table ${table} fields terminated by '|' lines terminated by '|\n';" &
 		done
 		wait
 	fi
 
-	mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" -e "analyze table ${table};"
+	local max_block_idx=$((block - 1))
+	if [ -z "${block}" ] || [ "${max_block_idx}" == "${block}" ]; then
+		mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" -e "analyze table ${table};"
+	fi
 }
 export -f load_tpch_data_to_mysql
 

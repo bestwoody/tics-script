@@ -42,7 +42,7 @@ function ti_cmd_tpch_load_no_raft
 	fi
 
 	local schema_dir="${integrated}/resource/tpch/ch/schema/${engine}"
-	local dbgen_bin_dir="/tmp/ti/master/bins"
+	local bin_dir="/tmp/ti/master/bins"
 
 	local db=`echo "tpch_${scale}_${engine}_no_raft" | tr '.' '_'`
 
@@ -55,14 +55,14 @@ function ti_cmd_tpch_load_no_raft
 	local file="${integrated}/conf/tools.kv"
 	local dbgen_url=`cross_platform_get_value "${file}" "dbgen_url"`
 	local dists_dss_url=`cross_platform_get_value "${file}" "dists_dss_url"`
-	local ch_bin="${dir}/tiflash"
-	local port=`get_value "${dir}/proc.info" 'tcp_port'`
+	local ch_bin="${bin_dir}/tiflash"
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tcp_port'`
 
 	for table in ${tables[@]}; do
 		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
 		local start_time=`date +%s`
 		echo "=> [$host] loading ${db}.${table} to CH directly"
-		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
+		generate_tpch_data "${dbgen_url}" "${bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
 		echo '   generated'
 		load_tpch_data_to_ch "${ch_bin}" "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
 		local finish_time=`date +%s`

@@ -3,6 +3,7 @@
 import sys
 
 def cal(addr, default_host, default_port, ensure_http = False):
+    default_port = int(default_port)
     addr = addr.strip()
 
     http = 'http://'
@@ -15,17 +16,17 @@ def cal(addr, default_host, default_port, ensure_http = False):
 
     host = kv[0].strip()
     if len(kv) == 1:
-        port = int(default_port)
+        port = default_port
     else:
         port = kv[1].strip()
         if len(port) == 0:
-            port = int(default_port)
+            port = default_port
         elif port[0] == '=':
-            port = int(port[0][1:])
+            port = eval(port[0][1:])
         elif port[0] != '+' and port[0] != '-':
-            port = int(port)
+            port = eval(port)
         else:
-            port = int(port) + int(default_port)
+            port = eval(port) + default_port
     if len(host) == 0:
         host = default_host
 
