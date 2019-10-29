@@ -19,6 +19,9 @@
 # run queries on tikv over tidb
 >> ops/ti.sh my.ti mysql "create table my_table..."
 
+# keep db.table syncing data from tikv to tiflash
+>> ops/ti.sh my.ti sync "db" "table"
+
 # run queries on tiflash over tidb
 >> ops/ti.sh my.ti mysql "select /*+ read_from_storage(tiflash[my_table]) */ from my_table..."
 

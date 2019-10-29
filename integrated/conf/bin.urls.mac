@@ -1,26 +1,30 @@
 # name \t md5sum \t bin_name \t url
 
-# release/support_access_from_flash_offer_dezhu - bfc2830e85c3f10e829f7271ef3e41eb79155cd0
-tidb	2f5ea6171e48f02702bf1431c78e95e1	tidb-server	http://139.219.11.38:8000/oTxTt/tidb-server.tar.gz
+# https://github.com/pingcap/tidb/pull/12453 - a82fcff46b28e189f9754b6eab6be88ccf482529
+tidb	d9abb4c604561998dc2b0d69e53e8a09	tidb-server	http://139.219.11.38:8000/ZHjCC/tidb-server.tar.gz
 
-# master - 6f4bc8cc29f6bdcaac8f4c2b975ef994abfb3fac
-tikv	37807c79a215f4f9cd44fd0a50ee4635	tikv-server	http://139.219.11.38:8000/I3YzK/tikv-server.tar.gz
+# master - a9c108185f79e2fd7dfbfcaad762b9413c99ce8a
+tikv	37807c79a215f4f9cd44fd0a50ee4635	tikv-server	http://139.219.11.38:8000/iKwkB/tikv-server.tar.gz
 
-pd	6b79bd3c126d3eaa26de8da57e122ccb	pd-server	http://139.219.11.38:8000/LmJHu/pd-server.tar.gz
+# https://github.com/disksing/pd/tree/placement - 3e0ed9fad2b779be9a7e386e11ef3a773bb2afb4
+pd	ce0f5de3b507365fc3c7ee275eca0286	pd-server	http://139.219.11.38:8000/D1wSb/pd-server.tar.gz
 
-# rngine-fix - 3bd483792cee075228a9fadae4537ecc77db4e16
-rngine	2d45ea5560fd7f55629f640b8dc8d814	tikv-server-rngine http://139.219.11.38:8000/10JHDF/tikv-server-rngine.tar.gz
+# https://github.com/overvenus/tikv/tree/rngine - 23e556168599f9c02472fd0b9781ef212a62297e
+rngine	364b62434aefe4d21304fb49a88c02a7	tikv-server-rngine http://139.219.11.38:8000/11145q/tikv-server-rngine.tar.gz
 
-# arrow_encode - 87955d1d43fd569dca65912dcf9478d5b7343e10
-tiflash	6d31734a47ed6442c244aa1829ad170b	tiflash	http://139.219.11.38:8000/c8mKt/tiflash.tar.gz
+# master - f111d0a3848e22ce11e0ad372f485451e63f99b3
+tiflash	aed679fb607a143166f152ccc8a64e70	tiflash	http://139.219.11.38:8000/dzwir/tiflash.tar.gz
+
+# https://github.com/pingcap/tiflash/pull/867
+cluster_manager	d8abadf708b2cd6b4d59f5f5accff958	flash_cluster_manager	http://139.219.11.38:8000/aLkgC/flash_cluster_manager.tar.gz
 
 # master - dd35e25c4b47c430f15167e885156760d24c47de
-chspark	e164a816b729eca2034d64ee1f5bf78c	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/4plSo/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
+chspark	e164a816b729eca2034d64ee1f5bf78c	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/PwtIX/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
 
-pd_ctl	483b85506806b835bbfa8b3abc1a38f4	pd-ctl	http://139.219.11.38:8000/TqEKY/pd-ctl.tar.gz
-tikv_ctl	f858021402608024367ea6fd5054e5d7	tikv-ctl	http://139.219.11.38:8000/wF0fP/tikv-ctl.tar.gz
+pd_ctl	2dbb87e4bbea4a68409cfb8debabbbfc	pd-ctl	http://139.219.11.38:8000/VKwpv/pd-ctl.tar.gz
+tikv_ctl	f858021402608024367ea6fd5054e5d7	tikv-ctl	http://139.219.11.38:8000/47bkL/tikv-ctl.tar.gz
 spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
 
 # TODO: fake lib file, remove it later
-tiflash_lib	3be1f808cb19d4df88c0a7cf635ba818	tiflash_lib.tgz	http://139.219.11.38:8000/lXX2z/tiflash_lib.tgz
+tiflash_lib	3be1f808cb19d4df88c0a7cf635ba818	tiflash_lib.tgz	http://139.219.11.38:8000/OjmtK/tiflash_lib.tgz

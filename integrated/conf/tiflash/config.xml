@@ -26,14 +26,18 @@
         <kvstore_path>{tiflash_dir}/kvstore</kvstore_path>
         <pd_addr>{tiflash_pd_addr}</pd_addr>
         <ignore_databases>system,default</ignore_databases>
-        <!-- TODO: conf for backward compatibility, remove in the future -->
-        <service_addr>{tiflash_listen_host}:{tiflash_raft_and_cop_port}</service_addr>
         <learner_key>engine</learner_key>
         <learner_value>tiflash</learner_value>
     </raft>
 
     <flash>
         <service_addr>{tiflash_listen_host}:{tiflash_raft_and_cop_port}</service_addr>
+        <flash_cluster>
+            <master_ttl>60</master_ttl>
+            <refresh_interval>20</refresh_interval>
+            <update_rule_interval>5</update_rule_interval>
+        </flash_cluster>
+        <tidb_status_addr>{tiflash_tidb_addr}</tidb_status_addr>
     </flash>
 
     <!-- Don't exit if ipv6 or ipv4 unavailable, but listen_host with this protocol specified -->

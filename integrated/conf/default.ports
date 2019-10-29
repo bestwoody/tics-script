@@ -12,12 +12,11 @@ tidb_status_port	8500
 
 rngine_port	9000
 
-# TODO: tiflash_raft_and_cop_port must be rngine_port plus 1, this dependency may be removed in the future
-tiflash_raft_and_cop_port	9001
+tiflash_raft_and_cop_port	9500
 
-spark_master_port	9500
-thriftserver_port	10000
-spark_master_webui_port	10500
-spark_worker_webui_port	11000
-jmxremote_port	11500
-jdwp_port	12000
+spark_master_port	10000
+thriftserver_port	10500
+spark_master_webui_port	11000
+spark_worker_webui_port	11500
+jmxremote_port	12000
+jdwp_port	12500

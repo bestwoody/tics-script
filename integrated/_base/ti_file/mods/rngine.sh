@@ -47,6 +47,11 @@ function rngine_run()
 		echo "[func rngine_run] get default tiflash_raft_and_cop_port from ${default_ports} failed" >&2
 		return 1
 	fi
+	local default_tiflash_http_port=`get_value "${default_ports}" 'tiflash_http_port'`
+	if [ -z "${default_tiflash_http_port}" ]; then
+		echo "[func rngine_run] get default tiflash_http_port from ${default_ports} failed" >&2
+		return 1
+	fi
 
 	if [ -z "${tiflash_addr}" ]; then
 		tiflash_addr="`must_print_ip`:${default_tiflash_raft_and_cop_port}"
@@ -59,6 +64,7 @@ function rngine_run()
 	fi
 
 	local rngine_port=$((${ports_delta} + ${default_rngine_port}))
+	local tiflash_http_port=$((${ports_delta} + ${default_tiflash_http_port}))
 
 	rngine_dir=`abs_path "${rngine_dir}"`
 
@@ -75,6 +81,7 @@ function rngine_run()
 	fi
 
 	local render_str="tiflash_raft_addr=${tiflash_addr}"
+	local render_str="${render_str}#tiflash_http_port=${tiflash_http_port}"
 	render_templ "${conf_templ_dir}/rngine.toml" "${rngine_dir}/rngine.toml" "${render_str}"
 
 	local info="${rngine_dir}/proc.info"

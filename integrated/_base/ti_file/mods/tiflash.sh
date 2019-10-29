@@ -3,7 +3,7 @@
 function tiflash_run()
 {
 	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func tiflash_run] usage: <func> tiflash_dir conf_templ_dir [daemon_mode] [pd_addr] [ports_delta] [listen_host] [cluster_id]" >&2
+		echo "[func tiflash_run] usage: <func> tiflash_dir conf_templ_dir [daemon_mode] [pd_addr] [tidb_addr] [ports_delta] [listen_host] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -23,21 +23,27 @@ function tiflash_run()
 	fi
 
 	if [ -z "${5+x}" ]; then
-		local ports_delta="0"
+		local tidb_addr=""
 	else
-		local ports_delta="${5}"
+		local tidb_addr="${5}"
 	fi
 
 	if [ -z "${6+x}" ]; then
-		local listen_host=""
+		local ports_delta="0"
 	else
-		local listen_host="${6}"
+		local ports_delta="${6}"
 	fi
 
 	if [ -z "${7+x}" ]; then
+		local listen_host=""
+	else
+		local listen_host="${7}"
+	fi
+
+	if [ -z "${8+x}" ]; then
 		local cluster_id="<none>"
 	else
-		local cluster_id="${7}"
+		local cluster_id="${8}"
 	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
@@ -45,6 +51,11 @@ function tiflash_run()
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
 		echo "[func tiflash_run] get default pd_port from ${default_ports} failed" >&2
+		return 1
+	fi
+	local default_tidb_status_port=`get_value "${default_ports}" 'tidb_status_port'`
+	if [ -z "${default_tidb_status_port}" ]; then
+		echo "[func tiflash_run] get default tidb_status_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tiflash_http_port=`get_value "${default_ports}" 'tiflash_http_port'`
@@ -69,6 +80,7 @@ function tiflash_run()
 	fi
 
 	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
+	local tidb_addr=$(cal_addr "${tidb_addr}" `must_print_ip` "${default_tidb_status_port}")
 
 	if [ -z "${listen_host}" ]; then
 		local listen_host="`must_print_ip`"
@@ -98,6 +110,7 @@ function tiflash_run()
 
 	local render_str="tiflash_dir=${tiflash_dir}"
 	local render_str="${render_str}#tiflash_pd_addr=${pd_addr}"
+	local render_str="${render_str}#tiflash_tidb_addr=${tidb_addr}"
 	local render_str="${render_str}#tiflash_listen_host=${listen_host}"
 	local render_str="${render_str}#tiflash_http_port=${http_port}"
 	local render_str="${render_str}#tiflash_tcp_port=${tcp_port}"
@@ -142,6 +155,10 @@ function tiflash_run()
 	echo "pd_addr	${pd_addr}" >> "${info}"
 	echo "cluster_id	${cluster_id}" >> "${info}"
 
+	if [ ! -f "${tiflash_dir}/extra_str_to_find_proc" ]; then
+		echo "config-file" > "${tiflash_dir}/extra_str_to_find_proc"
+	fi
+
 	if [ `uname` != "Darwin" ]; then
 		# TODO: check whether the following path exists before use it
 		local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${tiflash_dir}/${target_lib_dir}"
@@ -166,5 +183,6 @@ function tiflash_run()
 	fi
 	echo "pid	${pid}" >> "${info}"
 	echo "${pid}"
+	cluster_manager_run "${tiflash_dir}"
 }
 export -f tiflash_run

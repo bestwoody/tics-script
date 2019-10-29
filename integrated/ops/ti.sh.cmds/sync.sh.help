@@ -1,0 +1,2 @@
+sync table to tiflash
+usage: <cmd> database table [replica]

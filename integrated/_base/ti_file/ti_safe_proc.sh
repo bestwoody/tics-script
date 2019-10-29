@@ -135,23 +135,29 @@ function tiflash_safe_run()
 	fi
 
 	if [ -z "${5+x}" ]; then
-		local ports_delta="0"
+		local tidb_addr=""
 	else
-		local ports_delta="${5}"
+		local tidb_addr="${5}"
 	fi
 
 	if [ -z "${6+x}" ]; then
-		local listen_host=""
+		local ports_delta="0"
 	else
-		local listen_host="${6}"
+		local ports_delta="${6}"
 	fi
 
 	if [ -z "${7+x}" ]; then
+		local listen_host=""
+	else
+		local listen_host="${7}"
+	fi
+
+	if [ -z "${8+x}" ]; then
 		local cluster_id="<none>"
 	else
-		local cluster_id="${7}"
+		local cluster_id="${8}"
 	fi
-	tiflash_run "${tiflash_dir}" "${conf_templ_dir}" "${daemon_mode}" "${pd_addr}" "${ports_delta}" "${listen_host}" "${cluster_id}"
+	tiflash_run "${tiflash_dir}" "${conf_templ_dir}" "${daemon_mode}" "${pd_addr}" "${tidb_addr}" "${ports_delta}" "${listen_host}" "${cluster_id}"
 	wait_for_tiflash_local "${tiflash_dir}"
 }
 export -f tiflash_safe_run

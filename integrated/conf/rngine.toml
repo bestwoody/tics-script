@@ -11,7 +11,7 @@
 [readpool.coprocessor]
 
 [server]
-labels = { engine = "tiflash" }
+labels = { engine = "tiflash", "tiflash_http_port" = "{tiflash_http_port}" }
 engine-addr = "{tiflash_raft_addr}"
 
 [storage]

@@ -94,9 +94,9 @@ def parse_mod(obj, line, origin):
     mod_extra_tools = {
         'pd': ['pd_ctl'],
         'tikv': ['tikv_ctl'],
+        'tiflash': ['tiflash_lib', 'cluster_manager'],
         'spark_m': ['chspark'],
-        'spark_w': ['chspark'],
-        'tiflash': ['tiflash_lib']
+        'spark_w': ['chspark']
     }
     if obj.name in mod_extra_tools:
         obj.extra_tools = mod_extra_tools[obj.name]
@@ -397,11 +397,15 @@ def render_tiflashs(res, conf, hosts, indexes):
         print_mod_header(tiflash)
 
         def print_run_cmd(ssh, conf_templ_dir):
-            print '# tiflash_safe_run dir conf_templ_dir daemon_mode pd_addr ports_delta listen_host cluster_id'
+            print '# tiflash_safe_run dir conf_templ_dir daemon_mode pd_addr tidb_addr ports_delta listen_host cluster_id'
             print (ssh + 'tiflash_safe_run "%s" \\') % tiflash.dir
             print '\t"%s" \\' % conf_templ_dir
             pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
-            print '\t"true" "%s" "%s" "%s" "${id}"' % (pd_addr, tiflash.ports, tiflash.host)
+            if len(res.tidbs) <= 0:
+                return
+            # TODO: cluster_manager doesn't support multiple tidb now
+            tidb_addr = res.tidbs[0].host + ':' + res.tidbs[0].ports
+            print '\t"true" "%s" "%s" "%s" "%s" "${id}"' % (pd_addr, tidb_addr, tiflash.ports, tiflash.host)
 
         if tiflash.is_local():
             print_cp_bin(tiflash, conf)
@@ -413,17 +417,6 @@ def render_tiflashs(res, conf, hosts, indexes):
 
 def render_rngines(res, conf, hosts, indexes):
     for i in range(0, len(res.rngines)):
-        # TODO: set cluster version before every rngine run, it seems wierd, remove it later
-        if len(res.pds) != 0:
-            print_sep()
-            print '# Set cluster version'
-            pd = res.pds[0]
-            if pd.is_local():
-                print 'set_cluster_version_local "%s"' % pd.dir
-            else:
-                bins_dir = conf.cache_dir + '/master/bins'
-                print 'set_cluster_version_by_host "%s" "%s" %s %s' % (pd.host, pd.ports, bins_dir, conf.integrated_dir + '/conf/default.ports')
-
         rngine = res.rngines[i]
         if len(hosts) != 0 and rngine.host not in hosts:
             continue
