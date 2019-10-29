@@ -30,6 +30,7 @@ function _test_cluster_gen_and_load_tpch_table()
 	local mysql_host=`"${ti}" "${test_ti_file}" 'mysql/host'`
 	local mysql_port=`"${ti}" "${test_ti_file}" 'mysql/port'`
 
+	create_tpch_table_to_mysql "${mysql_host}" "${mysql_port}" "${schema_dir}" "${db}" "${table}"
 	load_tpch_data_to_mysql "${mysql_host}" "${mysql_port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
 }
 
