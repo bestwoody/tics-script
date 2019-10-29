@@ -78,7 +78,7 @@ function ls_sparkm_proc()
 {
 	local procs=`print_procs 'org.apache.spark.deploy.master.Master' '/spark/conf' | \
 		awk -F '-cp' '{print $2}' | awk -F ':' '{print $1}' | \
-		awk -F '/spark/conf' '{print $1}' | sed 's/[ \t]*//g'`
+		awk -F '/spark/conf' '{print $1}'`
 	if [ ! -z "${procs}" ]; then
 		echo "${procs}" | while read mod_dir; do
 			_print_mod_info "${mod_dir}"
@@ -91,7 +91,7 @@ function ls_sparkw_proc()
 {
 	local procs=`print_procs 'org.apache.spark.deploy.worker.Worker' '/spark/conf' | \
 		awk -F '-cp' '{print $2}' | awk -F ':' '{print $1}' | \
-		awk -F '/spark/conf' '{print $1}' | sed 's/[ \t]*//g'`
+		awk -F '/spark/conf' '{print $1}'`
 	if [ ! -z "${procs}" ]; then
 		echo "${procs}" | while read mod_dir; do
 			_print_mod_info "${mod_dir}"
