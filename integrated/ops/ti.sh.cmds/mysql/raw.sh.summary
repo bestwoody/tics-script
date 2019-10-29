@@ -8,6 +8,7 @@ function cmd_ti_mysql_raw()
 	local cmd_hosts="${4}"
 	local cmd_indexes="${5}"
 	local mods="${6}"
+	shift 6
 
 	local mod=`echo "${mods}"| grep "tidb.toml"`
 	if [ -z "${mod}" ]; then
