@@ -1,7 +1,7 @@
 # name \t md5sum \t bin_name \t url
 
-# master - a8ed9501ee0ecf7a56db0d7221a81da5f58e6408
-tidb	bcca5ff169d0fd2f18d48596f0292383	tidb-server	http://139.219.11.38:8000/15imf9/tidb-server.tar.gz
+# https://github.com/pingcap/tidb/pull/13034
+tidb	224a14d2ed704eed2a3323aedb7ad5dc	tidb-server	http://139.219.11.38:8000/GEDS9/tidb-server.tar.gz
 
 # master - a9c108185f79e2fd7dfbfcaad762b9413c99ce8a
 tikv	37807c79a215f4f9cd44fd0a50ee4635	tikv-server	http://139.219.11.38:8000/iKwkB/tikv-server.tar.gz
