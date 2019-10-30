@@ -403,8 +403,7 @@ def render_tiflashs(res, conf, hosts, indexes):
             pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
             if len(res.tidbs) <= 0:
                 return
-            # TODO: cluster_manager doesn't support multiple tidb now
-            tidb_addr = res.tidbs[0].host + ':' + res.tidbs[0].ports
+            tidb_addr = ';'.join(map(lambda x: x.host + ':' + x.ports, res.tidbs))
             print '\t"true" "%s" "%s" "%s" "%s" "${id}"' % (pd_addr, tidb_addr, tiflash.ports, tiflash.host)
 
         if tiflash.is_local():

@@ -27,4 +27,4 @@ spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://m
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
 
 # TODO: fake lib file, remove it later
-tiflash_lib	3be1f808cb19d4df88c0a7cf635ba818	tiflash_lib.tgz	http://139.219.11.38:8000/OjmtK/tiflash_lib.tgz
+tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
