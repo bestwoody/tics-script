@@ -183,7 +183,7 @@ function tiflash_run()
 	fi
 
 	echo "pid	${pid}" >> "${info}"
-	cluster_manager_run "${tiflash_dir}"
 	echo "${pid}"
+	cluster_manager_run "${tiflash_dir}"
 }
 export -f tiflash_run

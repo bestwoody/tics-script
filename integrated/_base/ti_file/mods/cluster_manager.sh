@@ -50,6 +50,8 @@ function cluster_manager_run()
 		return 1
 	fi
 
+	local error_handle="$-"
+	set +e
 	local http_port_ready='false'
 	for ((i=0; i<${timeout}; i++)); do
 		nc -z "${listen_host}" "${http_port}" 1>/dev/null 2>&1
@@ -63,6 +65,7 @@ function cluster_manager_run()
 			sleep 1
 		fi
 	done
+	restore_error_handle_flags "${error_handle}"
 	if [ "${http_port_ready}" == 'false' ]; then
 		echo "[func cluster_manager_run] tiflash http port ${listen_host}:${http_port} not ready" >&2
 		return 1

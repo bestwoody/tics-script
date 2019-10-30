@@ -1,7 +1,7 @@
 # name \t md5sum \t bin_name \t url
 
-# https://github.com/pingcap/tidb/pull/12453 - a82fcff46b28e189f9754b6eab6be88ccf482529
-tidb	d9abb4c604561998dc2b0d69e53e8a09	tidb-server	http://139.219.11.38:8000/ZHjCC/tidb-server.tar.gz
+# master - a8ed9501ee0ecf7a56db0d7221a81da5f58e6408
+tidb	bcca5ff169d0fd2f18d48596f0292383	tidb-server	http://139.219.11.38:8000/15imf9/tidb-server.tar.gz
 
 # master - a9c108185f79e2fd7dfbfcaad762b9413c99ce8a
 tikv	37807c79a215f4f9cd44fd0a50ee4635	tikv-server	http://139.219.11.38:8000/iKwkB/tikv-server.tar.gz
@@ -16,7 +16,7 @@ rngine	364b62434aefe4d21304fb49a88c02a7	tikv-server-rngine http://139.219.11.38:
 tiflash	aed679fb607a143166f152ccc8a64e70	tiflash	http://139.219.11.38:8000/dzwir/tiflash.tar.gz
 
 # https://github.com/pingcap/tiflash/pull/867
-cluster_manager	d8abadf708b2cd6b4d59f5f5accff958	flash_cluster_manager	http://139.219.11.38:8000/aLkgC/flash_cluster_manager.tar.gz
+cluster_manager	f99d8064d7e7b7bc8b419e9b05c7f1c1	flash_cluster_manager	http://139.219.11.38:8000/GY1qe/flash_cluster_manager.tar.gz
 
 # master - dd35e25c4b47c430f15167e885156760d24c47de
 chspark	e164a816b729eca2034d64ee1f5bf78c	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/PwtIX/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
