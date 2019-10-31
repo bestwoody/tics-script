@@ -80,8 +80,16 @@ function rngine_run()
 		return 0
 	fi
 
+	local disk_avail=`df -k "${rngine_dir}" | tail -n 1 | awk '{print $4}'`
+	local max_capacity=$(( 500 * 1024 * 1024 ))
+	if [ ${disk_avail} -gt ${max_capacity} ]; then
+		local disk_avail=${max_capacity}
+	fi
+	local disk_avail=$(( ${disk_avail} * 1024 ))
+
 	local render_str="tiflash_raft_addr=${tiflash_addr}"
 	local render_str="${render_str}#tiflash_http_port=${tiflash_http_port}"
+	local render_str="${render_str}#disk_avail=${disk_avail}"
 	render_templ "${conf_templ_dir}/rngine.toml" "${rngine_dir}/rngine.toml" "${render_str}"
 
 	local info="${rngine_dir}/proc.info"

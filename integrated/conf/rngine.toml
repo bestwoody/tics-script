@@ -27,6 +27,7 @@ engine-addr = "{tiflash_raft_addr}"
 [raftstore]
 raftdb-path = ""
 sync-log = true
+capacity = {disk_avail}
 #max-leader-missing-duration = "22s"
 #abnormal-leader-missing-duration = "21s"
 #peer-stale-state-check-interval = "20s"
