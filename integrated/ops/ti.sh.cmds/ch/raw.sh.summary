@@ -10,26 +10,27 @@ function cmd_ti_mysql_raw()
 	local mods="${6}"
 	shift 6
 
-	local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	local mod=`from_mods_random_mod "${mods}" 'tiflash' 'false'`
 	if [ -z "${mod}" ]; then
-		echo "[cmd mysql/raw] no tidb selected" >&2
+		echo "[cmd ch/raw] no tiflash selected" >&2
 		return 1
 	fi
 
 	local dir=`from_mod_get_dir "${mod}"`
 	local host=`from_mod_get_host "${mod}"`
 
-	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tcp_port'`
 	if [ -z "${host}" ]; then
 		local host=`must_print_ip`
 	fi
 
 	if [ -z "${port}" ]; then
-		echo "[cmd mysql/raw] getting tidb port failed from ${host}:${dir}" >&2
+		echo "[cmd ch/raw] getting tcp port failed from ${host}:${dir}" >&2
 		return 1
 	fi
 
-	mysql -h "${host}" -P "${port}" -u root "${@}"
+	local bin_dir="/tmp/ti/master/bins"
+	"${bin_dir}/tiflash" client --host="${host}" --port="${port}"
 }
 
 cmd_ti_mysql_raw "${@}"

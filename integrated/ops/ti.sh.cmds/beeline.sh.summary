@@ -1,0 +1,18 @@
+#!/bin/bash
+
+ti_file="${1}"
+ti_args="${2}"
+cmd_mod_names="${3}"
+cmd_hosts="${4}"
+cmd_indexes="${5}"
+mods="${6}"
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+spark_mod=`from_mods_random_mod "${mods}" 'spark_m'`
+if [ -z "${spark_mod}" ]; then
+	echo "[cmd beeline] no spark module found" >&2
+	exit 1
+fi
