@@ -12,11 +12,11 @@ function ssh_get_value_from_proc_info()
 	local key="${3}"
 
 	local info_file="${dir}/proc.info"
-	if [ ! -f "${info_file}" ]; then
-		return
-	fi
 
 	if [ "`is_local_host ${host}`" == 'true' ]; then
+		if [ ! -f "${info_file}" ]; then
+			return
+		fi
 		get_value "${info_file}" "${key}"
 	else
 		local has_info=`ssh_exe "${host}" "test -f \"${info_file}\" && echo true"`
