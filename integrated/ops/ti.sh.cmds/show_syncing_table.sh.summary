@@ -1,0 +1,42 @@
+#!/bin/bash
+
+function cmd_show_syncing_table()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		local db=""
+	else
+		local db="${1}"
+	fi
+
+	local pd_mod=`from_mods_random_mod "${mods}" 'pd' 'false'`
+	local pd_dir=`from_mod_get_dir "${pd_mod}"`
+	local pd_host=`from_mod_get_host "${pd_mod}"`
+	local pd_port=`ssh_get_value_from_proc_info "${pd_host}" "${pd_dir}" 'pd_port'`
+	if [ -z "${pd_port}" ]; then
+		echo "[cmd show_syncing_table] get port from ${pd_host}:${pd_dir}/proc.info failed" >&2
+		return 1
+	fi
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
+	local tidb_host=`from_mod_get_host "${tidb_mod}"`
+	local tidb_status_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'status_port'`
+	if [ -z "${tidb_status_port}" ]; then
+		echo "[cmd show_syncing_table] get port from ${tidb_host}:${tidb_dir}/proc.info failed" >&2
+		return 1
+	fi
+
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	python "${here}/show_syncing_table.py" "${pd_host}" "${pd_port}" "${tidb_host}" "${tidb_status_port}" "${db}"
+}
+
+set -euo pipefail
+cmd_show_syncing_table "${@}"
