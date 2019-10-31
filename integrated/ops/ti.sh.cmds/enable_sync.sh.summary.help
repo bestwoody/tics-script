@@ -1,2 +1,0 @@
-enable syncing data from tikv to tiflash
-usage: <cmd> database table

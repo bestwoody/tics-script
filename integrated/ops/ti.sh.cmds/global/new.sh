@@ -25,4 +25,4 @@ else
 	python "${here}"/new.py "${cmd_args[@]}" > "${path}"
 fi
 
-echo "${path} created, edit it before use"
+echo "${path} created"

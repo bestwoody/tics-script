@@ -59,7 +59,7 @@ function verify_raft_sync()
 	fi
 
 	local enable_sync_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" 'enable_sync' 'test' 'hello' 2>&1 | grep 'syncing'`
+		-k "${ti_args}" "${ti_file}" 'syncing/set' 'test' 'hello' 2>&1 | grep 'syncing'`
 	if [ ! -z "${enable_sync_ok}" ]; then
 		echo "OK     keep syncing test.hello to tiflash"
 	else

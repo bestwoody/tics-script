@@ -1,6 +1,8 @@
 create a cluster define file (.ti) by specify modules' numbers
-usage: <cmd> file_path_to_be_created.ti [pd=n] [tikv=n] [tidb=n] [tiflash=n] [spark=n] [nodes=n]
+usage: <cmd> file_to_be_created.ti [pd=n] [tikv=n] [tidb=n] [tiflash=n] [spark=n] [nodes=n] [delta=n] [dir=<path>]
 default: pd=1 tikv=1 tidb=1 tiflash=1 spark=0 nodes=1
+arg 'nodes' can be a number or a list of host address seperated by ','
+arg 'delta' means all listening ports of the cluster will be 'default_port + delta'
 eg: ti.sh new my.ti
 eg: ti.sh new my.ti tikv=2 tiflash=3 spark=3
 eg: ti.sh new my.ti tikv=2 tiflash=3 spark=3 nodes=3

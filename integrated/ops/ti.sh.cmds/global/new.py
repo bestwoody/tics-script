@@ -9,6 +9,7 @@ def error(msg):
 
 def parse(mods, origin):
     names = mods.keys()
+    names += ['delta', 'dir']
 
     argv = []
     for arg in origin:
@@ -27,7 +28,11 @@ def parse(mods, origin):
 
     last_name = None
     for arg in argv:
-        if not arg.isdigit():
+        if last_name == 'dir' or last_name == 'nodes':
+            mods[last_name] = arg
+            last_name = None
+            continue
+        if not arg.strip('-').strip('+').isdigit():
             if arg not in names:
                 error('\'' + arg + '\' not in ' + str(names))
             else:
@@ -39,21 +44,39 @@ def parse(mods, origin):
             last_name = None
 
 def render(mods):
+    hosts = []
     nodes = mods['nodes']
-    if nodes != 1:
+    custom_hosts = False
+    if nodes.isdigit():
+        nodes = int(nodes)
         for i in range(0, nodes):
-            print 'h' + str(i) + '=TODO'
+            hosts.append('TODO')
+    else:
+        custom_hosts = True
+        hosts = nodes.split(',')
+        nodes = len(hosts)
+    if custom_hosts or nodes > 1:
+        for i in range(0, nodes):
+            print 'h' + str(i) + '=' + hosts[i]
         print
 
-    if nodes != 1:
-        dir = '/tmp/nodes'
+    if mods.has_key('dir'):
+        dir = str(mods['dir'])
     else:
-        dir = 'nodes'
+        if nodes != 1:
+            dir = '/tmp/nodes'
+        else:
+            dir = 'nodes'
+        n = random.randint(1000, 9999)
+        dir = dir + '/' + str(n)
 
-    n = random.randint(1000, 9999)
-    print 'dir=' + dir + '/' + str(n)
+    print 'dir=' + dir
     print
-    print "delta=0"
+
+    if mods.has_key('delta'):
+        print "delta=" + str(mods['delta'])
+    else:
+        print "delta=0"
 
     def out(name):
         mod = mods[name]
@@ -74,7 +97,7 @@ def render(mods):
                     head += str(i)
             if name == 'spark_w':
                 head += ' cores=1 mem=1G'
-            if nodes != 1:
+            if custom_hosts or nodes > 1:
                 tail += ' host={h' + str(i % nodes) + '}'
             print head + tail
 
@@ -88,7 +111,7 @@ def render(mods):
 
 def new(argv):
     mods = {
-        'nodes': 1,
+        'nodes': '1',
         'pd': 1,
         'tikv': 1,
         'tidb': 1,

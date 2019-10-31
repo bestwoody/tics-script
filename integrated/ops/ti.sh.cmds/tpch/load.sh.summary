@@ -104,7 +104,7 @@ function ti_cmd_tpch_load()
 
 		if [ "${sync_to_tiflash}" == 'true' ]; then
 			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-				"${ti_file}" 'enable_sync' "${db}" "${table}" | awk '{print "   "$0}'
+				"${ti_file}" 'syncing/set' "${db}" "${table}" | awk '{print "   "$0}'
 		fi
 
 		load_tpch_data_to_mysql "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"
