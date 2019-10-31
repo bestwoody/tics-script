@@ -68,7 +68,7 @@ function verify_raft_sync()
 	fi
 
 	# TODO: remove this
-	sleep 15
+	sleep 10
 
 	local sql="select col from test.hello"
 	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
