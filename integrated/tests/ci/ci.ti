@@ -1,0 +1,13 @@
+dir=nodes/7
+
+delta=7
+
+pd: {dir}/pd ports+{delta}
+
+tikv: {dir}/tikv ports+{delta}
+
+tidb: {dir}/tidb ports+{delta}
+
+tiflash: {dir}/tiflash ports+{delta}
+
+rngine: {dir}/rngine tiflash={dir}/tiflash ports+{delta}

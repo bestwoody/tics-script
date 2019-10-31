@@ -623,7 +623,7 @@ if __name__ == '__main__':
         mod_names = set(sys.argv[6].split(','))
     for name in mod_names:
         if not mods.has_key(name):
-            error(name + 'is not a valid module name')
+            error(name + ' is not a valid module name')
 
     hosts = set()
     if len(sys.argv) >= 7 and len(sys.argv[7]) != 0:
