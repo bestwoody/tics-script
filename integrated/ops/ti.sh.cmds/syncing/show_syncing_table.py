@@ -35,7 +35,10 @@ def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
     tables = {}
     for table_id in table_ids:
         schema_request_rule = "http://" + tidb_host + ":" + tidb_port + "/db-table/" + table_id
+        # TODO: catch exceptions
         f = urllib.urlopen(schema_request_rule)
+        if f == '' or not f:
+            return
         db, table = get_db_and_table(f.read(), target_db)
         if table != "":
             if db not in tables:
@@ -44,7 +47,7 @@ def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
     for db in tables:
         print db
         for table in tables[db]:
-            print '\t' + table
+            print '    ' + table
 
 if __name__ == '__main__':
     if len(sys.argv) < 6:

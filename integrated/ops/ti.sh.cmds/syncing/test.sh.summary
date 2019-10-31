@@ -14,65 +14,85 @@ function verify_raft_sync()
 	local mods="${6}"
 	shift 6
 
+	local db='test'
+	local table='hello'
+	if [ ! -z "${1+x}" ] && [ ! -z "${1}" ]; then
+		local table="${1}"
+	fi
+
 	local ti="${integrated}/ops/ti.sh"
 
 	local tidb_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
 		'mysql' "show databases" | grep 'test'`
 	if [ ! -z "${tidb_ok}" ]; then
-		echo 'OK     connect to tidb'
+		echo 'OK     tidb: "show databases"'
 	else
-		echo 'FAILED connect to tidb'
+		echo 'FAILED tidb: "show databases"'
 		return 1
 	fi
 
 	local tiflash_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
 		'ch' "show databases" | grep 'default'`
 	if [ ! -z "${tiflash_ok}" ]; then
-		echo 'OK     connect to tiflash'
+		echo 'OK     tiflash: "show databases"'
 	else
-		echo 'FAILED connect to tiflash'
+		echo 'FAILED tiflash: "show databases"'
 		return 1
 	fi
 
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'mysql' "drop table if exists test.hello" >/dev/null 2>&1
+		'mysql' "drop table if exists ${db}.${table}" >/dev/null 2>&1
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'mysql' "create table if not exists test.hello (col varchar(10))"
+		'mysql' "create table if not exists ${db}.${table} (col varchar(10))"
 	local create_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'mysql' "show create table test.hello" 2>&1 | grep 'InnoDB'`
+		'mysql' "show create table ${db}.${table}" 2>&1 | grep 'InnoDB'`
 	if [ ! -z "${create_ok}" ]; then
-		echo "OK     create table test.hello"
+		echo "OK     tidb: \"create table ${db}.${table} (col varchar(10))\""
 	else
-		echo "FAILED create table test.hello: ${create_ok}"
+		echo "FAILED tidb: \"create table ${db}.${table} (col varchar(10))\": ${create_ok}"
 		return 1
 	fi
 
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'mysql' "insert into test.hello (col) values ('world')"
+		'mysql' "insert into ${db}.${table} (col) values ('world')"
 	local insert_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-		"${ti_file}" 'mysql' "select col from test.hello" 2>&1 | grep 'world'`
+		"${ti_file}" 'mysql' "select col from ${db}.${table}" 2>&1 | grep 'world'`
 	if [ ! -z "${insert_ok}" ]; then
-		echo "OK     insert one row into tidb"
+		echo "OK     insert one row into tidb and read it"
 	else
-		echo "FAILED insert one row into tidb: ${insert_ok}"
+		echo "FAILED insert one row into tidb and read it: ${insert_ok}"
 		return 1
 	fi
 
 	local enable_sync_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" 'syncing/set' 'test' 'hello' 2>&1 | grep 'syncing'`
+		-k "${ti_args}" "${ti_file}" 'syncing/set' "${db}" "${table}" 2>&1 | grep '\->'`
 	if [ ! -z "${enable_sync_ok}" ]; then
-		echo "OK     keep syncing test.hello to tiflash"
+		echo "OK     keep syncing ${db}.${table} to tiflash"
 	else
 		echo "FAILED set syncing failed: ${enable_sync_ok}"
 		return 1
 	fi
 
-	# TODO: remove this
-	sleep 10
+	for (( i = 0; i < 120; i++ )); do
+		local pd_syncing_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+			-k "${ti_args}" "${ti_file}" 'syncing/show' 'test' | grep "${table}"`
+		if [ ! -z "${pd_syncing_ok}" ]; then
+			break
+		fi
+	done
+	if [ ! -z "${pd_syncing_ok}" ]; then
+		echo "OK     read syncing info from pd"
+	else
+		echo "FAILED read syncing info from pd"
+		return 1
+	fi
 
-	local sql="select col from test.hello"
-	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'ch' "${sql}" '' 'TabSeparated' --schema_version 10000000 2>&1`
+	# TODO: remove this, read syncing table from tiflash
+	sleep 15
+
+	local sql="select col from ${db}.${table}"
+	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+		"${ti_file}" 'ch' "${sql}" '' 'TabSeparated' --schema_version 10000000 2>&1`
 	local read_err=`echo "${read_res}" | grep 'Exception'`
 	local read_ok=`echo "${read_res}" | grep 'world'`
 	if [ ! -z "${read_err}" ]; then
@@ -87,9 +107,9 @@ function verify_raft_sync()
 		echo "OK     read from tiflash directly"
 	fi
 
-	local sql="select /*+ read_from_storage(tiflash[hello]) */ col from hello"
+	local sql="select /*+ read_from_storage(tiflash[${table}]) */ col from ${table}"
 	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'mysql' "${sql}" 'test' 2>&1`
+		'mysql' "${sql}" "${db}" 2>&1`
 	local read_ok=`echo "${read_res}" | grep 'world'`
 	if [ -z "${read_ok}" ]; then
 		echo "FAILED can't read data from tiflash over tidb, result:"
@@ -101,11 +121,11 @@ function verify_raft_sync()
 	fi
 
 	local drop_err=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'mysql' "drop table if exists test.hello"`
+		'mysql' "drop table if exists ${db}.${table}"`
 	if [ -z "${drop_err}" ]; then
-		echo "OK     drop table test.hello from tidb"
+		echo "OK     drop table ${db}.${table} from tidb"
 	else
-		echo "FAILED drop table test.hello from tidb: ${create_ok}"
+		echo "FAILED drop table ${db}.${table} from tidb: ${create_ok}"
 		return 1
 	fi
 }
