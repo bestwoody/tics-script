@@ -1,0 +1,2 @@
+find tpch database name in cluster, throws error if there are more than one
+usage: <cmd> (no args)

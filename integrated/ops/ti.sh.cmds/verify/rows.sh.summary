@@ -35,12 +35,13 @@ if [ -z "${tiflash_rows}" ]; then
 fi
 
 if [ "${tiflash_rows}" == "${tikv_rows}" ] && [ "${learner_rows}" == "${tikv_rows}" ]; then
-	echo "${tiflash_rows}(tiflash direct) == ${tikv_rows}(tikv) == ${learner_rows}(tiflash over tidb) OK"
+	echo "OK     [${table}] ${tiflash_rows}(tiflash direct) == ${tikv_rows}(tikv) == ${learner_rows}(tiflash over tidb)"
 else
+	local res="FAILED [${table}]"
 	if [ "${tiflash_rows}" == "${tikv_rows}" ]; then
-		res="${tiflash_rows}(tiflash direct) == ${tikv_rows}(tikv)"
+		res="${res} ${tiflash_rows}(tiflash direct) == ${tikv_rows}(tikv)"
 	else
-		res="${tiflash_rows}(tiflash direct) != ${tikv_rows}(tikv)"
+		res="${res} ${tiflash_rows}(tiflash direct) != ${tikv_rows}(tikv)"
 	fi
 	if [ "${learner_rows}" == "${tikv_rows}" ]; then
 		echo "${res} == ${learner_rows}(tiflash over tidb)"

@@ -1,2 +1,2 @@
 verify table rows: rows(tiflash direct) vs rows(tikv) vs rows(tiflash over tidb)
-usage: <cmd> [database.]table
+usage: <cmd> [database]

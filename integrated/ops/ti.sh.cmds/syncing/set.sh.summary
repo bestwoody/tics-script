@@ -41,9 +41,9 @@ function cmd_enable_sync_table()
 	mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${query}"
 
 	if [ "${enabled}" == '0' ]; then
-		echo "removed ${db}.${table} from tiflash, and stop syncing it from tikv to tiflash"
+		echo "${db}.${table}: tikv -!> tiflash, rm from tiflash"
 	else
-		echo "keep syncing ${db}.${table} from tikv to tiflash"
+		echo "${db}.${table}: tikv -> tiflash"
 	fi
 }
 

@@ -1,0 +1,41 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+function ti_cmd_tpch_db()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+
+	shift 6
+
+	local tidb=`from_mods_random_mod "${mods}" 'tidb'`
+	if [ -z "${tidb}" ]; then
+		echo "[cmd tpch/db] tidb not found in cluster" >&2
+		return 1
+	fi
+
+	local db=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'tidb' -i "${tidb}" -k "${ti_args}" \
+		"${ti_file}" 'mysql' "show databases" | grep 'tpch'`
+	if [ -z "${db}" ]; then
+		echo "[cmd tpch/db] database with 'tpch' prefix not found" >&2
+		return 1
+	fi
+
+	local db_cnt=`echo "${db}" | wc -l | awk '{print $1}'`
+	if [ "${db_cnt}" != '1' ]; then
+		echo "[cmd tpch/db] more than one database with 'tpch' prefix in cluster:" >&2
+		echo "${db}" | awk '{print "  "$0}' >&2
+		return 1
+	fi
+
+	echo "${db}"
+}
+
+ti_cmd_tpch_db "${@}"

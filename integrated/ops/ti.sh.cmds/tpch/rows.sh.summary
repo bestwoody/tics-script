@@ -1,0 +1,39 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+function ti_cmd_tpch_rows()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+
+	shift 6
+
+	local db=''
+	if [ ! -z "${1+x}" ]; then
+		local db="${1}"
+	fi
+
+	if [ -z "${db}" ]; then
+		local db=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'tpch/db'`
+	fi
+	if [ -z "${db}" ]; then
+		echo "[cmd tpch/rows] auto select tpch database failed" >&2
+		return 1
+	fi
+
+	local tables=(lineitem orders partsupp part customer supplier nation part region)
+	for table in ${tables[@]}; do
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'verify/rows' "${db}.${table}"
+	done
+}
+
+ti_cmd_tpch_rows "${@}"
