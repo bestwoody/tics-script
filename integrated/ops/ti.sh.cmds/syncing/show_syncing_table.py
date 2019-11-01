@@ -43,7 +43,7 @@ def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
         if table != "":
             if db not in tables:
                 tables[db] = []
-                tables[db].append(table)
+            tables[db].append(table)
     for db in tables:
         print db
         for table in tables[db]:
