@@ -1,0 +1,2 @@
+execute following command by specify times
+usage: <cmd> repeat_times real_cmd [real_cmd_args]

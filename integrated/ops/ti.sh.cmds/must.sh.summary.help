@@ -1,2 +1,2 @@
 repeatly execute following command until it succeed
-usage: <cmd> (no args)
+usage: <cmd> real_cmd [read_cmd_args]
