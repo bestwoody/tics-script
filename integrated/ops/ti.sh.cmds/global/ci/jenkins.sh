@@ -1,4 +1,4 @@
 #!/bin/bash
 
-# TODO: disabled ci/cluster test for now, waiting fix about FLASH-630
-"${integrated}/ops/ti.sh" ci/self #:ci/cluster
+"${integrated}/ops/ti.sh" ci/self
+"${integrated}/ops/ti.sh" ci/cluster

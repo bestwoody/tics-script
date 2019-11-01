@@ -19,6 +19,11 @@ if [ "${ext}" != 'ti' ]; then
 	exit 1
 fi
 
+if [ -f "${path}" ]; then
+	echo "[cmd new] ${path} exists, burn and rm it first"
+	exit 1
+fi
+
 if [ -z "${cmd_args+x}" ]; then
 	python "${here}"/new.py > "${path}"
 else

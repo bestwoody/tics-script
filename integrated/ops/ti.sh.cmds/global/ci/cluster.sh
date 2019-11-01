@@ -7,10 +7,12 @@ function cmd_ci_cluster()
 	local dir='/tmp/ti/ci/cluster'
 	mkdir -p "${dir}"
 	local file="${dir}/cluster.ti"
+	rm -f "${file}"
 
 	"${ti}" new "${file}" 'delta=-6' "dir=${dir}"
 
 	"${ti}" "${file}" 'burn doit:up:tpch/load 0.01 all:tpch/ch:tpch/tikv'
+	"${ti}" "${file}" 'syncing/test'
 
 	"${ti}" "${file}" must burn doit
 
