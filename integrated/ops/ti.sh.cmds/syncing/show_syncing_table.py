@@ -23,7 +23,13 @@ def parse_table_ids(rules_str):
     return table_ids
 
 def get_db_and_table(schema_str, db=""):
-    schema = json.loads(schema_str)
+    if not schema_str or len(schema_str) == 0:
+        return "", ""
+    try:
+        schema = json.loads(schema_str)
+    except:
+        raise(Exception(schema_str))
+        return "", ""
     if db != "" and schema["db_info"]["db_name"]["O"] != db:
         return "", ""
     return schema["db_info"]["db_name"]["O"], schema["table_info"]["name"]["O"]

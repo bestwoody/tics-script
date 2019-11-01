@@ -23,20 +23,20 @@ function verify_raft_sync()
 	local ti="${integrated}/ops/ti.sh"
 
 	local tidb_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'mysql' "show databases" | grep 'test'`
+		'mysql' "show databases" | grep "${db}"`
 	if [ ! -z "${tidb_ok}" ]; then
-		echo 'OK     tidb: "show databases"'
+		echo 'OK     tidb: show databases'
 	else
-		echo 'FAILED tidb: "show databases"'
+		echo 'FAILED tidb: show databases'
 		return 1
 	fi
 
 	local tiflash_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
 		'ch' "show databases" | grep 'default'`
 	if [ ! -z "${tiflash_ok}" ]; then
-		echo 'OK     tiflash: "show databases"'
+		echo 'OK     tiflash: show databases'
 	else
-		echo 'FAILED tiflash: "show databases"'
+		echo 'FAILED tiflash: show databases'
 		return 1
 	fi
 
@@ -47,48 +47,36 @@ function verify_raft_sync()
 	local create_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
 		'mysql' "show create table ${db}.${table}" 2>&1 | grep 'InnoDB'`
 	if [ ! -z "${create_ok}" ]; then
-		echo "OK     tidb: \"create table ${db}.${table} (col varchar(10))\""
+		echo "OK     tidb: create table ${db}.${table} (col varchar(10))"
 	else
-		echo "FAILED tidb: \"create table ${db}.${table} (col varchar(10))\": ${create_ok}"
+		echo "FAILED tidb: create table ${db}.${table} (col varchar(10)): ${create_ok}"
 		return 1
 	fi
 
+	local insert_sql="insert into ${db}.${table} (col) values ('world')"
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'mysql' "insert into ${db}.${table} (col) values ('world')"
+		'mysql' "${insert_sql}"
 	local insert_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
 		"${ti_file}" 'mysql' "select col from ${db}.${table}" 2>&1 | grep 'world'`
 	if [ ! -z "${insert_ok}" ]; then
-		echo "OK     insert one row into tidb and read it"
+		echo "OK     tidb: ${insert_sql}"
 	else
-		echo "FAILED insert one row into tidb and read it: ${insert_ok}"
+		echo "FAILED tidb: ${insert_sql}: ${insert_ok}"
 		return 1
 	fi
 
-	local enable_sync_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" 'syncing/set' "${db}" "${table}" 2>&1 | grep '\->'`
+	local enable_sync_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		-k "${ti_args}" "${ti_file}" 'syncing/set' "${db}" "${table}" 2>&1`
+	local enable_sync_ok=`echo "${enable_sync_res}" | grep '\->'`
 	if [ ! -z "${enable_sync_ok}" ]; then
-		echo "OK     keep syncing ${db}.${table} to tiflash"
+		echo "OK     tidb: alter table ${db}.${table} set tiflash replica 1"
 	else
-		echo "FAILED set syncing failed: ${enable_sync_ok}"
+		echo "FAILED tidb: alter table ${db}.${table} set tiflash replica 1: ${enable_sync_res}"
 		return 1
 	fi
 
-	for (( i = 0; i < 120; i++ )); do
-		local pd_syncing_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-			-k "${ti_args}" "${ti_file}" 'syncing/show' 'test' | grep "${table}"`
-		if [ ! -z "${pd_syncing_ok}" ]; then
-			break
-		fi
-	done
-	if [ ! -z "${pd_syncing_ok}" ]; then
-		echo "OK     read syncing info from pd"
-	else
-		echo "FAILED read syncing info from pd"
-		return 1
-	fi
-
-	# TODO: remove this, read syncing table from tiflash
-	sleep 15
+	# TODO: remove this
+	sleep 10
 
 	local sql="select col from ${db}.${table}"
 	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
@@ -96,15 +84,13 @@ function verify_raft_sync()
 	local read_err=`echo "${read_res}" | grep 'Exception'`
 	local read_ok=`echo "${read_res}" | grep 'world'`
 	if [ ! -z "${read_err}" ]; then
-		echo "FAILED read from tiflash directly: ${read_err}"
+		echo "FAILED tiflash: ${sql}: ${read_err}"
 		return 1
 	elif [ -z "${read_ok}" ]; then
-		echo "FAILED rows are not synced to tiflash yet, result:"
-		echo "${read_res}"
-		echo "sql: ${sql}"
+		echo "FAILED tiflash: ${sql}: ${read_err}, result=\"${read_res}\""
 		return 1
 	else
-		echo "OK     read from tiflash directly"
+		echo "OK     tiflash: ${sql}"
 	fi
 
 	local sql="select /*+ read_from_storage(tiflash[${table}]) */ col from ${table}"
@@ -112,20 +98,18 @@ function verify_raft_sync()
 		'mysql' "${sql}" "${db}" 2>&1`
 	local read_ok=`echo "${read_res}" | grep 'world'`
 	if [ -z "${read_ok}" ]; then
-		echo "FAILED can't read data from tiflash over tidb, result:"
-		echo "${read_res}"
-		echo "sql: ${sql}"
+		echo "FAILED tidb: ${sql}, result=\"${read_res}\""
 		return 1
 	else
-		echo "OK     read data from tiflash over tidb"
+		echo "OK     tidb: ${sql}"
 	fi
 
 	local drop_err=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
 		'mysql' "drop table if exists ${db}.${table}"`
 	if [ -z "${drop_err}" ]; then
-		echo "OK     drop table ${db}.${table} from tidb"
+		echo "OK     tidb: drop table if exists ${db}.${table}"
 	else
-		echo "FAILED drop table ${db}.${table} from tidb: ${create_ok}"
+		echo "FAILED tidb: drop table if exists ${db}.${table}"
 		return 1
 	fi
 }

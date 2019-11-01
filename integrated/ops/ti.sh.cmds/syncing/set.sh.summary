@@ -11,8 +11,8 @@ function cmd_enable_sync_table()
 	shift 6
 
 	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo '[cmd sync] <cmd> database table [enabled=1|0]' >&2
-		return
+		echo '[cmd syncing/set] <cmd> database table [enabled=1|0]' >&2
+		return 1
 	fi
 
 	local db="${1}"
@@ -22,7 +22,7 @@ function cmd_enable_sync_table()
 	if [ ! -z "${3+x}" ] && [ ! -z "${3}" ]; then
 		local enabled="${3}"
 		if [ "${enabled}" != '0' ] && [ "${enabled}" != '1' ]; then
-			echo "[cmd sync] value of enabled should be 1 or 0" >&2
+			echo "[cmd syncing/set] value of enabled should be 1 or 0" >&2
 			return 1
 		fi
 	fi
@@ -33,7 +33,7 @@ function cmd_enable_sync_table()
 
 	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
 	if [ -z "${port}" ]; then
-		echo "[cmd sync] get port from ${host}:${dir}/proc.info failed" >&2
+		echo "[cmd syncing/set] get port from ${host}:${dir}/proc.info failed" >&2
 		return 1
 	fi
 
@@ -42,9 +42,26 @@ function cmd_enable_sync_table()
 
 	if [ "${enabled}" == '0' ]; then
 		echo "${db}.${table}: tikv -!> tiflash, rm from tiflash"
-	else
-		echo "${db}.${table}: tikv -> tiflash"
+		return
 	fi
+
+	local pd_syncing_ok=''
+	local ti="${integrated}/ops/ti.sh"
+	for (( i = 0; i < 120; i++ )); do
+		local pd_syncing_ok=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" \
+			"${ti_file}" 'syncing/show' "${db}" | grep "^    ${table}$"`
+		if [ ! -z "${pd_syncing_ok}" ]; then
+			break
+		fi
+		sleep 1
+	done
+
+	if [ -z "${pd_syncing_ok}" ]; then
+		echo "[cmd syncing/set] syncing info not found in pd"
+		return 1
+	fi
+
+	echo "${db}.${table}: tikv -> tiflash"
 }
 
 set -euo pipefail
