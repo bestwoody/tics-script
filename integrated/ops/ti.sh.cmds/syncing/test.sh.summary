@@ -75,23 +75,8 @@ function verify_raft_sync()
 		return 1
 	fi
 
-	# TODO: remove this
+	# TODO: FLASH-633
 	sleep 10
-
-	local sql="select col from ${db}.${table}"
-	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-		"${ti_file}" 'ch' "${sql}" '' 'TabSeparated' --schema_version 10000000 2>&1`
-	local read_err=`echo "${read_res}" | grep 'Exception'`
-	local read_ok=`echo "${read_res}" | grep 'world'`
-	if [ ! -z "${read_err}" ]; then
-		echo "FAILED tiflash: ${sql}: ${read_err}"
-		return 1
-	elif [ -z "${read_ok}" ]; then
-		echo "FAILED tiflash: ${sql}: ${read_err}, result=\"${read_res}\""
-		return 1
-	else
-		echo "OK     tiflash: ${sql}"
-	fi
 
 	local sql="select /*+ read_from_storage(tiflash[${table}]) */ col from ${table}"
 	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
@@ -102,6 +87,19 @@ function verify_raft_sync()
 		return 1
 	else
 		echo "OK     tidb: ${sql}"
+	fi
+
+	local sql="select col from ${db}.${table}"
+	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+		"${ti_file}" 'ch' "${sql}" '' 'TabSeparated' 2>&1`
+	local read_err=`echo "${read_res}" | grep 'Exception'`
+	local read_ok=`echo "${read_res}" | grep 'world'`
+	if [ ! -z "${read_err}" ]; then
+		echo "WARN   tiflash: ${sql}: ${read_err}"
+	elif [ -z "${read_ok}" ]; then
+		echo "WARN   tiflash: ${sql}: ${read_err}, result=\"${read_res}\""
+	else
+		echo "OK     tiflash: ${sql}"
 	fi
 
 	local drop_err=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
