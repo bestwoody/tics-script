@@ -13,7 +13,7 @@ pd	e7d4bf5b7cb00d898b5e6a50e3aaa24c	pd-server	http://139.219.11.38:8000/7EV8e/pd
 rngine	ce1f71e100d11dcc50ae5a09f0db0fec	tikv-server-rngine	http://139.219.11.38:8000/bURhj/tikv-server-rngine.tar.gz
 
 # master - ae3c5cb00353de3fc175800b83c480bd49084526
-tiflash	e6cbf20c79340866b3f56783df918db6	tiflash	http://139.219.11.38:8000/7P4wT/tiflash.tar.gz
+tiflash	fb346a3a2a81775af1f3a254df2eff26	tiflash	http://139.219.11.38:8000/HIxsw/tiflash.tar.gz
 
 # https://github.com/pingcap/tiflash/pull/867
 cluster_manager	26525b1954fb1a9f5a544f3fd07018c6	flash_cluster_manager	http://139.219.11.38:8000/pcUQC/flash_cluster_manager.tar.gz

@@ -50,6 +50,22 @@ function cmd_ti_ch()
 		local query_str="${query}"
 	fi
 	local port=`get_value "${dir}/proc.info" 'tcp_port'`
+	
+	if [ `uname` != "Darwin" ]; then
+		# TODO: remove hard code file name from this func
+		local target_lib_dir="tiflash_lib"
+		if [ ! -d "${dir}/${target_lib_dir}" ]; then
+			echo "[cmd ch] cannot find library dir ${dir}/${target_lib_dir}"
+			return 1
+		fi
+		# TODO: check whether the following path exists before use it
+		local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${dir}/${target_lib_dir}"
+		if [ -z "${LD_LIBRARY_PATH+x}" ]; then
+			export LD_LIBRARY_PATH="$lib_path"
+		else
+			export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$lib_path"
+		fi
+	fi
 	if [ -z "${1+x}" ]; then
 		"${dir}/tiflash" client --host="${host}" --port="${port}" -d "${db}" -f "${format}" --query="${query_str}"
 	else
