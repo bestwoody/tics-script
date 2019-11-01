@@ -60,7 +60,7 @@ function cluster_manager_run()
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
-				echo "#${i} waiting for tiflash http port ${listen_host}:${http_port} ready"
+				echo "#${i} waiting for tiflash http port ready at ${listen_host}:${http_port}"
 			fi
 			sleep 1
 		fi
