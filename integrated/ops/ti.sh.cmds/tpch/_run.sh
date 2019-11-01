@@ -21,9 +21,9 @@ function cmd_tpch_run_query()
 	if [ ! -z "${2+x}" ]; then
 		local db="${2}"
 	fi
-	local head='5'
+	local tail='5'
 	if [ ! -z "${3+x}" ]; then
-		local head="${3}"
+		local tail="${3}"
 	fi
 
 	if [ "${query}" == all ]; then
@@ -33,7 +33,7 @@ function cmd_tpch_run_query()
 		local queries=`echo "${query}" | awk -F ',' '{for ( i=1; i<=NF; i++ ) print $i}'`
 		echo "${queries}" | while read query; do
 			cmd_tpch_run_query "${queries_dir}" "${ti_file}" "${ti_args}" "${cmd_mod_names}" \
-				"${cmd_hosts}" "${cmd_indexes}" "${mods}" "${query}" "${db}" "${head}"
+				"${cmd_hosts}" "${cmd_indexes}" "${mods}" "${query}" "${db}" "${tail}"
 		done
 		return
 	fi
@@ -54,16 +54,13 @@ function cmd_tpch_run_query()
 		if [ "${db_cnt}" != '1' ]; then
 			echo "[cmd tpch/run] more than one database with 'tpch' prefix in cluster, need to specify in args:" >&2
 			echo "${db}" | awk '{print "  "$0}' >&2
-			echo "[cmd tpch/run] usage: <cmd> [query_index=all] [database=auto] [head_lines_of_result=5]" >&2
+			echo "[cmd tpch/run] usage: <cmd> [query_index=all] [database=auto] [tail_lines_of_result=5]" >&2
 			return 1
 		fi
 	fi
 
 	echo "=> ${queries_dir}/${query}.sql, db=${db}"
-	local start_time=`date +%s`
 	"${integrated}/ops/ti.sh"  -h "${cmd_hosts}" -m 'tidb' -i "${tidb}" -k "${ti_args}" "${ti_file}" \
-		'mysql' "${queries_dir}/${query}.sql" "${db}" | head -n "${head}"
-	local end_time=`date +%s`
-	echo "elapsed: $((end_time - start_time))s"
+		'mysql' "${queries_dir}/${query}.sql" "${db}" true | tail -n "${tail}"
 }
 export -f cmd_tpch_run_query
