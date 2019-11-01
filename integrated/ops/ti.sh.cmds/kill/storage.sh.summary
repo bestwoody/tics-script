@@ -13,7 +13,7 @@ mods="${6}"
 shift 6
 
 index="${RANDOM}"
-mod_types=(tikv tiflash rngine)
+mod_types=('tikv' 'tiflash,rngine')
 index=$((index % ${#mod_types[@]}))
 selected=${mod_types[${index}]}
 

@@ -1,2 +1,2 @@
-randomly kill on instance of tikv or tiflash or rngine
+randomly kill a instance of tikv or a pair of tiflash+rngine
 usage: <cmd> (no args)

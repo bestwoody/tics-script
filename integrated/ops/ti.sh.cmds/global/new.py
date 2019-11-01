@@ -130,6 +130,7 @@ def new(argv):
         parse(mods, argv)
 
     mods['rngine'] = mods['tiflash']
+
     if mods['spark'] != 0:
         mods['spark_m'] = 1
         mods['spark_w'] = mods['spark']
@@ -137,6 +138,9 @@ def new(argv):
         mods['spark_m'] = 0
         mods['spark_w'] = 0
     del mods['spark']
+
+    if mods['nodes'] == '1':
+        mods['nodes'] = '127.0.0.1'
 
     render(mods)
 
