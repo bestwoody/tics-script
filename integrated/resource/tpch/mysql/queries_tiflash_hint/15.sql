@@ -1,5 +1,6 @@
 -- using 1365545250 as a seed to the RNG
 
+drop view if exists revenue0;
 create view revenue0 (supplier_no, total_revenue) as
 	select /*+ read_from_storage(tiflash[lineitem]) */
 		l_suppkey,

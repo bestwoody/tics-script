@@ -29,7 +29,7 @@ function cmd_ti_mysql_raw()
 		return 1
 	fi
 
-	mysql -h "${host}" -P "${port}" -u root "${@}"
+	mysql --comments -h "${host}" -P "${port}" -u root "${@}"
 }
 
 cmd_ti_mysql_raw "${@}"

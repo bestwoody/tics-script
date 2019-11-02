@@ -52,4 +52,5 @@ function cmd_ti_mysql()
 	fi
 }
 
+set -euo pipefail
 cmd_ti_mysql "${@}"

@@ -73,4 +73,5 @@ function cmd_ti_ch()
 	fi
 }
 
+set -euo pipefail
 cmd_ti_ch "${@}"
