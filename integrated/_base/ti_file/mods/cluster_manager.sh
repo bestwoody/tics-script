@@ -3,14 +3,14 @@
 function cluster_manager_run()
 {
 	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
-		echo "[func cluster_manager_run] usage: <func> tiflash_dir [timeout]" >&2
+		echo "[func cluster_manager_run] usage: <func> tiflash_dir [timeout=300]" >&2
 		return 1
 	fi
 
 	local tiflash_dir="${1}"
 
 	if [ -z "${2+x}" ]; then
-		local timeout='180'
+		local timeout='300'
 	else
 		local timeout="${2}"
 	fi

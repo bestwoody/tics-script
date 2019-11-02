@@ -19,10 +19,10 @@ if [ -z "${cmd}" ]; then
 	exit 1
 fi
 
-for ((; 0 == 0; )); do
+for (( r = 0; 0 == 0; r++ )); do
 	if [ -z "`echo ${cmd} | grep ':'`" ]; then
 		echo "============"
-		echo "loop> ${@}"
+		echo "loop ${r}> ${@}"
 		echo "------------"
 	fi
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"

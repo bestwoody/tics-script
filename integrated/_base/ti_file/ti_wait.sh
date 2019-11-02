@@ -48,12 +48,12 @@ export -f wait_for_mysql
 function wait_for_tidb()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func wait_for_tidb] usage: <func> tidb_dir [timeout=180s]" >&2
+		echo "[func wait_for_tidb] usage: <func> tidb_dir [timeout=300]" >&2
 		return 1
 	fi
 
 	local tidb_dir="${1}"
-	local timeout=180
+	local timeout=300
 	if [ ! -z "${2+x}" ]; then
 		timeout="${2}"
 	fi
@@ -128,12 +128,12 @@ export -f wait_for_pd_port_ready
 function wait_for_pd_port_ready_local()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func wait_for_pd_port_ready_local] usage: <func> pd_dir [timeout=180s]" >&2
+		echo "[func wait_for_pd_port_ready_local] usage: <func> pd_dir [timeout=300]" >&2
 		return 1
 	fi
 
 	local pd_dir="${1}"
-	local timeout=60
+	local timeout=300
 	if [ ! -z "${2+x}" ]; then
 		timeout="${2}"
 	fi
@@ -177,6 +177,7 @@ function wait_for_pd()
 		return 1
 	fi
 
+	# TODO: move this key to config
 	local key="6D536368656D615665FF7273696F6E4B6579FF0000000000000000F70000000000000073"
 	for ((i=0; i<${timeout}; i++)); do
 		local region=`"${pd_ctl_path}" -u "http://${host}:${port}" <<< "region key ${key}"` >/dev/null
@@ -200,12 +201,12 @@ export -f wait_for_pd
 function wait_for_pd_local()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func wait_for_pd] usage: <func> pd_dir [timeout=180s]" >&2
+		echo "[func wait_for_pd] usage: <func> pd_dir [timeout=300]" >&2
 		return 1
 	fi
 
 	local pd_dir="${1}"
-	local timeout=180
+	local timeout=300
 	if [ ! -z "${2+x}" ]; then
 		timeout="${2}"
 	fi
@@ -281,12 +282,12 @@ export -f wait_for_tikv_port_ready
 function wait_for_tikv_port_ready_local()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func wait_for_tikv_port_ready_local] usage: <func> tikv_dir [timeout=180s]" >&2
+		echo "[func wait_for_tikv_port_ready_local] usage: <func> tikv_dir [timeout=300]" >&2
 		return 1
 	fi
 
 	local tikv_dir="${1}"
-	local timeout=60
+	local timeout=300
 	if [ ! -z "${2+x}" ]; then
 		timeout="${2}"
 	fi
@@ -342,12 +343,12 @@ export -f wait_for_tiflash
 function wait_for_tiflash_local()
 {
 	if [ -z "${1+x}" ]; then
-		echo "[func wait_for_tiflash_local] usage: <func> tiflash_dir [timeout=180s]" >&2
+		echo "[func wait_for_tiflash_local] usage: <func> tiflash_dir [timeout=300]" >&2
 		return 1
 	fi
 
 	local tiflash_dir="${1}"
-	local timeout=180
+	local timeout=300
 	if [ ! -z "${2+x}" ]; then
 		timeout="${2}"
 	fi

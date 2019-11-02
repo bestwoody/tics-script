@@ -18,10 +18,10 @@ if [ -z "${cmd}" ]; then
 	exit 1
 fi
 
-for ((; 0 == 0; )); do
+for (( r = 0; 0 == 0; r++ )); do
 	if [ -z "`echo ${cmd} | grep ':'`" ]; then
 		echo "============"
-		echo "floop> ${@}"
+		echo "floop ${r}> ${@}"
 		echo "------------"
 	fi
 	for ((; 0 == 0; )); do

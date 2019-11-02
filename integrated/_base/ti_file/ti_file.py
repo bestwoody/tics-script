@@ -386,7 +386,7 @@ def render_tiflashs(res, conf, hosts, indexes):
                 print 'wait_for_pd_local "%s"' % pd.dir
             else:
                 bins_dir = conf.cache_dir + '/master/bins'
-                print 'wait_for_pd_by_host "%s" "%s" 180 %s %s' % (pd.host, pd.ports, bins_dir, conf.integrated_dir + '/conf/default.ports')
+                print 'wait_for_pd_by_host "%s" "%s" 300 %s %s' % (pd.host, pd.ports, bins_dir, conf.integrated_dir + '/conf/default.ports')
 
     for i in range(0, len(res.tiflashs)):
         tiflash = res.tiflashs[i]
