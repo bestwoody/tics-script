@@ -8,13 +8,13 @@ function cmd_ci_release()
 
 	local dir='/tmp/ti/ci/release'
 	mkdir -p "${dir}"
-	local file="${dir}/cluster.ti"
+	local file="${dir}/release.ti"
 	rm -f "${file}"
-	"${ti}" new "${file}" 'delta=-6' "dir=${dir}"
+	"${ti}" new "${file}" 'delta=-8' "dir=${dir}"
 
-	"${ti}" "${file}" repeat 10 'up:tpch/load 0.1 all:tpch/ch:tpch/tikv'
 	# TODO: remote 'sleep' after FLASH-635 is addressed
-	"${ti}" "${file}" repeat 10 'kill/storage:up:sleep 300:tpch/ch:tpch/tikv'
+	"${ti}" "${file}" repeat 10 'up:tpch/load 0.1 all:sleep 420:tpch/ch:tpch/tikv'
+	"${ti}" "${file}" repeat 10 'kill/storage:up:sleep 420:tpch/ch:tpch/tikv'
 
 	"${ti}" "${file}" must burn doit
 	rm -f "${file}"

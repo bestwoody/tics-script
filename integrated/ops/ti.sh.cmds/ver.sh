@@ -46,7 +46,7 @@ function cmd_ti_ver()
 		if [ ! -f "${dir}/log/server.log" ]; then
 			local res='MISSED'
 		else
-			local res=`tail -n 99999 "${dir}"/log/server.log | { grep 'TiFlash' || test $? = 1; } | tail -n 1 | awk -F 'TiFlash version: TiFlash ' '{print $2}'`
+			local res=`cat "${dir}"/log/server.log | { grep 'TiFlash' || test $? = 1; } | tail -n 1 | awk -F 'TiFlash version: TiFlash ' '{print $2}'`
 			local ver=`echo "${res}" | awk '{print $1}'`
 			local git_hash=`echo "${res}" | awk '{print $2}'`
 			local git_hash="${git_hash#HEAD-}"
