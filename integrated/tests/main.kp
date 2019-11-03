@@ -5,4 +5,3 @@ performance/ti_tpcc_performance.sh
 performance/tpch_perf_10.sh
 
 !performance/ti_load_tpch_data.sh
-!tools/ti_launch.sh

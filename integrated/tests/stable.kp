@@ -4,4 +4,3 @@ cluster_ops/ti_restart_test.sh
 cluster_ops/ti_expand_shrink.sh
 
 performance/tpch_perf_01.sh
-!cluster_ops/ti_launch.sh
