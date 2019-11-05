@@ -27,8 +27,8 @@ def get_db_and_table(schema_str, db=""):
         return "", ""
     try:
         schema = json.loads(schema_str)
-    except:
-        raise(Exception(schema_str))
+    except Exception, e:
+        error(str(e) + ':' + schema_str)
         return "", ""
     if db != "" and schema["db_info"]["db_name"]["O"] != db:
         return "", ""

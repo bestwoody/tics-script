@@ -11,11 +11,11 @@ function cmd_ti_ci_release()
 	local file="${dir}/release.ti"
 	rm -f "${file}"
 	"${ti}" new "${file}" 'delta=-8' "dir=${dir}"
-	"${ti}" "${file}" must burn doit
+	"${ti}" "${file}" must 'burn doit:up:sleep 5'
 
 	# TODO: remote 'sleep' after FLASH-635 is addressed
-	"${ti}" "${file}" repeat 20 'up:sleep 5:tpch/load 0.01 all:tpch/ch:tpch/tikv'
-	"${ti}" "${file}" repeat 20 'up:sleep 5:kill/storage:tpch/ch:tpch/tikv'
+	"${ti}" "${file}" repeat 20 'tpch/load 0.001 all:tpch/ch:tpch/tikv'
+	"${ti}" "${file}" repeat 20 'kill/storage:up:sleep 5:tpch/ch:tpch/tikv'
 
 	"${ti}" "${file}" must burn doit
 	rm -f "${file}"
