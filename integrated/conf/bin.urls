@@ -1,10 +1,10 @@
 # name \t md5sum \t bin_name \t url
 
-# https://github.com/pingcap/tidb/pull/13034
-tidb	9dfdbd841011d8d8a9d5ebd24fabf8c6	tidb-server	http://139.219.11.38:8000/14kit9/tidb-server.tar.gz
+# https://github.com/crazycs520/tidb/tree/avoid-schema_change - a2ce730aad39a4f60b4265284add4e5c60e146ae
+tidb	e49101f395547f1723dcbaea166714f6	tidb-server	http://139.219.11.38:8000/15Ysvj/tidb-server.tar.gz
 
-# master - 38e8e07b16475966f36026cfc37e258e008837fc
-tikv	5c4d2b5e08a26a8069b9e9ed356467dd	tikv-server	http://139.219.11.38:8000/EzLS7/tikv-server.tar.gz
+# master - a8f1ba28d8c0a9fcc6f80c593175bc30ec1cf9b2
+tikv	d10e8684d17ae094c9201a602a313923	tikv-server	http://139.219.11.38:8000/J5epW/tikv-server.tar.gz
 
 # https://github.com/disksing/pd/tree/placement - 8a6f961ee2876a8ed9edd5bee215609e886d1c6d
 pd	1633b94fe8b3d3c767b568029ae8e799	pd-server	http://139.219.11.38:8000/EnvND/pd-server.tar.gz
@@ -12,8 +12,8 @@ pd	1633b94fe8b3d3c767b568029ae8e799	pd-server	http://139.219.11.38:8000/EnvND/pd
 # https://github.com/overvenus/tikv/tree/rngine - 23e556168599f9c02472fd0b9781ef212a62297e
 rngine	ce1f71e100d11dcc50ae5a09f0db0fec	tikv-server-rngine	http://139.219.11.38:8000/bURhj/tikv-server-rngine.tar.gz
 
-# master - ae3c5cb00353de3fc175800b83c480bd49084526
-tiflash	fb346a3a2a81775af1f3a254df2eff26	tiflash	http://139.219.11.38:8000/HIxsw/tiflash.tar.gz
+# master - 799c719ee5ada710a292fb9edb2f9d8b96638597
+tiflash	b8c8d6eb07fe2c7a249e69be1d3e05d8	tiflash	http://139.219.11.38:8000/fNXRL/tiflash.tar.gz
 
 # https://github.com/pingcap/tiflash/pull/867
 cluster_manager	26525b1954fb1a9f5a544f3fd07018c6	flash_cluster_manager	http://139.219.11.38:8000/pcUQC/flash_cluster_manager.tar.gz
@@ -22,6 +22,7 @@ cluster_manager	26525b1954fb1a9f5a544f3fd07018c6	flash_cluster_manager	http://13
 chspark	913b2789dfdf0fcabbe85ebdd1762f10	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/y6BYn/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
 
 pd_ctl	3f762a0e4ff02441db5a71c4fb5b9621	pd-ctl	http://139.219.11.38:8000/10zs84/pd-ctl.tar.gz
+
 tikv_ctl	eb9f21f34575d6a93ae99bbf57bfec62	tikv-ctl	http://139.219.11.38:8000/ZzOgG/tikv-ctl.tar.gz
 spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz

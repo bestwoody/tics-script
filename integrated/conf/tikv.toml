@@ -39,12 +39,16 @@ wal-dir = ""
 max-open-files = 1000
 
 [rocksdb.defaultcf]
+# TODO: check the meaning of this config
+force-consistency-checks = false
 block-cache-size = "10GB"
 
 [rocksdb.lockcf]
+force-consistency-checks = false
 block-cache-size = "4GB"
 
 [rocksdb.writecf]
+force-consistency-checks = false
 block-cache-size = "4GB"
 
 [raftdb]
