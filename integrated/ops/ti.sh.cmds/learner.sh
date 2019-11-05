@@ -47,10 +47,19 @@ function cmd_ti_learner()
 
 	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
 	local query=`python "${here}/to_learner_query.py" "${query}"`
-	echo "${query}"
-	echo "------------"
-	mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "explain ${query}"
-	echo "------------"
+	if [ ! -z "`echo ${query} | { grep 'select' || test $? = 1; }`" ]; then
+		local plan=`mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "explain ${query}" 2>&1`
+		if [ ! -z "`echo ${plan} | { grep 'ERROR' || test $? = 1; }`" ]; then
+			echo "${plan}"
+			echo "when executing: 'explain ${query}'"
+			return 1
+		else
+			echo "${query}"
+			echo "------------"
+			echo "${plan}"
+			echo "------------"
+		fi
+	fi
 
 	local start_time=`date +%s%N`
 	mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${query}"

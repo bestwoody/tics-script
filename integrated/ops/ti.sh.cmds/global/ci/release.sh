@@ -14,8 +14,8 @@ function cmd_ti_ci_release()
 	"${ti}" "${file}" must burn doit
 
 	# TODO: remote 'sleep' after FLASH-635 is addressed
-	"${ti}" "${file}" repeat 10 'up:tpch/load 0.01 all:sleep 420:tpch/ch:tpch/tikv'
-	"${ti}" "${file}" repeat 10 'kill/storage:up:sleep 420:tpch/ch:tpch/tikv'
+	"${ti}" "${file}" repeat 20 'up:sleep 5:tpch/load 0.01 all:tpch/ch:tpch/tikv'
+	"${ti}" "${file}" repeat 20 'up:sleep 5:kill/storage:tpch/ch:tpch/tikv'
 
 	"${ti}" "${file}" must burn doit
 	rm -f "${file}"

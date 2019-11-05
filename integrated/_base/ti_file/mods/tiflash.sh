@@ -217,7 +217,7 @@ function tiflash_run()
 	chmod +x "${tiflash_dir}/run.sh"
 	bash "${tiflash_dir}/run.sh"
 
-	sleep 0.1
+	sleep 0.5
 	local pid=`must_print_pid "${conf_file}" "\-\-config"`
 	if [ -z "${pid}" ]; then
 		echo "[func tiflash_run] pid not found, failed" >&2

@@ -27,8 +27,10 @@ def rewrite_one(query):
         return 'select ' + query
     return 'select /*+ read_from_storage(tiflash[' + tables + ']) */ ' + query
 
-def rewrite(query):
-    query = query.lower()
+def rewrite(origin):
+    query = origin.lower()
+    if query.find('select') < 0:
+        return origin
     subs = query.split('select')
     subs = map(lambda x: x.strip(), subs)
     subs = filter(lambda x: x, subs)
