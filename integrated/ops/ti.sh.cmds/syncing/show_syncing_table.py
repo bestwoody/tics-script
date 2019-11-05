@@ -45,7 +45,10 @@ def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
         f = urllib.urlopen(schema_request_rule)
         if f == '' or not f:
             return
-        db, table = get_db_and_table(f.read(), target_db)
+        s = f.read()
+        if s.find(' does not exist') >= 0:
+            return
+        db, table = get_db_and_table(s, target_db)
         if table != "":
             if db not in tables:
                 tables[db] = []
@@ -65,5 +68,5 @@ if __name__ == '__main__':
     tidb_port = sys.argv[4]
     db = ""
     if len(sys.argv) >= 6:
-        db = sys.argv[5] 
+        db = sys.argv[5]
     run(pd_host, pd_port, tidb_host, tidb_port, db)

@@ -1,1 +1,1 @@
-docker push hub.pingcap.net/tiflash/ops-ci:v5
+docker push hub.pingcap.net/tiflash/ops-ci:v6

@@ -1,20 +1,24 @@
 #!/bin/bash
 
-here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-source "${here}/_env.sh"
+function cmd_ti_kill_storage()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local index="${RANDOM}"
+	local mod_types=('tikv' 'tiflash')
+	local index=$((index % ${#mod_types[@]}))
+	local selected=${mod_types[${index}]}
+
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "kill/${selected}"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
-
-ti_file="${1}"
-ti_args="${2}"
-cmd_mod_names="${3}"
-cmd_hosts="${4}"
-cmd_indexes="${5}"
-mods="${6}"
-shift 6
-
-index="${RANDOM}"
-mod_types=('tikv' 'tiflash')
-index=$((index % ${#mod_types[@]}))
-selected=${mod_types[${index}]}
-
-"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "kill/${selected}"
+cmd_ti_kill_storage "${@}"

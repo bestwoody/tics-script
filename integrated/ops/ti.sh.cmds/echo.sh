@@ -1,18 +1,24 @@
 #!/bin/bash
 
-index="${1}"
-mod_name="${2}"
-dir="${3}"
-conf_rel_path="${4}"
-host="${5}"
+function cmd_ti_echo()
+{
+	local index="${1}"
+	local mod_name="${2}"
+	local dir="${3}"
+	local conf_rel_path="${4}"
+	local host="${5}"
 
-shift 5
+	shift 5
 
-args=("${@}")
-args_str="extra:[ "
-for it in "${args[@]}"; do
-	args_str="$args_str'$it' "
-done
-args_str="$args_str]"
+	local args=("${@}")
+	local args_str="extra:[ "
+	for it in "${args[@]}"; do
+		local args_str="$args_str'$it' "
+	done
+	local args_str="$args_str]"
 
-echo "${index}" "${mod_name}" "${dir}" "${conf_rel_path}" "${host}" "${args_str}"
+	echo "${index}" "${mod_name}" "${dir}" "${conf_rel_path}" "${host}" "${args_str}"
+}
+
+set -euo pipefail
+cmd_ti_echo "${@}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function cmd_ti_top()
+function cmd_ti_perf_top()
 {
 	local index="${1}"
 	local mod_name="${2}"
@@ -11,7 +11,7 @@ function cmd_ti_top()
 	shift 5
 
 	local show_title='false'
-	if [ ! -z "${1}" ]; then
+	if [ ! -z "${1+x}" ]; then
 		local show_title="${1}"
 	fi
 	if [ "${show_title}" == 'title' ]; then
@@ -49,4 +49,5 @@ function cmd_ti_top()
 	fi
 }
 
-cmd_ti_top "${@}"
+set -euo pipefail
+cmd_ti_perf_top "${@}"

@@ -15,7 +15,7 @@ function cmd_ti_ch()
 	fi
 
 	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
-		echo '[cmd ch] <cmd> query_str_or_file_path [database] [print_format=(tab|title|pretty)] [show_elapsed=false] [ch_args]' >&2
+		echo '[cmd ch] <cmd> query_str_or_file_path [database] [print_format=(tab|title|pretty)] [show_elapsed=true] [ch_args]' >&2
 		return
 	fi
 
@@ -47,7 +47,7 @@ function cmd_ti_ch()
 		local show_elapsed="${1}"
 		shift 1
 	else
-		local show_elapsed='false'
+		local show_elapsed='true'
 	fi
 	if [ "${show_elapsed}" != 'false' ] && [ "${show_elapsed}" != 'true' ]; then
 		echo "[cmd ch] show_elapsed should be 'true|false', got '${show_elapsed}'" >&2
@@ -61,27 +61,13 @@ function cmd_ti_ch()
 	fi
 	local port=`get_value "${dir}/proc.info" 'tcp_port'`
 
-	if [ `uname` != "Darwin" ]; then
-		# TODO: remove hard code file name from this func
-		local target_lib_dir="tiflash_lib"
-		if [ ! -d "${dir}/${target_lib_dir}" ]; then
-			echo "[cmd ch] cannot find library dir ${dir}/${target_lib_dir}"
-			return 1
-		fi
-		# TODO: check whether the following path exists before use it
-		local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${dir}/${target_lib_dir}"
-		if [ -z "${LD_LIBRARY_PATH+x}" ]; then
-			export LD_LIBRARY_PATH="$lib_path"
-		else
-			export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$lib_path"
-		fi
-	fi
-
 	local start_time=`date +%s%N`
 	if [ -z "${1+x}" ]; then
-		"${dir}/tiflash" client --host="${host}" --port="${port}" -d "${db}" -f "${format}" --query="${query_str}"
+		LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${dir}/tiflash" client --host="${host}" \
+			--port="${port}" -d "${db}" -f "${format}" --query="${query_str}"
 	else
-		"${dir}/tiflash" client --host="${host}" --port="${port}" -d "${db}" -f "${format}" --query="${query_str}" "${@}"
+		LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${dir}/tiflash" client --host="${host}" \
+			--port="${port}" -d "${db}" -f "${format}" --query="${query_str}" "${@}"
 	fi
 	local end_time=`date +%s%N`
 	if [ "${show_elapsed}" == 'true' ]; then

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function cmd_show_syncing_table()
+function cmd_ti_syncing_show()
 {
 	local ti_file="${1}"
 	local ti_args="${2}"
@@ -39,4 +39,4 @@ function cmd_show_syncing_table()
 }
 
 set -euo pipefail
-cmd_show_syncing_table "${@}"
+cmd_ti_syncing_show "${@}"

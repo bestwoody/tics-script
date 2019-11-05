@@ -32,4 +32,5 @@ function cmd_ti_mysql_raw()
 	mysql --comments -h "${host}" -P "${port}" -u root "${@}"
 }
 
+set -euo pipefail
 cmd_ti_mysql_raw "${@}"

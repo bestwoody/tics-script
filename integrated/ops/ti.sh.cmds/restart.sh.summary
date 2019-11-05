@@ -1,21 +1,27 @@
 #!/bin/bash
 
-ti_file="${1}"
-ti_args="${2}"
-cmd_mod_names="${3}"
-cmd_hosts="${4}"
-cmd_indexes="${5}"
-mods="${6}"
+function cmd_ti_restart()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
 
-fast="${7}"
+	local fast="${7}"
 
-here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-source "${here}/_env.sh"
-auto_error_handle
+	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+	source "${here}/_env.sh"
+	auto_error_handle
 
-stop_cmd='fstop'
-if [ ! -z "${fast}" ] && [ "${fast}" != 'fast' ] && [ "${fast}" != 'true' ]; then
-	stop_cmd='stop'
-fi
+	local stop_cmd='fstop'
+	if [ ! -z "${fast}" ] && [ "${fast}" != 'fast' ] && [ "${fast}" != 'true' ]; then
+		local stop_cmd='stop'
+	fi
 
-"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${stop_cmd}:run"
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		-k "${ti_args}" "${ti_file}" "${stop_cmd}:run"
+}
+
+cmd_ti_restart "${@}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function cmd_mod_flame_linux()
+function _mod_flame_linux()
 {
 	local here="${1}"
 	local mod="${2}"
@@ -29,14 +29,14 @@ function cmd_mod_flame_linux()
 		local pid=`get_value "${dir}/proc.info" 'pid'`
 		if [ -z "${pid}" ]; then
 			echo "   error: fetch pid from proc.info failed"
-			return
+			return 1
 		fi
 		mkdir -p "${gen_dir}"
 		rm -f "${data_file}"
 		local record_res=`perf record -F 400 -p "${pid}" -g -o "${data_file}" -- sleep "${sampling_sec}" 2>&1`
 		if [ ! -f "${data_file}" ]; then
 			echo "   error: perf record failed: ${record_res}"
-			return
+			return 1
 		fi
 		cp -f "${data_file}" "${copied_file}"
 	else
@@ -44,42 +44,41 @@ function cmd_mod_flame_linux()
 		local pid=`ssh_get_value_from_proc_info "${host}" "${dir}" 'pid'`
 		if [ -z "${pid}" ]; then
 			echo "   error: fetch pid from ${host}:${dir}/proc.info failed"
-			return
+			return 1
 		fi
 		local record_res=`ssh_exe "${host}" "mkdir -p \"${gen_dir}\" && rm -f \"${data_file}\" && perf record -F 200 -p \"${pid}\" -g -o \"${data_file}\" -- sleep \"${sampling_sec}\" 2>&1"`
 		local has_data=`ssh_exe "${host}" "test -f \"${data_file}\" && echo true"`
 		if [ "${has_data}" != 'true' ]; then
 			echo "   error: perf record failed: ${record_res} on ${host}"
-			return
+			return 1
 		fi
 		rsync --quiet ${host}:"${data_file}" "${copied_file}"
 	fi
 
 	if [ ! -f "${copied_file}" ]; then
 		echo "   error: file copy failed: ${record_res}"
-		return
+		return 1
 	fi
 	perf script -i "${copied_file}" > "${perf_file}" 2>/dev/null
 	if [ ! -f "${perf_file}" ]; then
 		echo "   error: create ${perf_file} failed"
-		return
+		return 1
 	fi
 	"${here}/stackcollapse-perf.pl" "${perf_file}" > "${folded_file}"
 	if [ ! -f "${perf_file}" ]; then
 		echo "   error: create ${folded_file} failed"
-		return
+		return 1
 	fi
 	"${here}/flamegraph.pl" "${folded_file}" > "${result_file}"
 	if [ ! -f "${perf_file}" ]; then
 		echo "   error: create ${result_file} failed"
-		return
+		return 1
 	fi
 	echo "   result: ${result_file}"
 }
 
-function cmd_mods_flame()
+function cmd_ti_perf_flame()
 {
-
 	local ti_file="${1}"
 	local ti_args="${2}"
 	local cmd_mod_names="${3}"
@@ -99,7 +98,7 @@ function cmd_mods_flame()
 		local sampling_sec='20'
 	fi
 	if [ -z "${result_dir}" ]; then
-		local result_dir="${ti_file}.flame"
+		local result_dir="${ti_file}.data"
 	fi
 
 	if [ `uname` == "Darwin" ]; then
@@ -108,8 +107,8 @@ function cmd_mods_flame()
 	fi
 
 	echo "${mods}" | while read mod; do
-		cmd_mod_flame_linux "${here}" "${mod}" "${result_dir}"
+		_mod_flame_linux "${here}" "${mod}" "${result_dir}"
 	done
 }
 
-cmd_mods_flame "${@}"
+cmd_ti_perf_flame "${@}"

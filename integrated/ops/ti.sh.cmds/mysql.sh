@@ -14,12 +14,12 @@ function cmd_ti_mysql()
 
 	if [ -z "${6+x}" ]; then
 		echo '[cmd mysql] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true] [mysql_args]' >&2
-		return
+		return 1
 	fi
 
 	local query="${6}"
 	if [ -z "${query}" ]; then
-		return
+		return 1
 	fi
 
 	if [ -z "${7+x}" ]; then
@@ -29,7 +29,7 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -z "${8+x}" ]; then
-		local show_elapsed='false'
+		local show_elapsed='true'
 	else
 		local show_elapsed="${8}"
 	fi

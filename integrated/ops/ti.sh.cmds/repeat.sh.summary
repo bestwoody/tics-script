@@ -1,32 +1,39 @@
 #!/bin/bash
 
-ti_file="${1}"
-ti_args="${2}"
-cmd_mod_names="${3}"
-cmd_hosts="${4}"
-cmd_indexes="${5}"
-mods="${6}"
-shift 6
+function cmd_ti_repeat()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
 
-repeat_times="${1}"
-shift 1
+	local repeat_times="${1}"
+	shift 1
 
-cmd="${1}"
+	local cmd="${1}"
 
-here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-source "${here}/_env.sh"
-auto_error_handle
+	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+	source "${here}/_env.sh"
+	auto_error_handle
 
-if [ -z "${cmd}" ] || [ -z "${repeat_times}" ]; then
-	echo "[cmd repeat] usage: ti.sh [flags] ti_file_path repeat repeat_times cmd [args]"
-	exit 1
-fi
-
-for (( r = 0; r < ${repeat_times}; r++ )); do
-	if [ -z "`echo ${cmd} | grep ':'`" ]; then
-		echo "============"
-		echo "repeat ${r}/(${repeat_times}-1)> ${@}"
-		echo "------------"
+	if [ -z "${cmd}" ] || [ -z "${repeat_times}" ]; then
+		echo "[cmd repeat] usage: ti.sh [flags] ti_file_path repeat repeat_times cmd [args]"
+		return 1
 	fi
-	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
-done
+
+	for (( r = 0; r < ${repeat_times}; r++ )); do
+		if [ -z "`echo ${cmd} | grep ':'`" ]; then
+			echo "============"
+			echo "repeat ${r}/(${repeat_times}-1)> ${@}"
+			echo "------------"
+		fi
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
+		sleep 0.1
+	done
+}
+
+cmd_ti_repeat "${@}"

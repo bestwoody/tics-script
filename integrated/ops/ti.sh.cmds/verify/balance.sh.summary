@@ -1,32 +1,36 @@
 #!/bin/bash
 
-ti_file="${1}"
-ti_args="${2}"
-cmd_mod_names="${3}"
-cmd_hosts="${4}"
-cmd_indexes="${5}"
-mods="${6}"
-shift 6
+function cmd_ti_verify_balance()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
 
-table="${1}"
-selraw="${2}"
+	local table="${1}"
+	local selraw="${2}"
 
-here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-source "${here}/_env.sh"
-auto_error_handle
+	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+	auto_error_handle
 
-if [ -z "${table}" ]; then
-	echo "[cmd verify/balance] usage: <cmd> [database.]table"
-	exit 1
-fi
-if [ -z "${selraw}" ]; then
-	selraw='false'
-fi
+	if [ -z "${table}" ]; then
+		echo "[cmd verify/balance] usage: <cmd> [database.]table"
+		exit 1
+	fi
+	if [ -z "${selraw}" ]; then
+		local selraw='false'
+	fi
 
-select='select'
-if [ "${selraw}" == 'true' ] || [ "${selraw}" == 'raw' ] || [ "${selraw}" == 'selraw' ]; then
-	select='selraw'
-fi
+	local select='select'
+	if [ "${selraw}" == 'true' ] || [ "${selraw}" == 'raw' ] || [ "${selraw}" == 'selraw' ]; then
+		local select='selraw'
+	fi
 
-"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" -m "${cmd_mod_names}" -i "${cmd_indexes}" "${ti_file}" \
-	'ch' "${select} count(1) from ${table}" 'default' 'TabSeparated' | sort -rnk 1
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" 'ch' "${select} count(1) from ${table}" 'default' 'TabSeparated' | sort -rnk 1
+}
+
+cmd_ti_verify_balance "${@}"

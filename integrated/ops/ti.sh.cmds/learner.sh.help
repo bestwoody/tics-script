@@ -1,2 +1,2 @@
 (try to) run queries on tiflash over tidb
-usage: <cmd> query_str_or_file_path [database] [show_elapsed=false]
+usage: <cmd> query_str_or_file_path [database] [show_elapsed=true]

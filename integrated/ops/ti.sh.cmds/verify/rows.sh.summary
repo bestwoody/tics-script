@@ -1,51 +1,58 @@
 #!/bin/bash
 
-ti_file="${1}"
-ti_args="${2}"
-cmd_mod_names="${3}"
-cmd_hosts="${4}"
-cmd_indexes="${5}"
-mods="${6}"
-shift 6
+function cmd_ti_verify_rows()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
 
-table="${1}"
+	local table="${1}"
 
-here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-source "${here}/_env.sh"
-auto_error_handle
+	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+	auto_error_handle
 
-if [ -z "${table}" ]; then
-	echo "[cmd verify/rows] usage: <cmd> [database.]table"
-	exit 1
-fi
-
-tiflash_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" "${ti_file}" \
-	'ch' "select count(1) from ${table}" 'default' 'TabSeparated' | awk '{sum+=$1}END{print sum}'`
-
-tidb_idx=`from_mods_random_mod "${mods}" 'tidb'`
-tikv_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i "${tidb_idx}" -k "${ti_args}" "${ti_file}" \
-	'mysql' "select count(1) from ${table}" | grep -v 'count'`
-
-learner_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i "${tidb_idx}" -k "${ti_args}" "${ti_file}" \
-	'mysql' "select /*+ read_from_storage(tiflash[${table}]) */ count(1) from ${table}" | grep -v 'count'`
-
-if [ -z "${tiflash_rows}" ]; then
-	echo "[cmd verify/rows] execute query on tiflash failed"
-	exit 1
-fi
-
-if [ "${tiflash_rows}" == "${tikv_rows}" ] && [ "${learner_rows}" == "${tikv_rows}" ]; then
-	echo "OK     [${table}] ${tiflash_rows}(tiflash direct) == ${tikv_rows}(tikv) == ${learner_rows}(tiflash over tidb)"
-else
-	local res="FAILED [${table}]"
-	if [ "${tiflash_rows}" == "${tikv_rows}" ]; then
-		res="${res} ${tiflash_rows}(tiflash direct) == ${tikv_rows}(tikv)"
-	else
-		res="${res} ${tiflash_rows}(tiflash direct) != ${tikv_rows}(tikv)"
+	if [ -z "${table}" ]; then
+		echo "[cmd verify/rows] usage: <cmd> [database.]table" >&2
+		return 1
 	fi
-	if [ "${learner_rows}" == "${tikv_rows}" ]; then
-		echo "${res} == ${learner_rows}(tiflash over tidb)"
-	else
-		echo "${res} != ${learner_rows}(tiflash over tidb)"
+
+	local tiflash_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" "${ti_file}" 'ch' \
+		"select count(1) from ${table}" 'default' 'TabSeparated' 'false' | awk '{sum+=$1}END{print sum}'`
+
+	local tidb_idx=`from_mods_random_mod "${mods}" 'tidb'`
+	local tikv_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i "${tidb_idx}" -k \
+		"${ti_args}" "${ti_file}" 'mysql' "select count(1) from ${table}" 'test' 'false' | grep -v 'count'`
+
+	local learner_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" \
+		-m tidb -i "${tidb_idx}" -k "${ti_args}" "${ti_file}" \
+		'mysql' "select /*+ read_from_storage(tiflash[${table}]) */ count(1) from ${table}" \
+		'test' 'false' | grep -v 'count'`
+
+	if [ -z "${tiflash_rows}" ]; then
+		echo "[cmd verify/rows] execute query on tiflash failed" >&2
+		return 1
 	fi
-fi
+
+	if [ "${tiflash_rows}" == "${tikv_rows}" ] && [ "${learner_rows}" == "${tikv_rows}" ]; then
+		local res="OK     [${table}] ${tiflash_rows}(tiflash direct)"
+		echo "${res} == ${tikv_rows}(tikv) == ${learner_rows}(tiflash over tidb)"
+	else
+		local res="FAILED [${table}]"
+		if [ "${tiflash_rows}" == "${tikv_rows}" ]; then
+			res="${res} ${tiflash_rows}(tiflash direct) == ${tikv_rows}(tikv)"
+		else
+			res="${res} ${tiflash_rows}(tiflash direct) != ${tikv_rows}(tikv)"
+		fi
+		if [ "${learner_rows}" == "${tikv_rows}" ]; then
+			echo "${res} == ${learner_rows}(tiflash over tidb)"
+		else
+			echo "${res} != ${learner_rows}(tiflash over tidb)"
+		fi
+	fi
+}
+
+cmd_ti_verify_rows "${@}"

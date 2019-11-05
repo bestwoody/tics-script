@@ -1,2 +1,0 @@
-run 'tikv-ctl' on tikv in a cluster
-usage: <cmd> online(true|false) command

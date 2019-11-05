@@ -1,5 +1,48 @@
 #!/bin/bash
 
+function get_tiflash_lib_path()
+{
+	# TODO: remove hard code file name from this func
+	local target_lib_dir='tiflash_lib'
+	if [ ! -d "${dir}/${target_lib_dir}" ]; then
+		if [ ! -f "${dir}/${target_lib_dir}.tgz" ]; then
+			echo "[func setup_tiflash_lib_path] can not find dir '${dir}/${target_lib_dir}' and related zfile."
+			return 1
+		else
+			tar -zxf "${dir}/${target_lib_dir}.tgz" -C ${dir} 1>/dev/null
+		fi
+	fi
+	if [ ! -d "${dir}/${target_lib_dir}" ]; then
+		echo "[func setup_tiflash_lib_path] can not find dir ${dir}/${target_lib_dir}"
+		return 1
+	fi
+
+	# TODO: check whether the following path exists before use it
+	local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${dir}/${target_lib_dir}"
+	if [ -z "${LD_LIBRARY_PATH+x}" ]; then
+		echo "${lib_path}"
+	else
+		echo "${LD_LIBRARY_PATH}:${lib_path}"
+	fi
+}
+export -f get_tiflash_lib_path
+
+function setup_tiflash_lib_path()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func setup_tiflash_lib_path] usage: <func> tiflash_dir" >&2
+		return 1
+	fi
+
+	local dir="${1}"
+
+	if [ `uname` == "Darwin" ]; then
+		return
+	fi
+	export LD_LIBRARY_PATH="`get_tiflash_lib_path`"
+}
+export -f setup_tiflash_lib_path
+
 function tiflash_run()
 {
 	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
@@ -143,7 +186,7 @@ function tiflash_run()
 			fi
 		fi
 		"${tiflash_dir}/tiflash" server --config-file "${conf_file}"
-		return $?
+		return ${?}
 	fi
 
 	local info="${tiflash_dir}/proc.info"
@@ -159,18 +202,17 @@ function tiflash_run()
 		echo "config-file" > "${tiflash_dir}/extra_str_to_find_proc"
 	fi
 
+	rm -f "${tiflash_dir}/run.sh"
 	if [ `uname` != "Darwin" ]; then
 		# TODO: check whether the following path exists before use it
 		local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${tiflash_dir}/${target_lib_dir}"
 		if [ -z "${LD_LIBRARY_PATH+x}" ]; then
-			echo "export LD_LIBRARY_PATH=\"$lib_path\"" > "${tiflash_dir}/run.sh"
+			echo "export LD_LIBRARY_PATH=\"$lib_path\"" >> "${tiflash_dir}/run.sh"
 		else
-			echo "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$lib_path\"" > "${tiflash_dir}/run.sh"
+			echo "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$lib_path\"" >> "${tiflash_dir}/run.sh"
 		fi
-		echo "nohup \"${tiflash_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" >> "${tiflash_dir}/run.sh"
-	else
-		echo "nohup \"${tiflash_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" > "${tiflash_dir}/run.sh"
 	fi
+	echo "nohup \"${tiflash_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" >> "${tiflash_dir}/run.sh"
 
 	chmod +x "${tiflash_dir}/run.sh"
 	bash "${tiflash_dir}/run.sh"

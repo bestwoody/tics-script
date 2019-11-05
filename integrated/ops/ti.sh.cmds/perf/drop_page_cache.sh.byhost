@@ -1,6 +1,12 @@
 #!/bin/bash
 
-host="${1}"
-echo "[${host}] using sudo to drop page cache"
-sudo bash -c "echo 1 > /proc/sys/vm/drop_caches && sysctl -p 1>/dev/null 2>&1"
-echo "[${host}] done"
+function cmd_ti_perf_drop_page_cache()
+{
+	local host="${1}"
+	echo "[${host}] using sudo to drop page cache"
+	sudo bash -c "echo 1 > /proc/sys/vm/drop_caches && sysctl -p 1>/dev/null 2>&1"
+	echo "[${host}] done"
+}
+
+set -euo pipefail
+cmd_ti_perf_drop_page_cache "${@}"

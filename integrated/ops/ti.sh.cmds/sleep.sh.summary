@@ -1,9 +1,16 @@
-shift 6
+#!/bin/bash
 
-if [ -z "${1+x}" ]; then
-	echo "[cmd sleep] usage: <cmd> sec"
-	exit 1
-fi
+function cmd_ti_sleep()
+{
+	shift 6
 
-sleep "${1}"
-echo "waked up"
+	if [ -z "${1+x}" ]; then
+		echo "[cmd sleep] usage: <cmd> sec" >&2
+		return 1
+	fi
+
+	sleep "${1}"
+	echo "waked up"
+}
+
+cmd_ti_sleep "${@}"

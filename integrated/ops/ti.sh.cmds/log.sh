@@ -12,7 +12,7 @@ function cmd_ti_log()
 
 	if [ -z "${1+x}" ]; then
 		echo "[cmd log] usage: <cmd> count_of_matched_log [grep_string] [upload]" >&2
-		return
+		return 1
 	fi
 	local cnt="${1}"
 
@@ -46,16 +46,19 @@ function cmd_ti_log()
 
 	if [ ! -f "${log_file}" ]; then
 		echo "[${mod_name} #${index} ${dir}] NO LOG" >&2
-		return
+		return 1
 	fi
 
 	if [ "${upload_log}" == "false" ]; then
-		cat "${log_file}" | { grep -i "${grep_str}" || test $? = 1; } | tail -n "${cnt}" | awk '{print "['${mod_name}' #'${index}' '${dir}'] "$0}'
+		cat "${log_file}" | { grep -i "${grep_str}" || test $? = 1; } | tail -n "${cnt}" | \
+			awk '{print "['${mod_name}' #'${index}' '${dir}'] "$0}'
 	else
 		local file_name=`basename "${log_file}"`
 		# TODO: move this to a new cmd
-		curl --upload-file "${log_file}" "http://139.219.11.38:8000/${file_name}" "http://139.219.11.38:8000/66nb8/${file_name}"
+		curl --upload-file "${log_file}" "http://139.219.11.38:8000/${file_name}"
+			"http://139.219.11.38:8000/66nb8/${file_name}"
 	fi
 }
 
+set -euo pipefail
 cmd_ti_log "${@}"

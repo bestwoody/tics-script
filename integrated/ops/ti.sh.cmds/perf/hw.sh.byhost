@@ -1,11 +1,14 @@
 #!/bin/bash
 
-here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-source "${here}/_env.sh"
+function cmd_ti_perf_hw()
+{
+	local host="${1}"
+	shift 1
+
+	echo "=> [${host}]"
+	hw_info | awk '{print "   "$0}'
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
-
-host="${1}"
-shift 1
-
-echo "=> [${host}]"
-hw_info | awk '{print "   "$0}'
+cmd_ti_perf_hw "${@}"

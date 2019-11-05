@@ -15,24 +15,30 @@ function cmd_ti_tikv_ctl()
 		return
 	fi
 
-	local help='[cmd tikv_ctl] usage: <cmd> online(true|false) command'
+	local help='[cmd tikv/ctl] usage: <cmd> online(true|false) command'
 	if [ -z "${6+x}" ] || [ -z "${7+x}" ]; then
 		echo "${help}" >&2
-		return
+		return 1
 	fi
 	local cmd_type="${6}"
 	if [ "${cmd_type}" != "true" ] && [ "${cmd_type}" != "false" ]; then
 		echo "${help}" >&2
-		return
+		return 1
 	fi
 
-	shift 6
+	shift 1
+	if [ -z "${1+x}" ]; then
+		echo "${help}" >&2
+		return 1
+	fi
+
 	if [ "${cmd_type}" == "true" ]; then
 		local port=`get_value "${dir}/proc.info" 'tikv_port'`
 		"${dir}/tikv-ctl" --host "${host}:${port}" "${@}"
 	else
 		"${dir}/tikv-ctl" --db "${dir}/data/db" "${@}"
-	fi	
+	fi
 }
 
+set -euo pipefail
 cmd_ti_tikv_ctl "${@}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function cmd_ti_mysql()
+function cmd_ti_learner()
 {
 	local index="${1}"
 	local mod_name="${2}"
@@ -13,13 +13,14 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -z "${6+x}" ]; then
-		echo '[cmd mysql] usage: <cmd> query_str_or_file_path [database] [show_elapsed=false]' >&2
-		return
+		echo '[cmd learner] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true]' >&2
+		return 1
 	fi
 
 	local query="${6}"
 	if [ -z "${query}" ]; then
-		return
+		echo '[cmd learner] query is empty'
+		return 1
 	fi
 
 	if [ -z "${7+x}" ]; then
@@ -29,14 +30,14 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -z "${8+x}" ]; then
-		local show_elapsed='false'
+		local show_elapsed='true'
 	else
 		local show_elapsed="${8}"
 	fi
 
 	local port=`get_value "${dir}/proc.info" 'tidb_port'`
 	if [ -z "${port}" ]; then
-		echo '[cmd mysql] get port failed' >&2
+		echo '[cmd learner] get port failed' >&2
 		return 1
 	fi
 
@@ -44,8 +45,12 @@ function cmd_ti_mysql()
 		local query=`cat "${query}" | tr -s "\n" " "`
 	fi
 
-	local query=`echo "${query}" | tr 'A-Z' 'a-z'`
-	local query=`replace_substr "${query}" 'select' 'select /*+ read_from_storage(tiflash[lineitem]) */'`
+	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+	local query=`python "${here}/to_learner_query.py" "${query}"`
+	echo "${query}"
+	echo "------------"
+	mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "explain ${query}"
+	echo "------------"
 
 	local start_time=`date +%s%N`
 	mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${query}"
@@ -55,4 +60,4 @@ function cmd_ti_mysql()
 	fi
 }
 
-cmd_ti_mysql "${@}"
+cmd_ti_learner "${@}"

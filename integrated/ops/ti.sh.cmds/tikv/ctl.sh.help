@@ -1,0 +1,2 @@
+run 'tikv-ctl' on tikv in a cluster
+usage: <cmd> online(true|false) tikv_command_and_args

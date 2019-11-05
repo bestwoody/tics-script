@@ -134,9 +134,11 @@ function load_tpch_data_to_ch()
 	local blocks=`ls "${data_dir}" | { grep "${table}.tbl" || test $? = 1; } | wc -l | awk '$1=$1'`
 
 	## Create database and tables
-	"${ch_bin}" client --host="${ch_host}" --port="${ch_port}" --query="create database if not exists ${db}"
+	LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${ch_bin}" client \
+		--host="${ch_host}" --port="${ch_port}" --query="create database if not exists ${db}"
 	local create_table_stmt=`cat "${schema_dir}/${table}.ddl" | tr -s "\n" " "`
-	"${ch_bin}" client --host="${ch_host}" --port="${ch_port}" -d "${db}" --query="${create_table_stmt}"
+	LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${ch_bin}" client \
+		--host="${ch_host}" --port="${ch_port}" -d "${db}" --query="${create_table_stmt}"
 
 	if [ -f "${data_dir}/${table}.tbl" ] && [ -f "${data_dir}/${table}.tbl.1" ]; then
 		echo "[func load_tpch_data_to_ch] '${data_dir}' not data dir" >&2
@@ -152,8 +154,8 @@ function load_tpch_data_to_ch()
 			## trans delimiter "|" to ","
 			cat "${data_file}" | python "${workspace}/trans/${table}.py" > "${csv_file}"
 		fi
-		cat "${csv_file}" | "${ch_bin}" client --host="${ch_host}" --port="${ch_port}" \
-			-d "${db}" --query="INSERT INTO $table FORMAT CSV"
+		cat "${csv_file}" | LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${ch_bin}" client --host="${ch_host}" \
+			--port="${ch_port}" -d "${db}" --query="INSERT INTO $table FORMAT CSV"
 	else
 		## Ensure all blocks exist.
 		for (( i = 1; i < ${blocks} + 1; ++i)); do
@@ -171,8 +173,8 @@ function load_tpch_data_to_ch()
 				local workspace="${integrated}/_base/test"
 				cat "${data_file}" | python ${workspace}/trans/${table}.py > "${csv_file}"
 			fi
-			cat "${csv_file}" | "${ch_bin}" client --host="${ch_host}" --port="${ch_port}" \
-				-d "${db}" --query="INSERT INTO $table FORMAT CSV" &
+			cat "${csv_file}" | LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${ch_bin}" client --host="${ch_host}" \
+				--port="${ch_port}" -d "${db}" --query="INSERT INTO $table FORMAT CSV" &
 		done
 		wait ## Wait for all blocks loaded
 	fi

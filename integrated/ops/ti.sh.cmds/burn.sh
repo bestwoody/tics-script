@@ -7,7 +7,11 @@ function cmd_ti_burn()
 	local dir="${3}"
 	local conf_rel_path="${4}"
 	local host="${5}"
-	local doit="${6}"
+
+	local doit=''
+	if [ ! -z "${6+x}" ]; then
+		local doit="${6}"
+	fi
 
 	if [ "${dir}" == "/" ]; then
 		echo "=> DENIED: rm -f /" >&2
@@ -47,4 +51,5 @@ function cmd_ti_burn()
 	fi
 }
 
+set -euo pipefail
 cmd_ti_burn "${@}"

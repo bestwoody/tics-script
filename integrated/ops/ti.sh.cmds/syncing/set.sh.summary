@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function cmd_enable_sync_table()
+function cmd_ti_syncing_set()
 {
 	local ti_file="${1}"
 	local ti_args="${2}"
@@ -57,7 +57,7 @@ function cmd_enable_sync_table()
 	done
 
 	if [ -z "${pd_syncing_ok}" ]; then
-		echo "[cmd syncing/set] syncing info not found in pd"
+		echo "[cmd syncing/set] syncing info not found in pd" >&2
 		return 1
 	fi
 
@@ -65,4 +65,4 @@ function cmd_enable_sync_table()
 }
 
 set -euo pipefail
-cmd_enable_sync_table "${@}"
+cmd_ti_syncing_set "${@}"
