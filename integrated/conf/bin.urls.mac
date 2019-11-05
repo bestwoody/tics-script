@@ -23,8 +23,8 @@ chspark	e164a816b729eca2034d64ee1f5bf78c	tiflashspark-0.1.0-SNAPSHOT-jar-with-de
 
 pd_ctl	2dbb87e4bbea4a68409cfb8debabbbfc	pd-ctl	http://139.219.11.38:8000/VKwpv/pd-ctl.tar.gz
 tikv_ctl	f858021402608024367ea6fd5054e5d7	tikv-ctl	http://139.219.11.38:8000/47bkL/tikv-ctl.tar.gz
-spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
-spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
+spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
+spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 
 # TODO: fake lib file, remove it later
 tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz

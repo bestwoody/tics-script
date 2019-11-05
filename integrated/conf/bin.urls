@@ -19,10 +19,10 @@ tiflash	fb346a3a2a81775af1f3a254df2eff26	tiflash	http://139.219.11.38:8000/HIxsw
 cluster_manager	26525b1954fb1a9f5a544f3fd07018c6	flash_cluster_manager	http://139.219.11.38:8000/pcUQC/flash_cluster_manager.tar.gz
 
 # master - dd35e25c4b47c430f15167e885156760d24c47de
-chspark	913b2789dfdf0fcabbe85ebdd1762f10	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/y6BYn/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz	
+chspark	913b2789dfdf0fcabbe85ebdd1762f10	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/y6BYn/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
 
 pd_ctl	3f762a0e4ff02441db5a71c4fb5b9621	pd-ctl	http://139.219.11.38:8000/10zs84/pd-ctl.tar.gz
 tikv_ctl	eb9f21f34575d6a93ae99bbf57bfec62	tikv-ctl	http://139.219.11.38:8000/ZzOgG/tikv-ctl.tar.gz
-spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
-spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.3.4/spark-2.3.4-bin-hadoop2.7.tgz
+spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
+spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
