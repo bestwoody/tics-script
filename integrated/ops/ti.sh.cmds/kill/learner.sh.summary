@@ -1,0 +1,27 @@
+#!/bin/bash
+
+function cmd_ti_kill_learner()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+
+	local tiflash_index=`from_mods_random_mod "${mods}" 'tiflash'`
+	local rngine_index=`from_mods_get_rngine_by_tiflash "${mods}" "${tiflash_index}"`
+
+	if [ ! -z "${tiflash_index}" ]; then
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'tiflash' \
+			-i "${tiflash_index}" -k "${ti_args}" "${ti_file}" 'fstop'
+	fi
+	if [ ! -z "${rngine_index}" ]; then
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'rngine' \
+			-i "${rngine_index}" -k "${ti_args}" "${ti_file}" 'fstop'
+	fi
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+cmd_ti_kill_learner "${@}"

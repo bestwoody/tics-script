@@ -10,6 +10,7 @@ function cmd_ti_kill_random()
 	local mods="${6}"
 	shift 6
 
+	local mods=`from_mods_not_type "${mods}" 'rngine' 'false'`
 	local mod=`from_mods_random_mod "${mods}" '' 'false'`
 	if [ -z "${mod}" ]; then
 		return
@@ -18,9 +19,9 @@ function cmd_ti_kill_random()
 	local name=`from_mod_get_name "${mod}"`
 	local index=`from_mod_get_index "${mod}"`
 
-	if [ "${name}" == 'rngine' ] || [ "${name}" == 'tiflash' ]; then
+	if [ "${name}" == 'tiflash' ]; then
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "kill/storage"
+			-i "${index}" -k "${ti_args}" "${ti_file}" "kill/learner"
 	else
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${name}" \
 			-i "${index}" -k "${ti_args}" "${ti_file}" 'fstop'

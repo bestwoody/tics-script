@@ -3,7 +3,7 @@
 function ssh_get_value_from_proc_info()
 {
 	if [ -z "${3+x}" ]; then
-		echo "[ssh_get_value_from_proc_info] host dir key" >&2
+		echo "[func ssh_get_value_from_proc_info] host dir key" >&2
 		return 1
 	fi
 
@@ -28,6 +28,55 @@ function ssh_get_value_from_proc_info()
 }
 export -f ssh_get_value_from_proc_info
 
+function from_mods_by_type()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func from_mods_by_type] usage: <func> mods_info_lines candidate_type" >&2
+		return 1
+	fi
+
+	local mods="${1}"
+	local type="${2}"
+	echo "${mods}" | { grep $'\t'"${type}" || test $? = 1; }
+}
+export -f from_mods_by_type
+
+function from_mods_not_type()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func from_mods_not_type] usage: <func> mods_info_lines type" >&2
+		return 1
+	fi
+
+	local mods="${1}"
+	local type="${2}"
+	echo "${mods}" | { grep -v $'\t'"${type}" || test $? = 1; }
+}
+export -f from_mods_not_type
+
+function from_mods_get_mod()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func from_mods_get_mod] usage: <func> mods_info_lines candidate_type index" >&2
+		return 1
+	fi
+
+	local mods="${1}"
+	local type="${2}"
+	local index="${3}"
+
+	local instances=`from_mods_by_type "${mods}" "${type}"`
+	if [ -z "${instances}" ]; then
+		return
+	fi
+	local count=`echo "${instances}" | wc -l | awk '{print $1}'`
+
+	local index_base_1=$((index + 1))
+	local mod=`echo "${instances}" | head -n "${index_base_1}" | tail -n 1`
+	echo "${mod}"
+}
+export -f from_mods_get_mod
+
 function from_mods_random_mod()
 {
 	if [ -z "${2+x}" ]; then
@@ -43,35 +92,22 @@ function from_mods_random_mod()
 		local index_only="${3}"
 	fi
 
-	local instances=`echo "${mods}" | { grep $'\t'"${type}" || test $? = 1; }`
+	local instances=`from_mods_by_type "${mods}" "${type}"`
 	if [ -z "${instances}" ]; then
 		return
 	fi
 	local count=`echo "${instances}" | wc -l | awk '{print $1}'`
 
 	local index="${RANDOM}"
-	local index_base_1=$((index % count + 1))
-	local line=`echo "${instances}" | head -n "${index_base_1}" | tail -n 1`
+	local index=$((index % count))
+	local mod=`from_mods_get_mod "${mods}" "${type}" "${index}"`
 	if [ "${index_only}" == 'true' ]; then
-		echo "${line}" | awk '{print $1}'
+		echo "${mod}" | awk '{print $1}'
 	else
-		echo "${line}"
+		echo "${mod}"
 	fi
 }
 export -f from_mods_random_mod
-
-function from_mods_by_type()
-{
-	if [ -z "${2+x}" ]; then
-		echo "[func from_mods_random_mod] usage: <func> mods_info_lines candidate_type" >&2
-		return 1
-	fi
-
-	local mods="${1}"
-	local type="${2}"
-	echo "${mods}" | { grep $'\t'"${type}" || test $? = 1; }
-}
-export -f from_mods_by_type
 
 function from_mod_get_index()
 {
@@ -144,3 +180,43 @@ function from_mod_get_tidb_port()
 	ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'
 }
 export -f from_mod_get_tidb_port
+
+function from_mods_get_rngine_by_tiflash()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func from_mods_get_rngine_by_tiflash] usage: <func> mods_info_lines tiflash_index" >&2
+		return 1
+	fi
+
+	local mods="${1}"
+	local tiflash_index="${2}"
+
+	local tiflash_mod=`from_mods_get_mod "${mods}" 'tiflash' "${tiflash_index}"`
+	if [ -z "${tiflash_mod}" ]; then
+		return
+	fi
+
+	local tiflash_host=`from_mod_get_host "${tiflash_mod}"`
+	local tiflash_dir=`from_mod_get_dir "${tiflash_mod}"`
+	local tiflash_port=`ssh_get_value_from_proc_info "${tiflash_host}" "${tiflash_dir}" 'raft_and_cop_port'`
+	if [ -z "${tiflash_port}" ]; then
+		return
+	fi
+	local tiflash_addr="${tiflash_host}:${tiflash_port}"
+
+	local instances=`from_mods_by_type "${mods}" 'rngine'`
+	echo "${instances}" | while read rngine_mod; do
+		local rngine_host=`from_mod_get_host "${rngine_mod}"`
+		local rngine_dir=`from_mod_get_dir "${rngine_mod}"`
+		local rngine_tiflash=`ssh_get_value_from_proc_info "${rngine_host}" \
+			"${rngine_dir}" 'tiflash_raft_addr'`
+		if [ "${rngine_tiflash}" == "${tiflash_addr}" ]; then
+			local rngine_index=`from_mod_get_index "${rngine_mod}"`
+			if [ ! -z "${rngine_index}" ]; then
+				echo "${rngine_index}"
+			fi
+			break
+		fi
+	done
+}
+export -f from_mods_get_rngine_by_tiflash

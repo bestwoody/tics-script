@@ -1,2 +1,2 @@
-randomly kill a tiflash+rngine instance pair on cluster
+randomly kill a tiflash instance on cluster
 usage: <cmd> (no args)
