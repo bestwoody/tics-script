@@ -17,8 +17,8 @@ export -f print_java_installed
 
 function spark_file_prepare()
 {
-	if [ -z "${4+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ]; then
-		echo "[func spark_file_prepare] usage: <func> spark_mod_dir conf_templ_dir pd_addr tiflash_addr" >&2
+	if [ -z "${7+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ] || [ -z "${6}" ] || [ -z "${7}" ]; then
+		echo "[func spark_file_prepare] usage: <func> spark_mod_dir conf_templ_dir pd_addr tiflash_addr jmxremote_port jdwp_port is_chspark" >&2
 		return 1
 	fi
 
@@ -28,15 +28,21 @@ function spark_file_prepare()
 	local tiflash_addr="${4}"
 	local jmxremote_port="${5}"
 	local jdwp_port="${6}"
+	local is_chspark="${7}"
 
 	local default_ports="${conf_templ_dir}/default.ports"
 
 	local render_str="pd_addresses=${pd_addr}"
-	local render_str="${render_str}#flash_addresses=${tiflash_addr}"
 	local render_str="${render_str}#spark_local_dir=${spark_mod_dir}/spark_local_dir"
 	local render_str="${render_str}#jmxremote_port=${jmxremote_port}"
 	local render_str="${render_str}#jdwp_port=${jdwp_port}"
-	render_templ "${conf_templ_dir}/spark-defaults.conf" "${spark_mod_dir}/spark-defaults.conf" "${render_str}"
+	if [ "${is_chspark}" == "true" ]; then
+		local render_str="${render_str}#flash_addresses=${tiflash_addr}"
+		local spark_conf_file="${conf_templ_dir}/spark-defaults-ch.conf"
+	else
+		local spark_conf_file="${conf_templ_dir}/spark-defaults.conf"
+	fi
+	render_templ "${spark_conf_file}" "${spark_mod_dir}/spark-defaults.conf" "${render_str}"
 
 	if [ ! -d "${spark_mod_dir}/spark" ]; then
 	    # TODO: remove spark file name from this func

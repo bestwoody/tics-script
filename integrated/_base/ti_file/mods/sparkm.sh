@@ -2,8 +2,8 @@
 
 function spark_master_run()
 {
-	if [ -z "${4+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ]; then
-		echo "[func spark_master_run] usage: <func> spark_master_dir conf_templ_dir pd_addr tiflash_addr [ports_delta] [advertise_host] [cluster_id]" >&2
+	if [ -z "${5+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ]; then
+		echo "[func spark_master_run] usage: <func> spark_master_dir conf_templ_dir pd_addr tiflash_addr is_chspark [ports_delta] [advertise_host] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -11,23 +11,26 @@ function spark_master_run()
 	local conf_templ_dir="${2}"
 	local pd_addr="${3}"
 	local tiflash_addr="${4}"
+	local is_chspark="${5}"
 
-	if [ -z "${5+x}" ]; then
+	shift 5
+
+	if [ -z "${1+x}" ]; then
 		local ports_delta="0"
 	else
-		local ports_delta="${5}"
+		local ports_delta="${1}"
 	fi
 
-	if [ -z "${6+x}" ]; then
+	if [ -z "${2+x}" ]; then
 		local advertise_host=""
 	else
-		local advertise_host="${6}"
+		local advertise_host="${2}"
 	fi
 
-	if [ -z "${7+x}" ]; then
+	if [ -z "${3+x}" ]; then
 		local cluster_id="<none>"
 	else
-		local cluster_id="${7}"
+		local cluster_id="${3}"
 	fi
 
 	local java_installed=`print_java_installed`
@@ -38,31 +41,51 @@ function spark_master_run()
 
 	local default_ports="${conf_templ_dir}/default.ports"
 
-	local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port'`
+	if [ "${is_chspark}" == "true" ]; then
+		local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port_ch'`
+	else
+		local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port'`
+	fi
 	if [ -z "${default_spark_master_port}" ]; then
 		echo "[func spark_master_run] get default spark_master_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
-	local default_thriftserver_port=`get_value "${default_ports}" 'thriftserver_port'`
+	if [ "${is_chspark}" == "true" ]; then
+		local default_thriftserver_port=`get_value "${default_ports}" 'thriftserver_port_ch'`
+	else
+		local default_thriftserver_port=`get_value "${default_ports}" 'thriftserver_port'`
+	fi
 	if [ -z "${default_thriftserver_port}" ]; then
 		echo "[func spark_master_run] get default thriftserver_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
-	local default_spark_master_webui_port=`get_value "${default_ports}" 'spark_master_webui_port'`
+	if [ "${is_chspark}" == "true" ]; then
+		local default_spark_master_webui_port=`get_value "${default_ports}" 'spark_master_webui_port_ch'`
+	else
+		local default_spark_master_webui_port=`get_value "${default_ports}" 'spark_master_webui_port'`
+	fi
 	if [ -z "${default_spark_master_webui_port}" ]; then
 		echo "[func spark_master_run] get default spark_master_webui_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
-	local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port'`
+	if [ "${is_chspark}" == "true" ]; then
+		local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port_ch'`
+	else
+		local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port'`
+	fi
 	if [ -z "${default_jmxremote_port}" ]; then
 		echo "[func spark_master_run] get default jmxremote_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
-	local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port'`
+	if [ "${is_chspark}" == "true" ]; then
+		local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port_ch'`
+	else
+		local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port'`
+	fi
 	if [ -z "${default_jdwp_port}" ]; then
 		echo "[func spark_master_run] get default jdwp_port from ${default_ports} failed" >&2
 		return 1
@@ -106,7 +129,19 @@ function spark_master_run()
 	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
 	local jdwp_port=$((${ports_delta} + ${default_jdwp_port}))
 
-	spark_file_prepare "${spark_master_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}" "${jdwp_port}"
+	spark_file_prepare "${spark_master_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}" "${jdwp_port}" "${is_chspark}"
+
+	if [ `uname` == 'Darwin' ]; then
+		local bin_urls_file="${conf_templ_dir}/bin.urls.mac"
+	else
+		local bin_urls_file="${conf_templ_dir}/bin.urls"
+	fi
+	if [ "${is_chspark}" == "true" ]; then
+		local mod_key="chspark"
+	else
+		local mod_key="tispark"
+	fi
+	local jar_file=`cat "${bin_urls_file}" | { grep "^${mod_key}\b" || test $? = 1; } | awk '{print $3}'`
 
 	if [ ! -f "${spark_master_dir}/run_master.sh" ]; then
 		echo "export SPARK_MASTER_HOST=${listen_host}" > "${spark_master_dir}/run_master_temp.sh"
@@ -115,7 +150,7 @@ function spark_master_run()
 		echo "${spark_master_dir}/spark/sbin/start-master.sh" >> "${spark_master_dir}/run_master_temp.sh"
 		echo "(" >> "${spark_master_dir}/run_master_temp.sh"
 		echo "  cd ${spark_master_dir}" >> "${spark_master_dir}/run_master_temp.sh"
-		echo "  ${spark_master_dir}/spark/sbin/start-thriftserver.sh --hiveconf hive.server2.thrift.port=${thriftserver_port} --jars ${spark_master_dir}/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar" >> "${spark_master_dir}/run_master_temp.sh"
+		echo "  ${spark_master_dir}/spark/sbin/start-thriftserver.sh --hiveconf hive.server2.thrift.port=${thriftserver_port} --jars ${spark_master_dir}/${jar_file} --master spark://${listen_host}:${spark_master_port}" >> "${spark_master_dir}/run_master_temp.sh"
 		echo ")" >> "${spark_master_dir}/run_master_temp.sh"
 		echo "wait" >> "${spark_master_dir}/run_master_temp.sh"
 		# TODO: remove this sleep

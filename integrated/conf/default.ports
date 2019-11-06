@@ -20,3 +20,10 @@ spark_master_webui_port	11000
 spark_worker_webui_port	11500
 jmxremote_port	12000
 jdwp_port	12500
+
+spark_master_port_ch	13000
+thriftserver_port_ch	13500
+spark_master_webui_port_ch	14000
+spark_worker_webui_port_ch	14500
+jmxremote_port_ch	15000
+jdwp_port_ch	15500

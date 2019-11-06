@@ -10,7 +10,7 @@ function cmd_ti_beeline()
 
 	shift 5
 
-	if [ "${mod_name}" != 'spark_m' ]; then
+	if [ "${mod_name}" != 'spark_m' ] &&  [ "${mod_name}" != 'chspark_m' ]; then
 		return
 	fi
 

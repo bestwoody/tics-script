@@ -18,13 +18,18 @@ tiflash	42fca29a51f4f75d935e35ea3ca73e97	tiflash	http://139.219.11.38:8000/kxqDS
 # https://github.com/pingcap/tiflash/pull/867
 cluster_manager	f99d8064d7e7b7bc8b419e9b05c7f1c1	flash_cluster_manager	http://139.219.11.38:8000/GY1qe/flash_cluster_manager.tar.gz
 
-# master - dd35e25c4b47c430f15167e885156760d24c47de
-chspark	e164a816b729eca2034d64ee1f5bf78c	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/PwtIX/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
+# master - 6f9e46e073aa5e2d8beead0d80063fb02a84e73b
+chspark	689954d70cd1e7d385f639518dcc0c77	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/btq5X/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
+
+# master - 700b50b1d8ebe3225a2937150cd2b27ad2765a8f
+tispark	0fd410ad1cc83edd0d3b86fa70f7c3b3	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/OqxAg/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz
 
 pd_ctl	2dbb87e4bbea4a68409cfb8debabbbfc	pd-ctl	http://139.219.11.38:8000/VKwpv/pd-ctl.tar.gz
 tikv_ctl	f858021402608024367ea6fd5054e5d7	tikv-ctl	http://139.219.11.38:8000/47bkL/tikv-ctl.tar.gz
 spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
+chspark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
+chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 
 # TODO: fake lib file, remove it later
 tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz

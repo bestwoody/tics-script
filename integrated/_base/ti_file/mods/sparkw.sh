@@ -2,8 +2,8 @@
 
 function spark_worker_run()
 {
-	if [ -z "${5+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ]; then
-		echo "[func spark_worker_run] usage: <func> spark_worker_dir conf_templ_dir pd_addr tiflash_addr spark_master_addr [ports_delta] [advertise_host] [cores] [memory] [cluster_id]" >&2
+	if [ -z "${6+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ] || [ -z "${6}" ]; then
+		echo "[func spark_worker_run] usage: <func> spark_worker_dir conf_templ_dir pd_addr tiflash_addr spark_master_addr is_chspark [ports_delta] [advertise_host] [cores] [memory] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -12,35 +12,38 @@ function spark_worker_run()
 	local pd_addr="${3}"
 	local tiflash_addr="${4}"
 	local spark_master_addr="${5}"
+	local is_chspark="${6}"
 
-	if [ -z "${6+x}" ]; then
+	shift 6
+
+	if [ -z "${1+x}" ]; then
 		local ports_delta="0"
 	else
-		local ports_delta="${6}"
+		local ports_delta="${1}"
 	fi
 
-	if [ -z "${7+x}" ]; then
+	if [ -z "${2+x}" ]; then
 		local advertise_host=""
 	else
-		local advertise_host="${7}"
+		local advertise_host="${2}"
 	fi
 
-	if [ -z "${8+x}" ]; then
+	if [ -z "${3+x}" ]; then
 		local worker_cores=""
 	else
-		local worker_cores="${8}"
+		local worker_cores="${3}"
 	fi
 
-	if [ -z "${9+x}" ]; then
+	if [ -z "${4+x}" ]; then
 		local worker_memory=""
 	else
-		local worker_memory="${9}"
+		local worker_memory="${4}"
 	fi
 
-	if [ -z "${10+x}" ]; then
+	if [ -z "${5+x}" ]; then
 		local cluster_id="<none>"
 	else
-		local cluster_id="${10}"
+		local cluster_id="${5}"
 	fi
 
 	local java_installed=`print_java_installed`
@@ -51,31 +54,41 @@ function spark_worker_run()
 
 	local default_ports="${conf_templ_dir}/default.ports"
 
-	local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port'`
+	if [ "${is_chspark}" == "true" ]; then
+		local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port_ch'`
+	else
+		local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port'`
+	fi
 	if [ -z "${default_spark_master_port}" ]; then
 		echo "[func spark_worker_run] get default spark_master_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
-	local default_thriftserver_port=`get_value "${default_ports}" 'thriftserver_port'`
-	if [ -z "${default_thriftserver_port}" ]; then
-		echo "[func spark_worker_run] get default thriftserver_port from ${default_ports} failed" >&2
-		return 1
+	if [ "${is_chspark}" == "true" ]; then
+		local default_spark_worker_webui_port=`get_value "${default_ports}" 'spark_worker_webui_port_ch'`
+	else
+		local default_spark_worker_webui_port=`get_value "${default_ports}" 'spark_worker_webui_port'`
 	fi
-
-	local default_spark_worker_webui_port=`get_value "${default_ports}" 'spark_worker_webui_port'`
 	if [ -z "${default_spark_worker_webui_port}" ]; then
 		echo "[func spark_worker_run] get default spark_worker_webui_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
-	local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port'`
+	if [ "${is_chspark}" == "true" ]; then
+		local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port_ch'`
+	else
+		local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port'`
+	fi
 	if [ -z "${default_jmxremote_port}" ]; then
 		echo "[func spark_master_run] get default jmxremote_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
-	local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port'`
+	if [ "${is_chspark}" == "true" ]; then
+		local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port_ch'`
+	else
+		local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port'`
+	fi
 	if [ -z "${default_jdwp_port}" ]; then
 		echo "[func spark_master_run] get default jdwp_port from ${default_ports} failed" >&2
 		return 1
@@ -118,7 +131,7 @@ function spark_worker_run()
 	local tiflash_addr=$(cal_addr "${tiflash_addr}" `must_print_ip` "${default_tiflash_tcp_port}")
 	local spark_master_addr=$(cal_addr "${spark_master_addr}" `must_print_ip` "${default_spark_master_port}")
 
-	spark_file_prepare "${spark_worker_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}" "${jdwp_port}"
+	spark_file_prepare "${spark_worker_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}" "${jdwp_port}" "${is_chspark}"
 
 	local info="${spark_worker_dir}/proc.info"
 	echo "listen_host	${listen_host}" > "${info}"

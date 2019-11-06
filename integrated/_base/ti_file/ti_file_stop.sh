@@ -44,6 +44,12 @@ function ti_file_mod_stop()
 	if [ "${name}" == "spark_w" ]; then
 		spark_worker_stop "${dir}" "${fast}"
 	fi
+	if [ "${name}" == "chspark_m" ]; then
+		spark_master_stop "${dir}" "${fast}"
+	fi
+	if [ "${name}" == "chspark_w" ]; then
+		spark_worker_stop "${dir}" "${fast}"
+	fi
 
 	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
 	local ok=`echo "${up_status}" | { grep ^OK || test $? = 1; }`

@@ -19,6 +19,8 @@ class Ti:
         self.rngines = []
         self.spark_master = None
         self.spark_workers = []
+        self.spark_master_ch = None
+        self.spark_workers_ch = []
         self.pd_addr = []
 
     def dump(self):
@@ -49,6 +51,13 @@ class Ti:
             print 'Spark workers'
         for it in self.spark_workers:
             print vars(it)
+        if self.spark_master_ch is not None:
+            print 'Spark master for chspark'
+            print vars(self.spark_master_ch)
+        if len(self.spark_workers_ch):
+            print 'Spark workers for chspark'
+        for it in self.spark_workers_ch:
+            print vars(it)
 
 class Mod(object):
     def __init__(self, name):
@@ -68,8 +77,8 @@ class ModRngine(Mod):
         self.tiflash = ""
 
 class ModSparkWorker(Mod):
-    def __init__(self):
-        super(ModSparkWorker, self).__init__("spark_w")
+    def __init__(self, mod_name="spark_w"):
+        super(ModSparkWorker, self).__init__(mod_name)
         self.cores = ""
         self.mem = ""
 
@@ -95,11 +104,13 @@ def parse_mod(obj, line, origin):
         'pd': ['pd_ctl'],
         'tikv': ['tikv_ctl'],
         'tiflash': ['tiflash_lib', 'cluster_manager'],
-        'spark_m': ['chspark'],
-        'spark_w': ['chspark']
+        'spark_m': ['tispark'],
+        'spark_w': ['tispark'],
+        'chspark_m': ['chspark'],
+        'chspark_w': ['chspark']
     }
     if obj.name in mod_extra_tools:
-        obj.extra_tools = mod_extra_tools[obj.name]
+        obj.extra_tools.extend(mod_extra_tools[obj.name])
     for field in fields:
         if field.startswith('ports'):
             setattr(obj, 'ports', field[5:].strip())
@@ -155,6 +166,10 @@ def spark_master(res, line, origin):
     res.spark_master = parse_mod(Mod('spark_m'), line, origin)
 def spark_worker(res, line, origin):
     res.spark_workers.append(parse_mod(ModSparkWorker(), line, origin))
+def spark_master_ch(res, line, origin):
+    res.spark_master_ch = parse_mod(Mod('chspark_m'), line, origin)
+def spark_worker_ch(res, line, origin):
+    res.spark_workers_ch.append(parse_mod(ModSparkWorker('chspark_w'), line, origin))
 
 mods = {
     'pd': pd,
@@ -163,7 +178,9 @@ mods = {
     'tiflash': tiflash,
     'rngine': rngine,
     'spark_m': spark_master,
-    'spark_w': spark_worker
+    'spark_w': spark_worker,
+    'chspark_m': spark_master_ch,
+    'chspark_w': spark_worker_ch,
 }
 
 def parse_file(res, path, kvs):
@@ -230,7 +247,7 @@ def check_mod_is_valid(mod, index, dirs, ports):
 
 def check_is_valid(res):
     dirs = set()
-    for mods in [res.pds, res.tikvs, res.tidbs, res.tiflashs, res.rngines, res.spark_master, res.spark_workers]:
+    for mods in [res.pds, res.tikvs, res.tidbs, res.tiflashs, res.rngines, res.spark_master, res.spark_workers, res.spark_master_ch, res.spark_workers_ch]:
         ports = set()
         if isinstance(mods, list):
             for i in range(0, len(mods)):
@@ -457,8 +474,11 @@ def render_rngines(res, conf, hosts, indexes):
         pd_addr = rngine.pd or ','.join(res.pd_addr)
         print '\t"%s" "${tiflash_addr}" "%s" "%s" "${id}"' % (pd_addr, rngine.host, rngine.ports)
 
-def render_spark_master(res, conf, hosts, indexes):
-    spark_master = res.spark_master
+def render_spark_master(res, conf, hosts, indexes, is_chspark=False):
+    if is_chspark:
+        spark_master = res.spark_master_ch
+    else:
+        spark_master = res.spark_master
     if len(hosts) != 0 and spark_master.host not in hosts:
         return
     if len(indexes) != 0 and (0 not in indexes):
@@ -472,10 +492,10 @@ def render_spark_master(res, conf, hosts, indexes):
         tiflash_addr.append(addr)
 
     def print_run_cmd(ssh, conf_templ_dir):
-        print '# spark_master_run dir conf_templ_dir pd_addr tiflash_addr ports_delta listen_host cluster_id'
+        print '# spark_master_run dir conf_templ_dir pd_addr tiflash_addr is_chspark ports_delta listen_host cluster_id'
         print (ssh + 'spark_master_run "%s" \\') % spark_master.dir
         print '\t"%s" "%s" "%s" \\' % (conf_templ_dir, ",".join(res.pd_addr), ",".join(tiflash_addr))
-        print '\t "%s" "%s" "${id}"' % (spark_master.ports, spark_master.host)
+        print '\t "%s" "%s" "%s" "${id}"' % ("true" if is_chspark else "false", spark_master.ports, spark_master.host)
 
     if spark_master.is_local():
         print_cp_bin(spark_master, conf)
@@ -485,13 +505,21 @@ def render_spark_master(res, conf, hosts, indexes):
         print_ssh_prepare(spark_master, conf, env_dir)
         print_run_cmd('call_remote_func "%s" "%s" ' % (spark_master.host, env_dir), env_dir + '/conf')
 
-def render_spark_workers(res, conf, hosts, indexes):
-    spark_workers = res.spark_workers
+def render_spark_workers(res, conf, hosts, indexes, is_chspark=False):
+    if is_chspark:
+        spark_workers = res.spark_workers_ch
+        spark_master = res.spark_master_ch
+    else:
+        spark_workers = res.spark_workers
+        spark_master = res.spark_master
     if len(spark_workers) == 0:
         return
-    if res.spark_master is None:
-        error("spark master is not specified")
-    spark_master_addr = res.spark_master.host + ':' + res.spark_master.ports
+    if spark_master is None:
+        if is_chspark:
+            error("spark master for chspark is not specified")
+        else:
+            error("spark master for tispark is not specified")
+    spark_master_addr = spark_master.host + ':' + spark_master.ports
 
     for i in range(0, len(spark_workers)):
         spark_worker = spark_workers[i]
@@ -508,10 +536,10 @@ def render_spark_workers(res, conf, hosts, indexes):
             tiflash_addr.append(addr)
 
         def print_run_cmd(ssh, conf_templ_dir):
-            print '# spark_worker_run dir conf_templ_dir pd_addr tiflash_addr spark_master_addr ports_delta listen_host cores memory cluster_id'
+            print '# spark_worker_run dir conf_templ_dir pd_addr tiflash_addr spark_master_addr is_chspark ports_delta listen_host cores memory cluster_id'
             print (ssh + 'spark_worker_run "%s" \\') % spark_worker.dir
             print '\t"%s" "%s" "%s" "%s" \\' % (conf_templ_dir, ",".join(res.pd_addr), ",".join(tiflash_addr), spark_master_addr)
-            print '\t"%s" "%s" "%s" "%s" "${id}"' % (spark_worker.ports, spark_worker.host, spark_worker.cores, spark_worker.mem)
+            print '\t"%s" "%s" "%s" "%s" "%s" "${id}"' % ("true" if is_chspark else "false", spark_worker.ports, spark_worker.host, spark_worker.cores, spark_worker.mem)
 
         if spark_worker.is_local():
             print_cp_bin(spark_worker, conf)
@@ -540,9 +568,13 @@ def render(res, conf, kvs, mod_names, hosts, indexes):
     if should_render('rngine'):
         render_rngines(res, conf, hosts, indexes)
     if should_render('spark_m') and res.spark_master is not None:
-        render_spark_master(res, conf, hosts, indexes)
+        render_spark_master(res, conf, hosts, indexes, False)
     if should_render('spark_w'):
-        render_spark_workers(res, conf, hosts, indexes)
+        render_spark_workers(res, conf, hosts, indexes, False)
+    if should_render('chspark_m') and res.spark_master_ch is not None:
+        render_spark_master(res, conf, hosts, indexes, True)
+    if should_render('chspark_w'):
+        render_spark_workers(res, conf, hosts, indexes, True)
 
 def get_mods(res, mod_names, hosts, indexes):
     confs = {
@@ -552,7 +584,9 @@ def get_mods(res, mod_names, hosts, indexes):
         'tiflash': 'conf/config.xml',
         'rngine': 'rngine.toml',
         'spark_m': 'spark-defaults.conf',
-        'spark_w': 'spark-defaults.conf'
+        'spark_w': 'spark-defaults.conf',
+        'chspark_m': 'spark-defaults-ch.conf',
+        'chspark_w': 'spark-defaults-ch.conf',
     }
 
     def output_mod(mod, index):
@@ -575,6 +609,8 @@ def get_mods(res, mod_names, hosts, indexes):
     output(res.rngines)
     output_mod(res.spark_master, 0)
     output(res.spark_workers)
+    output_mod(res.spark_master_ch, 0)
+    output(res.spark_workers_ch)
 
 def get_hosts(res, mod_names, hosts, indexes):
     host_infos = set()
