@@ -47,26 +47,19 @@ function cmd_ti_learner()
 
 	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
 	local query=`python "${here}/to_learner_query.py" "${query}"`
-	if [ ! -z "`echo ${query} | { grep 'select' || test $? = 1; }`" ]; then
-		local plan=`mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "explain ${query}" 2>&1`
-		if [ ! -z "`echo ${plan} | { grep 'ERROR' || test $? = 1; }`" ]; then
-			echo "${plan}"
-			echo "when executing: 'explain ${query}'"
-			return 1
-		else
-			echo "${query}"
-			echo "------------"
-			echo "${plan}"
-			echo "------------"
-		fi
+
+	if [ "${show_elapsed}" == 'true' ]; then
+		mysql_explain "${host}" "${port}" "${query}"
+		local start_time=`timer_start`
 	fi
 
-	local start_time=`timer_start`
 	mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${query}"
-	local elapsed=`timer_end "${start_time}"`
+
 	if [ "${show_elapsed}" == 'true' ]; then
+		local elapsed=`timer_end "${start_time}"`
 		echo "elapsed: ${elapsed}"
 	fi
 }
 
+set -euo pipefail
 cmd_ti_learner "${@}"

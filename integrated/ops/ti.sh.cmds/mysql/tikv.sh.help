@@ -1,0 +1,2 @@
+run queries on tikv over tidb by setting tidb_isolation_read_engines
+usage: <cmd> query_str_or_file_path [database] [show_elapsed=true]

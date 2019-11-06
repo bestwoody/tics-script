@@ -22,8 +22,14 @@
 # enable syncing table data from tikv to tiflash
 >> ops/ti.sh my.ti enable_sync "default" "my_table"
 
+# run queries on tikv over tidb
+>> ops/ti.sh my.ti mysql/tikv "select count(*) from my_table..."
+
 # run queries on tiflash over tidb
->> ops/ti.sh my.ti mysql "select /*+ read_from_storage(tiflash[my_table]) */ count(*) from my_table..."
+>> ops/ti.sh my.ti mysql/learner "select count(*) from my_table..."
+
+# run queries on tidb, auto select storage
+>> ops/ti.sh my.ti mysql "select count(*) from my_table..."
 
 # close and destory cluster
 >> ops/ti.sh my.ti burn doit

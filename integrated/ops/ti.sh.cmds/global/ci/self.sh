@@ -19,7 +19,9 @@ function cmd_ti_ci_self()
 	rm -f "${file}"
 	"${ti}" new "${file}" 'delta=-4' "dir=${dir}" 'spark=1'
 
-	"${ti}" "${file}" 'fstop:stop:up:status:prop:du:log 1:log 1 info'
+	"${ti}" "${file}" 'fstop:stop:up'
+	"${ti}" "${file}" 'kill/tiflash:kill/rngine:kill/tikv:kill/storage:kill/random:kill/random'
+	"${ti}" "${file}" 'up:status:prop:du:log 1:log 1 info'
 
 	"${ti}" "${file}" pd/ctl --help 1>/dev/null
 	"${ti}" "${file}" tikv/ctl true --help 1>/dev/null
@@ -37,6 +39,18 @@ function cmd_ti_ci_self()
 	"${ti}" "${file}" mysql 'show databases' 'test' 1>/dev/null
 	"${ti}" "${file}" mysql 'show databases' 'test' 'true' 1>/dev/null
 	"${ti}" "${file}" mysql 'show databases' 'test' 'false' 1>/dev/null
+	"${ti}" "${file}" mysql/tikv 'show databases' 1>/dev/null
+	"${ti}" "${file}" mysql/tikv 'show databases' 'test' 1>/dev/null
+	"${ti}" "${file}" mysql/tikv 'show databases' 'test' 'true' 1>/dev/null
+	"${ti}" "${file}" mysql/tikv 'show databases' 'test' 'false' 1>/dev/null
+	"${ti}" "${file}" mysql/learner 'show databases' 1>/dev/null
+	"${ti}" "${file}" mysql/learner 'show databases' 'test' 1>/dev/null
+	"${ti}" "${file}" mysql/learner 'show databases' 'test' 'true' 1>/dev/null
+	"${ti}" "${file}" mysql/learner 'show databases' 'test' 'false' 1>/dev/null
+	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 1>/dev/null
+	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 1>/dev/null
+	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'true' 1>/dev/null
+	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'false' 1>/dev/null
 	"${ti}" "${file}" mysql/host:mysql/port
 
 	local res=`"${ti}" "${file}" beeline default -e 'show databases' | grep test`

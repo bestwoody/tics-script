@@ -45,13 +45,15 @@ function cmd_ti_mysql()
 	fi
 
 	if [ "${show_elapsed}" == 'true' ]; then
+		mysql_explain "${host}" "${port}" "${query}"
 		local start_time=`timer_start`
 	fi
 
 	if [ -f "${query}" ]; then
 		mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments < "${query}"
 	else
-		mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${query}"
+		local si="set @@session.tidb_isolation_read_engines=\"tiflash\"; "
+		mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${si} ${query}"
 	fi
 
 	if [ "${show_elapsed}" == 'true' ]; then

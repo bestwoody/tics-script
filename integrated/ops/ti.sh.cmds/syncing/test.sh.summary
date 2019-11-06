@@ -19,7 +19,7 @@ function verify_raft_sync()
 	local ti="${integrated}/ops/ti.sh"
 
 	local tidb_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" 'mysql' "show databases" | grep "${db}"`
+		-k "${ti_args}" "${ti_file}" 'mysql/tikv' "show databases" | grep "${db}"`
 	if [ ! -z "${tidb_ok}" ]; then
 		echo 'OK     tidb: show databases'
 	else
@@ -53,7 +53,7 @@ function verify_raft_sync()
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
 		"${ti_file}" 'mysql' "${insert_sql}" "${db}" 'false'
 	local insert_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k \
-		"${ti_args}" "${ti_file}" 'mysql' "select col from ${db}.${table}" 2>&1 | grep 'world'`
+		"${ti_args}" "${ti_file}" 'mysql/tikv' "select col from ${db}.${table}" 2>&1 | grep 'world'`
 	if [ ! -z "${insert_ok}" ]; then
 		echo "OK     tidb: ${insert_sql}"
 	else
@@ -74,15 +74,15 @@ function verify_raft_sync()
 	# TODO: FLASH-633
 	sleep 10
 
-	local sql="select /*+ read_from_storage(tiflash[${table}]) */ col from ${table}"
+	local sql="select col from ${table}"
 	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" 'mysql' "${sql}" "${db}" 2>&1`
+		-k "${ti_args}" "${ti_file}" 'mysql/learner' "${sql}" "${db}" 2>&1`
 	local read_ok=`echo "${read_res}" | grep 'world'`
 	if [ -z "${read_ok}" ]; then
-		echo "FAILED tidb: ${sql}, result=\"${read_res}\""
+		echo "FAILED tidb on tiflash: ${sql}, result=\"${read_res}\""
 		return 1
 	else
-		echo "OK     tidb: ${sql}"
+		echo "OK     tidb on tiflash: ${sql}"
 	fi
 
 	local sql="select col from ${db}.${table}"

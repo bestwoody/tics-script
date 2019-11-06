@@ -220,3 +220,30 @@ function from_mods_get_rngine_by_tiflash()
 	done
 }
 export -f from_mods_get_rngine_by_tiflash
+
+function mysql_explain()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func mysql_explain] usage: <func> host port query" >&2
+		return 1
+	fi
+
+	local host="${1}"
+	local port="${2}"
+	local query="${3}"
+
+	if [ ! -z "`echo ${query} | { grep 'select' || test $? = 1; }`" ]; then
+		local plan=`mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "explain ${query}" 2>&1`
+		if [ ! -z "`echo ${plan} | { grep 'ERROR' || test $? = 1; }`" ]; then
+			echo "${plan}"
+			echo "when executing: 'explain ${query}'"
+			return 1
+		else
+			echo "${query}"
+			echo "------------"
+			echo "${plan}"
+			echo "------------"
+		fi
+	fi
+}
+export -f mysql_explain

@@ -12,10 +12,10 @@ function cmd_ti_ci_cluster()
 	"${ti}" new "${file}" 'delta=-6' "dir=${dir}"
 	"${ti}" "${file}" 'burn doit:up:sleep 5'
 
-	"${ti}" "${file}" learner 'show databases' 1>/dev/null
-	"${ti}" "${file}" learner 'show databases' 'test' 1>/dev/null
-	"${ti}" "${file}" learner 'show databases' 'test' 'true' 1>/dev/null
-	"${ti}" "${file}" learner 'show databases' 'test' 'false' 1>/dev/null
+	"${ti}" "${file}" mysql/learner 'show databases' 1>/dev/null
+	"${ti}" "${file}" mysql/learner 'show databases' 'test' 1>/dev/null
+	"${ti}" "${file}" mysql/learner 'show databases' 'test' 'true' 1>/dev/null
+	"${ti}" "${file}" mysql/learner 'show databases' 'test' 'false' 1>/dev/null
 
 	"${ti}" "${file}" 'tpch/create 0.01 region:tpch/load 0.01 region:tpch/load 0.01 all:tpch/tikv'
 	# TODO: remote 'sleep' after FLASH-635 is addressed
