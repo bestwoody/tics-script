@@ -1,0 +1,32 @@
+#!/bin/bash
+
+function cmd_ti_kill_random()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local mod=`from_mods_random_mod "${mods}" '' 'false'`
+	if [ -z "${mod}" ]; then
+		return
+	fi
+
+	local name=`from_mod_get_name "${mod}"`
+	local index=`from_mod_get_index "${mod}"`
+
+	if [ "${name}" == 'rngine' ] || [ "${name}" == 'tiflash' ]; then
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "kill/storage"
+	else
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${name}" \
+			-i "${index}" -k "${ti_args}" "${ti_file}" 'fstop'
+	fi
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+cmd_ti_kill_random "${@}"
