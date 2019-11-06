@@ -61,7 +61,7 @@ function cmd_ti_ch()
 	fi
 	local port=`get_value "${dir}/proc.info" 'tcp_port'`
 
-	local start_time=`date +%s%N`
+	local start_time=`timer_start`
 	if [ -z "${1+x}" ]; then
 		LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${dir}/tiflash" client --host="${host}" \
 			--port="${port}" -d "${db}" -f "${format}" --query="${query_str}"
@@ -69,9 +69,9 @@ function cmd_ti_ch()
 		LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${dir}/tiflash" client --host="${host}" \
 			--port="${port}" -d "${db}" -f "${format}" --query="${query_str}" "${@}"
 	fi
-	local end_time=`date +%s%N`
+	local elapsed=`timer_end "${start_time}"`
 	if [ "${show_elapsed}" == 'true' ]; then
-		echo "elapsed: $(( (end_time - start_time) / 1000000 ))ms"
+		echo "elapsed: ${elapsed}"
 	fi
 }
 

@@ -61,11 +61,11 @@ function cmd_ti_learner()
 		fi
 	fi
 
-	local start_time=`date +%s%N`
+	local start_time=`timer_start`
 	mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${query}"
-	local end_time=`date +%s%N`
+	local elapsed=`timer_end "${start_time}"`
 	if [ "${show_elapsed}" == 'true' ]; then
-		echo "elapsed: $(( (end_time - start_time) / 1000000 ))ms"
+		echo "elapsed: ${elapsed}"
 	fi
 }
 

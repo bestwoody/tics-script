@@ -28,10 +28,10 @@ function cmd_ti_beeline()
 
 	local port=`get_value "${dir}/proc.info" 'thriftserver_port'`
 
-	local start_time=`date +%s%N`
+	local start_time=`timer_start`
 	${dir}/spark/bin/beeline --verbose=false --silent=true -u "jdbc:hive2://${host}:${port}/${db}" "${@}"
-	local end_time=`date +%s%N`
-	echo "elapsed: $(( (end_time - start_time) / 1000000 ))ms"
+	local elapsed=`timer_end "${start_time}"`
+	echo "elapsed: ${elapsed}"
 }
 
 set -euo pipefail
