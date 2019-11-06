@@ -32,4 +32,4 @@ function cmd_ti_ci_cluster()
 }
 
 set -euo pipefail
-cmd_ti_ci_cluster "${@}"
+cmd_ti_ci_cluster

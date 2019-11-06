@@ -59,4 +59,4 @@ function cmd_ti_ci_self()
 }
 
 set -euo pipefail
-cmd_ti_ci_self "${@}"
+cmd_ti_ci_self
