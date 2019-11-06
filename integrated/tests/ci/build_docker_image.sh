@@ -1,1 +1,1 @@
-docker build -t hub.pingcap.net/tiflash/ops-ci:v9 .
+docker build -t hub.pingcap.net/tiflash/ops-ci:v10 .
