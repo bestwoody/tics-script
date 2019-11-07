@@ -94,7 +94,7 @@ function tidb_run()
 	chmod +x "${tidb_dir}/run.sh"
 	bash "${tidb_dir}/run.sh"
 
-	sleep 0.1
+	sleep 0.3
 	local pid=`must_print_pid "${tidb_dir}/tidb.toml" "\-\-config"`
 	if [ -z "${pid}" ]; then
 		echo "[func tidb_run] pid not found, failed" >&2

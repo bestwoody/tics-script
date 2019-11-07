@@ -169,7 +169,7 @@ function spark_worker_run()
 		ln "${spark_worker_dir}/spark/logs/${spark_worker_log_name}" "${spark_worker_dir}/logs/spark_worker.log"
 	fi
 
-	sleep 0.1
+	sleep 0.3
 	local pid=`must_print_pid "${str_for_finding_spark_worker}" "org.apache.spark.deploy.worker.Worker"`
 	if [ -z "${pid}" ]; then
 		echo "[func spark_worker_run] pid not found, failed" >&2

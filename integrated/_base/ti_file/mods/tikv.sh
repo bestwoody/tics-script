@@ -92,7 +92,7 @@ function tikv_run()
 	chmod +x "${tikv_dir}/run.sh"
 	bash "${tikv_dir}/run.sh"
 
-	sleep 0.1
+	sleep 0.3
 	local pid=`must_print_pid "${tikv_dir}/tikv.toml" "\-\-config"`
 	if [ -z "${pid}" ]; then
 		echo "[func tikv_run] pid not found, failed" >&2

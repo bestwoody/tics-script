@@ -186,7 +186,7 @@ function spark_master_run()
 		ln "${spark_master_dir}/spark/logs/${spark_master_log_name}" "${spark_master_dir}/logs/spark_master.log"
 	fi
 
-	sleep 0.1
+	sleep 0.3
 	local pid=`must_print_pid "${str_for_finding_spark_master}" "org.apache.spark.deploy.master.Master"`
 	if [ -z "${pid}" ]; then
 		echo "[func spark_master_run] pid not found, failed" >&2

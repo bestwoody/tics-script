@@ -113,7 +113,7 @@ function rngine_run()
 	chmod +x "${rngine_dir}/run.sh"
 	bash "${rngine_dir}/run.sh"
 
-	sleep 0.1
+	sleep 0.3
 	local pid=`must_print_pid "${rngine_dir}/rngine.toml" "\-\-config"`
 	if [ -z "${pid}" ]; then
 		echo "[func rngine_run] pid not found, failed" >&2

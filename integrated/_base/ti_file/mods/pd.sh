@@ -108,7 +108,7 @@ function pd_run()
 	chmod +x "${pd_dir}/run.sh"
 	bash "${pd_dir}/run.sh"
 
-	sleep 0.1
+	sleep 0.3
 	local pid=`must_print_pid "${pd_dir}/pd.toml" "\-\-config"`
 	if [ -z "${pid}" ]; then
 		echo "[func pd_run] pid not found, failed" >&2
