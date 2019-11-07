@@ -22,6 +22,7 @@ function cmd_ti_ci_self()
 	"${ti}" "${file}" 'fstop:stop:up'
 	"${ti}" "${file}" 'kill/tiflash:kill/rngine:kill/tikv:kill/storage:kill/random:kill/random'
 	"${ti}" "${file}" 'up:status:prop:du:log 1:log 1 info'
+	"${ti}" "${file}" 'safe_point:safe_point ts:safe_point: time'
 
 	"${ti}" "${file}" pd/ctl --help 1>/dev/null
 	"${ti}" "${file}" tikv/ctl true --help 1>/dev/null

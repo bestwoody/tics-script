@@ -1,0 +1,2 @@
+get tikv_gc_safe_point from tidb
+usage: <cmd> [format=ts|time]

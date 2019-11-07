@@ -1,0 +1,59 @@
+#!/bin/bash
+
+function cmd_ti_safe_point()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+
+	shift 6
+
+	local format='ts'
+	if [ ! -z "${1+x}" ]; then
+		local format="${1}"
+	fi
+	if [ "${format}" != 'ts' ] && [ "${format}" != 'time' ]; then
+		echo "[cmd safe_point] arg 'format' should be 'ts' or 'time'"
+		return 1
+	fi
+
+	local index=`from_mods_random_mod "${mods}" 'tidb'`
+	if [ -z "${index}" ]; then
+		echo "[cmd safe_point] no tidb selected"
+		return 1
+	fi
+
+	local read_res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'tidb' -i "${index}" \
+		-k "${ti_args}" "${ti_file}" 'mysql' \
+		'select VARIABLE_VALUE from tidb where VARIABLE_NAME="tikv_gc_safe_point"' \
+		'mysql' 'false' 2>&1`
+	local res=`echo "${read_res}" | grep -v 'VARIABLE_VALUE'`
+
+	if [ -z "${res}" ]; then
+		echo "[cmd safe_point] read from tidb failed: ${read_res}"
+		return 1
+	fi
+
+	if [ "${format}" != 'time' ]; then
+		local res_tz=${res:18}
+		local local_tz=`date +%z`
+		if [ "${res_tz}" != "${local_tz}" ]; then
+			echo "[cmd safe_point] local timezone not equal to tidb timezone: ${res_tz} != ${local_tz}"
+			return 1
+		fi
+		local res="${res:0:17}"
+		echo "{${res}}"
+		local res="${res:0:4}-${res:4:2}-${res:6:2} ${res:9}"
+		echo "{${res}}"
+		local res=`date -d "${res}" +%s`
+	fi
+
+	echo "${res}"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+cmd_ti_safe_point "${@}"
