@@ -1,0 +1,2 @@
+pack flash_cluster_manager binary, upload it and update the url in bin.urls[.mac]
+usage: <cmd> repo_path [branch] [commit] [binary_rel_path]

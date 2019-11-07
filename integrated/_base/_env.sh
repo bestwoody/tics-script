@@ -12,6 +12,7 @@ source "${integrated}/_base/log.sh"
 source "${integrated}/_base/path.sh"
 source "${integrated}/_base/network.sh"
 source "${integrated}/_base/misc.sh"
+source "${integrated}/_base/upload.sh"
 
 source "${integrated}/_base/ssh.sh"
 source "${integrated}/_base/proc.sh"

@@ -28,8 +28,15 @@ function cmd_ti_mysql_raw()
 		echo "[cmd mysql/raw] getting tidb port failed from ${host}:${dir}" >&2
 		return 1
 	fi
-
-	mysql --comments -h "${host}" -P "${port}" -u root "${@}"
+	local error_handle="$-"
+	set +eu
+	local cmd_args=("${@}")
+	restore_error_handle_flags "${error_handle}"
+	if [ -z "${cmd_args+x}" ]; then
+		mysql --comments -h "${host}" -P "${port}" -u root
+	else
+		mysql --comments -h "${host}" -P "${port}" -u root "${cmd_args[@]}"
+	fi
 }
 
 set -euo pipefail

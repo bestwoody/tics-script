@@ -52,7 +52,6 @@ catchError {
                             try {
                                 sh "tests/ci/jenkins.sh"
                             } catch (err) {
-                                sh "cat nodes/7/tiflash/log/server.log"
                                 throw err
                             }
                         }
