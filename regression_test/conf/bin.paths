@@ -1,0 +1,4 @@
+# name \t bin_name \t path1:path2:...
+tiflash	tiflash	{integrated}/../binary/tics/theflash
+tidb	tidb-server	{integrated}/../binary/bin/tidb-server
+tikv	tikv-server	{integrated}/../binary/bin/tikv-server
