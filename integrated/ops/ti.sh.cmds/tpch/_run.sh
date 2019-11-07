@@ -45,7 +45,8 @@ function cmd_tpch_run_query()
 	fi
 
 	if [ -z "${db}" ] || [ "${db}" == 'auto' ]; then
-		local db=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'tidb' -i "${tidb}" -k "${ti_args}" "${ti_file}" 'mysql' "show databases" | grep 'tpch'`
+		local db=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'tidb' -i "${tidb}" -k "${ti_args}" \
+			"${ti_file}" 'mysql' "show databases" | grep 'tpch' | awk '{print $NF}'`
 		if [ -z "${db}" ]; then
 			echo "[cmd tpch/run] database with 'tpch' prefix not found" >&2
 			return 1
