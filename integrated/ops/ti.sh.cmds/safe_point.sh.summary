@@ -45,9 +45,7 @@ function cmd_ti_safe_point()
 			return 1
 		fi
 		local res="${res:0:17}"
-		echo "{${res}}"
 		local res="${res:0:4}-${res:4:2}-${res:6:2} ${res:9}"
-		echo "{${res}}"
 		local res=`date -d "${res}" +%s`
 	fi
 

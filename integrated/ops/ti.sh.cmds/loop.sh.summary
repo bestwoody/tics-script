@@ -23,9 +23,9 @@ function cmd_ti_loop()
 
 	for (( r = 0; 0 == 0; r++ )); do
 		if [ -z "`echo ${cmd} | grep ':'`" ]; then
-			echo "============"
+			print_hhr
 			echo "loop ${r}> ${@}"
-			echo "------------"
+			print_hr
 		fi
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"

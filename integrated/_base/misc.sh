@@ -127,3 +127,15 @@ function terminal_width()
 	stty size | awk '{print $2}'
 }
 export -f terminal_width
+
+function print_hhr()
+{
+	echo '================================================================================'
+}
+export -f print_hhr
+
+function print_hr()
+{
+	echo '--------------------------------------------------------------------------------'
+}
+export -f print_hr

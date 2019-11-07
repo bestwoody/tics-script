@@ -22,9 +22,9 @@ function cmd_ti_floop()
 
 	for (( r = 0; 0 == 0; r++ )); do
 		if [ -z "`echo ${cmd} | grep ':'`" ]; then
-			echo "============"
+			print_hhr
 			echo "floop ${r}> ${@}"
-			echo "------------"
+			print_hr
 		fi
 		for ((; 0 == 0; )); do
 			set +e

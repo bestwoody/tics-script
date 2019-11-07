@@ -1,0 +1,18 @@
+#!/bin/bash
+
+function cmd_ti_ci_release()
+{
+	local file="${1}"
+	shift 6
+	local ti="${integrated}/ops/ti.sh"
+
+	# TODO: unstable
+	#"${ti}" "${file}" 'kill/random:kill/random'
+
+	# TODO: remote 'sleep' after FLASH-635 is addressed
+	"${ti}" "${file}" repeat 20 'tpch/load 0.001 all:sleep 5:tpch/ch:tpch/tikv'
+	"${ti}" "${file}" repeat 20 'kill/storage:up:sleep 5:tpch/ch:tpch/tikv'
+}
+
+set -euo pipefail
+cmd_ti_ci_release "${@}"

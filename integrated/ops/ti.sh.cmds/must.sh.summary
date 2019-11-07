@@ -22,9 +22,9 @@ function cmd_ti_must()
 
 	for (( r = 0; 0 == 0; r++ )); do
 		if [ -z "`echo ${cmd} | grep ':'`" ]; then
-			echo "============"
+			print_hhr
 			echo "must ${r}> ${@}"
-			echo "------------"
+			print_hr
 		fi
 		set +e
 		local res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
