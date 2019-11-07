@@ -49,7 +49,8 @@ function cmd_ti_learner()
 	local query=`python "${here}/to_learner_query.py" "${query}"`
 
 	if [ "${show_elapsed}" == 'true' ]; then
-		mysql_explain "${host}" "${port}" "${query}"
+		# Plan don't affected by hint
+		#mysql_explain "${host}" "${port}" "${query}" ''
 		local start_time=`timer_start`
 	fi
 

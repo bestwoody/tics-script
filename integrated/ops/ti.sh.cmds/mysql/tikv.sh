@@ -45,7 +45,7 @@ function cmd_ti_mysql()
 	fi
 
 	if [ "${show_elapsed}" == 'true' ]; then
-		mysql_explain "${host}" "${port}" "${query}"
+		mysql_explain "${host}" "${port}" "${query}" "tikv"
 		local start_time=`timer_start`
 	fi
 

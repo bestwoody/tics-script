@@ -223,21 +223,31 @@ export -f from_mods_get_rngine_by_tiflash
 
 function mysql_explain()
 {
-	if [ -z "${3+x}" ]; then
-		echo "[func mysql_explain] usage: <func> host port query" >&2
+	if [ -z "${4+x}" ]; then
+		echo "[func mysql_explain] usage: <func> host port query si" >&2
 		return 1
 	fi
 
 	local host="${1}"
 	local port="${2}"
 	local query="${3}"
+	local si="${4}"
 
+	if [ ! -z "`echo ${query} | sed 's/ //g' | { grep '^explain' || test $? = 1; }`" ]; then
+		return
+	fi
+
+	if [ ! -z "${si}" ]; then
+		local si="set @@session.tidb_isolation_read_engines=\"${si}\"; "
+	fi
+
+	local explain='explain '
 	if [ ! -z "`echo ${query} | { grep 'select' || test $? = 1; }`" ]; then
-		local plan=`mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "explain ${query}" 2>&1`
+		local plan=`mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${si}${explain}${query}" 2>&1`
 		if [ ! -z "`echo ${plan} | { grep 'ERROR' || test $? = 1; }`" ]; then
-			echo "${plan}"
-			echo "when executing: 'explain ${query}'"
-			return 1
+			#echo "${plan}"
+			#echo "when executing: '${si}${explain}${query}'"
+			return
 		else
 			echo "${query}"
 			echo "------------"
