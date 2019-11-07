@@ -20,8 +20,8 @@ function cmd_ti_ci_cluster()
 	"${ti}" "${file}" 'verify/rows tpch_0_01.lineitem:tpch/rows'
 	"${ti}" "${file}" 'syncing/test:sleep 3:syncing/show'
 	"${ti}" "${file}" 'fstop:up:tpch/load_no_raft 0.01 lineitem tmt'
-	"${ti}" "${file}" 'verify/balance tpch_0_01_tmt_no_raft.lineitem:fstop'
-	"${ti}" "${file}" must up
+	"${ti}" -i 0 "${file}" verify/balance tpch_0_01_tmt_no_raft.lineitem
+	"${ti}" "${file}" must fstop:up
 }
 
 set -euo pipefail

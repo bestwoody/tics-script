@@ -22,7 +22,7 @@ function ti_cmd_tpch_rows()
 
 	if [ -z "${db}" ]; then
 		local db=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'tpch/db'`
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'tpch/db' | awk '{print $NF}'`
 	fi
 	if [ -z "${db}" ]; then
 		echo "[cmd tpch/rows] auto select tpch database failed" >&2
