@@ -6,8 +6,8 @@ tidb	e49101f395547f1723dcbaea166714f6	tidb-server	http://139.219.11.38:8000/15Ys
 # master - a8f1ba28d8c0a9fcc6f80c593175bc30ec1cf9b2
 tikv	d10e8684d17ae094c9201a602a313923	tikv-server	http://139.219.11.38:8000/J5epW/tikv-server.tar.gz
 
-# https://github.com/disksing/pd/tree/placement - 8a6f961ee2876a8ed9edd5bee215609e886d1c6d
-pd	1633b94fe8b3d3c767b568029ae8e799	pd-server	http://139.219.11.38:8000/EnvND/pd-server.tar.gz
+# https://github.com/disksing/pd/tree/placement - eecd15291aa326b3401af28c7a0592ef99f6cf09
+pd      d20b7ba9c08d011decbee565897a3c25        pd-server       http://139.219.11.38:8000/rdHnq/pd-server.tar.gz
 
 # https://github.com/overvenus/tikv/tree/rngine - 23e556168599f9c02472fd0b9781ef212a62297e
 rngine	ce1f71e100d11dcc50ae5a09f0db0fec	tikv-server-rngine	http://139.219.11.38:8000/bURhj/tikv-server-rngine.tar.gz
