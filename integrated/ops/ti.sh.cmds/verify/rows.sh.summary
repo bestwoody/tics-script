@@ -21,14 +21,14 @@ function cmd_ti_verify_rows()
 	fi
 
 	local tiflash_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" "${ti_file}" 'ch' \
-		"select count(1) from ${table}" 'default' 'TabSeparated' 'false' | awk '{print $NF}' | awk '{sum+=$1}END{print sum}'`
+		"select count(1) from ${table}" 'default' 'TabSeparated' 'false' | trim_host | awk '{sum+=$1}END{print sum}'`
 
 	local tidb_idx=`from_mods_random_mod "${mods}" 'tidb'`
 	local tikv_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i "${tidb_idx}" -k \
-		"${ti_args}" "${ti_file}" 'mysql/tikv' "select count(1) from ${table}" 'test' 'false' | grep -v 'count' | awk '{print $NF}'`
+		"${ti_args}" "${ti_file}" 'mysql/tikv' "select count(1) from ${table}" 'test' 'false' | grep -v 'count' | trim_host`
 
 	local learner_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i "${tidb_idx}" -k \
-		"${ti_args}" "${ti_file}" 'mysql/learner' "select count(1) from ${table}" 'test' 'false' | grep -v 'count' | awk '{print $NF}'`
+		"${ti_args}" "${ti_file}" 'mysql/learner' "select count(1) from ${table}" 'test' 'false' | grep -v 'count' | trim_host`
 
 	if [ -z "${tiflash_rows}" ]; then
 		echo "[cmd verify/rows] execute query on tiflash failed" >&2
