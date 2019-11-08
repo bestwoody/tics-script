@@ -25,6 +25,7 @@ labels = {  }
 [raftstore]
 raftdb-path = ""
 sync-log = true
+capacity = {disk_avail}
 consistency-check-interval = "10s"
 #raft-log-gc-count-limit = 256
 hibernate-regions = false

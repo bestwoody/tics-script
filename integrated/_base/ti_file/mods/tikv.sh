@@ -70,7 +70,15 @@ function tikv_run()
 		return 0
 	fi
 
-	cp_when_diff "${conf_templ_dir}/tikv.toml" "${tikv_dir}/tikv.toml"
+	local disk_avail=`df -k "${tikv_dir}" | tail -n 1 | awk '{print $4}'`
+	local max_capacity=$(( 500 * 1024 * 1024 ))
+	if [ ${disk_avail} -gt ${max_capacity} ]; then
+		local disk_avail=${max_capacity}
+	fi
+	local disk_avail=$(( ${disk_avail} * 1024 ))
+
+	local render_str="disk_avail=${disk_avail}"
+	render_templ "${conf_templ_dir}/tikv.toml" "${tikv_dir}/tikv.toml" "${render_str}"
 
 	local info="${tikv_dir}/proc.info"
 	echo "listen_host	${listen_host}" > "${info}"
