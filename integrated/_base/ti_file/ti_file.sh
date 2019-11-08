@@ -137,7 +137,15 @@ function ti_file_exe()
 		local remote_script="${remote_env}${cmd_dir_rel}${remote_script}"
 	fi
 
-	if [ "${local}" != 'true' ] && [ "${cmd}" != 'dry' ]; then
+	local do_deploy='true'
+	if [ "${local}" == 'true' ] || [ "${cmd}" == 'dry' ]; then
+		local do_deploy='false'
+	fi
+	if [ -z "${script}" ] && [ ! -z "${summary}" ]; then
+		local do_deploy='false'
+	fi
+
+	if [ "${do_deploy}" == 'true' ]; then
 		# TODO: Parallel ping and copy
 		echo "${hosts}" | while read host; do
 			if [ ! -z "${host}" ] && [ "${host}" != '127.0.0.1' ] && [ "${host}" != 'localhost' ]; then
