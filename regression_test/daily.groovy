@@ -1,4 +1,4 @@
-def runDailyIntegrationTest(branch, label) {
+def runTest(branch, label, notify) {
     taskStartTimeInMillis = System.currentTimeMillis()
 
     def TIDB_BRANCH = "master"
@@ -32,15 +32,11 @@ def runDailyIntegrationTest(branch, label) {
 
                 stage("Download Resources") {
                     container("tiflash-docker") {
-                        dir("/home/jenkins/agent/git/tiflash/binary/") {
+                        dir("/home/jenkins/agent/git/tiflash/") {
                             sh "chown -R 1000:1000 ./"
 
                             def ws = pwd()
                             deleteDir()
-
-                            if (sh(returnStatus: true, script: '[ -d .git ] && [ -f Makefile ] && git rev-parse --git-dir > /dev/null 2>&1') != 0) {
-                                deleteDir()
-                            }
 
                             checkout changelog: false, poll: false, scm: [
                                     $class                           : 'GitSCM',
@@ -48,7 +44,9 @@ def runDailyIntegrationTest(branch, label) {
                                     doGenerateSubmoduleConfigurations: false,
                                     userRemoteConfigs                : [[credentialsId: 'github-sre-bot-ssh', url: 'git@github.com:pingcap/tiflash.git']]
                             ]
+                        }
 
+                        dir("/home/jenkins/agent/git/tiflash/binary/") {
                             // tidb
                             def tidb_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tidb/${TIDB_BRANCH}/sha1").trim()
                             sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tidb/${tidb_sha1}/centos7/tidb-server.tar.gz | tar xz"
@@ -65,19 +63,23 @@ def runDailyIntegrationTest(branch, label) {
                             docker cp \${ID}:/tics ./
                             docker rm \${ID}
                             chown -R 1000:1000 ./
-
-                            ls bin/tidb-server
-                            ls bin/tikv-server
-                            ls bin/pd-server
-                            ls tics/theflash
                             """
                         }
                     }
                 }
 
-                stage("Regression Test") {
+                stage("Test Tiflash Latest Stable") {
                     container("docker-ops-ci") {
                         dir("/home/jenkins/agent/git/tiflash") {
+                            sh "regression_test/daily.sh"
+                        }
+                    }
+                }
+
+                stage("Test Tiflash Master Branch") {
+                    container("docker-ops-ci") {
+                        dir("/home/jenkins/agent/git/tiflash") {
+                            sh "cp regression_test/conf/bin.paths integrated/conf/"
                             sh "regression_test/daily.sh"
                         }
                     }
@@ -88,19 +90,29 @@ def runDailyIntegrationTest(branch, label) {
     }
 
     stage('Summary') {
-        def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(2, BigDecimal.ROUND_HALF_UP)
-        def slackmsg = "TiFlash Daily Integration Test\n" +
-                "Result: `${currentBuild.result}`\n" +
-                "Elapsed Time: `${duration}` Mins\n" +
-                "https://internal.pingcap.net/idc-jenkins/blue/organizations/jenkins/tiflash_regression_test_daily/activity\n" +
-                "https://internal.pingcap.net/idc-jenkins/job/tiflash_regression_test_daily/"
+        if (notify) {
+            def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(2, BigDecimal.ROUND_HALF_UP)
+            def slackmsg = "TiFlash Daily Integration Test\n" +
+                    "Result: `${currentBuild.result}`\n" +
+                    "Elapsed Time: `${duration}` Mins\n" +
+                    "https://internal.pingcap.net/idc-jenkins/blue/organizations/jenkins/tiflash_regression_test_daily/activity\n" +
+                    "https://internal.pingcap.net/idc-jenkins/job/tiflash_regression_test_daily/"
 
-        if (currentBuild.result != "SUCCESS") {
-            slackSend channel: '#tiflash-daily-test', color: 'danger', teamDomain: 'pingcap', tokenCredentialId: 'slack-pingcap-token', message: "${slackmsg}"
-        } else {
-            slackSend channel: '#tiflash-daily-test', color: 'good', teamDomain: 'pingcap', tokenCredentialId: 'slack-pingcap-token', message: "${slackmsg}"
+            if (currentBuild.result != "SUCCESS") {
+                slackSend channel: '#tiflash-daily-test', color: 'danger', teamDomain: 'pingcap', tokenCredentialId: 'slack-pingcap-token', message: "${slackmsg}"
+            } else {
+                slackSend channel: '#tiflash-daily-test', color: 'good', teamDomain: 'pingcap', tokenCredentialId: 'slack-pingcap-token', message: "${slackmsg}"
+            }
         }
     }
+}
+
+def runDailyIntegrationTest(branch, label, notify) {
+    runTest(branch, label, notify)
+}
+
+def runDailyIntegrationTest(branch, label) {
+    runTest(branch, label, false)
 }
 
 return this

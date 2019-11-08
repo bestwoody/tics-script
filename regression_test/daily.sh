@@ -3,13 +3,11 @@
 FLASH_HOME="$(dirname `cd $(dirname ${BASH_SOURCE[0]}) && pwd`)"
 
 export PATH=$PATH:"$FLASH_HOME/integrated/ops/"
-cp "$FLASH_HOME/regression_test/conf/bin.paths" "$FLASH_HOME/integrated/conf/"
 
 # simple test
 ti.sh new ci.ti
 ti.sh ci.ti 'up:tpch/load 0.1 all'
 ti.sh ci.ti burn doit
-
 
 # call ci release test
 # loading tpch_0_01_tmt_no_raft.lineitem to CH directly
