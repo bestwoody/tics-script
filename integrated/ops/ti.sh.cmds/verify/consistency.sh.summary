@@ -1,0 +1,118 @@
+#!/bin/bash
+
+function verify_consistency()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_hosts="${3}"
+	local cmd_indexes="${4}"
+	local ts="${5}"
+	local query="${6}"
+
+	local tikv_res=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'tidb' -i "${cmd_indexes}" "${ti_file}" \
+		'mysql/tikv' "set @@tidb_snapshot=\"${ts}\"; ${query}" 'test' 'false' 2>&1`
+	local learner_res=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'tidb' -i "${cmd_indexes}" "${ti_file}" \
+		'mysql/learner' "set @@tidb_snapshot=\"${ts}\"; ${query}" 'test' 'false' 2>&1`
+
+	local tikv_line=`echo "${tikv_res}" | tail -n 1`
+	local learner_line=`echo "${learner_res}" | tail -n 1`
+	if [ "${tikv_res}" == "${learner_res}" ]; then
+		if [ ! -z "`echo ${tikv_line} | { grep 'older than GC safe point' || test $? == 1; }`" ]; then
+			return
+		fi
+		echo "${ts} snapshot: OK"
+	else
+		echo "${ts} snapshot: FAILED"
+	fi
+	echo "    tikv:    ${tikv_line}"
+	echo "    learner: ${learner_line}"
+	if [ "${tikv_res}" != "${learner_res}" ]; then
+		return 1
+	fi
+}
+
+function cmd_ti_verify_consistency()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd verify/consistency] usage: <cmd> [db.]table [max_times=32] [query]" >&2
+		return 1
+	fi
+
+	local table="${1}"
+
+	local max_times='32'
+	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
+		local max_times="${2}"
+	fi
+
+	local query="select count(1) from ${table}"
+	if [ ! -z "${3+x}" ] && [ ! -z "${3}" ]; then
+		local query="${3}"
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+
+	local pd_index=`from_mods_random_mod "${mods}" 'pd'`
+	if [ -z "${pd_index}" ]; then
+		echo "[cmd verify/consistency] no selected pd" >&2
+		return 1
+	fi
+
+	local min_max_tso=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" "${ti_file}" 'ch' \
+		"selraw min(_INTERNAL_VERSION), max(_INTERNAL_VERSION) from ${table}" \
+		'default' 'tab' 'false'`
+
+	local min_tso=`echo "${min_max_tso}" | awk '{print $1}'`
+	local max_tso=`echo "${min_max_tso}" | awk '{print $2}'`
+
+	local min_tss=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" 'pd/ctl' \
+		"tso ${min_tso}" | grep 'system' | awk '{print $(NF-3),$(NF-2),$(NF-1)}'`
+	local max_tss=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" 'pd/ctl' \
+		"tso ${max_tso}" | grep 'system' | awk '{print $(NF-3),$(NF-2),$(NF-1)}'`
+
+	if [ "`echo ${min_tss} | awk '{print $NF}'`" != "`date +%z`" ]; then
+		echo "[cmd verify/consistency] timezone in table not equal to os local" >&2
+		return 1
+	fi
+
+	local min_ts=`echo "${min_tss}" | awk -F '.' '{print $1}'`
+	local max_ts=`echo "${max_tss}" | awk -F '.' '{print $1}'`
+	local min_ts=`to_ts "${min_ts}"`
+	local max_ts=`to_ts "${max_ts}"`
+
+	local min_in_range=$((min_ts + 1))
+	if [ "${min_ts}" == "${max_ts}" ] || [ "${min_in_range}" == "${max_ts}" ]; then
+		echo "[cmd verify/consistency] data too small, ignored" >&2
+		return
+	fi
+
+	if [ "${max_times}" != '0' ]; then
+		verify_consistency "${ti_file}" "${ti_args}" "${cmd_hosts}" "${cmd_indexes}" \
+			"`from_ts ${max_ts}`" "${query}"
+	fi
+
+	local mid_ts="${min_in_range}"
+	for (( m = 1; m < ${max_times}; m++)); do
+		local new_ts=$(( (max_ts - mid_ts) / 2 + mid_ts ))
+		local new_ts_minus=$((new_ts - 1))
+		if [ "${new_ts}" == "${mid_ts}" ] || [ "${new_ts_minus}" == "${mid_ts}" ]; then
+			break
+		fi
+		local mid_ts="${new_ts}"
+		verify_consistency "${ti_file}" "${ti_args}" "${cmd_hosts}" "${cmd_indexes}" \
+			"`from_ts ${mid_ts}`" "${query}"
+	done
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+cmd_ti_verify_consistency "${@}"

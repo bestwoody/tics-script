@@ -1,0 +1,2 @@
+verify data are the same in tikv and in tiflash with snapshot read
+usage: <cmd> [db.]table [max_times=32] [query='select count(1) from table']

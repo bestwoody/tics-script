@@ -1,0 +1,2 @@
+disable tidb gc by set 'tikv_gc_life_time' to '365d'
+usage: <cmd> (no args)

@@ -32,3 +32,38 @@ function hw_info()
 	fi
 }
 export -f hw_info
+
+function to_ts()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func to_ts] usage: <func> time_str" >&2
+		return 1
+	fi
+
+	local time="${1}"
+	if [ `uname` == "Darwin" ]; then
+		echo "[func to_ts] TODO: linux support" >&2
+		return 1
+	else
+		date -d "${time}" +%s
+	fi
+}
+export -f to_ts
+
+function from_ts()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func from_ts] usage: <func> ts" >&2
+		return 1
+	fi
+
+	local ts="${1}"
+	if [ `uname` == "Darwin" ]; then
+		echo "[func from_ts] TODO: linux support" >&2
+		return 1
+	else
+		#echo date -d @"${ts}" "+%Y-%m-%d %H:%M:%S" >&2
+		date -d @"${ts}" "+%Y-%m-%d %H:%M:%S"
+	fi
+}
+export -f from_ts

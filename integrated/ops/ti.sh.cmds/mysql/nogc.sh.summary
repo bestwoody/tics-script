@@ -1,0 +1,37 @@
+#!/bin/bash
+
+function cmd_ti_mysql_raw()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${mod}" ]; then
+		echo "[cmd mysql/nogc] no tidb selected" >&2
+		return 1
+	fi
+
+	local dir=`from_mod_get_dir "${mod}"`
+	local host=`from_mod_get_host "${mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
+	if [ -z "${host}" ]; then
+		local host=`must_print_ip`
+	fi
+
+	if [ -z "${port}" ]; then
+		echo "[cmd mysql/nogc] getting tidb port failed from ${host}:${dir}" >&2
+		return 1
+	fi
+
+	mysql --comments -h "${host}" -P "${port}" -u root -e \
+		"update mysql.tidb set VARIABLE_VALUE=\"365d\" where VARIABLE_NAME=\"tikv_gc_life_time\""
+}
+
+set -euo pipefail
+cmd_ti_mysql_raw "${@}"
