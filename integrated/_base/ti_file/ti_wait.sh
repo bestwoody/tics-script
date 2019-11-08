@@ -22,6 +22,7 @@ function wait_for_mysql()
 	mysql --help 1>/dev/null 2>&1
 	if [ "$?" != "0" ]; then
 		echo "[func wait_for_mysql] run mysql client failed" >&2
+		restore_error_handle_flags "${error_handle}"
 		return 1
 	fi
 

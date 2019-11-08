@@ -10,10 +10,10 @@ function cmd_ti_ci_self()
 	local ti="${integrated}/ops/ti.sh"
 
 	"${ti}" "${file}" 'fstop:stop'
-	"${ti}" "${file}" must 'up:sleep 5'
+	"${ti}" "${file}" 'up:sleep 5'
 	"${ti}" "${file}" 'kill/tiflash:kill/rngine:kill/tikv:kill/storage'
 
-	"${ti}" "${file}" must 'up:sleep 5'
+	"${ti}" "${file}" 'up:sleep 5'
 	"${ti}" "${file}" 'status:prop:du:log 1:log 1 info'
 
 	"${ti}" "${file}" pd/ctl --help 1>/dev/null
