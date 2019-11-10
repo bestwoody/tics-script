@@ -90,7 +90,7 @@ def runTest(branch, label, notify) {
     }
 
     stage('Summary') {
-        if (notify) {
+        if (notify == "true" || notify == true) {
             def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(2, BigDecimal.ROUND_HALF_UP)
             def slackmsg = "TiFlash Daily Integration Test\n" +
                     "Result: `${currentBuild.result}`\n" +
