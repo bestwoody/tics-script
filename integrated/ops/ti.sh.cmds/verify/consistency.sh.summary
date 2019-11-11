@@ -87,6 +87,15 @@ function cmd_ti_verify_consistency()
 	local min_ts=`echo "${min_tss}" | awk -F '.' '{print $1}'`
 	local max_ts=`echo "${max_tss}" | awk -F '.' '{print $1}'`
 	local min_ts=`to_ts "${min_ts}"`
+	if [ -z "${min_ts}" ]; then
+		echo "[cmd verify/consistency] time -> ts failed" >&2
+		return 1
+	fi
+	local min_time="`from_ts ${min_ts}`"
+	if [ -z "${min_time}" ]; then
+		echo "[cmd verify/consistency] ts -> time failed" >&2
+		return 1
+	fi
 	local max_ts=`to_ts "${max_ts}"`
 
 	local min_in_range=$((min_ts + 1))

@@ -42,8 +42,7 @@ function to_ts()
 
 	local time="${1}"
 	if [ `uname` == "Darwin" ]; then
-		echo "[func to_ts] TODO: linux support" >&2
-		return 1
+		date -j -f "%Y-%m-%d %H:%M:%S" "${time}" +%s
 	else
 		date -d "${time}" +%s
 	fi
@@ -59,10 +58,8 @@ function from_ts()
 
 	local ts="${1}"
 	if [ `uname` == "Darwin" ]; then
-		echo "[func from_ts] TODO: linux support" >&2
-		return 1
+		date -r "${ts}" "+%Y-%m-%d %H:%M:%S"
 	else
-		#echo date -d @"${ts}" "+%Y-%m-%d %H:%M:%S" >&2
 		date -d @"${ts}" "+%Y-%m-%d %H:%M:%S"
 	fi
 }
