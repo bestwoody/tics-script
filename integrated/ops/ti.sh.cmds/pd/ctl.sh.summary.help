@@ -1,2 +1,2 @@
 run 'pd-ctl' on pd in a cluster
-usage: <cmd> pd_ctl_command_and_args
+usage: <cmd> pd_ctl_cmd_and_args

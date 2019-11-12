@@ -21,15 +21,13 @@ function cmd_ti_pd_ctl_pretty()
 		return 1
 	fi
 
-	local command="${1}"
-
 	local host=`from_mod_get_host "${pd_mod}"`
 	local dir=`from_mod_get_dir "${pd_mod}"`
 
 	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'pd_port'`
 
 	local bin_dir="/tmp/ti/master/bins"
-	"${bin_dir}/pd-ctl" -u "http://${host}:${port}" <<< "${command}" | print_json
+	"${bin_dir}/pd-ctl" -u "http://${host}:${port}" <<< "${@}" | print_json
 }
 
 set -euo pipefail

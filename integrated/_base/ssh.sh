@@ -64,7 +64,7 @@ function call_remote_func_raw()
 
 	local args_str=""
 	for it in "${args[@]}"; do
-		args_str="$args_str \"$it\""
+		args_str="${args_str} \"${it}\""
 	done
 
 	ssh -o BatchMode=yes "${host}" "source \"${env_dir}/_env.sh\" && \"${func}\" ${args_str}" </dev/null 2>&1
