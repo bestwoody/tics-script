@@ -74,9 +74,9 @@ function cmd_ti_verify_consistency()
 	local min_tso=`echo "${min_max_tso}" | awk '{print $1}'`
 	local max_tso=`echo "${min_max_tso}" | awk '{print $2}'`
 
-	local min_tss=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" 'pd/ctl' \
+	local min_tss=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" 'pd/ctl_raw' \
 		"tso ${min_tso}" | grep 'system' | awk '{print $(NF-3),$(NF-2),$(NF-1)}'`
-	local max_tss=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" 'pd/ctl' \
+	local max_tss=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" 'pd/ctl_raw' \
 		"tso ${max_tso}" | grep 'system' | awk '{print $(NF-3),$(NF-2),$(NF-1)}'`
 
 	if [ "`echo ${min_tss} | awk '{print $NF}'`" != "`date +%z`" ]; then

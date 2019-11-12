@@ -121,7 +121,7 @@ function restart_tiflash_test()
 	local table="lineitem"
 	local ti="${integrated}/ops/ti.sh"
 	
-	"${ti}" "${test_ti_file}" 'pd/ctl' "config set learner-schedule-limit 256"
+	"${ti}" "${test_ti_file}" 'pd/ctl_raw' "config set learner-schedule-limit 256"
 	"${ti}" -l "${test_ti_file}" "tpch/load" "${load_tpch_scale}" "${table}" &
 
 	for (( i = 0; i < "${restart_times}"; i++ )); do

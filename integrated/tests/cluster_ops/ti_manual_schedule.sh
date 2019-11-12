@@ -8,7 +8,8 @@ function get_learner_id_for_region()
 	local region_id="${1}"
 	local test_ti_file="${2}"
 
-	echo `"${integrated}/ops/ti.sh" -i 0 "${test_ti_file}" 'pd/ctl' "region ${region_id}" | { grep -B 1 "is_learner" || test $? = 1; } | { grep "store_id" || test $? = 1; } | awk '{print $2}' | tr -d ','`
+	echo `"${integrated}/ops/ti.sh" -i 0 "${test_ti_file}" 'pd/ctl_raw' "region ${region_id}" | \
+		{ grep -B 1 "is_learner" || test $? = 1; } | { grep "store_id" || test $? = 1; } | awk '{print $2}' | tr -d ','`
 }
 
 function transfer_learner()
@@ -24,11 +25,11 @@ function transfer_learner()
 
 	local ti="${integrated}/ops/ti.sh"
 
-	"${ti}" -i 0 "${test_ti_file}" 'pd/ctl' "operator add add-learner ${region_id} ${learner_id}"
+	"${ti}" -i 0 "${test_ti_file}" 'pd/ctl_raw' "operator add add-learner ${region_id} ${learner_id}"
 	for ((k=0; k<${timeout}; k++)); do
 		echo "region id ${region_id}"
 		echo "target learner id ${learner_id}"
-		local learner_count=`"${ti}" -i 0 "${test_ti_file}" 'pd/ctl' "region ${region_id}" | { grep "is_learner" || test $? = 1; } | wc -l`
+		local learner_count=`"${ti}" -i 0 "${test_ti_file}" 'pd/ctl_raw' "region ${region_id}" | { grep "is_learner" || test $? = 1; } | wc -l`
 		echo "learner count ${learner_count}"
 		if [ "${learner_count}" -eq 1 ]; then
 			local learner_store_id=`get_learner_id_for_region "${region_id}" "${test_ti_file}"`
@@ -36,7 +37,7 @@ function transfer_learner()
 			if [ "${learner_store_id}" == "${learner_id}" ]; then
 				break
 			else
-				"${ti}" -i 0 "${test_ti_file}" 'pd/ctl' "operator add add-learner ${region_id} ${learner_id}"
+				"${ti}" -i 0 "${test_ti_file}" 'pd/ctl_raw' "operator add add-learner ${region_id} ${learner_id}"
 			fi
 		fi
 		sleep 1
@@ -49,7 +50,7 @@ function dump_cluster_region_count()
 	local store_count=`test_cluster_get_normal_store_count "${test_ti_file}"`
 	for ((i=0; i<${store_count}; i++)); do
 		local store_id=`test_cluster_get_learner_store_id_by_index "${test_ti_file}" "${i}"`
-		local region_count=`"${integrated}/ops/ti.sh" -i 0 "${test_ti_file}" "pd/ctl" "store ${store_id}" | { grep "region_count" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
+		local region_count=`"${integrated}/ops/ti.sh" -i 0 "${test_ti_file}" "pd/ctl_raw" "store ${store_id}" | { grep "region_count" || test $? = 1; } | awk -F ':' '{print $2}' | tr -cd '[0-9]'`
 		echo "index ${i} store id ${store_id} region count ${region_count}"
 	done
 }
@@ -97,7 +98,7 @@ function ti_manual_schedule()
 	echo "cluster total region count: ${cluster_region_count}"
 
 	for ((i=0; i<${cluster_region_count}; i++)); do
-		local region_info=`"${ti}" "${test_ti_file}" 'pd/ctl' "region ${i}"`
+		local region_info=`"${ti}" "${test_ti_file}" 'pd/ctl_raw' "region ${i}"`
 		if [ "${region_info}" != "null" ]; then
 			local target_learner_id=`choose_target_learner_id "${i}" "${test_ti_file}"`
 			echo "${i}"

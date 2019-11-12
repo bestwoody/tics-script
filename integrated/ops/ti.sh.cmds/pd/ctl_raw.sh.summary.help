@@ -1,0 +1,2 @@
+run 'pd-ctl' on pd in a cluster, output origin json format
+usage: <cmd> pd_ctl_cmd_and_args

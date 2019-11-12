@@ -12,12 +12,12 @@ function cmd_ti_pd_ctl_pretty()
 
 	local pd_mod=`from_mods_random_mod "${mods}" 'pd' 'false'`
 	if [ -z "${pd_mod}" ]; then
-		echo "[cmd pd/ctl_pretty] no selected pd" >&2
+		echo "[cmd pd/ctl_raw] no selected pd" >&2
 		return 1
 	fi
 
 	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
-		echo '[cmd pd/ctl] usage: <cmd> command' >&2
+		echo '[cmd pd/ctl_raw] usage: <cmd> pd_ctl_cmd_and_args' >&2
 		return 1
 	fi
 
@@ -27,7 +27,7 @@ function cmd_ti_pd_ctl_pretty()
 	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'pd_port'`
 
 	local bin_dir="/tmp/ti/master/bins"
-	"${bin_dir}/pd-ctl" -u "http://${host}:${port}" <<< "${@}" | print_json
+	"${bin_dir}/pd-ctl" -u "http://${host}:${port}" <<< "${@}"
 }
 
 set -euo pipefail

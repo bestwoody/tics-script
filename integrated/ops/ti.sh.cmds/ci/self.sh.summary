@@ -16,7 +16,10 @@ function cmd_ti_ci_self()
 	"${ti}" "${file}" 'up:sleep 5'
 	"${ti}" "${file}" 'status:prop:du:log 1:log 1 info'
 
+	"${ti}" "${file}" pd/ctl_raw --help 1>/dev/null
+	"${ti}" "${file}" pd/ctl_raw store 1>/dev/null
 	"${ti}" "${file}" pd/ctl --help 1>/dev/null
+	"${ti}" "${file}" pd/ctl store 1>/dev/null
 	"${ti}" "${file}" tikv/ctl true --help 1>/dev/null
 	"${ti}" "${file}" perf/fio --help 1>/dev/null
 
