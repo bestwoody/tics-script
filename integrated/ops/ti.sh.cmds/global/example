@@ -32,4 +32,4 @@
 >> ops/ti.sh my.ti mysql "select count(*) from my_table..."
 
 # close and destory cluster
->> ops/ti.sh my.ti burn doit
+>> ops/ti.sh my.ti burn

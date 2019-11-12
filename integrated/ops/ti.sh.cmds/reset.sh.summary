@@ -14,7 +14,7 @@ function cmd_ti_reset()
 	auto_error_handle
 
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "burn doit:run"
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'burn:run'
 }
 
 cmd_ti_reset "${@}"

@@ -32,7 +32,7 @@ function stop_test_cluster()
 	local ti_file="${test_entry_dir}/test.ti"
 	if [ -f "${ti_file}" ]; then
 		if [ "${clean}" == 'true' ]; then
-			"${integrated}/ops/ti.sh" "${ti_file}" burn doit
+			"${integrated}/ops/ti.sh" "${ti_file}" burn
 		else
 			"${integrated}/ops/ti.sh" "${ti_file}" fstop
 		fi

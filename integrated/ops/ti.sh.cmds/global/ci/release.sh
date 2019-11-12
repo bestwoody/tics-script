@@ -10,9 +10,9 @@ function cmd_ti_global_ci_release()
 	rm -f "${file}"
 
 	"${ti}" new "${file}" 'delta=-8' "dir=${dir}"
-	"${ti}" "${file}" 'burn doit:up:sleep 5'
+	"${ti}" "${file}" 'burn:up:sleep 5'
 	"${ti}" "${file}" ci/release
-	"${ti}" "${file}" must burn doit
+	"${ti}" "${file}" must burn
 
 	rm -f "${file}"
 	echo '------------'

@@ -158,11 +158,11 @@ function test_cluster_prepare()
 		split_ti_args "${args}" > "${rendered_file_path}"
 		echo '' >> "${rendered_file_path}"
 		cat "${ti_file}" >> "${rendered_file_path}"
-		"${ti}" "${rendered_file_path}" burn doit
+		"${ti}" "${rendered_file_path}" burn
 		echo '---'
 		"${ti}" -m "${mods}" "${rendered_file_path}" run
 	else
-		"${ti}" -k "${args}" "${ti_file}" burn doit
+		"${ti}" -k "${args}" "${ti_file}" burn
 		echo '---'
 		"${ti}" -m "${mods}" -k "${args}" "${ti_file}" run
 	fi
@@ -209,11 +209,11 @@ function test_cluster_multi_node_prepare()
 		split_ti_args "${args}" > "${rendered_file_path}"
 		echo '' >> "${rendered_file_path}"
 		cat "${ti_file}" >> "${rendered_file_path}"
-		"${ti}" "${rendered_file_path}" burn doit
+		"${ti}" "${rendered_file_path}" burn
 		echo '---'
 		"${ti}" -m "${mods}" "${rendered_file_path}" run
 	else
-		"${ti}" -k "${args}" "${ti_file}" burn doit
+		"${ti}" -k "${args}" "${ti_file}" burn
 		echo '---'
 		"${ti}" -m "${mods}" -k "${args}" "${ti_file}" run
 	fi
@@ -238,7 +238,7 @@ function test_cluster_burn()
 
 	local test_ti_file="${1}"
 	local ti="${integrated}/ops/ti.sh"
-	"${ti}" "${test_ti_file}" burn doit
+	"${ti}" "${test_ti_file}" burn
 }
 export -f test_cluster_burn
 

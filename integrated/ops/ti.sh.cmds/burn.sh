@@ -8,9 +8,9 @@ function cmd_ti_burn()
 	local conf_rel_path="${4}"
 	local host="${5}"
 
-	local doit=''
+	local dry=''
 	if [ ! -z "${6+x}" ]; then
-		local doit="${6}"
+		local dry="${6}"
 	fi
 
 	if [ "${dir}" == "/" ]; then
@@ -19,7 +19,7 @@ function cmd_ti_burn()
 	fi
 
 	echo "=> burning: ${dir}"
-	if [ "${doit}" == "doit" ]; then
+	if [ "${dry}" != 'dry' ] && [ "${dry}" != 'true' ]; then
 		while true; do
 			local up_status=`ti_file_mod_status "${dir}" "${conf_rel_path}"`
 			local ok=`echo "${up_status}" | { grep ^OK || test $? = 1; }`
@@ -32,7 +32,7 @@ function cmd_ti_burn()
 			sleep 0.5
 		done
 		if [ ! -d "${dir}" ]; then
-			echo "   missed"
+			echo "   MISSED"
 		else
 			local result=`rm -rf "${dir}" 2>&1`
 			if [ ! -z "${result}" ]; then
@@ -46,7 +46,7 @@ function cmd_ti_burn()
 		if [ ! -d "${dir}" ]; then
 			echo "   MISSED"
 		else
-			echo "   dry run, append 'doit' to erase data"
+			echo "   dry run"
 		fi
 	fi
 }

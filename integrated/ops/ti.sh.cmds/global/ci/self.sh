@@ -16,10 +16,10 @@ function cmd_ti_global_ci_self()
 	rm -f "${file}"
 
 	"${ti}" new "${file}" 'delta=-4' "dir=${dir}" 'spark=1'
-	"${ti}" "${file}" 'burn doit:up:sleep 5'
+	"${ti}" "${file}" 'burn:up:sleep 5'
 	"${ti}" "${file}" ci/self
 	"${ti}" "${file}" reset:restart
-	"${ti}" "${file}" must 'burn:burn doit'
+	"${ti}" "${file}" must burn
 
 	rm -f "${file}"
 	echo '------------'

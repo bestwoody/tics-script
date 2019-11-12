@@ -45,6 +45,8 @@ def print_json(jpath):
         return
     if jpath != '':
         obj = jsonpath.jsonpath(obj, jpath)
+        if str(obj) == 'False':
+            sys.exit(1)
     print_obj(obj)
 
 if __name__ == '__main__':
