@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function cmd_ti_mysql_raw()
+function cmd_ti_ch_raw()
 {
 	local ti_file="${1}"
 	local ti_args="${2}"
@@ -33,4 +33,4 @@ function cmd_ti_mysql_raw()
 	LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${bin_dir}/tiflash" client --host="${host}" --port="${port}"
 }
 
-cmd_ti_mysql_raw "${@}"
+cmd_ti_ch_raw "${@}"
