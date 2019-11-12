@@ -1,6 +1,7 @@
 import json
 import urllib
 import sys
+import time
 
 def error(msg):
     sys.stderr.write('[show_syncing_table.py] ' + msg + '\n')
@@ -34,15 +35,36 @@ def get_db_and_table(schema_str, db=""):
         return "", ""
     return schema["db_info"]["db_name"]["O"], schema["table_info"]["name"]["O"]
 
+def open_url(url):
+    max_try_times = 100
+    max_sleep = 8
+    i = 0
+    sleep_interval = 1
+    while True:
+        try:
+            f = urllib.urlopen(url)
+        except Exception as e:
+            if i >= max_try_times:
+                raise
+            else:
+                print "open " + rules_request_url + " failed"
+                i += 1
+            time.sleep(sleep_interval)
+            if sleep_interval < max_sleep:
+                sleep_interval *= 2
+        else:
+            return f
+
 def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
     rules_request_url = "http://" + pd_host + ":" + pd_port + "/pd/api/v1/config/rules/group/tiflash"
-    f = urllib.urlopen(rules_request_url)
+    f = open_url(rules_request_url)
+    if f == '' or not f:
+        return
     table_ids = parse_table_ids(f.read())
     tables = {}
     for table_id in table_ids:
         schema_request_rule = "http://" + tidb_host + ":" + tidb_port + "/db-table/" + table_id
-        # TODO: catch exceptions
-        f = urllib.urlopen(schema_request_rule)
+        f = open_url(schema_request_rule)
         if f == '' or not f:
             return
         s = f.read()
