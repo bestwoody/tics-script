@@ -1,0 +1,2 @@
+run 'pd-ctl' on pd in a cluster, use pretty output format
+usage: <cmd> pd_ctl_command_and_args

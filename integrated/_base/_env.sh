@@ -17,6 +17,7 @@ source "${integrated}/_base/upload.sh"
 source "${integrated}/_base/ssh.sh"
 source "${integrated}/_base/proc.sh"
 
+source "${integrated}/_base/json/_env.sh"
 source "${integrated}/_base/ti_file/_env.sh"
 source "${integrated}/_base/report/_env.sh"
 source "${integrated}/_base/test/_env.sh"

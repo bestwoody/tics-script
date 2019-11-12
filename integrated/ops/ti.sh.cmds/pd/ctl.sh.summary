@@ -1,0 +1,36 @@
+#!/bin/bash
+
+function cmd_ti_pd_ctl_pretty()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local pd_mod=`from_mods_random_mod "${mods}" 'pd' 'false'`
+	if [ -z "${pd_mod}" ]; then
+		echo "[cmd pd/ctl_pretty] no selected pd" >&2
+		return 1
+	fi
+
+	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
+		echo '[cmd pd/ctl] usage: <cmd> command' >&2
+		return 1
+	fi
+
+	local command="${1}"
+
+	local host=`from_mod_get_host "${pd_mod}"`
+	local dir=`from_mod_get_dir "${pd_mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'pd_port'`
+
+	local bin_dir="/tmp/ti/master/bins"
+	"${bin_dir}/pd-ctl" -u "http://${host}:${port}" <<< "${command}"
+}
+
+set -euo pipefail
+cmd_ti_pd_ctl_pretty "${@}"
