@@ -38,10 +38,13 @@ def print_json(jpath):
             break
         lines += line
 
-    obj = json.loads(lines)
+    try:
+        obj = json.loads(lines)
+    except:
+        print lines
+        return
     if jpath != '':
-        obj = jsonpath.jsonpath(json.loads(lines), jpath)
-    json.dumps(obj, sort_keys=True, indent=2)
+        obj = jsonpath.jsonpath(obj, jpath)
     print_obj(obj)
 
 if __name__ == '__main__':

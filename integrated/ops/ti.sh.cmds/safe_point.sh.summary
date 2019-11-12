@@ -28,7 +28,7 @@ function cmd_ti_safe_point()
 
 	local read_res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'tidb' -i "${index}" \
 		-k "${ti_args}" "${ti_file}" 'mysql' \
-		"select VARIABLE_VALUE from tidb where VARIABLE_NAME=\"tikv_gc_safe_point\"" \
+		"select VARIABLE_VALUE from tidb where VARIABLE_NAME='tikv_gc_safe_point'" \
 		'mysql' 'false' 2>&1`
 	local res=`echo "${read_res}" | grep -v 'VARIABLE_VALUE' | trim_host`
 
