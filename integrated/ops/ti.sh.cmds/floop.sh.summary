@@ -10,28 +10,34 @@ function cmd_ti_floop()
 	local mods="${6}"
 	shift 6
 
-	local cmd="${1}"
-
-	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-	source "${here}/_env.sh"
-
-	if [ -z "${cmd}" ]; then
-		echo "[cmd loop] usage: ti.sh [flags] ti_file_path loop cmd [args]"
-		return 1
+	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
+		echo "[cmd floop] usage: ti.sh [flags] ti_file_path floop cmd [args]"
+		exit 1
 	fi
 
-	for (( r = 0; 0 == 0; r++ )); do
-		if [ -z "`echo ${cmd} | grep ':'`" ]; then
-			print_hhr
-			echo ":: floop ${r}> ${@}"
-			print_hr
+	local cmd="${1}"
+	local cmds_str=''
+	for it in "${@}"; do
+		if [ -z "${cmds_str}" ]; then
+			local cmds_str="${it}"
+		else
+			local cmds_str="${cmds_str} ${it}"
 		fi
-		for ((; 0 == 0; )); do
-			set +e
+	done
+
+	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+
+	for (( r = 0; 0 == 0; r++ )); do
+		if [ -z "`echo ${cmds_str} | grep ':'`" ]; then
+			print_hhr
+			echo ":: floop ${r}> ${cmds_str}"
+			print_hr
 			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
-			break
-		done
+		else
+			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${cmds_str}"
+		fi
 		sleep 0.1
 	done
 }

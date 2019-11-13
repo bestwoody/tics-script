@@ -332,3 +332,31 @@ function stop_procs()
 	fi
 }
 export -f stop_procs
+
+function stop_pids_tree()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func stop_procs] usage: <func> pid_or_pids [fast=false] [timeout=60]" >&2
+		return 1
+	fi
+
+	local pids="${1}"
+
+	if [ -z "${2+x}" ]; then
+		local fast=''
+	else
+		local fast="${2}"
+	fi
+
+	if [ -z "${3+x}" ]; then
+		local timeout='60'
+	else
+		local timeout="${3}"
+	fi
+
+	local sub_pids=`_print_sub_pids "${pids}"`
+
+	stop_pids "${pids}" "${fast}" "${timeout}"
+	stop_pids "${sub_pids}" "${fast}" "${timeout}"
+}
+export -f stop_pids_tree

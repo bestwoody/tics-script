@@ -10,25 +10,34 @@ function cmd_ti_must()
 	local mods="${6}"
 	shift 6
 
-	local cmd="${1}"
-
-	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
-	source "${here}/_env.sh"
-
-	if [ -z "${cmd}" ]; then
-		echo "[cmd loop] usage: ti.sh [flags] ti_file_path loop cmd [args]"
+	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
+		echo "[cmd must] usage: ti.sh [flags] ti_file_path must cmd [args]"
 		exit 1
 	fi
 
-	for (( r = 0; 0 == 0; r++ )); do
-		if [ -z "`echo ${cmd} | grep ':'`" ]; then
-			print_hhr
-			echo ":: must ${r}> ${@}"
-			print_hr
+	local cmd="${1}"
+	local cmds_str=''
+	for it in "${@}"; do
+		if [ -z "${cmds_str}" ]; then
+			local cmds_str="${it}"
+		else
+			local cmds_str="${cmds_str} ${it}"
 		fi
-		set +e
-		local res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}" 1>&2 && echo 'true'`
+	done
+
+	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+
+	for (( r = 0; 0 == 0; r++ )); do
+		if [ -z "`echo ${cmds_str} | grep ':'`" ]; then
+			print_hhr
+			echo ":: must ${r}> ${cmds_str}"
+			print_hr
+			local res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}" 1>&2 && echo 'true'`
+		else
+			local res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${cmds_str}" 1>&2 && echo 'true'`
+		fi
 		if [ "${res}" == 'true' ]; then
 			break
 		fi
