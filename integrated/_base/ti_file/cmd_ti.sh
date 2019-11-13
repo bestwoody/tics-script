@@ -228,7 +228,26 @@ function cmd_ti()
 
 	if [ -z "${ti_file}" ] && [ ! -z "${cmd}" ]; then
 		if [ -z "${cmd_args+x}" ]; then
-			ti_file_exe_global_cmd "${cmd}" "${cmd_dir}"
+			if [ ! -z "`echo ${cmd} | { grep ':' || test $? = 1; }`" ]; then
+				local cmds=`echo "${cmd}" | awk -F ':' '{for ( i=1; i<=NF; i++ ) print $i}'`
+				echo "${cmds}" | while read cmd; do
+					print_hhr
+					local cmd_and_args=(${cmd})
+					if [ "${#cmd_and_args[@]}" == '1' ]; then
+						echo ":: ${cmd}"
+						print_hr
+						ti_file_exe_global_cmd "${cmd}" "${cmd_dir}"
+					else
+						local cmd="${cmd_and_args[0]}"
+						local cmd_args=${cmd_and_args[@]:1}
+						echo ":: ${cmd} ${cmd_args}"
+						print_hr
+						ti_file_exe_global_cmd "${cmd}" "${cmd_dir}" "${cmd_args[@]}"
+					fi
+				done
+			else
+				ti_file_exe_global_cmd "${cmd}" "${cmd_dir}"
+			fi
 		else
 			ti_file_exe_global_cmd "${cmd}" "${cmd_dir}" "${cmd_args[@]}"
 		fi

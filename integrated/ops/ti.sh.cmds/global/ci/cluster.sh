@@ -10,7 +10,7 @@ function cmd_ti_ci_cluster()
 	rm -f "${file}"
 
 	"${ti}" new "${file}" 'delta=-6' "dir=${dir}" 1>/dev/null
-	"${ti}" "${file}" 'burn:up:sleep 5'
+	"${ti}" "${file}" must burn
 	"${ti}" "${file}" ci/cluster
 	"${ti}" "${file}" must burn
 

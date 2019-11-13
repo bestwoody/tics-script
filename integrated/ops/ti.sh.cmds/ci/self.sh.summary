@@ -5,19 +5,21 @@ function cmd_ti_ci_self()
 	local file="${1}"
 	local mods="${6}"
 	shift 6
+
 	local ti="${integrated}/ops/ti.sh"
 
-	"${ti}" "${file}" 'fstop:stop'
-	"${ti}" "${file}" 'up:sleep 5'
+	"${ti}" "${file}" 'stop:fstop:up:sleep 5'
 	"${ti}" "${file}" 'kill/tiflash:kill/rngine:kill/tikv:kill/storage'
+	"${ti}" "${file}" 'up:sleep 5:status:prop:du:log 1:log 1 info'
+	"${ti}" "${file}" 'pd/ctl_raw store:pd/ctl store:mysql/host:mysql/port'
+	"${ti}" "${file}" 'byhost/do uptime:byhost/procs'
+	"${ti}" "${file}" 'ver:ver ver:ver githash:ver full:sleep 1'
+	"${ti}" "${file}" 'safe_point:safe_point ts:safe_point time'
+	"${ti}" "${file}" 'perf/top:perf/top true:perf/top false'
 
-	"${ti}" "${file}" 'up:sleep 5'
-	"${ti}" "${file}" 'status:prop:du:log 1:log 1 info'
+	"${ti}" "${file}" repeat 2 status
 
-	"${ti}" "${file}" pd/ctl_raw --help 1>/dev/null
-	"${ti}" "${file}" pd/ctl_raw store 1>/dev/null
-	"${ti}" "${file}" pd/ctl --help 1>/dev/null
-	"${ti}" "${file}" pd/ctl store 1>/dev/null
+
 	"${ti}" "${file}" tikv/ctl true --help 1>/dev/null
 	"${ti}" "${file}" perf/fio --help 1>/dev/null
 
@@ -45,21 +47,12 @@ function cmd_ti_ci_self()
 	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 1>/dev/null
 	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'true' 1>/dev/null
 	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'false' 1>/dev/null
-	"${ti}" "${file}" mysql/host:mysql/port
-	#${ti}" io_report 1>/dev/null
 
 	local beeline_exists=`from_mods_random_mod "${mods}" 'spark_m'`
 	if [ ! -z "${beeline_exists}" ]; then
 		local res=`"${ti}" "${file}" beeline default -e 'show databases' | grep test`
 		test ! -z "${res}"
 	fi
-
-	"${ti}" "${file}" 'safe_point:safe_point ts:safe_point time'
-	"${ti}" "${file}" 'ver:ver ver:ver githash:ver full:sleep 1'
-	"${ti}" "${file}" 'perf/top:perf/top true:perf/top false'
-
-	"${ti}" "${file}" repeat 2 status
-	"${ti}" "${file}" 'byhost/do uptime:byhost/procs'
 
 	# TODO: Fixme: flame dependences
 	#local tiflash_mod=`from_mods_random_mod "${mods}" 'tiflash'`
