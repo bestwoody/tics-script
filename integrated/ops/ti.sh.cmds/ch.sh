@@ -59,7 +59,11 @@ function cmd_ti_ch()
 	else
 		local query_str="${query}"
 	fi
-	local port=`get_value "${dir}/proc.info" 'tcp_port'`
+	local port=`get_value "${dir}/proc.info" 'tcp_port' 2>/dev/null`
+	if [ -z "${port}" ]; then
+		echo "[cmd ch/queries] getting port from proc.info failed" >&2
+		return 1
+	fi
 
 	local start_time=`timer_start`
 	if [ -z "${1+x}" ]; then

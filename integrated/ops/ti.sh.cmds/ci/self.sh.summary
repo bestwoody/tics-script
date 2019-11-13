@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# TODO test: loop, floop
-# TODO need sudo to test: perf/drop_page_cache, perf/hw
 function cmd_ti_ci_self()
 {
 	local file="${1}"
@@ -48,6 +46,7 @@ function cmd_ti_ci_self()
 	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'true' 1>/dev/null
 	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'false' 1>/dev/null
 	"${ti}" "${file}" mysql/host:mysql/port
+	#${ti}" io_report 1>/dev/null
 
 	local beeline_exists=`from_mods_random_mod "${mods}" 'spark_m'`
 	if [ ! -z "${beeline_exists}" ]; then
@@ -55,6 +54,7 @@ function cmd_ti_ci_self()
 		test ! -z "${res}"
 	fi
 
+	"${ti}" "${file}" 'safe_point:safe_point ts:safe_point time'
 	"${ti}" "${file}" 'ver:ver ver:ver githash:ver full:sleep 1'
 	"${ti}" "${file}" 'perf/top:perf/top true:perf/top false'
 
@@ -70,8 +70,8 @@ function cmd_ti_ci_self()
 	# TODO: Fixme: ssh failed
 	#${ti}" "${file}" 'perf/io_report:byhost/local/do date'
 
-	# TODO: Fixme: this failed on cluster-mode
-	#"${ti}" "${file}" 'safe_point:safe_point ts:safe_point time'
+	# TODO test: loop, floop
+	# TODO need sudo to test: perf/drop_page_cache, perf/hw
 }
 
 set -euo pipefail

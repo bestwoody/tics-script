@@ -9,6 +9,10 @@ function cmd_ti_global_ci_self()
 	"${ti}" flags 1>/dev/null
 	"${ti}" example 1>/dev/null
 	"${ti}" procs 1>/dev/null
+	# TODO: take too long
+	#"${ti}" io_report 1>/dev/null
+	# TODO: need sudo
+	#"${ti}" hw 1>/dev/null
 
 	local dir='/tmp/ti/ci/self'
 	mkdir -p "${dir}"
