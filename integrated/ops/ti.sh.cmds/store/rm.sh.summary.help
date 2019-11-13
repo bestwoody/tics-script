@@ -1,0 +1,2 @@
+remove a learner store (rngine+tiflash) from cluster, the data in learner store will be removed too
+usage: <cmd> [tiflash_index=random|0|1|..]

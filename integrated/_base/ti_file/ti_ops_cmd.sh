@@ -73,7 +73,10 @@ function from_mods_get_mod()
 
 	local index_base_1=$((index + 1))
 	local mod=`echo "${instances}" | head -n "${index_base_1}" | tail -n 1`
-	echo "${mod}"
+	local mod_index=`echo "${mod}" | awk '{print $1}'`
+	if [ "${mod_index}" == "${index}" ]; then
+		echo "${mod}"
+	fi
 }
 export -f from_mods_get_mod
 
@@ -205,6 +208,10 @@ function from_mods_get_rngine_by_tiflash()
 	local tiflash_addr="${tiflash_host}:${tiflash_port}"
 
 	local instances=`from_mods_by_type "${mods}" 'rngine'`
+	if [ -z "${instances}" ]; then
+		return
+	fi
+
 	echo "${instances}" | while read rngine_mod; do
 		local rngine_host=`from_mod_get_host "${rngine_mod}"`
 		local rngine_dir=`from_mod_get_dir "${rngine_mod}"`

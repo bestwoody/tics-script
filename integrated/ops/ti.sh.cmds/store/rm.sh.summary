@@ -1,0 +1,76 @@
+#!/bin/bash
+
+function cmd_ti_store_rm()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local tiflash_index_arg='random'
+	if [ ! -z "${1+x}" ] && [ ! -z "${1}" ]; then
+		local tiflash_index_arg="${1}"
+	fi
+
+	local pd_index=`from_mods_random_mod "${mods}" 'pd'`
+	if [ -z "${pd_index}" ]; then
+		echo "[cmd store/rm] no selected pd" >&2
+		local pd_index='0'
+	fi
+
+	if [ "${tiflash_index_arg}" == 'random' ]; then
+		local tiflash_index=`from_mods_random_mod "${mods}" 'tiflash'`
+		if [ -z "${tiflash_index}" ]; then
+			echo "[cmd store/rm] no selected tiflash" >&2
+			return 1
+		fi
+	else
+		local tiflash_index="${tiflash_index_arg}"
+	fi
+
+	local rngine_index=`from_mods_get_rngine_by_tiflash "${mods}" "${tiflash_index}"`
+	if [ -z "${rngine_index}" ]; then
+		echo "[cmd store/rm] can't get rngine from selected tiflash: ${tiflash_index}" >&2
+		return 1
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+
+	local rngine_prop=`"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' "${ti_file}" 'prop'`
+	local rngine_host=`echo "${rngine_prop}" | grep "listen_host" | awk -F 'listen_host:' '{print $2}' | tr -d ' '`
+	local rngine_port=`echo "${rngine_prop}" | grep "rngine_port" | awk -F 'rngine_port:' '{print $2}' | tr -d ' '`
+
+	local store_addr="${rngine_host}:${rngine_port}"
+	local store_id=`"${integrated}/ops/ti.sh" -i "${pd_index}" "${ti_file}" "pd/ctl_raw" "store" | \
+		print_jpath "$.stores[?(@.store.peer_address=='${store_addr}')].store.id"`
+	if [ -z "${store_id}" ]; then
+		echo "[cmd store/rm] cannot get store id from ${store_addr}" >&2
+		return 1
+	fi
+
+	echo "=> learner store address: ${store_addr}, id: ${store_id}, tiflash: ${tiflash_index}, rngine: ${rngine_index}. removing"
+
+	#"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' "${ti_file}" 'fstop'
+	#"${ti}" -h "${cmd_hosts}" -i "${tiflash_index}" -m 'tiflash' "${ti_file}" 'fstop'
+
+	local op_resp=`"${integrated}/ops/ti.sh" -i "${pd_index}" "${ti_file}" "pd/ctl_raw" "store delete ${store_id}"`
+	# TODO: remove tr
+	# local op_resp=`echo "${op_resp}" | tr -d '\[\][0-9] \.'`
+	if [ "${op_resp}" != "Success!" ]; then
+		echo "[cmd store/rm] remove store ${store_addr} failed: ${op_resp}"
+		return 1
+	fi
+
+	"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' "${ti_file}" 'burn'
+	"${ti}" -h "${cmd_hosts}" -i "${tiflash_index}" -m 'tiflash' "${ti_file}" 'burn'
+
+	echo "=> learner store address: ${store_addr}, id: ${store_id}, tiflash: ${tiflash_index}, rngine: ${rngine_index}. removed"
+	echo "   OK"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+cmd_ti_store_rm "${@}"

@@ -13,7 +13,8 @@ function cmd_ti_kill_random()
 	local mods=`from_mods_not_type "${mods}" 'rngine' 'false'`
 	local mod=`from_mods_random_mod "${mods}" '' 'false'`
 	if [ -z "${mod}" ]; then
-		return
+		echo "[cmd store/rm_random] no selected tiflash" >&2
+		return 1
 	fi
 
 	local name=`from_mod_get_name "${mod}"`
