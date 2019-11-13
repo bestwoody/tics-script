@@ -1,0 +1,2 @@
+execute many commands in the same time
+usage: ti.sh [flags] ti_file_path go cmd1 cmd2 ..

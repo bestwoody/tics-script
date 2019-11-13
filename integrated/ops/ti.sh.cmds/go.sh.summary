@@ -1,0 +1,74 @@
+#!/bin/bash
+
+function cmd_ti_loop()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local cmd="${1}"
+
+	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+	source "${here}/_env.sh"
+	# auto_error_handle
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd go] usage: ti.sh [flags] ti_file_path go cmd1 cmd2"
+		exit 1
+	fi
+
+	local log_dir="${ti_file}.data/go"
+	mkdir -p "${log_dir}"
+
+	local go_flag="GO_CMD_FLAG"
+	local run_flag="${go_flag}:RUN"
+	local end_flag="${go_flag}:END"
+
+	local i='0'
+	for cmd in "${@}"; do
+		{
+			local log="${log_dir}/go_cmd_${i}.log"
+			echo -e "${cmd}\n${run_flag}\n***\n" > "${log}"
+
+			# TODO: this will have bug when a normal cmd arg have ':' in it
+			if [ ! -z "`echo ${cmd} | { grep ':' || test $? = 1; }`" ]; then
+				"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+					-k "${ti_args}" "${ti_file}" "${cmd}" 1>>"${log}" 2>&1 && \
+					echo -e "\n***\n${end_flag}" >> "${log}"
+			else
+				"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+					-k "${ti_args}" "${ti_file}" ${cmd} 1>>"${log}" 2>&1 && \
+					echo -e "\n***\n${end_flag}" >> "${log}"
+			fi
+		} &
+
+		local i=$((i + 1))
+	done
+
+	wait
+
+	local all_ok='true'
+	local i='0'
+	for cmd in "${@}"; do
+		local log="${log_dir}/go_cmd_${i}.log"
+		local last_line=`tail -n 1 "${log}"`
+		if [ "${last_line}" == "${end_flag}" ]; then
+			local ok='OK    '
+		else
+			local ok='FAILED'
+			local all_ok='false'
+		fi
+		echo "${ok} ${log}: '${cmd}'"
+		local i=$((i + 1))
+	done
+
+	if [ "${all_ok}" != 'true' ]; then
+		return 1
+	fi
+}
+
+cmd_ti_loop "${@}"
