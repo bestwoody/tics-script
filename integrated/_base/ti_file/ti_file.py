@@ -273,12 +273,6 @@ def print_sep():
 
 def print_mod_header(mod):
     print_sep()
-    if not mod.is_local():
-        host = '[' + mod.host + '] '
-    else:
-        host = ''
-    print 'echo "%s=> %s #%d (%s)"' % (host, mod.name, mod.index, mod.dir)
-    print ''
 
 def print_cp_bin(mod, conf):
     line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "%s/master/bins"'
@@ -400,10 +394,11 @@ def render_tiflashs(res, conf, hosts, indexes):
         print '# Wait for pd to ready'
         for pd in res.pds:
             if pd.is_local():
-                print 'wait_for_pd_local "%s"' % pd.dir
+                print 'wait_for_pd_local "%s" | awk \'{print "   "$0}\'' % pd.dir
             else:
                 bins_dir = conf.cache_dir + '/master/bins'
-                print 'wait_for_pd_by_host "%s" "%s" 300 %s %s' % (pd.host, pd.ports, bins_dir, conf.integrated_dir + '/conf/default.ports')
+                wait_str = 'wait_for_pd_by_host "%s" "%s" 300 %s %s | awk \'{print "   "$0}\''
+                print wait_str % (pd.host, pd.ports, bins_dir, conf.integrated_dir + '/conf/default.ports')
 
     for i in range(0, len(res.tiflashs)):
         tiflash = res.tiflashs[i]

@@ -25,14 +25,14 @@ function cmd_ti_burn()
 			local ok=`echo "${up_status}" | { grep ^OK || test $? = 1; }`
 			if [ ! -z "${ok}" ]; then
 				ti_file_cmd_fstop "${index}" "${mod_name}" "${dir}" "${conf_rel_path}" 2>&1 | \
-					awk '{if ($1 != "=>") print "   "$0}'
+					awk '{if ($1 != "=>") print $0}'
 			else
 			    break
 			fi
 			sleep 0.5
 		done
 		if [ ! -d "${dir}" ]; then
-			echo "   MISSED"
+			echo "   missed"
 		else
 			local result=`rm -rf "${dir}" 2>&1`
 			if [ ! -z "${result}" ]; then

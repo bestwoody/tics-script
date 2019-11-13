@@ -15,6 +15,8 @@ function spark_master_run()
 
 	shift 5
 
+	local spark_master_dir=`abs_path "${spark_master_dir}"`
+
 	if [ -z "${1+x}" ]; then
 		local ports_delta="0"
 	else
@@ -33,9 +35,11 @@ function spark_master_run()
 		local cluster_id="${3}"
 	fi
 
+	echo "=> spark_m: ${spark_master_dir}"
+
 	local java_installed=`print_java_installed`
 	if [ "${java_installed}" == "false" ]; then
-		echo "java not installed" >&2
+		echo "   java not installed" >&2
 		return 1
 	fi
 
@@ -47,7 +51,7 @@ function spark_master_run()
 		local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port'`
 	fi
 	if [ -z "${default_spark_master_port}" ]; then
-		echo "[func spark_master_run] get default spark_master_port from ${default_ports} failed" >&2
+		echo "   get default spark_master_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -57,7 +61,7 @@ function spark_master_run()
 		local default_thriftserver_port=`get_value "${default_ports}" 'thriftserver_port'`
 	fi
 	if [ -z "${default_thriftserver_port}" ]; then
-		echo "[func spark_master_run] get default thriftserver_port from ${default_ports} failed" >&2
+		echo "   get default thriftserver_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -67,7 +71,7 @@ function spark_master_run()
 		local default_spark_master_webui_port=`get_value "${default_ports}" 'spark_master_webui_port'`
 	fi
 	if [ -z "${default_spark_master_webui_port}" ]; then
-		echo "[func spark_master_run] get default spark_master_webui_port from ${default_ports} failed" >&2
+		echo "   get default spark_master_webui_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -77,7 +81,7 @@ function spark_master_run()
 		local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port'`
 	fi
 	if [ -z "${default_jmxremote_port}" ]; then
-		echo "[func spark_master_run] get default jmxremote_port from ${default_ports} failed" >&2
+		echo "   get default jmxremote_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -87,19 +91,19 @@ function spark_master_run()
 		local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port'`
 	fi
 	if [ -z "${default_jdwp_port}" ]; then
-		echo "[func spark_master_run] get default jdwp_port from ${default_ports} failed" >&2
+		echo "   get default jdwp_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
-		echo "[func spark_master_run] get default pd_port from ${default_ports} failed" >&2
+		echo "   get default pd_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
 	local default_tiflash_tcp_port=`get_value "${default_ports}" 'tiflash_tcp_port'`
 	if [ -z "${default_tiflash_tcp_port}" ]; then
-		echo "[func spark_master_run] get default tiflash_tcp_port from ${default_ports} failed" >&2
+		echo "   get default tiflash_tcp_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -110,13 +114,12 @@ function spark_master_run()
 		local listen_host="`must_print_ip`"
 	fi
 
-	local spark_master_dir=`abs_path "${spark_master_dir}"`
 	local str_for_finding_spark_master="${spark_master_dir}/spark/jars/"
 
 	local proc_cnt=`print_proc_cnt "${str_for_finding_spark_master}" "org.apache.spark.deploy.master.Master"`
 
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
+		echo "   running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -178,7 +181,7 @@ function spark_master_run()
 
 	local spark_master_log_name=`ls -tr "${spark_master_dir}/spark/logs" | { grep "org.apache.spark.deploy.master.Master" || test $? = 1; } | tail -n 1`
 	if [ -z "${spark_master_log_name}" ]; then
-		echo "[func spark_master_run] spark master logs not found, failed" >&2
+		echo "   spark master logs not found, failed" >&2
 		return 1
 	fi
 	mkdir -p "${spark_master_dir}/logs"
@@ -187,12 +190,12 @@ function spark_master_run()
 	fi
 
 	sleep 0.3
-	local pid=`must_print_pid "${str_for_finding_spark_master}" "org.apache.spark.deploy.master.Master"`
+	local pid=`must_print_pid "${str_for_finding_spark_master}" "org.apache.spark.deploy.master.Master" 2>/dev/null`
 	if [ -z "${pid}" ]; then
-		echo "[func spark_master_run] pid not found, failed" >&2
+		echo "   pid not found, failed" >&2
 		return 1
 	fi
 	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
+	echo "   ${pid}"
 }
 export -f spark_master_run

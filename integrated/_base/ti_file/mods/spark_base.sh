@@ -49,7 +49,7 @@ function spark_file_prepare()
 		local spark_file="spark-2.3.4-bin-hadoop2.7"
 		local spark_file_name="${spark_file}.tgz"
 		if [ ! -f "${spark_mod_dir}/${spark_file_name}" ]; then
-			echo "[func spark_file_prepare] cannot find spark file"
+			echo "[func spark_file_prepare] cannot find spark file" >&2
 			return 1
 		fi
 		tar -zxf "${spark_mod_dir}/${spark_file_name}" -C ${spark_mod_dir} 1>/dev/null

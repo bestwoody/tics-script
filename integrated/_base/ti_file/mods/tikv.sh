@@ -8,6 +8,8 @@ function tikv_run()
 	fi
 
 	local tikv_dir="${1}"
+	local tikv_dir=`abs_path "${tikv_dir}"`
+
 	local conf_templ_dir="${2}"
 	local pd_addr="${3}"
 
@@ -29,16 +31,18 @@ function tikv_run()
 		local cluster_id="${6}"
 	fi
 
+	echo "=> tikv: ${tikv_dir}"
+
 	local default_ports="${conf_templ_dir}/default.ports"
 
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
-		echo "[func tikv_run] get default pd_port from ${default_ports} failed" >&2
+		echo "   get default pd_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tikv_port=`get_value "${default_ports}" 'tikv_port'`
 	if [ -z "${default_tikv_port}" ]; then
-		echo "[func tikv_run] get default tikv_port from ${default_ports} failed" >&2
+		echo "   get default tikv_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -62,11 +66,9 @@ function tikv_run()
 
 	local tikv_port=$((${ports_delta} + ${default_tikv_port}))
 
-	local tikv_dir=`abs_path "${tikv_dir}"`
-
 	local proc_cnt=`print_proc_cnt "${tikv_dir}/tikv.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
+		echo "   running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -101,12 +103,12 @@ function tikv_run()
 	bash "${tikv_dir}/run.sh"
 
 	sleep 0.3
-	local pid=`must_print_pid "${tikv_dir}/tikv.toml" "\-\-config"`
+	local pid=`must_print_pid "${tikv_dir}/tikv.toml" "\-\-config" 2>/dev/null`
 	if [ -z "${pid}" ]; then
-		echo "[func tikv_run] pid not found, failed" >&2
+		echo "   pid not found, failed" >&2
 		return 1
 	fi
 	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
+	echo "   ${pid}"
 }
 export -f tikv_run

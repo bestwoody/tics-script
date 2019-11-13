@@ -41,7 +41,7 @@ function pd_safe_run()
 	fi
 
 	pd_run "${pd_dir}" "${conf_templ_dir}" "${name_ports_delta}" "${advertise_host}" "${pd_name}" "${initial_cluster}" "${cluster_id}"
-	wait_for_pd_port_ready_local "${pd_dir}"
+	wait_for_pd_port_ready_local "${pd_dir}" | awk '{print "   "$0}'
 }
 export -f pd_safe_run
 
@@ -75,7 +75,7 @@ function tikv_safe_run()
 	fi
 
 	tikv_run "${tikv_dir}" "${conf_templ_dir}" "${pd_addr}" "${advertise_host}" "${ports_delta}" "${cluster_id}"
-	wait_for_tikv_port_ready_local "${tikv_dir}"
+	wait_for_tikv_port_ready_local "${tikv_dir}" | awk '{print "   "$0}'
 }
 export -f tikv_safe_run
 
@@ -108,7 +108,7 @@ function tidb_safe_run()
 		local cluster_id="${6}"
 	fi
 	tidb_run "${tidb_dir}" "${conf_templ_dir}" "${pd_addr}" "${advertise_host}" "${ports_delta}" "${cluster_id}"
-	wait_for_tidb "${tidb_dir}"
+	wait_for_tidb "${tidb_dir}" | awk '{print "   "$0}'
 }
 export -f tidb_safe_run
 
@@ -158,6 +158,6 @@ function tiflash_safe_run()
 		local cluster_id="${8}"
 	fi
 	tiflash_run "${tiflash_dir}" "${conf_templ_dir}" "${daemon_mode}" "${pd_addr}" "${tidb_addr}" "${ports_delta}" "${listen_host}" "${cluster_id}"
-	wait_for_tiflash_local "${tiflash_dir}"
+	wait_for_tiflash_local "${tiflash_dir}" | awk '{print "   "$0}'
 }
 export -f tiflash_safe_run

@@ -8,6 +8,8 @@ function rngine_run()
 	fi
 
 	local rngine_dir="${1}"
+	local rngine_dir=`abs_path "${rngine_dir}"`
+
 	local conf_templ_dir="${2}"
 	local pd_addr="${3}"
 	local tiflash_addr="${4}"
@@ -30,26 +32,28 @@ function rngine_run()
 		local cluster_id="${7}"
 	fi
 
+	echo "=> rngine: ${rngine_dir}"
+
 	local default_ports="${conf_templ_dir}/default.ports"
 
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
-		echo "[func rngine_run] get default pd_port from ${default_ports} failed" >&2
+		echo "   get default pd_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_rngine_port=`get_value "${default_ports}" 'rngine_port'`
 	if [ -z "${default_rngine_port}" ]; then
-		echo "[func rngine_run] get default rngine_port from ${default_ports} failed" >&2
+		echo "   get default rngine_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tiflash_raft_and_cop_port=`get_value "${default_ports}" 'tiflash_raft_and_cop_port'`
 	if [ -z "${default_tiflash_raft_and_cop_port}" ]; then
-		echo "[func rngine_run] get default tiflash_raft_and_cop_port from ${default_ports} failed" >&2
+		echo "   get default tiflash_raft_and_cop_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tiflash_http_port=`get_value "${default_ports}" 'tiflash_http_port'`
 	if [ -z "${default_tiflash_http_port}" ]; then
-		echo "[func rngine_run] get default tiflash_http_port from ${default_ports} failed" >&2
+		echo "   get default tiflash_http_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -66,8 +70,6 @@ function rngine_run()
 	local rngine_port=$((${ports_delta} + ${default_rngine_port}))
 	local tiflash_http_port=$((${ports_delta} + ${default_tiflash_http_port}))
 
-	rngine_dir=`abs_path "${rngine_dir}"`
-
 	if [ "${advertise_host}" != "127.0.0.1" ] || [ "${advertise_host}" != "localhost" ]; then
 		local listen_host="${advertise_host}"
 	else
@@ -76,7 +78,7 @@ function rngine_run()
 
 	local proc_cnt=`print_proc_cnt "${rngine_dir}/rngine.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
+		echo "  running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -114,12 +116,12 @@ function rngine_run()
 	bash "${rngine_dir}/run.sh"
 
 	sleep 0.3
-	local pid=`must_print_pid "${rngine_dir}/rngine.toml" "\-\-config"`
+	local pid=`must_print_pid "${rngine_dir}/rngine.toml" "\-\-config" 2>/dev/null`
 	if [ -z "${pid}" ]; then
-		echo "[func rngine_run] pid not found, failed" >&2
+		echo "   pid not found, failed" >&2
 		return 1
 	fi
 	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
+	echo "   ${pid}"
 }
 export -f rngine_run

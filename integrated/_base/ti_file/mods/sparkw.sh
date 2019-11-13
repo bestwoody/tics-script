@@ -16,6 +16,8 @@ function spark_worker_run()
 
 	shift 6
 
+	local spark_worker_dir=`abs_path "${spark_worker_dir}"`
+
 	if [ -z "${1+x}" ]; then
 		local ports_delta="0"
 	else
@@ -46,9 +48,11 @@ function spark_worker_run()
 		local cluster_id="${5}"
 	fi
 
+	echo "=> spark_w: ${spark_worker_dir}"
+
 	local java_installed=`print_java_installed`
 	if [ "${java_installed}" == "false" ]; then
-		echo "java not installed" >&2
+		echo "   java not installed" >&2
 		return 1
 	fi
 
@@ -60,7 +64,7 @@ function spark_worker_run()
 		local default_spark_master_port=`get_value "${default_ports}" 'spark_master_port'`
 	fi
 	if [ -z "${default_spark_master_port}" ]; then
-		echo "[func spark_worker_run] get default spark_master_port from ${default_ports} failed" >&2
+		echo "   get default spark_master_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -70,7 +74,7 @@ function spark_worker_run()
 		local default_spark_worker_webui_port=`get_value "${default_ports}" 'spark_worker_webui_port'`
 	fi
 	if [ -z "${default_spark_worker_webui_port}" ]; then
-		echo "[func spark_worker_run] get default spark_worker_webui_port from ${default_ports} failed" >&2
+		echo "   get default spark_worker_webui_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -80,7 +84,7 @@ function spark_worker_run()
 		local default_jmxremote_port=`get_value "${default_ports}" 'jmxremote_port'`
 	fi
 	if [ -z "${default_jmxremote_port}" ]; then
-		echo "[func spark_master_run] get default jmxremote_port from ${default_ports} failed" >&2
+		echo "   get default jmxremote_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -90,19 +94,19 @@ function spark_worker_run()
 		local default_jdwp_port=`get_value "${default_ports}" 'jdwp_port'`
 	fi
 	if [ -z "${default_jdwp_port}" ]; then
-		echo "[func spark_master_run] get default jdwp_port from ${default_ports} failed" >&2
+		echo "   get default jdwp_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
-		echo "[func spark_master_run] get default pd_port from ${default_ports} failed" >&2
+		echo "   get default pd_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
 	local default_tiflash_tcp_port=`get_value "${default_ports}" 'tiflash_tcp_port'`
 	if [ -z "${default_tiflash_tcp_port}" ]; then
-		echo "[func spark_master_run] get default tiflash_tcp_port from ${default_ports} failed" >&2
+		echo "   get default tiflash_tcp_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -117,13 +121,12 @@ function spark_worker_run()
 	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
 	local jdwp_port=$((${ports_delta} + ${default_jdwp_port}))
 
-	local spark_worker_dir=`abs_path "${spark_worker_dir}"`
 	local str_for_finding_spark_worker="${spark_worker_dir}/spark/jars/"
 
 	local proc_cnt=`print_proc_cnt "${str_for_finding_spark_worker}" "org.apache.spark.deploy.worker.Worker"`
 
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
+		echo "   running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -160,7 +163,7 @@ function spark_worker_run()
 
 	local spark_worker_log_name=`ls -tr "${spark_worker_dir}/spark/logs" | { grep "org.apache.spark.deploy.worker.Worker" || test $? = 1; } | tail -n 1`
 	if [ -z "${spark_worker_log_name}" ]; then
-		echo "[func spark_worker_run] spark worker logs not found, failed" >&2
+		echo "   spark worker logs not found, failed" >&2
 		return 1
 	fi
 
@@ -170,12 +173,12 @@ function spark_worker_run()
 	fi
 
 	sleep 0.3
-	local pid=`must_print_pid "${str_for_finding_spark_worker}" "org.apache.spark.deploy.worker.Worker"`
+	local pid=`must_print_pid "${str_for_finding_spark_worker}" "org.apache.spark.deploy.worker.Worker" 2>/dev/null`
 	if [ -z "${pid}" ]; then
-		echo "[func spark_worker_run] pid not found, failed" >&2
+		echo "   pid not found, failed" >&2
 		return 1
 	fi
 	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
+	echo "   ${pid}"
 }
 export -f spark_worker_run

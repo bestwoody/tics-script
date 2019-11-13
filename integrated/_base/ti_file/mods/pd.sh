@@ -8,6 +8,8 @@ function pd_run()
 	fi
 
 	local pd_dir="${1}"
+	local pd_dir=`abs_path "${pd_dir}"`
+
 	local conf_templ_dir="${2}"
 
 	if [ -z "${3+x}" ]; then
@@ -55,14 +57,16 @@ function pd_run()
 
 	local default_ports="${conf_templ_dir}/default.ports"
 
+	echo "=> pd: ${pd_dir}"
+
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
-		echo "[func pd_run] get default pd_port from ${default_ports} failed" >&2
+		echo "   get default pd_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_pd_peer_port=`get_value "${default_ports}" 'pd_peer_port'`
 	if [ -z "${default_pd_peer_port}" ]; then
-		echo "[func pd_run] get default pd_peer_port from ${default_ports} failed" >&2
+		echo "   get default pd_peer_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -75,11 +79,9 @@ function pd_run()
 		local initial_cluster=$(cal_addr "${initial_cluster}" "${advertise_host}" "${default_pd_peer_port}" "${pd_name}")
 	fi
 
-	local pd_dir=`abs_path "${pd_dir}"`
-
 	local proc_cnt=`print_proc_cnt "${pd_dir}/pd.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
+		echo "   running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -109,12 +111,12 @@ function pd_run()
 	bash "${pd_dir}/run.sh"
 
 	sleep 0.3
-	local pid=`must_print_pid "${pd_dir}/pd.toml" "\-\-config"`
+	local pid=`must_print_pid "${pd_dir}/pd.toml" "\-\-config" 2>/dev/null`
 	if [ -z "${pid}" ]; then
-		echo "[func pd_run] pid not found, failed" >&2
+		echo "   pid not found, failed" >&2
 		return 1
 	fi
 	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
+	echo "   ${pid}"
 }
 export -f pd_run

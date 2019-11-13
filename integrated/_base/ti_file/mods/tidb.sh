@@ -8,6 +8,8 @@ function tidb_run()
 	fi
 
 	local tidb_dir="${1}"
+	local tidb_dir=`abs_path "${tidb_dir}"`
+
 	local conf_templ_dir="${2}"
 	local pd_addr="${3}"
 
@@ -29,21 +31,23 @@ function tidb_run()
 		local cluster_id="${6}"
 	fi
 
+	echo "=> tidb: ${tidb_dir}"
+
 	local default_ports="${conf_templ_dir}/default.ports"
 
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
-		echo "[func tidb_run] get default pd_port from ${default_ports} failed" >&2
+		echo "   get default pd_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tidb_port=`get_value "${default_ports}" 'tidb_port'`
 	if [ -z "${default_tidb_port}" ]; then
-		echo "[func tidb_run] get default tidb_port from ${default_ports} failed" >&2
+		echo "   get default tidb_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tidb_status_port=`get_value "${default_ports}" 'tidb_status_port'`
 	if [ -z "${default_tidb_status_port}" ]; then
-		echo "[func tidb_run] get default tidb_status_port from ${default_ports} failed" >&2
+		echo "   get default tidb_status_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -56,8 +60,6 @@ function tidb_run()
 	local tidb_port=$((${ports_delta} + ${default_tidb_port}))
 	local status_port=$((${ports_delta} + ${default_tidb_status_port}))
 
-	local tidb_dir=`abs_path "${tidb_dir}"`
-
 	local listen_host=""
 	if [ "${advertise_host}" != "127.0.0.1" ] || [ "${advertise_host}" != "localhost" ]; then
 		local listen_host="${advertise_host}"
@@ -67,7 +69,7 @@ function tidb_run()
 
 	local proc_cnt=`print_proc_cnt "${tidb_dir}/tidb.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
+		echo "   running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -95,12 +97,12 @@ function tidb_run()
 	bash "${tidb_dir}/run.sh"
 
 	sleep 0.3
-	local pid=`must_print_pid "${tidb_dir}/tidb.toml" "\-\-config"`
+	local pid=`must_print_pid "${tidb_dir}/tidb.toml" "\-\-config" 2>/dev/null`
 	if [ -z "${pid}" ]; then
-		echo "[func tidb_run] pid not found, failed" >&2
+		echo "   pid not found, failed" >&2
 		return 1
 	fi
 	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
+	echo "   ${pid}"
 }
 export -f tidb_run

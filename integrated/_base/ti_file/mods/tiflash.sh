@@ -51,6 +51,8 @@ function tiflash_run()
 	fi
 
 	local tiflash_dir="${1}"
+	local tiflash_dir=`abs_path "${tiflash_dir}"`
+
 	local conf_templ_dir="${2}"
 
 	if [ -z "${3+x}" ]; then
@@ -89,36 +91,38 @@ function tiflash_run()
 		local cluster_id="${8}"
 	fi
 
+	echo "=> tiflash: ${tiflash_dir}"
+
 	local default_ports="${conf_templ_dir}/default.ports"
 
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then
-		echo "[func tiflash_run] get default pd_port from ${default_ports} failed" >&2
+		echo "   get default pd_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tidb_status_port=`get_value "${default_ports}" 'tidb_status_port'`
 	if [ -z "${default_tidb_status_port}" ]; then
-		echo "[func tiflash_run] get default tidb_status_port from ${default_ports} failed" >&2
+		echo "   get default tidb_status_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tiflash_http_port=`get_value "${default_ports}" 'tiflash_http_port'`
 	if [ -z "${default_tiflash_http_port}" ]; then
-		echo "[func tiflash_run] get default tiflash_http_port from ${default_ports} failed" >&2
+		echo "   get default tiflash_http_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tiflash_tcp_port=`get_value "${default_ports}" 'tiflash_tcp_port'`
 	if [ -z "${default_tiflash_tcp_port}" ]; then
-		echo "[func tiflash_run] get default tiflash_tcp_port from ${default_ports} failed" >&2
+		echo "   get default tiflash_tcp_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tiflash_interserver_http_port=`get_value "${default_ports}" 'tiflash_interserver_http_port'`
 	if [ -z "${default_tiflash_interserver_http_port}" ]; then
-		echo "[func tiflash_run] get default tiflash_interserver_http_port from ${default_ports} failed" >&2
+		echo "   get default tiflash_interserver_http_port from ${default_ports} failed" >&2
 		return 1
 	fi
 	local default_tiflash_raft_and_cop_port=`get_value "${default_ports}" 'tiflash_raft_and_cop_port'`
 	if [ -z "${default_tiflash_raft_and_cop_port}" ]; then
-		echo "[func tiflash_run] get default tiflash_raft_and_cop_port from ${default_ports} failed" >&2
+		echo "   get default tiflash_raft_and_cop_port from ${default_ports} failed" >&2
 		return 1
 	fi
 
@@ -132,17 +136,15 @@ function tiflash_run()
 	mkdir -p "${tiflash_dir}"
 
 	if [ ! -d "${tiflash_dir}" ]; then
-		echo "[func tiflash_run] ${tiflash_dir} is not a dir" >&2
+		echo "   ${tiflash_dir} is not a dir" >&2
 		return 1
 	fi
-
-	local tiflash_dir=`abs_path "${tiflash_dir}"`
 
 	local conf_file="${tiflash_dir}/conf/config.xml"
 
 	local proc_cnt=`print_proc_cnt "${conf_file}" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "running(${proc_cnt}), skipped"
+		echo "   running(${proc_cnt}), skipped"
 		return 0
 	fi
 
@@ -168,7 +170,7 @@ function tiflash_run()
 	if [ ! -d "${tiflash_dir}/${target_lib_dir}" ]; then
 		local lib_file_name="tiflash_lib.tgz"
 		if [ ! -f "${tiflash_dir}/${lib_file_name}" ]; then
-			echo "[func tiflash_run] cannot find lib file"
+			echo "   cannot find lib file"
 			return 1
 		fi
 		tar -zxf "${tiflash_dir}/${lib_file_name}" -C ${tiflash_dir} 1>/dev/null
@@ -218,14 +220,14 @@ function tiflash_run()
 	bash "${tiflash_dir}/run.sh"
 
 	sleep 0.3
-	local pid=`must_print_pid "${conf_file}" "\-\-config"`
+	local pid=`must_print_pid "${conf_file}" "\-\-config" 2>/dev/null`
 	if [ -z "${pid}" ]; then
-		echo "[func tiflash_run] pid not found, failed" >&2
+		echo "   pid not found, failed" >&2
 		return 1
 	fi
 
 	echo "pid	${pid}" >> "${info}"
-	echo "${pid}"
+	echo "   ${pid}"
 	cluster_manager_run "${tiflash_dir}"
 }
 export -f tiflash_run

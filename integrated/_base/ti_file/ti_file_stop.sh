@@ -24,37 +24,37 @@ function ti_file_mod_stop()
 	echo "=> stopping ${name} #${index} (${dir})"
 
 	if [ "${name}" == "pd" ]; then
-		pd_stop "${dir}" "${fast}"
+		pd_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	fi
 	if [ "${name}" == "tikv" ]; then
-		tikv_stop "${dir}" "${fast}"
+		tikv_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	fi
 	if [ "${name}" == "tidb" ]; then
-		tidb_stop "${dir}" "${fast}"
+		tidb_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	fi
 	if [ "${name}" == "tiflash" ]; then
-		tiflash_stop "${dir}" "${fast}"
+		tiflash_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	fi
 	if [ "${name}" == "rngine" ]; then
-		rngine_stop "${dir}" "${fast}"
+		rngine_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	fi
 	if [ "${name}" == "spark_m" ]; then
-		spark_master_stop "${dir}" "${fast}"
+		spark_master_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	fi
 	if [ "${name}" == "spark_w" ]; then
-		spark_worker_stop "${dir}" "${fast}"
+		spark_worker_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	fi
 	if [ "${name}" == "chspark_m" ]; then
-		spark_master_stop "${dir}" "${fast}"
+		spark_master_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	fi
 	if [ "${name}" == "chspark_w" ]; then
-		spark_worker_stop "${dir}" "${fast}"
+		spark_worker_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	fi
 
 	local up_status=`ti_file_mod_status "${dir}" "${conf}"`
 	local ok=`echo "${up_status}" | { grep ^OK || test $? = 1; }`
 	if [ ! -z "${ok}" ]; then
-		echo "failed.. ${name} #${index} (${dir}) ${up_status}"
+		echo "   failed.. ${name} #${index} (${dir}) ${up_status}"
 		return 1
 	fi
 }
