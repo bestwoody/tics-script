@@ -1,8 +1,5 @@
 # name \t md5sum \t bin_name \t url
 
-# master - a8f1ba28d8c0a9fcc6f80c593175bc30ec1cf9b2
-tikv	d10e8684d17ae094c9201a602a313923	tikv-server	http://139.219.11.38:8000/J5epW/tikv-server.tar.gz
-
 # https://github.com/disksing/pd/tree/placement - eecd15291aa326b3401af28c7a0592ef99f6cf09
 pd      d20b7ba9c08d011decbee565897a3c25        pd-server       http://139.219.11.38:8000/rdHnq/pd-server.tar.gz
 
@@ -31,3 +28,4 @@ chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https:/
 tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
 
 tidb    d8baa9a3fd51f339b1721a71bfb0baa5        tidb-server     http://139.219.11.38:8000/QXVXX/tidb-server.tar.gz          master  e9f19970d51164cff7f6da5976796e2e95c174e8
+tikv    162ba2080cd8a4d9949dd70ac2b17ad8        tikv-server     http://139.219.11.38:8000/DKMOw/tikv-server.tar.gz      mast    er  ce273530df2ecdf3c4092edef29dae57f2341e6c
