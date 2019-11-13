@@ -57,7 +57,7 @@ function pd_run()
 
 	local default_ports="${conf_templ_dir}/default.ports"
 
-	echo "=> pd: ${pd_dir}"
+	echo "=> run pd: ${pd_dir}"
 
 	local default_pd_port=`get_value "${default_ports}" 'pd_port'`
 	if [ -z "${default_pd_port}" ]; then

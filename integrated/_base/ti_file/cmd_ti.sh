@@ -251,14 +251,14 @@ function cmd_ti()
 				print_hhr
 				local cmd_and_args=(${cmd})
 				if [ "${#cmd_and_args[@]}" == '1' ]; then
-					echo "${cmd}"
+					echo ":: ${cmd}"
 					print_hr
 					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
 						"${mods}" "${hosts}" "${indexes}" "${cache_dir}"
 				else
 					local cmd="${cmd_and_args[0]}"
 					local cmd_args=${cmd_and_args[@]:1}
-					echo "${cmd} ${cmd_args}"
+					echo ":: ${cmd} ${cmd_args}"
 					print_hr
 					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
 						"${mods}" "${hosts}" "${indexes}" "${cache_dir}" ${cmd_args[@]}

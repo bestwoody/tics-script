@@ -48,7 +48,7 @@ function spark_worker_run()
 		local cluster_id="${5}"
 	fi
 
-	echo "=> spark_w: ${spark_worker_dir}"
+	echo "=> run spark_w: ${spark_worker_dir}"
 
 	local java_installed=`print_java_installed`
 	if [ "${java_installed}" == "false" ]; then

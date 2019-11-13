@@ -31,7 +31,7 @@ function tidb_run()
 		local cluster_id="${6}"
 	fi
 
-	echo "=> tidb: ${tidb_dir}"
+	echo "=> run tidb: ${tidb_dir}"
 
 	local default_ports="${conf_templ_dir}/default.ports"
 

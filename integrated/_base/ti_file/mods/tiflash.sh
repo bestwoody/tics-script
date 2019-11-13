@@ -91,7 +91,7 @@ function tiflash_run()
 		local cluster_id="${8}"
 	fi
 
-	echo "=> tiflash: ${tiflash_dir}"
+	echo "=> run tiflash: ${tiflash_dir}"
 
 	local default_ports="${conf_templ_dir}/default.ports"
 

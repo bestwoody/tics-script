@@ -15,9 +15,10 @@ function cmd_ti_global_ci_release()
 	"${ti}" "${file}" must burn
 
 	rm -f "${file}"
-	echo '------------'
-	echo 'OK'
+	print_hhr
+	echo 'ci/release OK'
 }
 
-set -euo pipefail
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
 cmd_ti_global_ci_release

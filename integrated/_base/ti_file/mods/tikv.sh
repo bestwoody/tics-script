@@ -31,7 +31,7 @@ function tikv_run()
 		local cluster_id="${6}"
 	fi
 
-	echo "=> tikv: ${tikv_dir}"
+	echo "=> run tikv: ${tikv_dir}"
 
 	local default_ports="${conf_templ_dir}/default.ports"
 

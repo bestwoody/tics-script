@@ -32,7 +32,7 @@ function rngine_run()
 		local cluster_id="${7}"
 	fi
 
-	echo "=> rngine: ${rngine_dir}"
+	echo "=> run rngine: ${rngine_dir}"
 
 	local default_ports="${conf_templ_dir}/default.ports"
 
@@ -78,7 +78,7 @@ function rngine_run()
 
 	local proc_cnt=`print_proc_cnt "${rngine_dir}/rngine.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
-		echo "  running(${proc_cnt}), skipped"
+		echo "   running(${proc_cnt}), skipped"
 		return 0
 	fi
 

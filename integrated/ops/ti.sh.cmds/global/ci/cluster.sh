@@ -9,15 +9,16 @@ function cmd_ti_ci_cluster()
 	local file="${dir}/cluster.ti"
 	rm -f "${file}"
 
-	"${ti}" new "${file}" 'delta=-6' "dir=${dir}"
+	"${ti}" new "${file}" 'delta=-6' "dir=${dir}" 1>/dev/null
 	"${ti}" "${file}" 'burn:up:sleep 5'
 	"${ti}" "${file}" ci/cluster
 	"${ti}" "${file}" must burn
 
 	rm -f "${file}"
-	echo '------------'
-	echo 'OK'
+	print_hhr
+	echo 'ci/cluster OK'
 }
 
-set -euo pipefail
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
 cmd_ti_ci_cluster

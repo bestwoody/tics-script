@@ -21,7 +21,10 @@ function cmd_ti_restart()
 	fi
 
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" "${stop_cmd}:run"
+		-k "${ti_args}" "${ti_file}" "${stop_cmd}"
+	print_hr
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		-k "${ti_args}" "${ti_file}" 'run'
 }
 
 cmd_ti_restart "${@}"

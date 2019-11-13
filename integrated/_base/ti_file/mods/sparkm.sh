@@ -35,7 +35,7 @@ function spark_master_run()
 		local cluster_id="${3}"
 	fi
 
-	echo "=> spark_m: ${spark_master_dir}"
+	echo "=> run spark_m: ${spark_master_dir}"
 
 	local java_installed=`print_java_installed`
 	if [ "${java_installed}" == "false" ]; then
