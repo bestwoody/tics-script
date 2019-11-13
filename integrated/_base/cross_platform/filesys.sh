@@ -28,12 +28,8 @@ function cp_when_diff()
 
 	mkdir -p `dirname "${dest}"`
 
-	if [ `uname` == "Darwin" ]; then
-		# TODO: Update mode
-		cp -f "${src}" "${dest}"
-	else
-		cp -f -u "${src}" "${dest}"
-	fi
+	# TODO: Update mode
+	cp -f "${src}" "${dest}"
 }
 export -f cp_when_diff
 
