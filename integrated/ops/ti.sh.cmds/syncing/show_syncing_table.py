@@ -23,6 +23,20 @@ def parse_table_ids(rules_str):
         table_ids.append(parsed_item_id[1])
     return table_ids
 
+def parse_table_status(replica_status_str):
+    if replica_status_str == "null":
+        return []
+    replica_status = json.loads(replica_status_str)
+    if not replica_status:
+        return {}
+    all_table_status = {}
+    for item in replica_status:
+        table_id = str(item["id"])
+        if table_id in all_table_status:
+            error("duplicate table id")
+        all_table_status[table_id] = str(item["available"])
+    return all_table_status
+
 def get_db_and_table(schema_str, db=""):
     if not schema_str or len(schema_str) == 0:
         return "", ""
@@ -47,7 +61,7 @@ def open_url(url):
             if i >= max_try_times:
                 raise
             else:
-                print "open " + rules_request_url + " failed"
+                print "open " + url + " failed"
                 i += 1
             time.sleep(sleep_interval)
             if sleep_interval < max_sleep:
@@ -55,16 +69,39 @@ def open_url(url):
         else:
             return f
 
+def get_table_name_max_length(tables):
+    max_length = 0
+    for db in tables:
+        for table, _ in tables[db]:
+            if len(table) > max_length:
+                max_length = len(table)
+    return max_length
+
+def print_result(tables):
+    table_name_max_length = get_table_name_max_length(tables)
+    for db in tables:
+        print db
+        for table, status in tables[db]:
+            padding = ' ' * (table_name_max_length - len(table) + 4)
+            print '    ' + table + padding + status.lower()
+
 def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
     rules_request_url = "http://" + pd_host + ":" + pd_port + "/pd/api/v1/config/rules/group/tiflash"
     f = open_url(rules_request_url)
     if f == '' or not f:
         return
     table_ids = parse_table_ids(f.read())
+
+    replica_status_request_url = "http://" + tidb_host + ":" + tidb_port + "/tiflash/replica"
+    f = open_url(replica_status_request_url)
+    if f == '' or not f:
+        return
+    all_table_status = parse_table_status(f.read())
+
     tables = {}
     for table_id in table_ids:
-        schema_request_rule = "http://" + tidb_host + ":" + tidb_port + "/db-table/" + table_id
-        f = open_url(schema_request_rule)
+        schema_request_url = "http://" + tidb_host + ":" + tidb_port + "/db-table/" + table_id
+        f = open_url(schema_request_url)
         if f == '' or not f:
             return
         s = f.read()
@@ -74,11 +111,13 @@ def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
         if table != "":
             if db not in tables:
                 tables[db] = []
-            tables[db].append(table)
-    for db in tables:
-        print db
-        for table in tables[db]:
-            print '    ' + table
+            table_status = "unknown"
+            if str(table_id) in all_table_status:
+                table_status = all_table_status[str(table_id)]
+            tables[db].append((table, table_status))
+    
+    print_result(tables)
+    
 
 if __name__ == '__main__':
     if len(sys.argv) < 6:
