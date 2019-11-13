@@ -1,0 +1,2 @@
+verify table regions: regions(pd) vs regions(ch)
+usage: <cmd> database table
