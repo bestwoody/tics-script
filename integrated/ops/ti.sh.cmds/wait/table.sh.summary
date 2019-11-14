@@ -24,8 +24,8 @@ function cmd_ti_wait_table()
 
 	for ((; 0 == 0; )); do
 		local has_db=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-			"${ti_file}" 'ch' 'show databases' | grep "^${db}$"`
-		if [ ! -z "${has_db}" ]; then
+			"${ti_file}" 'ch' 'show databases' 2>/dev/null | grep "^${db}$"`
+		if [ ${?} == 0 ] && [ ! -z "${has_db}" ]; then
 			break
 		fi
 		sleep 0.5
@@ -34,8 +34,8 @@ function cmd_ti_wait_table()
 
 	for ((; 0 == 0; )); do
 		local has_db=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-			"${ti_file}" 'ch' 'show tables' "${db}" | grep "^${table}$"`
-		if [ ! -z "${has_db}" ]; then
+			"${ti_file}" 'ch' 'show tables' "${db}"  2>/dev/null | grep "^${table}$"`
+		if [ ${?} == 0 ] && [ ! -z "${has_db}" ]; then
 			break
 		fi
 		sleep 0.5
@@ -44,5 +44,4 @@ function cmd_ti_wait_table()
 	echo "   got table ${table}"
 }
 
-set -euo pipefail
 cmd_ti_wait_table "${@}"
