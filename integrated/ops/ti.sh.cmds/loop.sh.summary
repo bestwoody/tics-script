@@ -16,14 +16,7 @@ function cmd_ti_loop()
 	fi
 
 	local cmd="${1}"
-	local cmds_str=''
-	for it in "${@}"; do
-		if [ -z "${cmds_str}" ]; then
-			local cmds_str="${it}"
-		else
-			local cmds_str="${cmds_str} ${it}"
-		fi
-	done
+	local cmds_str=`esc_args "${@}"`
 
 	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 	auto_error_handle
