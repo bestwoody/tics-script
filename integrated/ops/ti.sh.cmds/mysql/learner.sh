@@ -13,7 +13,7 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -z "${6+x}" ]; then
-		echo '[cmd mysql] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true]' >&2
+		echo '[cmd mysql/learner] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true]' >&2
 		return 1
 	fi
 
@@ -34,13 +34,13 @@ function cmd_ti_mysql()
 		local show_elapsed="${8}"
 	fi
 	if [ "${show_elapsed}" != 'false' ] && [ "${show_elapsed}" != 'true' ]; then
-		echo "[cmd mysql] show_elapsed should be 'true|false', got '${show_elapsed}'" >&2
+		echo "[cmd mysql/learner] show_elapsed should be 'true|false', got '${show_elapsed}'" >&2
 		return 1
 	fi
 
 	local port=`get_value "${dir}/proc.info" 'tidb_port'`
 	if [ -z "${port}" ]; then
-		echo '[cmd mysql] get port failed' >&2
+		echo '[cmd mysql/learner] get port failed' >&2
 		return 1
 	fi
 

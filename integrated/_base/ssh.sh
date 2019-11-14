@@ -55,18 +55,9 @@ function call_remote_func_raw()
 	local host="${1}"
 	local env_dir="${2}"
 	local func="${3}"
+	shift 3
 
-	local error_handle="$-"
-	set +u
-	local args=("${@}")
-	local args=("${args[@]:3}")
-	restore_error_handle_flags "${error_handle}"
-
-	local args_str=""
-	for it in "${args[@]}"; do
-		local args_str="${args_str} \"${it}\""
-	done
-
+	local args_str=`esc_args "${@}"`
 	ssh -o BatchMode=yes "${host}" "source \"${env_dir}/_env.sh\" && \"${func}\" ${args_str}" </dev/null 2>&1
 }
 export -f call_remote_func_raw

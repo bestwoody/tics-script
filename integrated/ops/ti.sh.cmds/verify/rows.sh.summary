@@ -25,10 +25,12 @@ function cmd_ti_verify_rows()
 
 	local tidb_idx=`from_mods_random_mod "${mods}" 'tidb'`
 	local tikv_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i "${tidb_idx}" -k \
-		"${ti_args}" "${ti_file}" 'mysql/tikv' "select count(1) from ${table}" 'test' 'false' | grep -v 'count' | trim_host`
+		"${ti_args}" "${ti_file}" 'mysql/tikv' "select count(1) from ${table}" 'test' 'false' | \
+		grep -v 'count' | trim_host | awk '{if ($1=="ERROR") print "E"$2; else print $0}'`
 
 	local learner_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i "${tidb_idx}" -k \
-		"${ti_args}" "${ti_file}" 'mysql/learner' "select count(1) from ${table}" 'test' 'false' | grep -v 'count' | trim_host`
+		"${ti_args}" "${ti_file}" 'mysql/learner' "select count(1) from ${table}" 'test' 'false' | \
+		grep -v 'count' | trim_host | awk '{if ($1=="ERROR") print "E"$2; else print $0}'`
 
 	if [ -z "${tiflash_rows}" ]; then
 		echo "[cmd verify/rows] execute query on tiflash failed" >&2

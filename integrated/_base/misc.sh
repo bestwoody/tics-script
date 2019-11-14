@@ -139,3 +139,14 @@ function print_hr()
 	echo '---------------------'
 }
 export -f print_hr
+
+function esc_args()
+{
+	if [ -z "${1+x}" ]; then
+		return
+	fi
+	for it in "${@}"; do
+		echo "${it}"
+	done | python "${integrated}/_base/esc_args.py"
+}
+export -f esc_args

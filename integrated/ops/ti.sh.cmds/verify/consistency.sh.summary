@@ -10,9 +10,9 @@ function verify_consistency()
 	local query="${6}"
 
 	local tikv_res=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'tidb' -i "${cmd_indexes}" "${ti_file}" \
-		'mysql/tikv' "set @@tidb_snapshot=\"${ts}\"; ${query}" 'test' 'false' 2>&1`
+		'mysql/tikv' "set @@tidb_snapshot=\"${ts}\"; ${query}" 'test' 'false' 2>&1 | trim_host`
 	local learner_res=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'tidb' -i "${cmd_indexes}" "${ti_file}" \
-		'mysql/learner' "set @@tidb_snapshot=\"${ts}\"; ${query}" 'test' 'false' 2>&1`
+		'mysql/learner' "set @@tidb_snapshot=\"${ts}\"; ${query}" 'test' 'false' 2>&1 | trim_host`
 
 	local tikv_line=`echo "${tikv_res}" | tail -n 1`
 	local learner_line=`echo "${learner_res}" | tail -n 1`
@@ -67,9 +67,9 @@ function cmd_ti_verify_consistency()
 	fi
 
 	local min_max_tso=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m "${cmd_mod_names}" \
-		-i "${cmd_indexes}" "${ti_file}" 'ch' \
+		-i '0' "${ti_file}" 'ch' \
 		"selraw min(_INTERNAL_VERSION), max(_INTERNAL_VERSION) from ${table}" \
-		'default' 'tab' 'false'`
+		'default' 'tab' 'false' | trim_host`
 	if [ -z "${min_max_tso}" ]; then
 		echo "[cmd verify/consistency] getting min-max ts failed" >&2
 		return 1
@@ -83,8 +83,10 @@ function cmd_ti_verify_consistency()
 	local max_tss=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" 'pd/ctl_raw' \
 		"tso ${max_tso}" | grep 'system' | awk '{print $(NF-3),$(NF-2),$(NF-1)}'`
 
-	if [ "`echo ${min_tss} | awk '{print $NF}'`" != "`date +%z`" ]; then
-		echo "[cmd verify/consistency] timezone in table not equal to os local" >&2
+	local tz_tidb=`echo ${min_tss} | awk '{print $NF}'`
+	local tz_local=`date +%z`
+	if [ "${tz_tidb}" != "${tz_local}" ]; then
+		echo "[cmd verify/consistency] timezone in table(${tz_tidb}) not equal to os(${tz_local})" >&2
 		return 1
 	fi
 

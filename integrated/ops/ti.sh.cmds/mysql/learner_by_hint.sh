@@ -13,13 +13,13 @@ function cmd_ti_learner()
 	fi
 
 	if [ -z "${6+x}" ]; then
-		echo '[cmd learner] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true]' >&2
+		echo '[cmd mysql/learner_by_hint] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true]' >&2
 		return 1
 	fi
 
 	local query="${6}"
 	if [ -z "${query}" ]; then
-		echo '[cmd learner] query is empty'
+		echo '[cmd mysql/learner_by_hint] query is empty'
 		return 1
 	fi
 
@@ -37,7 +37,7 @@ function cmd_ti_learner()
 
 	local port=`get_value "${dir}/proc.info" 'tidb_port'`
 	if [ -z "${port}" ]; then
-		echo '[cmd learner] get port failed' >&2
+		echo '[cmd mysql/learner_by_hint] get port failed' >&2
 		return 1
 	fi
 
