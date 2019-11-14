@@ -1,0 +1,2 @@
+wait for table exists in tiflash
+usage: <cmd> db table

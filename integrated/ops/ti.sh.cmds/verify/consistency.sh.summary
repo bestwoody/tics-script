@@ -70,6 +70,10 @@ function cmd_ti_verify_consistency()
 		-i "${cmd_indexes}" "${ti_file}" 'ch' \
 		"selraw min(_INTERNAL_VERSION), max(_INTERNAL_VERSION) from ${table}" \
 		'default' 'tab' 'false'`
+	if [ -z "${min_max_tso}" ]; then
+		echo "[cmd verify/consistency] getting min-max ts failed" >&2
+		return 1
+	fi
 
 	local min_tso=`echo "${min_max_tso}" | awk '{print $1}'`
 	local max_tso=`echo "${min_max_tso}" | awk '{print $2}'`

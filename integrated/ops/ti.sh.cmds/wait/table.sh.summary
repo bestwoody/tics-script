@@ -1,0 +1,48 @@
+#!/bin/bash
+
+function cmd_ti_wait_table()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${2+x}" ]; then
+		echo "[cmd wait/table] usage: <cmd> db table" >&2
+		return 1
+	fi
+
+	local db="${1}"
+	local table="${2}"
+
+	local ti="${integrated}/ops/ti.sh"
+
+	echo "=> wait for ${db}.${table} exists"
+
+	for ((; 0 == 0; )); do
+		local has_db=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+			"${ti_file}" 'ch' 'show databases' | grep "^${db}$"`
+		if [ ! -z "${has_db}" ]; then
+			break
+		fi
+		sleep 0.5
+	done
+	echo "   got database ${db}"
+
+	for ((; 0 == 0; )); do
+		local has_db=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+			"${ti_file}" 'ch' 'show tables' "${db}" | grep "^${table}$"`
+		if [ ! -z "${has_db}" ]; then
+			break
+		fi
+		sleep 0.5
+	done
+
+	echo "   got table ${table}"
+}
+
+set -euo pipefail
+cmd_ti_wait_table "${@}"

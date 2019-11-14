@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function cmd_ti_loop()
+function cmd_ti_go()
 {
 	local ti_file="${1}"
 	local ti_args="${2}"
@@ -14,52 +14,154 @@ function cmd_ti_loop()
 
 	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
 	source "${here}/_env.sh"
-	# auto_error_handle
 
 	if [ -z "${1+x}" ]; then
 		echo "[cmd go] usage: ti.sh [flags] ti_file_path go cmd1 cmd2"
 		exit 1
 	fi
 
+	local ti="${integrated}/ops/ti.sh"
+
 	local log_dir="${ti_file}.data/go"
 	mkdir -p "${log_dir}"
 
-	local go_flag="GO_CMD_FLAG"
+	local pids_file="${ti_file}.data/go/pids"
+	if [ -f "${pids_file}" ]; then
+		local uncleaned_pids=`cat "${pids_file}"`
+		stop_pids_tree "${uncleaned_pids}" 'true' '10' 1>/dev/null 2>&1
+		rm -f "${pids_file}"
+	fi
+
+	local go_flag="GO_CMD"
 	local run_flag="${go_flag}:RUN"
-	local end_flag="${go_flag}:END"
+	local end_flag="${go_flag}:DONE"
+	local err_flag="${go_flag}:ERROR"
+
+	local go_pid="${$}"
+	local waiting=''
+	local looping=''
+	local looping_indexes=''
 
 	local i='0'
 	for cmd in "${@}"; do
-		{
-			local log="${log_dir}/go_cmd_${i}.log"
-			echo -e "${cmd}\n${run_flag}\n***\n" > "${log}"
+		local once_part="${cmd%\*\**}"
+		local looping_part="${cmd#*\*\*}"
+		if [ "${once_part}" != "${looping_part}" ]; then
+			local cmd="${once_part}"
+			local cmd_looping="${looping_part}"
+		else
+			local cmd_looping=''
+		fi
 
-			# TODO: this will have bug when a normal cmd arg have ':' in it
-			if [ ! -z "`echo ${cmd} | { grep ':' || test $? = 1; }`" ]; then
-				"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-					-k "${ti_args}" "${ti_file}" "${cmd}" 1>>"${log}" 2>&1 && \
-					echo -e "\n***\n${end_flag}" >> "${log}"
-			else
-				"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-					-k "${ti_args}" "${ti_file}" ${cmd} 1>>"${log}" 2>&1 && \
-					echo -e "\n***\n${end_flag}" >> "${log}"
-			fi
+		{
+			local log="${log_dir}/cmd_${i}.log"
+			rm -f "${log}"
+
+			for ((; 0 == 0; )); do
+				echo -e "${run_flag} ${cmd}\n***" >> "${log}"
+				if [ -z "`echo ${cmd} | grep ':'`" ]; then
+					"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+						-k "${ti_args}" "${ti_file}" ${cmd} 1>>"${log}" 2>&1 && \
+						echo -e "***\n${end_flag}" >> "${log}"
+				else
+					"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+						-k "${ti_args}" "${ti_file}" "${cmd}" 1>>"${log}" 2>&1 && \
+						echo -e "***\n${end_flag}" >> "${log}"
+				fi
+				if [ ${?} != '0' ]; then
+					echo -e "***\n${err_flag}" >> "${log}"
+					return 1
+				fi
+				if [ -z "${cmd_looping}" ]; then
+					break
+				else
+					local cmd="${cmd_looping}"
+				fi
+
+				echo >> "${log}"
+				print_hhr >> "${log}"
+				echo >> "${log}"
+			done
 		} &
+
+		sleep 0.01
+
+		local pid="${!}"
+		if [ ! -z "${cmd_looping}" ]; then
+			local looping="${looping} ${pid}"
+			local looping_indexes="${looping_indexes} ${i}"
+		else
+			local waiting="${waiting} ${pid}"
+		fi
+		echo "${pid}" >> "${pids_file}"
 
 		local i=$((i + 1))
 	done
 
-	wait
+	# TODO: clean this mess
+	local looping_indexes=(${looping_indexes})
+	local checking='true'
+	for ((; 0 == 0; )); do
+		local j='0'
+		for cmd in "${@}"; do
+			local is_looping_index='false'
+			for it in ${looping_indexes[@]}; do
+				if [ "${it}" == "${j}" ]; then
+					local is_looping_index='true'
+					break
+				fi
+			done
+			local log="${log_dir}/cmd_${j}.log"
+			if [ "${is_looping_index}" == 'true' ]; then
+				local has_err=`cat "${log}" | grep "${err_flag}"`
+				if [ ! -z "${has_err}" ]; then
+					local running_pids=`cat "${pids_file}"`
+					stop_pids_tree "${running_pids}" 'true' '10' 1>/dev/null 2>&1
+					local checking='false'
+					break
+				fi
+			else
+				# TODO: wait more than one job
+				local has_end=`cat "${log}" | grep "${end_flag}"`
+				if [ ! -z "${has_end}" ]; then
+					local checking='false'
+					break
+				fi
+			fi
+			local j=$((j + 1))
+		done
+		if [ "${checking}" != 'true' ]; then
+			break
+		fi
+		sleep 0.5
+	done
+
+	local waiting_pids=(${waiting})
+	for pid in ${waiting_pids[@]}; do
+		wait ${pid}
+	done
+
+	local looping_pids=(${looping})
+	for pid in ${looping_pids[@]}; do
+		stop_pids_tree "${pid}" 'true' '10' 1>/dev/null 2>&1
+	done
+
+	rm -f "${pids_file}"
 
 	local all_ok='true'
 	local i='0'
 	for cmd in "${@}"; do
-		local log="${log_dir}/go_cmd_${i}.log"
-		local last_line=`tail -n 1 "${log}"`
-		if [ "${last_line}" == "${end_flag}" ]; then
-			local ok='OK    '
+		local log="${log_dir}/cmd_${i}.log"
+		local has_err=`cat "${log}" | grep "${err_flag}"`
+		local has_end=`cat "${log}" | grep "${end_flag}"`
+
+		if [ ! -z "${has_err}" ]; then
+			local ok='FAILED    '
+			local all_ok='false'
+		elif [ ! -z "${has_end}" ]; then
+			local ok='OK        '
 		else
-			local ok='FAILED'
+			local ok='UNFINISHED'
 			local all_ok='false'
 		fi
 		echo "${ok} ${log}: '${cmd}'"
@@ -71,4 +173,4 @@ function cmd_ti_loop()
 	fi
 }
 
-cmd_ti_loop "${@}"
+cmd_ti_go "${@}"
