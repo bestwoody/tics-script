@@ -471,13 +471,31 @@ def render_rngines(res, conf, hosts, indexes):
 
 def render_spark_master(res, conf, hosts, indexes, is_chspark=False):
     if is_chspark:
+        spark_workers = res.spark_workers_ch
         spark_master = res.spark_master_ch
     else:
+        spark_workers = res.spark_workers
         spark_master = res.spark_master
     if len(hosts) != 0 and spark_master.host not in hosts:
         return
     if len(indexes) != 0 and (0 not in indexes):
         return
+
+    executor_memory = 0
+    if len(spark_workers) != 0:
+        for w in spark_workers:
+            memory = w.mem
+            if memory == "":
+                continue
+            if memory[-1] != "G":
+                continue
+            memory = int(memory[0:-1])
+            if executor_memory == 0 or memory < executor_memory:
+                executor_memory = memory
+    executor_memory_repr = ""
+    if executor_memory != 0:
+        executor_memory_repr = str(executor_memory) + "G"
+
     print_mod_header(spark_master)
 
     tiflash_addr = []
@@ -487,10 +505,10 @@ def render_spark_master(res, conf, hosts, indexes, is_chspark=False):
         tiflash_addr.append(addr)
 
     def print_run_cmd(ssh, conf_templ_dir):
-        print '# spark_master_run dir conf_templ_dir pd_addr tiflash_addr is_chspark ports_delta listen_host cluster_id'
+        print '# spark_master_run dir conf_templ_dir pd_addr tiflash_addr is_chspark ports_delta listen_host executor_memory cluster_id'
         print (ssh + 'spark_master_run "%s" \\') % spark_master.dir
         print '\t"%s" "%s" "%s" \\' % (conf_templ_dir, ",".join(res.pd_addr), ",".join(tiflash_addr))
-        print '\t "%s" "%s" "%s" "${id}"' % ("true" if is_chspark else "false", spark_master.ports, spark_master.host)
+        print '\t "%s" "%s" "%s" "%s" "${id}"' % ("true" if is_chspark else "false", spark_master.ports, spark_master.host, executor_memory_repr)
 
     if spark_master.is_local():
         print_cp_bin(spark_master, conf)
@@ -632,6 +650,8 @@ def get_hosts(res, mod_names, hosts, indexes):
     output(res.rngines)
     output_mod(res.spark_master, 0)
     output(res.spark_workers)
+    output_mod(res.spark_master_ch, 0)
+    output(res.spark_workers_ch)
 
     for host in host_infos:
         print host

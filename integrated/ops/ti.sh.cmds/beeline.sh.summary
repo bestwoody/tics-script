@@ -12,7 +12,8 @@ source "${here}/_env.sh"
 auto_error_handle
 
 spark_mod=`from_mods_random_mod "${mods}" 'spark_m'`
-if [ -z "${spark_mod}" ]; then
+chspark_mod=`from_mods_random_mod "${mods}" 'chspark_m'`
+if [ -z "${spark_mod}" ] && [ -z "${chspark_mod}" ]; then
 	echo "[cmd beeline] no spark module found" >&2
 	exit 1
 fi

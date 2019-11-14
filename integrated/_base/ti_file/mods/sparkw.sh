@@ -111,7 +111,7 @@ function spark_worker_run()
 	fi
 
 	local listen_host=""
-	if [ "${advertise_host}" != "127.0.0.1" ] && [ "${advertise_host}" != "localhost" ] && [ "${advertise_host}" != "" ]; then
+	if [ "${advertise_host}" != "localhost" ] && [ "${advertise_host}" != "" ]; then
 		local listen_host="${advertise_host}"
 	else
 		local listen_host="`must_print_ip`"
@@ -141,19 +141,18 @@ function spark_worker_run()
 	echo "spark_worker_webui_port	${spark_worker_webui_port}" >> "${info}"
 	echo "cluster_id	${cluster_id}" >> "${info}"
 
-	if [ ! -f "${spark_worker_dir}/run_worker.sh" ]; then
-		local run_worker_cmd="${spark_worker_dir}/spark/sbin/start-slave.sh ${spark_master_addr} --host ${listen_host}"
-		if [ "${worker_cores}" != "" ]; then
-			local run_worker_cmd="${run_worker_cmd} --cores ${worker_cores}"
-		fi
-		if [ "${worker_memory}" != "" ]; then
-			local run_worker_cmd="${run_worker_cmd} --memory ${worker_memory}"
-		fi
-		echo "export WEBUI_PORT=${spark_worker_webui_port}" >> "${spark_worker_dir}/run_worker_temp.sh"
-		echo "${run_worker_cmd}" > "${spark_worker_dir}/run_worker_temp.sh"
-		chmod +x "${spark_worker_dir}/run_worker_temp.sh"
-		mv "${spark_worker_dir}/run_worker_temp.sh" "${spark_worker_dir}/run_worker.sh"
+	local run_worker_cmd="${spark_worker_dir}/spark/sbin/start-slave.sh ${spark_master_addr} --host ${listen_host}"
+	if [ "${worker_cores}" != "" ]; then
+		local run_worker_cmd="${run_worker_cmd} --cores ${worker_cores}"
 	fi
+	if [ "${worker_memory}" != "" ]; then
+		local run_worker_cmd="${run_worker_cmd} --memory ${worker_memory}"
+	fi
+	echo "export WEBUI_PORT=${spark_worker_webui_port}" > "${spark_worker_dir}/run_worker_temp.sh"
+	echo "${run_worker_cmd}" >> "${spark_worker_dir}/run_worker_temp.sh"
+	chmod +x "${spark_worker_dir}/run_worker_temp.sh"
+	mv "${spark_worker_dir}/run_worker_temp.sh" "${spark_worker_dir}/run_worker.sh"
+
 	mkdir -p "${spark_worker_dir}/logs"
 	bash "${spark_worker_dir}/run_worker.sh" 2>&1 1>/dev/null
 

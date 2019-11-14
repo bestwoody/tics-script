@@ -3,7 +3,7 @@
 function spark_master_run()
 {
 	if [ -z "${5+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ]; then
-		echo "[func spark_master_run] usage: <func> spark_master_dir conf_templ_dir pd_addr tiflash_addr is_chspark [ports_delta] [advertise_host] [cluster_id]" >&2
+		echo "[func spark_master_run] usage: <func> spark_master_dir conf_templ_dir pd_addr tiflash_addr is_chspark [ports_delta] [advertise_host] [executor_memory] [cluster_id]" >&2
 		return 1
 	fi
 
@@ -30,9 +30,15 @@ function spark_master_run()
 	fi
 
 	if [ -z "${3+x}" ]; then
+		local executor_memory=""
+	else
+		local executor_memory="${3}"
+	fi
+
+	if [ -z "${4+x}" ]; then
 		local cluster_id="<none>"
 	else
-		local cluster_id="${3}"
+		local cluster_id="${4}"
 	fi
 
 	echo "=> run spark_m: ${spark_master_dir}"
@@ -108,7 +114,7 @@ function spark_master_run()
 	fi
 
 	local listen_host=""
-	if [ "${advertise_host}" != "127.0.0.1" ] && [ "${advertise_host}" != "localhost" ] && [ "${advertise_host}" != "" ]; then
+	if [ "${advertise_host}" != "localhost" ] && [ "${advertise_host}" != "" ]; then
 		local listen_host="${advertise_host}"
 	else
 		local listen_host="`must_print_ip`"
@@ -146,21 +152,28 @@ function spark_master_run()
 	fi
 	local jar_file=`cat "${bin_urls_file}" | { grep "^${mod_key}\b" || test $? = 1; } | awk '{print $3}'`
 
-	if [ ! -f "${spark_master_dir}/run_master.sh" ]; then
-		echo "export SPARK_MASTER_HOST=${listen_host}" > "${spark_master_dir}/run_master_temp.sh"
-		echo "export SPARK_MASTER_PORT=${spark_master_port}" >> "${spark_master_dir}/run_master_temp.sh"
-		echo "export SPARK_MASTER_WEBUI_PORT=${spark_master_webui_port}" >> "${spark_master_dir}/run_master_temp.sh"
-		echo "${spark_master_dir}/spark/sbin/start-master.sh" >> "${spark_master_dir}/run_master_temp.sh"
-		echo "(" >> "${spark_master_dir}/run_master_temp.sh"
-		echo "  cd ${spark_master_dir}" >> "${spark_master_dir}/run_master_temp.sh"
-		echo "  ${spark_master_dir}/spark/sbin/start-thriftserver.sh --hiveconf hive.server2.thrift.port=${thriftserver_port} --jars ${spark_master_dir}/${jar_file} --master spark://${listen_host}:${spark_master_port}" >> "${spark_master_dir}/run_master_temp.sh"
-		echo ")" >> "${spark_master_dir}/run_master_temp.sh"
-		echo "wait" >> "${spark_master_dir}/run_master_temp.sh"
-		# TODO: remove this sleep
-		echo "sleep 5" >> "${spark_master_dir}/run_master_temp.sh"
-		chmod +x "${spark_master_dir}/run_master_temp.sh"
-		mv "${spark_master_dir}/run_master_temp.sh" "${spark_master_dir}/run_master.sh"
+	local run_thrift_server_command="${spark_master_dir}/spark/sbin/start-thriftserver.sh"
+	local run_thrift_server_command="${run_thrift_server_command} --hiveconf hive.server2.thrift.port=${thriftserver_port}"
+	local run_thrift_server_command="${run_thrift_server_command} --hiveconf hive.server2.thrift.bind.host=${listen_host}"
+	if [ "${executor_memory}" != "" ]; then
+		local run_thrift_server_command="${run_thrift_server_command} --executor-memory ${executor_memory}"	
 	fi
+	local run_thrift_server_command="${run_thrift_server_command} --jars ${spark_master_dir}/${jar_file}"
+	local run_thrift_server_command="${run_thrift_server_command} --master spark://${listen_host}:${spark_master_port}"
+	
+	echo "export SPARK_MASTER_HOST=${listen_host}" > "${spark_master_dir}/run_master_temp.sh"
+	echo "export SPARK_MASTER_PORT=${spark_master_port}" >> "${spark_master_dir}/run_master_temp.sh"
+	echo "export SPARK_MASTER_WEBUI_PORT=${spark_master_webui_port}" >> "${spark_master_dir}/run_master_temp.sh"
+	echo "${spark_master_dir}/spark/sbin/start-master.sh" >> "${spark_master_dir}/run_master_temp.sh"
+	echo "(" >> "${spark_master_dir}/run_master_temp.sh"
+	echo "  cd ${spark_master_dir}" >> "${spark_master_dir}/run_master_temp.sh"
+	echo "  ${run_thrift_server_command}" >> "${spark_master_dir}/run_master_temp.sh"
+	echo ")" >> "${spark_master_dir}/run_master_temp.sh"
+	echo "wait" >> "${spark_master_dir}/run_master_temp.sh"
+	# TODO: remove this sleep
+	echo "sleep 5" >> "${spark_master_dir}/run_master_temp.sh"
+	chmod +x "${spark_master_dir}/run_master_temp.sh"
+	mv "${spark_master_dir}/run_master_temp.sh" "${spark_master_dir}/run_master.sh"
 	
 	bash "${spark_master_dir}/run_master.sh" 2>&1 1>/dev/null
 
