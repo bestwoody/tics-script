@@ -272,7 +272,13 @@ function unfold_cmd_chain()
 		return 1
 	fi
 	for it in "${@}"; do
-		echo "${it}"
+		if [ "${it:0:2}" == '--' ]; then
+			echo -n '--' && echo "${it:2}"
+		elif [ "${it:0:1}" == '-' ]; then
+			echo -n '-' && echo "${it:1}"
+		else
+			echo "${it}"
+		fi
 	done | python "${integrated}/_base/ti_file/unfold_cmd_chain.py"
 }
 export -f unfold_cmd_chain

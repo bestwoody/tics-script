@@ -146,7 +146,13 @@ function esc_args()
 		return
 	fi
 	for it in "${@}"; do
-		echo "${it}"
+		if [ "${it:0:2}" == '--' ]; then
+			echo -n '--' && echo "${it:2}"
+		elif [ "${it:0:1}" == '-' ]; then
+			echo -n '-' && echo "${it:1}"
+		else
+			echo "${it}"
+		fi
 	done | python "${integrated}/_base/esc_args.py"
 }
 export -f esc_args
