@@ -14,33 +14,14 @@ def unfold(sep):
             continue
         line = line[:-1].strip()
 
-        i = line.find(sep)
-        if i < 0:
-            res.append('"' + line.strip() + '"')
-            continue
+        # TODO: handle '\"', '\\"', etc
+        line = line.replace('"', '\\\"')
 
-        fields = line.split(sep)
-        fields = map(lambda x: x.strip(), fields)
-
-        if len(fields) == 0:
+        if line != sep:
+            res.append('"' + line + '"')
+        else:
             total.append(res)
             res = []
-            continue
-
-        if len(fields[0]) > 0:
-            res.append('"' + fields[0] + '"')
-        total.append(res)
-        if len(fields[-1]) > 0:
-            res = ['"' + fields[-1] + '"']
-        else:
-            res = []
-        fields = fields[1:-1]
-
-        fields = filter(lambda x: len(x) > 0, fields)
-        fields = map(lambda x: '"' + x + '"', fields)
-        for field in fields:
-            if len(field) > 0:
-                total.append([field])
 
     total.append(res)
     res = None

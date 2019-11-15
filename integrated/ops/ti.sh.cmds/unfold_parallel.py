@@ -3,7 +3,7 @@
 import sys
 
 # TODO: this func is the same as in the 'unfold_cmd_chain.py'
-def unfold(sep):
+def unfold(sep, quote):
     total = []
     res = []
 
@@ -17,7 +17,7 @@ def unfold(sep):
 
         i = line.find(sep)
         if i < 0:
-            res.append('"' + line.strip() + '"')
+            res.append(quote + line.strip() + quote)
             continue
 
         fields = line.split(sep)
@@ -29,16 +29,16 @@ def unfold(sep):
             continue
 
         if len(fields[0]) > 0:
-            res.append('"' + fields[0] + '"')
+            res.append(quote + fields[0] + quote)
         total.append(res)
         if len(fields[-1]) > 0:
-            res = ['"' + fields[-1] + '"']
+            res = [quote + fields[-1] + quote]
         else:
             res = []
         fields = fields[1:-1]
 
         fields = filter(lambda x: len(x) > 0, fields)
-        fields = map(lambda x: '"' + x + '"', fields)
+        fields = map(lambda x: quote + x + quote, fields)
         for field in fields:
             if len(field) > 0:
                 total.append([field])
@@ -49,8 +49,8 @@ def unfold(sep):
 
     return total
 
-def render(total, sep):
-    sep = '"' + sep + '"'
+def render(total, sep, quote):
+    sep = quote + sep + quote
     for cmd in total:
         once = []
         loop = []
@@ -65,4 +65,12 @@ def render(total, sep):
         print ' '.join(once) + '\t' + has_loop + '\t' + ' '.join(loop)
 
 if __name__ == '__main__':
-    render(unfold('GO:'), 'LOOP:')
+    quotes = True
+    if len(sys.argv) > 1:
+        quotes = (sys.argv[1] == 'true')
+
+    quote = ''
+    if quotes:
+        quote = '"'
+
+    render(unfold('GO:', quote), 'LOOP:', quote)

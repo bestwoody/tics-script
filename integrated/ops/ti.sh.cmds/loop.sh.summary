@@ -21,9 +21,9 @@ function cmd_ti_loop()
 	auto_error_handle
 
 	for (( r = 0; 0 == 0; r++ )); do
-		if [ -z "`echo ${cmds_str} | grep ':'`" ]; then
+		if [ -z "`echo ${cmds_str} | grep '":"'`" ]; then
 			print_hhr
-			echo ":: loop ${r}> ${cmds_str}"
+			echo ":: loop ${r}> ${@}"
 			print_hr
 		fi
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \

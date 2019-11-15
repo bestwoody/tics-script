@@ -4,7 +4,7 @@ function cmd_ti_global_ci_self()
 {
 	local ti="${integrated}/ops/ti.sh"
 
-	"${ti}" 'help:help stop:flags:example:procs'
+	"${ti}" help : help stop : flags : example : procs
 
 	# TODO: take too long, or need sudo
 	#"${ti}" io_report:hw

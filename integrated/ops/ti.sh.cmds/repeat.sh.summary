@@ -19,12 +19,12 @@ function cmd_ti_repeat()
 	shift 1
 
 	local cmds_str=`esc_args "${@}"`
-	local is_cmd_chain=`echo "${cmds_str}" | grep ':'`
+	local is_cmd_chain=`echo "${cmds_str}" | grep '":"'`
 
 	for (( r = 0; r < "${repeat_times}"; r++ )); do
 		if [ -z "${is_cmd_chain}" ]; then
 			print_hhr
-			echo ":: repeat ${r}/$((repeat_times - 1))> ${cmds_str}"
+			echo ":: repeat ${r}/$((repeat_times - 1))> ${@}"
 			print_hr
 		fi
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \

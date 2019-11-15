@@ -32,6 +32,7 @@ function cmd_ti_parallel()
 
 	local cmds="${dir}/cmds"
 	print_args "${@}" | python "${here}/unfold_parallel.py" > "${cmds}"
+	print_args "${@}" | python "${here}/unfold_parallel.py" false > "${cmds}.nq"
 
 	local cmd_flag="{PARALLEL_MARK"
 	local run_flag="${cmd_flag}:RUN}"
@@ -137,7 +138,7 @@ function cmd_ti_parallel()
 			if [ "${log_new}" -gt 11 ]; then
 				local tail_cnt='10'
 				local unshown_cnt=$((log_new - 10))
-				echo "[${j}] (${unshown_cnt} more lines)"
+				echo "[${j}] {${unshown_cnt} more lines}"
 			fi
 			if [ "${log_new}" != 0 ]; then
 				tail -n "${tail_cnt}" "${log}" | awk '{print "['${j}'] "$0}'
@@ -169,7 +170,8 @@ function cmd_ti_parallel()
 
 	local all_ok='true'
 	local i='0'
-	while read cmd; do
+	while read cmd_info; do
+		local cmd=`echo "${cmd_info}" | awk -F '\t' '{print $1}'`
 		local log="${dir}/cmd_${i}.log"
 		local has_err=`cat "${log}" | grep "${err_flag}"`
 		local has_end=`cat "${log}" | grep "${end_flag}"`
@@ -183,9 +185,9 @@ function cmd_ti_parallel()
 			local ok='UNFINISHED'
 			local all_ok='false'
 		fi
-		echo "[${i}] ${ok} ${log}: '${cmd}'"
+		echo "[${i}] ${ok} ${log}: ${cmd}"
 		local i=$((i + 1))
-	done < "${cmds}"
+	done < "${cmds}.nq"
 
 	if [ "${all_ok}" != 'true' ]; then
 		return 1

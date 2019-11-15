@@ -10,9 +10,9 @@ function verify_consistency()
 	local query="${6}"
 
 	local tikv_res=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'tidb' -i "${cmd_indexes}" "${ti_file}" \
-		'mysql/tikv' "set @@tidb_snapshot=\"${ts}\"; ${query}" 'test' 'false' 2>&1 | trim_host`
+		'mysql/tikv' "set @@tidb_snapshot='${ts}'; ${query}" 'test' 'false' 2>&1 | trim_host`
 	local learner_res=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'tidb' -i "${cmd_indexes}" "${ti_file}" \
-		'mysql/learner' "set @@tidb_snapshot=\"${ts}\"; ${query}" 'test' 'false' 2>&1 | trim_host`
+		'mysql/learner' "set @@tidb_snapshot='${ts}'; ${query}" 'test' 'false' 2>&1 | trim_host`
 
 	local tikv_line=`echo "${tikv_res}" | tail -n 1`
 	local learner_line=`echo "${learner_res}" | tail -n 1`

@@ -18,9 +18,9 @@ function cmd_ti_floop()
 	local cmds_str=`esc_args "${@}"`
 
 	for (( r = 0; 0 == 0; r++ )); do
-		if [ -z "`echo ${cmds_str} | grep ':'`" ]; then
+		if [ -z "`echo ${cmds_str} | grep '":"'`" ]; then
 			print_hhr
-			echo ":: floop ${r}> ${cmds_str}"
+			echo ":: floop ${r}> ${@}"
 			print_hr
 		fi
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \

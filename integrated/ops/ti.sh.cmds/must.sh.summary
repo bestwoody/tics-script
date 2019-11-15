@@ -18,9 +18,9 @@ function cmd_ti_must()
 	local cmds_str=`esc_args "${@}"`
 
 	for (( r = 0; 0 == 0; r++ )); do
-		if [ -z "`echo ${cmds_str} | grep ':'`" ]; then
+		if [ -z "`echo ${cmds_str} | grep '":"'`" ]; then
 			print_hhr
-			echo ":: must ${r}> ${cmds_str}"
+			echo ":: must ${r}> ${@}"
 			print_hr
 		fi
 		local res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
