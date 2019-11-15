@@ -50,12 +50,11 @@ catchError {
                     dir("tiflash/integrated") {
                         stage("OPS TI Test") {
                             container("docker-ops-ci") {
-                                if (fileExists("tests/ci/jenkins.sh")) {
-                                    try {
-                                        sh "tests/ci/jenkins.sh"
-                                    } catch (err) {
-                                        throw err
-                                    }
+                                try {
+                                    sh "tests/ci/jenkins.sh"
+                                } catch (err) {
+                                    sh "for f in \$(find /tmp/ti/ci/self -name '*.log' | grep -v 'data'); do echo \"LOG: \$f\"; tail -500 \$f; done"
+                                    throw err
                                 }
                             }
                         }

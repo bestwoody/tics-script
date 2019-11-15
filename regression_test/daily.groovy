@@ -71,7 +71,13 @@ def runTest(branch, label, notify) {
                 stage("Test Tiflash Latest Stable") {
                     container("docker-ops-ci") {
                         dir("/home/jenkins/agent/git/tiflash") {
-                            sh "regression_test/daily.sh"
+                            try {
+                                sh "regression_test/daily.sh"
+                            } catch (err) {
+                                sh "for f in \$(find /tmp/ti/ci/self -name '*.log' | grep -v 'data'); do echo \"LOG: \$f\"; tail -500 \$f; done"
+                                sh "for f in \$(find /tmp/ti/ci/release -name '*.log' | grep -v 'data'); do echo \"LOG: \$f\"; tail -500 \$f; done"
+                                throw err
+                            }
                         }
                     }
                 }
@@ -79,8 +85,14 @@ def runTest(branch, label, notify) {
                 stage("Test Tiflash Master Branch") {
                     container("docker-ops-ci") {
                         dir("/home/jenkins/agent/git/tiflash") {
-                            sh "cp regression_test/conf/bin.paths integrated/conf/"
-                            sh "regression_test/daily.sh"
+                            try {
+                                sh "cp regression_test/conf/bin.paths integrated/conf/"
+                                sh "regression_test/daily.sh"
+                            } catch (err) {
+                                sh "for f in \$(find /tmp/ti/ci/self -name '*.log' | grep -v 'data'); do echo \"LOG: \$f\"; tail -500 \$f; done"
+                                sh "for f in \$(find /tmp/ti/ci/release -name '*.log' | grep -v 'data'); do echo \"LOG: \$f\"; tail -500 \$f; done"
+                                throw err
+                            }
                         }
                     }
                 }
