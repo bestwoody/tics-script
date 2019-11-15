@@ -41,7 +41,7 @@ function cmd_ti_ver()
 		if [ ! -f "${dir}/tidb-server" ]; then
 			local res='MISSED'
 		else
-			local res=`"${dir}"/tidb-server -V | { grep "${grep_str}" || test $? = 1; }`
+			local res=`"${dir}"/tidb-server -V 2>/dev/null | { grep "${grep_str}" || test $? = 1; }`
 		fi
 	elif [ "${mod_name}" == 'tiflash' ]; then
 		if [ ! -f "${dir}/log/server.log" ]; then

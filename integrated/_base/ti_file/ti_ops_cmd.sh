@@ -271,14 +271,6 @@ function unfold_cmd_chain()
 		echo "[func unfold_cmd_chain] usage: <func> cmd_and_args"
 		return 1
 	fi
-	for it in "${@}"; do
-		if [ "${it:0:2}" == '--' ]; then
-			echo -n '--' && echo "${it:2}"
-		elif [ "${it:0:1}" == '-' ]; then
-			echo -n '-' && echo "${it:1}"
-		else
-			echo "${it}"
-		fi
-	done | python "${integrated}/_base/ti_file/unfold_cmd_chain.py"
+	print_args "${@}" | python "${integrated}/_base/ti_file/unfold_cmd_chain.py"
 }
 export -f unfold_cmd_chain

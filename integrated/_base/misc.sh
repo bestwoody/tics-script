@@ -140,7 +140,7 @@ function print_hr()
 }
 export -f print_hr
 
-function esc_args()
+function print_args()
 {
 	if [ -z "${1+x}" ]; then
 		return
@@ -153,6 +153,14 @@ function esc_args()
 		else
 			echo "${it}"
 		fi
-	done | python "${integrated}/_base/esc_args.py"
+	done
+}
+export -f print_args
+
+function esc_args()
+{
+	if [ ! -z "${1+x}" ]; then
+		print_args "${@}" | python "${integrated}/_base/esc_args.py"
+	fi
 }
 export -f esc_args

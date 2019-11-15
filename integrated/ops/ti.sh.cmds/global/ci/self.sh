@@ -18,7 +18,7 @@ function cmd_ti_global_ci_self()
 
 	"${ti}" "${file}" must burn
 	"${ti}" "${file}" ci/self
-	"${ti}" "${file}" reset:restart
+	"${ti}" "${file}" reset : restart
 	"${ti}" "${file}" must burn
 
 	rm -f "${file}"
