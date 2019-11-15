@@ -113,7 +113,12 @@ def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
                 tables[db] = []
             table_status = "unknown"
             if str(table_id) in all_table_status:
-                table_status = all_table_status[str(table_id)]
+                if all_table_status[str(table_id)] == "True":
+                    table_status = "available"
+                elif all_table_status[str(table_id)] == "False":
+                    table_status = "unavailable"
+                else:
+                    error("Unknown table status")
             tables[db].append((table, table_status))
     
     print_result(tables)
