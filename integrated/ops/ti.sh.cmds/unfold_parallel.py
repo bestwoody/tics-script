@@ -2,6 +2,7 @@
 
 import sys
 
+# TODO: this func is the same as in the 'unfold_cmd_chain.py'
 def unfold(sep):
     total = []
     res = []
@@ -48,20 +49,20 @@ def unfold(sep):
 
     return total
 
-def render(total):
-    for cmd_args in total:
-        cmd = cmd_args[0]
-        assert cmd[0] == '"', cmd
-        assert cmd[-1] == '"', cmd
-        cmd = cmd[1:-1]
-        cmd_args = cmd_args[1:]
-        if len(cmd_args) > 0:
-            print cmd + '\t' + ' '.join(cmd_args)
-        else:
-            cmd_args = cmd.split()
-            cmd = cmd_args[0]
-            cmd_args = cmd_args[1:]
-            print cmd + '\t' + ' '.join(cmd_args)
+def render(total, sep):
+    sep = '"' + sep + '"'
+    for cmd in total:
+        once = []
+        loop = []
+        for i in range(0, len(cmd)):
+            field = cmd[i]
+            if field != sep:
+                once.append(field)
+            else:
+                loop = cmd[i + 1:]
+                break
+        has_loop = (len(loop) != 0) and 'has_loop' or 'no_loop'
+        print ' '.join(once) + '\t' + has_loop + '\t' + ' '.join(loop)
 
 if __name__ == '__main__':
-    render(unfold(':'))
+    render(unfold('GO:'), 'LOOP:')

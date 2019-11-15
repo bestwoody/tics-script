@@ -1,0 +1,18 @@
+#!/bin/bash
+
+function cmd_ti_parallel_clean()
+{
+	local ti_file="${1}"
+	shift 6
+
+	local pids_file="${ti_file}.data/parallel/pids"
+	if [ ! -f "${pids_file}" ]; then
+		return
+	fi
+	local pids=`cat "${pids_file}"`
+	stop_pids_tree "${pids}" 'true' '10' 2>/dev/null
+	rm -f "${pids_file}"
+}
+
+set -ueo pipefail
+cmd_ti_parallel_clean "${@}"

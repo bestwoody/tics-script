@@ -229,7 +229,7 @@ function cmd_ti()
 
 	if [ ! -z "${ti_file}" ] && [ -z "${1+x}" ]; then
 		local cmds_and_args='status'
-	elif [ "${1}" == 'must' ] || [ "${1}" == 'repeat' ] || [ "${1}" == 'loop' ] || [ "${1}" == 'floop' ]; then
+	elif [ "${1}" == 'parallel' ] || [ "${1}" == 'must' ] || [ "${1}" == 'repeat' ] || [ "${1}" == 'loop' ] || [ "${1}" == 'floop' ]; then
 		local cmd="${1}"
 		shift 1
 		if [ -z "${1}" ] || [ -z "${ti_file}" ]; then

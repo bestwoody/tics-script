@@ -1,0 +1,7 @@
+execute many commands in the same time
+each thread begins with 'GO:', then commands.
+one 'LOOP:' mark could be put in commands, the commands after that will run repeatly
+eg: ti.sh my.ti parallel GO: burn:up GO: sleep 10 LOOP: verify/consistency
+    1st command: (start) -> burn -> up -> (end)
+    2nd command: (start) -> sleep 10 -> (repeatly): verify/consistency -> (until 1st finished or something goes wrong)
+usage: ti.sh [flags] ti_file_path parallel GO: cmds1 GO: cmds2 ..

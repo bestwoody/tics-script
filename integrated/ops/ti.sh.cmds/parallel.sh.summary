@@ -1,0 +1,196 @@
+#!/bin/bash
+
+function cmd_ti_parallel()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+	source "${here}/_env.sh"
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd parallel] usage: ti.sh [flags] ti_file_path parallel cmd1 cmd2"
+		exit 1
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+
+	local dir="${ti_file}.data/parallel"
+	mkdir -p "${dir}"
+
+	local pids_file="${dir}/pids"
+	if [ -f "${pids_file}" ]; then
+		local uncleaned_pids=`cat "${pids_file}"`
+		stop_pids_tree "${uncleaned_pids}" 'true' '10' 1>/dev/null 2>&1
+		rm -f "${pids_file}"
+	fi
+
+	local cmds="${dir}/cmds"
+	print_args "${@}" | python "${here}/unfold_parallel.py" > "${cmds}"
+
+	local cmd_flag="{PARALLEL_MARK"
+	local run_flag="${cmd_flag}:RUN}"
+	local end_flag="${cmd_flag}:DONE}"
+	local half_end_flag="${cmd_flag}:HALF_DONE}"
+	local err_flag="${cmd_flag}:ERROR}"
+
+	local waiting=''
+	local looping=''
+	local looping_indexes=''
+
+	local i='0'
+	while read cmd_info; do
+		local cmd=`echo "${cmd_info}" | awk -F '\t' '{print $1}'`
+		local cmd_looping=`echo "${cmd_info}" | awk -F '\t' '{print $3}'`
+		local has_loop='false'
+		if [ ! -z "${cmd_looping}" ]; then
+			local has_loop='true'
+		fi
+
+		{
+			local log="${dir}/cmd_${i}.log"
+			rm -f "${log}"
+
+			for ((; 0 == 0; )); do
+				local flag="${end_flag}"
+				if [ ! -z "${cmd_looping}" ]; then
+					local flag="${half_end_flag}"
+				fi
+
+				if [ "${has_loop}" == 'false' ] || [ ! -z "${cmd_looping}" ]; then
+					echo -e "${run_flag} ${cmd}" >> "${log}"
+				fi
+
+				eval "\"${ti}\" -h \"${cmd_hosts}\" -m \"${cmd_mod_names}\" -i \"${cmd_indexes}\" \
+					-k \"${ti_args}\" \"${ti_file}\" ${cmd}" 1>>"${log}" 2>&1 && \
+					echo -e "${flag}" >> "${log}"
+				if [ ${?} != '0' ]; then
+					echo -e "${err_flag}" >> "${log}"
+					return 1
+				fi
+				if [ "${has_loop}" == 'false' ]; then
+					break
+				elif [ ! -z "${cmd_looping}" ]; then
+					local cmd="${cmd_looping}"
+					local cmd_looping=''
+				fi
+			done
+		} &
+
+		sleep 0.01
+
+		local pid="${!}"
+		if [ ! -z "${cmd_looping}" ]; then
+			local looping="${looping} ${pid}"
+			local looping_indexes="${looping_indexes} ${i}"
+		else
+			local waiting="${waiting} ${pid}"
+		fi
+
+		echo "${pid}" >> "${pids_file}"
+
+		local i=$((i + 1))
+	done < "${cmds}"
+
+	local log_cnts=()
+	local i='0'
+	while read cmd; do
+		local log_cnts[i]='0'
+		local i=$((i + 1))
+	done < "${cmds}"
+
+	local looping_indexes=(${looping_indexes})
+	local checking='true'
+	for ((; 0 == 0; )); do
+		local j='0'
+		while read cmd; do
+			local has_loop=`echo "${cmd}" | awk -F '\t' '{print $2}'`
+
+			local log="${dir}/cmd_${j}.log"
+
+			local has_err=`cat "${log}" | grep "${err_flag}"`
+			if [ ! -z "${has_err}" ]; then
+				local running_pids=`cat "${pids_file}"`
+				stop_pids_tree "${running_pids}" 'true' '10' 1>/dev/null 2>&1
+				local checking='false'
+				break
+			fi
+
+			if [ "${has_loop}" != 'has_loop' ]; then
+				# TODO: wait more than one job
+				local has_end=`cat "${log}" | grep "${end_flag}"`
+				if [ ! -z "${has_end}" ]; then
+					local checking='false'
+					break
+				fi
+			fi
+
+			local old_log_cnt="${log_cnts[${j}]}"
+			local log_cnt=`cat "${log}" | wc -l | awk '{print $1}'`
+			local log_new=$((log_cnt - old_log_cnt))
+			local tail_cnt="${log_new}"
+			if [ "${log_new}" -gt 11 ]; then
+				local tail_cnt='10'
+				local unshown_cnt=$((log_new - 10))
+				echo "[${j}] (${unshown_cnt} more lines)"
+			fi
+			if [ "${log_new}" != 0 ]; then
+				tail -n "${tail_cnt}" "${log}" | awk '{print "['${j}'] "$0}'
+			fi
+			local log_cnts[${j}]="${log_cnt}"
+
+			local j=$((j + 1))
+		done < "${cmds}"
+
+		if [ "${checking}" != 'true' ]; then
+			break
+		fi
+		sleep 5
+	done
+
+	local waiting_pids=(${waiting})
+	for pid in ${waiting_pids[@]}; do
+		wait ${pid}
+	done
+
+	local looping_pids=(${looping})
+	for pid in ${looping_pids[@]}; do
+		stop_pids_tree "${pid}" 'true' '10' 1>/dev/null 2>&1
+	done
+
+	rm -f "${pids_file}"
+
+	echo
+
+	local all_ok='true'
+	local i='0'
+	while read cmd; do
+		local log="${dir}/cmd_${i}.log"
+		local has_err=`cat "${log}" | grep "${err_flag}"`
+		local has_end=`cat "${log}" | grep "${end_flag}"`
+
+		if [ ! -z "${has_err}" ]; then
+			local ok='FAILED    '
+			local all_ok='false'
+		elif [ ! -z "${has_end}" ]; then
+			local ok='OK        '
+		else
+			local ok='UNFINISHED'
+			local all_ok='false'
+		fi
+		echo "[${i}] ${ok} ${log}: '${cmd}'"
+		local i=$((i + 1))
+	done < "${cmds}"
+
+	if [ "${all_ok}" != 'true' ]; then
+		return 1
+	fi
+}
+
+set -u
+cmd_ti_parallel "${@}"
