@@ -15,22 +15,16 @@ function cmd_ti_must()
 		exit 1
 	fi
 
-	local cmd="${1}"
 	local cmds_str=`esc_args "${@}"`
-
-	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 
 	for (( r = 0; 0 == 0; r++ )); do
 		if [ -z "`echo ${cmds_str} | grep ':'`" ]; then
 			print_hhr
 			echo ":: must ${r}> ${cmds_str}"
 			print_hr
-			local res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}" 1>&2 && echo 'true'`
-		else
-			local res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${cmds_str}" 1>&2 && echo 'true'`
 		fi
+		local res=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}" 1>&2 && echo 'true'`
 		if [ "${res}" == 'true' ]; then
 			break
 		fi
@@ -38,4 +32,5 @@ function cmd_ti_must()
 	done
 }
 
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 cmd_ti_must "${@}"

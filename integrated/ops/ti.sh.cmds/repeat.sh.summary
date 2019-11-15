@@ -10,33 +10,29 @@ function cmd_ti_repeat()
 	local mods="${6}"
 	shift 6
 
-	if [ -z "${2+2}" ] || [ -z "${2}" ]; then
-		echo "[cmd repeat] usage: ti.sh [flags] ti_file_path repeat repeat_times cmd [args]"
+	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
+		echo "[cmd repeat] usage: ti.sh [flags] ti_file_path repeat repeat_times cmd [args]" >&2
 		return 1
 	fi
 
 	local repeat_times="${1}"
 	shift 1
 
-	local cmd="${1}"
 	local cmds_str=`esc_args "${@}"`
+	local is_cmd_chain=`echo "${cmds_str}" | grep ':'`
 
-	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
-	auto_error_handle
-
-	for (( r = 0; r < ${repeat_times}; r++ )); do
-		if [ -z "`echo ${cmds_str} | grep ':'`" ]; then
+	for (( r = 0; r < "${repeat_times}"; r++ )); do
+		if [ -z "${is_cmd_chain}" ]; then
 			print_hhr
-			echo ":: repeat ${r}/(${repeat_times}-1)> ${cmds_str}"
+			echo ":: repeat ${r}/$((repeat_times - 1))> ${cmds_str}"
 			print_hr
-			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
-		else
-			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${cmds_str}"
 		fi
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
 		sleep 0.1
 	done
 }
 
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
 cmd_ti_repeat "${@}"

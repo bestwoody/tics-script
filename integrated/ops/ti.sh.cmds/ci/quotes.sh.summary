@@ -1,0 +1,68 @@
+#!/bin/bash
+
+function _get_echo_result()
+{
+	grep extra | awk -F 'extra:' '{print $2}' | tr '\n' 'N'
+}
+
+function cmd_ti_ci_quotes()
+{
+	local file="${1}"
+	shift 6
+
+	local ti="${integrated}/ops/ti.sh"
+
+	local res=`"${ti}" -m pd "${file}" repeat 1 echo a b :: echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" repeat 1 echo a b:: echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" repeat 1 echo a b ::echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" repeat 1 echo a b: :echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" repeat 1 echo a b : echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" repeat 1 echo a b: echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" repeat 1 echo a b :echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" repeat 1 echo 'a b' : echo "c d" | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N[ 'c d' ]N"
+	local res=`"${ti}" -m pd "${file}" repeat 1 "echo 'a b' : echo \"c d\"" | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N[ 'c d' ]N"
+
+	local res=`"${ti}" -m pd "${file}" echo a b : echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" echo a b: echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" echo a b :echo c d | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N[ 'c' 'd' ]N"
+	local res=`"${ti}" -m pd "${file}" echo 'a b' : echo "c d" | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N[ 'c d' ]N"
+	local res=`"${ti}" -m pd "${file}" "echo 'a b' : echo \"c d\"" | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N[ 'c d' ]N"
+
+	local res=`"${ti}" -m pd "${file}" 'echo a b' | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N"
+	local res=`"${ti}" -m pd "${file}" 'echo "a b"' | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N"
+	local res=`"${ti}" -m pd "${file}" 'echo '\''a b'\' | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N"
+
+	local res=`"${ti}" -m pd "${file}" "echo a b" | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N"
+	local res=`"${ti}" -m pd "${file}" "echo 'a b'" | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N"
+	local res=`"${ti}" -m pd "${file}" "echo \"a b\"" | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N"
+
+	local res=`"${ti}" -m pd "${file}" echo a b | _get_echo_result`
+	assert_eq "${res}" "[ 'a' 'b' ]N"
+	local res=`"${ti}" -m pd "${file}" echo 'a b' | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N"
+	local res=`"${ti}" -m pd "${file}" echo "a b" | _get_echo_result`
+	assert_eq "${res}" "[ 'a b' ]N"
+}
+
+set -euo pipefail
+cmd_ti_ci_quotes "${@}"

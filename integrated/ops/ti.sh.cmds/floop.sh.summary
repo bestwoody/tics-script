@@ -15,24 +15,19 @@ function cmd_ti_floop()
 		exit 1
 	fi
 
-	local cmd="${1}"
 	local cmds_str=`esc_args "${@}"`
-
-	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 
 	for (( r = 0; 0 == 0; r++ )); do
 		if [ -z "`echo ${cmds_str} | grep ':'`" ]; then
 			print_hhr
 			echo ":: floop ${r}> ${cmds_str}"
 			print_hr
-			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
-		else
-			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${cmds_str}"
 		fi
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
 		sleep 0.1
 	done
 }
 
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 cmd_ti_floop "${@}"

@@ -14,7 +14,10 @@ function cmd_ti_global_ci_self()
 	local file="${dir}/self.ti"
 	rm -f "${file}"
 
-	"${ti}" new "${file}" 'delta=-4' "dir=${dir}" 'spark=1' 1>/dev/null
+	# TODO: test with spark
+	#"${ti}" new "${file}" 'delta=-4' "dir=${dir}" 'spark=1' 1>/dev/null
+	"${ti}" new "${file}" 'delta=-4' "dir=${dir}" 1>/dev/null
+
 	"${ti}" "${file}" must burn
 	"${ti}" "${file}" ci/self
 	"${ti}" "${file}" reset:restart

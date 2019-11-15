@@ -11,9 +11,11 @@ def run():
         if len(line) == 0:
             continue
         line = line[:-1]
-        line = line.replace("'", "\'")
+
+        # TODO: handle '\"', '\\"', etc
         line = line.replace('"', '\\\"')
         res.append('"' + line + '"')
+
     print ' '.join(res)
 
 if __name__ == '__main__':

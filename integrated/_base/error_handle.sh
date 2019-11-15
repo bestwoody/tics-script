@@ -26,3 +26,19 @@ function restore_error_handle_flags()
 	fi
 }
 export -f restore_error_handle_flags
+
+function assert_eq()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func assert_eq] usage: <func> v1 v2"
+		return 1
+	fi
+
+	local v1="${1}"
+	local v2="${2}"
+	if [ "${v1}" != "${v2}" ]; then
+		echo "[func assert_eq] ${v1} != ${v2}"
+		return 1
+	fi
+}
+export -f assert_eq

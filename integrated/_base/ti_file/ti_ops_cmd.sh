@@ -264,3 +264,15 @@ function mysql_explain()
 	fi
 }
 export -f mysql_explain
+
+function unfold_cmd_chain()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func unfold_cmd_chain] usage: <func> cmd_and_args"
+		return 1
+	fi
+	for it in "${@}"; do
+		echo "${it}"
+	done | python "${integrated}/_base/ti_file/unfold_cmd_chain.py"
+}
+export -f unfold_cmd_chain

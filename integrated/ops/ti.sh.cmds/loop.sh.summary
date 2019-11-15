@@ -15,7 +15,6 @@ function cmd_ti_loop()
 		exit 1
 	fi
 
-	local cmd="${1}"
 	local cmds_str=`esc_args "${@}"`
 
 	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
@@ -26,12 +25,9 @@ function cmd_ti_loop()
 			print_hhr
 			echo ":: loop ${r}> ${cmds_str}"
 			print_hr
-			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
-		else
-			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${cmds_str}"
 		fi
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" "${@}"
 		sleep 0.1
 	done
 }

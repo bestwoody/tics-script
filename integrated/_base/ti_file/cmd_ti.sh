@@ -215,81 +215,57 @@ function cmd_ti()
 	local ext=`print_file_ext "${1}"`
 	if [ "${ext}" != 'ti' ]; then
 		local ti_file=''
-		local cmd="${1}"
-		shift 1
 	else
 		local ti_file="${1}"
-		local cmd="${2}"
-		shift 2
+		shift 1
 	fi
 
-	local cmd_args=("${@}")
 	auto_error_handle
 
-	if [ -z "${ti_file}" ] && [ ! -z "${cmd}" ]; then
-		if [ -z "${cmd_args+x}" ]; then
-			if [ ! -z "`echo ${cmd} | { grep ':' || test $? = 1; }`" ]; then
-				local cmds=`echo "${cmd}" | awk -F ':' '{for ( i=1; i<=NF; i++ ) print $i}'`
-				echo "${cmds}" | while read cmd; do
-					print_hhr
-					local cmd_and_args=(${cmd})
-					if [ "${#cmd_and_args[@]}" == '1' ]; then
-						echo ":: ${cmd}"
-						print_hr
-						ti_file_exe_global_cmd "${cmd}" "${cmd_dir}"
-					else
-						local cmd="${cmd_and_args[0]}"
-						local cmd_args=${cmd_and_args[@]:1}
-						echo ":: ${cmd} ${cmd_args}"
-						print_hr
-						ti_file_exe_global_cmd "${cmd}" "${cmd_dir}" "${cmd_args[@]}"
-					fi
-				done
-			else
-				ti_file_exe_global_cmd "${cmd}" "${cmd_dir}"
-			fi
-		else
-			ti_file_exe_global_cmd "${cmd}" "${cmd_dir}" "${cmd_args[@]}"
-		fi
-		return
-	fi
-
-	if [ -z "${ti_file}" ]; then
+	if [ -z "${ti_file}" ] && [ -z "${1+x}" ]; then
 		ti_file_cmd_default_help "${cmd_dir}" >&2
 		return 1
 	fi
 
-	if [ -z "${cmd}" ]; then
-		local cmd="status"
+	if [ ! -z "${ti_file}" ] && [ -z "${1+x}" ]; then
+		local cmds_and_args='status'
+	elif [ "${1}" == 'must' ] || [ "${1}" == 'repeat' ] || [ "${1}" == 'loop' ] || [ "${1}" == 'floop' ]; then
+		local cmd="${1}"
+		shift 1
+		if [ -z "${1}" ] || [ -z "${ti_file}" ]; then
+			echo "[?] TODO: put some help here"
+			return 1
+		fi
+		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
+			"${mods}" "${hosts}" "${indexes}" "${cache_dir}" "${@}"
+		return
+	else
+		local cmds_and_args=`unfold_cmd_chain "${@}"`
 	fi
 
-	if [ -z "${cmd_args+x}" ]; then
-		if [ ! -z "`echo ${cmd} | { grep ':' || test $? = 1; }`" ]; then
-			local cmds=`echo "${cmd}" | awk -F ':' '{for ( i=1; i<=NF; i++ ) print $i}'`
-			echo "${cmds}" | while read cmd; do
-				print_hhr
-				local cmd_and_args=(${cmd})
-				if [ "${#cmd_and_args[@]}" == '1' ]; then
-					echo ":: ${cmd}"
-					print_hr
-					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
-						"${mods}" "${hosts}" "${indexes}" "${cache_dir}"
-				else
-					local cmd="${cmd_and_args[0]}"
-					local cmd_args=${cmd_and_args[@]:1}
-					echo ":: ${cmd} ${cmd_args}"
-					print_hr
-					ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
-						"${mods}" "${hosts}" "${indexes}" "${cache_dir}" ${cmd_args[@]}
-				fi
-			done
-		else
-			ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
-				"${mods}" "${hosts}" "${indexes}" "${cache_dir}"
+	local cmds_cnt=`echo "${cmds_and_args}" | wc -l | awk '{print $1}'`
+
+	echo "${cmds_and_args}" | while read cmd_and_args; do
+		local cmd=`echo "${cmd_and_args}" | awk -F '\t' '{print $1}'`
+		local cmd_args=`echo "${cmd_and_args}" | awk -F '\t' '{print $2}'`
+
+		if [ "${cmds_cnt}" != 1 ]; then
+			print_hhr
+			if [ -z "${cmd_args}" ]; then
+				local cmd_display="${cmd}"
+			else
+				local cmd_display="${cmd} ${cmd_args}"
+			fi
+			echo ":: ${cmd_display}"
+			print_hr
 		fi
-	else
-		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
-			"${mods}" "${hosts}" "${indexes}" "${cache_dir}" "${cmd_args[@]}"
-	fi
+
+		if [ -z "${ti_file}" ]; then
+			eval "ti_file_exe_global_cmd \"${cmd}\" \"${cmd_dir}\" ${cmd_args}"
+		else
+			eval "ti_file_exe \"${cmd}\" \"${ti_file}\" \"${conf_templ_dir}\" \"${cmd_dir}\" \"${ti_args}\" \
+				\"${mods}\" \"${hosts}\" \"${indexes}\" \"${cache_dir}\" ${cmd_args}"
+		fi
+	done
 }
 export -f cmd_ti
