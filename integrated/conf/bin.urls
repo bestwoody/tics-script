@@ -3,9 +3,6 @@
 # https://github.com/disksing/pd/tree/placement - eecd15291aa326b3401af28c7a0592ef99f6cf09
 pd      d20b7ba9c08d011decbee565897a3c25        pd-server       http://139.219.11.38:8000/rdHnq/pd-server.tar.gz
 
-# https://github.com/overvenus/tikv/tree/rngine - 23e556168599f9c02472fd0b9781ef212a62297e
-rngine	ce1f71e100d11dcc50ae5a09f0db0fec	tikv-server-rngine	http://139.219.11.38:8000/bURhj/tikv-server-rngine.tar.gz
-
 # master - 799c719ee5ada710a292fb9edb2f9d8b96638597
 tiflash	b8c8d6eb07fe2c7a249e69be1d3e05d8	tiflash	http://139.219.11.38:8000/fNXRL/tiflash.tar.gz
 
@@ -28,4 +25,5 @@ chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https:/
 tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
 
 tidb    d8baa9a3fd51f339b1721a71bfb0baa5        tidb-server     http://139.219.11.38:8000/QXVXX/tidb-server.tar.gz          master  e9f19970d51164cff7f6da5976796e2e95c174e8
-tikv    162ba2080cd8a4d9949dd70ac2b17ad8        tikv-server     http://139.219.11.38:8000/DKMOw/tikv-server.tar.gz      mast    er  ce273530df2ecdf3c4092edef29dae57f2341e6c
+tikv    162ba2080cd8a4d9949dd70ac2b17ad8        tikv-server     http://139.219.11.38:8000/DKMOw/tikv-server.tar.gz      master  ce273530df2ecdf3c4092edef29dae57f2341e6c
+rngine	5947779eabe5aec88c87ec923bc7ee36	tikv-server-rngine	http://139.219.11.38:8000/10IoXt/tikv-server-rngine.tar.gz	rngine	80f4a74cc6172a8424069bd2300b7ac5d1fc17a4
