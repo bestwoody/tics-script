@@ -1,0 +1,57 @@
+#!/bin/bash
+function print_tikv_or_rngine_status()
+{
+	local ti="${1}"
+	local mod="${2}"
+	local cmd_hosts="${3}"
+	local ti_file="${4}"
+	local port_name="${5}"
+	local address_name="${6}"
+
+	local name=`from_mod_get_name "${mod}"`
+	local dir=`from_mod_get_dir "${mod}"`
+	local host=`from_mod_get_host "${mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" "${port_name}"`
+	if [ -z "${port}" ]; then
+		echo "[func print_tikv_or_rngine_status] getting port failed" >&2
+		return 1
+	fi
+	local status=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" "${ti_file}" "pd/ctl_raw" "store" | print_jpath "$.stores[?(@.store.${address_name}=='${host}:${port}')].store.state_name"`
+	if [ -z "${status}" ]; then
+		local status="Tomestone"
+	fi
+	echo "${host}:${port} ${name} ${status}"
+}
+
+function cmd_ti_status()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local tikv_mods=`from_mods_by_type "${mods}" 'tikv'`
+	local rngine_mods=`from_mods_by_type "${mods}" 'rngine'`
+	if [ -z "${tikv_mods}" ] && [ -z "${rngine_mods}" ]; then
+		echo '[cmd store/status] cannot find tikv or rngine mod' >&2
+		return 1
+	fi
+	local ti="${integrated}/ops/ti.sh"
+	if [ ! -z "${tikv_mods}" ]; then
+		echo "${tikv_mods}" | while read tikv_mod; do
+			print_tikv_or_rngine_status "${ti}" "${tikv_mod}" "${cmd_hosts}" "${ti_file}" "tikv_port" "address"
+		done
+	fi
+	if [ ! -z "${rngine_mods}" ]; then
+		echo "${rngine_mods}" | while read rngine_mod; do
+			print_tikv_or_rngine_status "${ti}" "${rngine_mod}" "${cmd_hosts}" "${ti_file}" "rngine_port" "peer_address"
+		done
+	fi
+}
+
+set -euo pipefail
+cmd_ti_status "${@}"

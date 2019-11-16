@@ -64,6 +64,17 @@ function cmd_ti_store_rm()
 		return 1
 	fi
 
+	for (( r = 0; 0 == 0; r++ )); do
+		local status=`"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' "${ti_file}" 'store/status' | awk '{print $3}'`
+		if [ "${status}" == "Tomestone" ]; then
+			break
+		fi
+		if [ $((${r} % 10)) = 0 ] && [ ${r} -ge 10 ]; then
+			echo "#${r} waiting for store ${store_addr} deleted"
+		fi
+		sleep 1
+	done
+
 	"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' "${ti_file}" 'burn'
 	"${ti}" -h "${cmd_hosts}" -i "${tiflash_index}" -m 'tiflash' "${ti_file}" 'burn'
 
