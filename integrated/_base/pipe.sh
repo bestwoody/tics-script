@@ -8,7 +8,6 @@ export -f uncolor
 
 function trim_host()
 {
-	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
-	python "${here}/trim_host.py"
+	python "${integrated}/_base/trim_host.py"
 }
 export -f trim_host

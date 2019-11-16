@@ -22,9 +22,15 @@ function cmd_ti_wait_table()
 
 	echo "=> wait for ${db}.${table} exists"
 
+	local index=`from_mods_random_mod "${mods}" 'tiflash'`
+	if [ -z "${index}" ]; then
+		echo "[cmd wait/table] no selected tiflash" >&2
+		return 1
+	fi
+
 	for ((; 0 == 0; )); do
 		local has_db=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-			"${ti_file}" 'ch' 'show databases' 2>/dev/null | grep "^${db}$"`
+			"${ti_file}" 'ch' 'show databases' 2>/dev/null | trim_host | grep "^${db}$"`
 		if [ ${?} == 0 ] && [ ! -z "${has_db}" ]; then
 			break
 		fi
@@ -34,7 +40,7 @@ function cmd_ti_wait_table()
 
 	for ((; 0 == 0; )); do
 		local has_db=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-			"${ti_file}" 'ch' 'show tables' "${db}"  2>/dev/null | grep "^${table}$"`
+			"${ti_file}" 'ch' 'show tables' "${db}"  2>/dev/null | trim_host | grep "^${table}$"`
 		if [ ${?} == 0 ] && [ ! -z "${has_db}" ]; then
 			break
 		fi
