@@ -16,6 +16,7 @@ function cmd_ti_global_ci_self()
 
 	"${ti}" new "${file}" 'delta=-4' "dir=${dir}" 'spark=1' 1>/dev/null
 
+	"${ti}" "${file}" ci/quotes
 	"${ti}" "${file}" must burn
 	"${ti}" "${file}" ci/self
 	"${ti}" "${file}" reset : restart
