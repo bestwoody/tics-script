@@ -10,10 +10,17 @@ def print_normal(compare_results):
     sorted_results = sorted(compare_results, key=lambda result: result["region_json"]["start_key"])
 
     tb = pt.PrettyTable()
-    tb.field_names = ["region_id", "in_pd", "in_ch", "key_range"]
+    tb.field_names = ["region_id", "in_pd", "in_ch", "start_key", "end_key"]
+    for field_name in tb.field_names:
+        tb.align[field_name] = "r"
+
     for i in range(0, len(sorted_results)):
         compare_result = sorted_results[i]
-        tb.add_row([compare_result["region_id"], compare_result["in_pd"], compare_result["in_ch"], compare_result["region_json"]["start_key"] + " ~ " + compare_result["region_json"]["end_key"]])
+        tb.add_row([compare_result["region_id"],
+                    int(compare_result["in_pd"] == True),
+                    int(compare_result["in_ch"] == True),
+                    compare_result["region_json"]["start_key"],
+                    compare_result["region_json"]["end_key"]])
     print(tb)
 
 def should_merge(left, right):
@@ -68,14 +75,19 @@ def print_pretty(compare_results):
     merged_results = merge(sorted_results)
 
     tb = pt.PrettyTable()
-    tb.field_names = ["region_range", "region_num", "in_pd", "in_ch", "key_range"]
+    tb.field_names = ["min_region", "max_region", "region_num", "in_pd", "in_ch", "start_key", "end_key"]
+    for field_name in tb.field_names:
+        tb.align[field_name] = "r"
+
     for i in range(0, len(merged_results)):
         merged_result = merged_results[i]
-        tb.add_row([str(merged_result["min_region_id"]) + " ~ " + str(merged_result["max_region_id"]),
+        tb.add_row([str(merged_result["min_region_id"]),
+                    str(merged_result["max_region_id"]),
                     len(merged_result["compare_results"]),
-                    merged_result["in_pd"],
-                    merged_result["in_ch"],
-                    merged_result["start_key"] + " ~ " + merged_result["end_key"]])
+                    int(merged_result["in_pd"] == True),
+                    int(merged_result["in_ch"]== True),
+                    merged_result["start_key"],
+                    merged_result["end_key"]])
     print(tb)
 
 def do_compare_table_regions(table_regions_all, table_regions_from_pd, table_regions_from_ch,
