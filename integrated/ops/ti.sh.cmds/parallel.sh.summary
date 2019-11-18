@@ -155,14 +155,18 @@ function cmd_ti_parallel()
 	done
 
 	local waiting_pids=(${waiting})
-	for pid in ${waiting_pids[@]}; do
-		wait ${pid}
-	done
+	if [ ! -z "${waiting_pids+x}" ]; then
+		for pid in ${waiting_pids[@]}; do
+			wait ${pid}
+		done
+	fi
 
 	local looping_pids=(${looping})
-	for pid in ${looping_pids[@]}; do
-		stop_pids_tree "${pid}" 'true' '10' 1>/dev/null 2>&1
-	done
+	if [ ! -z "${looping_pids+x}" ]; then
+		for pid in ${looping_pids[@]}; do
+			stop_pids_tree "${pid}" 'true' '10' 1>/dev/null 2>&1
+		done
+	fi
 
 	rm -f "${pids_file}"
 

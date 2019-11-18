@@ -90,19 +90,24 @@ function cmd_ti_verify_consistency()
 		return 1
 	fi
 
-	local min_ts=`echo "${min_tss}" | awk -F '.' '{print $1}'`
-	local max_ts=`echo "${max_tss}" | awk -F '.' '{print $1}'`
+	local min_ts="${min_tss:0:19}"
+	local max_ts="${max_tss:0:19}"
+
 	local min_ts=`to_ts "${min_ts}"`
 	if [ -z "${min_ts}" ]; then
-		echo "[cmd verify/consistency] time -> ts failed" >&2
+		echo "[cmd verify/consistency] min time -> ts failed" >&2
 		return 1
 	fi
 	local min_time="`from_ts ${min_ts}`"
 	if [ -z "${min_time}" ]; then
-		echo "[cmd verify/consistency] ts -> time failed" >&2
+		echo "[cmd verify/consistency] min ts -> time failed" >&2
 		return 1
 	fi
 	local max_ts=`to_ts "${max_ts}"`
+	if [ -z "${max_ts}" ]; then
+		echo "[cmd verify/consistency] max time -> ts failed" >&2
+		return 1
+	fi
 
 	local min_in_range=$((min_ts + 1))
 	if [ "${min_ts}" == "${max_ts}" ] || [ "${min_in_range}" == "${max_ts}" ]; then
@@ -115,6 +120,7 @@ function cmd_ti_verify_consistency()
 			"`from_ts ${max_ts}`" "${query}"
 	fi
 
+	# TODO: test more ranges
 	local mid_ts="${min_in_range}"
 	for (( m = 1; m < ${max_times}; m++)); do
 		local new_ts=$(( (max_ts - mid_ts) / 2 + mid_ts ))
