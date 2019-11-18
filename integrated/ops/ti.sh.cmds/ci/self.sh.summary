@@ -9,7 +9,7 @@ function cmd_ti_ci_self()
 	local ti="${integrated}/ops/ti.sh"
 
 	"${ti}" "${file}" stop : fstop : up : sleep 5
-	"${ti}" "${file}" kill/tiflash : kill/rngine : kill/tikv_ra : kill/storage
+	"${ti}" "${file}" kill/tiflash : kill/rngine : kill/tikv_raw : kill/storage
 	"${ti}" "${file}" up : sleep 5 : status : prop : du : log 1 : log 1 info
 	"${ti}" "${file}" pd/ctl_raw store : pd/ctl store : mysql/host : mysql/port
 	"${ti}" "${file}" byhost/do uptime : byhost/procs
