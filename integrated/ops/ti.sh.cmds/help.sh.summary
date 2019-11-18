@@ -7,8 +7,8 @@ auto_error_handle
 shift 6
 
 if [ -z "${1+x}" ]; then
-	ti_file_cmd_list "${here}"
+	ti_file_help_cmds "${here}"
 else
 	matching="${1}"
-	ti_file_cmd_list "${here}" "${1}"
+	ti_file_help_cmds "${here}" "${1}"
 fi

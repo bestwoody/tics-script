@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function ti_file_cmd_list()
+function _ti_file_cmd_list()
 {
 	local dir="${1}"
 
@@ -16,12 +16,25 @@ function ti_file_cmd_list()
 		local parent=''
 	fi
 
+	if [ ! -z "${4+x}" ] && [ ! -z "${4}" ]; then
+		local show_help="${4}"
+	else
+		if [ -z "${matching}" ] && [ -z "${parent}"  ]; then
+			local show_help="false"
+		else
+			local show_help='true'
+		fi
+	fi
+
 	ls "${dir}" | while read f; do
 		if [ "${f:0:1}" == '_' ] || [ "${f}" == 'help' ]; then
 			continue
 		fi
+		if [ -z "${parent}" ] && [ "${f}" == 'global' ]; then
+			continue
+		fi
 		if [ ! -z "${matching}" ]; then
-			local matched=`echo "${f}" | { grep "${matching}" || test $? = 1; }`
+			local matched=`echo "${parent}${f}" | { grep "${matching%/*}" || test $? = 1; }`
 			if [ -z "${matched}" ]; then
 				continue
 			fi
@@ -51,32 +64,47 @@ function ti_file_cmd_list()
 			fi
 
 			echo "${parent}${name}"
-			cat "${dir}/${f}" | awk '{print "    "$0}'
-			if [ ! -z "${cmd_type}" ]; then
-				echo "    ${cmd_type}"
+			if [ "${show_help}" == 'true' ]; then
+				cat "${dir}/${f}" | awk '{print "    "$0}'
+				if [ ! -z "${cmd_type}" ]; then
+					echo "    ${cmd_type}"
+				fi
 			fi
 			continue
 		fi
 		if [ -d "${dir}/${f}" ] && [ "${f}" != 'byhost' ]; then
-			echo "${f}/*"
-			if [ -f "${dir}/${f}/help" ]; then
+			if [ "${show_help}" == 'true' ] && [ -f "${dir}/${f}/help" ]; then
+				echo "${f}/*"
 				cat "${dir}/${f}/help" | awk '{print "    "$0}'
 			fi
+			_ti_file_cmd_list "${dir}/${f}" "${string#*chars}" "${parent}${f}" "${show_help}"
 		fi
 	done
 }
-export -f ti_file_cmd_list
+export -f _ti_file_cmd_list
+
+function ti_file_help_cmds()
+{
+	local dir="${1}"
+	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
+		local matching="${2}"
+	else
+		local matching=''
+	fi
+	_ti_file_cmd_list "${dir}" "${matching}" ''
+}
+export -f ti_file_help_cmds
 
 function ti_file_cmd_default_help()
 {
-	echo "ti.sh help [matching-string]"
-	echo "    - list global cmds"
-	echo "ti.sh [flags] my.ti help [matching-string]"
+	echo "ti.sh example"
+	echo "    - shows a simple example about how to use this tool"
+	echo "ti.sh help [matching_string]"
+	echo "    - list global cmds and their helps"
+	echo "ti.sh [flags] my.ti cmds [matching_string]"
 	echo "    - list the cmds can be used on the cluster defined by my.ti"
 	echo "ti.sh flags"
 	echo "    - detail usage of flags"
-	echo "ti.sh example"
-	echo "    - shows a simple example about how to use this tool"
 }
 export -f ti_file_cmd_default_help
 
@@ -137,10 +165,10 @@ function ti_file_exe_global_cmd()
 
 	if [ "${cmd}" == 'help' ]; then
 		if [ -z "${1+x}" ]; then
-			ti_file_cmd_list "${cmd_dir}/global"
+			ti_file_help_cmds "${cmd_dir}/global"
 		else
 			local cmd_args=("${@}")
-			ti_file_cmd_list "${cmd_dir}/global" "${cmd_args[@]}"
+			ti_file_help_cmds "${cmd_dir}/global" "${cmd_args[@]}"
 		fi
 		return
 	fi
