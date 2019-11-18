@@ -16,7 +16,8 @@ function cmd_ti_ci_cluster()
 	"${ti}" "${file}" tpch/ch all tpch_0_01 : tpch/db : ch/compaction tpch_0_01 lineitem
 
 	"${ti}" "${file}" verify/rows tpch_0_01.lineitem : tpch/rows
-	"${ti}" "${file}" verify/regions tpch_0_01 lineitem : verify/consistency tpch_0_01.lineitem
+	"${ti}" "${file}" verify/regions tpch_0_01 lineitem false : verify/consistency tpch_0_01.lineitem
+	"${ti}" "${file}" verify/regions tpch_0_01 lineitem true : verify/consistency tpch_0_01.lineitem
 
 	"${ti}" "${file}" syncing/test : sleep 3 : syncing/show : ch/queries
 

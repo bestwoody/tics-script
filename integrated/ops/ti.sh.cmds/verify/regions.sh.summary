@@ -1,33 +1,8 @@
 #!/bin/bash
 
-function compare_regions()
+function print_help()
 {
-    local regions_from_pd="${1}"
-    local regions_from_ch="${2}"
-
-    local regions=`echo -e "${regions_from_pd}\n${regions_from_ch}" | sort -u -n`
-
-    echo -e "region\tin_pd\tin_ch"
-    for region in ${regions}
-    do
-        local in_pd=false
-        local in_ch=false
-        for region_from_pd in ${regions_from_pd}
-        do
-            if [ "$region" = "$region_from_pd" ];then
-            in_pd=true
-        fi
-    done
-
-    for region_from_ch in ${regions_from_ch}
-    do
-        if [ "$region" = "$region_from_ch" ];then
-        in_ch=true
-        fi
-    done
-
-    echo -e "${region}\t${in_pd}\t${in_ch}"
-    done
+    echo "[cmd verify/regions] usage: <cmd> database table [pretty=true]" >&2
 }
 
 function cmd_ti_verify_regions()
@@ -42,17 +17,21 @@ function cmd_ti_verify_regions()
 
     local db="${1}"
     local table="${2}"
+    local pretty="${3}"
 
     source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
     auto_error_handle
 
     if [ -z "${db}" ]; then
-        echo "[cmd verify/regions] usage: <cmd> database table" >&2
+        print_help
         return 1
     fi
     if [ -z "${table}" ]; then
-        echo "[cmd verify/regions] usage: <cmd> database table" >&2
+        print_help
         return 1
+    fi
+    if [ -z "${pretty}" ]; then
+        pretty="true"
     fi
 
     local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
@@ -66,20 +45,29 @@ function cmd_ti_verify_regions()
 
     local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
 
-    # Get region info from TiDB
+    # get gable region info from tidb
     local regions_pd_str=`curl --silent "http://${tidb_host}:${tidb_status_port}/tables/${db}/${table}/regions"`
+    local error=`echo ${regions_pd_str} | grep "doesn't exist"`
+    if [[ "${error}" != "" ]]; then
+        echo "${regions_pd_str}"
+        exit 1
+    fi
 
-    # Get Table ID
-    local table_id="`python "${here}/parse_table_id.py" "${regions_pd_str}"`"
+    # parse table id
+    local table_id="`echo "${regions_pd_str}" | python "${here}/parse_table_id.py"`"
 
-    # Get Region from PD
-    local table_regions_from_pd="`python "${here}/parse_table_regions.py" "${regions_pd_str}" | sort -n`"
+    # parse table region from pd
+    local table_regions_from_pd="`echo "${regions_pd_str}" | python "${here}/parse_table_regions.py" | sort -n`"
 
-    # Get Region from CH
+    # get table region from ch
     local table_regions_from_ch=`"${integrated}/ops/ti.sh" "${ti_file}" ch "DBGInvoke dump_all_region($table_id, true)" | grep "\[region" | cut -f 2 -d " " | sed 's/.$//' | sort -n`
 
-    # Compare Regions from PD & Regions from CH
-    compare_regions "${table_regions_from_pd}" "${table_regions_from_ch}"
+    # get all region Info from pd
+    local all_regions_from_pd=`"${integrated}/ops/ti.sh" "${ti_file}" pd/ctl_raw region`
+
+    # compare regions from pd & regions from ch
+    local table_regions_all=`echo -e "${table_regions_from_pd}\n${table_regions_from_ch}" | sort -u -n`
+    echo "${table_regions_all}" "****" "${table_regions_from_pd}" "****" "${table_regions_from_ch}" "****" "${all_regions_from_pd}" | python "${here}/compare_table_regions.py" "${pretty}" "****"
 }
 
 cmd_ti_verify_regions "${@}"

@@ -17,10 +17,12 @@ def parse_table_regions(regions_str):
     return table_regions
 
 if __name__ == '__main__':
-    if len(sys.argv) < 1:
-        error('usage: <bin> regions_pd_str')
-
-    regions_pd_str = sys.argv[1]
+    regions_pd_str = ""
+    for line in sys.stdin.readlines():
+        if not line:
+            break
+        else:
+            regions_pd_str = regions_pd_str + line
 
     table_regions = parse_table_regions(regions_pd_str)
     for table_region in table_regions:

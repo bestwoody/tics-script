@@ -14,10 +14,12 @@ def parse_table_id(regions_str):
     return result["id"]
 
 if __name__ == '__main__':
-    if len(sys.argv) < 1:
-        error('usage: <bin> regions_pd_str')
-
-    regions_pd_str = sys.argv[1]
+    regions_pd_str = ""
+    for line in sys.stdin.readlines():
+        if not line:
+            break
+        else:
+            regions_pd_str = regions_pd_str + line
 
     table_id = parse_table_id(regions_pd_str)
     print table_id
