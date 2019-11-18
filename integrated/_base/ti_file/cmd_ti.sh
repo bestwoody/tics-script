@@ -255,9 +255,7 @@ function cmd_ti()
 		return 1
 	fi
 
-	if [ ! -z "${ti_file}" ] && [ -z "${1+x}" ]; then
-		local cmds_and_args='status'
-	elif [ "${1}" == 'parallel' ] || [ "${1}" == 'must' ] || [ "${1}" == 'repeat' ] || [ "${1}" == 'loop' ] || [ "${1}" == 'floop' ]; then
+	if [ "${1}" == 'parallel' ] || [ "${1}" == 'must' ] || [ "${1}" == 'repeat' ] || [ "${1}" == 'loop' ] || [ "${1}" == 'floop' ]; then
 		local cmd="${1}"
 		shift 1
 		if [ -z "${1}" ] || [ -z "${ti_file}" ]; then
@@ -267,8 +265,32 @@ function cmd_ti()
 		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
 			"${mods}" "${hosts}" "${indexes}" "${cache_dir}" "${@}"
 		return
-	else
-		local cmds_and_args=`unfold_cmd_chain "${@}"`
+	fi
+
+	local cmds_and_args=`unfold_cmd_chain "${@}"`
+	if [ -z "${cmds_and_args}" ]; then
+		if [ -z "${1+x}" ]; then
+			local cmd='status'
+		else
+			local cmd="${1}"
+			shift 1
+		fi
+		if [ -z "${ti_file}" ]; then
+			if [ ! -z "${1+x}" ]; then
+				ti_file_exe_global_cmd "${cmd}" "${cmd_dir}" "${@}"
+			else
+				ti_file_exe_global_cmd "${cmd}" "${cmd_dir}"
+			fi
+		else
+			if [ ! -z "${1+x}" ]; then
+				ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
+					"${mods}" "${hosts}" "${indexes}" "${cache_dir}" "${@}"
+			else
+				ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
+					"${mods}" "${hosts}" "${indexes}" "${cache_dir}"
+			fi
+		fi
+		return
 	fi
 
 	local cmds_cnt=`echo "${cmds_and_args}" | wc -l | awk '{print $1}'`

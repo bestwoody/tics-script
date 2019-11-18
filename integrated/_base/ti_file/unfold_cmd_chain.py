@@ -30,6 +30,8 @@ def unfold(sep):
     return total
 
 def render(total):
+    if len(total) <= 1:
+        return
     for cmd_args in total:
         cmd = cmd_args[0]
         assert cmd[0] == '"', cmd
