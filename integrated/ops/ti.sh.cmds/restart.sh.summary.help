@@ -1,2 +1,0 @@
-alias of 'stop:run', use fstop if fast=true
-usage: <cmd> [fast=true]

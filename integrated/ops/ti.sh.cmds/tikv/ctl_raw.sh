@@ -15,7 +15,7 @@ function cmd_ti_tikv_ctl()
 		return
 	fi
 
-	local help='[cmd tikv/ctl] usage: <cmd> online(true|false) command'
+	local help='[cmd tikv/ctl_raw] usage: <cmd> online(true|false) command'
 	if [ -z "${6+x}" ] || [ -z "${7+x}" ]; then
 		echo "${help}" >&2
 		return 1

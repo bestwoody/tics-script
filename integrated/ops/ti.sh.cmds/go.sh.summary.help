@@ -1,6 +1,0 @@
-execute many commands in the same time
-each command could be seperated by '**', the left side only execute once, the right side will run repeatly
-eg: ti.sh my.ti go 'burn:up' 'sleep 2 ** verify/consistency'
-    1st command: (start) -> burn -> up -> (end)
-    2nd command: (start) -> sleep 2 -> loop: verify/consistency -> (until 1st finished or something go wrong)
-usage: ti.sh [flags] ti_file_path go cmd1 cmd2 ..
