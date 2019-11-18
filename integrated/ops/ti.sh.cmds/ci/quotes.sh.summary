@@ -28,19 +28,19 @@ function cmd_ti_ci_quotes()
 	#local res=`"${ti}" -m pd "${file}" "echo 'a b' : echo \"c d\"" | _get_echo_result`
 	#assert_eq "${res}" "[ 'a b' ]N[ 'c d' ]N"
 
-	local res=`"${ti}" -m pd "${file}" 'echo a b' | _get_echo_result`
-	assert_eq "${res}" "[ 'a' 'b' ]N"
-	local res=`"${ti}" -m pd "${file}" 'echo "a b"' | _get_echo_result`
-	assert_eq "${res}" "[ 'a b' ]N"
-	local res=`"${ti}" -m pd "${file}" 'echo '\''a b'\' | _get_echo_result`
-	assert_eq "${res}" "[ 'a b' ]N"
+	#local res=`"${ti}" -m pd "${file}" 'echo a b' | _get_echo_result`
+	#assert_eq "${res}" "[ 'a' 'b' ]N"
+	#local res=`"${ti}" -m pd "${file}" 'echo "a b"' | _get_echo_result`
+	#assert_eq "${res}" "[ 'a b' ]N"
+	#local res=`"${ti}" -m pd "${file}" 'echo '\''a b'\' | _get_echo_result`
+	#assert_eq "${res}" "[ 'a b' ]N"
 
-	local res=`"${ti}" -m pd "${file}" "echo a b" | _get_echo_result`
-	assert_eq "${res}" "[ 'a' 'b' ]N"
-	local res=`"${ti}" -m pd "${file}" "echo 'a b'" | _get_echo_result`
-	assert_eq "${res}" "[ 'a b' ]N"
-	local res=`"${ti}" -m pd "${file}" "echo \"a b\"" | _get_echo_result`
-	assert_eq "${res}" "[ 'a b' ]N"
+	#local res=`"${ti}" -m pd "${file}" "echo a b" | _get_echo_result`
+	#assert_eq "${res}" "[ 'a' 'b' ]N"
+	#local res=`"${ti}" -m pd "${file}" "echo 'a b'" | _get_echo_result`
+	#assert_eq "${res}" "[ 'a b' ]N"
+	#local res=`"${ti}" -m pd "${file}" "echo \"a b\"" | _get_echo_result`
+	#assert_eq "${res}" "[ 'a b' ]N"
 
 	local res=`"${ti}" -m pd "${file}" echo a b | _get_echo_result`
 	assert_eq "${res}" "[ 'a' 'b' ]N"
