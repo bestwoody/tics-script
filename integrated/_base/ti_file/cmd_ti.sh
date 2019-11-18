@@ -77,7 +77,7 @@ function _ti_file_cmd_list()
 				echo "${f}/*"
 				cat "${dir}/${f}/help" | awk '{print "    "$0}'
 			fi
-			_ti_file_cmd_list "${dir}/${f}" "${string#*chars}" "${parent}${f}" "${show_help}"
+			_ti_file_cmd_list "${dir}/${f}" "${matching#*/}" "${parent}${f}" "${show_help}"
 		fi
 	done
 }
