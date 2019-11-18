@@ -7,14 +7,14 @@ function cmd_ti_ci_release()
 	shift 6
 	local ti="${integrated}/ops/ti.sh"
 
-	"${ti}" "${file}" repeat 20 store/rm : up
+	"${ti}" "${file}" repeat 20 store/rm : up : sleep 5
 
-	"${ti}" "${file}" repeat 20 tpch/load 0.001 all : sleep 5 : tpch/ch:tpch/tikv
+	"${ti}" "${file}" repeat 20 tpch/load 0.001 all : sleep 5 : tpch/ch : tpch/tikv
 
-	"${ti}" "${file}" repeat 20 kill/storage : up : sleep 5 : tpch/ch:tpch/tikv
+	"${ti}" "${file}" repeat 20 kill/storage : up : sleep 5 : tpch/ch : tpch/tikv
 
 	# TODO: recover time is unstable
-	#"${ti}" "${file}" repeat 20 'kill/random:kill/random:up'
+	#"${ti}" "${file}" repeat 20 kill/random : kill/random : up
 }
 
 set -euo pipefail
