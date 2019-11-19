@@ -7,7 +7,7 @@ pd      d20b7ba9c08d011decbee565897a3c25        pd-server       http://139.219.1
 tiflash	b8c8d6eb07fe2c7a249e69be1d3e05d8	tiflash	http://139.219.11.38:8000/fNXRL/tiflash.tar.gz
 
 # https://github.com/pingcap/tiflash/pull/867
-cluster_manager	26525b1954fb1a9f5a544f3fd07018c6	flash_cluster_manager	http://139.219.11.38:8000/pcUQC/flash_cluster_manager.tar.gz
+cluster_manager	966e5d77831a75559ad91e391cfb8835	flash_cluster_manager	http://139.219.11.38:8000/UlyFr/flash_cluster_manager.tar.gz
 
 # master - 6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 chspark	f983c70d2a09880df5fbd4d61e6bb0dc	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/rZiST/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz	
