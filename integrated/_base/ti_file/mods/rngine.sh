@@ -108,7 +108,6 @@ function rngine_run()
 	echo "	--pd \"${pd_addr}\" \\" >> "${rngine_dir}/run.sh"
 	echo "	--data-dir \"${rngine_dir}/data\" \\" >> "${rngine_dir}/run.sh"
 	echo "	--config \"${rngine_dir}/rngine.toml\" \\" >> "${rngine_dir}/run.sh"
-	echo "	--log-level info \\" >> "${rngine_dir}/run.sh"
 	echo "	--log-file \"${rngine_dir}/rngine.log\" \\" >> "${rngine_dir}/run.sh"
 	echo "	2>> \"${rngine_dir}/rngine_stderr.log\" 1>&2 &" >> "${rngine_dir}/run.sh"
 

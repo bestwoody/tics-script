@@ -94,7 +94,6 @@ function tikv_run()
 	echo "	--advertise-addr \"${advertise_host}:${tikv_port}\" \\" >> "${tikv_dir}/run.sh"
 	echo "	--pd \"${pd_addr}\" \\" >> "${tikv_dir}/run.sh"
 	echo "	--data-dir \"${tikv_dir}/data\" \\" >> "${tikv_dir}/run.sh"
-	echo "	--log-level info \\" >> "${tikv_dir}/run.sh"
 	echo "	--config \"${tikv_dir}/tikv.toml\" \\" >> "${tikv_dir}/run.sh"
 	echo "	--log-file \"${tikv_dir}/tikv.log\" \\" >> "${tikv_dir}/run.sh"
 	echo "	2>> \"${tikv_dir}/tikv_stderr.log\" 1>&2 &" >> "${tikv_dir}/run.sh"

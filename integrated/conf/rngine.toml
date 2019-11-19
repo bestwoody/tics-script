@@ -5,6 +5,7 @@
 #   Time(based on ms): ms, s, m, h
 #    e.g.: 78_000 = "1.3m"
 
+log-level = "info"
 
 [readpool.storage]
 
