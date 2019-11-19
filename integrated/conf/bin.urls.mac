@@ -10,7 +10,6 @@ tikv	f6130a6d88636b436735e998f85694ef	tikv-server	http://139.219.11.38:8000/Fgqt
 pd	d1388387554eb9eb0bfd280e8ecfd011	pd-server	http://139.219.11.38:8000/u0r3q/pd-server.tar.gz
 
 # https://github.com/overvenus/tikv/tree/rngine - 23e556168599f9c02472fd0b9781ef212a62297e
-rngine	364b62434aefe4d21304fb49a88c02a7	tikv-server-rngine http://139.219.11.38:8000/11145q/tikv-server-rngine.tar.gz
 
 # master - 799c719ee5ada710a292fb9edb2f9d8b96638597
 tiflash	42fca29a51f4f75d935e35ea3ca73e97	tiflash	http://139.219.11.38:8000/kxqDS/tiflash.tar.gz
@@ -33,3 +32,4 @@ chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https:/
 
 # TODO: fake lib file, remove it later
 tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
+rngine	8cc5febacc6cc9e2b9970877bed33239	tikv-server-rngine	http://139.219.11.38:8000/14TWVN/tikv-server-rngine.tar.gz	rngine	80f4a74cc6172a8424069bd2300b7ac5d1fc17a4
