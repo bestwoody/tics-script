@@ -60,10 +60,10 @@ function cmd_ti_verify_regions()
     local table_regions_from_pd="`echo "${regions_pd_str}" | python "${here}/parse_table_regions.py" | sort -n`"
 
     # get table region from ch
-    local table_regions_from_ch=`"${integrated}/ops/ti.sh" "${ti_file}" ch "DBGInvoke dump_all_region($table_id, true)" | grep "\[region" | cut -f 2 -d " " | sed 's/.$//' | sort -n`
+    local table_regions_from_ch=`"${integrated}/ops/ti.sh" "${ti_file}" ch "DBGInvoke dump_all_region($table_id, true)" | trim_host | grep "\[region" | cut -f 2 -d " " | sed 's/.$//' | sort -n`
 
     # get all region Info from pd
-    local all_regions_from_pd=`"${integrated}/ops/ti.sh" "${ti_file}" pd/ctl_raw region`
+    local all_regions_from_pd=`"${integrated}/ops/ti.sh" "${ti_file}" pd/ctl_raw region | trim_host`
 
     # compare regions from pd & regions from ch
     local table_regions_all=`echo -e "${table_regions_from_pd}\n${table_regions_from_ch}" | sort -u -n`
