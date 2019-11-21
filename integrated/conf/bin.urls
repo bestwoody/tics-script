@@ -3,9 +3,6 @@
 # https://github.com/disksing/pd/tree/placement - eecd15291aa326b3401af28c7a0592ef99f6cf09
 pd      d20b7ba9c08d011decbee565897a3c25        pd-server       http://139.219.11.38:8000/rdHnq/pd-server.tar.gz
 
-# master - 799c719ee5ada710a292fb9edb2f9d8b96638597
-tiflash	b8c8d6eb07fe2c7a249e69be1d3e05d8	tiflash	http://139.219.11.38:8000/fNXRL/tiflash.tar.gz
-
 # https://github.com/pingcap/tiflash/pull/867
 cluster_manager	966e5d77831a75559ad91e391cfb8835	flash_cluster_manager	http://139.219.11.38:8000/UlyFr/flash_cluster_manager.tar.gz
 
@@ -26,4 +23,5 @@ tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.3
 
 tidb    d8baa9a3fd51f339b1721a71bfb0baa5        tidb-server     http://139.219.11.38:8000/QXVXX/tidb-server.tar.gz          master  e9f19970d51164cff7f6da5976796e2e95c174e8
 tikv    162ba2080cd8a4d9949dd70ac2b17ad8        tikv-server     http://139.219.11.38:8000/DKMOw/tikv-server.tar.gz      master  ce273530df2ecdf3c4092edef29dae57f2341e6c
+tiflash	76c3392b34bcbd3a6465dd76ccfee7fc	tiflash	http://139.219.11.38:8000/VfuUH/tiflash.tar.gz	master	43c97b01f85e306ef898c870f88c562c309ffdfd
 rngine	32bbcc52f89f4eff881d4da9b0f63864	tikv-server-rngine	http://139.219.11.38:8000/BK8vA/tikv-server-rngine.tar.gz	rngine	4e4bbc0487f724e8c1c5d2932d191e62bb9d1991
