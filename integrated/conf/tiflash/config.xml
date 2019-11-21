@@ -38,6 +38,7 @@
             <update_rule_interval>5</update_rule_interval>
         </flash_cluster>
         <tidb_status_addr>{tiflash_tidb_addr}</tidb_status_addr>
+        <overlap_threshold>0.6</overlap_threshold>
     </flash>
 
     <!-- Don't exit if ipv6 or ipv4 unavailable, but listen_host with this protocol specified -->
