@@ -255,19 +255,26 @@ function cmd_ti()
 		return 1
 	fi
 
-	if [ "${1}" == 'parallel' ] || [ "${1}" == 'must' ] || [ "${1}" == 'repeat' ] || [ "${1}" == 'loop' ] || [ "${1}" == 'floop' ]; then
-		local cmd="${1}"
-		shift 1
-		if [ -z "${1}" ] || [ -z "${ti_file}" ]; then
-			echo "[?] TODO: put some help here"
-			return 1
+	if [ ! -z "${1+x}" ]; then
+		if [ "${1}" == 'parallel' ] || [ "${1}" == 'must' ] || [ "${1}" == 'repeat' ] || [ "${1}" == 'loop' ] || [ "${1}" == 'floop' ]; then
+			local cmd="${1}"
+			shift 1
+			if [ -z "${1}" ] || [ -z "${ti_file}" ]; then
+				echo "[?] TODO: put some help here"
+				return 1
+			fi
+			ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
+				"${mods}" "${hosts}" "${indexes}" "${cache_dir}" "${@}"
+			return
 		fi
-		ti_file_exe "${cmd}" "${ti_file}" "${conf_templ_dir}" "${cmd_dir}" "${ti_args}" \
-			"${mods}" "${hosts}" "${indexes}" "${cache_dir}" "${@}"
-		return
 	fi
 
-	local cmds_and_args=`unfold_cmd_chain "${@}"`
+	if [ ! -z "${1+x}" ]; then
+		local cmds_and_args=`unfold_cmd_chain "${@}"`
+	else
+		local cmds_and_args=''
+	fi
+
 	if [ -z "${cmds_and_args}" ]; then
 		if [ -z "${1+x}" ]; then
 			local cmd='status'
