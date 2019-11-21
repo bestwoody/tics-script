@@ -18,6 +18,7 @@ function verify_consistency()
 	local learner_line=`echo "${learner_res}" | tail -n 1`
 	if [ "${tikv_res}" == "${learner_res}" ]; then
 		if [ ! -z "`echo ${tikv_line} | { grep 'older than GC safe point' || test $? == 1; }`" ]; then
+			echo "${ts} snapshot: has been GCed, ignored"
 			return
 		fi
 		echo "${ts} snapshot: OK"
@@ -69,9 +70,23 @@ function cmd_ti_verify_consistency()
 	local min_max_tso=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m "${cmd_mod_names}" \
 		-i '0' "${ti_file}" 'ch' \
 		"selraw min(_INTERNAL_VERSION), max(_INTERNAL_VERSION) from ${table}" \
-		'default' 'tab' 'false' | trim_host`
+		'default' 'tab' 'false' 2>&1 | trim_host`
 	if [ -z "${min_max_tso}" ]; then
 		echo "[cmd verify/consistency] getting min-max ts failed" >&2
+		return 1
+	fi
+
+	# Ignore region splitting error: https://internal.pingcap.net/jira/browse/FLASH-686
+	# TODO: create a better ErrorCode from TiFlash
+	local has_region_error=`echo "${min_max_tso}" | grep 'Code: 100. DB::Exception: Unknown packet 101'`
+	if [ ! -z "${has_region_error}" ]; then
+		echo "[cmd verify/consistency] regions maybe spliting, ignored" >&2
+		return
+	fi
+
+	local has_error=`echo "${min_max_tso}" | grep 'Exception: '`
+	if [ ! -z "${has_error}" ]; then
+		echo "[cmd verify/consistency] getting min-max ts failed: ${has_error}" >&2
 		return 1
 	fi
 
