@@ -26,4 +26,4 @@ tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.3
 
 tidb    d8baa9a3fd51f339b1721a71bfb0baa5        tidb-server     http://139.219.11.38:8000/QXVXX/tidb-server.tar.gz          master  e9f19970d51164cff7f6da5976796e2e95c174e8
 tikv    162ba2080cd8a4d9949dd70ac2b17ad8        tikv-server     http://139.219.11.38:8000/DKMOw/tikv-server.tar.gz      master  ce273530df2ecdf3c4092edef29dae57f2341e6c
-rngine	5947779eabe5aec88c87ec923bc7ee36	tikv-server-rngine	http://139.219.11.38:8000/10IoXt/tikv-server-rngine.tar.gz	rngine	80f4a74cc6172a8424069bd2300b7ac5d1fc17a4
+rngine	32bbcc52f89f4eff881d4da9b0f63864	tikv-server-rngine	http://139.219.11.38:8000/BK8vA/tikv-server-rngine.tar.gz	rngine	4e4bbc0487f724e8c1c5d2932d191e62bb9d1991
