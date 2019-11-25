@@ -1,27 +1,10 @@
 # name \t md5sum \t bin_name \t url
 
-# https://github.com/crazycs520/tidb/tree/avoid-schema_change - a2ce730aad39a4f60b4265284add4e5c60e146ae
-tidb	877730bb78987d46d18e244f203322df	tidb-server	http://139.219.11.38:8000/nFht7/tidb-server.tar.gz
+pd	d1388387554eb9eb0bfd280e8ecfd011	pd-server	http://139.219.11.38:8000/u0r3q/pd-server.tar.gz	placement	eecd15291aa326b3401af28c7a0592ef99f6cf09
 
-# master - a8f1ba28d8c0a9fcc6f80c593175bc30ec1cf9b2
-tikv	f6130a6d88636b436735e998f85694ef	tikv-server	http://139.219.11.38:8000/FgqtW/tikv-server.tar.gz
+chspark	689954d70cd1e7d385f639518dcc0c77	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/btq5X/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz	master	6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 
-# https://github.com/disksing/pd/tree/placement - eecd15291aa326b3401af28c7a0592ef99f6cf09
-pd	d1388387554eb9eb0bfd280e8ecfd011	pd-server	http://139.219.11.38:8000/u0r3q/pd-server.tar.gz
-
-# https://github.com/overvenus/tikv/tree/rngine - 23e556168599f9c02472fd0b9781ef212a62297e
-
-# master - 799c719ee5ada710a292fb9edb2f9d8b96638597
-tiflash	42fca29a51f4f75d935e35ea3ca73e97	tiflash	http://139.219.11.38:8000/kxqDS/tiflash.tar.gz
-
-# https://github.com/pingcap/tiflash/pull/867
-cluster_manager	f99d8064d7e7b7bc8b419e9b05c7f1c1	flash_cluster_manager	http://139.219.11.38:8000/GY1qe/flash_cluster_manager.tar.gz
-
-# master - 6f9e46e073aa5e2d8beead0d80063fb02a84e73b
-chspark	689954d70cd1e7d385f639518dcc0c77	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/btq5X/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
-
-# master - 700b50b1d8ebe3225a2937150cd2b27ad2765a8f
-tispark	0fd410ad1cc83edd0d3b86fa70f7c3b3	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/OqxAg/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz
+tispark	0fd410ad1cc83edd0d3b86fa70f7c3b3	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/OqxAg/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	700b50b1d8ebe3225a2937150cd2b27ad2765a8f
 
 pd_ctl	2dbb87e4bbea4a68409cfb8debabbbfc	pd-ctl	http://139.219.11.38:8000/VKwpv/pd-ctl.tar.gz
 tikv_ctl	f858021402608024367ea6fd5054e5d7	tikv-ctl	http://139.219.11.38:8000/47bkL/tikv-ctl.tar.gz
@@ -33,3 +16,7 @@ chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https:/
 # TODO: fake lib file, remove it later
 tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
 rngine	8cc5febacc6cc9e2b9970877bed33239	tikv-server-rngine	http://139.219.11.38:8000/14TWVN/tikv-server-rngine.tar.gz	rngine	80f4a74cc6172a8424069bd2300b7ac5d1fc17a4
+cluster_manager	8c3df1b14fe4891659512a233b5095e0	flash_cluster_manager	http://139.219.11.38:8000/9Yyvr/flash_cluster_manager.tar.gz	FLASH-403	003714b10541994b1a9cf767908e493035981c3f
+tikv	9ac13c855c86212e7b1b92287c1e6dfc	tikv-server	http://139.219.11.38:8000/2SH97/tikv-server.tar.gz	master	d426d9c876d8e1f83b7b3b046029666451de4353
+tidb	55bead2a9ec159ad0c8fcce72a2364ba	tidb-server	http://139.219.11.38:8000/Djaap/tidb-server.tar.gz	master	e4d199d93a9db4565752220f76c6a921e393e328
+tiflash	8e07c47844aeb16a6c51d16382967f31	tiflash	http://139.219.11.38:8000/yTTFh/tiflash.tar.gz	master	43c97b01f85e306ef898c870f88c562c309ffdfd

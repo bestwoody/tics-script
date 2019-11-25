@@ -48,14 +48,15 @@ function _build_and_update_mod()
 				git reset --hard "${commit}"
 			fi
 			cd "${here}"
+			local commit_hash=`git log | head -n 1 | awk '{print $2}'`
 		else
 			git checkout "${branch}"
 			git pull
 			if [ ! -z "${commit}" ]; then
 				git reset --hard "${commit}"
 			fi
+			local commit_hash=`git log | head -n 1 | awk '{print $2}'`
 		fi
-		local commit_hash=`git log | head -n 1 | awk '{print $2}'`
 		local binary_file_path="${repo_path}/${binary_rel_path}"
 		local binary_file_name=`basename "${binary_file_path}"`
 		rm -f "${binary_file_path}"
