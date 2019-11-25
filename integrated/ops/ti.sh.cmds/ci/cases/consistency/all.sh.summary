@@ -1,0 +1,20 @@
+#!/bin/bash
+
+function cmd_ti_cases_consistency()
+{
+	local file="${1}"
+	local args="${2}"
+	shift 6
+
+	local scale='0.1'
+	if [ ! -z "${1+x}" ]; then
+		local scale="${1}"
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+
+	"${ti}" -k "${args}" "${file}" ci/cases/consistency/loading "${scale}"
+}
+
+set -euo pipefail
+cmd_ti_cases_consistency "${@}"

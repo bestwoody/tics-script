@@ -164,3 +164,47 @@ function esc_args()
 	fi
 }
 export -f esc_args
+
+function _range_points()
+{
+	local min="${1}"
+	local max="${2}"
+	local times="${3}"
+	local times=$(( times + 1 ))
+
+	echo "${min}"
+	if [ "${min}" -ne "${max}" ]; then
+		echo "${max}"
+	fi
+
+	local mid=$(( (max - min) / 2 + min ))
+	if [ "${mid}" == "${min}" ] || [ "${mid}" == "${max}" ]; then
+		return
+	fi
+
+	if [ "${times}" -gt 2 ]; then
+		local times=$(( times / 2 ))
+		if [ "${mid}" != "${min}" ]; then
+			_range_points "${min}" "${mid}" "${times}"
+		fi
+		if [ "${mid}" != "${max}" ]; then
+			_range_points "${mid}" "${max}" "${times}"
+		fi
+	fi
+}
+export -f _range_points
+
+function range_points()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func range_points] usage: <func> min max rough_times" >&2
+		return 1
+	fi
+
+	local min="${1}"
+	local max="${2}"
+	local times="${3}"
+
+	_range_points "${min}" "${max}" "${times}" | sort -n | uniq
+}
+export -f range_points

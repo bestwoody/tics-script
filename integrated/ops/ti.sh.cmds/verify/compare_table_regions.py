@@ -17,10 +17,10 @@ def print_normal(compare_results):
     for i in range(0, len(sorted_results)):
         compare_result = sorted_results[i]
         tb.add_row([compare_result["region_id"],
-                    int(compare_result["in_pd"] == True),
-                    int(compare_result["in_ch"] == True),
-                    compare_result["region_json"]["start_key"],
-                    compare_result["region_json"]["end_key"]])
+            compare_result["in_pd"] and 'y' or 'n',
+            compare_result["in_ch"] and 'y' or 'n',
+            compare_result["region_json"]["start_key"],
+            compare_result["region_json"]["end_key"]])
     print(tb)
 
 def should_merge(left, right):
@@ -82,16 +82,16 @@ def print_pretty(compare_results):
     for i in range(0, len(merged_results)):
         merged_result = merged_results[i]
         tb.add_row([str(merged_result["min_region_id"]),
-                    str(merged_result["max_region_id"]),
-                    len(merged_result["compare_results"]),
-                    int(merged_result["in_pd"] == True),
-                    int(merged_result["in_ch"]== True),
-                    merged_result["start_key"],
-                    merged_result["end_key"]])
+            str(merged_result["max_region_id"]),
+            len(merged_result["compare_results"]),
+            int(merged_result["in_pd"] == True),
+            int(merged_result["in_ch"]== True),
+            merged_result["start_key"],
+            merged_result["end_key"]])
     print(tb)
 
 def do_compare_table_regions(table_regions_all, table_regions_from_pd, table_regions_from_ch,
-                             all_regions_from_pd, pretty):
+        all_regions_from_pd, pretty):
     json_all_regions_from_pd = json.loads(all_regions_from_pd)
     json_regions = json_all_regions_from_pd["regions"]
 
@@ -100,7 +100,7 @@ def do_compare_table_regions(table_regions_all, table_regions_from_pd, table_reg
         json_region = json_regions[i]
         id = str(json_region["id"])
         id_to_region_map[id] = json_region
-    
+
     compare_results = []
     for i in range(0, len(table_regions_all)):
         region_id = table_regions_all[i]
@@ -118,8 +118,7 @@ def do_compare_table_regions(table_regions_all, table_regions_from_pd, table_reg
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        error(
-            'usage: <bin> pretty separator')
+        error('usage: <bin> pretty separator')
 
     pretty = sys.argv[1]
     separator = sys.argv[2]
@@ -138,4 +137,4 @@ if __name__ == '__main__':
     all_regions_from_pd = args[3]
 
     do_compare_table_regions(table_regions_all.split(), table_regions_from_pd.split(),
-                             table_regions_from_ch.split(), all_regions_from_pd, pretty)
+        table_regions_from_ch.split(), all_regions_from_pd, pretty)

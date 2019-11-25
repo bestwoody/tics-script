@@ -16,7 +16,8 @@ function verify_consistency()
 
 	local tikv_line=`echo "${tikv_res}" | tail -n 1`
 	local learner_line=`echo "${learner_res}" | tail -n 1`
-	if [ "${tikv_res}" == "${learner_res}" ]; then
+	local has_err=`echo "${tikv_res}" | grep 'ERROR'`
+	if [ "${tikv_res}" == "${learner_res}" ] && [ -z "${has_err}" ]; then
 		if [ ! -z "`echo ${tikv_line} | { grep 'older than GC safe point' || test $? == 1; }`" ]; then
 			echo "${ts} snapshot: has been GCed, ignored"
 			return
@@ -27,7 +28,7 @@ function verify_consistency()
 	fi
 	echo "    tikv:    ${tikv_line}"
 	echo "    learner: ${learner_line}"
-	if [ "${tikv_res}" != "${learner_res}" ]; then
+	if [ "${tikv_res}" != "${learner_res}" ] || [ ! -z "${has_err}" ]; then
 		return 1
 	fi
 }
@@ -125,27 +126,14 @@ function cmd_ti_verify_consistency()
 	fi
 
 	local min_in_range=$((min_ts + 1))
-	if [ "${min_ts}" == "${max_ts}" ] || [ "${min_in_range}" == "${max_ts}" ]; then
+	local points=`range_points "${min_in_range}" "${max_ts}" "${max_times}" | sort -nr`
+	if [ "${min_ts}" == "${max_ts}" ] || [ "${min_in_range}" == "${max_ts}" ] || [ -z "${points}" ]; then
 		echo "[cmd verify/consistency] data too small, ignored" >&2
 		return
 	fi
 
-	if [ "${max_times}" != '0' ]; then
-		verify_consistency "${ti_file}" "${ti_args}" "${cmd_hosts}" "${cmd_indexes}" \
-			"`from_ts ${max_ts}`" "${query}"
-	fi
-
-	# TODO: test more ranges
-	local mid_ts="${min_in_range}"
-	for (( m = 1; m < ${max_times}; m++)); do
-		local new_ts=$(( (max_ts - mid_ts) / 2 + mid_ts ))
-		local new_ts_minus=$((new_ts - 1))
-		if [ "${new_ts}" == "${mid_ts}" ] || [ "${new_ts_minus}" == "${mid_ts}" ]; then
-			break
-		fi
-		local mid_ts="${new_ts}"
-		verify_consistency "${ti_file}" "${ti_args}" "${cmd_hosts}" "${cmd_indexes}" \
-			"`from_ts ${mid_ts}`" "${query}"
+	echo "${points}" | while read ts; do
+		verify_consistency "${ti_file}" "${ti_args}" "${cmd_hosts}" "${cmd_indexes}" "`from_ts ${ts}`" "${query}"
 	done
 }
 

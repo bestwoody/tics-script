@@ -63,8 +63,10 @@ function cmd_ti_parallel()
 					local flag="${half_end_flag}"
 				fi
 
-				if [ "${has_loop}" == 'false' ] || [ ! -z "${cmd_looping}" ]; then
+				if [ "${has_loop}" == 'false' ]; then
 					echo -e "${run_flag} ${cmd}" >> "${log}"
+				elif [ ! -z "${cmd_looping}" ]; then
+					echo -e "${run_flag} ${cmd} LOOP: ${cmd_looping}" >> "${log}"
 				fi
 
 				eval "\"${ti}\" -h \"${cmd_hosts}\" -m \"${cmd_mod_names}\" -i \"${cmd_indexes}\" \
@@ -176,6 +178,7 @@ function cmd_ti_parallel()
 	local i='0'
 	while read cmd_info; do
 		local cmd=`echo "${cmd_info}" | awk -F '\t' '{print $1}'`
+		local cmd_looping=`echo "${cmd_info}" | awk -F '\t' '{print $3}'`
 		local log="${dir}/cmd_${i}.log"
 		local has_err=`cat "${log}" | grep "${err_flag}"`
 		local has_end=`cat "${log}" | grep "${end_flag}"`
@@ -189,7 +192,11 @@ function cmd_ti_parallel()
 			local ok='UNFINISHED'
 			local all_ok='false'
 		fi
-		echo "[${i}] ${ok} ${log}: ${cmd}"
+		if [ -z "${cmd_looping}" ]; then
+			echo "[${i}] ${ok} ${log}: ${cmd}"
+		else
+			echo "[${i}] ${ok} ${log}: ${cmd} LOOP: ${cmd_looping}"
+		fi
 		local i=$((i + 1))
 	done < "${cmds}.nq"
 

@@ -13,9 +13,12 @@ def trim():
         if len(line) != 0 and line[0] == '[':
             i = line.find(']')
             if i >= 0:
-                line = line[i + 1:]
-                if len(line) > 0 and line[0] == ' ':
-                    line = line[1:]
+                host = line[0:i]
+                # TODO: more strick condition to make sure this is a valid host string
+                if host.find(' ') < 0:
+                    line = line[i + 1:]
+                    if len(line) > 0 and line[0] == ' ':
+                        line = line[1:]
         print line
 
 trim()

@@ -39,12 +39,12 @@ function cmd_ti_store_rm()
 
 	local ti="${integrated}/ops/ti.sh"
 
-	local rngine_prop=`"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' "${ti_file}" 'prop'`
+	local rngine_prop=`"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' -k "${ti_args}" "${ti_file}" 'prop'`
 	local rngine_host=`echo "${rngine_prop}" | grep "listen_host" | awk -F 'listen_host:' '{print $2}' | tr -d ' '`
 	local rngine_port=`echo "${rngine_prop}" | grep "rngine_port" | awk -F 'rngine_port:' '{print $2}' | tr -d ' '`
 
 	local store_addr="${rngine_host}:${rngine_port}"
-	local store_id=`"${integrated}/ops/ti.sh" -i "${pd_index}" "${ti_file}" "pd/ctl_raw" "store" | \
+	local store_id=`"${integrated}/ops/ti.sh" -i "${pd_index}" -k "${ti_args}" "${ti_file}" "pd/ctl_raw" "store" | \
 		print_jpath "$.stores[?(@.store.peer_address=='${store_addr}')].store.id"`
 	if [ -z "${store_id}" ]; then
 		echo "[cmd store/rm] cannot get store id from ${store_addr}" >&2
@@ -53,10 +53,11 @@ function cmd_ti_store_rm()
 
 	echo "=> learner store address: ${store_addr}, id: ${store_id}, tiflash: ${tiflash_index}, rngine: ${rngine_index}. removing"
 
-	#"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' "${ti_file}" 'fstop'
-	#"${ti}" -h "${cmd_hosts}" -i "${tiflash_index}" -m 'tiflash' "${ti_file}" 'fstop'
+	#"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' -k "${ti_args}" "${ti_file}" 'fstop'
+	#"${ti}" -h "${cmd_hosts}" -i "${tiflash_index}" -m 'tiflash' -k "${ti_args}" "${ti_file}" 'fstop'
 
-	local op_resp=`"${integrated}/ops/ti.sh" -i "${pd_index}" "${ti_file}" "pd/ctl_raw" "store delete ${store_id}"`
+	local op_resp=`"${integrated}/ops/ti.sh" -i "${pd_index}" -k "${ti_args}" "${ti_file}" \
+		"pd/ctl_raw" "store delete ${store_id}"`
 	# TODO: remove tr
 	# local op_resp=`echo "${op_resp}" | tr -d '\[\][0-9] \.'`
 	if [ "${op_resp}" != "Success!" ]; then
@@ -65,7 +66,8 @@ function cmd_ti_store_rm()
 	fi
 
 	for (( r = 0; 0 == 0; r++ )); do
-		local status=`"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' "${ti_file}" 'store/status' | awk '{print $3}'`
+		local status=`"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' -k "${ti_args}" \
+			"${ti_file}" 'store/status' | awk '{print $3}'`
 		if [ "${status}" == "Tomestone" ]; then
 			break
 		fi
@@ -75,8 +77,8 @@ function cmd_ti_store_rm()
 		sleep 1
 	done
 
-	"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' "${ti_file}" 'burn'
-	"${ti}" -h "${cmd_hosts}" -i "${tiflash_index}" -m 'tiflash' "${ti_file}" 'burn'
+	"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' -k "${ti_args}" "${ti_file}" 'burn'
+	"${ti}" -h "${cmd_hosts}" -i "${tiflash_index}" -m 'tiflash' -k "${ti_args}" "${ti_file}" 'burn'
 
 	echo "=> learner store address: ${store_addr}, id: ${store_id}, tiflash: ${tiflash_index}, rngine: ${rngine_index}. removed"
 	echo "   OK"

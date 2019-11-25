@@ -3,64 +3,65 @@
 function cmd_ti_ci_self()
 {
 	local file="${1}"
+	local args="${2}"
 	local mods="${6}"
 	shift 6
 
 	local ti="${integrated}/ops/ti.sh"
 
-	"${ti}" "${file}" stop : fstop : up : sleep 5
-	"${ti}" "${file}" kill/tiflash : kill/rngine : kill/tikv : kill/storage
-	"${ti}" "${file}" up : sleep 5 : status : prop : du : log 1 : log 1 info
-	"${ti}" "${file}" pd/ctl_raw store : pd/ctl store : mysql/host : mysql/port
-	"${ti}" "${file}" byhost/do uptime : byhost/procs
-	"${ti}" "${file}" ver : ver ver : ver githash : ver full : sleep 1
-	"${ti}" "${file}" safe_point : safe_point ts : safe_point time
-	"${ti}" "${file}" perf/top : perf/top true : perf/top false
+	"${ti}" -k "${args}" "${file}" stop : fstop : up : sleep 5
+	"${ti}" -k "${args}" "${file}" kill/tiflash : kill/rngine : kill/tikv : kill/storage
+	"${ti}" -k "${args}" "${file}" up : sleep 5 : status : prop : du : log 1 : log 1 info
+	"${ti}" -k "${args}" "${file}" pd/ctl_raw store : pd/ctl store : mysql/host : mysql/port
+	"${ti}" -k "${args}" "${file}" byhost/do uptime : byhost/procs
+	"${ti}" -k "${args}" "${file}" ver : ver ver : ver githash : ver full : sleep 1
+	"${ti}" -k "${args}" "${file}" safe_point : safe_point ts : safe_point time
+	"${ti}" -k "${args}" "${file}" perf/top : perf/top true : perf/top false
 
-	"${ti}" "${file}" repeat 2 status
+	"${ti}" -k "${args}" "${file}" repeat 2 status
 
-	"${ti}" "${file}" tikv/ctl_raw true --help 1>/dev/null
-	"${ti}" "${file}" perf/fio --help 1>/dev/null
+	"${ti}" -k "${args}" "${file}" tikv/ctl_raw true --help 1>/dev/null
+	"${ti}" -k "${args}" "${file}" perf/fio --help 1>/dev/null
 
-	"${ti}" "${file}" ch "show databases" 1>/dev/null
-	"${ti}" "${file}" ch "show databases" 'default' 1>/dev/null
-	"${ti}" "${file}" ch "show databases" 'default' 'tab' 1>/dev/null
-	"${ti}" "${file}" ch "show databases" 'default' 'title' 1>/dev/null
-	"${ti}" "${file}" ch "show databases" 'default' 'pretty' 1>/dev/null
-	"${ti}" "${file}" ch 'show databases' 'default' 'pretty' 'true' 1>/dev/null
-	"${ti}" "${file}" ch 'show databases' 'default' 'pretty' 'false' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch "show databases" 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch "show databases" 'default' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch "show databases" 'default' 'tab' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch "show databases" 'default' 'title' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch "show databases" 'default' 'pretty' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch 'show databases' 'default' 'pretty' 'true' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch 'show databases' 'default' 'pretty' 'false' 1>/dev/null
 
-	"${ti}" "${file}" mysql 'show databases' 1>/dev/null
-	"${ti}" "${file}" mysql 'show databases' 'test' 1>/dev/null
-	"${ti}" "${file}" mysql 'show databases' 'test' 'true' 1>/dev/null
-	"${ti}" "${file}" mysql 'show databases' 'test' 'false' 1>/dev/null
-	"${ti}" "${file}" mysql/tikv 'show databases' 1>/dev/null
-	"${ti}" "${file}" mysql/tikv 'show databases' 'test' 1>/dev/null
-	"${ti}" "${file}" mysql/tikv 'show databases' 'test' 'true' 1>/dev/null
-	"${ti}" "${file}" mysql/tikv 'show databases' 'test' 'false' 1>/dev/null
-	"${ti}" "${file}" mysql/learner 'show databases' 1>/dev/null
-	"${ti}" "${file}" mysql/learner 'show databases' 'test' 1>/dev/null
-	"${ti}" "${file}" mysql/learner 'show databases' 'test' 'true' 1>/dev/null
-	"${ti}" "${file}" mysql/learner 'show databases' 'test' 'false' 1>/dev/null
-	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 1>/dev/null
-	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 1>/dev/null
-	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'true' 1>/dev/null
-	"${ti}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'false' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql 'show databases' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql 'show databases' 'test' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql 'show databases' 'test' 'true' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql 'show databases' 'test' 'false' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/tikv 'show databases' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/tikv 'show databases' 'test' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/tikv 'show databases' 'test' 'true' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/tikv 'show databases' 'test' 'false' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/learner 'show databases' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/learner 'show databases' 'test' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/learner 'show databases' 'test' 'true' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/learner 'show databases' 'test' 'false' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/learner_by_hint 'show databases' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/learner_by_hint 'show databases' 'test' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'true' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" mysql/learner_by_hint 'show databases' 'test' 'false' 1>/dev/null
 
 	local beeline_exists=`from_mods_random_mod "${mods}" 'spark_m'`
 	if [ ! -z "${beeline_exists}" ]; then
-		local res=`"${ti}" "${file}" beeline default -e 'show databases' | grep test`
+		local res=`"${ti}" -k "${args}" "${file}" beeline default -e 'show databases' | grep test`
 		test ! -z "${res}"
 	fi
 
 	# TODO: Fixme: flame dependences
 	#local tiflash_mod=`from_mods_random_mod "${mods}" 'tiflash'`
 	#if [ ! -z "${tiflash_mod}" ]; then
-	#	"${ti}" -m tiflash "${file}" 'perf/flame:perf/flame 5'
+	#	"${ti}" -m tiflash -k "${args}" "${file}" 'perf/flame:perf/flame 5'
 	#fi
 
 	# TODO: Fixme: ssh failed
-	#${ti}" "${file}" 'perf/io_report:byhost/local/do date'
+	#${ti}" -k "${args}" "${file}" 'perf/io_report:byhost/local/do date'
 
 	# TODO test: loop, floop
 	# TODO need sudo to test: perf/drop_page_cache, perf/hw
