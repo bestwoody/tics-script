@@ -1,0 +1,27 @@
+#!/bin/bash
+
+function cmd_ti_cases_verify_loading()
+{
+	local ti_file="${1}"
+	shift 6
+
+	local scale='10'
+	if [ ! -z "${1+x}" ]; then
+		local scale="${1}"
+	fi
+
+	local db=`echo "tpch_${scale}" | scale_to_name`
+	local table='lineitem'
+
+	local ti="${integrated}/ops/ti.sh"
+
+	"${ti}" "${ti_file}" must burn : up : mysql/nogc
+
+	"${integrated}/ops/ti.sh" "${ti_file}" parallel \
+		GO: tpch/load "${scale}" "${table}" : wait/syncing "${db}" "${table}" : sleep 120 \
+		GO: wait/table "${db}" lineitem \
+			LOOP: verify/consistency "${db}" "${table}"
+}
+
+set -euo pipefail
+cmd_ti_cases_verify_loading "${@}"

@@ -10,18 +10,16 @@ function cmd_ti_verify_balance()
 	local mods="${6}"
 	shift 6
 
-	local table="${1}"
-	local selraw="${2}"
-
-	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
-	auto_error_handle
-
-	if [ -z "${table}" ]; then
-		echo "[cmd verify/balance] usage: <cmd> [database.]table"
+	if [ -z "${2+x}" ]; then
+		echo "[cmd verify/balance] usage: <cmd> database table [selraw=false]"
 		exit 1
 	fi
-	if [ -z "${selraw}" ]; then
-		local selraw='false'
+
+	local table="${1}.${2}"
+
+	local selraw='false'
+	if [ ! -z "${3+x}" ]; then
+		local selraw="${3}"
 	fi
 
 	local select='select'
@@ -30,7 +28,9 @@ function cmd_ti_verify_balance()
 	fi
 
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		"${ti_file}" 'ch' "${select} count(1) from ${table}" 'default' 'TabSeparated' | sort -rnk 1
+		"${ti_file}" 'ch' "${select} count(1) from ${table}" 'default' 'TabSeparated' 'false' | sort -rnk 1
 }
 
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
 cmd_ti_verify_balance "${@}"

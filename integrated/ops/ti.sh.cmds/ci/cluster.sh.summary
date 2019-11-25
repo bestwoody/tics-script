@@ -15,14 +15,14 @@ function cmd_ti_ci_cluster()
 
 	"${ti}" "${file}" tpch/ch all tpch_0_01 : tpch/db : ch/compaction tpch_0_01 lineitem
 
-	"${ti}" "${file}" verify/rows tpch_0_01.lineitem : tpch/rows
-	"${ti}" "${file}" verify/regions tpch_0_01 lineitem false : verify/consistency tpch_0_01.lineitem
-	"${ti}" "${file}" verify/regions tpch_0_01 lineitem true : verify/consistency tpch_0_01.lineitem
+	"${ti}" "${file}" verify/rows tpch_0_01 lineitem : tpch/rows
+	"${ti}" "${file}" verify/regions tpch_0_01 lineitem false : verify/consistency tpch_0_01 lineitem
+	"${ti}" "${file}" verify/regions tpch_0_01 lineitem true : verify/consistency tpch_0_01 lineitem
 
 	"${ti}" "${file}" syncing/test : sleep 3 : syncing/show : ch/queries
 
 	"${ti}" "${file}" fstop : up : tpch/load_no_raft 0.01 lineitem tmt
-	"${ti}" -i 0 "${file}" sleep 1 : verify/balance tpch_0_01_tmt_no_raft.lineitem
+	"${ti}" -i 0 "${file}" sleep 1 : verify/balance tpch_0_01_tmt_no_raft lineitem
 
 	"${ti}" "${file}" fstop : up
 }

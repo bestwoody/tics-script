@@ -11,3 +11,9 @@ function trim_host()
 	python "${integrated}/_base/trim_host.py"
 }
 export -f trim_host
+
+function scale_to_name()
+{
+	tr '.' '_'
+}
+export -f scale_to_name

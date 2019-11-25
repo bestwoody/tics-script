@@ -11,7 +11,7 @@ function cmd_ti_wait_syncing()
 	shift 6
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd wait/table] usage: <cmd> db table [wait_for_available=true]" >&2
+		echo "[cmd wait/table] usage: <cmd> database table [wait_for_available=true]" >&2
 		return 1
 	fi
 

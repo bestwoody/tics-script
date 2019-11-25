@@ -32,7 +32,7 @@ function ti_cmd_tpch_rows()
 	local tables=(lineitem orders partsupp part customer supplier nation part region)
 	for table in ${tables[@]}; do
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'verify/rows' "${db}.${table}"
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'verify/rows' "${db}" "${table}"
 	done
 }
 

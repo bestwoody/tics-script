@@ -2,10 +2,13 @@
 
 import sys
 
-def rewrite_one(query):
+def rewrite_one(query, origin_has_select):
     j = query.find('from')
     if j < 0:
-        return 'select ' + query
+        if origin_has_select:
+            return 'select ' + query
+        else:
+            return query
     tail = query[j + 5:]
 
     tables = None
@@ -28,14 +31,15 @@ def rewrite_one(query):
     return 'select /*+ read_from_storage(tiflash[' + tables + ']) */ ' + query
 
 def rewrite(origin):
-    query = origin.lower()
+    query = origin.lower().strip()
     if query.find('select') < 0:
         return origin
+    starts_with_select = query.startswith('select')
     subs = query.split('select')
     subs = map(lambda x: x.strip(), subs)
     subs = filter(lambda x: x, subs)
     for i in range(0, len(subs)):
-        subs[i] = rewrite_one(subs[i])
+        subs[i] = rewrite_one(subs[i], i != 0 or starts_with_select)
     return ' '.join(subs)
 
 if __name__ == '__main__':

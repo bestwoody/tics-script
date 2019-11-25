@@ -10,15 +10,12 @@ function cmd_ti_verify_rows()
 	local mods="${6}"
 	shift 6
 
-	local table="${1}"
-
-	source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
-	auto_error_handle
-
-	if [ -z "${table}" ]; then
-		echo "[cmd verify/rows] usage: <cmd> [database.]table" >&2
+	if [ -z "${2+x}" ]; then
+		echo "[cmd verify/rows] usage: <cmd> database table" >&2
 		return 1
 	fi
+
+	local table="${1}.${2}"
 
 	local tiflash_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" "${ti_file}" 'ch' \
 		"select count(1) from ${table}" 'default' 'TabSeparated' 'false' | trim_host | awk '{sum+=$1}END{print sum}'`
@@ -55,4 +52,6 @@ function cmd_ti_verify_rows()
 	fi
 }
 
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
 cmd_ti_verify_rows "${@}"

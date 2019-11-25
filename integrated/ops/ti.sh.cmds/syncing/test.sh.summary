@@ -11,9 +11,13 @@ function verify_raft_sync()
 	shift 6
 
 	local db='test'
-	local table='hello'
 	if [ ! -z "${1+x}" ] && [ ! -z "${1}" ]; then
-		local table="${1}"
+		local db="${1}"
+	fi
+
+	local table='hello'
+	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
+		local table="${2}"
 	fi
 
 	local ti="${integrated}/ops/ti.sh"

@@ -1,2 +1,2 @@
 verify data syncing between 'pd+tikv+tidb' and 'tiflash+rngine'
-usage: <cmd> [table=hello]
+usage: <cmd> [database=test] [table=hello]

@@ -2,7 +2,7 @@
 
 function trans_schema_fields_decimal_to_double()
 {
-	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] ; then
+	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
 		echo "[func trans_schema_fields_decimal_to_double] cmd src_schema_dir dst_schema_dir" >&2
 		return 1
 	fi
