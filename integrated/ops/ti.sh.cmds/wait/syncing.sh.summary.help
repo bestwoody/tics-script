@@ -1,0 +1,2 @@
+wait for table exists in tiflash and is in syncing status
+usage: <cmd> db table [wait_for_available=true]

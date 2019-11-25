@@ -1,0 +1,62 @@
+#!/bin/bash
+
+function cmd_ti_wait_syncing()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${2+x}" ]; then
+		echo "[cmd wait/table] usage: <cmd> db table [wait_for_available=true]" >&2
+		return 1
+	fi
+
+	local db="${1}"
+	local table="${2}"
+
+	local wait_for_available='true'
+	if [ ! -z "${3+x}" ]; then
+		local wait_for_available="${3}"
+		if [ "${wait_for_available}" == 'available' ]; then
+			local wait_for_available='true'
+		fi
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+			"${ti_file}" 'wait/table' "${db}" "${table}"
+
+	echo "=> wait for ${db}.${table} is syncing to tiflash"
+
+	local index=`from_mods_random_mod "${mods}" 'tiflash'`
+	if [ -z "${index}" ]; then
+		echo "[cmd wait/table] no selected tiflash" >&2
+		return 1
+	fi
+
+	local available=''
+	for ((; 0 == 0; )); do
+		local has_table=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+			"${ti_file}" 'syncing/show' "${db}" 2>/dev/null | trim_host | grep -v "^${db}$" | grep " ${table} "`
+		local available=`echo "${has_table}" | grep ' available'`
+		if [ ${?} == 0 ] && [ ! -z "${has_table}" ]; then
+			if [ "${wait_for_available}" != 'true' ] || [ ! -z "${available}" ]; then
+				break
+			fi
+		fi
+		sleep 0.5
+	done
+
+	if [ ! -z "${available}" ]; then
+		echo "   syncing and available"
+	else
+		echo "   syncing but not available yet"
+	fi
+}
+
+cmd_ti_wait_syncing "${@}"
