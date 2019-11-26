@@ -43,9 +43,10 @@ function spark_master_run()
 
 	echo "=> run spark_m: ${spark_master_dir}"
 
-	local java_installed=`print_java_installed`
-	if [ "${java_installed}" == "false" ]; then
-		echo "   java not installed" >&2
+	prepare_spark_env
+	local java8_installed=`print_java_installed`
+	if [ "${java8_installed}" == "false" ]; then
+		echo "   java8 not installed" >&2
 		return 1
 	fi
 
@@ -138,6 +139,15 @@ function spark_master_run()
 	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
 	local jdwp_port=$((${ports_delta} + ${default_jdwp_port}))
 
+	local error_handle="$-"
+	set +eu
+	if [ ! -z "${JAVA_HOME}" ]; then
+		local java_home="${JAVA_HOME}"
+	else
+		local java_home=""
+	fi
+	restore_error_handle_flags "${error_handle}"
+
 	spark_file_prepare "${spark_master_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}" "${jdwp_port}" "${is_chspark}"
 
 	if [ `uname` == 'Darwin' ]; then
@@ -160,10 +170,13 @@ function spark_master_run()
 	fi
 	local run_thrift_server_command="${run_thrift_server_command} --jars ${spark_master_dir}/${jar_file}"
 	local run_thrift_server_command="${run_thrift_server_command} --master spark://${listen_host}:${spark_master_port}"
-	
+
 	echo "export SPARK_MASTER_HOST=${listen_host}" > "${spark_master_dir}/run_master_temp.sh"
 	echo "export SPARK_MASTER_PORT=${spark_master_port}" >> "${spark_master_dir}/run_master_temp.sh"
 	echo "export SPARK_MASTER_WEBUI_PORT=${spark_master_webui_port}" >> "${spark_master_dir}/run_master_temp.sh"
+	if [ ! -z "${java_home}" ]; then
+		echo "export JAVA_HOME=${java_home}" >> "${spark_master_dir}/run_master_temp.sh"
+	fi
 	echo "${spark_master_dir}/spark/sbin/start-master.sh" >> "${spark_master_dir}/run_master_temp.sh"
 	echo "(" >> "${spark_master_dir}/run_master_temp.sh"
 	echo "  cd ${spark_master_dir}" >> "${spark_master_dir}/run_master_temp.sh"

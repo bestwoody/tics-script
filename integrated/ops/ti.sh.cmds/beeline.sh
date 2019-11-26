@@ -28,6 +28,7 @@ function cmd_ti_beeline()
 
 	local port=`get_value "${dir}/proc.info" 'thriftserver_port'`
 
+	prepare_spark_env
 	local start_time=`timer_start`
 	${dir}/spark/bin/beeline --verbose=false --silent=true -u "jdbc:hive2://${host}:${port}/${db}" "${@}"
 	local elapsed=`timer_end "${start_time}"`

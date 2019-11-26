@@ -1,11 +1,25 @@
 #!/bin/bash
 
+function prepare_spark_env()
+{
+	local error_handle="$-"
+	set +eu
+	local conf_file="${integrated}/conf/envs.kv"
+	local java_home=`get_value "${conf_file}" "java_home"`
+	if [ -z "${JAVA_HOME}" ] && [ ! -z "${java_home}" ]; then
+		export JAVA_HOME="${java_home}"
+	fi
+
+	restore_error_handle_flags "${error_handle}"
+}
+export -f prepare_spark_env
+
 function print_java_installed()
 {
 	local error_handle="$-"
 	set +e
-	java -version 1>/dev/null 2>&1
-	if [ "${?}" != 0 ]; then
+	local java8_installed=`java -version 2>&1 | grep "1.8" | wc -l`
+	if [ "${java8_installed}" -eq 0 ]; then
 		echo "false"
 	else
 		echo "true"

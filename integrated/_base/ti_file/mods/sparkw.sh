@@ -50,9 +50,10 @@ function spark_worker_run()
 
 	echo "=> run spark_w: ${spark_worker_dir}"
 
-	local java_installed=`print_java_installed`
-	if [ "${java_installed}" == "false" ]; then
-		echo "   java not installed" >&2
+	prepare_spark_env
+	local java8_installed=`print_java_installed`
+	if [ "${java8_installed}" == "false" ]; then
+		echo "   java8 not installed" >&2
 		return 1
 	fi
 
@@ -134,6 +135,15 @@ function spark_worker_run()
 	local tiflash_addr=$(cal_addr "${tiflash_addr}" `must_print_ip` "${default_tiflash_tcp_port}")
 	local spark_master_addr=$(cal_addr "${spark_master_addr}" `must_print_ip` "${default_spark_master_port}")
 
+	local error_handle="$-"
+	set +eu
+	if [ ! -z "${JAVA_HOME}" ]; then
+		local java_home="${JAVA_HOME}"
+	else
+		local java_home=""
+	fi
+	restore_error_handle_flags "${error_handle}"
+	
 	spark_file_prepare "${spark_worker_dir}" "${conf_templ_dir}" "${pd_addr}" "${tiflash_addr}" "${jmxremote_port}" "${jdwp_port}" "${is_chspark}"
 
 	local info="${spark_worker_dir}/proc.info"
@@ -149,6 +159,9 @@ function spark_worker_run()
 		local run_worker_cmd="${run_worker_cmd} --memory ${worker_memory}"
 	fi
 	echo "export WEBUI_PORT=${spark_worker_webui_port}" > "${spark_worker_dir}/run_worker_temp.sh"
+	if [ ! -z "${java_home}" ]; then
+		echo "export JAVA_HOME=${java_home}" >> "${spark_worker_dir}/run_worker_temp.sh"
+	fi
 	echo "${run_worker_cmd}" >> "${spark_worker_dir}/run_worker_temp.sh"
 	chmod +x "${spark_worker_dir}/run_worker_temp.sh"
 	mv "${spark_worker_dir}/run_worker_temp.sh" "${spark_worker_dir}/run_worker.sh"
