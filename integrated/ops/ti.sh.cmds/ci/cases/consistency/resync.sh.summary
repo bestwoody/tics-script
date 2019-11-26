@@ -14,12 +14,12 @@ function cmd_ti_cases_verify_loading()
 	local table='lineitem'
 	local ti="${integrated}/ops/ti.sh"
 
-	"${ti}" "${ti_file}" must burn : up : mysql/nogc
+	"${ti}" "${ti_file}" must burn : up
 
 	"${integrated}/ops/ti.sh" "${ti_file}" parallel \
-		GO: tpch/load "${scale}" "${table}" : wait/syncing "${db}" "${table}" : sleep 120 \
-		GO: wait/table "${db}" "${table}" \
-			LOOP: verify/consistency "${db}" "${table}"
+		GO: tpch/load "${scale}" "${table}" : wait/syncing "${db}" "${table}" : \
+			store/rm : up : store/rm : up : store/rm : up : store/rm : up \
+		GO: LOOP: wait/syncing "${db}" "${table}" : verify/consistency "${db}" "${table}"
 }
 
 set -euo pipefail

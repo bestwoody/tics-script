@@ -72,7 +72,7 @@ function cmd_ti_store_rm()
 			break
 		fi
 		if [ $((${r} % 10)) = 0 ] && [ ${r} -ge 10 ]; then
-			echo "#${r} waiting for store ${store_addr} deleted"
+			echo "#${r} waiting for store ${store_addr} deleted, current status: ${status}"
 		fi
 		sleep 1
 	done

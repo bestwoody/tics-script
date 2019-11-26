@@ -62,7 +62,7 @@ def render(total, sep, quote):
                 loop = cmd[i + 1:]
                 break
         has_loop = (len(loop) != 0) and 'has_loop' or 'no_loop'
-        print ' '.join(once) + '\t' + has_loop + '\t' + ' '.join(loop)
+        print (' '.join(once) or ';') + '\t' + has_loop + '\t' + ' '.join(loop)
 
 if __name__ == '__main__':
     quotes = True

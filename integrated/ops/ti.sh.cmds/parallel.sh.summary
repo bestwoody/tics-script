@@ -58,23 +58,25 @@ function cmd_ti_parallel()
 			rm -f "${log}"
 
 			for ((; 0 == 0; )); do
-				local flag="${end_flag}"
-				if [ ! -z "${cmd_looping}" ]; then
-					local flag="${half_end_flag}"
-				fi
+				if [ "${cmd}" != ';' ]; then
+					local flag="${end_flag}"
+					if [ ! -z "${cmd_looping}" ]; then
+						local flag="${half_end_flag}"
+					fi
 
-				if [ "${has_loop}" == 'false' ]; then
-					echo -e "${run_flag} ${cmd}" >> "${log}"
-				elif [ ! -z "${cmd_looping}" ]; then
-					echo -e "${run_flag} ${cmd} LOOP: ${cmd_looping}" >> "${log}"
-				fi
+					if [ "${has_loop}" == 'false' ]; then
+						echo -e "${run_flag} ${cmd}" >> "${log}"
+					elif [ ! -z "${cmd_looping}" ]; then
+						echo -e "${run_flag} ${cmd} LOOP: ${cmd_looping}" >> "${log}"
+					fi
 
-				eval "\"${ti}\" -h \"${cmd_hosts}\" -m \"${cmd_mod_names}\" -i \"${cmd_indexes}\" \
-					-k \"${ti_args}\" \"${ti_file}\" ${cmd}" 1>>"${log}" 2>&1 && \
-					echo -e "${flag}" >> "${log}"
-				if [ ${?} != '0' ]; then
-					echo -e "${err_flag}" >> "${log}"
-					return 1
+					eval "\"${ti}\" -h \"${cmd_hosts}\" -m \"${cmd_mod_names}\" -i \"${cmd_indexes}\" \
+						-k \"${ti_args}\" \"${ti_file}\" ${cmd}" 1>>"${log}" 2>&1 && \
+						echo -e "${flag}" >> "${log}"
+					if [ ${?} != '0' ]; then
+						echo -e "${err_flag}" >> "${log}"
+						return 1
+					fi
 				fi
 				if [ "${has_loop}" == 'false' ]; then
 					break

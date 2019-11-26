@@ -26,9 +26,11 @@ function wait_for_mysql()
 		return 1
 	fi
 
+	local failed='true'
 	for ((i=0; i<${timeout}; i++)); do
 		mysql -h "${host}" -P "${port}" -u root -e 'show databases' 1>/dev/null 2>&1
 		if [ "$?" == "0" ]; then
+			local failed='false'
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
@@ -39,6 +41,10 @@ function wait_for_mysql()
 	done
 
 	restore_error_handle_flags "${error_handle}"
+
+	if [ "${failed}" != 'false' ]; then
+		return 1
+	fi
 
 	# TODO: remove this!
 	sleep 5
@@ -108,11 +114,14 @@ function wait_for_pd_port_ready()
 		local server_id="${4}"
 	fi
 
+	local failed='true'
+
 	local error_handle="$-"
 	set +e
 	for ((i=0; i<${timeout}; i++)); do
 		nc -zv "${host}" "${port}" >/dev/null 2>&1
 		if [ "${?}" == "0" ] && [ `curl "${host}:${port}/health" 2>/dev/null` == '{"health":"true"}' ]; then
+			local failed='false'
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
@@ -123,6 +132,10 @@ function wait_for_pd_port_ready()
 	done
 
 	restore_error_handle_flags "${error_handle}"
+
+	if [ "${failed}" != 'false' ]; then
+		return 1
+	fi
 }
 export -f wait_for_pd_port_ready
 
@@ -178,11 +191,14 @@ function wait_for_pd()
 		return 1
 	fi
 
+	local failed='true'
+
 	# TODO: move this key to config
 	local key="6D536368656D615665FF7273696F6E4B6579FF0000000000000000F70000000000000073"
 	for ((i=0; i<${timeout}; i++)); do
 		local region=`"${pd_ctl_path}" -u "http://${host}:${port}" <<< "region key ${key}"` >/dev/null
 		if [ "${region}" != "null" ] && [ `echo "${region}" | { grep "Failed" || test $? = 1; } | wc -l` == 0 ]; then
+			local failed='false'
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
@@ -193,6 +209,10 @@ function wait_for_pd()
 	done
 
 	restore_error_handle_flags "${error_handle}"
+
+	if [ "${failed}" != 'false' ]; then
+		return 1
+	fi
 
 	# TODO: remove this!
 	sleep 5
@@ -262,11 +282,14 @@ function wait_for_tikv_port_ready()
 		local server_id="${4}"
 	fi
 
+	local failed='true'
+
 	local error_handle="$-"
 	set +e
 	for ((i=0; i<${timeout}; i++)); do
 		nc -zv "${host}" "${port}" >/dev/null 2>&1
 		if [ "${?}" == "0" ]; then
+			local failed='false'
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
@@ -277,6 +300,10 @@ function wait_for_tikv_port_ready()
 	done
 
 	restore_error_handle_flags "${error_handle}"
+
+	if [ "${failed}" != 'false' ]; then
+		return 1
+	fi
 }
 export -f wait_for_tikv_port_ready
 
@@ -322,12 +349,15 @@ function wait_for_tiflash()
 		local server_id="${4}"
 	fi
 
+	local failed='true'
+
 	local error_handle="$-"
 	set +e
 
 	for ((i=0; i<${timeout}; i++)); do
 		nc -z "${host}" "${port}" 1>/dev/null 2>&1
 		if [ "$?" == "0" ]; then
+			local failed='false'
 			break
 		else
 			if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
@@ -338,6 +368,10 @@ function wait_for_tiflash()
 	done
 
 	restore_error_handle_flags "${error_handle}"
+
+	if [ "${failed}" != 'false' ]; then
+		return 1
+	fi
 }
 export -f wait_for_tiflash
 
