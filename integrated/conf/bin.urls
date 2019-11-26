@@ -9,8 +9,7 @@ cluster_manager	966e5d77831a75559ad91e391cfb8835	flash_cluster_manager	http://13
 # master - 6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 chspark	f983c70d2a09880df5fbd4d61e6bb0dc	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/rZiST/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz	
 
-# master - 301b69f8c1cdc6465328329acb5559daee4c1668
-tispark	5f04ab1dc2e1e6fbf523c7da2a910adb	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/Hpbiv/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz
+tispark	3e5ca4c1990b7e4f4dab1f5636b4a798	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/3o8Ty/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	156fb138deff328b923ee1bffca6b38d4a7ab938
 
 pd_ctl	3f762a0e4ff02441db5a71c4fb5b9621	pd-ctl	http://139.219.11.38:8000/10zs84/pd-ctl.tar.gz
 

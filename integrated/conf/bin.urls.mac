@@ -4,7 +4,7 @@ pd	d1388387554eb9eb0bfd280e8ecfd011	pd-server	http://139.219.11.38:8000/u0r3q/pd
 
 chspark	689954d70cd1e7d385f639518dcc0c77	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/btq5X/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz	master	6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 
-tispark	0fd410ad1cc83edd0d3b86fa70f7c3b3	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/OqxAg/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	700b50b1d8ebe3225a2937150cd2b27ad2765a8f
+tispark	3e5ca4c1990b7e4f4dab1f5636b4a798	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/3o8Ty/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	156fb138deff328b923ee1bffca6b38d4a7ab938
 
 pd_ctl	2dbb87e4bbea4a68409cfb8debabbbfc	pd-ctl	http://139.219.11.38:8000/VKwpv/pd-ctl.tar.gz
 tikv_ctl	f858021402608024367ea6fd5054e5d7	tikv-ctl	http://139.219.11.38:8000/47bkL/tikv-ctl.tar.gz
