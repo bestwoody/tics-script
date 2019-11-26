@@ -41,7 +41,11 @@ function spark_master_run()
 		local cluster_id="${4}"
 	fi
 
-	echo "=> run spark_m: ${spark_master_dir}"
+	if [ "${is_chspark}" == "true" ]; then
+		echo "=> run chspark_m: ${spark_master_dir}"
+	else
+		echo "=> run spark_m: ${spark_master_dir}"
+	fi
 
 	prepare_spark_env
 	local java8_installed=`print_java_installed`

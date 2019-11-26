@@ -48,7 +48,11 @@ function spark_worker_run()
 		local cluster_id="${5}"
 	fi
 
-	echo "=> run spark_w: ${spark_worker_dir}"
+	if [ "${is_chspark}" == "true" ]; then
+		echo "=> run chspark_w: ${spark_worker_dir}"
+	else
+		echo "=> run spark_w: ${spark_worker_dir}"
+	fi
 
 	prepare_spark_env
 	local java8_installed=`print_java_installed`
