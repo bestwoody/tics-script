@@ -186,6 +186,7 @@ function wait_for_pd()
 	set +e
 
 	local pd_ctl_path="${bins_dir}/pd-ctl"
+	ensure_bin_in_local_dir "pd_ctl" "${bins_dir}"
 	if [ ! -f "${pd_ctl_path}" ]; then
 		echo "[func wait_for_pd] '${pd_ctl_path}' not found" >&2
 		return 1

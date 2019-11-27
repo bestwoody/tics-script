@@ -30,6 +30,7 @@ function cmd_ti_ch_raw()
 	fi
 
 	local bin_dir="/tmp/ti/master/bins"
+	ensure_bin_in_local_dir "tiflash" "${bin_dir}"
 	LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${bin_dir}/tiflash" client --host="${host}" --port="${port}"
 }
 

@@ -1,0 +1,46 @@
+#!/bin/bash
+
+function cmd_ti_tikv_ctl()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local tikv_mod=`from_mods_random_mod "${mods}" 'tikv' 'false'`
+	if [ -z "${tikv_mod}" ]; then
+		echo "[cmd tikv/ctl_raw] no selected tikv" >&2
+		return 1
+	fi
+
+	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
+		echo '[cmd tikv/ctl_raw] usage: <cmd> online(true|false) command' >&2
+		return 1
+	fi
+
+	local cmd_type="${1}"
+
+	local host=`from_mod_get_host "${tikv_mod}"`
+	local dir=`from_mod_get_dir "${tikv_mod}"`
+
+	local bin_dir="/tmp/ti/master/bins"
+	ensure_bin_in_local_dir "tikv_ctl" "${bin_dir}"
+
+	shift 1
+	if [ "${cmd_type}" == "true" ]; then
+		local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tikv_port'`
+		"${bin_dir}/tikv-ctl" --host "${host}:${port}" "${@}"
+	else
+		if [ "${host}" != "127.0.0.1" ]; then
+			echo "[cmd tikv/ctl_raw] must use online mode for remote tikv" >&2
+			return 1
+		fi
+		"${bin_dir}/tikv-ctl" --db "${dir}/data/db" "${@}"
+	fi
+}
+
+set -euo pipefail
+cmd_ti_tikv_ctl "${@}"

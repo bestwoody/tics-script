@@ -44,14 +44,15 @@ export -f get_bin_name_from_conf
 # bin_paths_file: name \t md5sum \t bin_name \t url
 function cp_bin_to_dir_from_paths()
 {
-	if [ -z "${3+x}" ]; then
-		echo "[func cp_bin_to_dir_from_paths] usage: <func> name_of_bin_module dest_dir bin_paths_file" >&2
+	if [ -z "${4+x}" ]; then
+		echo "[func cp_bin_to_dir_from_paths] usage: <func> name_of_bin_module dest_dir bin_paths_file cache_dir" >&2
 		return 1
 	fi
 
 	local name="${1}"
 	local dest_dir="${2}"
 	local bin_paths_file="${3}"
+	local cache_dir="${4}"
 
 	local entry_str=`cat "${bin_paths_file}" | { grep "^${name}\b" || test $? = 1; }`
 
@@ -64,7 +65,8 @@ function cp_bin_to_dir_from_paths()
 			# TODO: Pass integrated dir from args
 			local path=`replace_substr "${path}" '{integrated}' "${integrated}"`
 			if [ -f "${path}" ]; then
-				cp_when_diff "${path}" "${dest_dir}/${bin_name}"
+				cp_when_diff "${path}" "${cache_dir}/${bin_name}"
+				cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
 				local found="true"
 				break
 			fi
@@ -196,7 +198,7 @@ function cp_bin_to_dir()
 		local bin_urls_file="${bin_urls_file}.mac"
 	fi
 
-	local found=`cp_bin_to_dir_from_paths "${name}" "${dest_dir}" "${bin_paths_file}"`
+	local found=`cp_bin_to_dir_from_paths "${name}" "${dest_dir}" "${bin_paths_file}" "${cache_dir}"`
 	if [ "${found}" != 'true' ]; then
 		cp_bin_to_dir_from_urls "${name}" "${dest_dir}" "${bin_urls_file}" "${cache_dir}"
 	fi

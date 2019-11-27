@@ -208,3 +208,18 @@ function range_points()
 	_range_points "${min}" "${max}" "${times}" | sort -n | uniq
 }
 export -f range_points
+
+function ensure_bin_in_local_dir()
+{
+	local bin_name="${1}"
+	local target_bin_dir="${2}"
+
+	# TODO: tidy up these path	
+	local conf_templ_dir="${integrated}/conf"
+	local bin_paths_file="${conf_templ_dir}/bin.paths"
+	local bin_urls_file="${conf_templ_dir}/bin.urls"
+	local cache_dir="/tmp/ti/master/bins"
+
+	cp_bin_to_dir "${bin_name}" "${target_bin_dir}" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" 'true'
+}
+export -f ensure_bin_in_local_dir

@@ -27,6 +27,7 @@ function cmd_ti_pd_ctl_pretty()
 	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'pd_port'`
 
 	local bin_dir="/tmp/ti/master/bins"
+	ensure_bin_in_local_dir "pd_ctl" "${bin_dir}"
 	"${bin_dir}/pd-ctl" -u "http://${host}:${port}" <<< "${@}"
 }
 
