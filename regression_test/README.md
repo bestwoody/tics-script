@@ -10,7 +10,7 @@ The result of the Flash regression test will be sent to this slack channel: [#ti
 
 ```
 cd ${tiflash_home_dir}
-docker run --rm -i -t -v `pwd`:/tiflash --name ops-ci hub.pingcap.net/tiflash/ops-ci:v10 /bin/bash
+docker run --rm -i -t -v `pwd`:/tiflash --name ops-ci hub.pingcap.net/tiflash/ops-ci:v11 /bin/bash
 ```
 
 2. Run regression test in docker:

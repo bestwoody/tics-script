@@ -24,7 +24,7 @@ catchError {
                 containerTemplate(name: 'docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
                         envVars: [ envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375')],
                         alwaysPullImage: true, ttyEnabled: true, command: 'cat'),
-                containerTemplate(name: 'docker-ops-ci', image: 'hub.pingcap.net/tiflash/ops-ci:v10',
+                containerTemplate(name: 'docker-ops-ci', image: 'hub.pingcap.net/tiflash/ops-ci:v11',
                         envVars: [ envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375') ],
                         alwaysPullImage: true, ttyEnabled: true, command: 'cat'),
             ]) {
@@ -64,7 +64,7 @@ catchError {
                                     sh "cat /tmp/ti/ci/self/tidb/tidb_stderr.log"
                                     sh "cat /tmp/ti/ci/self/tikv/tikv_stderr.log"
                                     sh "cat /tmp/ti/ci/self/tikv/tikv.log"
-                                    
+
                                     throw err
                                 }
                             }
