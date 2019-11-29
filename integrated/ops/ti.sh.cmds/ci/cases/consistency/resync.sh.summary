@@ -1,8 +1,9 @@
 #!/bin/bash
 
-function cmd_ti_cases_verify_loading()
+function cmd_ti_cases_consistency_resync()
 {
 	local ti_file="${1}"
+	local ti_args="${2}"
 	shift 6
 
 	local scale='0.1'
@@ -14,13 +15,17 @@ function cmd_ti_cases_verify_loading()
 	local table='lineitem'
 	local ti="${integrated}/ops/ti.sh"
 
-	"${ti}" "${ti_file}" must burn : up
+	"${ti}" -k "${ti_args}" "${ti_file}" must burn : up : tpch/load "${scale}" "${table}" : \
+		wait/syncing "${db}" "${table}" : verify/rows "${db}" "${table}"
 
-	"${integrated}/ops/ti.sh" "${ti_file}" parallel \
-		GO: tpch/load "${scale}" "${table}" : wait/syncing "${db}" "${table}" : \
-			store/rm : up : store/rm : up : store/rm : up : store/rm : up \
+	"${integrated}/ops/ti.sh" -k "${ti_args}" "${ti_file}" parallel \
+		GO: store/rm : up : store/rm : up : store/rm : up : store/rm : up : store/rm : up \
+			store/rm : up : store/rm : up : store/rm : up : store/rm : up : store/rm : up \
+			store/rm : up : store/rm : up : store/rm : up : store/rm : up : store/rm : up \
+			store/rm : up : store/rm : up : store/rm : up : store/rm : up : store/rm : up \
+			verify/rows "${db}" "${table}" : verify/consistency "${db}" "${table}" \
 		GO: LOOP: wait/syncing "${db}" "${table}" : verify/consistency "${db}" "${table}"
 }
 
 set -euo pipefail
-cmd_ti_cases_verify_loading "${@}"
+cmd_ti_cases_consistency_resync "${@}"

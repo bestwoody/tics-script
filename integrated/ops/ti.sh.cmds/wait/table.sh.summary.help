@@ -1,2 +1,2 @@
 wait for table exists in tiflash
-usage: <cmd> database table
+usage: <cmd> database table [timeout=1200]

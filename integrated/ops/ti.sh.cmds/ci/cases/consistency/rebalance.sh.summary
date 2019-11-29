@@ -1,0 +1,34 @@
+#!/bin/bash
+
+function cmd_ti_cases_consistency_rebalance()
+{
+	local ti_file="${1}"
+	local mods="${6}"
+	shift 6
+
+	local tiflashs=`from_mods_by_type "${mods}" 'tiflash'`
+	if [ -z "${tiflash}" ]; then
+		echo "[ci ti_cases_consistency_rebalance] no selected tiflash" >&2
+		return 1
+	fi
+	if [ `echo "${tiflash}" | wc -l | awk '{print $1}'` == '1' ]; then
+		echo "[ci ti_cases_consistency_rebalance] only one selected tiflash, should be >1" >&2
+		return 1
+	fi
+
+	local scale='0.1'
+	if [ ! -z "${1+x}" ]; then
+		local scale="${1}"
+	fi
+
+	local db=`echo "tpch_${scale}" | scale_to_name`
+	local table='lineitem'
+	local ti="${integrated}/ops/ti.sh"
+
+	"${ti}" -k "${ti_args}" "${ti_file}" must burn : up
+
+	"${integrated}/ops/ti.sh" "${ti_file}" ci/cases/consistency/resync
+}
+
+set -euo pipefail
+cmd_ti_cases_consistency_rebalance "${@}"

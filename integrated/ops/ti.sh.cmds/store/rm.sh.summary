@@ -65,17 +65,24 @@ function cmd_ti_store_rm()
 		return 1
 	fi
 
+	local failed='true'
 	for (( r = 0; 0 == 0; r++ )); do
 		local status=`"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' -k "${ti_args}" \
 			"${ti_file}" 'store/status' | awk '{print $3}'`
-		if [ "${status}" == "Tomestone" ]; then
+		if [ "${status}" == "Tombstone" ]; then
+			local failed='false'
 			break
 		fi
 		if [ $((${r} % 10)) = 0 ] && [ ${r} -ge 10 ]; then
-			echo "#${r} waiting for store ${store_addr} deleted, current status: ${status}"
+			echo "   #${r} waiting for store ${store_addr} deleted, current status: ${status}"
 		fi
 		sleep 1
 	done
+
+	if [ "${failed}" == 'true' ]; then
+		echo "   cant not reach Tombstone status"
+		return 1
+	fi
 
 	"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' -k "${ti_args}" "${ti_file}" 'burn'
 	"${ti}" -h "${cmd_hosts}" -i "${tiflash_index}" -m 'tiflash' -k "${ti_args}" "${ti_file}" 'burn'

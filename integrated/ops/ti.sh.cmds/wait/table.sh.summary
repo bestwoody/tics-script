@@ -11,12 +11,17 @@ function cmd_ti_wait_table()
 	shift 6
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd wait/table] usage: <cmd> database table" >&2
+		echo "[cmd wait/table] usage: <cmd> database table [timeout=1200]" >&2
 		return 1
 	fi
 
 	local db="${1}"
 	local table="${2}"
+
+	local timeout='1200'
+	if [ ! -z "${3+x}" ]; then
+		local timeout="${3}"
+	fi
 
 	local ti="${integrated}/ops/ti.sh"
 
@@ -28,26 +33,45 @@ function cmd_ti_wait_table()
 		return 1
 	fi
 
-	for ((; 0 == 0; )); do
+	local failed='true'
+	for (( i = 0; i < "${timeout}"; i++ )); do
 		local has_db=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
 			"${ti_file}" 'ch' 'show databases' 2>/dev/null | trim_host | grep "^${db}$"`
 		if [ ${?} == 0 ] && [ ! -z "${has_db}" ]; then
+			local failed='false'
 			break
 		fi
-		sleep 0.5
+		if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
+			echo "   #${i} waiting for database ${db}"
+		fi
+		sleep 1
 	done
-	echo "   got database ${db}"
+	if [ "${failed}" == 'true' ]; then
+		echo "   get database ${db} failed" >&2
+		return 1
+	else
+		echo "   got database ${db}"
+	fi
 
-	for ((; 0 == 0; )); do
+	for (( i = 0; i < "${timeout}"; i++ )); do
 		local has_db=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
 			"${ti_file}" 'ch' 'show tables' "${db}"  2>/dev/null | trim_host | grep "^${table}$"`
 		if [ ${?} == 0 ] && [ ! -z "${has_db}" ]; then
+			local failed='false'
 			break
 		fi
-		sleep 0.5
+		if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
+			echo "   #${i} waiting for table ${db}.${table}"
+		fi
+		sleep 1
 	done
 
-	echo "   got table ${table}"
+	if [ "${failed}" == 'true' ]; then
+		echo "   get table ${db}.${table} failed" >&2
+		return 1
+	else
+		echo "   got table ${db}.${table}"
+	fi
 }
 
 cmd_ti_wait_table "${@}"

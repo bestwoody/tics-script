@@ -11,7 +11,7 @@ function cmd_ti_wait_syncing()
 	shift 6
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd wait/table] usage: <cmd> database table [wait_for_available=true]" >&2
+		echo "[cmd wait/table] usage: <cmd> database table [wait_for_available=true] [timeout=1200]" >&2
 		return 1
 	fi
 
@@ -24,6 +24,11 @@ function cmd_ti_wait_syncing()
 		if [ "${wait_for_available}" == 'available' ]; then
 			local wait_for_available='true'
 		fi
+	fi
+
+	local timeout='1200'
+	if [ ! -z "${4+x}" ]; then
+		local timeout="${4}"
 	fi
 
 	local ti="${integrated}/ops/ti.sh"
@@ -39,23 +44,38 @@ function cmd_ti_wait_syncing()
 		return 1
 	fi
 
+	local failed='true'
 	local available=''
-	for ((; 0 == 0; )); do
-		local has_table=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-			"${ti_file}" 'syncing/show' "${db}" 2>/dev/null | trim_host | grep -v "^${db}$" | grep " ${table} "`
-		local available=`echo "${has_table}" | grep ' available'`
-		if [ ${?} == 0 ] && [ ! -z "${has_table}" ]; then
-			if [ "${wait_for_available}" != 'true' ] || [ ! -z "${available}" ]; then
+	for (( i = 0; i < "${timeout}"; i++ )); do
+		local db_info=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+			"${ti_file}" 'syncing/show' "${db}" | grep -v "^${db}$" | trim_host 2>/dev/null`
+		local table_info=`echo "${db_info}" | grep " ${table} "`
+		local table_status=`echo "${table_info}" | awk '{print $2}'`
+		if [ ${?} == 0 ] && [ ! -z "${table_info}" ]; then
+			if [ "${wait_for_available}" != 'true' ] || [ "${table_status}" == 'available' ]; then
+				local failed='false'
 				break
 			fi
 		fi
-		sleep 0.5
+		if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
+			if [ "${wait_for_available}" == 'true' ]; then
+				echo "   #${i} waiting for ${db}.${table} learner storage available, now: ${table_status}"
+			else
+				echo "   #${i} waiting for ${db}.${table} in syncing list of pd"
+			fi
+		fi
+		sleep 1
 	done
 
-	if [ ! -z "${available}" ]; then
-		echo "   syncing and available"
+	if [ "${failed}" == 'true' ]; then
+		echo "   can not reach syncing status" >&2
+		return 1
 	else
-		echo "   syncing but not available yet"
+		if [ ! -z "${available}" ]; then
+			echo "   syncing and available"
+		else
+			echo "   syncing but not available yet"
+		fi
 	fi
 }
 

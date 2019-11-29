@@ -1,0 +1,2 @@
+wait for all tpch tables are in available status
+usage: <cmd> [database=auto] [wait_for_available=true] [timeout=1200]

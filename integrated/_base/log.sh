@@ -40,7 +40,7 @@ function wait_for_log()
 		fi
 	done
 
-	echo "[func wait_for_log] wait for \"${str}\" in ${file} timeout" >&2
+	echo "[func wait_for_log] timeout: waiting for \"${str}\" in ${file}" >&2
 	return 1
 }
 export -f wait_for_log

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function ti_cmd_tpch_rows()
+function ti_cmd_tpch_wait_syncing()
 {
 	local ti_file="${1}"
 	local ti_args="${2}"
@@ -14,6 +14,7 @@ function ti_cmd_tpch_rows()
 	local db=''
 	if [ ! -z "${1+x}" ]; then
 		local db="${1}"
+		shift 1
 	fi
 
 	if [ -z "${db}" ]; then
@@ -27,11 +28,16 @@ function ti_cmd_tpch_rows()
 
 	local tables=(lineitem orders partsupp part customer supplier nation part region)
 	for table in ${tables[@]}; do
-		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
-			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'verify/rows' "${db}" "${table}"
+		if [ -z "${1+x}" ]; then
+			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'wait/syncing' "${db}" "${table}"
+		else
+			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'wait/syncing' "${db}" "${table}" "${@}"
+		fi
 	done
 }
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
-ti_cmd_tpch_rows "${@}"
+ti_cmd_tpch_wait_syncing "${@}"
