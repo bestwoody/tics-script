@@ -242,8 +242,15 @@ function mysql_explain()
 
 	local host="${1}"
 	local port="${2}"
-	local query="${3}"
+	local query_input="${3}"
 	local si="${4}"
+
+	# if query_input is a file, read its content.
+    if [ -f "${query_input}" ]; then
+        local query=`cat "${query_input}"`
+    else
+        local query="${query_input}"
+    fi
 
 	if [ ! -z "`echo ${query} | sed 's/ //g' | { grep '^explain' || test $? = 1; }`" ]; then
 		return

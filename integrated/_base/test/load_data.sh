@@ -158,21 +158,25 @@ function load_tpch_data_to_ch()
 			--port="${ch_port}" -d "${db}" --query="INSERT INTO $table FORMAT CSV"
 	else
 		## Ensure all blocks exist.
+		echo "   check and translate data files."
 		for (( i = 1; i < ${blocks} + 1; ++i)); do
 			local data_file="${data_dir}/${table}.tbl.${i}"
 			if [ ! -f "${data_file}" ]; then
 				echo "[func load_tpch_data_to_mysql] ${data_file} not exists" >&2
 				return 1
+			else
+				local csv_file="${data_dir}/${table}.csv.tbl.${i}"
+				if [ ! -f "${csv_file}" ]; then
+					## trans delimiter "|" to ","
+					local workspace="${integrated}/_base/test"
+					cat "${data_file}" | python "${workspace}/trans/${table}.py" > "${csv_file}" &
+				fi
 			fi
 		done
+		wait ## Wait for all csv file generated.
+		echo "   check and translate done."
 		for ((i=1; i<${blocks}+1; ++i)); do
-			local data_file="${data_dir}/${table}.tbl.${i}"
 			local csv_file="${data_dir}/${table}.csv.tbl.${i}"
-			if [ ! -f "${csv_file}" ]; then
-				## trans delimiter "|" to ","
-				local workspace="${integrated}/_base/test"
-				cat "${data_file}" | python ${workspace}/trans/${table}.py > "${csv_file}"
-			fi
 			cat "${csv_file}" | LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${ch_bin}" client --host="${ch_host}" \
 				--port="${ch_port}" -d "${db}" --query="INSERT INTO $table FORMAT CSV" &
 		done

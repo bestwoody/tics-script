@@ -15,7 +15,7 @@ function ti_cmd_tpch_create
 	fi
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd tpch/create] usage: <cmd> scale table(all|lineitem|...) [db_suffix=\"\"] [decimal_or_double=decimal|double]" >&2
+		echo "[cmd tpch/create] usage: <cmd> scale table(all|lineitem|...) [db_suffix=\"\"] [float_type=decimal|double]" >&2
 		return
 	fi
 

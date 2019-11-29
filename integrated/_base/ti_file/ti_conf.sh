@@ -41,7 +41,7 @@ function get_bin_name_from_conf()
 }
 export -f get_bin_name_from_conf
 
-# bin_paths_file: name \t md5sum \t bin_name \t url
+# bin_paths_file: name \t bin_name \t path1:path2:...
 function cp_bin_to_dir_from_paths()
 {
 	if [ -z "${4+x}" ]; then

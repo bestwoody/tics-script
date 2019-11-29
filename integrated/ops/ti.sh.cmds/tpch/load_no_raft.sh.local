@@ -20,7 +20,7 @@ function ti_cmd_tpch_load_no_raft
 	fi
 
 	if [ -z "${3+x}" ]; then
-		echo "[cmd tpch/load_no_raft] usage: <cmd> scale table(all|lineitem|...) engine(tmt|dm) [data_dir={integrated}/data/tpch] [threads=4]" >&2
+		echo "[cmd tpch/load_no_raft] usage: <cmd> scale table(all|lineitem|...) engine(tmt|dm|mt) [data_dir={integrated}/data/tpch] [threads=4]" >&2
 		return
 	fi
 
@@ -55,7 +55,10 @@ function ti_cmd_tpch_load_no_raft
 	local file="${integrated}/conf/tools.kv"
 	local dbgen_url=`cross_platform_get_value "${file}" "dbgen_url"`
 	local dists_dss_url=`cross_platform_get_value "${file}" "dists_dss_url"`
+
+	ensure_bin_in_local_dir "tiflash" "${bin_dir}"
 	local ch_bin="${bin_dir}/tiflash"
+
 	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tcp_port'`
 
 	for table in ${tables[@]}; do
