@@ -118,6 +118,11 @@ function wait_for_pd_port_ready()
 
 	local error_handle="$-"
 	set +e
+	local nc_installed=`print_cmd_installed "nc"`
+	if [ "${nc_installed}" == "false" ]; then
+		echo "    nc not installed" >&2
+		return 1
+	fi
 	for ((i=0; i<${timeout}; i++)); do
 		nc -zv "${host}" "${port}" >/dev/null 2>&1
 		if [ "${?}" == "0" ] && [ `curl "${host}:${port}/health" 2>/dev/null` == '{"health":"true"}' ]; then
@@ -287,6 +292,11 @@ function wait_for_tikv_port_ready()
 
 	local error_handle="$-"
 	set +e
+	local nc_installed=`print_cmd_installed "nc"`
+	if [ "${nc_installed}" == "false" ]; then
+		echo "    nc not installed" >&2
+		return 1
+	fi
 	for ((i=0; i<${timeout}; i++)); do
 		nc -zv "${host}" "${port}" >/dev/null 2>&1
 		if [ "${?}" == "0" ]; then
@@ -354,7 +364,11 @@ function wait_for_tiflash()
 
 	local error_handle="$-"
 	set +e
-
+	local nc_installed=`print_cmd_installed "nc"`
+	if [ "${nc_installed}" == "false" ]; then
+		echo "    nc not installed" >&2
+		return 1
+	fi
 	for ((i=0; i<${timeout}; i++)); do
 		nc -z "${host}" "${port}" 1>/dev/null 2>&1
 		if [ "$?" == "0" ]; then

@@ -165,6 +165,56 @@ function esc_args()
 }
 export -f esc_args
 
+function print_cmd_installed()
+{
+	if [ -z "${1+x}" ]; then
+		return
+	fi
+	local error_handle="$-"
+	set +e
+	local cmd="${1}"
+	which which 1>/dev/null 2>&1
+	if [ "${?}" -ne 0 ]; then
+		echo "command which is not available" >&2
+		echo "false"
+	else
+		which "${cmd}" 1>/dev/null 2>&1
+		if [ "${?}" -eq 0 ]; then
+			echo "true"
+		else
+			echo "false"
+		fi
+	fi
+	restore_error_handle_flags "${error_handle}"
+}
+export -f print_cmd_installed
+
+function print_port_occupied()
+{
+	if [ -z "${1+x}" ]; then
+		return
+	fi
+	local error_handle="$-"
+	set +e
+	local port="${1}"
+
+	lsof -h 1>/dev/null 2>&1
+	if [ "$?" != "0" ]; then
+		echo "[func print_port_occupied] lsof not installed" >&2
+		restore_error_handle_flags "${error_handle}"
+		return 1
+	fi
+
+	local listen_num=`lsof -i:"${port}" | grep 'LISTEN' | wc -l` 
+	if [ "${listen_num}" -eq 0 ]; then
+		echo "false"
+	else
+		echo "true"
+	fi
+	restore_error_handle_flags "${error_handle}"
+}
+export -f print_port_occupied
+
 function _range_points()
 {
 	local min="${1}"

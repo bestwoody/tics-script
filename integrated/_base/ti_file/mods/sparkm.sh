@@ -142,6 +142,31 @@ function spark_master_run()
 	local spark_master_webui_port=$((${ports_delta} + ${default_spark_master_webui_port}))
 	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
 	local jdwp_port=$((${ports_delta} + ${default_jdwp_port}))
+	local spark_master_port_occupied=`print_port_occupied "${spark_master_port}"`
+	if [ "${spark_master_port_occupied}" == "true" ]; then
+		echo "   spark master port: ${spark_master_port} is occupied" >&2
+		return 1
+	fi
+	local thriftserver_port_occupied=`print_port_occupied "${thriftserver_port}"`
+	if [ "${thriftserver_port_occupied}" == "true" ]; then
+		echo "   thrift server port: ${thriftserver_port} is occupied" >&2
+		return 1
+	fi
+	local master_webui_port_occupied=`print_port_occupied "${spark_master_webui_port}"`
+	if [ "${master_webui_port_occupied}" == "true" ]; then
+		echo "   spark master webui port: ${spark_master_webui_port} is occupied" >&2
+		return 1
+	fi
+	local jmxremote_port_occupied=`print_port_occupied "${jmxremote_port}"`
+	if [ "${jmxremote_port_occupied}" == "true" ]; then
+		echo "   jmxremote port: ${jmxremote_port} is occupied" >&2
+		return 1
+	fi
+	local jdwp_port_occupied=`print_port_occupied "${jdwp_port}"`
+	if [ "${jdwp_port_occupied}" == "true" ]; then
+		echo "   jdwp port: ${jdwp_port} is occupied" >&2
+		return 1
+	fi
 
 	local error_handle="$-"
 	set +eu

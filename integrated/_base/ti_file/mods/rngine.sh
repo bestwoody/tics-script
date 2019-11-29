@@ -67,19 +67,25 @@ function rngine_run()
 		local advertise_host="`must_print_ip`"
 	fi
 
+	local proc_cnt=`print_proc_cnt "${rngine_dir}/rngine.toml" "\-\-config"`
+	if [ "${proc_cnt}" != "0" ]; then
+		echo "   running(${proc_cnt}), skipped"
+		return 0
+	fi
+
 	local rngine_port=$((${ports_delta} + ${default_rngine_port}))
+	local rngine_port_occupied=`print_port_occupied "${rngine_port}"`
+	if [ "${rngine_port_occupied}" == "true" ]; then
+		echo "   rngine port: ${rngine_port} is occupied" >&2
+		return 1
+	fi
+
 	local tiflash_http_port=$((${ports_delta} + ${default_tiflash_http_port}))
 
 	if [ "${advertise_host}" != "127.0.0.1" ] || [ "${advertise_host}" != "localhost" ]; then
 		local listen_host="${advertise_host}"
 	else
 		local listen_host="`must_print_ip`"
-	fi
-
-	local proc_cnt=`print_proc_cnt "${rngine_dir}/rngine.toml" "\-\-config"`
-	if [ "${proc_cnt}" != "0" ]; then
-		echo "   running(${proc_cnt}), skipped"
-		return 0
 	fi
 
 	local disk_avail=`df -k "${rngine_dir}" | tail -n 1 | awk '{print $4}'`

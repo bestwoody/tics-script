@@ -57,20 +57,30 @@ function tidb_run()
 		local advertise_host="`must_print_ip`"
 	fi
 
+	local proc_cnt=`print_proc_cnt "${tidb_dir}/tidb.toml" "\-\-config"`
+	if [ "${proc_cnt}" != "0" ]; then
+		echo "   running(${proc_cnt}), skipped"
+		return 0
+	fi
+
 	local tidb_port=$((${ports_delta} + ${default_tidb_port}))
 	local status_port=$((${ports_delta} + ${default_tidb_status_port}))
+	local tidb_port_occupied=`print_port_occupied "${tidb_port}"`
+	if [ "${tidb_port_occupied}" == "true" ]; then
+		echo "   tidb port: ${tidb_port} is occupied" >&2
+		return 1
+	fi
+	local status_port_occupied=`print_port_occupied "${status_port}"`
+	if [ "${status_port_occupied}" == "true" ]; then
+		echo "   tidb status port: ${status_port} is occupied" >&2
+		return 1
+	fi
 
 	local listen_host=""
 	if [ "${advertise_host}" != "127.0.0.1" ] || [ "${advertise_host}" != "localhost" ]; then
 		local listen_host="${advertise_host}"
 	else
 		local listen_host="`must_print_ip`"
-	fi
-
-	local proc_cnt=`print_proc_cnt "${tidb_dir}/tidb.toml" "\-\-config"`
-	if [ "${proc_cnt}" != "0" ]; then
-		echo "   running(${proc_cnt}), skipped"
-		return 0
 	fi
 
 	local render_str="tidb_listen_host=${listen_host}"

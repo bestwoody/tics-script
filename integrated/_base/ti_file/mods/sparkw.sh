@@ -122,17 +122,21 @@ function spark_worker_run()
 		local listen_host="`must_print_ip`"
 	fi
 
-	local spark_worker_webui_port=$((${ports_delta} + ${default_spark_worker_webui_port}))
-	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
-	local jdwp_port=$((${ports_delta} + ${default_jdwp_port}))
-
 	local str_for_finding_spark_worker="${spark_worker_dir}/spark/jars/"
-
 	local proc_cnt=`print_proc_cnt "${str_for_finding_spark_worker}" "org.apache.spark.deploy.worker.Worker"`
-
 	if [ "${proc_cnt}" != "0" ]; then
 		echo "   running(${proc_cnt}), skipped"
 		return 0
+	fi
+
+	local spark_worker_webui_port=$((${ports_delta} + ${default_spark_worker_webui_port}))
+	# TODO: jmxremote_port and jdwp_port not used in spark worker, remove them
+	local jmxremote_port=$((${ports_delta} + ${default_jmxremote_port}))
+	local jdwp_port=$((${ports_delta} + ${default_jdwp_port}))
+	local worker_webui_port_occupied=`print_port_occupied "${spark_worker_webui_port}"`
+	if [ "${worker_webui_port_occupied}" == "true" ]; then
+		echo "   spark worker webui port: ${spark_worker_webui_port} is occupied" >&2
+		return 1
 	fi
 
 	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
@@ -162,10 +166,12 @@ function spark_worker_run()
 	if [ "${worker_memory}" != "" ]; then
 		local run_worker_cmd="${run_worker_cmd} --memory ${worker_memory}"
 	fi
-	echo "export WEBUI_PORT=${spark_worker_webui_port}" > "${spark_worker_dir}/run_worker_temp.sh"
+
+	echo "export SPARK_WORKER_WEBUI_PORT=${spark_worker_webui_port}" > "${spark_worker_dir}/run_worker_temp.sh"
 	if [ ! -z "${java_home}" ]; then
 		echo "export JAVA_HOME=${java_home}" >> "${spark_worker_dir}/run_worker_temp.sh"
 	fi
+
 	echo "${run_worker_cmd}" >> "${spark_worker_dir}/run_worker_temp.sh"
 	chmod +x "${spark_worker_dir}/run_worker_temp.sh"
 	mv "${spark_worker_dir}/run_worker_temp.sh" "${spark_worker_dir}/run_worker.sh"

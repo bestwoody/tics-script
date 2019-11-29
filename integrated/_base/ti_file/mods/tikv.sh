@@ -64,12 +64,17 @@ function tikv_run()
 		local listen_host="`must_print_ip`"
 	fi
 
-	local tikv_port=$((${ports_delta} + ${default_tikv_port}))
-
 	local proc_cnt=`print_proc_cnt "${tikv_dir}/tikv.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
 		echo "   running(${proc_cnt}), skipped"
 		return 0
+	fi
+
+	local tikv_port=$((${ports_delta} + ${default_tikv_port}))
+	local tikv_port_occupied=`print_port_occupied "${tikv_port}"`
+	if [ "${tikv_port_occupied}" == "true" ]; then
+		echo "   tikv port: ${tikv_port} is occupied" >&2
+		return 1
 	fi
 
 	local disk_avail=`df -k "${tikv_dir}" | tail -n 1 | awk '{print $4}'`

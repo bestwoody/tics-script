@@ -153,6 +153,27 @@ function tiflash_run()
 	local interserver_http_port=$((${ports_delta} + ${default_tiflash_interserver_http_port}))
 	local tiflash_raft_and_cop_port=$((${ports_delta} + ${default_tiflash_raft_and_cop_port}))
 
+	local http_port_occupied=`print_port_occupied "${http_port}"`
+	if [ "${http_port_occupied}" == "true" ]; then
+		echo "   tiflash http port: ${http_port} is occupied" >&2
+		return 1
+	fi
+	local tcp_port_occupied=`print_port_occupied "${tcp_port}"`
+	if [ "${tcp_port_occupied}" == "true" ]; then
+		echo "   tiflash tcp port: ${tcp_port} is occupied" >&2
+		return 1
+	fi
+	local interserver_http_port_occupied=`print_port_occupied "${interserver_http_port}"`
+	if [ "${interserver_http_port_occupied}" == "true" ]; then
+		echo "   tiflash interserver http port: ${interserver_http_port} is occupied" >&2
+		return 1
+	fi
+	local raft_and_cop_port_occupied=`print_port_occupied "${tiflash_raft_and_cop_port}"`
+	if [ "${raft_and_cop_port_occupied}" == "true" ]; then
+		echo "   tiflash raft and cop port: ${tiflash_raft_and_cop_port} is occupied" >&2
+		return 1
+	fi
+
 	local render_str="tiflash_dir=${tiflash_dir}"
 	local render_str="${render_str}#tiflash_pd_addr=${pd_addr}"
 	local render_str="${render_str}#tiflash_tidb_addr=${tidb_addr}"

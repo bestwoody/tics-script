@@ -70,21 +70,31 @@ function pd_run()
 		return 1
 	fi
 
-	local pd_port=$((${name_ports_delta} + ${default_pd_port}))
-	local peer_port=$((${name_ports_delta} + ${default_pd_peer_port}))
-
-	if [ -z "${initial_cluster}" ]; then
-		local initial_cluster="${pd_name}=http://${advertise_host}:${peer_port}"
-	else
-		local initial_cluster=$(cal_addr "${initial_cluster}" "${advertise_host}" "${default_pd_peer_port}" "${pd_name}")
-	fi
-
 	local proc_cnt=`print_proc_cnt "${pd_dir}/pd.toml" "\-\-config"`
 	if [ "${proc_cnt}" != "0" ]; then
 		echo "   running(${proc_cnt}), skipped"
 		return 0
 	fi
 
+	local pd_port=$((${name_ports_delta} + ${default_pd_port}))
+	local peer_port=$((${name_ports_delta} + ${default_pd_peer_port}))
+	local pd_port_occupied=`print_port_occupied "${pd_port}"`
+	if [ "${pd_port_occupied}" == "true" ]; then
+		echo "   pd port: ${pd_port} is occupied" >&2
+		return 1
+	fi
+	local peer_port_occupied=`print_port_occupied "${peer_port}"`
+	if [ "${peer_port_occupied}" == "true" ]; then
+		echo "   peer port: ${peer_port} is occupied" >&2
+		return 1
+	fi
+
+	if [ -z "${initial_cluster}" ]; then
+		local initial_cluster="${pd_name}=http://${advertise_host}:${peer_port}"
+	else
+		local initial_cluster=$(cal_addr "${initial_cluster}" "${advertise_host}" "${default_pd_peer_port}" "${pd_name}")
+	fi
+	
 	cp_when_diff "${conf_templ_dir}/pd.toml" "${pd_dir}/pd.toml"
 
 	local info="${pd_dir}/proc.info"

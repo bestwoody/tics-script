@@ -53,6 +53,11 @@ function cluster_manager_run()
 
 	local error_handle="$-"
 	set +e
+	local nc_installed=`print_cmd_installed "nc"`
+	if [ "${nc_installed}" == "false" ]; then
+		echo "    nc not installed" >&2
+		return 1
+	fi
 	local http_port_ready='false'
 	for ((i=0; i<${timeout}; i++)); do
 		nc -z "${listen_host}" "${http_port}" 1>/dev/null 2>&1
