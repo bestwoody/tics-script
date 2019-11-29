@@ -51,7 +51,9 @@ catchError {
                         stage("OPS TI Test") {
                             container("docker-ops-ci") {
                                 try {
-                                    sh "tests/ci/jenkins.sh"
+                                    timeout(60) {
+                                        sh "tests/ci/jenkins.sh"
+                                    }
                                 } catch (err) {
                                     sh "cat /tmp/ti/ci/self/rngine/rngine.log"
                                     sh "cat /tmp/ti/ci/self/rngine/rngine_stderr.log"

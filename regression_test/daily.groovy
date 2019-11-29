@@ -72,7 +72,9 @@ def runTest(branch, label, notify) {
                     container("docker-ops-ci") {
                         dir("/home/jenkins/agent/git/tiflash") {
                             try {
-                                sh "regression_test/daily.sh"
+                                timeout(360) {
+                                    sh "regression_test/daily.sh"
+                                }
                             } catch (err) {
                                 sh "cat /tmp/ti/ci/release/rngine/rngine.log"
                                 sh "cat /tmp/ti/ci/release/rngine/rngine_stderr.log"
@@ -109,7 +111,9 @@ def runTest(branch, label, notify) {
                         dir("/home/jenkins/agent/git/tiflash") {
                             try {
                                 sh "cp regression_test/conf/bin.paths integrated/conf/"
-                                sh "regression_test/daily.sh"
+                                timeout(360) {
+                                    sh "regression_test/daily.sh"
+                                }
                             } catch (err) {
                                 sh "cat /tmp/ti/ci/release/rngine/rngine.log"
                                 sh "cat /tmp/ti/ci/release/rngine/rngine_stderr.log"
