@@ -47,8 +47,8 @@ function _build_and_update_mod()
 			if [ ! -z "${commit}" ]; then
 				git reset --hard "${commit}"
 			fi
-			cd "${here}"
 			local commit_hash=`git log | head -n 1 | awk '{print $2}'`
+			cd "${here}"
 		else
 			git checkout "${branch}"
 			git pull
