@@ -69,7 +69,7 @@ function cmd_ti_store_rm()
 	for (( r = 0; 0 == 0; r++ )); do
 		local status=`"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' -k "${ti_args}" \
 			"${ti_file}" 'store/status' | awk '{print $3}'`
-		if [ "${status}" == "Tombstone" ]; then
+		if [ "${status}" == "Empty" ] || [ "${status}" == "Tombstone" ]; then
 			local failed='false'
 			break
 		fi

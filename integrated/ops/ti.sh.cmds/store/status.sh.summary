@@ -23,7 +23,7 @@ function print_tikv_or_rngine_status()
 		-i "${cmd_indexes}" "${ti_file}" "pd/ctl_raw" "store" \
 		| print_jpath "$.stores[?(@.store.${address_name}=='${host}:${port}')].store.state_name"`
 	if [ -z "${status}" ]; then
-		local status="Tomestone"
+		local status="Empty"
 	fi
 	echo "${host}:${port} ${name} ${status}"
 }
