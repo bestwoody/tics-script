@@ -1,0 +1,2 @@
+kill all executing queries in tiflash
+usage: <cmd> [no args]
