@@ -1,0 +1,2 @@
+speed up data syncing from tikv to tiflash
+usage: <cmd> [region_and_replica_schedule_limit=128] [store_limit=6000]

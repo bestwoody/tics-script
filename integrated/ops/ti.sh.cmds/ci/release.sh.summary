@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TODO: remote 'sleep' after FLASH-635 is addressed
+# TODO: remove 'sleep' after FLASH-635 is addressed
 function cmd_ti_ci_release()
 {
 	local file="${1}"

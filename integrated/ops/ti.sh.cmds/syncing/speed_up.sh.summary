@@ -1,0 +1,36 @@
+#!/bin/bash
+
+function cmd_ti_syncing_speed_up()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		local schedule_limit='128'
+	else
+		local schedule_limit="${1}"
+	fi
+	if [ -z "${2+x}" ]; then
+		local store_limit='6000'
+	else
+		local store_limit="${2}"
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+
+	local pd_index=`from_mods_random_mod "${mods}" 'pd'`
+	"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" \
+		'pd/ctl' config set region-schedule-limit "${schedule_limit}"
+	"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" \
+		'pd/ctl' config set replica-schedule-limit "${schedule_limit}"
+	"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m 'pd' -i "${pd_index}" "${ti_file}" \
+		'pd/ctl' store limit all "${store_limit}"
+}
+
+set -euo pipefail
+cmd_ti_syncing_speed_up "${@}"

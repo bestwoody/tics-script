@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TODO: remote 'sleep' after FLASH-635 is addressed
+# TODO: remove 'sleep' after FLASH-635 is addressed
 function cmd_ti_ci_cluster()
 {
 	local file="${1}"
@@ -12,7 +12,7 @@ function cmd_ti_ci_cluster()
 	"${ti}" -k "${args}" "${file}" stop : fstop : up : sleep 5
 
 	"${ti}" -k "${args}" "${file}" tpch/create 0.01 region : tpch/load 0.01 region : sleep 5
-	"${ti}" -k "${args}" "${file}" mysql/nogc : tpch/load 0.01 all : sleep 5 : tpch/tikv all tpch_0_01
+	"${ti}" -k "${args}" "${file}" mysql/nogc : syncing/speed_up : tpch/load 0.01 all : sleep 5 : tpch/tikv all tpch_0_01
 
 	"${ti}" -k "${args}" "${file}" tpch/ch all tpch_0_01 : tpch/db : ch/compaction tpch_0_01 lineitem
 
