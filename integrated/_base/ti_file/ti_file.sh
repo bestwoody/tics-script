@@ -118,7 +118,7 @@ function ti_file_exe()
 	fi
 
 	local has_func=`func_exists "ti_file_cmd_${cmd}"`
-	if [ -z "${script}" ] && [ -z "${summary}" ] && [ "${has_func}" != 'true' ] && [ "${cmd}" != 'run' ] && [ "${cmd}" != 'dry' ]; then
+	if [ -z "${script}" ] && [ -z "${summary}" ] && [ "${has_func}" != 'true' ] && [ "${cmd}" != 'run' ] && [ "${cmd}" != 'dry' ] && [ "${cmd}" != 'predeploy' ]; then
 		echo "none of this scripts can be found:" >&2
 		echo "  ${cmd_dir}/${cmd}.sh" >&2
 		echo "  ${cmd_dir}/${cmd}.sh.summary" >&2
@@ -144,6 +144,9 @@ function ti_file_exe()
 	if [ -z "${script}" ] && [ ! -z "${summary}" ]; then
 		local do_deploy='false'
 	fi
+	if [ "${cmd}" == 'predeploy' ]; then
+		local do_deploy='true'
+	fi
 
 	if [ "${do_deploy}" == 'true' ]; then
 		# TODO: Parallel ping and copy
@@ -157,6 +160,11 @@ function ti_file_exe()
 				cp_env_to_host "${integrated}" "${local_cache_env}" "${host}" "${remote_env_parent}"
 			fi
 		done
+	fi
+
+	if [ "${cmd}" == 'predeploy' ]; then
+		echo "script env deploying done"
+		return
 	fi
 
 	if [ "${byhost}" != 'true' ]; then
