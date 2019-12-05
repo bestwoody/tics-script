@@ -12,7 +12,7 @@ log-level = "info"
 [readpool.coprocessor]
 
 [server]
-labels = { engine = "tiflash", "tiflash_http_port" = "{tiflash_http_port}" }
+labels = { "tiflash_http_port" = "{tiflash_http_port}" }
 engine-addr = "{tiflash_raft_addr}"
 
 [storage]

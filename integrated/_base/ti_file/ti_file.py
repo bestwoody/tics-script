@@ -412,10 +412,10 @@ def render_tiflashs(res, conf, hosts, indexes):
             print '# tiflash_safe_run dir conf_templ_dir daemon_mode pd_addr tidb_addr ports_delta listen_host cluster_id'
             print (ssh + 'tiflash_safe_run "%s" \\') % tiflash.dir
             print '\t"%s" \\' % conf_templ_dir
-            pd_addr = tiflash.pd and ';'.join(tiflash.pd.split(',')) or ';'.join(res.pd_addr)
+            pd_addr = tiflash.pd and tiflash.pd or ','.join(res.pd_addr)
             if len(res.tidbs) <= 0:
                 return
-            tidb_addr = ';'.join(map(lambda x: x.host + ':' + x.ports, res.tidbs))
+            tidb_addr = ','.join(map(lambda x: x.host + ':' + x.ports, res.tidbs))
             print '\t"true" "%s" "%s" "%s" "%s" "${id}"' % (pd_addr, tidb_addr, tiflash.ports, tiflash.host)
 
         if tiflash.is_local():

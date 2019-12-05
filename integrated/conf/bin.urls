@@ -3,9 +3,6 @@
 # https://github.com/disksing/pd/tree/placement - eecd15291aa326b3401af28c7a0592ef99f6cf09
 pd      d20b7ba9c08d011decbee565897a3c25        pd-server       http://139.219.11.38:8000/rdHnq/pd-server.tar.gz
 
-# https://github.com/pingcap/tiflash/pull/867
-cluster_manager	966e5d77831a75559ad91e391cfb8835	flash_cluster_manager	http://139.219.11.38:8000/UlyFr/flash_cluster_manager.tar.gz
-
 # master - 6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 chspark	f983c70d2a09880df5fbd4d61e6bb0dc	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/rZiST/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
 
@@ -20,5 +17,6 @@ tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.3
 tidb    d8baa9a3fd51f339b1721a71bfb0baa5        tidb-server     http://139.219.11.38:8000/QXVXX/tidb-server.tar.gz          master  e9f19970d51164cff7f6da5976796e2e95c174e8
 tikv    162ba2080cd8a4d9949dd70ac2b17ad8        tikv-server     http://139.219.11.38:8000/DKMOw/tikv-server.tar.gz      master  ce273530df2ecdf3c4092edef29dae57f2341e6c
 rngine	32bbcc52f89f4eff881d4da9b0f63864	tikv-server-rngine	http://139.219.11.38:8000/BK8vA/tikv-server-rngine.tar.gz	rngine	4e4bbc0487f724e8c1c5d2932d191e62bb9d1991
-tiflash 9fcd35993d97c5d092ef6751f48a36d1        tiflash http://139.219.11.38:8000/H9ulJ/tiflash.tar.gz  master  78df65b4fa3f4a7d96beed64cea60c3294a58638
 tispark	b97a82d0d62fb4511e1791c224089f4d	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/Ov8xY/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	3318f4cc395f2f192510427b9ac9a07ee534d250
+tiflash	3014773ad0d107df1509c7ca0cb47cc4	tiflash	http://139.219.11.38:8000/ZHbFT/tiflash.tar.gz	master	2819f26e5e9718bbba97af3a16983c0f2997adc9
+cluster_manager	46e15f9cbdf226f7a6cb4fe29621a101	flash_cluster_manager	http://139.219.11.38:8000/xu8tJ/flash_cluster_manager.tar.gz	FLASH-403	57016ce964ab0af161bf29eee79f13284d938813

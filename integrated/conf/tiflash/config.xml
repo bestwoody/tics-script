@@ -26,8 +26,6 @@
         <kvstore_path>{tiflash_dir}/kvstore</kvstore_path>
         <pd_addr>{tiflash_pd_addr}</pd_addr>
         <ignore_databases>system,default</ignore_databases>
-        <learner_key>engine</learner_key>
-        <learner_value>tiflash</learner_value>
     </raft>
 
     <flash>

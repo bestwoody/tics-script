@@ -48,8 +48,3 @@ tolerant-size-ratio = 5.0
 location-labels = []
 max-replicas = 1
 enable-placement-rules = true
-
-[label-property]
-[[label-property.slave]]
-key = "engine"
-value = "tiflash"
