@@ -1,7 +1,5 @@
 # name \t md5sum \t bin_name \t url
 
-pd	d1388387554eb9eb0bfd280e8ecfd011	pd-server	http://139.219.11.38:8000/u0r3q/pd-server.tar.gz	placement	eecd15291aa326b3401af28c7a0592ef99f6cf09
-
 chspark	689954d70cd1e7d385f639518dcc0c77	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/btq5X/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz	master	6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 
 pd_ctl	2dbb87e4bbea4a68409cfb8debabbbfc	pd-ctl	http://139.219.11.38:8000/VKwpv/pd-ctl.tar.gz
@@ -16,6 +14,7 @@ tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.3
 rngine	8cc5febacc6cc9e2b9970877bed33239	tikv-server-rngine	http://139.219.11.38:8000/14TWVN/tikv-server-rngine.tar.gz	rngine	80f4a74cc6172a8424069bd2300b7ac5d1fc17a4
 tikv	9ac13c855c86212e7b1b92287c1e6dfc	tikv-server	http://139.219.11.38:8000/2SH97/tikv-server.tar.gz	master	d426d9c876d8e1f83b7b3b046029666451de4353
 tidb	55bead2a9ec159ad0c8fcce72a2364ba	tidb-server	http://139.219.11.38:8000/Djaap/tidb-server.tar.gz	master	e4d199d93a9db4565752220f76c6a921e393e328
+pd	93a11d3d11e37944af70e3d795044765	pd-server	http://139.219.11.38:8000/o2Q60/pd-server.tar.gz	placement	f05b79c22ec83ec2d794933532150ab794c216dc
 tispark	b97a82d0d62fb4511e1791c224089f4d	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/Ov8xY/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	3318f4cc395f2f192510427b9ac9a07ee534d250
 tiflash	3433f4a45b29010110d7559f75a9279f	tiflash	http://139.219.11.38:8000/ELRPW/tiflash.tar.gz	master	2819f26e5e9718bbba97af3a16983c0f2997adc9
 cluster_manager	d7b5a1e86f64de7e4a7739303d3b2ddf	flash_cluster_manager	http://139.219.11.38:8000/zqhRp/flash_cluster_manager.tar.gz	FLASH-403	57016ce964ab0af161bf29eee79f13284d938813
