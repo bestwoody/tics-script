@@ -9,8 +9,8 @@ function cmd_ti_global_ci_release()
 	local file="${dir}/release.ti"
 	rm -f "${file}"
 
-	"${ti}" new "${file}" 'delta=-8' "dir=${dir}"
-	"${ti}" "${file}" burn : up : sleep 5
+	"${ti}" new "${file}" 'delta=-8' 'tikv=2' 'tiflash=2' "dir=${dir}"
+	"${ti}" "${file}" burn : up
 	"${ti}" "${file}" ci/release
 	"${ti}" "${file}" must burn
 
