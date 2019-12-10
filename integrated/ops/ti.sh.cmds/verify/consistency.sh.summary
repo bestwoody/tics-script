@@ -85,6 +85,12 @@ function cmd_ti_verify_consistency()
 		return
 	fi
 
+	local has_store_error=`echo "${min_max_tso}" | grep 'maybe learner storage is not ready'`
+	if [ ! -z "${has_store_error}" ]; then
+		echo "[cmd verify/consistency] maybe learner storage is not ready, ignored" >&2
+		return
+	fi
+
 	local has_error=`echo "${min_max_tso}" | grep 'Exception: '`
 	if [ ! -z "${has_error}" ]; then
 		echo "[cmd verify/consistency] getting min-max ts failed: ${has_error}" >&2
