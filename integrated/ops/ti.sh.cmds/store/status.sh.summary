@@ -19,9 +19,12 @@ function print_tikv_or_rngine_status()
 		echo "[func print_tikv_or_rngine_status] getting port failed" >&2
 		return 1
 	fi
-	local status=`"${integrated}/ops/ti.sh" -k "${ti_args}" -h "${cmd_hosts}" \
-		-i "${cmd_indexes}" "${ti_file}" "pd/ctl_raw" "store" \
-		| print_jpath "$.stores[?(@.store.${address_name}=='${host}:${port}')].store.state_name"`
+	local status=`"${integrated}/ops/ti.sh" -k "${ti_args}" -h "${cmd_hosts}" "${ti_file}" "pd/ctl_raw" "store"`
+	if [ -z "${status}" ]; then
+		echo "[func print_tikv_or_rngine_status] pd/ctl_raw failed" >&2
+		return 1
+	fi
+	local status=`echo "${status}" | print_jpath "$.stores[?(@.store.${address_name}=='${host}:${port}')].store.state_name"`
 	if [ -z "${status}" ]; then
 		local status="Empty"
 	fi
@@ -55,7 +58,7 @@ function cmd_ti_status()
 	if [ ! -z "${rngine_mods}" ]; then
 		echo "${rngine_mods}" | while read rngine_mod; do
 			print_tikv_or_rngine_status "${ti}" "${ti_file}" "${ti_args}" "${cmd_hosts}" \
-				"${cmd_indexes}" "${rngine_mod}" "rngine_port" "peer_address"			
+				"${cmd_indexes}" "${rngine_mod}" "rngine_port" "peer_address"
 		done
 	fi
 }

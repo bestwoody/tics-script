@@ -15,12 +15,6 @@ function cmd_ti_store_rm()
 		local tiflash_index_arg="${1}"
 	fi
 
-	local pd_index=`from_mods_random_mod "${mods}" 'pd'`
-	if [ -z "${pd_index}" ]; then
-		echo "[cmd store/rm] no selected pd" >&2
-		local pd_index='0'
-	fi
-
 	if [ "${tiflash_index_arg}" == 'random' ]; then
 		local tiflash_index=`from_mods_random_mod "${mods}" 'tiflash'`
 		if [ -z "${tiflash_index}" ]; then
@@ -44,7 +38,7 @@ function cmd_ti_store_rm()
 	local rngine_port=`echo "${rngine_prop}" | grep "rngine_port" | awk -F 'rngine_port:' '{print $2}' | tr -d ' '`
 
 	local store_addr="${rngine_host}:${rngine_port}"
-	local store_id=`"${integrated}/ops/ti.sh" -i "${pd_index}" -k "${ti_args}" "${ti_file}" "pd/ctl_raw" "store" | \
+	local store_id=`"${integrated}/ops/ti.sh" -k "${ti_args}" "${ti_file}" "pd/ctl_raw" "store" | \
 		print_jpath "$.stores[?(@.store.peer_address=='${store_addr}')].store.id"`
 	if [ -z "${store_id}" ]; then
 		echo "[cmd store/rm] cannot get store id from pd by ${store_addr}" >&2
@@ -56,7 +50,7 @@ function cmd_ti_store_rm()
 	#"${ti}" -h "${cmd_hosts}" -i "${rngine_index}" -m 'rngine' -k "${ti_args}" "${ti_file}" 'fstop'
 	#"${ti}" -h "${cmd_hosts}" -i "${tiflash_index}" -m 'tiflash' -k "${ti_args}" "${ti_file}" 'fstop'
 
-	local op_resp=`"${integrated}/ops/ti.sh" -i "${pd_index}" -k "${ti_args}" "${ti_file}" \
+	local op_resp=`"${integrated}/ops/ti.sh" -k "${ti_args}" "${ti_file}" \
 		"pd/ctl_raw" "store delete ${store_id}"`
 	# TODO: remove tr
 	# local op_resp=`echo "${op_resp}" | tr -d '\[\][0-9] \.'`
