@@ -14,7 +14,7 @@ tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.3
 rngine	8cc5febacc6cc9e2b9970877bed33239	tikv-server-rngine	http://139.219.11.38:8000/14TWVN/tikv-server-rngine.tar.gz	rngine	80f4a74cc6172a8424069bd2300b7ac5d1fc17a4
 tikv	9ac13c855c86212e7b1b92287c1e6dfc	tikv-server	http://139.219.11.38:8000/2SH97/tikv-server.tar.gz	master	d426d9c876d8e1f83b7b3b046029666451de4353
 tidb	55bead2a9ec159ad0c8fcce72a2364ba	tidb-server	http://139.219.11.38:8000/Djaap/tidb-server.tar.gz	master	e4d199d93a9db4565752220f76c6a921e393e328
-pd	93a11d3d11e37944af70e3d795044765	pd-server	http://139.219.11.38:8000/o2Q60/pd-server.tar.gz	placement	f05b79c22ec83ec2d794933532150ab794c216dc
+pd	1159d5ae32825ec8016db411ed8abed4	pd-server	http://139.219.11.38:8000/nQdVH/pd-server.tar.gz	placement	8eb7c403029228defcaff60907edacb4390ba1c8
 tiflash	3433f4a45b29010110d7559f75a9279f	tiflash	http://139.219.11.38:8000/ELRPW/tiflash.tar.gz	master	2819f26e5e9718bbba97af3a16983c0f2997adc9
 cluster_manager	d7b5a1e86f64de7e4a7739303d3b2ddf	flash_cluster_manager	http://139.219.11.38:8000/zqhRp/flash_cluster_manager.tar.gz	FLASH-403	57016ce964ab0af161bf29eee79f13284d938813
 tispark	4a7908f351860316382a124af6d5575c	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/ODvMn/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	8a5bafcf5b3476d0c0318a2f83ad68bea8b89605
