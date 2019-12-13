@@ -1,0 +1,44 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+function ti_cmd_lightning_load_tpch()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+
+	shift 6
+
+	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] ; then
+		echo "[cmd lightning/load_tpch] usage: <cmd> database table data_source [check_checksum=true|false] [header=false|true]" >&2
+		echo "                          with check_checksum=false, loading will speed up a lot" >&2
+		return 1
+	fi
+
+	local db="${1}"
+	local table="${2}"
+	local data_source="${3}"
+	local check_checksum="${4:-"true"}"
+
+	# mydumper.csv options. See `https://pingcap.com/docs-cn/stable/reference/tools/tidb-lightning/csv/` for details.
+	local header="${5:-"false"}"
+	local separator="|"
+	local delimiter=""
+	local not_null="true"
+	local null=""
+	local backslash_escape="false"
+	local trim_last_separator="true"
+
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+		"${ti_file}" 'lightning/load' \
+			"${db}" "${table}" "${data_source}" "${check_checksum}" \
+			"${header}" "${separator}" "${delimiter}" "${not_null}" "${null}" "${backslash_escape}" "${trim_last_separator}"
+}
+
+ti_cmd_lightning_load_tpch "${@}"

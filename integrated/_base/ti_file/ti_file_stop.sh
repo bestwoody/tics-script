@@ -25,30 +25,27 @@ function ti_file_mod_stop()
 
 	if [ "${name}" == "pd" ]; then
 		pd_stop "${dir}" "${fast}" | awk '{print "   "$0}'
-	fi
-	if [ "${name}" == "tikv" ]; then
+	elif [ "${name}" == "tikv" ]; then
 		tikv_stop "${dir}" "${fast}" | awk '{print "   "$0}'
-	fi
-	if [ "${name}" == "tidb" ]; then
+	elif [ "${name}" == "tidb" ]; then
 		tidb_stop "${dir}" "${fast}" | awk '{print "   "$0}'
-	fi
-	if [ "${name}" == "tiflash" ]; then
+	elif [ "${name}" == "tiflash" ]; then
 		tiflash_stop "${dir}" "${fast}" | awk '{print "   "$0}'
-	fi
-	if [ "${name}" == "rngine" ]; then
+	elif [ "${name}" == "rngine" ]; then
 		rngine_stop "${dir}" "${fast}" | awk '{print "   "$0}'
-	fi
-	if [ "${name}" == "spark_m" ]; then
+	elif [ "${name}" == "spark_m" ]; then
 		spark_master_stop "${dir}" "${fast}" | awk '{print "   "$0}'
-	fi
-	if [ "${name}" == "spark_w" ]; then
+	elif [ "${name}" == "spark_w" ]; then
 		spark_worker_stop "${dir}" "${fast}" | awk '{print "   "$0}'
-	fi
-	if [ "${name}" == "chspark_m" ]; then
+	elif [ "${name}" == "chspark_m" ]; then
 		spark_master_stop "${dir}" "${fast}" | awk '{print "   "$0}'
-	fi
-	if [ "${name}" == "chspark_w" ]; then
+	elif [ "${name}" == "chspark_w" ]; then
 		spark_worker_stop "${dir}" "${fast}" | awk '{print "   "$0}'
+	elif [ "${name}" == "tikv_importer" ]; then
+		tikv_importer_stop "${dir}" "${fast}" | awk '{print "   "$0}'
+	else
+		echo "   unknown mod to stop."
+		return 1
 	fi
 
 	local up_status=`ti_file_mod_status "${dir}" "${conf}"`

@@ -1,0 +1,141 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+function ti_cmd_tpch_load_fast()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+
+	shift 6
+
+	local help="[cmd tpch/load_fast] usage: <cmd> scale table(all|lineitem|..) sync_to_tiflash(true|false) [threads=auto] [db_suffix=''] [float_type=decimal|double] [check_checksum=true|false] [data_dir={integrated}/data/tpch]"
+	if [ -z "${2+x}" ]; then
+		echo "${help}" >&2
+		return 1
+	fi
+
+	local scale="${1}"
+	local table="${2}"
+
+	local sync_to_tiflash="${3:-"true"}"
+
+	local tidbs=`from_mods_by_type "${mods}" 'tidb'`
+	if [ -z "${tidbs}" ]; then
+		echo "[cmd tpch/load_fast] not tidb module found" >&2
+		return 1
+	fi
+
+	local blocks="${4:-"4"}"
+
+	if [ ! -z "${5+x}" ] && [ ! -z "${5}" ]; then
+		local db_suffix="_${5}"
+	else
+		local db_suffix=''
+	fi
+
+	local float_type="${6:-"decimal"}"
+	local check_checksum="${7:-"true"}"
+	local data_dir="${8:-"${integrated}/data/tpch"}"
+
+	if [ "${float_type}" == "decimal" ]; then
+		local schema_dir="${integrated}/resource/tpch/mysql/schema"
+	elif [ "${float_type}" == "double" ]; then
+		local ori_schema_dir="${integrated}/resource/tpch/mysql/schema"
+		local schema_dir="${ori_schema_dir}_double"
+		# Replace fields from `DECIMAL(..,..)` to `DOUBLE`
+		trans_schema_fields_decimal_to_double "${ori_schema_dir}" "${schema_dir}"
+	else
+		echo "[cmd tpch/load] unknown float type: ${float_type}, should be 'decimal' or 'double'" >&2
+		return 1
+	fi
+
+	local db=`echo "tpch_${scale}${db_suffix}" | scale_to_name`
+	local dbgen_bin_dir="/tmp/ti/master/bins"
+
+	if [ "${table}" != 'all' ]; then
+		local tables=("${table}")
+	else
+		local tables=(customer nation orders part region supplier partsupp lineitem)
+	fi
+
+	local conf_file="${integrated}/conf/tools.kv"
+	local dbgen_url=`cross_platform_get_value "${conf_file}" "dbgen_url"`
+	local dists_dss_url=`cross_platform_get_value "${conf_file}" "dists_dss_url"`
+
+	# adjust pd schedule threshold to let it fly
+	echo "=> speed up pd schedulers"
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+		"${ti_file}" "syncing/speed_up" 128 6000
+
+	for table in ${tables[@]}; do
+		local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+		local host=`from_mod_get_host "${mod}"`
+		local port=`from_mod_get_proc_info "${mod}" "tidb_port"`
+		if [ -z "${mod}" ] || [ -z "${host}" ] || [ -z "${port}" ]; then
+			echo "[cmd tpch/load] getting tidb address from random instance failed" >&2
+			return 1
+		fi
+
+		local start_time=`date +%s`
+		echo "=> [${host}] generating data of ${db}.${table}"
+		local table_dir="${data_dir}/tpch_s`echo ${scale} | scale_to_name`_b${blocks}/${table}"
+		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
+		echo '   generated'
+
+		# create table in tidb
+		echo "=> [${host}] creating ${db}.${table}"
+		create_tpch_table_to_mysql "${host}" "${port}" "${schema_dir}" "${db}" "${table}"
+
+		echo "=> [${host}] loading data to ${db}.${table} by tidb-lightning"
+		# clean and create dir for lighting to load
+		local import_dir="${table_dir}/.import.${db}.${table}.`date +%s`.${RANDOM}"
+		rm -rf ${import_dir}
+		mkdir -p "${import_dir}"
+		(
+			cd "${import_dir}"
+			for f in `ls "${table_dir}" | grep "${table}.tbl." `; do
+				local num=`echo ${f} | awk -F. '{print $3}'`
+				ln -sf "../${f}" "${db}.${table}.${num}.csv"
+			done
+		)
+		wait
+		# load data using lightning
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+			"${ti_file}" 'lightning/load' "${db}" "${table}" "${import_dir}" "${check_checksum}" | awk '{print "   "$0}'
+		# analyze table after data loaded.
+		mysql -u root -P "${port}" -h "${host}" -D "${db}" -e "analyze table ${table};"
+		local finish_time=`date +%s`
+		local duration=$((finish_time-start_time))
+		echo "   lightning loaded in ${duration}s"
+		rm -rf "${import_dir}"
+
+		# turn on sync to tiflash 
+		if [ "${sync_to_tiflash}" == 'true' ]; then
+			echo "   syncing to tiflash"
+			local start_time=`date +%s`
+			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+				"${ti_file}" 'syncing/set' "${db}" "${table}" | awk '{print "   "$0}'
+
+			# wait for tiflash become avaliable
+			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+				"${ti_file}" "wait/syncing" "${db}" "${table}" | awk '{print "   "$0}'
+
+			local finish_time=`date +%s`
+			local duration=$((finish_time-start_time))
+			echo "   sync to tiflash in ${duration}s"
+		elif [ "${sync_to_tiflash}" != 'false' ]; then
+			echo "[cmd tpch/load] arg 'sync_to_tiflash' only can be true|false, got ${sync_to_tiflash}" >&2
+			return 1
+		fi
+
+	done
+}
+
+ti_cmd_tpch_load_fast "${@}"

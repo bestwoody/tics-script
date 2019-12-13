@@ -1,0 +1,87 @@
+# TiDB Lightning configuration file template
+# https://pingcap.com/docs-cn/stable/reference/tools/tidb-lightning/deployment/
+
+[lightning]
+# Toggle server mode.
+# If "false", running Lightning will immediately start the import job, and exits
+# after the job is finished.
+# If "true", running Lightning will wait for user to submit tasks, via the HTTP API
+# (`curl http://lightning-ip:8289/tasks --data-binary @tidb-lightning.toml`).
+# The program will keep running and waiting for more tasks, until receiving the SIGINT signal.
+server-mode = {server_mode}
+
+# Listening address for the HTTP server (set to empty string to disable).
+# The server is responsible for the web interface, submitting import tasks,
+# serving Prometheus metrics and exposing debug profiling data.
+status-addr = "{lightning_addr}"
+
+pprof-port = 0
+# check-requirements = true
+index-concurrency = 2
+table-concurrency = 6
+# region-concurrency =
+io-concurrency = 5
+# logging
+level = "info"
+file = "{lightning_dir}/tidb-lightning.log"
+max-size = 128 # MB
+max-days = 28
+max-backups = 14
+
+[checkpoint]
+enable = true
+schema = "tidb_lightning_checkpoint"
+driver = "file"
+dsn = "/tmp/tidb_lightning_checkpoint.pb"
+# keep-after-success = false
+
+[tikv-importer]
+addr = "{importer_listen_host}:{importer_listen_port}"
+
+[mydumper]
+read-block-size = 65536 # byte (64 KB by default)
+batch-size = 107_374_182_400 # byte (100 GiB by default)
+batch-import-ratio = 0.75
+
+data-source-dir = "{data_source}"
+# fetch schema from TiDB
+no-schema = true
+character-set = "auto"
+# case-sensitive = false
+
+[mydumper.csv]
+header = {header}
+separator = '{separator}'
+delimiter = '{delimiter}'
+not-null = {not_null}
+null = '{null}'
+backslash-escape = {backslash_escape}
+trim-last-separator = {trim_last_separator}
+
+[tidb]
+host = "{tidb_listen_host}"
+port = {tidb_listen_port}
+user = "root"
+password = ""
+status-port = {tidb_status_port}
+pd-addr = "{pd_addr}"
+log-level = "error"
+# sql-mode = ""
+
+# Sets the TiDB session variable to speed up the Checksum and Analyze operations.
+# https://pingcap.com/docs-cn/sql/statistics/#%E6%8E%A7%E5%88%B6-analyze-%E5%B9%B6%E5%8F%91%E5%BA%A6
+build-stats-concurrency = 20
+distsql-scan-concurrency = 100
+index-serial-scan-concurrency = 20
+checksum-table-concurrency = 16
+
+[post-restore]
+checksum = {check_checksum}
+level-1-compact = false
+compact = false
+analyze = false # do it in scripts
+
+[cron]
+switch-mode = "5m"
+log-progress = "10s"
+

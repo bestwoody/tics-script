@@ -37,7 +37,7 @@ function from_mods_by_type()
 
 	local mods="${1}"
 	local type="${2}"
-	echo "${mods}" | { grep $'\t'"${type}" || test $? = 1; }
+	echo "${mods}" | { grep $'\t'"${type}[[:blank:]]" || test $? = 1; }
 }
 export -f from_mods_by_type
 
@@ -50,7 +50,7 @@ function from_mods_not_type()
 
 	local mods="${1}"
 	local type="${2}"
-	echo "${mods}" | { grep -v $'\t'"${type}" || test $? = 1; }
+	echo "${mods}" | { grep -v $'\t'"${type}[[:blank:]]" || test $? = 1; }
 }
 export -f from_mods_not_type
 
@@ -176,18 +176,19 @@ function from_mod_get_host()
 }
 export -f from_mod_get_host
 
-function from_mod_get_tidb_port()
+function from_mod_get_proc_info()
 {
-	if [ -z "${1+x}" ]; then
-		echo "[func from_mod_get_host] usage: <func> mod_info_line" >&2
+	if [ -z "${2+x}" ]; then
+		echo "[func from_mod_get_proc_info] usage: <func> mod_info_line match_key" >&2
 		return 1
 	fi
 	local mod="${1}"
 	local dir=`from_mod_get_dir "${mod}"`
 	local host=`from_mod_get_host "${mod}"`
-	ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'
+	local key="${2}"
+	ssh_get_value_from_proc_info "${host}" "${dir}" "${key}"
 }
-export -f from_mod_get_tidb_port
+export -f from_mod_get_proc_info
 
 function from_mods_get_rngine_by_tiflash()
 {

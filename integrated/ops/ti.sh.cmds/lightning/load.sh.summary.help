@@ -1,0 +1,4 @@
+load data to tidb using tidb-lightning
+usage: <cmd> database table data_source [check_checksum=true|false]
+        `data_source` should be a directory with files naming `database`.`table`.*.csv
+        with `check_checksum`=false, loading will speed up a lot

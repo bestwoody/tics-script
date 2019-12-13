@@ -87,7 +87,7 @@ function ti_cmd_tpch_load()
 	for table in ${tables[@]}; do
 		local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
 		local host=`from_mod_get_host "${mod}"`
-		local port=`from_mod_get_tidb_port "${mod}"`
+		local port=`from_mod_get_proc_info "${mod}" "tidb_port"`
 		if [ -z "${mod}" ] || [ -z "${host}" ] || [ -z "${port}" ]; then
 			echo "[cmd tpch/load] getting tidb address from random instance failed" >&2
 			return 1

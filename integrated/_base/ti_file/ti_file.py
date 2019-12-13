@@ -2,6 +2,7 @@
 
 import sys
 import os
+import re
 
 class Conf:
     def __init__(self):
@@ -22,6 +23,7 @@ class Ti:
         self.spark_master_ch = None
         self.spark_workers_ch = []
         self.pd_addr = []
+        self.tikv_importers = []
 
     def dump(self):
         if len(self.pds):
@@ -58,6 +60,10 @@ class Ti:
             print 'Spark workers for chspark'
         for it in self.spark_workers_ch:
             print vars(it)
+        if len(self.tikv_importers):
+            print('TiKV importers')
+        for it in self.importers:
+            print(vars(it))
 
 class Mod(object):
     def __init__(self, name):
@@ -107,7 +113,8 @@ def parse_mod(obj, line, origin):
         'spark_m': ['tispark'],
         'spark_w': ['tispark'],
         'chspark_m': ['chspark'],
-        'chspark_w': ['chspark']
+        'chspark_w': ['chspark'],
+        'tikv_importer': ['tidb_lightning'],
     }
     if obj.name in mod_extra_tools:
         obj.extra_tools.extend(mod_extra_tools[obj.name])
@@ -170,6 +177,8 @@ def spark_master_ch(res, line, origin):
     res.spark_master_ch = parse_mod(Mod('chspark_m'), line, origin)
 def spark_worker_ch(res, line, origin):
     res.spark_workers_ch.append(parse_mod(ModSparkWorker('chspark_w'), line, origin))
+def tikv_importer(res, line, origin):
+    res.tikv_importers.append(parse_mod(Mod('tikv_importer'), line, origin))
 
 mods = {
     'pd': pd,
@@ -181,6 +190,7 @@ mods = {
     'spark_w': spark_worker,
     'chspark_m': spark_master_ch,
     'chspark_w': spark_worker_ch,
+    'tikv_importer': tikv_importer,
 }
 
 def parse_file(res, path, kvs):
@@ -208,7 +218,7 @@ def parse_file(res, path, kvs):
         else:
             matched = False
             for mod, func in mods.items():
-                if line.startswith(mod):
+                if re.match('^{}(\\s)?[:=]'.format(mod), line):
                     props = line[len(mod):].strip()
                     if props.startswith(':'):
                         func(res, props[1:].strip(), origin)
@@ -247,7 +257,11 @@ def check_mod_is_valid(mod, index, dirs, ports):
 
 def check_is_valid(res):
     dirs = set()
-    for mods in [res.pds, res.tikvs, res.tidbs, res.tiflashs, res.rngines, res.spark_master, res.spark_workers, res.spark_master_ch, res.spark_workers_ch]:
+    for mods in [res.pds, res.tikvs, res.tidbs,
+                 res.tiflashs, res.rngines, 
+                 res.spark_master, res.spark_workers, 
+                 res.spark_master_ch, res.spark_workers_ch, 
+                 res.tikv_importers]:
         ports = set()
         if isinstance(mods, list):
             for i in range(0, len(mods)):
@@ -562,6 +576,31 @@ def render_spark_workers(res, conf, hosts, indexes, is_chspark=False):
             print_ssh_prepare(spark_worker, conf, env_dir)
             print_run_cmd('call_remote_func "%s" "%s" ' % (spark_worker.host, env_dir), env_dir + '/conf')
 
+def render_tikv_importers(res, conf, hosts, indexes):
+    if len(res.tikv_importers) == 0:
+        return
+
+    for i, tikv_importer in enumerate(res.tikv_importers):
+        if len(hosts) != 0 and tikv_importer.host not in hosts:
+            continue
+        if len(indexes) != 0 and (i not in indexes):
+            continue
+        print_mod_header(tikv_importer)
+
+        def print_run_cmd(ssh, conf_templ_dir):
+            print '# tikv_importer_run dir conf_templ_dir ports_delta listen_host cluster_id'
+            print (ssh + 'tikv_importer_run "%s" \\') % tikv_importer.dir
+            print '\t"%s" \\' % conf_templ_dir
+            print '\t"%s" "%s" "${id}"' % (tikv_importer.ports, tikv_importer.host)
+
+        if tikv_importer.is_local():
+            print_cp_bin(tikv_importer, conf)
+            print_run_cmd('', conf.conf_templ_dir)
+        else:
+            env_dir = conf.cache_dir + '/worker/integrated'
+            print_ssh_prepare(tikv_importer, conf, env_dir)
+            print_run_cmd('call_remote_func "%s" "%s" ' % (tikv_importer.host, env_dir), env_dir + '/conf')
+
 def render(res, conf, kvs, mod_names, hosts, indexes):
     def should_render(mod_name):
         if len(mod_names) == 0 or (mod_name in mod_names):
@@ -588,6 +627,8 @@ def render(res, conf, kvs, mod_names, hosts, indexes):
         render_spark_master(res, conf, hosts, indexes, True)
     if should_render('chspark_w'):
         render_spark_workers(res, conf, hosts, indexes, True)
+    if should_render('tikv_importer'):
+        render_tikv_importers(res, conf, hosts, indexes)
 
 def get_mods(res, mod_names, hosts, indexes):
     confs = {
@@ -600,6 +641,7 @@ def get_mods(res, mod_names, hosts, indexes):
         'spark_w': 'spark-defaults.conf',
         'chspark_m': 'spark-defaults-ch.conf',
         'chspark_w': 'spark-defaults-ch.conf',
+        'tikv_importer': 'tikv-importer.toml',
     }
 
     def output_mod(mod, index):
@@ -624,6 +666,7 @@ def get_mods(res, mod_names, hosts, indexes):
     output(res.spark_workers)
     output_mod(res.spark_master_ch, 0)
     output(res.spark_workers_ch)
+    output(res.tikv_importers)
 
 def get_hosts(res, mod_names, hosts, indexes):
     host_infos = set()

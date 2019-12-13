@@ -1,0 +1,38 @@
+# TiKV Importer configuration file template
+# https://pingcap.com/docs-cn/stable/reference/tools/tidb-lightning/deployment/
+
+log-file = "{importer_dir}/tikv-importer.log"
+log-level = "info"
+
+[server]
+addr = "{importer_listen_host}:{importer_listen_port}"
+grpc-concurrency = 16
+
+[metric]
+job = "tikv-importer"
+interval = "15s"
+address = ""
+
+[rocksdb]
+max-background-jobs = 32
+
+[rocksdb.defaultcf]
+write-buffer-size = "1GB"
+max-write-buffer-number = 8
+
+compression-per-level = ["lz4", "no", "no", "no", "no", "no", "lz4"]
+
+[rocksdb.writecf]
+compression-per-level = ["lz4", "no", "no", "no", "no", "no", "lz4"]
+
+[import]
+import-dir = "{importer_dir}/data.import"
+num-threads = 4
+num-import-jobs = 24
+# max-prepare-duration = "5m"
+# region-split-size = "512MB"
+# stream-channel-window = 128
+max-open-engines = 8
+# upload-speed-limit = "512MB"
+min-available-ratio = 0.05
+

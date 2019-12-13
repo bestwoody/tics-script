@@ -53,6 +53,9 @@ function cmd_ti_wait_syncing()
 		local table_status=`echo "${table_info}" | awk '{print $2}'`
 		if [ ${?} == 0 ] && [ ! -z "${table_info}" ]; then
 			if [ "${wait_for_available}" != 'true' ] || [ "${table_status}" == 'available' ]; then
+				if [ "${table_status}" == 'available' ]; then
+					local available='available'
+				fi
 				local failed='false'
 				break
 			fi

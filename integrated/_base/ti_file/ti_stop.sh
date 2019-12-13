@@ -150,3 +150,17 @@ function spark_worker_stop()
 	spark_stop "${spark_worker_dir}" "org.apache.spark.deploy.worker.Worker" "${fast}"
 }
 export -f spark_worker_stop
+
+function tikv_importer_stop()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func tikv_importer_stop] usage: <func> tikv_importer_dir [fast_mode=false]" >&2
+		return 1
+	fi
+	local fast="false"
+	if [ ! -z "${2+x}" ]; then
+		local fast="${2}"
+	fi
+	_ti_stop "${1}" "tikv-importer.toml" "${fast}"
+}
+export -f tikv_importer_stop

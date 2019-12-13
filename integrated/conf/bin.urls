@@ -18,3 +18,6 @@ tiflash	3014773ad0d107df1509c7ca0cb47cc4	tiflash	http://139.219.11.38:8000/ZHbFT
 cluster_manager	46e15f9cbdf226f7a6cb4fe29621a101	flash_cluster_manager	http://139.219.11.38:8000/xu8tJ/flash_cluster_manager.tar.gz	FLASH-403	57016ce964ab0af161bf29eee79f13284d938813
 pd	618a28d30aec4e30f4c605a9415ae04f	pd-server	http://139.219.11.38:8000/pRmmi/pd-server.tar.gz	placement	8eb7c403029228defcaff60907edacb4390ba1c8
 tispark	4a7908f351860316382a124af6d5575c	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/ODvMn/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	8a5bafcf5b3476d0c0318a2f83ad68bea8b89605
+
+tidb_lightning  5333479ace472c8032f77caca7bab539    tidb-lightning  http://139.219.11.38:8000/aoCNy/tidb-lightning.tar.gz    master  605760d1b2025d1e1a8b7d0c668c74863d7d1271
+tikv_importer   9bfd01af4254235c16417de62d0a27e1    tikv-importer   http://139.219.11.38:8000/13D9G1/tikv-importer.tar.gz    master  ad32bdcd951ae68cf1ea743a651e2bd47198d6df
