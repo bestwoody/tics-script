@@ -27,7 +27,7 @@ function cmd_ti_compaction()
 		return
 	fi
 
-	local config="${dir}/conf/config.xml"
+	local config="${dir}/conf/config.toml"
 	if [ ! -f "${config}" ]; then
 		echo "   error: config file missed"
 		return 1

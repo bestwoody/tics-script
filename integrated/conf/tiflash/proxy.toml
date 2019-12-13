@@ -13,7 +13,7 @@ log-level = "info"
 
 [server]
 labels = { "tiflash_http_port" = "{tiflash_http_port}" }
-engine-addr = "{tiflash_raft_addr}"
+engine-addr = "{tiflash_listen_host}:{tiflash_raft_and_cop_port}"
 
 [storage]
 

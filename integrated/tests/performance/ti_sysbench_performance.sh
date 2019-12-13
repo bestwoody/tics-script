@@ -91,7 +91,7 @@ function sysbench_test()
 		"${ti}" "${test_ti_file}" "mysql" "ANALYZE TABLE sbtest${i};" "sbtest"
 	done
 	run_sysbench "tidb_only" "${vers}" "${entry_dir}" "${table_num}" "${table_size}"
-	"${ti}" -m "tiflash,rngine" "${test_ti_file}" "run"
+	"${ti}" -m "tiflash" "${test_ti_file}" "run"
 	run_sysbench "with_tiflash" "${vers}" "${entry_dir}" "${table_num}" "${table_size}"
 	sysbench_perf_report "${entry_dir}"
 }

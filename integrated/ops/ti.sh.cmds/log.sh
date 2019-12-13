@@ -35,8 +35,6 @@ function cmd_ti_log()
 		local log_file='tidb.log'
 	elif [ "${mod_name}" == 'tiflash' ]; then
 		local log_file='log/server.log'
-	elif [ "${mod_name}" == 'rngine' ]; then
-		local log_file='rngine.log'
 	elif [ "${mod_name}" == 'spark_m' ]; then
 		local log_file='logs/spark_master.log'
 	elif [ "${mod_name}" == 'spark_w' ]; then
@@ -50,7 +48,7 @@ function cmd_ti_log()
 	fi
 
 	if [ "${upload_log}" == "false" ]; then
-		cat "${log_file}" | { grep -i "${grep_str}" || test $? = 1; } | tail -n "${cnt}" | \
+		cat "${log_file}" | { grep -ia "${grep_str}" || test $? = 1; } | tail -n "${cnt}" | \
 			awk '{print "['${mod_name}' #'${index}' '${dir}'] "$0}'
 	else
 		local file_name=`basename "${log_file}"`

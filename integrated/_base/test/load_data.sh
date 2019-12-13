@@ -134,12 +134,12 @@ function load_tpch_data_to_ch()
 	local blocks=`ls "${data_dir}" | { grep "${table}.tbl" || test $? = 1; } | wc -l | awk '$1=$1'`
 
 	## Create database and tables
-	LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${ch_bin}" client \
-		--host="${ch_host}" --port="${ch_port}" --query="create database if not exists ${db}"
+	local create_db_stmt="create database if not exists ${db}"
 	local create_table_stmt=`cat "${schema_dir}/${table}.ddl" | tr -s "\n" " "`
-	LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${ch_bin}" client \
-		--host="${ch_host}" --port="${ch_port}" -d "${db}" --query="${create_table_stmt}"
-
+	local ch_bin_dir="`dirname ${ch_bin}`"
+	run_query_through_ch_client "${ch_bin}" --host="${ch_host}" --port="${ch_port}" --query="${create_db_stmt}"
+	run_query_through_ch_client "${ch_bin}" --host="${ch_host}" --port="${ch_port}" -d "${db}" --query="${create_table_stmt}"
+	
 	if [ -f "${data_dir}/${table}.tbl" ] && [ -f "${data_dir}/${table}.tbl.1" ]; then
 		echo "[func load_tpch_data_to_ch] '${data_dir}' not data dir" >&2
 		return 1
@@ -154,8 +154,8 @@ function load_tpch_data_to_ch()
 			## trans delimiter "|" to ","
 			cat "${data_file}" | python "${workspace}/trans/${table}.py" > "${csv_file}"
 		fi
-		cat "${csv_file}" | LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${ch_bin}" client --host="${ch_host}" \
-			--port="${ch_port}" -d "${db}" --query="INSERT INTO $table FORMAT CSV"
+		cat "${csv_file}" | run_query_through_ch_client "${ch_bin}" --host="${ch_host}" \
+				--port="${ch_port}" -d "${db}" --query="INSERT INTO $table FORMAT CSV"
 	else
 		## Ensure all blocks exist.
 		echo "   check and translate data files."
@@ -177,8 +177,8 @@ function load_tpch_data_to_ch()
 		echo "   check and translate done."
 		for ((i=1; i<${blocks}+1; ++i)); do
 			local csv_file="${data_dir}/${table}.csv.tbl.${i}"
-			cat "${csv_file}" | LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${ch_bin}" client --host="${ch_host}" \
-				--port="${ch_port}" -d "${db}" --query="INSERT INTO $table FORMAT CSV" &
+			cat "${csv_file}" | run_query_through_ch_client "${ch_bin}" --host="${ch_host}" \
+					--port="${ch_port}" -d "${db}" --query="INSERT INTO $table FORMAT CSV" &
 		done
 		wait ## Wait for all blocks loaded
 	fi

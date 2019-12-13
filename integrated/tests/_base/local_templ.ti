@@ -6,7 +6,6 @@ tikv: {dir}/tikv ports{p}
 tidb: {dir}/tidb ports{p}
 
 tiflash: {dir}/tiflash ports{p}
-rngine: {dir}/rngine tiflash={dir}/tiflash ports{p}
 
 spark_m: {dir}/spark_m ports{p}
 spark_w: {dir}/spark_w ports{p}

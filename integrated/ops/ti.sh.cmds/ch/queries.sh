@@ -21,8 +21,8 @@ function cmd_ti_ch_queries()
 	fi
 
 	local query_str='select query, elapsed, read_rows from system.processes'
-	LD_LIBRARY_PATH="`get_tiflash_lib_path`" "${dir}/tiflash" client --host="${host}" \
-		--port="${port}" -d "default" -f "PrettyCompactNoEscapes" --query="${query_str}"
+	run_query_through_ch_client "${dir}/tiflash" --host="${host}" --port="${port}" -d "default" \
+		-f "PrettyCompactNoEscapes" --query="${query_str}"
 }
 
 cmd_ti_ch_queries "$@"

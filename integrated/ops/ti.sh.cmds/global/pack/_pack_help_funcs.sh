@@ -59,10 +59,10 @@ function _build_and_update_mod()
 		fi
 		local binary_file_path="${repo_path}/${binary_rel_path}"
 		local binary_file_name=`basename "${binary_file_path}"`
-		rm -f "${binary_file_path}"
+		local binary_file_dir=`dirname "${binary_file_path}"`
+		rm -rf "${binary_file_path}"
 		${build_command}
 		if [ ! -z "${binary_alias}" ]; then
-			local binary_file_dir=`dirname "${binary_file_path}"`
 			local alias_file_path="${binary_file_dir}/${binary_alias}"
 			rm -f "${alias_file_path}"
 			mv "${binary_file_path}" "${alias_file_path}"
@@ -71,18 +71,36 @@ function _build_and_update_mod()
 			local binary_rel_dir=`dirname "${binary_rel_path}"`
 			local binary_rel_path="${binary_rel_dir}/${binary_alias}"
 		fi
-		if [ ! -f "${binary_file_path}" ]; then
+		if [ ! -f "${binary_file_path}" ] && [ ! -d "${binary_file_path}" ]; then
 			echo "[func _build_and_update_mod] cannot found target binary at ${binary_file_path}" >&2
 			return 1
 		fi
-		local compressed_file_name="${binary_file_name}.tar.gz"
-		rm -f "${compressed_file_name}"
-		tar -zcvf "${compressed_file_name}" "${binary_rel_path}"
-		if [ ! -f "${compressed_file_name}" ]; then
-			echo "[func _build_and_update_mod] compress binary file failed" >&2
-			return 1
+		if [ -f "${binary_file_path}" ]; then
+			local compressed_file_name="${binary_file_name}.tar.gz"
+			rm -f "${compressed_file_name}"
+			tar -zcvf "${compressed_file_name}" "${binary_rel_path}"
+			if [ ! -f "${compressed_file_name}" ]; then
+				echo "[func _build_and_update_mod] compress binary file failed" >&2
+				return 1
+			fi
+		elif [ -d "${binary_file_path}" ]; then
+			local compressed_file_name="${binary_file_name}.tgz"
+			rm -f "${compressed_file_name}"
+			local here=`pwd`
+			cd "${binary_file_dir}"
+			tar -zcvf "${compressed_file_name}" "${binary_file_name}"
+			cd "${here}"
+			mv "${binary_file_dir}/${compressed_file_name}" "${compressed_file_name}"
+			if [ ! -f "${compressed_file_name}" ]; then
+				echo "[func _build_and_update_mod] compress binary file failed" >&2
+				return 1
+			fi
 		fi
 		local result_url=`upload_file "${compressed_file_name}"`
+		if [ -z "${result_url}" ]; then
+			echo "[func _build_and_update_mod] upload binary file failed" >&2
+			return 1
+		fi
 		local file_md5=`file_md5 "${binary_file_path}"`
 		_update_mod_urls "${mod_name}" "${file_md5}" "${binary_file_name}" "${result_url}" "${branch}" "${commit_hash}"
 	)

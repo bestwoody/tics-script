@@ -11,14 +11,13 @@ chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https:/
 
 # TODO: fake lib file, remove it later
 tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
-rngine	8cc5febacc6cc9e2b9970877bed33239	tikv-server-rngine	http://139.219.11.38:8000/14TWVN/tikv-server-rngine.tar.gz	rngine	80f4a74cc6172a8424069bd2300b7ac5d1fc17a4
+tiflash_proxy	7fc0f4ddad784dfe6fd8c251840f1f3f	libtiflash_proxy.dylib	http://139.219.11.38:8000/1EqeW/libtiflash_proxy.tar.gz	tiflash-proxy-lib	cc692c0dde39049af282214cc08decad03603a95
 tikv	9ac13c855c86212e7b1b92287c1e6dfc	tikv-server	http://139.219.11.38:8000/2SH97/tikv-server.tar.gz	master	d426d9c876d8e1f83b7b3b046029666451de4353
-tidb	55bead2a9ec159ad0c8fcce72a2364ba	tidb-server	http://139.219.11.38:8000/Djaap/tidb-server.tar.gz	master	e4d199d93a9db4565752220f76c6a921e393e328
+cluster_manager	66e2a00bb2b7adb2518d0a5dc8f078d6	flash_cluster_manager.tgz	http://139.219.11.38:8000/1384Ix/flash_cluster_manager.tgz	FLASH-403	8a282a2ac9f47b924331dc170de32dd81d90746e
 pd	1159d5ae32825ec8016db411ed8abed4	pd-server	http://139.219.11.38:8000/nQdVH/pd-server.tar.gz	placement	8eb7c403029228defcaff60907edacb4390ba1c8
-tiflash	3433f4a45b29010110d7559f75a9279f	tiflash	http://139.219.11.38:8000/ELRPW/tiflash.tar.gz	master	2819f26e5e9718bbba97af3a16983c0f2997adc9
-cluster_manager	d7b5a1e86f64de7e4a7739303d3b2ddf	flash_cluster_manager	http://139.219.11.38:8000/zqhRp/flash_cluster_manager.tar.gz	FLASH-403	57016ce964ab0af161bf29eee79f13284d938813
 tispark	4a7908f351860316382a124af6d5575c	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/ODvMn/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	8a5bafcf5b3476d0c0318a2f83ad68bea8b89605
-
+tidb	55bead2a9ec159ad0c8fcce72a2364ba	tidb-server	http://139.219.11.38:8000/Djaap/tidb-server.tar.gz	master	e4d199d93a9db4565752220f76c6a921e393e328
+tiflash	127caaaff4488f119dc3a044adcac23f	tiflash	http://139.219.11.38:8000/gCOG3/tiflash.tar.gz	master	a8043d0b2d86909e0bb047a210ce3faefa14efa6
 
 tidb_lightning  aa8a75a79dabe78219b5978e91b447a0    tidb-lightning  http://139.219.11.38:8000/p6f8F/tidb-lightning.tar.gz    master  605760d1b2025d1e1a8b7d0c668c74863d7d1271
 tikv_importer   834005a83cb63943238cb4b644ee0684    tikv-importer   http://139.219.11.38:8000/Gx4Ze/tikv-importer.tar.gz     master  ad32bdcd951ae68cf1ea743a651e2bd47198d6df

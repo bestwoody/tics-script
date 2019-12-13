@@ -8,7 +8,6 @@ Create a cluster define file `my.ti` by command `ops/ti.sh new my.ti spark=1`, t
 tikv: node0/tikv
 tidb: node0/tidb
 tiflash: node0/tiflash
-rngine: node0/rngine tiflash={dir}/tiflash
 spark_m: node0/spark_m
 spark_w: node0/spark_w cores=1 mem=1G
 ```
@@ -23,8 +22,6 @@ Then run `ops/ti.sh my.ti run`:
 18238
 => tiflash #0 (node0/tiflash)
 18511
-=> rngine #0 (node0/rngine)
-18647
 => spark_m #0 (node0/spark_m)
 18278
 => spark_w #0 (node0/spark_w)
@@ -38,7 +35,6 @@ OK     pd #0 (node0/pd)        <-- "#0" means it's the 1st pd
 OK     tikv #0 (node0/tikv)
 OK     tidb #0 (node0/tidb)
 OK     tiflash #0 (node0/tiflash)
-OK     rngine #0 (node0/rngine)
 OK     spark_m #0 (node0/spark_m)
 OK     spark_w #0 (node0/spark_w)
 ```
@@ -81,7 +77,7 @@ tidb: node1/tidb ports+1
 ```
 The address of `pd` will be used to other modules for connect.
 
-Although, we can use `pd` prop (and `tiflash` prop in rngine) to connect modules outside this file:
+Although, we can use `pd` prop to connect modules outside this file:
 ```
 tikv: node1/tikv pd=:+1        <-- the pd host is empty, so will be auto set (localhost)
                                    the pd port will be "default+1"
@@ -93,7 +89,7 @@ Take one line for example `pd: node0/pd`
 The format is simple: `mod-name: prop prop ...`, there is space chars seperated the mod-name and the props.
 ```
 pd:             <- the module name, we have a small set of modules:
-                   pd, tikv, tidb, tiflash, rngine
+                   pd, tikv, tidb, tiflash
 ```
 
 The props supported now are:
@@ -112,10 +108,6 @@ host=10.0.0.1   <- this module should be deployed to which host.
 pd=ip           <- connect to which pd.
 pd=ip:port         module will connect to the pd in the same file if not provided.
 pd=ip:port         "port" can be real number or "+n" "-n" delta form.
-
-tiflash=dir     <- only used by rngine module,
-tiflash=ip:port    it means which tiflash instance rngine should connect,
-tiflash=ip:dir    "tiflash=host:dir" is used for support remote connect.
 
 cores=10        <- only used by spark_w module,
                    total cpu cores to allow spark applications to use on the machine
@@ -137,8 +129,6 @@ tidb: node1/tidb ports+1
 tidb: node2/tidb ports+2
 tiflash: node1/tiflash ports+1
 tiflash: node2/tiflash ports+2
-rngine: node1/rngine tiflash=node1/tiflash ports+1
-rngine: node2/rngine tiflash=node2/tiflash ports+2
 spark_m: node1/spark_m ports+1
 spark_w: node1/spark_w ports+1 cores=10 mem=10G
 spark_w: node2/spark_w ports+2 cores=10 mem=10G

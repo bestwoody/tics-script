@@ -19,7 +19,12 @@ function _ti_stop()
 	local ti_dir=`abs_path "${ti_dir}"`
 	local conf_file="${ti_dir}/${conf_rel_path}"
 
-	local proc_cnt=`print_proc_cnt "${conf_file}" "\-\-config"`
+	local extra_str_to_find_proc="\-\-config"
+	if [ -f "${ti_dir}/extra_str_to_find_proc" ]; then
+		local extra_str_to_find_proc="`cat ${ti_dir}/extra_str_to_find_proc`"
+	fi
+
+	local proc_cnt=`print_proc_cnt "${conf_file}" "${extra_str_to_find_proc}"`
 	if [ "${proc_cnt}" == "0" ]; then
 		echo "[func ti_stop] ${ti_dir} is not running, skipping"
 		return 0
@@ -44,7 +49,7 @@ function tiflash_stop()
 	if [ ! -z "${2+x}" ]; then
 		local fast="${2}"
 	fi
-	_ti_stop "${1}" "conf/config.xml" "${fast}"
+	_ti_stop "${1}" "conf/config.toml" "${fast}"
 }
 export -f tiflash_stop
 
@@ -89,20 +94,6 @@ function tidb_stop()
 	_ti_stop "${1}" "tidb.toml" "true" "${fast}"
 }
 export -f tidb_stop
-
-function rngine_stop()
-{
-	if [ -z "${1+x}" ]; then
-		echo "[func rngine_stop] usage: <func> rngine_dir [fast_mode=false]" >&2
-		return 1
-	fi
-	local fast="false"
-	if [ ! -z "${2+x}" ]; then
-		local fast="${2}"
-	fi
-	_ti_stop "${1}" "rngine.toml" "${fast}"
-}
-export -f rngine_stop
 
 function spark_stop()
 {

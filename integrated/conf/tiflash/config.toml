@@ -1,0 +1,43 @@
+tmp_path = "{tiflash_dir}/tmp"
+display_name = "TiFlash"
+default_profile = "default"
+users_config = "users.toml"
+path = "{tiflash_dir}/db"
+mark_cache_size = 5368709120
+listen_host = "{tiflash_listen_host}"
+tcp_port = {tiflash_tcp_port}
+http_port = {tiflash_http_port}
+interserver_http_port = {tiflash_interserver_http_port}
+
+[flash]
+tidb_status_addr = "{tiflash_tidb_addr}"
+service_addr = "{tiflash_listen_host}:{tiflash_raft_and_cop_port}"
+overlap_threshold = 0.6
+
+[flash.flash_cluster]
+master_ttl = 60
+refresh_interval = 20
+update_rule_interval = 5
+cluster_manager_path = "{tiflash_dir}/flash_cluster_manager"
+
+[flash.proxy]
+addr = "{tiflash_listen_host}:{proxy_port}"
+advertise-addr = "{tiflash_listen_host}:{proxy_port}"
+data-dir = "{tiflash_dir}/db/proxy"
+config = "{tiflash_dir}/conf/proxy.toml"
+log-file = "{tiflash_dir}/log/proxy.log"
+
+[logger]
+level = "trace"
+log = "{tiflash_dir}/log/server.log"
+errorlog = "{tiflash_dir}/log/error.log"
+size = "4000M"
+count = 10
+
+[application]
+runAsDaemon = true
+
+[raft]
+kvstore_path = "{tiflash_dir}/kvstore"
+pd_addr = "{tiflash_pd_addr}"
+ignore_databases = "system,default"

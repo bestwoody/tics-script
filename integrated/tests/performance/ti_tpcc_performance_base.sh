@@ -142,10 +142,10 @@ function tidb_tpcc_perf()
 
 	load_tpcc_data "${benchmark_dir}" "${test_ti_file}" "${warehouses}" "${minutes}"
 	test_cluster_run_tpcc "tidb_only" "${benchmark_dir}" "${entry_dir}" "${vers}"
-	"${integrated}/ops/ti.sh" -m 'pd,tikv,tidb,tiflash,rngine' "${test_ti_file}" "run"
+	"${integrated}/ops/ti.sh" -m 'pd,tikv,tidb,tiflash' "${test_ti_file}" "run"
 	test_cluster_run_tpcc "with_tiflash" "${benchmark_dir}" "${entry_dir}" "${vers}"
 	tidb_tpcc_perf_report "${test_entry_file}"
 
-	"${integrated}/ops/ti.sh" -m 'pd,tikv,tidb,tiflash,rngine' "${test_ti_file}" "burn" "doit"
+	"${integrated}/ops/ti.sh" -m 'pd,tikv,tidb,tiflash' "${test_ti_file}" "burn" "doit"
 	echo '[func tidb_tpcc_perf] done'
 }

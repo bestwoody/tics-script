@@ -31,8 +31,6 @@ function ti_file_mod_stop()
 		tidb_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	elif [ "${name}" == "tiflash" ]; then
 		tiflash_stop "${dir}" "${fast}" | awk '{print "   "$0}'
-	elif [ "${name}" == "rngine" ]; then
-		rngine_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	elif [ "${name}" == "spark_m" ]; then
 		spark_master_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	elif [ "${name}" == "spark_w" ]; then

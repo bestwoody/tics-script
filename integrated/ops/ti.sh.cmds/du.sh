@@ -7,7 +7,7 @@ function cmd_ti_du()
 	local dir="${3}"
 	local conf_rel_path="${4}"
 
-	if [ "${mod_name}" == 'pd' ] || [ "${mod_name}" == 'tikv' ] || [ "${mod_name}" == 'rngine' ]; then
+	if [ "${mod_name}" == 'pd' ] || [ "${mod_name}" == 'tikv' ]; then
 		local data_dir="${dir}/data"
 	elif [ "${mod_name}" == 'tiflash' ]; then
 		local data_dir="${dir}/db"

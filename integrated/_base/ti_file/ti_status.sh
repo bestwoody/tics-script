@@ -42,8 +42,7 @@ export -f ls_pd_proc
 
 function ls_tikv_proc()
 {
-	local procs=`print_procs 'tikv-server' "\-\-config" | { grep -v 'tikv-server-rngine' || test $? = 1; } | \
-		awk -F '--config' '{print $2}' | awk '{print $1}'`
+	local procs=`print_procs 'tikv-server' "\-\-config" | awk -F '--config' '{print $2}' | awk '{print $1}'`
 	if [ ! -z "${procs}" ]; then
 		echo "${procs}" | while read conf; do
 			_print_mod_info `_print_file_dir_when_abs "${conf}"`
@@ -62,17 +61,6 @@ function ls_tidb_proc()
 	fi
 }
 export -f ls_tidb_proc
-
-function ls_rngine_proc()
-{
-	local procs=`print_procs 'tikv-server-rngine' "\-\-config" | awk -F '--config' '{print $2}' | awk '{print $1}'`
-	if [ ! -z "${procs}" ]; then
-		echo "${procs}" | while read conf; do
-			_print_mod_info `_print_file_dir_when_abs "${conf}"`
-		done
-	fi
-}
-export -f ls_rngine_proc
 
 function ls_sparkm_proc()
 {
@@ -118,7 +106,6 @@ function ls_ti_procs()
 	_ls_ti_proc 'tikv'
 	_ls_ti_proc 'tidb'
 	_ls_ti_proc 'tiflash'
-	_ls_ti_proc 'rngine'
 	_ls_ti_proc 'sparkm'
 	_ls_ti_proc 'sparkw'
 }

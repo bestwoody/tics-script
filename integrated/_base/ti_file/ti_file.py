@@ -17,7 +17,6 @@ class Ti:
         self.tikvs = []
         self.tidbs = []
         self.tiflashs = []
-        self.rngines = []
         self.spark_master = None
         self.spark_workers = []
         self.spark_master_ch = None
@@ -41,10 +40,6 @@ class Ti:
         if len(self.tiflashs):
             print 'TiFlashs'
         for it in self.tiflashs:
-            print vars(it)
-        if len(self.rngines):
-            print 'Rngines'
-        for it in self.rngines:
             print vars(it)
         if self.spark_master is not None:
             print 'Spark master'
@@ -77,11 +72,6 @@ class Mod(object):
     def is_local(self):
         return self.host == "" or self.host == '127.0.0.1' or self.host == 'localhost'
 
-class ModRngine(Mod):
-    def __init__(self):
-        super(ModRngine, self).__init__("rngine")
-        self.tiflash = ""
-
 class ModSparkWorker(Mod):
     def __init__(self, mod_name="spark_w"):
         super(ModSparkWorker, self).__init__(mod_name)
@@ -109,7 +99,7 @@ def parse_mod(obj, line, origin):
     mod_extra_tools = {
         'pd': ['pd_ctl'],
         'tikv': ['tikv_ctl'],
-        'tiflash': ['tiflash_lib', 'cluster_manager'],
+        'tiflash': ['tiflash_lib', 'cluster_manager', 'tiflash_proxy'],
         'spark_m': ['tispark'],
         'spark_w': ['tispark'],
         'chspark_m': ['chspark'],
@@ -167,8 +157,6 @@ def tidb(res, line, origin):
     res.tidbs.append(parse_mod(Mod('tidb'), line, origin))
 def tiflash(res, line, origin):
     res.tiflashs.append(parse_mod(Mod('tiflash'), line, origin))
-def rngine(res, line, origin):
-    res.rngines.append(parse_mod(ModRngine(), line, origin))
 def spark_master(res, line, origin):
     res.spark_master = parse_mod(Mod('spark_m'), line, origin)
 def spark_worker(res, line, origin):
@@ -185,7 +173,6 @@ mods = {
     'tikv': tikv,
     'tidb': tidb,
     'tiflash': tiflash,
-    'rngine': rngine,
     'spark_m': spark_master,
     'spark_w': spark_worker,
     'chspark_m': spark_master_ch,
@@ -258,7 +245,7 @@ def check_mod_is_valid(mod, index, dirs, ports):
 def check_is_valid(res):
     dirs = set()
     for mods in [res.pds, res.tikvs, res.tidbs,
-                 res.tiflashs, res.rngines, 
+                 res.tiflashs,
                  res.spark_master, res.spark_workers, 
                  res.spark_master_ch, res.spark_workers_ch, 
                  res.tikv_importers]:
@@ -440,49 +427,6 @@ def render_tiflashs(res, conf, hosts, indexes):
             print_ssh_prepare(tiflash, conf, env_dir)
             print_run_cmd('call_remote_func "%s" "%s" ' % (tiflash.host, env_dir), env_dir + '/conf')
 
-def render_rngines(res, conf, hosts, indexes):
-    for i in range(0, len(res.rngines)):
-        rngine = res.rngines[i]
-        if len(hosts) != 0 and rngine.host not in hosts:
-            continue
-        if len(indexes) != 0 and (i not in indexes):
-            continue
-        print_mod_header(rngine)
-
-        if rngine.is_local():
-            ssh = ''
-            conf_templ_dir = conf.conf_templ_dir
-            print_cp_bin(rngine, conf)
-        else:
-            env_dir = conf.cache_dir + '/worker/integrated'
-            ssh = 'call_remote_func "%s" "%s" ' % (rngine.host, env_dir)
-            conf_templ_dir = env_dir + '/conf'
-            print_ssh_prepare(rngine, conf, env_dir)
-
-        tiflash_host, tiflash_dir = '', ''
-        tiflash_addr = map(lambda x: x.strip(), rngine.tiflash.split(':'))
-        if len(tiflash_addr) == 2:
-            tiflash_host = tiflash_addr[0]
-            tiflash_dir = tiflash_addr[1]
-        elif len(tiflash_addr) == 1:
-            tiflash_dir = tiflash_addr[0]
-        else:
-            error('bad tiflash address in rngine: ' + rngine.tiflash)
-        if len(tiflash_host) == 0:
-            tiflash_host = rngine.host
-
-        print '# rngine_run dir conf_templ_dir pd_addr tiflash_addr advertise_host ports_delta cluster_id'
-        if len(tiflash_host) == 0 or tiflash_host == '127.0.0.1' or tiflash_host == 'localhost':
-            print 'tiflash_addr="`get_tiflash_addr_from_dir %s`"' % tiflash_dir
-        else:
-            get_addr_cmd = 'tiflash_addr="`call_remote_func_raw "%s" "%s" get_tiflash_addr_from_dir %s`"'
-            env_dir = conf.cache_dir + '/worker/integrated'
-            print get_addr_cmd % (tiflash_host, env_dir, tiflash_dir)
-        print ssh + 'rngine_run "%s" \\' % rngine.dir
-        print '\t"%s" \\' % conf_templ_dir
-        pd_addr = rngine.pd or ','.join(res.pd_addr)
-        print '\t"%s" "${tiflash_addr}" "%s" "%s" "${id}"' % (pd_addr, rngine.host, rngine.ports)
-
 def render_spark_master(res, conf, hosts, indexes, is_chspark=False):
     if is_chspark:
         spark_workers = res.spark_workers_ch
@@ -617,8 +561,6 @@ def render(res, conf, kvs, mod_names, hosts, indexes):
         render_tidbs(res, conf, hosts, indexes)
     if should_render('tiflash'):
         render_tiflashs(res, conf, hosts, indexes)
-    if should_render('rngine'):
-        render_rngines(res, conf, hosts, indexes)
     if should_render('spark_m') and res.spark_master is not None:
         render_spark_master(res, conf, hosts, indexes, False)
     if should_render('spark_w'):
@@ -635,8 +577,7 @@ def get_mods(res, mod_names, hosts, indexes):
         'pd' : 'pd.toml',
         'tikv': 'tikv.toml',
         'tidb': 'tidb.toml',
-        'tiflash': 'conf/config.xml',
-        'rngine': 'rngine.toml',
+        'tiflash': 'conf/config.toml',
         'spark_m': 'spark-defaults.conf',
         'spark_w': 'spark-defaults.conf',
         'chspark_m': 'spark-defaults-ch.conf',
@@ -661,7 +602,6 @@ def get_mods(res, mod_names, hosts, indexes):
     output(res.tikvs)
     output(res.tidbs)
     output(res.tiflashs)
-    output(res.rngines)
     output_mod(res.spark_master, 0)
     output(res.spark_workers)
     output_mod(res.spark_master_ch, 0)
@@ -690,7 +630,6 @@ def get_hosts(res, mod_names, hosts, indexes):
     output(res.tikvs)
     output(res.tidbs)
     output(res.tiflashs)
-    output(res.rngines)
     output_mod(res.spark_master, 0)
     output(res.spark_workers)
     output_mod(res.spark_master_ch, 0)

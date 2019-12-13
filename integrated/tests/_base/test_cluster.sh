@@ -127,7 +127,7 @@ function test_cluster_vers()
 	local test_ti_file="${1}"
 
 	# TODO: can be faster
-	local version="`test_cluster_ver "${test_ti_file}" "pd"`,`test_cluster_ver "${test_ti_file}" "tikv"`,`test_cluster_ver "${test_ti_file}" "tidb"`,`test_cluster_ver "${test_ti_file}" "tiflash"`,`test_cluster_ver "${test_ti_file}" "rngine"`"
+	local version="`test_cluster_ver "${test_ti_file}" "pd"`,`test_cluster_ver "${test_ti_file}" "tikv"`,`test_cluster_ver "${test_ti_file}" "tidb"`,`test_cluster_ver "${test_ti_file}" "tiflash"`"
 	echo "${version}"
 }
 export -f test_cluster_vers
@@ -311,8 +311,8 @@ function test_cluster_get_store_id_by_index()
 
 	local prop=`"${ti}" -i "${index}" -m "${module}" "${test_ti_file}" 'prop'`
 	local host=`echo "${prop}" | grep "listen_host" | awk -F 'listen_host:' '{print $2}' | tr -d ' '`
-	if [ "${module}" == "rngine" ]; then
-		local port=`echo "${prop}" | grep "rngine_port" | awk -F 'rngine_port:' '{print $2}' | tr -d ' '`
+	if [ "${module}" == "tiflash" ]; then
+		local port=`echo "${prop}" | grep "proxy_port" | awk -F 'proxy_port:' '{print $2}' | tr -d ' '`
 	else
 		local port=`echo "${prop}" | grep "tikv_port" | awk -F 'tikv_port:' '{print $2}' | tr -d ' '`
 	fi
@@ -331,7 +331,7 @@ function test_cluster_get_learner_store_id_by_index()
 	local test_ti_file="${1}"
 	local index="${2}"
 	
-	echo `test_cluster_get_store_id_by_index "${test_ti_file}" "${index}" "rngine"`
+	echo `test_cluster_get_store_id_by_index "${test_ti_file}" "${index}" "tiflash"`
 }
 export -f test_cluster_get_learner_store_id_by_index
 

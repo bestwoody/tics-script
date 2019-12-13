@@ -127,7 +127,7 @@ function ti_file_global_cmd_flags()
 	echo 'the selecting flags below are for selecting mods from the .ti file defined a cluster.'
 	echo 'example: ops/ti.sh -m pd -i 0,2 my.ti stop'
 	echo '    -m:'
-	echo '        the module name, could be one of pd|tikv|tidb|tiflash|rngine|sparkm|sparkw.'
+	echo '        the module name, could be one of pd|tikv|tidb|tiflash|sparkm|sparkw.'
 	echo '        and could be multi modules like: `pd,tikv`.'
 	echo '        if this arg is not provided, it means all modules.'
 	echo '    -h:'

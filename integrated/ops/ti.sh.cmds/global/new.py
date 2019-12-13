@@ -91,10 +91,6 @@ def render(mods):
             if mod != 1:
                 head += str(i)
                 tail += '+' + str(i * 2)
-            if name == 'rngine':
-                head += ' tiflash={dir}/tiflash'
-                if mod != 1:
-                    head += str(i)
             if name == 'spark_w':
                 head += ' cores=1 mem=1G'
             if custom_hosts or nodes > 1:
@@ -105,7 +101,6 @@ def render(mods):
     out('tikv')
     out('tidb')
     out('tiflash')
-    out('rngine')
     out('spark_m')
     out('spark_w')
 
@@ -128,8 +123,6 @@ def new(argv):
             mods['tikv'] = int(argv[1])
     else:
         parse(mods, argv)
-
-    mods['rngine'] = mods['tiflash']
 
     if mods['spark'] != 0:
         mods['spark_m'] = 1

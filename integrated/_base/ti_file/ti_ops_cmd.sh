@@ -190,50 +190,6 @@ function from_mod_get_proc_info()
 }
 export -f from_mod_get_proc_info
 
-function from_mods_get_rngine_by_tiflash()
-{
-	if [ -z "${2+x}" ]; then
-		echo "[func from_mods_get_rngine_by_tiflash] usage: <func> mods_info_lines tiflash_index" >&2
-		return 1
-	fi
-
-	local mods="${1}"
-	local tiflash_index="${2}"
-
-	local tiflash_mod=`from_mods_get_mod "${mods}" 'tiflash' "${tiflash_index}"`
-	if [ -z "${tiflash_mod}" ]; then
-		return
-	fi
-
-	local tiflash_host=`from_mod_get_host "${tiflash_mod}"`
-	local tiflash_dir=`from_mod_get_dir "${tiflash_mod}"`
-	local tiflash_port=`ssh_get_value_from_proc_info "${tiflash_host}" "${tiflash_dir}" 'raft_and_cop_port'`
-	if [ -z "${tiflash_port}" ]; then
-		return
-	fi
-	local tiflash_addr="${tiflash_host}:${tiflash_port}"
-
-	local instances=`from_mods_by_type "${mods}" 'rngine'`
-	if [ -z "${instances}" ]; then
-		return
-	fi
-
-	echo "${instances}" | while read rngine_mod; do
-		local rngine_host=`from_mod_get_host "${rngine_mod}"`
-		local rngine_dir=`from_mod_get_dir "${rngine_mod}"`
-		local rngine_tiflash=`ssh_get_value_from_proc_info "${rngine_host}" \
-			"${rngine_dir}" 'tiflash_raft_addr'`
-		if [ "${rngine_tiflash}" == "${tiflash_addr}" ]; then
-			local rngine_index=`from_mod_get_index "${rngine_mod}"`
-			if [ ! -z "${rngine_index}" ]; then
-				echo "${rngine_index}"
-			fi
-			break
-		fi
-	done
-}
-export -f from_mods_get_rngine_by_tiflash
-
 function mysql_explain()
 {
 	if [ -z "${4+x}" ]; then
