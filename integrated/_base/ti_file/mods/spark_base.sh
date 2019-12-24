@@ -8,6 +8,11 @@ function prepare_spark_env()
 	local java_home=`get_value "${conf_file}" "java_home"`
 	if [ -z "${JAVA_HOME}" ] && [ ! -z "${java_home}" ]; then
 		export JAVA_HOME="${java_home}"
+		if [ -z "${PATH+x}" ]; then
+			export PATH="${JAVA_HOME}/bin"
+		else
+			export PATH="${JAVA_HOME}/bin:${PATH}"
+		fi
 	fi
 
 	restore_error_handle_flags "${error_handle}"

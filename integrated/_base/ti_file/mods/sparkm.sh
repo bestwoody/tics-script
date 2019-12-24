@@ -205,6 +205,11 @@ function spark_master_run()
 	echo "export SPARK_MASTER_WEBUI_PORT=${spark_master_webui_port}" >> "${spark_master_dir}/run_master_temp.sh"
 	if [ ! -z "${java_home}" ]; then
 		echo "export JAVA_HOME=${java_home}" >> "${spark_master_dir}/run_master_temp.sh"
+		if [ -z "${PATH+x}" ]; then
+			echo "export PATH=${JAVA_HOME}/bin" >> "${spark_master_dir}/run_master_temp.sh"
+		else
+			echo "export PATH=${JAVA_HOME}/bin:${PATH}" >> "${spark_master_dir}/run_master_temp.sh"
+		fi
 	fi
 	echo "${spark_master_dir}/spark/sbin/start-master.sh" >> "${spark_master_dir}/run_master_temp.sh"
 	echo "(" >> "${spark_master_dir}/run_master_temp.sh"
