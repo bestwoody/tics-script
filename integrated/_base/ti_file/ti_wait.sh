@@ -125,7 +125,7 @@ function wait_for_pd_port_ready()
 	fi
 	for ((i=0; i<${timeout}; i++)); do
 		nc -zv "${host}" "${port}" >/dev/null 2>&1
-		if [ "${?}" == "0" ] && [ `curl "${host}:${port}/health" 2>/dev/null` == '{"health":"true"}' ]; then
+		if [ "${?}" == "0" ] && [ "`curl "${host}:${port}/health" 2>/dev/null`" == '{"health":"true"}' ]; then
 			local failed='false'
 			break
 		else
