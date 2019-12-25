@@ -20,4 +20,4 @@ tidb	d8baa9a3fd51f339b1721a71bfb0baa5	tidb-server	http://139.219.11.38:8000/QXVX
 
 tidb_lightning  5333479ace472c8032f77caca7bab539    tidb-lightning  http://139.219.11.38:8000/aoCNy/tidb-lightning.tar.gz    master  605760d1b2025d1e1a8b7d0c668c74863d7d1271
 tikv_importer   9bfd01af4254235c16417de62d0a27e1    tikv-importer   http://139.219.11.38:8000/13D9G1/tikv-importer.tar.gz    master  ad32bdcd951ae68cf1ea743a651e2bd47198d6df
-tiflash	9f752caf440a5397e135afa90b4d6094	tiflash	http://139.219.11.38:8000/V5Hjx/tiflash.tar.gz	master	de4ae6c1bcf7e53c4d162ffb7b3aacb2ad0358c7
+tiflash	6b9dc897175b3e0ea5eb23aeb86b01e1	tiflash	http://139.219.11.38:8000/cx8hW/tiflash.tar.gz	master	375035282451103999f3863c691e2fc24223f87b
