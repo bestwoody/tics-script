@@ -414,9 +414,7 @@ def render_tiflashs(res, conf, hosts, indexes):
             print (ssh + 'tiflash_safe_run "%s" \\') % tiflash.dir
             print '\t"%s" \\' % conf_templ_dir
             pd_addr = tiflash.pd and tiflash.pd or ','.join(res.pd_addr)
-            if len(res.tidbs) <= 0:
-                return
-            tidb_addr = ','.join(map(lambda x: x.host + ':' + x.ports, res.tidbs))
+            tidb_addr = '' if len(res.tidbs) <= 0 else ','.join(map(lambda x: x.host + ':' + x.ports, res.tidbs))
             print '\t"true" "%s" "%s" "%s" "%s" "${id}"' % (pd_addr, tidb_addr, tiflash.ports, tiflash.host)
 
         if tiflash.is_local():
