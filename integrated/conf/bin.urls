@@ -16,8 +16,8 @@ tiflash_proxy	3773c1dc3b7a17ce7b3d4ea74013640b	libtiflash_proxy.so	http://139.21
 cluster_manager	e399680003833a000a2e214f539ce81d	flash_cluster_manager.tgz	http://139.219.11.38:8000/IVEEx/flash_cluster_manager.tgz	FLASH-403	8a282a2ac9f47b924331dc170de32dd81d90746e
 pd	618a28d30aec4e30f4c605a9415ae04f	pd-server	http://139.219.11.38:8000/pRmmi/pd-server.tar.gz	placement	8eb7c403029228defcaff60907edacb4390ba1c8
 tispark	4a7908f351860316382a124af6d5575c	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/ODvMn/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	8a5bafcf5b3476d0c0318a2f83ad68bea8b89605
-tidb	d8baa9a3fd51f339b1721a71bfb0baa5	tidb-server	http://139.219.11.38:8000/QXVXX/tidb-server.tar.gz	master	e9f19970d51164cff7f6da5976796e2e95c174e8
 
 tidb_lightning  5333479ace472c8032f77caca7bab539    tidb-lightning  http://139.219.11.38:8000/aoCNy/tidb-lightning.tar.gz    master  605760d1b2025d1e1a8b7d0c668c74863d7d1271
 tikv_importer   9bfd01af4254235c16417de62d0a27e1    tikv-importer   http://139.219.11.38:8000/13D9G1/tikv-importer.tar.gz    master  ad32bdcd951ae68cf1ea743a651e2bd47198d6df
+tidb	d5194854e61a9d07b57da2f43c63b082	tidb-server	http://139.219.11.38:8000/Rn8yD/tidb-server.tar.gz	hot-fix/tiflash	eb11488c0a34d14559f2eefad51f85ee865c9eca
 tiflash	6b9dc897175b3e0ea5eb23aeb86b01e1	tiflash	http://139.219.11.38:8000/cx8hW/tiflash.tar.gz	master	375035282451103999f3863c691e2fc24223f87b
