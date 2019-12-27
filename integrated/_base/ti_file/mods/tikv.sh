@@ -78,7 +78,7 @@ function tikv_run()
 	fi
 
 	local disk_avail=`df -k "${tikv_dir}" | tail -n 1 | awk '{print $4}'`
-	local max_capacity=$(( 500 * 1024 * 1024 ))
+	local max_capacity=$(( 2048 * 1024 * 1024 ))
 	if [ ${disk_avail} -gt ${max_capacity} ]; then
 		local disk_avail=${max_capacity}
 	fi
