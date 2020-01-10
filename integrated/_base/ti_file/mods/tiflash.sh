@@ -95,7 +95,7 @@ function run_query_through_ch_client()
 		install_proxy_lib_on_mac "${bin_dir}"
 		"${ch_binary}" client "${@}"
 	else
-		LD_LIBRARY_PATH="`get_tiflash_lib_path_for_linux ${dir}`" "${ch_binary}" client "${@}"
+		LD_LIBRARY_PATH="`get_tiflash_lib_path_for_linux ${bin_dir}`" "${ch_binary}" client "${@}"
 	fi
 }
 export -f run_query_through_ch_client
