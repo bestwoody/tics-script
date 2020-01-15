@@ -1,0 +1,2 @@
+run crud test on tiflash cluster
+usage: <cmd> [user_count=1000] [post_count=1000] [update_users=20] [update_posts=200] [concurrency=100] [pessimistic=false]

@@ -1,0 +1,85 @@
+#!/bin/bash
+
+function cmd_ti_schrodinger_crud()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${tidb_mod}" ]; then
+		echo "[cmd schrodinger/crud] no selected tidb" >&2
+		return 1
+	fi
+
+	if [ -z "${1+x}" ]; then
+		local user_count="1000"
+	else
+		local user_count="${1}"
+	fi
+
+	if [ -z "${2+x}" ]; then
+		local post_count="1000"
+	else
+		local post_count="${2}"
+	fi
+
+	if [ -z "${3+x}" ]; then
+		local update_users="20"
+	else
+		local update_users="${3}"
+	fi
+
+	if [ -z "${4+x}" ]; then
+		local update_posts="200"
+	else
+		local update_posts="${4}"
+	fi
+
+	if [ -z "${5+x}" ]; then
+		local concurrency="100"
+	else
+		local concurrency="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local pessimistic="false"
+	else
+		local pessimistic="${6}"
+	fi
+
+	local host=`from_mod_get_host "${tidb_mod}"`
+	local dir=`from_mod_get_dir "${tidb_mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
+
+	local bin_dir="/tmp/ti/master/bins"
+	# TODO: remove hardcode file path
+	local conf_file="${integrated}/conf/tools.kv"
+	local binary_url=`cross_platform_get_value "${conf_file}" "crud_url"`
+	echo "Downloading test binary..."
+	download_test_binary "${binary_url}" "crud" "${bin_dir}"
+	echo "Start to run crud test..."
+	echo "Number of users: ${user_count}"
+	echo "Number of post: ${post_count}"
+	echo "Number of users updated: ${update_users}"
+	echo "Number of post updated: ${update_posts}"
+	echo "Concurrency worker count: ${concurrency}"
+	echo "Use pessimistic transaction: ${pessimistic}"
+	export TIDB_SERVICE="${host}:${port}"
+	"${bin_dir}/crud" \
+		-user-count="${user_count}" \
+		-post-count="${post_count}" \
+		-update-users="${update_users}" \
+		-update-posts="${update_posts}" \
+		-concurrency="${concurrency}" \
+		-pessimistic="${pessimistic}" \
+		1>crud.log 2>&1	
+}
+
+set -euo pipefail
+cmd_ti_schrodinger_crud "${@}"

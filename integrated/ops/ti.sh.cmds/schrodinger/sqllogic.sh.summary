@@ -1,0 +1,53 @@
+#!/bin/bash
+
+function cmd_ti_schrodinger_sqllogic()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${tidb_mod}" ]; then
+		echo "[cmd schrodinger/sqllogic] no selected tidb" >&2
+		return 1
+	fi
+
+	if [ -z "${1+x}" ]; then
+		local parallel="1"
+	else
+		local parallel="${1}"
+	fi
+
+	if [ -z "${2+x}" ]; then
+		local skip_error="false"
+	else
+		local skip_error="${2}"
+	fi
+
+	local host=`from_mod_get_host "${tidb_mod}"`
+	local dir=`from_mod_get_dir "${tidb_mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
+
+	local bin_dir="/tmp/ti/master/bins"
+	# TODO: remove hardcode file path
+	local conf_file="${integrated}/conf/tools.kv"
+	local binary_url=`cross_platform_get_value "${conf_file}" "sqllogic_url"`
+	echo "Downloading test binary..."
+	download_test_binary "${binary_url}" "sqllogic" "${bin_dir}"
+	echo "Start to run sqllogic test..."
+	echo "Parallel count: ${parallel}"
+	echo "Skip error: ${skip_error}"
+	export TIDB_SERVICE="${host}:${port}" 
+	"${bin_dir}/sqllogic" \
+		-parallel="${parallel}" \
+		-skip-error="${skip_error}" \
+		1>sqllogic.log 2>&1	
+}
+
+set -euo pipefail
+cmd_ti_schrodinger_sqllogic "${@}"

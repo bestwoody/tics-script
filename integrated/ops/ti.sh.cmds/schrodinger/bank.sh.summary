@@ -1,0 +1,85 @@
+#!/bin/bash
+
+function cmd_ti_schrodinger_bank()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${tidb_mod}" ]; then
+		echo "[cmd schrodinger/bank] no selected tidb" >&2
+		return 1
+	fi
+
+	if [ -z "${1+x}" ]; then
+		local accounts="1000000"
+	else
+		local accounts="${1}"
+	fi
+
+	if [ -z "${2+x}" ]; then
+		local interval="2s"
+	else
+		local interval="${2}"
+	fi
+
+	if [ -z "${3+x}" ]; then
+		local tables="1"
+	else
+		local tables="${3}"
+	fi
+
+	if [ -z "${4+x}" ]; then
+		local concurrency="100"
+	else
+		local concurrency="${4}"
+	fi
+
+	if [ -z "${5+x}" ]; then
+		local long_txn="true"
+	else
+		local long_txn="${5}"
+	fi
+
+	if [ -z "${6+x}" ]; then
+		local pessimistic="false"
+	else
+		local pessimistic="${6}"
+	fi
+
+	local host=`from_mod_get_host "${tidb_mod}"`
+	local dir=`from_mod_get_dir "${tidb_mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
+
+	local bin_dir="/tmp/ti/master/bins"
+	# TODO: remove hardcode file path
+	local conf_file="${integrated}/conf/tools.kv"
+	local binary_url=`cross_platform_get_value "${conf_file}" "bank_url"`
+	echo "Downloading test binary..."
+	download_test_binary "${binary_url}" "bank" "${bin_dir}"
+	echo "Start to run bank test..."
+	echo "Number of accounts: ${accounts}"
+	echo "Verify interval: ${interval}"
+	echo "Number of tables: ${tables}"
+	echo "Concurrency worker count: ${concurrency}"
+	echo "Enable long-term transactions: ${long_txn}"
+	echo "Use pessimistic transaction: ${pessimistic}"
+	export TIDB_SERVICE="${host}:${port}"
+	"${bin_dir}/bank" \
+		-accounts="${accounts}" \
+		-interval="${interval}" \
+		-tables="${tables}" \
+		-concurrency="${concurrency}" \
+		-long-txn="${long_txn}" \
+		-pessimistic="${pessimistic}" \
+		1>bank.log 2>&1	
+}
+
+set -euo pipefail
+cmd_ti_schrodinger_bank "${@}"

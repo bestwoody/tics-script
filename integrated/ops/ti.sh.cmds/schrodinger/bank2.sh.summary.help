@@ -1,0 +1,2 @@
+run bank2 test on tiflash cluster
+usage: <cmd> [accounts=1000000] [interval=2s] [concurrency=100] [contention=low] [pessimistic=false]
