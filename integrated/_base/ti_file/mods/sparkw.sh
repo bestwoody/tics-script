@@ -169,11 +169,11 @@ function spark_worker_run()
 
 	echo "export SPARK_WORKER_WEBUI_PORT=${spark_worker_webui_port}" > "${spark_worker_dir}/run_worker_temp.sh"
 	if [ ! -z "${java_home}" ]; then
-		echo "export JAVA_HOME=${java_home}" >> "${spark_worker_dir}/run_worker_temp.sh"
+		echo "export JAVA_HOME=\"${java_home}\"" >> "${spark_worker_dir}/run_worker_temp.sh"
 		if [ -z "${PATH+x}" ]; then
-			echo "export PATH=${JAVA_HOME}/bin" >> "${spark_worker_dir}/run_master_temp.sh"
+			echo "export PATH=\"${JAVA_HOME}/bin\"" >> "${spark_worker_dir}/run_master_temp.sh"
 		else
-			echo "export PATH=${JAVA_HOME}/bin:${PATH}" >> "${spark_worker_dir}/run_master_temp.sh"
+			echo "export PATH=\"${JAVA_HOME}/bin:${PATH}\"" >> "${spark_worker_dir}/run_master_temp.sh"
 		fi
 	fi
 

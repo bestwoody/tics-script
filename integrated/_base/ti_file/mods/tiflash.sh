@@ -29,7 +29,7 @@ function install_proxy_lib_on_mac()
 		echo "[func install_proxy_lib_on_mac] can not find dir ${dir}/${tiflash_bin_name}" >&2
 		return 1
 	fi
-	local dependent_proxy_path=`otool -L "${dir}/${tiflash_bin_name}" | grep "libtiflash_proxy.dylib[[:blank:]]" | awk -F '(' '{print $1}' | sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]]*$//'`
+	local dependent_proxy_path=`otool -L "${dir}/${tiflash_bin_name}" | grep "libtiflash_proxy.dylib[[:blank:]]" | awk -F '(' '{print $1}' | trim_space`
 	if [ ! -z "${dependent_proxy_path}" ] && [ "${dependent_proxy_path}" != "${dir}/${proxy_file_name}" ]; then
 		install_name_tool -change "${dependent_proxy_path}" "${dir}/${proxy_file_name}" "${dir}/${tiflash_bin_name}"
 	fi

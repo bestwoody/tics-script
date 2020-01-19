@@ -17,3 +17,9 @@ function scale_to_name()
 	tr '.' '_'
 }
 export -f scale_to_name
+
+function trim_space()
+{
+	sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]]*$//'
+}
+export -f trim_space
