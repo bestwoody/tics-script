@@ -50,7 +50,7 @@ function cmd_ti_ci_self()
 
 	local beeline_exists=`from_mods_random_mod "${mods}" 'spark_m'`
 	if [ ! -z "${beeline_exists}" ]; then
-		local res=`"${ti}" -k "${args}" "${file}" beeline default -e 'show databases' | grep test`
+		local res=`"${ti}" -k "${args}" "${file}" beeline 'show databases' default | grep test`
 		test ! -z "${res}"
 	fi
 

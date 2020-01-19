@@ -1,0 +1,62 @@
+#!/bin/bash
+
+function cmd_ti_beeline_raw()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local mod=`from_mods_random_mod "${mods}" 'spark_m' 'false'`
+	if [ -z "${mod}" ]; then
+		local mod=`from_mods_random_mod "${mods}" 'chspark_m' 'false'`
+	fi
+	if [ -z "${mod}" ]; then
+		echo "[cmd beeline/raw] no spark_m|chspark_m selected" >&2
+		return 1
+	fi
+
+	local dir=`from_mod_get_dir "${mod}"`
+	local host=`from_mod_get_host "${mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'thriftserver_port'`
+	if [ -z "${host}" ]; then
+		local host=`must_print_ip`
+	fi
+
+	if [ -z "${port}" ]; then
+		echo "[cmd beeline/raw] getting thriftserver port failed from ${host}:${dir}" >&2
+		return 1
+	fi
+	local error_handle="$-"
+	set +eu
+	local cmd_args=("${@}")
+	restore_error_handle_flags "${error_handle}"
+
+	# remove hardcode path
+	local bin_dir="/tmp/ti/master/bins"
+	ensure_bin_in_local_dir "spark_m" "${bin_dir}"
+	if [ ! -d "${bin_dir}/spark" ]; then
+		# TODO: remove spark file name from this func
+		local spark_file="spark-2.3.4-bin-hadoop2.7"
+		local spark_file_name="${spark_file}.tgz"
+		if [ ! -f "${bin_dir}/${spark_file_name}" ]; then
+			echo "[func spark_file_prepare] cannot find spark file" >&2
+			return 1
+		fi
+		tar -zxf "${bin_dir}/${spark_file_name}" -C ${bin_dir} 1>/dev/null
+		mv "${bin_dir}/${spark_file}" "${bin_dir}/spark"
+	fi
+
+	if [ -z "${cmd_args+x}" ]; then
+		${bin_dir}/spark/bin/beeline --verbose=false -u "jdbc:hive2://${host}:${port}"
+	else
+		${bin_dir}/spark/bin/beeline --verbose=false -u "jdbc:hive2://${host}:${port}" "${cmd_args[@]}"
+	fi
+}
+
+set -euo pipefail
+cmd_ti_beeline_raw "${@}"

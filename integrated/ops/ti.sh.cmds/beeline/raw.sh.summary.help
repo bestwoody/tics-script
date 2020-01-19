@@ -1,0 +1,2 @@
+connect to spark in interactive mode
+usage: <cmd> [beeline_connecting_args]
