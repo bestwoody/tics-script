@@ -95,14 +95,25 @@ function _build_and_update_mod()
 				echo "[func _build_and_update_mod] compress binary file failed" >&2
 				return 1
 			fi
+		else
+			echo "[func _build_and_update_mod] cannot find binary file in ${binary_file_path}" >&2
+			return 1
 		fi
 		local result_url=`upload_file "${compressed_file_name}"`
 		if [ -z "${result_url}" ]; then
 			echo "[func _build_and_update_mod] upload binary file failed" >&2
 			return 1
 		fi
-		local file_md5=`file_md5 "${binary_file_path}"`
-		_update_mod_urls "${mod_name}" "${file_md5}" "${binary_file_name}" "${result_url}" "${branch}" "${commit_hash}"
+		if [ -f "${binary_file_path}" ]; then
+			local file_md5=`file_md5 "${binary_file_path}"`
+			_update_mod_urls "${mod_name}" "${file_md5}" "${binary_file_name}" "${result_url}" "${branch}" "${commit_hash}"
+		elif [ -d "${binary_file_path}" ]; then
+			local file_md5=`file_md5 "${binary_file_name}.tgz"`
+			_update_mod_urls "${mod_name}" "${file_md5}" "${binary_file_name}.tgz" "${result_url}" "${branch}" "${commit_hash}"
+		else
+			echo "[func _build_and_update_mod] cannot find binary file in ${binary_file_path}" >&2
+			return 1
+		fi
 	)
 }
 export -f _build_and_update_mod

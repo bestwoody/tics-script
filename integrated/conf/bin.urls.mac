@@ -12,12 +12,12 @@ chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https:/
 # TODO: fake lib file, remove it later
 tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
 tiflash_proxy	7fc0f4ddad784dfe6fd8c251840f1f3f	libtiflash_proxy.dylib	http://139.219.11.38:8000/1EqeW/libtiflash_proxy.tar.gz	tiflash-proxy-lib	cc692c0dde39049af282214cc08decad03603a95
-cluster_manager	66e2a00bb2b7adb2518d0a5dc8f078d6	flash_cluster_manager.tgz	http://139.219.11.38:8000/1384Ix/flash_cluster_manager.tgz	FLASH-403	8a282a2ac9f47b924331dc170de32dd81d90746e
 tispark	4a7908f351860316382a124af6d5575c	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/ODvMn/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	8a5bafcf5b3476d0c0318a2f83ad68bea8b89605
 
 tidb_lightning  aa8a75a79dabe78219b5978e91b447a0    tidb-lightning  http://139.219.11.38:8000/p6f8F/tidb-lightning.tar.gz    master  605760d1b2025d1e1a8b7d0c668c74863d7d1271
 tikv_importer   834005a83cb63943238cb4b644ee0684    tikv-importer   http://139.219.11.38:8000/Gx4Ze/tikv-importer.tar.gz     master  ad32bdcd951ae68cf1ea743a651e2bd47198d6df
-tiflash	018634b938d115f8fd1c13a943fecbbb	tiflash	http://139.219.11.38:8000/Uh13r/tiflash.tar.gz	master	9ee682abbf1f95a1097eb1c5b19920419ae53d0c
-tidb	d8dfa4e5ede78a70fe9b56747d9e15b3	tidb-server	http://139.219.11.38:8000/ma7yn/tidb-server.tar.gz	master	0d7edc7ef32c52dd734c21dfade5860c71aececd
 tikv	da9a4ca1b7427bf1c138cf21c39a4b28	tikv-server	http://139.219.11.38:8000/8LMLV/tikv-server.tar.gz	master	4f8b0a4f7b4e90376f4bda6d5a9dc62e55edb58d
 pd	1159d5ae32825ec8016db411ed8abed4	pd-server	http://139.219.11.38:8000/nQdVH/pd-server.tar.gz	placement	8eb7c403029228defcaff60907edacb4390ba1c8
+tidb	571b86a37b61c30f270aa72864708b29	tidb-server	http://139.219.11.38:8000/ReAdS/tidb-server.tar.gz	tiflash-maintain	eaa0ac4bd918e427bde2688be149fa0db5ff83eb
+cluster_manager	2a5ace710892ac35dbed16e8e73cddee	flash_cluster_manager.tgz	http://139.219.11.38:8000/MJSIH/flash_cluster_manager.tgz	master	ccd9324cef5ada5b01e46fd4fc990243d328fa40
+tiflash	00809525f2f4e38355b7cec31c040582	tiflash	http://139.219.11.38:8000/dLNLD/tiflash.tar.gz	master	ccd9324cef5ada5b01e46fd4fc990243d328fa40
