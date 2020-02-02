@@ -26,7 +26,9 @@ function ti_cmd_tpcc_load()
 	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
 	local tidb_host=`from_mod_get_host "${tidb_mod}"`
 	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
-	local tidb_port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
+	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
+
+	local ti="${integrated}/ops/ti.sh"
 
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
 		"${ti_file}" "mysql" "drop database if exists ${db}" 'test' 'false'

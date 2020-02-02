@@ -1,0 +1,2 @@
+run tpcc benchmark after loading data
+usage: <cmd> warehouses load_workers terminals

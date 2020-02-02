@@ -1,0 +1,2 @@
+load tpcc data to tidb using mysql client
+usage: <cmd> warehouses load_workers terminals

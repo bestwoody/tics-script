@@ -27,7 +27,7 @@ function ti_cmd_tpcc_run()
 	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
 	local tidb_host=`from_mod_get_host "${tidb_mod}"`
 	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
-	local tidb_port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
+	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
 
 	tpcc_run "${entry_dir}" "${tidb_host}" "${tidb_port}" "${db}" "${warehouses}" "${minutes}" "${terminals}" "${load_workers}" "${tag}"
 }
