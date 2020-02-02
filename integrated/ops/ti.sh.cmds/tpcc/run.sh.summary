@@ -11,7 +11,7 @@ function ti_cmd_tpcc_run()
 	shift 6
 
 	if [ -z "${4+x}" ]; then
-		echo "[cmd tpcc/run] usage: <cmd> warehouses minutes terminals tag" >&2
+		echo "[cmd tpcc/run] usage: <cmd> warehouses minutes terminals tag [txn_mode=optimistic|pessimistic]" >&2
 		return 1
 	fi
 
@@ -19,6 +19,15 @@ function ti_cmd_tpcc_run()
 	local minutes="${2}"
 	local terminals="${3}"
 	local tag="${4}"
+
+	local txn_mode='pessimistic'
+	if [ -z "${5+x}" ]; then
+		local txn_mode='optimistic'
+	fi
+	if [ "${txn_mode}" != 'optimistic' ] && [ "${txn_mode}" != 'pessimistic' ]; then
+		echo "bad txn_mode: ${txn_mode}, should be pessimistic or optimistic" >&2
+		return 1
+	fi
 
 	local load_workers='1'
 	local db="tpcc_${warehouses}"
@@ -28,6 +37,11 @@ function ti_cmd_tpcc_run()
 	local tidb_host=`from_mod_get_host "${tidb_mod}"`
 	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
 	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
+
+	local ti="${integrated}/ops/ti.sh"
+	local sql="set @@global.tidb_txn_mode = '${txn_mode}';"
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" "mysql" "${sql}" 'test' 'false'
 
 	tpcc_run "${entry_dir}" "${tidb_host}" "${tidb_port}" "${db}" "${warehouses}" "${minutes}" "${terminals}" "${load_workers}" "${tag}"
 }

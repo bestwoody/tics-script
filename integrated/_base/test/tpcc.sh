@@ -96,7 +96,7 @@ function tpcc_report()
 	local entry_dir="${1}"
 
 	local report="${entry_dir}/report"
-	local title='<tpcc performance'
+	local title='<tpcc performance>'
 
 	rm -f "${report}.tmp"
 
