@@ -11,7 +11,7 @@ function ti_cmd_tpcc_run()
 	shift 6
 
 	if [ -z "${4+x}" ]; then
-		echo "[cmd tpcc/run] usage: <cmd> warehouses minutes terminals tag [txn_mode=optimistic|pessimistic]" >&2
+		echo "[cmd tpcc/run] usage: <cmd> warehouses minutes terminals tag [txn_mode=pessimistic|optimistic]" >&2
 		return 1
 	fi
 
@@ -21,8 +21,8 @@ function ti_cmd_tpcc_run()
 	local tag="${4}"
 
 	local txn_mode='pessimistic'
-	if [ -z "${5+x}" ]; then
-		local txn_mode='optimistic'
+	if [ ! -z "${5+x}" ]; then
+		local txn_mode='${5}'
 	fi
 	if [ "${txn_mode}" != 'optimistic' ] && [ "${txn_mode}" != 'pessimistic' ]; then
 		echo "bad txn_mode: ${txn_mode}, should be pessimistic or optimistic" >&2

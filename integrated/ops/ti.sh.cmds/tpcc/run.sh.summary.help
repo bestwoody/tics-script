@@ -1,2 +1,2 @@
 run tpcc benchmark after loading data
-usage: <cmd> warehouses load_workers terminals
+usage: <cmd> warehouses load_workers terminals tag [txn_mode=pessimistic|optimistic]
