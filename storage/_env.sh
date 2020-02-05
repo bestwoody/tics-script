@@ -3,9 +3,9 @@
 # Executable path
 
 if [ `uname` == "Darwin" ]; then
-	export storage_bin="build_clang/dbms/src/Server/theflash"
+	export storage_bin="build_clang/dbms/src/Server/tiflash"
 else
-	export storage_bin="build/dbms/src/Server/theflash"
+	export storage_bin="build/dbms/src/Server/tiflash"
 fi
 
 # Serve config for launching

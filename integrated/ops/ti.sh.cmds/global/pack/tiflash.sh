@@ -20,9 +20,9 @@ function cmd_ti_pack_tiflash()
 	fi
 	if [ -z "${4+x}" ]; then
 		if [ `uname` == "Darwin" ]; then
-			local binary_rel_path="build_clang/dbms/src/Server/theflash"
+			local binary_rel_path="build_clang/dbms/src/Server/tiflash"
 		else
-			local binary_rel_path="build/dbms/src/Server/theflash"
+			local binary_rel_path="build/dbms/src/Server/tiflash"
 		fi
 	else
 		local binary_rel_path="${4}"

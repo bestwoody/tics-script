@@ -9,7 +9,7 @@ type="$2"
 set -eu
 
 if [ -z "$target" ]; then
-	target="theflash"
+	target="tiflash"
 fi
 
 if [ -z "$type" ]; then

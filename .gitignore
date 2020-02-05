@@ -60,6 +60,7 @@ benchmark/tpch.log*
 
 # deployment generated files
 deployment/publish/theflash*
+deployment/publish/tiflash*
 deployment/ceph-tools/offline/downloaded
 deployment/ceph-tools/deploy/*.keyring
 deployment/ceph-tools/deploy/ceph.conf

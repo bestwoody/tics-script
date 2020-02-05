@@ -26,4 +26,4 @@ cd $FLASH_HOME/storage/ch/contrib/kvproto
 
 cd $FLASH_HOME/storage
 source ./_build.sh
-build_ch "ch" "theflash" "true" "$build_type"
+build_ch "ch" "tiflash" "true" "$build_type"
