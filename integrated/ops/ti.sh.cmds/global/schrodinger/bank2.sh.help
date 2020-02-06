@@ -1,2 +1,2 @@
 bank2 test used by jenkins
-usage: <cmd> [test_bin_dir=/tmp/ti/schrodinger/bank2]
+usage: <cmd> [enable_region_merge=false] [enable_shuffle_region=false] [enable_shuffle_leader=false] [test_bin_dir=/tmp/ti/schrodinger/bank2]
