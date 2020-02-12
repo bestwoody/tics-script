@@ -109,7 +109,9 @@ function ti_cmd_tpch_load_fast()
 		# load data using lightning
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
 			"${ti_file}" 'lightning/load' "${db}" "${table}" "${import_dir}" "${check_checksum}" | awk '{print "   "$0}'
+		echo "=> [${host}] analyze table ..."
 		# analyze table after data loaded.
+		local si='set @@session.tidb_build_stats_concurrency=10; set @@session.tidb_distsql_scan_concurrency=40;'
 		mysql -u root -P "${port}" -h "${host}" -D "${db}" -e "analyze table ${table};"
 		local finish_time=`date +%s`
 		local duration=$((finish_time-start_time))

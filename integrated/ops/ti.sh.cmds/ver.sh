@@ -21,7 +21,7 @@ function cmd_ti_ver()
 	elif [ "${mode}" == 'githash' ]; then
 		local grep_str='Git Commit Hash'
 	else
-		local grep_str='Git Commit Hash\|Git Commit Branch\|Release Version\|UTC Build Time'
+		local grep_str='Git Commit Hash\|Git Commit Branch\|Git Branch\|Release Version\|UTC Build Time'
 	fi
 
 	if [ "${mod_name}" == 'pd' ]; then
@@ -68,7 +68,7 @@ function cmd_ti_ver()
 				awk -F ':' '{print $2}' | trim_space`
 			local git_hash="${tiflash_git_hash}(proxy:${proxy_git_hash})"
 
-			local tiflash_and_proxy_branch=`echo "${res}" | { grep "Git Commit Branch" || test $? = 1; }`
+			local tiflash_and_proxy_branch=`echo "${res}" | { grep "Git Commit Branch\|Git Branch" || test $? = 1; }`
 			local tiflash_branch=`echo "${tiflash_and_proxy_branch}" | head -n 1 | \
 				awk -F ':' '{print $2}' | trim_space`
 			local proxy_branch=`echo "${tiflash_and_proxy_branch}" | tail -n 1 | \
