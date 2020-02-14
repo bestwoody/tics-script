@@ -10,7 +10,15 @@ catchError {
         return params.ticsTag ?: params.ghprbTargetBranch ?: 'raft'
     }).call()
 
-    echo "ticsTag=${params.ticsTag} ghprbTargetBranch=${params.ghprbTargetBranch} ghprbCommentBody=${params.ghprbCommentBody}"
+    def tidbBranch = ({
+        def m = params.ghprbCommentBody =~ /tidb\s*=\s*([^\s\\]+)(\s|\\|$)/
+        if (m) {
+            return "${m.group(1)}"
+        }
+        return params.tidbBranch ?: params.ghprbTargetBranch ?: 'master'
+    }).call()
+
+    echo "ticsTag=${ticsTag} tidbBranch=${tidbBranch} ghprbTargetBranch=${params.ghprbTargetBranch} ghprbCommentBody=${params.ghprbCommentBody}"
 
     def tasks = {}
 
@@ -118,7 +126,7 @@ catchError {
                                 }
 
                                 try {
-                                    sh "TAG=$ticsTag sh -xe run.sh"
+                                    sh "TAG=$ticsTag BRANCH=$tidbBranch sh -xe run.sh"
                                 } catch(e) {
                                     sh "for f in \$(find log -name '*.log'); do echo \"LOG: \$f\"; tail -500 \$f; done"
                                     throw e
