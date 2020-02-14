@@ -100,10 +100,16 @@ function ti_cmd_tpch_load_fast()
 		mkdir -p "${import_dir}"
 		(
 			cd "${import_dir}"
-			for f in `ls "${table_dir}" | grep "${table}.tbl." `; do
-				local num=`echo ${f} | awk -F. '{print $3}'`
-				ln -sf "../${f}" "${db}.${table}.${num}.csv"
-			done
+			if [ -f "${table_dir}/${table}.tbl" ]; then
+				# single blocks
+				ln -sf "../${table}.tbl" "${db}.${table}.csv"
+			else
+				# multiple blocks
+				for f in `ls "${table_dir}" | grep "${table}.tbl." `; do
+					local num=`echo ${f} | awk -F. '{print $3}'`
+					ln -sf "../${f}" "${db}.${table}.${num}.csv"
+				done
+			fi
 		)
 		wait
 		# load data using lightning

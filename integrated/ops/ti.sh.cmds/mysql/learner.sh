@@ -44,17 +44,17 @@ function cmd_ti_mysql()
 		return 1
 	fi
 
+	if [ -f "${query}" ]; then
+		local query=`cat "${query}" | tr -s "\n" " "`
+	fi
+
 	if [ "${show_elapsed}" == 'true' ]; then
 		mysql_explain "${host}" "${port}" "${query}" 'tiflash'
 		local start_time=`timer_start`
 	fi
 
-	if [ -f "${query}" ]; then
-		mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments < "${query}"
-	else
-		local si="set @@session.tidb_isolation_read_engines=\"tiflash\"; "
-		mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${si} ${query}"
-	fi
+	local si="set @@session.tidb_isolation_read_engines=\"tiflash\"; "
+	mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${si} ${query}"
 
 	if [ "${show_elapsed}" == 'true' ]; then
 		local elapsed=`timer_end "${start_time}"`
