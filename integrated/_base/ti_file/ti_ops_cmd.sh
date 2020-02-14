@@ -100,7 +100,11 @@ function from_mods_random_mod()
 		local index_only="${3}"
 	fi
 
-	local instances=`from_mods_by_type "${mods}" "${type}"`
+	if [ -z "${type}" ]; then
+		local instances="${mods}"
+	else
+		local instances=`from_mods_by_type "${mods}" "${type}"`
+	fi
 	if [ -z "${instances}" ]; then
 		return
 	fi
