@@ -1,0 +1,89 @@
+#!/bin/bash
+
+function load_tpch()
+{
+	local scale="${1}"
+	local table="${2}"
+	local ti_file="${3}"
+
+	"${integrated}/ops/ti.sh" "${ti_file}" "tpch/load" "${scale}" "${table}"
+}
+export -f load_tpch
+
+function run_cluster()
+{
+	local ti_file="${1}"
+	"${integrated}/ops/ti.sh" "${ti_file}" run
+}
+export -f run_cluster
+
+function run_file()
+{
+	local target="${1}"
+	local ti_file="${2}"
+	local run_test_entry="${3}"
+	local ti="${4}"
+
+	python "${run_test_entry}" "${target}" "${ti}" "${ti_file}" "true"
+	echo "${target}": OK
+}
+
+function run_dir()
+{
+	local target="${1}"
+	local ti_file="${2}"
+	local run_test_entry="${3}"
+	local ti="${4}"
+
+	find "${target}" -maxdepth 1 -name "*.test" -type f | sort | while read file; do
+		if [ -f "${file}" ]; then
+			run_file "${file}" "${ti_file}" "${run_test_entry}" "${ti}"
+		fi
+	done
+
+	find "${target}" -maxdepth 1 -type d | sort -r | while read dir; do
+		if [ -d "${dir}" ] && [ "${dir}" != "${target}" ]; then
+			run_dir "${dir}" "${ti_file}" "${run_test_entry}" "${ti}"
+		fi
+	done
+}
+
+function cmd_ti_fullstatck_run()
+{
+	local file="${1}"
+	local args="${2}"
+	shift 6
+	local ti="${integrated}/ops/ti.sh"
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	if [ -z "${1+x}" ]; then
+		local test_cases="${here}/fullstack_tests"
+	else
+		local test_cases="${here}/fullstack_tests/${1}"
+	fi
+	if [ -z "${2+x}" ]; then
+		local gen_tests="true"
+	else
+		local gen_tests="${2}"
+	fi
+		
+	if [ -d "${test_cases}" ]; then
+		run_dir "${test_cases}" "${file}" "${here}/fullstack_run.py" "${ti}"
+	elif [ -f "${test_cases}" ]; then
+		run_file "${test_cases}" "${file}" "${here}/fullstack_run.py" "${ti}"
+	else
+		echo "${test_cases} not found" >&2
+		return 1
+	fi
+
+	if [ "${gen_tests}" == "true" ]; then
+		local gen_tests_dir="${here}/fullstack_tests/gen_tests"
+		local temp_gen_tests_dir="${gen_tests_dir}.`date +%s`.${RANDOM}"
+		python "${here}/fullstack_generate.py" "test" "t" "${temp_gen_tests_dir}"
+		rm -rf "${gen_tests_dir}"
+		mv "${temp_gen_tests_dir}" "${gen_tests_dir}"
+		run_dir "${gen_tests_dir}" "${file}" "${here}/fullstack_run.py" "${ti}"
+	fi
+}
+
+set -euo pipefail
+cmd_ti_fullstatck_run "${@}"

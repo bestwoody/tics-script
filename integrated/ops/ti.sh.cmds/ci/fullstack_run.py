@@ -4,8 +4,6 @@ import os
 import sys
 import time
 
-CMD_PREFIX = '>> '
-CMD_PREFIX_ALTER = '=> '
 CMD_PREFIX_TI_MYSQL = 'ti_mysql> '
 CMD_PREFIX_TI_BEELINE = 'ti_beeline> '
 CMD_PREFIX_TI_CH = 'ti_ch> '
@@ -22,7 +20,6 @@ class QueryType:
     ti_beeline_tag = "ti_beeline"
     ti_ch_tag = "ti_ch"
     ti_mysql_tag = "ti_mysql"
-    ch_tag = "ch"
     func_tag = "func"
     def __init__(self, query_type):
         self.query_type = query_type
@@ -36,9 +33,6 @@ class QueryType:
     def ti_mysql(cls):
         return cls(cls.ti_mysql_tag)
     @classmethod
-    def ch(cls):
-        return cls(cls.ch_tag)
-    @classmethod
     def func(cls):
         return cls(cls.func_tag)
     def is_ti_beeline(self):
@@ -47,23 +41,10 @@ class QueryType:
         return self.query_type == self.ti_ch_tag
     def is_ti_mysql(self):
         return self.query_type == self.ti_mysql_tag
-    def is_ch(self):
-        return self.query_type == self.ch_tag
     def is_func(self):
         return self.query_type == self.func_tag
     def __str__(self):
         return self.query_type
-
-class Executor:
-    def __init__(self, dbc):
-        self.dbc = dbc
-    def exe(self, cmd):
-        cmd_arr = cmd.split("--")
-        if len(cmd_arr) <= 0:
-            return ""
-        query = cmd_arr[0]
-        args = map(lambda x: "--" + x.strip(), cmd_arr[1:])
-        return os.popen((self.dbc + ' "' + query + '" ' + " ".join(args) + ' 2>&1').strip()).readlines()
 
 class ShellFuncExecutor:
     def __init__(self, test_ti_file):
@@ -77,15 +58,15 @@ class OpsExecutor:
         self.test_ti_file = test_ti_file
     def exe(self, cmd_type, cmd):
         ops_cmd = ""
-        blank_args = []
+        padding_args = []
         if cmd_type.is_ti_beeline():
-            ops_cmd = "beeline '' -e"
+            ops_cmd = "beeline"
         elif cmd_type.is_ti_mysql():
             ops_cmd = "mysql"
-            blank_args = ['""']
+            padding_args = ['""', 'false']
         elif cmd_type.is_ti_ch():
             ops_cmd = "ch"
-            blank_args = ['""', '""']
+            padding_args = ['default', 'pretty', 'false']
         else:
             raise Exception("Unknown command type", str(cmd_type))
         cmd_arr = cmd.split("--")
@@ -93,9 +74,15 @@ class OpsExecutor:
             return ""
         query = cmd_arr[0]
         args = map(lambda x: "--" + x.strip(), cmd_arr[1:])
-        return os.popen((self.ti_sh + ' "' + self.test_ti_file + '" ' + ops_cmd
-                         + ' "' + query + '" ' + " ".join(blank_args) + ' ' + " ".join(args)
-                         + ' 2>&1').strip()).readlines()
+        cmd = ""
+        cmd += self.ti_sh
+        cmd += ' "' + self.test_ti_file + '"'
+        cmd += ' ' + ops_cmd
+        cmd += ' "' + query + '"'
+        cmd += ' ' + " ".join(padding_args)
+        cmd += ' ' + " ".join(args)
+        cmd += ' 2>&1'
+        return os.popen(cmd.strip()).readlines()
 
 def parse_line(line):
     words = [w.strip() for w in line.split("│") if w.strip() != ""]
@@ -231,16 +218,13 @@ def matched(outputs, matches, fuzz, query_type):
         return ti_beeline_matched(outputs, matches, fuzz)
     elif query_type.is_ti_ch():
         return ch_matched(outputs, matches, fuzz)
-    elif query_type.is_ch():
-        return ch_matched(outputs, matches, fuzz)
     elif query_type.is_ti_mysql():
         return mysql_matched(outputs, matches, fuzz)
     else:
         raise Exception("Unknown query type", str(query_type))
 
 class Matcher:
-    def __init__(self, executor, executor_func, executor_ops, fuzz):
-        self.executor = executor
+    def __init__(self, executor_func, executor_ops, fuzz):
         self.executor_func = executor_func
         self.executor_ops = executor_ops
         self.fuzz = fuzz
@@ -299,17 +283,6 @@ class Matcher:
             self.outputs = map(lambda x: x.split(' ', 1)[1] if x.startswith('[') else x, self.outputs)
             self.extra_outputs = None
             self.matches = []
-        elif line.startswith(CMD_PREFIX) or line.startswith(CMD_PREFIX_ALTER):
-            if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
-                return False
-            self.query_line_number = line_number
-            self.query = line[len(CMD_PREFIX):]
-            self.query_type = QueryType.ch()
-            self.outputs = self.executor.exe(self.query)
-            self.outputs = map(lambda x: x.strip(), self.outputs)
-            self.outputs = filter(lambda x: len(x) != 0, self.outputs)
-            self.extra_outputs = None
-            self.matches = []
         else:
             self.matches.append(line)
         return True
@@ -319,12 +292,12 @@ class Matcher:
             return False
         return True
 
-def parse_exe_match(path, executor, executor_func, executor_ops, fuzz):
+def parse_exe_match(path, executor_func, executor_ops, fuzz):
     todos = []
     line_number = 0
     line_number_cached = 0
     with open(path) as file:
-        matcher = Matcher(executor, executor_func, executor_ops, fuzz)
+        matcher = Matcher(executor_func, executor_ops, fuzz)
         cached = None
         for origin in file:
             line_number += 1
@@ -350,18 +323,17 @@ def parse_exe_match(path, executor, executor_func, executor_ops, fuzz):
         return True, matcher, todos
 
 def run():
-    if len(sys.argv) != 6:
-        print 'usage: <bin> tiflash_client_cmd test_file_path ti_sh test_ti_file fuzz_check'
+    if len(sys.argv) != 5:
+        print 'usage: <bin> tiflash_client_cmd test_file_path ti_sh ti_file fuzz_check'
         sys.exit(1)
 
-    dbc = sys.argv[1]
-    test_file_path = sys.argv[2]
-    ti_sh = sys.argv[3]
-    test_ti_file = sys.argv[4]
-    fuzz = (sys.argv[5] == 'true')
+    test_file_path = sys.argv[1]
+    ti_sh = sys.argv[2]
+    ti_file = sys.argv[3]
+    fuzz = (sys.argv[4] == 'true')
 
-    matched, matcher, todos = parse_exe_match(test_file_path, Executor(dbc), ShellFuncExecutor(test_ti_file),
-                                              OpsExecutor(ti_sh, test_ti_file), fuzz)
+    matched, matcher, todos = parse_exe_match(test_file_path, ShellFuncExecutor(ti_file),
+                                              OpsExecutor(ti_sh, ti_file), fuzz)
 
     def display(lines):
         if len(lines) == 0:

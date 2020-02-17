@@ -1,0 +1,2 @@
+run fullstack test on cluster
+usage: <cmd> [test-case-path](relative path to fullstack_tests directory) [run-generate-tests=true]
