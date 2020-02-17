@@ -29,3 +29,5 @@ jmxremote_port_ch	15000
 jdwp_port_ch	15500
 
 tikv_importer_port  16000
+
+tikv_status_port	16500

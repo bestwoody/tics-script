@@ -45,6 +45,11 @@ function tikv_run()
 		echo "   get default tikv_port from ${default_ports} failed" >&2
 		return 1
 	fi
+	local default_status_port=`get_value "${default_ports}" 'tikv_status_port'`
+	if [ -z "${default_status_port}" ]; then
+		echo "   get default tikv_status_port from ${default_ports} failed" >&2
+		return 1
+	fi
 
 	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
 
@@ -77,6 +82,13 @@ function tikv_run()
 		return 1
 	fi
 
+	local status_port=$((${ports_delta} + ${default_status_port}))
+	local tikv_port_occupied=`print_port_occupied "${status_port}"`
+	if [ "${tikv_port_occupied}" == "true" ]; then
+		echo "   tikv status port: ${status_port} is occupied" >&2
+		return 1
+	fi
+
 	local disk_avail=`df -k "${tikv_dir}" | tail -n 1 | awk '{print $4}'`
 	local max_capacity=$(( 2048 * 1024 * 1024 ))
 	if [ ${disk_avail} -gt ${max_capacity} ]; then
@@ -89,6 +101,7 @@ function tikv_run()
 
 	local info="${tikv_dir}/proc.info"
 	echo "listen_host	${listen_host}" > "${info}"
+	echo "status_port	${status_port}" >> "${info}"
 	echo "tikv_port	${tikv_port}" >> "${info}"
 	echo "advertise_host	${advertise_host}" >> "${info}"
 	echo "pd_addr	${pd_addr}" >> "${info}"
@@ -96,6 +109,7 @@ function tikv_run()
 
 	echo "nohup \"${tikv_dir}/tikv-server\" \\" > "${tikv_dir}/run.sh"
 	echo "	--addr \"${listen_host}:${tikv_port}\" \\" >> "${tikv_dir}/run.sh"
+	echo "	--status-addr=\"${advertise_host}:${status_port}\" \\" >> "${tikv_dir}/run.sh"
 	echo "	--advertise-addr \"${advertise_host}:${tikv_port}\" \\" >> "${tikv_dir}/run.sh"
 	echo "	--pd \"${pd_addr}\" \\" >> "${tikv_dir}/run.sh"
 	echo "	--data-dir \"${tikv_dir}/data\" \\" >> "${tikv_dir}/run.sh"
