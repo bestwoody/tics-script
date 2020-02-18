@@ -37,7 +37,11 @@ function from_mods_by_type()
 
 	local mods="${1}"
 	local type="${2}"
-	echo "${mods}" | { grep $'\t'"${type}[[:blank:]]" || test $? = 1; }
+	if [ -z "${type}" ]; then
+		echo "${mods}"
+	else
+		echo "${mods}" | { grep $'\t'"${type}[[:blank:]]" || test $? = 1; }
+	fi
 }
 export -f from_mods_by_type
 
@@ -50,7 +54,11 @@ function from_mods_not_type()
 
 	local mods="${1}"
 	local type="${2}"
-	echo "${mods}" | { grep -v $'\t'"${type}[[:blank:]]" || test $? = 1; }
+	if [ -z "${type}" ]; then
+		echo "${mods}"
+	else
+		echo "${mods}" | { grep -v $'\t'"${type}[[:blank:]]" || test $? = 1; }
+	fi
 }
 export -f from_mods_not_type
 
@@ -100,11 +108,7 @@ function from_mods_random_mod()
 		local index_only="${3}"
 	fi
 
-	if [ -z "${type}" ]; then
-		local instances="${mods}"
-	else
-		local instances=`from_mods_by_type "${mods}" "${type}"`
-	fi
+	local instances=`from_mods_by_type "${mods}" "${type}"`
 	if [ -z "${instances}" ]; then
 		return
 	fi
