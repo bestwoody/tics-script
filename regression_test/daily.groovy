@@ -4,6 +4,7 @@ def runTest(branch, label, notify) {
     def TIDB_BRANCH = "master"
     def TIKV_BRANCH = "master"
     def PD_BRANCH = "master"
+    def TIFLASH_BRANCH = "master"
 
     podTemplate(name: label, label: label, instanceCap: 5, idleMinutes: 5, containers: [
             containerTemplate(name: 'tiflash-docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
@@ -57,12 +58,13 @@ def runTest(branch, label, notify) {
                             def pd_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/pd/${PD_BRANCH}/sha1").trim()
                             sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/pd/${pd_sha1}/centos7/pd-server.tar.gz | tar xz"
 
+                            // tiflash
+                            def tiflash_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tiflash/${TIFLASH_BRANCH}/sha1").trim()
+                            sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tiflash/${TIFLASH_BRANCH}/${tiflash_sha1}/centos7/tiflash.tar.gz | tar xz"
+
                             sh """
-                            chown -R 1000:1000 ./
-                            ID=\$(docker create hub.pingcap.net/tiflash/tics:master)
-                            docker cp \${ID}:/tics ./
-                            docker rm \${ID}
-                            chown -R 1000:1000 ./
+                            cd tiflash
+                            tar -zcvf flash_cluster_manager.tgz flash_cluster_manager/
                             """
                         }
                     }
@@ -76,30 +78,7 @@ def runTest(branch, label, notify) {
                                     sh "regression_test/daily.sh"
                                 }
                             } catch (err) {
-                                sh "cat /tmp/ti/ci/release/rngine/rngine.log"
-                                sh "cat /tmp/ti/ci/release/rngine/rngine_stderr.log"
-                                sh "cat /tmp/ti/ci/release/tiflash/tmp/flash_cluster_manager.log"
-                                sh "cat /tmp/ti/ci/release/tiflash/log/error.log"
-                                sh "cat /tmp/ti/ci/release/tiflash/log/server.log"
-                                sh "cat /tmp/ti/ci/release/pd/pd_stderr.log"
-                                sh "cat /tmp/ti/ci/release/pd/pd.log"
-                                sh "cat /tmp/ti/ci/release/tidb/tidb.log"
-                                sh "cat /tmp/ti/ci/release/tidb/tidb_stderr.log"
-                                sh "cat /tmp/ti/ci/release/tikv/tikv_stderr.log"
-                                sh "cat /tmp/ti/ci/release/tikv/tikv.log"
-
-                                sh "cat /tmp/ti/ci/self/rngine/rngine.log"
-                                sh "cat /tmp/ti/ci/self/rngine/rngine_stderr.log"
-                                sh "cat /tmp/ti/ci/self/tiflash/tmp/flash_cluster_manager.log"
-                                sh "cat /tmp/ti/ci/self/tiflash/log/error.log"
-                                sh "cat /tmp/ti/ci/self/tiflash/log/server.log"
-                                sh "cat /tmp/ti/ci/self/pd/pd_stderr.log"
-                                sh "cat /tmp/ti/ci/self/pd/pd.log"
-                                sh "cat /tmp/ti/ci/self/tidb/tidb.log"
-                                sh "cat /tmp/ti/ci/self/tidb/tidb_stderr.log"
-                                sh "cat /tmp/ti/ci/self/tikv/tikv_stderr.log"
-                                sh "cat /tmp/ti/ci/self/tikv/tikv.log"
-
+                                sh "for f in \$(find /tmp/ti/ci -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
                                 throw err
                             }
                         }
@@ -115,30 +94,7 @@ def runTest(branch, label, notify) {
                                     sh "regression_test/daily.sh"
                                 }
                             } catch (err) {
-                                sh "cat /tmp/ti/ci/release/rngine/rngine.log"
-                                sh "cat /tmp/ti/ci/release/rngine/rngine_stderr.log"
-                                sh "cat /tmp/ti/ci/release/tiflash/tmp/flash_cluster_manager.log"
-                                sh "cat /tmp/ti/ci/release/tiflash/log/error.log"
-                                sh "cat /tmp/ti/ci/release/tiflash/log/server.log"
-                                sh "cat /tmp/ti/ci/release/pd/pd_stderr.log"
-                                sh "cat /tmp/ti/ci/release/pd/pd.log"
-                                sh "cat /tmp/ti/ci/release/tidb/tidb.log"
-                                sh "cat /tmp/ti/ci/release/tidb/tidb_stderr.log"
-                                sh "cat /tmp/ti/ci/release/tikv/tikv_stderr.log"
-                                sh "cat /tmp/ti/ci/release/tikv/tikv.log"
-
-                                sh "cat /tmp/ti/ci/self/rngine/rngine.log"
-                                sh "cat /tmp/ti/ci/self/rngine/rngine_stderr.log"
-                                sh "cat /tmp/ti/ci/self/tiflash/tmp/flash_cluster_manager.log"
-                                sh "cat /tmp/ti/ci/self/tiflash/log/error.log"
-                                sh "cat /tmp/ti/ci/self/tiflash/log/server.log"
-                                sh "cat /tmp/ti/ci/self/pd/pd_stderr.log"
-                                sh "cat /tmp/ti/ci/self/pd/pd.log"
-                                sh "cat /tmp/ti/ci/self/tidb/tidb.log"
-                                sh "cat /tmp/ti/ci/self/tidb/tidb_stderr.log"
-                                sh "cat /tmp/ti/ci/self/tikv/tikv_stderr.log"
-                                sh "cat /tmp/ti/ci/self/tikv/tikv.log"
-
+                                sh "for f in \$(find /tmp/ti/ci -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
                                 throw err
                             }
                         }
