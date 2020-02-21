@@ -1,5 +1,7 @@
-def runTest(branch, label, notify) {
+def runDailyIntegrationTest(branch, version, notify) {
     taskStartTimeInMillis = System.currentTimeMillis()
+
+    def label = "test-tiflash-regression-v11"
 
     def TIDB_BRANCH = "master"
     def TIKV_BRANCH = "master"
@@ -47,49 +49,38 @@ def runTest(branch, label, notify) {
                             ]
                         }
 
-                        dir("/home/jenkins/agent/git/tiflash/binary/") {
-                            // tidb
-                            def tidb_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tidb/${TIDB_BRANCH}/sha1").trim()
-                            sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tidb/${tidb_sha1}/centos7/tidb-server.tar.gz | tar xz"
-                            // tikv
-                            def tikv_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tikv/${TIKV_BRANCH}/sha1").trim()
-                            sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tikv/${tikv_sha1}/centos7/tikv-server.tar.gz | tar xz"
-                            // pd
-                            def pd_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/pd/${PD_BRANCH}/sha1").trim()
-                            sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/pd/${pd_sha1}/centos7/pd-server.tar.gz | tar xz"
+                        if(version == "latest") {
+                          dir("/home/jenkins/agent/git/tiflash/binary/") {
+                              // tidb
+                              def tidb_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tidb/${TIDB_BRANCH}/sha1").trim()
+                              sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tidb/${tidb_sha1}/centos7/tidb-server.tar.gz | tar xz"
+                              // tikv
+                              def tikv_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tikv/${TIKV_BRANCH}/sha1").trim()
+                              sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tikv/${tikv_sha1}/centos7/tikv-server.tar.gz | tar xz"
+                              // pd
+                              def pd_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/pd/${PD_BRANCH}/sha1").trim()
+                              sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/pd/${pd_sha1}/centos7/pd-server.tar.gz | tar xz"
 
-                            // tiflash
-                            def tiflash_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tiflash/${TIFLASH_BRANCH}/sha1").trim()
-                            sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tiflash/${TIFLASH_BRANCH}/${tiflash_sha1}/centos7/tiflash.tar.gz | tar xz"
+                              // tiflash
+                              def tiflash_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tiflash/${TIFLASH_BRANCH}/sha1").trim()
+                              sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tiflash/${TIFLASH_BRANCH}/${tiflash_sha1}/centos7/tiflash.tar.gz | tar xz"
 
-                            sh """
-                            cd tiflash
-                            tar -zcvf flash_cluster_manager.tgz flash_cluster_manager/
-                            """
+                              sh """
+                              cd tiflash
+                              tar -zcvf flash_cluster_manager.tgz flash_cluster_manager/
+                              """
+                          }
                         }
                     }
                 }
 
-                stage("Test Tiflash Latest Stable") {
+                stage("Test_" + branch + "_" + version) {
                     container("docker-ops-ci") {
                         dir("/home/jenkins/agent/git/tiflash") {
-                            try {
-                                timeout(360) {
-                                    sh "regression_test/daily.sh"
-                                }
-                            } catch (err) {
-                                sh "for f in \$(find /tmp/ti/ci -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
-                                throw err
+                            if(version == "latest") {
+                              sh "cp regression_test/conf/bin.paths integrated/conf/"
                             }
-                        }
-                    }
-                }
-
-                stage("Test Tiflash Master Branch") {
-                    container("docker-ops-ci") {
-                        dir("/home/jenkins/agent/git/tiflash") {
                             try {
-                                sh "cp regression_test/conf/bin.paths integrated/conf/"
                                 timeout(360) {
                                     sh "regression_test/daily.sh"
                                 }
@@ -110,6 +101,7 @@ def runTest(branch, label, notify) {
         def slackmsg = "TiFlash Daily Integration Test\n" +
                 "Result: `${currentBuild.result}`\n" +
                 "Branch: `${branch}`\n" +
+                "Version: `${version}`\n" +
                 "Elapsed Time: `${duration}` Mins\n" +
                 "https://internal.pingcap.net/idc-jenkins/blue/organizations/jenkins/tiflash_regression_test_daily/activity\n" +
                 "https://internal.pingcap.net/idc-jenkins/job/tiflash_regression_test_daily/"
@@ -122,15 +114,6 @@ def runTest(branch, label, notify) {
             }
         }
     }
-}
-
-def runDailyIntegrationTest(branch, label, notify) {
-    runTest(branch, label, notify)
-}
-
-def runDailyIntegrationTest(branch, notify) {
-    def label = "test-tiflash-regression-v11"
-    runTest(branch, label, false)
 }
 
 return this
