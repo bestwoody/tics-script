@@ -27,6 +27,7 @@ def runSchordingerTest(branch, version, testcase, maxRunTime, notify) {
                         killall -9 tikv-server || true
                         killall -9 pd-server || true
                         killall -9 theflash || true
+                        killall -9 tiflash || true
                         killall -9 tikv-server-rngine || true
                         pkill -f 'java*' || true
                         """
