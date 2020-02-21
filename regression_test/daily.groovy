@@ -106,14 +106,15 @@ def runTest(branch, label, notify) {
     }
 
     stage('Summary') {
+        def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(2, BigDecimal.ROUND_HALF_UP)
+        def slackmsg = "TiFlash Daily Integration Test\n" +
+                "Result: `${currentBuild.result}`\n" +
+                "Branch: `${branch}`\n" +
+                "Elapsed Time: `${duration}` Mins\n" +
+                "https://internal.pingcap.net/idc-jenkins/blue/organizations/jenkins/tiflash_regression_test_daily/activity\n" +
+                "https://internal.pingcap.net/idc-jenkins/job/tiflash_regression_test_daily/"
+        print slackmsg
         if (notify == "true" || notify == true) {
-            def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(2, BigDecimal.ROUND_HALF_UP)
-            def slackmsg = "TiFlash Daily Integration Test\n" +
-                    "Result: `${currentBuild.result}`\n" +
-                    "Elapsed Time: `${duration}` Mins\n" +
-                    "https://internal.pingcap.net/idc-jenkins/blue/organizations/jenkins/tiflash_regression_test_daily/activity\n" +
-                    "https://internal.pingcap.net/idc-jenkins/job/tiflash_regression_test_daily/"
-
             if (currentBuild.result != "SUCCESS") {
                 slackSend channel: '#tiflash-daily-test', color: 'danger', teamDomain: 'pingcap', tokenCredentialId: 'slack-pingcap-token', message: "${slackmsg}"
             } else {
@@ -127,7 +128,8 @@ def runDailyIntegrationTest(branch, label, notify) {
     runTest(branch, label, notify)
 }
 
-def runDailyIntegrationTest(branch, label) {
+def runDailyIntegrationTest(branch, notify) {
+    def label = "test-tiflash-regression-v11"
     runTest(branch, label, false)
 }
 
