@@ -82,7 +82,7 @@ def runDailyIntegrationTest(branch, version, notify) {
                               sh "cp regression_test/conf/bin.paths integrated/conf/"
                             }
                             try {
-                                timeout(360) {
+                                timeout(720) {
                                     sh "regression_test/daily.sh"
                                 }
                             } catch (err) {
