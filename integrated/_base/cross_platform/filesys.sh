@@ -29,6 +29,10 @@ function cp_when_diff()
 	mkdir -p `dirname "${dest}"`
 
 	# TODO: Update mode
+	# Rename old file first due to FLASH-946
+	if [ -f "${dest}" ]; then
+		mv "${dest}" "${dest}.old"
+	fi
 	cp -f "${src}" "${dest}"
 }
 export -f cp_when_diff
