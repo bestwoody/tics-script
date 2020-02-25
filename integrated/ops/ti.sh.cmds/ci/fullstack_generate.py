@@ -18,7 +18,7 @@ update_stmt = Template("ti_mysql> update $database.$table set $exprs $condition\
 delete_stmt = Template("ti_mysql> delete from $database.$table $condition\n")
 select_stmt = Template("ti_ch> select $columns from $database.$table\n")
 refresh_schema_stmt = "\nti_ch> DBGInvoke __refresh_schemas()\n\n"
-sleep_string = "\nSLEEP 15\n\n"
+sleep_string = "\nSLEEP 30\n\n"
 
 
 INSERT = "insert"

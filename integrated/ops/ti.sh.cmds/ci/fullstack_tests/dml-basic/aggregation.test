@@ -8,7 +8,7 @@ ti_ch> DBGInvoke __refresh_schemas()
 ti_mysql> insert into test.t(col_1, col_2) values('test1', 666)
 ti_mysql> insert into test.t(col_1, col_2) values('test2', 666)
 ti_mysql> insert into test.t(col_1, col_2) values('test3', 777)
-SLEEP 15
+SLEEP 30
 
 ti_mysql> select count(col_1) from test.t group by col_2
 count(col_1)
