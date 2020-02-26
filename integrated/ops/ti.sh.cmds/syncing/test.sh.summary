@@ -91,7 +91,7 @@ function verify_raft_sync()
 	fi
 
 	# TODO: FLASH-633
-	local sleep_time='30'
+	local sleep_time='60'
 	echo "OK     sleeping"
 	sleep "${sleep_time}"
 	echo "OK     slept ${sleep_time}s"

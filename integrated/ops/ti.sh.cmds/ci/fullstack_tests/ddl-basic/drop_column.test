@@ -5,7 +5,7 @@ ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 ti_ch> DBGInvoke __refresh_schemas()
 ti_mysql> insert into test.t values('Hello world', 666)
 ti_mysql> insert into test.t values('Hello world', 666)
-SLEEP 30
+SLEEP 60
 
 ti_mysql> select c1, c2 from test.t
 c1	c2
