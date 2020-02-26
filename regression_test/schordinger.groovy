@@ -79,6 +79,7 @@ def runSchordingerTest(branch, version, testcase, maxRunTime, notify) {
                     container("docker-ops-ci") {
                         dir("/home/jenkins/agent/git/tiflash") {
                             if(version == "latest") {
+                              sh "rm -f integrated/conf/bin.paths"
                               sh "cp regression_test/conf/bin.paths integrated/conf/"
                             }
 
