@@ -17,6 +17,27 @@ function run_cluster()
 }
 export -f run_cluster
 
+function wait_table()
+{
+	local db="${1}"
+	local table="${2}"
+	local ti_file="${3}"
+	local timeout='1200'
+	"${integrated}/ops/ti.sh" "${ti_file}" wait/table "${db}" "${table}"
+	for (( i = 0; i < "${timeout}"; i++ )); do
+		local region_cnt=`"${integrated}/ops/ti.sh" "${ti_file}" verify/regions "${db}" "${table}" false \
+			| awk -F '|' '{print $4}' | trim_space | grep ^y$ | wc -l`
+		if [ "${region_cnt}" != "0" ]; then
+			break
+		fi
+		if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
+			echo "   #${i} waiting for database ${db} table ${table}"
+		fi
+		sleep 1
+	done
+}
+export -f wait_table
+
 function run_file()
 {
 	local target="${1}"

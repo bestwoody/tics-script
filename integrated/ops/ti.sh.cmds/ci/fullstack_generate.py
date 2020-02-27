@@ -18,7 +18,7 @@ update_stmt = Template("ti_mysql> update $database.$table set $exprs $condition\
 delete_stmt = Template("ti_mysql> delete from $database.$table $condition\n")
 select_stmt = Template("ti_ch> select $columns from $database.$table\n")
 refresh_schema_stmt = "\nti_ch> DBGInvoke __refresh_schemas()\n\n"
-sleep_string = "\nSLEEP 60\n\n"
+wait_stmt = Template("ti_func> wait_table $database $table\n")
 
 
 INSERT = "insert"
@@ -177,7 +177,8 @@ def generate_cases_inner(database, table, column_names, types, sample_data,
                                                            "columns": ", ".join(column_names),
                                                            "data": ", ".join([repr(d) if d != "null" else d for d in case_data[k]])}))
                         if first_insert:
-                            file.write(sleep_string)
+                            file.write(wait_stmt.substitute({"database": database,
+                                                            "table": table}))
                             first_insert = False
                 if op == UPDATE:
                     for data_point in case_data:

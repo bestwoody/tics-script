@@ -3,7 +3,7 @@ ti_mysql> drop database if exists tpch_1
 ti_func> load_tpch 0.2 lineitem
 ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 ti_ch> DBGInvoke __refresh_schemas()
-SLEEP 30
+ti_func> wait_table tpch_0_2 lineitem
 ti_mysql> select count(*) from tpch_0_2.lineitem t
 count(*)
 1199969
