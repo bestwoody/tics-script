@@ -59,7 +59,7 @@ catchError {
                         stage("OPS TI Test") {
                             container("docker-ops-ci") {
                                 try {
-                                    timeout(60) {
+                                    timeout(120) {
                                         sh "tests/ci/jenkins.sh"
                                     }
                                 } catch (err) {

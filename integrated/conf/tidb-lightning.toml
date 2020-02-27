@@ -66,7 +66,8 @@ password = ""
 status-port = {tidb_status_port}
 pd-addr = "{pd_addr}"
 log-level = "error"
-# sql-mode = ""
+# set sql-mode to empty, make it easier to load dataset like ontime
+sql-mode = ""
 
 # Sets the TiDB session variable to speed up the Checksum and Analyze operations.
 # https://pingcap.com/docs-cn/sql/statistics/#%E6%8E%A7%E5%88%B6-analyze-%E5%B9%B6%E5%8F%91%E5%BA%A6
