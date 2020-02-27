@@ -1,0 +1,39 @@
+#!/bin/bash
+
+function cmd_ti_region_split()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local region_number="${1}"
+
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+
+	# get all region Info from pd
+	local all_regions_from_pd=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -i "${cmd_indexes}" \
+		-k "${ti_args}" "${ti_file}" 'pd/ctl_raw' 'region' | trim_host`
+
+	local ids=`echo "${all_regions_from_pd}" | python "${here}/get_region_id.py"`
+	local region_ids=${ids[@]}
+	local i=0
+	for region_id in ${region_ids[@]}
+	do
+		if [ $i -lt $region_number ]; then
+			echo "Split region ${region_id}"
+			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -i "${cmd_indexes}" \
+			  -k "${ti_args}" "${ti_file}" 'pd/ctl' 'operator' 'add' 'split-region' ${region_id} '--policy=approximate'
+			i=$(($i+1))
+		fi
+	done
+
+	echo "   OK"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+cmd_ti_region_split "${@}"
