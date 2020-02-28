@@ -26,7 +26,7 @@ function wait_table()
 	"${integrated}/ops/ti.sh" "${ti_file}" wait/table "${db}" "${table}"
 	for (( i = 0; i < "${timeout}"; i++ )); do
 		local region_cnt=`"${integrated}/ops/ti.sh" "${ti_file}" verify/regions "${db}" "${table}" false \
-			| awk -F '|' '{print $4}' | trim_space | grep ^y$ | wc -l`
+			| awk -F '|' '{print $4}' | sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]]*$//' | grep ^y$ | wc -l`
 		if [ "${region_cnt}" != "0" ]; then
 			break
 		fi

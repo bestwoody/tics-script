@@ -41,7 +41,7 @@ function cmd_ti_pack_tiflash()
 	else
 		local build_command="./build.sh"
 	fi
-	_build_and_update_mod "${repo_path}" "${branch}" "${commit}" "${binary_rel_path}" "${build_command}" "tiflash" "tiflash"
+	_build_and_update_mod "${repo_path}" "${branch}" "${commit}" "${binary_rel_path}" "${build_command}" "tiflash"
 
 	echo "pack binary done"
 }
