@@ -90,11 +90,8 @@ function verify_raft_sync()
 		return 1
 	fi
 
-	# TODO: FLASH-633
-	local sleep_time='60'
-	echo "OK     sleeping"
-	sleep "${sleep_time}"
-	echo "OK     slept ${sleep_time}s"
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		-k "${ti_args}" "${ti_file}" 'wait/syncing' "${db}" "${table}"
 
 	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
 		-k "${ti_args}" "${ti_file}" 'mysql/learner' "${read_sql}" "${db}" 2>&1`

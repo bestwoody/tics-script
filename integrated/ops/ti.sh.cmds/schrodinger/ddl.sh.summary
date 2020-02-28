@@ -16,13 +16,13 @@ function cmd_ti_schrodinger_ddl()
 		return 1
 	fi
 
-	if [ -z "${1+x}" ]; then
+	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
 		local concurrency="20"
 	else
 		local concurrency="${1}"
 	fi
 
-	if [ -z "${2+x}" ]; then
+	if [ -z "${2+x}" ] || [ -z "${2}" ]; then
 		local mysql_compatible="false"
 	else
 		local mysql_compatible="${2}"

@@ -16,37 +16,37 @@ function cmd_ti_schrodinger_crud()
 		return 1
 	fi
 
-	if [ -z "${1+x}" ]; then
+	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
 		local user_count="1000"
 	else
 		local user_count="${1}"
 	fi
 
-	if [ -z "${2+x}" ]; then
+	if [ -z "${2+x}" ] || [ -z "${2}" ]; then
 		local post_count="1000"
 	else
 		local post_count="${2}"
 	fi
 
-	if [ -z "${3+x}" ]; then
+	if [ -z "${3+x}" ] || [ -z "${3}" ]; then
 		local update_users="20"
 	else
 		local update_users="${3}"
 	fi
 
-	if [ -z "${4+x}" ]; then
+	if [ -z "${4+x}" ] || [ -z "${4}" ]; then
 		local update_posts="200"
 	else
 		local update_posts="${4}"
 	fi
 
-	if [ -z "${5+x}" ]; then
+	if [ -z "${5+x}" ] || [ -z "${5}" ]; then
 		local concurrency="100"
 	else
 		local concurrency="${5}"
 	fi
 
-	if [ -z "${6+x}" ]; then
+	if [ -z "${6+x}" ] || [ -z "${6}" ]; then
 		local pessimistic="false"
 	else
 		local pessimistic="${6}"

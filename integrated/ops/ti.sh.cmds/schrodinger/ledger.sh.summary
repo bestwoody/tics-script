@@ -16,25 +16,25 @@ function cmd_ti_schrodinger_ledger()
 		return 1
 	fi
 
-	if [ -z "${1+x}" ]; then
+	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
 		local accounts="1000000"
 	else
 		local accounts="${1}"
 	fi
 
-	if [ -z "${2+x}" ]; then
+	if [ -z "${2+x}" ] || [ -z "${2}" ]; then
 		local interval="2s"
 	else
 		local interval="${2}"
 	fi
 
-	if [ -z "${3+x}" ]; then
+	if [ -z "${3+x}" ] || [ -z "${3}" ]; then
 		local concurrency="100"
 	else
 		local concurrency="${3}"
 	fi
 
-	if [ -z "${4+x}" ]; then
+	if [ -z "${4+x}" ] || [ -z "${4}" ]; then
 		local pessimistic="false"
 	else
 		local pessimistic="${4}"
