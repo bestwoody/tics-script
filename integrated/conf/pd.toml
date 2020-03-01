@@ -5,6 +5,7 @@ enable-prevote = true
 lease = 3
 namespace-classifier = "table"
 tso-save-interval = "3s"
+quota-backend-bytes = "8G"
 
 [security]
 cacert-path = ""

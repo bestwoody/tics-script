@@ -1,0 +1,40 @@
+#!/bin/bash
+
+function cmd_ti_massive_sync_run()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	
+	shift 6
+	if [ -z "${1+x}" ]; then
+		local case_num="1000"
+	else
+		local case_num="${1}"
+	fi
+
+	if [ -z "${2+x}" ]; then
+		local insert_num="10"
+	else
+		local insert_num="${2}"
+	fi
+	
+	echo $case_num
+	echo $insert_num
+
+	local mod=`from_mods_random_mod "${mods}" 'tidb' 'true'`
+	if [ -z "${mod}" ]; then
+		echo "[cmd mysql/raw] no tidb selected" >&2
+		return 1
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	python ${here}/massive_sync.py ${ti} ${ti_file} ${mod} ${case_num} ${insert_num}
+}
+
+set -euo pipefail
+cmd_ti_massive_sync_run "${@}"
