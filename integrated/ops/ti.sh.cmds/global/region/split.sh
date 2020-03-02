@@ -10,12 +10,12 @@ function cmd_ti_global_region_split()
 	rm -f "${file}"
 
 	"${ti}" new "${file}" 'delta=-9' 'tikv=3' 'tiflash=3' "dir=${dir}"
-	"${ti}" "${file}" burn : up
+	"${ti}" "${file}" burn : up : sleep 60
 	"${ti}" "${file}" parallel \
-		GO: wait/syncing tpch_10 lineitem : repeat 20 region/split 20 : sleep 20 \
-		GO: tpch/load 10 lineitem true \
-		GO: wait/syncing tpch_10 lineitem \
-			LOOP: verify/consistency tpch_10 lineitem
+		GO: wait/syncing tpch_1 lineitem : region/split_test 10 10 10 \
+		GO: tpch/load 1 lineitem true \
+		GO: wait/syncing tpch_1 lineitem \
+			LOOP: verify/consistency tpch_1 lineitem
 	"${ti}" "${file}" must burn
 
 	rm -f "${file}"
