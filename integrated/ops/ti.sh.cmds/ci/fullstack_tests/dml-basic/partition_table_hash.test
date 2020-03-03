@@ -1,0 +1,98 @@
+ti_mysql> drop table if exists test.employees
+
+ti_mysql> create table test.employees  (
+		id int,
+		fname varchar(25) not null,
+		lname varchar(25) not null,
+		store_id int not null,
+		department_id int not null
+	)
+	partition by hash(store_id)
+	partitions 4;
+
+ti_mysql> alter table test.employees set tiflash replica 1
+ti_func> wait_table test employees
+
+ti_mysql> select available from information_schema.tiflash_replica where table_schema='test' and table_name='employees'
++-----------+
+| available |
++-----------+
+|         1 |
++-----------+
+
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+
+ti_mysql> insert into test.employees(fname, lname, store_id, department_id) values
+	('Bob', 'Taylor', 3, 2), ('Frank', 'Williams', 1, 2),
+	('Ellen', 'Johnson', 3, 4), ('Jim', 'Smith', 2, 4),
+	('Mary', 'Jones', 1, 1), ('Linda', 'Black', 2, 3),
+	('Ed', 'Jones', 2, 1), ('June', 'Wilson', 3, 1),
+	('Andy', 'Smith', 1, 3), ('Lou', 'Waters', 2, 4),
+	('Jill', 'Stone', 1, 4), ('Roger', 'White', 3, 2),
+	('Howard', 'Andrews', 1, 2), ('Fred', 'Goldberg', 3, 3),
+	('Barbara', 'Brown', 2, 3), ('Alice', 'Rogers', 2, 2),
+	('Mark', 'Morgan', 3, 3), ('Karen', 'Cole', 3, 2)
+
+ti_mysql> select * from test.employees
++------+---------+----------+----------+---------------+
+| id   | fname   | lname    | store_id | department_id |
++------+---------+----------+----------+---------------+
+| NULL | Frank   | Williams |        1 |             2 |
+| NULL | Mary    | Jones    |        1 |             1 |
+| NULL | Andy    | Smith    |        1 |             3 |
+| NULL | Jill    | Stone    |        1 |             4 |
+| NULL | Howard  | Andrews  |        1 |             2 |
+| NULL | Jim     | Smith    |        2 |             4 |
+| NULL | Linda   | Black    |        2 |             3 |
+| NULL | Ed      | Jones    |        2 |             1 |
+| NULL | Lou     | Waters   |        2 |             4 |
+| NULL | Barbara | Brown    |        2 |             3 |
+| NULL | Alice   | Rogers   |        2 |             2 |
+| NULL | Bob     | Taylor   |        3 |             2 |
+| NULL | Ellen   | Johnson  |        3 |             4 |
+| NULL | June    | Wilson   |        3 |             1 |
+| NULL | Roger   | White    |        3 |             2 |
+| NULL | Fred    | Goldberg |        3 |             3 |
+| NULL | Mark    | Morgan   |        3 |             3 |
+| NULL | Karen   | Cole     |        3 |             2 |
++------+---------+----------+----------+---------------+
+
+ti_mysql> select * from test.employees partition (p0);
+
+ti_mysql> select * from test.employees partition (p1);
++------+--------+----------+----------+---------------+
+| id   | fname  | lname    | store_id | department_id |
++------+--------+----------+----------+---------------+
+| NULL | Frank  | Williams |        1 |             2 |
+| NULL | Mary   | Jones    |        1 |             1 |
+| NULL | Andy   | Smith    |        1 |             3 |
+| NULL | Jill   | Stone    |        1 |             4 |
+| NULL | Howard | Andrews  |        1 |             2 |
++------+--------+----------+----------+---------------+
+
+ti_mysql> select * from test.employees partition (p2);
++------+---------+--------+----------+---------------+
+| id   | fname   | lname  | store_id | department_id |
++------+---------+--------+----------+---------------+
+| NULL | Jim     | Smith  |        2 |             4 |
+| NULL | Linda   | Black  |        2 |             3 |
+| NULL | Ed      | Jones  |        2 |             1 |
+| NULL | Lou     | Waters |        2 |             4 |
+| NULL | Barbara | Brown  |        2 |             3 |
+| NULL | Alice   | Rogers |        2 |             2 |
++------+---------+--------+----------+---------------+
+
+ti_mysql> select * from test.employees partition (p3);
++------+-------+----------+----------+---------------+
+| id   | fname | lname    | store_id | department_id |
++------+-------+----------+----------+---------------+
+| NULL | Bob   | Taylor   |        3 |             2 |
+| NULL | Ellen | Johnson  |        3 |             4 |
+| NULL | June  | Wilson   |        3 |             1 |
+| NULL | Roger | White    |        3 |             2 |
+| NULL | Fred  | Goldberg |        3 |             3 |
+| NULL | Mark  | Morgan   |        3 |             3 |
+| NULL | Karen | Cole     |        3 |             2 |
++------+-------+----------+----------+---------------+
+
+ti_mysql> drop table if exists test.employees
