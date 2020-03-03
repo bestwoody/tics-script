@@ -63,17 +63,7 @@ catchError {
                                         sh "tests/ci/jenkins.sh"
                                     }
                                 } catch (err) {
-                                    sh "cat /tmp/ti/ci/self/tiflash/log/error.log"
-                                    sh "cat /tmp/ti/ci/self/tiflash/log/server.log"
-                                    sh "cat /tmp/ti/ci/self/tiflash/log/proxy.log"
-                                    sh "cat /tmp/ti/ci/self/tiflash/tmp/flash_cluster_manager.log"
-                                    sh "cat /tmp/ti/ci/self/pd/pd_stderr.log"
-                                    sh "cat /tmp/ti/ci/self/pd/pd.log"
-                                    sh "cat /tmp/ti/ci/self/tidb/tidb.log"
-                                    sh "cat /tmp/ti/ci/self/tidb/tidb_stderr.log"
-                                    sh "cat /tmp/ti/ci/self/tikv/tikv_stderr.log"
-                                    sh "cat /tmp/ti/ci/self/tikv/tikv.log"
-
+                                    sh "for f in \$(find /tmp/ti/ci -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
                                     throw err
                                 }
                             }

@@ -1,7 +1,7 @@
-def runSchordingerTest(branch, version, testcase, maxRunTime, notify) {
+def runSchrodingerTest(branch, version, testcase, maxRunTime, notify) {
     taskStartTimeInMillis = System.currentTimeMillis()
 
-    def label = "test-tiflash-schordinger-v11"
+    def label = "test-tiflash-Schrodinger-v11"
 
     def TIDB_BRANCH = "master"
     def TIKV_BRANCH = "master"
@@ -86,7 +86,7 @@ def runSchordingerTest(branch, version, testcase, maxRunTime, notify) {
                             def startTime = System.currentTimeMillis()
                             try {
                                 timeout(maxRunTime) {
-                                    sh "regression_test/schordinger.sh " + testcase
+                                    sh "regression_test/schrodinger.sh " + testcase
                                 }
                             } catch (err) {
                                 def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(0, BigDecimal.ROUND_HALF_UP)
@@ -105,14 +105,14 @@ def runSchordingerTest(branch, version, testcase, maxRunTime, notify) {
 
     stage('Summary') {
       def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(2, BigDecimal.ROUND_HALF_UP)
-      def slackmsg = "TiFlash Schordinger Test\n" +
+      def slackmsg = "TiFlash Schrodinger Test\n" +
               "Branch: `${branch}`\n" +
               "Version: `${version}`\n" +
               "Testcase: `${testcase}`\n" +
               "Result: `${currentBuild.result}`\n" +
               "Elapsed Time: `${duration}` Mins\n" +
-              "https://internal.pingcap.net/idc-jenkins/blue/organizations/jenkins/tiflash_schordinger_test/activity\n" +
-              "https://internal.pingcap.net/idc-jenkins/job/tiflash_schordinger_test/"
+              "https://internal.pingcap.net/idc-jenkins/blue/organizations/jenkins/tiflash_schrodinger_test/activity\n" +
+              "https://internal.pingcap.net/idc-jenkins/job/tiflash_schrodinger_test/"
         print slackmsg
         if (notify == "true" || notify == true) {
             if (currentBuild.result != "SUCCESS") {
