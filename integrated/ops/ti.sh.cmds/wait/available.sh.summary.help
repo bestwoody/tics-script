@@ -1,0 +1,2 @@
+wait for table in tiflash become available in tidb
+usage: <cmd> database table [timeout=1200]

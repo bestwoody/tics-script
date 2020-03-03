@@ -13,7 +13,7 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -z "${6+x}" ]; then
-		echo '[cmd mysql] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true]' >&2
+		echo '[cmd mysql] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true] [pretty=false]' >&2
 		return 1
 	fi
 
@@ -38,6 +38,12 @@ function cmd_ti_mysql()
 		return 1
 	fi
 
+	if [ -z "${9+x}" ]; then
+		local pretty='false'
+	else
+		local pretty="${9}"
+	fi
+
 	local port=`get_value "${dir}/proc.info" 'tidb_port'`
 	if [ -z "${port}" ]; then
 		echo '[cmd mysql] get port failed' >&2
@@ -48,10 +54,16 @@ function cmd_ti_mysql()
 		local start_time=`timer_start`
 	fi
 
-	if [ -f "${query}" ]; then
-		mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments < "${query}"
+	if [ "${pretty}" == 'false' ]; then
+		local mysql_cmd="mysql -h ${host} -P ${port} -u root --database=${db} --comments"
 	else
-		mysql -h "${host}" -P "${port}" -u root --database="${db}" --comments -e "${query}"
+		local mysql_cmd="mysql -h ${host} -P ${port} -u root --database=${db} --comments --table"
+	fi
+
+	if [ -f "${query}" ]; then
+		${mysql_cmd} < "${query}"
+	else
+		${mysql_cmd} -e "${query}"
 	fi
 
 	if [ "${show_elapsed}" == 'true' ]; then

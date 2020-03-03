@@ -12,7 +12,7 @@ function cmd_ti_pack_pd()
 		local repo_path="${1}"
 	fi
 	if [ -z "${2+x}" ]; then
-		local branch="placement"
+		local branch="master"
 	else
 		local branch="${2}"
 	fi

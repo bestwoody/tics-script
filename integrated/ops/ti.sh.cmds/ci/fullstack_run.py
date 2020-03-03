@@ -63,7 +63,7 @@ class OpsExecutor:
             ops_cmd = "beeline"
         elif cmd_type.is_ti_mysql():
             ops_cmd = "mysql"
-            padding_args = ['""', 'false']
+            padding_args = ['""', 'false', 'true']
         elif cmd_type.is_ti_ch():
             ops_cmd = "ch"
             padding_args = ['default', 'pretty', 'false']
@@ -89,6 +89,10 @@ def parse_line(line):
     return "@".join(words)
 
 def parse_beeline_line(line):
+    words = [w.strip() for w in line.split("|") if w.strip() != ""]
+    return "@".join(words)
+
+def parse_mysql_line(line):
     words = [w.strip() for w in line.split("|") if w.strip() != ""]
     return "@".join(words)
 
@@ -134,6 +138,17 @@ def parse_ch_table_parts(lines, fuzz):
                     line += '-extra'
                 parts.add(line)
     return parts
+
+def parse_mysql_table_parts(lines):
+    results = set()
+    for line in lines:
+        if line.startswith('+'):
+            continue
+        line = parse_mysql_line(line)
+        while line in results:
+            line += '-extra'
+        results.add(line)
+    return results
 
 def is_blank_char(c):
     return c in [' ', '\n', '\t']
@@ -199,14 +214,18 @@ def ch_matched(outputs, matches, fuzz):
                 return False
         return True
 
-def mysql_matched(outputs, matches, fuzz):
-    outputs.sort()
-    matches.sort()
-    if len(outputs) != len(matches):
-        return False
-    for i in range(0, len(outputs)):
-        if not compare_line(outputs[i], matches[i]):
+def mysql_matched(outputs, matches):
+    is_table_parts = len(matches) > 0 and matches[0].startswith('+')
+    if is_table_parts:
+        a = parse_mysql_table_parts(outputs)
+        b = parse_mysql_table_parts(matches)
+        return a == b
+    else:
+        if len(outputs) != len(matches):
             return False
+        for i in range(0, len(outputs)):
+            if not compare_line(outputs[i], matches[i]):
+                return False
     return True
 
 
@@ -219,7 +238,7 @@ def matched(outputs, matches, fuzz, query_type):
     elif query_type.is_ti_ch():
         return ch_matched(outputs, matches, fuzz)
     elif query_type.is_ti_mysql():
-        return mysql_matched(outputs, matches, fuzz)
+        return mysql_matched(outputs, matches)
     else:
         raise Exception("Unknown query type", str(query_type))
 

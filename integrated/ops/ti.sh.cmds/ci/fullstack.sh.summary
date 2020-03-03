@@ -23,7 +23,7 @@ function wait_table()
 	local table="${2}"
 	local ti_file="${3}"
 	local timeout='1200'
-	"${integrated}/ops/ti.sh" "${ti_file}" wait/syncing "${db}" "${table}"
+	"${integrated}/ops/ti.sh" "${ti_file}" wait/available "${db}" "${table}"
 }
 export -f wait_table
 
