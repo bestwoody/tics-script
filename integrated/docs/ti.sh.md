@@ -5,6 +5,7 @@ The ops/ti.sh is designed for fast testing, CI, or POCing, anyone can easily dep
 ## Quick start
 Create a cluster define file `my.ti` by command `ops/ti.sh new my.ti spark=1`, this file will be like:
 ```
+pd: node0/pd
 tikv: node0/tikv
 tidb: node0/tidb
 tiflash: node0/tiflash
