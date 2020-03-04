@@ -1,0 +1,32 @@
+#!/bin/bash
+
+function cmd_ti_write_balance_run()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		local insert_num="5000"
+	else
+		local insert_num="${1}"
+	fi
+
+	if [ -z "${2+x}" ]; then
+		local batch="100"
+	else
+		local batch="${2}"
+	fi
+	
+	echo $insert_num
+	echo $batch
+
+	local ti="${integrated}/ops/ti.sh"
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	
+	python ${here}/write_balance.py ${ti} ${ti_file} ${insert_num} ${batch}
+}
+
+set -euo pipefail
+cmd_ti_write_balance_run "${@}"
