@@ -187,6 +187,11 @@ function tiflash_run()
 		echo "   get default proxy_port from ${default_ports} failed" >&2
 		return 1
 	fi
+	local default_proxy_status_port=`get_value "${default_ports}" 'proxy_status_port'`
+	if [ -z "${default_proxy_status_port}" ]; then
+		echo "   get default proxy_status_port from ${default_ports} failed" >&2
+		return 1
+	fi
 
 	local pd_addr=$(cal_addr "${pd_addr}" `must_print_ip` "${default_pd_port}")
 	local tidb_addr=$(cal_addr "${tidb_addr}" `must_print_ip` "${default_tidb_status_port}")
@@ -216,6 +221,7 @@ function tiflash_run()
 	local interserver_http_port=$((${ports_delta} + ${default_tiflash_interserver_http_port}))
 	local tiflash_raft_and_cop_port=$((${ports_delta} + ${default_tiflash_raft_and_cop_port}))
 	local proxy_port=$((${ports_delta} + ${default_proxy_port}))
+	local proxy_status_port=$((${ports_delta} + ${default_proxy_status_port}))
 
 	local http_port_occupied=`print_port_occupied "${http_port}"`
 	if [ "${http_port_occupied}" == "true" ]; then
@@ -242,6 +248,11 @@ function tiflash_run()
 		echo "   proxy port: ${proxy_port} is occupied" >&2
 		return 1
 	fi
+	local proxy_status_port_occupied=`print_port_occupied "${proxy_status_port}"`
+	if [ "${proxy_status_port_occupied}" == "true" ]; then
+		echo "   proxy status port: ${proxy_status_port} is occupied" >&2
+		return 1
+	fi
 
 	local disk_avail=`df -k "${tiflash_dir}" | tail -n 1 | awk '{print $4}'`
 	local max_capacity=$(( 2048 * 1024 * 1024 ))
@@ -259,6 +270,7 @@ function tiflash_run()
 	local render_str="${render_str}#tiflash_interserver_http_port=${interserver_http_port}"
 	local render_str="${render_str}#tiflash_raft_and_cop_port=${tiflash_raft_and_cop_port}"
 	local render_str="${render_str}#proxy_port=${proxy_port}"
+	local render_str="${render_str}#proxy_status_port=${proxy_status_port}"
 	local render_str="${render_str}#disk_avail=${disk_avail}"
 
 	render_templ "${conf_templ_dir}/tiflash/config.toml" "${conf_file}" "${render_str}"
