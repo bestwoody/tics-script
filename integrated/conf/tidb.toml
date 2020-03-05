@@ -40,7 +40,7 @@ report-status = true
 
 [performance]
 cross-join = true
-feedback-probability = 0.05
+feedback-probability = 0.0
 force-priority = "NO_PRIORITY"
 max-procs = 0
 pseudo-estimate-ratio = 0.8

@@ -13,7 +13,7 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -z "${6+x}" ]; then
-		echo '[cmd mysql] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true] [pretty=false]' >&2
+		echo '[cmd mysql] usage: <cmd> query_str_or_file_path [database] [show_elapsed=true] [pretty=false] [show-warnings=false]' >&2
 		return 1
 	fi
 
@@ -44,6 +44,12 @@ function cmd_ti_mysql()
 		local pretty="${9}"
 	fi
 
+	if [ -z "${10+x}" ]; then
+		local show_warnings='false'
+	else
+		local show_warnings="${10}"
+	fi
+
 	local port=`get_value "${dir}/proc.info" 'tidb_port'`
 	if [ -z "${port}" ]; then
 		echo '[cmd mysql] get port failed' >&2
@@ -55,10 +61,18 @@ function cmd_ti_mysql()
 	fi
 
 	if [ "${pretty}" == 'false' ]; then
-		local mysql_cmd="mysql -h ${host} -P ${port} -u root --database=${db} --comments"
+		local pretty_opt=''
 	else
-		local mysql_cmd="mysql -h ${host} -P ${port} -u root --database=${db} --comments --table"
+		local pretty_opt=' --table'
 	fi
+
+	if [ "${show_warnings}" == 'false' ]; then
+		local show_warnings_opt=''
+	else
+		local show_warnings_opt=' --show-warnings'
+	fi
+
+	local mysql_cmd="mysql -h ${host} -P ${port} -u root --database=${db} --comments${pretty_opt}${show_warnings_opt}"
 
 	if [ -f "${query}" ]; then
 		${mysql_cmd} < "${query}"

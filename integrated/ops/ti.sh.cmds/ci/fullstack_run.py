@@ -5,6 +5,7 @@ import sys
 import time
 
 CMD_PREFIX_TI_MYSQL = 'ti_mysql> '
+CMD_PREFIX_TI_MYSQL_COP = 'ti_mysql_cop> '
 CMD_PREFIX_TI_BEELINE = 'ti_beeline> '
 CMD_PREFIX_TI_CH = 'ti_ch> '
 CMD_SHELL_FUNC = 'ti_func> '
@@ -20,6 +21,7 @@ class QueryType:
     ti_beeline_tag = "ti_beeline"
     ti_ch_tag = "ti_ch"
     ti_mysql_tag = "ti_mysql"
+    ti_mysql_cop_tag = "ti_mysql_cop"
     func_tag = "func"
     def __init__(self, query_type):
         self.query_type = query_type
@@ -33,6 +35,9 @@ class QueryType:
     def ti_mysql(cls):
         return cls(cls.ti_mysql_tag)
     @classmethod
+    def ti_mysql_cop(cls):
+        return cls(cls.ti_mysql_cop_tag)
+    @classmethod
     def func(cls):
         return cls(cls.func_tag)
     def is_ti_beeline(self):
@@ -41,6 +46,8 @@ class QueryType:
         return self.query_type == self.ti_ch_tag
     def is_ti_mysql(self):
         return self.query_type == self.ti_mysql_tag
+    def is_ti_mysql_cop(self):
+        return self.query_type == self.ti_mysql_cop_tag
     def is_func(self):
         return self.query_type == self.func_tag
     def __str__(self):
@@ -52,27 +59,47 @@ class ShellFuncExecutor:
     def exe(self, cmd):
         return os.popen((cmd + ' ' + self.test_ti_file + ' 2>&1').strip()).readlines()
 
+# A mysql or mysql_cop query statement could specify an optional session isolation engine (tikv, tiflash, or both - concatenated by comma and no space) at head.
+# If specified, this method prepends an individual session isolation engine setting statement to overcome the limitation that we use separate mysql sessions for different statements.
+def parse_mysql_query_si(query, explain):
+    splits = query.split(" ")
+    query_prefix = ""
+    if explain:
+        query_prefix = "explain "
+    if splits[0] == "tikv" or splits[0] == "tiflash" or splits[0] == "tikv,tiflash" or splits[0] == "tiflash,tikv":
+        si = splits[0]
+        actual_query = " ".join(splits[1:])
+        return ["set @@session.tidb_isolation_read_engines='" + si + "'", query_prefix + actual_query]
+    return [query_prefix + query]
+
 class OpsExecutor:
     def __init__(self, ti_sh, test_ti_file):
         self.ti_sh = ti_sh
         self.test_ti_file = test_ti_file
     def exe(self, cmd_type, cmd):
         ops_cmd = ""
+        cmd_arr = cmd.split("--")
+        if len(cmd_arr) <= 0:
+            return ""
+        query = cmd_arr[0]
         padding_args = []
         if cmd_type.is_ti_beeline():
             ops_cmd = "beeline"
         elif cmd_type.is_ti_mysql():
             ops_cmd = "mysql"
-            padding_args = ['""', 'false', 'true']
+            query_arr = parse_mysql_query_si(query, False)
+            query = ";".join(query_arr)
+            padding_args = ['"test"', 'false', 'true', 'false']
+        elif cmd_type.is_ti_mysql_cop():
+            ops_cmd = "mysql"
+            query_arr = parse_mysql_query_si(query, True)
+            query = ";".join(query_arr)
+            padding_args = ['"test"', 'false', 'true', 'true']
         elif cmd_type.is_ti_ch():
             ops_cmd = "ch"
             padding_args = ['default', 'pretty', 'false']
         else:
             raise Exception("Unknown command type", str(cmd_type))
-        cmd_arr = cmd.split("--")
-        if len(cmd_arr) <= 0:
-            return ""
-        query = cmd_arr[0]
         args = map(lambda x: "--" + x.strip(), cmd_arr[1:])
         cmd = ""
         cmd += self.ti_sh
@@ -228,6 +255,14 @@ def mysql_matched(outputs, matches):
                 return False
     return True
 
+def mysql_cop_matched(outputs, matches):
+    match_idx = 0
+    for output in outputs:
+        if match_idx == len(matches):
+            break
+        if matches[match_idx] in output:
+            match_idx += 1
+    return match_idx == len(matches)
 
 def matched(outputs, matches, fuzz, query_type):
     if len(outputs) == 0 and len(matches) == 0:
@@ -239,6 +274,8 @@ def matched(outputs, matches, fuzz, query_type):
         return ch_matched(outputs, matches, fuzz)
     elif query_type.is_ti_mysql():
         return mysql_matched(outputs, matches)
+    elif query_type.is_ti_mysql_cop():
+        return mysql_cop_matched(outputs, matches)
     else:
         raise Exception("Unknown query type", str(query_type))
 
@@ -270,6 +307,17 @@ class Matcher:
             self.query_line_number = line_number
             self.query = line[len(CMD_PREFIX_TI_MYSQL):]
             self.query_type = QueryType.ti_mysql()
+            self.outputs = self.executor_ops.exe(self.query_type, self.query)
+            self.outputs = map(lambda x: x.strip(), self.outputs)
+            self.outputs = filter(lambda x: len(x) != 0, self.outputs)
+            self.extra_outputs = None
+            self.matches = []
+        elif line.startswith(CMD_PREFIX_TI_MYSQL_COP):
+            if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
+                return False
+            self.query_line_number = line_number
+            self.query = line[len(CMD_PREFIX_TI_MYSQL_COP):]
+            self.query_type = QueryType.ti_mysql_cop()
             self.outputs = self.executor_ops.exe(self.query_type, self.query)
             self.outputs = map(lambda x: x.strip(), self.outputs)
             self.outputs = filter(lambda x: len(x) != 0, self.outputs)

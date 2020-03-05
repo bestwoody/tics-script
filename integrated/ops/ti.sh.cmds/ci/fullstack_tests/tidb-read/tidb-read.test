@@ -1,0 +1,310 @@
+## Initialize.
+
+
+ti_mysql> set @@global.tidb_isolation_read_engines='tikv, tiflash';
+
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(col_1 varchar(256), col_2 int not null primary key)
+ti_mysql> alter table test.t add index(col_2)
+ti_mysql> insert into test.t(col_1, col_2) values('test1', 555), ('test2', 666), ('test3', 777)
+ti_mysql> analyze table test.t
+
+
+## No replica cases.
+
+
+# Session isolation tiflash and no tiflash replica, error.
+ti_mysql_cop> tiflash select min(col_2) from test.t
+Can not find access path
+
+# Hint tiflash and no tiflash replica, goes tikv and warning.
+ti_mysql_cop> select /*+ read_from_storage(tiflash[t]) */ min(col_2) from test.t
+tikv
+No available path
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ min(col_2) from test.t
++------------+
+| min(col_2) |
++------------+
+|        555 |
++------------+
+
+# Add tiflash replica.
+ti_mysql> alter table test.t set tiflash replica 1
+ti_func> wait_table test t
+
+
+## CBO cases.
+
+
+# CBO, goes tikv.
+ti_mysql_cop> select min(col_2) from test.t
+tikv
+ti_mysql> select min(col_2) from test.t
++------------+
+| min(col_2) |
++------------+
+|        555 |
++------------+
+
+# CBO, goes tiflash.
+ti_mysql_cop> select count(*) from test.t
+tiflash
+ti_mysql> select count(*) from test.t
++----------+
+| count(*) |
++----------+
+|        3 |
++----------+
+
+
+## Session isolation cases.
+
+
+# Session isolation tikv, goes tikv.
+ti_mysql_cop> tikv select count(*) from test.t
+tikv
+ti_mysql> tikv select count(*) from test.t
++----------+
+| count(*) |
++----------+
+|        3 |
++----------+
+
+# Session isolation tiflash, goes tiflash.
+ti_mysql_cop> tiflash select min(col_2) from test.t
+tiflash
+ti_mysql> tiflash select min(col_2) from test.t
++------------+
+| min(col_2) |
++------------+
+|        555 |
++------------+
+
+# Session isolation both, same as CBO, goes tikv.
+ti_mysql_cop> tikv,tiflash select min(col_2) from test.t
+tikv
+ti_mysql> tikv,tiflash select min(col_2) from test.t
++------------+
+| min(col_2) |
++------------+
+|        555 |
++------------+
+
+# Session isolation both, same as CBO, goes tiflash.
+ti_mysql_cop> tikv,tiflash select count(*) from test.t
+tiflash
+ti_mysql> tikv,tiflash select count(*) from test.t
++----------+
+| count(*) |
++----------+
+|        3 |
++----------+
+
+
+## Global isolation cases.
+
+
+# Global isolation tikv.
+ti_mysql> set @@global.tidb_isolation_read_engines = 'tikv'
+SLEEP 5
+ti_mysql> select @@global.tidb_isolation_read_engines
++--------------------------------------+
+| @@global.tidb_isolation_read_engines |
++--------------------------------------+
+| tikv                                 |
++--------------------------------------+
+ti_mysql> select @@session.tidb_isolation_read_engines
++---------------------------------------+
+| @@session.tidb_isolation_read_engines |
++---------------------------------------+
+| tikv                                  |
++---------------------------------------+
+
+# Global isolation tiflash.
+ti_mysql> set @@global.tidb_isolation_read_engines = 'tiflash'
+SLEEP 5
+ti_mysql> select @@global.tidb_isolation_read_engines
++--------------------------------------+
+| @@global.tidb_isolation_read_engines |
++--------------------------------------+
+| tiflash                              |
++--------------------------------------+
+ti_mysql> select @@session.tidb_isolation_read_engines
++---------------------------------------+
+| @@session.tidb_isolation_read_engines |
++---------------------------------------+
+| tiflash                               |
++---------------------------------------+
+
+# Global isolation both.
+ti_mysql> set @@global.tidb_isolation_read_engines = 'tikv, tiflash'
+SLEEP 5
+ti_mysql> select @@global.tidb_isolation_read_engines
++--------------------------------------+
+| @@global.tidb_isolation_read_engines |
++--------------------------------------+
+| tikv,tiflash                         |
++--------------------------------------+
+ti_mysql> select @@session.tidb_isolation_read_engines
++---------------------------------------+
+| @@session.tidb_isolation_read_engines |
++---------------------------------------+
+| tikv,tiflash                          |
++---------------------------------------+
+
+# Global isolation both.
+ti_mysql> set @@global.tidb_isolation_read_engines = 'tikv, tiflash'
+SLEEP 5
+ti_mysql> select @@global.tidb_isolation_read_engines
++--------------------------------------+
+| @@global.tidb_isolation_read_engines |
++--------------------------------------+
+| tikv,tiflash                         |
++--------------------------------------+
+ti_mysql> select @@session.tidb_isolation_read_engines
++---------------------------------------+
+| @@session.tidb_isolation_read_engines |
++---------------------------------------+
+| tikv,tiflash                          |
++---------------------------------------+
+
+# Global isolation both, session isolation tikv.
+ti_mysql> set @@global.tidb_isolation_read_engines = 'tikv, tiflash'
+SLEEP 5
+ti_mysql> select @@global.tidb_isolation_read_engines
++--------------------------------------+
+| @@global.tidb_isolation_read_engines |
++--------------------------------------+
+| tikv,tiflash                         |
++--------------------------------------+
+ti_mysql> set @@session.tidb_isolation_read_engines = 'tikv'; select @@session.tidb_isolation_read_engines
++---------------------------------------+
+| @@session.tidb_isolation_read_engines |
++---------------------------------------+
+| tikv                                  |
++---------------------------------------+
+
+# Global isolation both, session isolation tiflash.
+ti_mysql> set @@global.tidb_isolation_read_engines = 'tikv, tiflash'
+SLEEP 5
+ti_mysql> select @@global.tidb_isolation_read_engines
++--------------------------------------+
+| @@global.tidb_isolation_read_engines |
++--------------------------------------+
+| tikv,tiflash                         |
++--------------------------------------+
+ti_mysql> set @@session.tidb_isolation_read_engines = 'tiflash'; select @@session.tidb_isolation_read_engines
++---------------------------------------+
+| @@session.tidb_isolation_read_engines |
++---------------------------------------+
+| tiflash                               |
++---------------------------------------+
+
+# Global isolation tikv, session isolation both.
+ti_mysql> set @@global.tidb_isolation_read_engines = 'tikv'
+SLEEP 5
+ti_mysql> select @@global.tidb_isolation_read_engines
++--------------------------------------+
+| @@global.tidb_isolation_read_engines |
++--------------------------------------+
+| tikv                                 |
++--------------------------------------+
+ti_mysql> set @@session.tidb_isolation_read_engines = 'tikv, tiflash'; select @@session.tidb_isolation_read_engines
++---------------------------------------+
+| @@session.tidb_isolation_read_engines |
++---------------------------------------+
+| tikv,tiflash                          |
++---------------------------------------+
+
+# Global isolation tiflash, session isolation both.
+ti_mysql> set @@global.tidb_isolation_read_engines = 'tiflash'
+SLEEP 5
+ti_mysql> select @@global.tidb_isolation_read_engines
++--------------------------------------+
+| @@global.tidb_isolation_read_engines |
++--------------------------------------+
+| tiflash                              |
++--------------------------------------+
+ti_mysql> set @@session.tidb_isolation_read_engines = 'tikv, tiflash'; select @@session.tidb_isolation_read_engines
++---------------------------------------+
+| @@session.tidb_isolation_read_engines |
++---------------------------------------+
+| tikv,tiflash                          |
++---------------------------------------+
+
+# Recover global isolation.
+ti_mysql> set @@global.tidb_isolation_read_engines = 'tikv, tiflash'
+
+
+## Hint cases.
+
+
+# Hint tikv, goes tikv.
+ti_mysql_cop> select /*+ read_from_storage(tikv[t]) */ count(*) from test.t
+tikv
+ti_mysql> select /*+ read_from_storage(tikv[t]) */ count(*) from test.t
++----------+
+| count(*) |
++----------+
+|        3 |
++----------+
+
+# Hint tiflash, goes tiflash.
+ti_mysql_cop> select /*+ read_from_storage(tiflash[t]) */ min(col_2) from test.t
+tiflash
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ min(col_2) from test.t
++------------+
+| min(col_2) |
++------------+
+|        555 |
++------------+
+
+# Hint tikv, session isolation tiflash, goes tiflash and warning.
+ti_mysql_cop> tiflash select /*+ read_from_storage(tikv[t]) */ count(*) from test.t
+tiflash
+No available path
+ti_mysql> tiflash select /*+ read_from_storage(tikv[t]) */ count(*) from test.t
++----------+
+| count(*) |
++----------+
+|        3 |
++----------+
+
+# Hint tikv with wrong table name, session isolation both, goes tiflash and warning.
+ti_mysql_cop> tikv,tiflash select /*+ read_from_storage(tikv[xxx]) */ count(*) from test.t
+tiflash
+# TODO: TiDB doesn't report warning for this case, which it should complain about table name 'xxx'.
+ti_mysql> tikv,tiflash select /*+ read_from_storage(tikv[xxx]) */ count(*) from test.t
++----------+
+| count(*) |
++----------+
+|        3 |
++----------+
+
+# Hint tiflash, session isolation tikv, goes tikv and warning.
+ti_mysql_cop> tikv select /*+ read_from_storage(tiflash[t]) */ min(col_2) from test.t
+tikv
+No available path
+ti_mysql> tikv select /*+ read_from_storage(tiflash[t]) */ min(col_2) from test.t
++------------+
+| min(col_2) |
++------------+
+|        555 |
++------------+
+
+# Hint tiflash with wrong table name, session isolation both, goes tikv and warning.
+ti_mysql_cop> tikv,tiflash select /*+ read_from_storage(tiflash[xxx]) */ min(col_2) from test.t
+tikv
+# TODO: TiDB doesn't report warning for this case, which it should complain about table name 'xxx'.
+ti_mysql> tikv,tiflash select /*+ read_from_storage(tiflash[xxx]) */ min(col_2) from test.t
++------------+
+| min(col_2) |
++------------+
+|        555 |
++------------+
+
+
+## Cleanup.
+
+
+ti_mysql> drop table if exists test.t
