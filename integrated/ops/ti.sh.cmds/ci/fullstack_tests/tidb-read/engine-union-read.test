@@ -1,0 +1,26 @@
+ti_mysql> drop table if exists test.t1
+ti_mysql> drop table if exists test.t2
+ti_mysql> create table if not exists test.t1(col_1 varchar(256), col_2 int not null)
+ti_mysql> create table if not exists test.t2(col_1 varchar(256), col_2 int not null)
+ti_mysql> insert into test.t1(col_1, col_2) values('t1_test1', 555), ('t1_test2', 666), ('t1_test3', 777)
+ti_mysql> insert into test.t2(col_1, col_2) values('t2_test1', 555), ('t2_test2', 666), ('t2_test3', 777)
+ti_mysql> analyze table test.t1
+ti_mysql> analyze table test.t2
+
+ti_mysql> alter table test.t1 set tiflash replica 1
+ti_func> wait_table test t1
+
+ti_mysql_cop> select /*+ read_from_storage(tiflash[t1]) */ * from test.t1 join test.t2 on t1.col_2 = t2.col_2
+tikv
+tiflash
+ti_mysql> select /*+ read_from_storage(tiflash[t1]) */ * from test.t1 join test.t2 on t1.col_2 = t2.col_2
++----------+-------+----------+-------+
+| col_1    | col_2 | col_1    | col_2 |
++----------+-------+----------+-------+
+| t1_test1 |   555 | t2_test1 |   555 |
+| t1_test2 |   666 | t2_test2 |   666 |
+| t1_test3 |   777 | t2_test3 |   777 |
++----------+-------+----------+-------+
+
+ti_mysql> drop table if exists test.t1
+ti_mysql> drop table if exists test.t2
