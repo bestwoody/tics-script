@@ -1,0 +1,2 @@
+run tidb snapshot read test on cluster
+usage: <cmd> (no args)

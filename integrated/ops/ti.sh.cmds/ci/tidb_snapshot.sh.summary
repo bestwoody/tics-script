@@ -1,0 +1,77 @@
+#!/bin/bash
+
+function cust_mysql()
+{
+  local query="${1}"
+  "${ti}" "${file}" mysql "${query}" test false false
+}
+
+function cmd_ti_tidb_snapshot_read()
+{
+  ti="${integrated}/ops/ti.sh"
+  file="${1}"
+  shift 6
+
+  # Init a table with 1 row, record time into t1.
+  cust_mysql "drop table if exists test.t"
+  cust_mysql "create table if not exists test.t(col_1 int not null, col_2 int not null)"
+  cust_mysql "insert into test.t values(1, 101)"
+  cust_mysql "alter table test.t set tiflash replica 1"
+  "${ti}" "${file}" wait/available test t
+  local t1=$(cust_mysql "select now()" | tail -n +2)
+  echo "t1: ${t1}"
+
+  # Insert some data after t1, record time into t2.
+  "${ti}" "${file}" sleep 2
+  cust_mysql "insert into test.t values(1, 102)"
+  "${ti}" "${file}" sleep 2
+  local t2=$(cust_mysql "select now()" | tail -n +2)
+  echo "t2: ${t2}"
+
+  # Snapshot at t1: only old data visible. OK.
+  local r1=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; set @@tidb_snapshot='${t1}'; select max(col_2) from test.t group by col_1" | tail -n +2)
+  echo "Result at t1: ${r1}"
+  if [ "${r1}" != "101" ]; then
+    echo "Result at t1 should be: 101"
+    exit 1
+  fi
+
+  # Do some compatible DDL after t2, record time into t3.
+  "${ti}" "${file}" sleep 2
+  cust_mysql "drop table if exists tmp; create table tmp(i int); drop table tmp;"
+  "${ti}" "${file}" sleep 2
+  local t3=$(cust_mysql "select now()" | tail -n +2)
+  echo "t3: ${t3}"
+
+  # Snapshot at t2: new data visible, compatible DDL invisible to TiDB and visible to TiFlash, not blocking query. OK.
+  local r2=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; set @@tidb_snapshot='${t2}'; select max(col_2) from test.t group by col_1" | tail -n +2)
+  echo "Result at t2: ${r2}"
+  if [ "${r2}" != "102" ]; then
+    echo "Result at t2 should be: 102"
+    exit 1
+  fi
+
+  # Do some incompatible DDL after t3, record time into t4.
+  "${ti}" "${file}" sleep 2
+  cust_mysql "alter table test.t drop column col_1;"
+  "${ti}" "${file}" sleep 2
+  local t4=$(cust_mysql "select now()" | tail -n +2)
+  echo "t4: ${t4}"
+
+  # Snapshot at t3: new data visible, incompatible DDL invisible to TiDB and visible to TiFlash, blocking query. Error 'newer schema version'.
+  local r3=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; set @@tidb_snapshot='${t3}'; select max(col_2) from test.t group by col_1" 2>&1)
+  # local r3=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; set @@tidb_snapshot='${t3}'; select max(col_2) from test.t group by col_1" 2>&1 | tail -n +2)
+  echo "Result at t3: ${r3}"
+  # TODO: should be error, and check error match.
+
+  # Snapshot at t3: new data visible, incompatible DDL visible to both TiDB and TiFlash, invalid query. Error 'unknown column'.
+  local r4=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; set @@tidb_snapshot='${t4}'; select max(col_2) from test.t group by col_1" 2>&1)
+  echo "Result at t4: ${r4}"
+  if [ "${r4}" != "ERROR 1054 (42S22) at line 1: Unknown column 'col_1' in 'group statement'" ]; then
+    echo "Result at t4 should be: ERROR 1054 (42S22) at line 1: Unknown column 'col_1' in 'group statement'"
+    exit 1
+  fi
+}
+
+set -euo pipefail
+cmd_ti_tidb_snapshot_read "${@}"
