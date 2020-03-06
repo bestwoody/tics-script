@@ -1,0 +1,161 @@
+# ti.sh my.ti ci/fullstack replica/create_like.test false
+
+# FLASH-957 62. 原表未创建副本，create table xx like
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 int, c2 varchar(256))
+ti_mysql> insert into test.t values(1, 'a')
+
+ti_mysql> drop table if exists test.t2
+ti_mysql> create table test.t2 like test.t
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
+
+ti_mysql> desc test.t2
++-------+--------------+------+------+---------+-------+
+| Field | Type         | Null | Key  | Default | Extra |
++-------+--------------+------+------+---------+-------+
+| c1    | int(11)      | YES  |      | NULL    |       |
+| c2    | varchar(256) | YES  |      | NULL    |       |
++-------+--------------+------+------+---------+-------+
+
+ti_mysql> drop table if exists test.t2
+ti_mysql> drop table if exists test.t
+
+# FLASH-957 63. 原表已创建副本，create table xx like
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 int, c2 varchar(256))
+
+ti_mysql> alter table test.t set tiflash replica 2
+ti_func> wait_table test t
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+ti_mysql> select count(*) from test.t
++----------+
+| count(*) |
++----------+
+|        0 |
++----------+
+
+ti_mysql> drop table if exists test.t2
+ti_mysql> create table test.t2 like test.t
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             2 |
++---------------+
+
+ti_mysql> select count(*) from test.t2
++----------+
+| count(*) |
++----------+
+|        0 |
++----------+
+
+ti_mysql> drop table if exists test.t2
+ti_mysql> drop table if exists test.t
+
+# FLASH-957 64. 原表已创建副本，create table xx like 创建多个新表
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 int, c2 varchar(256))
+
+ti_mysql> alter table test.t set tiflash replica 2
+ti_func> wait_table test t
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+ti_mysql> select count(*) from test.t
++----------+
+| count(*) |
++----------+
+|        0 |
++----------+
+
+ti_mysql> drop table if exists test.t2
+ti_mysql> drop table if exists test.t3
+ti_mysql> drop table if exists test.t4
+ti_mysql> drop table if exists test.t5
+ti_mysql> drop table if exists test.t6
+ti_mysql> create table test.t2 like test.t
+ti_mysql> create table test.t3 like test.t
+ti_mysql> create table test.t4 like test.t
+ti_mysql> create table test.t5 like test.t
+ti_mysql> create table test.t6 like test.t
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             2 |
++---------------+
+
+ti_mysql> select count(*) from test.t2
++----------+
+| count(*) |
++----------+
+|        0 |
++----------+
+
+ti_mysql> select count(*) from test.t3
++----------+
+| count(*) |
++----------+
+|        0 |
++----------+
+
+ti_mysql> select count(*) from test.t4
++----------+
+| count(*) |
++----------+
+|        0 |
++----------+
+
+ti_mysql> select count(*) from test.t5
++----------+
+| count(*) |
++----------+
+|        0 |
++----------+
+
+ti_mysql> select count(*) from test.t6
++----------+
+| count(*) |
++----------+
+|        0 |
++----------+
+
+ti_mysql> drop table if exists test.t2
+ti_mysql> drop table if exists test.t3
+ti_mysql> drop table if exists test.t4
+ti_mysql> drop table if exists test.t5
+ti_mysql> drop table if exists test.t6
+ti_mysql> drop table if exists test.t
+
+# FLASH-957 65. create table xxx like 创建的 tiflash 副本，修改最原始的表
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 int, c2 varchar(256))
+ti_mysql> insert into test.t values(1, 'a')
+ti_mysql> alter table test.t set tiflash replica 2
+ti_func> wait_table test t
+
+ti_mysql> drop table if exists test.t2
+ti_mysql> create table test.t2 like test.t
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             2 |
++---------------+
+ti_mysql> select * from test.t2
+
+ti_mysql> insert into test.t values(2, 'b')
+ti_mysql> delete from test.t where c1 = 2
+ti_mysql> update test.t set c2 = 'aa' where c1 = 1
+
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             2 |
++---------------+
+ti_mysql> select * from test.t2
+
+ti_mysql> drop table if exists test.t2
+ti_mysql> create table test.t2 like test.t

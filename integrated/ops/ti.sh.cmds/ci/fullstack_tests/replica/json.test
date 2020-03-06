@@ -1,0 +1,26 @@
+# ti.sh my.ti ci/fullstack replica/json.test false
+
+# FLASH-957 46. 含有 stored 生成列的表，创建副本
+ti_mysql> drop table if exists test.person
+ti_mysql> CREATE TABLE test.person (name VARCHAR(255) NOT NULL, address_info JSON, city VARCHAR(64) AS (JSON_UNQUOTE(JSON_EXTRACT(address_info, '$.city'))) STORED, KEY (city))
+
+ti_mysql> insert into test.person (name, address_info) values ('name1', '{\"city\": \"Beijing\"}')
+
+ti_mysql> SELECT * FROM test.person WHERE city = 'Beijing';
++-------+---------------------+---------+
+| name  | address_info        | city    |
++-------+---------------------+---------+
+| name1 | {"city": "Beijing"} | Beijing |
++-------+---------------------+---------+
+
+ti_mysql> alter table test.person set tiflash replica 1
+ti_func> wait_table test person
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+ti_mysql> SELECT * FROM test.person WHERE city = 'Beijing';
++-------+---------------------+---------+
+| name  | address_info        | city    |
++-------+---------------------+---------+
+| name1 | {"city": "Beijing"} | Beijing |
++-------+---------------------+---------+
+
+ti_mysql> drop table if exists test.person

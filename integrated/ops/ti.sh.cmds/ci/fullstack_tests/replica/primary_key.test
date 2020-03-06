@@ -1,0 +1,87 @@
+# ti.sh my.ti ci/fullstack replica/primary_key.test false
+
+# FLASH-957 54. 原表无主键，创建副本
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 int, c2 varchar(256))
+ti_mysql> insert into test.t values(1, 'a')
+
+ti_mysql> alter table test.t set tiflash replica 1
+ti_func> wait_table test t
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+
+ti_mysql> SELECT * FROM test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | a    |
++------+------+
+
+ti_mysql> insert into test.t values(2, 'b')
+ti_mysql> SELECT * FROM test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | a    |
+|    2 | b    |
++------+------+
+
+ti_mysql> delete from test.t where c1 = 2
+ti_mysql> SELECT * FROM test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | a    |
++------+------+
+
+ti_mysql> update test.t set c2 = 'aa' where c1 = 1
+ti_mysql> SELECT * FROM test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | aa   |
++------+------+
+
+ti_mysql> drop table if exists test.t
+
+# FLASH-957 55. 原表有主键，创建副本
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 int PRIMARY KEY, c2 varchar(256))
+ti_mysql> insert into test.t values(1, 'a')
+
+ti_mysql> alter table test.t set tiflash replica 1
+ti_func> wait_table test t
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+
+ti_mysql> SELECT * FROM test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | a    |
++------+------+
+
+ti_mysql> insert into test.t values(2, 'b')
+ti_mysql> SELECT * FROM test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | a    |
+|    2 | b    |
++------+------+
+
+ti_mysql> delete from test.t where c1 = 2
+ti_mysql> SELECT * FROM test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | a    |
++------+------+
+
+ti_mysql> update test.t set c2 = 'aa' where c1 = 1
+ti_mysql> SELECT * FROM test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | aa   |
++------+------+
+
+ti_mysql> drop table if exists test.t

@@ -1,0 +1,54 @@
+# ti.sh my.ti ci/fullstack replica/create.test false
+
+# FLASH-957 36. 错误的创建副本语句
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 varchar(256), c2 int)
+
+ti_mysql> alter table test.t set tiflash1 replica 1
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 31 near "tiflash1 replica 1"
+ti_mysql> SELECT * FROM information_schema.tiflash_replica
+
+ti_mysql> alter table test.t set tiflash replica1 1
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 39 near "replica1 1"
+ti_mysql> SELECT * FROM information_schema.tiflash_replica
+
+ti_mysql> drop table if exists test.t
+
+# FLASH-957 37. 正确的创建副本语句
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 varchar(256), c2 int)
+
+ti_mysql> alter table test.t set tiflash replica 1
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             1 |
++---------------+
+ti_mysql> drop table if exists test.t
+
+# FLASH-957 38. 原表不存在，创建副本
+ti_mysql> alter table test.not_exists set tiflash replica 1
+ERROR 1146 (42S02) at line 1: Table 'test.not_exists' doesn't exist
+ti_mysql> SELECT * FROM information_schema.tiflash_replica
+
+# FLASH-957 39. 原表无数据，创建副本进行数据同步
+ti_mysql> create table if not exists test.t(c1 varchar(256), c2 int)
+ti_mysql> alter table test.t set tiflash replica 1
+ti_func> wait_table test t
+ti_mysql> select available from information_schema.tiflash_replica where table_schema='test' and table_name='t'
++-----------+
+| available |
++-----------+
+|         1 |
++-----------+
+
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+ti_mysql> select count(*) from test.t
++----------+
+| count(*) |
++----------+
+|        0 |
++----------+
+
+ti_mysql> drop table if exists test.t
