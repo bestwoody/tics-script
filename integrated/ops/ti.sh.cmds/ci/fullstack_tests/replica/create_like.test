@@ -7,6 +7,7 @@ ti_mysql> insert into test.t values(1, 'a')
 
 ti_mysql> drop table if exists test.t2
 ti_mysql> create table test.t2 like test.t
+ti_mysql> set @@session.tidb_isolation_read_engines='tikv,tiflash'
 ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
 
 ti_mysql> desc test.t2
@@ -36,6 +37,7 @@ ti_mysql> select count(*) from test.t
 
 ti_mysql> drop table if exists test.t2
 ti_mysql> create table test.t2 like test.t
+ti_mysql> set @@session.tidb_isolation_read_engines='tikv,tiflash'
 ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
 +---------------+
 | REPLICA_COUNT |
@@ -43,6 +45,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 |             1 |
 +---------------+
 
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 ti_mysql> select count(*) from test.t2
 +----------+
 | count(*) |
@@ -77,6 +80,7 @@ ti_mysql> create table test.t3 like test.t
 ti_mysql> create table test.t4 like test.t
 ti_mysql> create table test.t5 like test.t
 ti_mysql> create table test.t6 like test.t
+ti_mysql> set @@session.tidb_isolation_read_engines='tikv,tiflash'
 ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
 +---------------+
 | REPLICA_COUNT |
@@ -135,20 +139,23 @@ ti_func> wait_table test t
 
 ti_mysql> drop table if exists test.t2
 ti_mysql> create table test.t2 like test.t
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 
+ti_mysql> set @@session.tidb_isolation_read_engines='tikv,tiflash'
 ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
 +---------------+
 | REPLICA_COUNT |
 +---------------+
 |             1 |
 +---------------+
+
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 ti_mysql> select * from test.t2
 
 ti_mysql> insert into test.t values(2, 'b')
 ti_mysql> delete from test.t where c1 = 2
 ti_mysql> update test.t set c2 = 'aa' where c1 = 1
 
+ti_mysql> set @@session.tidb_isolation_read_engines='tikv,tiflash'
 ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='test' and TABLE_NAME='t2'
 +---------------+
 | REPLICA_COUNT |
