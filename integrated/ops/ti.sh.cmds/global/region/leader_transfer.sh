@@ -12,9 +12,9 @@ function cmd_ti_global_region_leader_transfer()
 	"${ti}" new "${file}" 'delta=-9' 'tikv=3' 'tiflash=3' "dir=${dir}"
 	"${ti}" "${file}" burn : up : sleep 60
 	"${ti}" "${file}" parallel \
-		GO: wait/syncing tpch_1 lineitem : pd/ctl scheduler add shuffle-leader-scheduler : sleep 120 \
+		GO: wait/available tpch_1 lineitem : pd/ctl scheduler add shuffle-leader-scheduler : sleep 120 \
 		GO: tpch/load 1 lineitem true \
-		GO: wait/syncing tpch_1 lineitem \
+		GO: wait/available tpch_1 lineitem \
 			LOOP: verify/consistency tpch_1 lineitem
 	"${ti}" "${file}" must burn
 

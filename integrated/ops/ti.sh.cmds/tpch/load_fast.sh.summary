@@ -133,7 +133,7 @@ function ti_cmd_tpch_load_fast()
 
 			# wait for tiflash become avaliable
 			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-				"${ti_file}" "wait/syncing" "${db}" "${table}" | awk '{print "   "$0}'
+				"${ti_file}" "wait/available" "${db}" "${table}" | awk '{print "   "$0}'
 
 			local finish_time=`date +%s`
 			local duration=$((finish_time-start_time))

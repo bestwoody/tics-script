@@ -91,7 +91,7 @@ function verify_raft_sync()
 	fi
 
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" 'wait/syncing' "${db}" "${table}"
+		-k "${ti_args}" "${ti_file}" 'wait/available' "${db}" "${table}"
 
 	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
 		-k "${ti_args}" "${ti_file}" 'mysql/learner' "${read_sql}" "${db}" 2>&1`

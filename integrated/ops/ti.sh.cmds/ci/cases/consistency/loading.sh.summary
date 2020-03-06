@@ -18,8 +18,8 @@ function cmd_ti_cases_consistency_loading()
 	"${ti}" -k "${ti_args}" "${ti_file}" must burn : up : mysql/nogc
 
 	"${integrated}/ops/ti.sh" -k "${ti_args}" "${ti_file}" parallel \
-		GO: tpch/load "${scale}" "${table}" : wait/syncing "${db}" "${table}" : sleep 120 \
-		GO: wait/table "${db}" "${table}" \
+		GO: tpch/load "${scale}" "${table}" : wait/available "${db}" "${table}" : sleep 120 \
+		GO: wait/available "${db}" "${table}" \
 			LOOP: verify/consistency "${db}" "${table}"
 }
 
