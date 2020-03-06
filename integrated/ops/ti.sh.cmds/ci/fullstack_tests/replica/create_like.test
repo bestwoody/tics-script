@@ -24,7 +24,7 @@ ti_mysql> drop table if exists test.t
 ti_mysql> drop table if exists test.t
 ti_mysql> create table if not exists test.t(c1 int, c2 varchar(256))
 
-ti_mysql> alter table test.t set tiflash replica 2
+ti_mysql> alter table test.t set tiflash replica 1
 ti_func> wait_table test t
 ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 ti_mysql> select count(*) from test.t
@@ -40,7 +40,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 +---------------+
 | REPLICA_COUNT |
 +---------------+
-|             2 |
+|             1 |
 +---------------+
 
 ti_mysql> select count(*) from test.t2
@@ -57,7 +57,7 @@ ti_mysql> drop table if exists test.t
 ti_mysql> drop table if exists test.t
 ti_mysql> create table if not exists test.t(c1 int, c2 varchar(256))
 
-ti_mysql> alter table test.t set tiflash replica 2
+ti_mysql> alter table test.t set tiflash replica 1
 ti_func> wait_table test t
 ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 ti_mysql> select count(*) from test.t
@@ -81,7 +81,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 +---------------+
 | REPLICA_COUNT |
 +---------------+
-|             2 |
+|             1 |
 +---------------+
 
 ti_mysql> select count(*) from test.t2
@@ -130,7 +130,7 @@ ti_mysql> drop table if exists test.t
 ti_mysql> drop table if exists test.t
 ti_mysql> create table if not exists test.t(c1 int, c2 varchar(256))
 ti_mysql> insert into test.t values(1, 'a')
-ti_mysql> alter table test.t set tiflash replica 2
+ti_mysql> alter table test.t set tiflash replica 1
 ti_func> wait_table test t
 
 ti_mysql> drop table if exists test.t2
@@ -141,7 +141,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 +---------------+
 | REPLICA_COUNT |
 +---------------+
-|             2 |
+|             1 |
 +---------------+
 ti_mysql> select * from test.t2
 
@@ -153,7 +153,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 +---------------+
 | REPLICA_COUNT |
 +---------------+
-|             2 |
+|             1 |
 +---------------+
 ti_mysql> select * from test.t2
 
