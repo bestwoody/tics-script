@@ -88,9 +88,9 @@ def runDailyIntegrationTest(branch, version, notify) {
                                 }
                             } catch (err) {
                                 sh "for f in \$(find /tmp/ti/ci -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
-                                curl --upload-file "/tmp/ti/ci/release/pd/pd.log" "http://139.219.11.38:8000/pd.log" "http://139.219.11.38:8000/66nb8/pd.log"
-                                curl --upload-file "/tmp/ti/ci/release/tikv0/tikv.log" "http://139.219.11.38:8000/tikv0.log" "http://139.219.11.38:8000/66nb8/tikv0.log"
-                                curl --upload-file "/tmp/ti/ci/release/tikv1/tikv.log" "http://139.219.11.38:8000/tikv1.log" "http://139.219.11.38:8000/66nb8/tikv1.log"
+                                sh "curl --upload-file /tmp/ti/ci/release/pd/pd.log http://139.219.11.38:8000/pd.log http://139.219.11.38:8000/66nb8/pd.log"
+                                sh "curl --upload-file /tmp/ti/ci/release/tikv0/tikv.log http://139.219.11.38:8000/tikv0.log http://139.219.11.38:8000/66nb8/tikv0.log"
+                                sh "curl --upload-file /tmp/ti/ci/release/tikv1/tikv.log http://139.219.11.38:8000/tikv1.log http://139.219.11.38:8000/66nb8/tikv1.log"
                                 throw err
                             }
                         }
