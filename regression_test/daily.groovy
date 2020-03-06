@@ -8,7 +8,7 @@ def runDailyIntegrationTest(branch, version, notify) {
     def PD_BRANCH = "master"
     def TIFLASH_BRANCH = "master"
 
-    podTemplate(name: label, label: label, instanceCap: 5, idleMinutes: 5, containers: [
+    podTemplate(name: label, label: label, instanceCap: 10, idleMinutes: 5, containers: [
             containerTemplate(name: 'tiflash-docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
                     envVars: [
                             envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375'),

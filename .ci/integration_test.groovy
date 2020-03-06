@@ -26,7 +26,7 @@ catchError {
         "OPS TI Test": {
             def label = "test-tiflash-ops-ti"
 
-            podTemplate(name: label, label: label, instanceCap: 3, containers: [
+            podTemplate(name: label, label: label, instanceCap: 10, containers: [
                 containerTemplate(name: 'dockerd', image: 'docker:18.09.6-dind', privileged: true,
                         resourceRequestCpu: '2000m', resourceRequestMemory: '8Gi'),
                 containerTemplate(name: 'docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
@@ -75,7 +75,7 @@ catchError {
         "Integration Test": {
             def label = "test-tiflash-integration"
 
-            podTemplate(name: label, label: label, instanceCap: 3, containers: [
+            podTemplate(name: label, label: label, instanceCap: 10, containers: [
                 containerTemplate(name: 'dockerd', image: 'docker:18.09.6-dind', privileged: true,
                         resourceRequestCpu: '2000m', resourceRequestMemory: '8Gi'),
                 containerTemplate(name: 'docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
