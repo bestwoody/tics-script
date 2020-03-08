@@ -14,6 +14,7 @@ def runDailyIntegrationTest(branch, version, notify) {
                             envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375'),
                     ], alwaysPullImage: true, ttyEnabled: true, command: 'cat'),
             containerTemplate(name: 'docker-ops-ci', image: 'hub.pingcap.net/tiflash/ops-ci:v11',
+                    resourceRequestCpu: '10',
                     envVars: [
                             envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375'),
                     ], alwaysPullImage: true, ttyEnabled: true, command: 'cat'),
