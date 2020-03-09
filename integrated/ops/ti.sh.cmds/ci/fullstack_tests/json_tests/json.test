@@ -1,0 +1,76 @@
+ti_mysql> drop table if exists test.t
+ti_mysql> create table test.t(a0 json, a1 int, primary key (a1))
+ti_mysql> alter table test.t set tiflash replica 1
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+
+ti_mysql> insert into test.t(a0, a1) values(null, '-2147483648')
+ti_mysql> insert into test.t(a0, a1) values(null, '2147483647')
+ti_mysql> insert into test.t(a0, a1) values('{\"a\": 1}', '8')
+ti_mysql> insert into test.t(a0, a1) values('{\"a\": 2}', '9')
+ti_mysql> insert into test.t(a0, a1) values('{\"aa\": 1}', '10')
+ti_mysql> insert into test.t(a0, a1) values('{\"a\": 1, \"b\": {\"key\": \"k_1\", \"val\": [1, 3, 5]}}', '11')
+ti_mysql> insert into test.t(a0, a1) values('{\"a\": 1, \"b\": {\"key\": \"k_2\", \"val\": [0, 1, 2]}}', '12')
+ti_mysql> select a0, a1 from test.t
++-------------------------------------------------+-------------+
+| a0                                              | a1          |
++-------------------------------------------------+-------------+
+| NULL                                            | -2147483648 |
+| NULL                                            |  2147483647 |
+| {"a": 1}                                        |           8 |
+| {"a": 2}                                        |           9 |
+| {"aa": 1}                                       |          10 |
+| {"a": 1, "b": {"key": "k_1", "val": [1, 3, 5]}} |          11 |
+| {"a": 1, "b": {"key": "k_2", "val": [0, 1, 2]}} |          12 |
++-------------------------------------------------+-------------+
+
+ti_mysql> select JSON_EXTRACT(a0, \"$.a\") a from test.t
++------+
+| a    |
++------+
+| NULL |
+| NULL |
+| 1    |
+| 2    |
+| NULL |
+| 1    |
+| 1    |
++------+
+
+ti_mysql> select a0, a1 from test.t where JSON_EXTRACT(a0, \"$.a\") = 1
++-------------------------------------------------+----+
+| a0                                              | a1 |
++-------------------------------------------------+----+
+| {"a": 1}                                        |  8 |
+| {"a": 1, "b": {"key": "k_1", "val": [1, 3, 5]}} | 11 |
+| {"a": 1, "b": {"key": "k_2", "val": [0, 1, 2]}} | 12 |
++-------------------------------------------------+----+
+
+ti_mysql> select a0, a1 from test.t where JSON_EXTRACT(JSON_EXTRACT(a0, \"$.b\"), \"$.key\") = 'k_2'
++-------------------------------------------------+----+
+| a0                                              | a1 |
++-------------------------------------------------+----+
+| {"a": 1, "b": {"key": "k_2", "val": [0, 1, 2]}} | 12 |
++-------------------------------------------------+----+
+
+ti_mysql> update test.t set a0='{\"a\": 1}' where a1 = '-2147483648'
+ti_mysql> update test.t set a0='{\"a\": 2}' where a1 = '2147483647'
+ti_mysql> update test.t set a0=null where a1 = '8'
+ti_mysql> update test.t set a0='{\"a\": 3}' where a1 = '9'
+ti_mysql> update test.t set a0=null where a1 = '10'
+ti_mysql> update test.t set a0=null where a1 = '11'
+ti_mysql> update test.t set a0='{\"a\": 4}' where a1 = '12'
+ti_mysql> alter table test.t add a2 int generated always as (a0 -> '$.a')
+ti_mysql> select a0, a1, a2 from test.t
++----------+-------------+------+
+| a0       | a1          | a2   |
++----------+-------------+------+
+| {"a": 1} | -2147483648 |    1 |
+| {"a": 2} |  2147483647 |    2 |
+| NULL     |           8 | NULL |
+| {"a": 3} |           9 |    3 |
+| NULL     |          10 | NULL |
+| NULL     |          11 | NULL |
+| {"a": 4} |          12 |    4 |
++----------+-------------+------+
+
+ti_mysql> drop table if exists test.t
