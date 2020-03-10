@@ -1,0 +1,133 @@
+# ti.sh my.ti ci/fullstack replica/region_split.test false
+
+# FLASH-957 48. 按 index 均匀切分 region 的表，创建副本
+# FLASH-957 50. 按行均匀分 region 的表，创建副本
+ti_mysql> drop database if exists tpch_1
+ti_func> load_tpch 1 customer false
+
+ti_mysql> SELECT * FROM information_schema.tiflash_replica where TABLE_SCHEMA='tpch_1' and TABLE_NAME='customer'
+
+ti_mysql> SPLIT TABLE tpch_1.customer BETWEEN (0) AND (150000) REGIONS 10
++--------------------+----------------------+
+| TOTAL_SPLIT_REGION | SCATTER_FINISH_RATIO |
++--------------------+----------------------+
+|                 10 |                    1 |
++--------------------+----------------------+
+
+ti_mysql> alter table tpch_1.customer set tiflash replica 1
+ti_func> wait_table tpch_1 customer
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='tpch_1' and TABLE_NAME='customer'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             1 |
++---------------+
+
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+ti_mysql> select count(*) from tpch_1.customer
++----------+
+| count(*) |
++----------+
+|   150000 |
++----------+
+
+ti_mysql> drop database if exists tpch_1
+
+# FLASH-957 49. 按 index 不均匀切分 region 的表，创建副本
+# FLASH-957 51. 按行不均匀分 region 的表，创建副本
+ti_mysql> drop database if exists tpch_1
+ti_func> load_tpch 1 customer false
+
+ti_mysql> SPLIT TABLE tpch_1.customer BY (10000), (30000), (100000), (120000), (140000)
++--------------------+----------------------+
+| TOTAL_SPLIT_REGION | SCATTER_FINISH_RATIO |
++--------------------+----------------------+
+|                  5 |                    1 |
++--------------------+----------------------+
+
+ti_mysql> alter table tpch_1.customer set tiflash replica 1
+ti_func> wait_table tpch_1 customer
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='tpch_1' and TABLE_NAME='customer'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             1 |
++---------------+
+
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+ti_mysql> select count(*) from tpch_1.customer
++----------+
+| count(*) |
++----------+
+|   150000 |
++----------+
+
+ti_mysql> drop database if exists tpch_1
+
+# FLASH-957 52. 创建 tilash 副本后，对原表进行 region 预切分
+ti_mysql> drop database if exists tpch_1
+ti_func> load_tpch 1 customer false
+
+ti_mysql> alter table tpch_1.customer set tiflash replica 1
+ti_func> wait_table tpch_1 customer
+
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='tpch_1' and TABLE_NAME='customer'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             1 |
++---------------+
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+ti_mysql> select count(*) from tpch_1.customer
++----------+
+| count(*) |
++----------+
+|   150000 |
++----------+
+
+ti_mysql> SPLIT TABLE tpch_1.customer BETWEEN (0) AND (150000) REGIONS 10
++--------------------+----------------------+
+| TOTAL_SPLIT_REGION | SCATTER_FINISH_RATIO |
++--------------------+----------------------+
+|                  9 |                    1 |
++--------------------+----------------------+
+
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='tpch_1' and TABLE_NAME='customer'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             1 |
++---------------+
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+ti_mysql> select count(*) from tpch_1.customer
++----------+
+| count(*) |
++----------+
+|   150000 |
++----------+
+
+# FLASH-957 53. 创建 tiflash 副本且未同步完成，对原表进行 region 预切分操作
+ti_mysql> drop database if exists tpch_10
+ti_func> load_tpch 10 customer false
+ti_mysql> alter table tpch_10.customer set tiflash replica 1
+ti_mysql> SPLIT TABLE tpch_10.customer BETWEEN (0) AND (1500000) REGIONS 10
++--------------------+----------------------+
+| TOTAL_SPLIT_REGION | SCATTER_FINISH_RATIO |
++--------------------+----------------------+
+|                 10 |                    1 |
++--------------------+----------------------+
+
+ti_func> wait_table tpch_10 customer
+ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TABLE_SCHEMA='tpch_10' and TABLE_NAME='customer'
++---------------+
+| REPLICA_COUNT |
++---------------+
+|             1 |
++---------------+
+ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
+ti_mysql> select count(*) from tpch_10.customer
++----------+
+| count(*) |
++----------+
+|  1500000 |
++----------+

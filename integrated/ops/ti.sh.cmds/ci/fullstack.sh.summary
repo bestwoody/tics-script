@@ -4,9 +4,10 @@ function load_tpch()
 {
 	local scale="${1}"
 	local table="${2}"
-	local ti_file="${3}"
+	local sync_to_tiflash="${3}"
+	local ti_file="${4}"
 
-	"${integrated}/ops/ti.sh" "${ti_file}" "tpch/load" "${scale}" "${table}"
+	"${integrated}/ops/ti.sh" "${ti_file}" "tpch/load" "${scale}" "${table}" "${sync_to_tiflash}"
 }
 export -f load_tpch
 
@@ -75,7 +76,7 @@ function cmd_ti_fullstatck_run()
 	else
 		local gen_tests="${2}"
 	fi
-		
+
 	if [ -d "${test_cases}" ]; then
 		run_dir "${test_cases}" "${file}" "${here}/fullstack_run.py" "${ti}"
 	elif [ -f "${test_cases}" ]; then

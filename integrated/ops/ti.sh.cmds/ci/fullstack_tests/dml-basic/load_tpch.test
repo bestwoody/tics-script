@@ -1,6 +1,6 @@
 ti_mysql> drop database if exists tpch_0_002
 
-ti_func> load_tpch 0.002 lineitem
+ti_func> load_tpch 0.002 lineitem true
 ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 ti_func> wait_table tpch_0_002 lineitem
 ti_mysql> select count(*) from tpch_0_002.lineitem t
