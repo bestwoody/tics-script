@@ -1,0 +1,87 @@
+#!/bin/bash
+
+function cust_mysql()
+{
+  local query="${1}"
+  local user="${2}"
+  "${ti}" "${file}" mysql "${query}" test false false false "${user}"
+}
+
+function cmd_ti_tidb_privilege()
+{
+  ti="${integrated}/ops/ti.sh"
+  file="${1}"
+  shift 6
+
+  # Init a table with tiflash replica.
+  cust_mysql "drop table if exists test.t" "root"
+  cust_mysql "create table if not exists test.t(col_1 varchar(256) not null)" "root"
+  cust_mysql "insert into test.t values('OK')" "root"
+  cust_mysql "alter table test.t set tiflash replica 1" "root"
+  "${ti}" "${file}" wait/available test t
+
+  # Create users with different privileges.
+  cust_mysql "drop user if exists u_sel; create user u_sel; grant select on test.t to u_sel" "root"
+  cust_mysql "drop user if exists u_ins; create user u_ins; grant insert on test.t to u_ins" "root"
+  cust_mysql "drop user if exists u_up; create user u_up; grant select, update on test.t to u_up" "root"
+  cust_mysql "drop user if exists u_del; create user u_del; grant select, delete on test.t to u_del" "root"
+
+  # Select using u_sel.
+  local r_sel=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; select * from test.t" "u_sel" 2>&1)
+  echo "Result of select using u_sel: ${r_sel}"
+  if [[ "${r_sel}" == *"ERROR"* ]]; then
+    echo "Result of select shouldn't error"
+    exit 1
+  fi
+
+  # Insert using u_ins.
+  local r_ins_u_ins=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; insert into test.t values ('OK 2')" "u_ins" 2>&1)
+  echo "Result of insert using u_ins: ${r_ins_u_ins}"
+  if [[ "${r_ins_u_ins}" == *"ERROR"* ]]; then
+    echo "Result of insert using u_sel shouldn't error"
+    exit 1
+  fi
+
+  # Insert using u_sel.
+  local r_ins_u_sel=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; insert into test.t values ('OK 2')" "u_sel" 2>&1)
+  echo "Result of insert using u_sel: ${r_ins_u_sel}"
+  if [[ "${r_ins_u_sel}" != *"ERROR"* ]]; then
+    echo "Result of insert using u_sel should error"
+    exit 1
+  fi
+
+  # Update using u_up.
+  local r_up_u_up=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; update test.t set col_1='OK 2' where col_1='OK'" "u_up" 2>&1)
+  echo "Result of update using u_up: ${r_up_u_up}"
+  if [[ "${r_up_u_up}" == *"ERROR"* ]]; then
+    echo "Result of update using u_up shouldn't error"
+    exit 1
+  fi
+
+  # Update using u_ins.
+  local r_up_u_ins=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; update test.t set col_1='OK 2' where col_1='OK'" "u_ins" 2>&1)
+  echo "Result of update using u_ins: ${r_up_u_ins}"
+  if [[ "${r_up_u_ins}" != *"ERROR"* ]]; then
+    echo "Result of update using u_ins should error"
+    exit 1
+  fi
+
+  # Delete using u_del.
+  local r_del_u_del=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; delete from test.t where col_1='OK'" "u_del" 2>&1)
+  echo "Result of delete using u_del: ${r_del_u_del}"
+  if [[ "${r_del_u_del}" == *"ERROR"* ]]; then
+    echo "Result of delete using u_del shouldn't error"
+    exit 1
+  fi
+
+  # Delete using u_up.
+  local r_del_u_up=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; delete from test.t where col_1='OK'" "u_up" 2>&1)
+  echo "Result of delete using u_up: ${r_del_u_up}"
+  if [[ "${r_del_u_up}" != *"ERROR"* ]]; then
+    echo "Result of delete using u_up should error"
+    exit 1
+  fi
+}
+
+set -euo pipefail
+cmd_ti_tidb_privilege "${@}"

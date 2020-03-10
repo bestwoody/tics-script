@@ -1,0 +1,2 @@
+run tidb privilege test on cluster
+usage: <cmd> (no args)
