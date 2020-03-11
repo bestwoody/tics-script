@@ -52,6 +52,12 @@ function cmd_ti_schrodinger_bank()
 		local pessimistic="${6}"
 	fi
 
+	if [ -z "${7+x}" ] || [ -z "${7}" ]; then
+		local enable_follower_read="false"
+	else
+		local enable_follower_read="${7}"
+	fi
+
 	local host=`from_mod_get_host "${tidb_mod}"`
 	local dir=`from_mod_get_dir "${tidb_mod}"`
 
@@ -70,6 +76,7 @@ function cmd_ti_schrodinger_bank()
 	echo "Concurrency worker count: ${concurrency}"
 	echo "Enable long-term transactions: ${long_txn}"
 	echo "Use pessimistic transaction: ${pessimistic}"
+	echo "Enable follower read: ${enable_follower_read}"
 	export TIDB_SERVICE="${host}:${port}"
 	"${bin_dir}/bank" \
 		-accounts="${accounts}" \
@@ -78,6 +85,7 @@ function cmd_ti_schrodinger_bank()
 		-concurrency="${concurrency}" \
 		-long-txn="${long_txn}" \
 		-pessimistic="${pessimistic}" \
+		-enable-follower-read="${enable_follower_read}" \
 		1>bank.log 2>&1	
 }
 
