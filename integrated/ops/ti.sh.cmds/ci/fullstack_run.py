@@ -6,6 +6,7 @@ import time
 
 CMD_PREFIX_TI_MYSQL = 'ti_mysql> '
 CMD_PREFIX_TI_MYSQL_COP = 'ti_mysql_cop> '
+CMD_PREFIX_TI_MYSQL_IGNORE_OUTPUT = 'ti_mysql_ignore> '
 CMD_PREFIX_TI_BEELINE = 'ti_beeline> '
 CMD_PREFIX_TI_CH = 'ti_ch> '
 CMD_SHELL_FUNC = 'ti_func> '
@@ -22,6 +23,7 @@ class QueryType:
     ti_ch_tag = "ti_ch"
     ti_mysql_tag = "ti_mysql"
     ti_mysql_cop_tag = "ti_mysql_cop"
+    ti_mysql_ignore_tag = "ti_mysql_ignore"
     func_tag = "func"
     def __init__(self, query_type):
         self.query_type = query_type
@@ -38,6 +40,9 @@ class QueryType:
     def ti_mysql_cop(cls):
         return cls(cls.ti_mysql_cop_tag)
     @classmethod
+    def ti_mysql_ignore(cls):
+        return cls(cls.ti_mysql_ignore_tag)
+    @classmethod
     def func(cls):
         return cls(cls.func_tag)
     def is_ti_beeline(self):
@@ -48,6 +53,8 @@ class QueryType:
         return self.query_type == self.ti_mysql_tag
     def is_ti_mysql_cop(self):
         return self.query_type == self.ti_mysql_cop_tag
+    def is_ti_mysql_ignore(self):
+        return self.query_type == self.ti_mysql_ignore_tag
     def is_func(self):
         return self.query_type == self.func_tag
     def __str__(self):
@@ -85,7 +92,7 @@ class OpsExecutor:
         padding_args = []
         if cmd_type.is_ti_beeline():
             ops_cmd = "beeline"
-        elif cmd_type.is_ti_mysql():
+        elif cmd_type.is_ti_mysql() or cmd_type.is_ti_mysql_ignore():
             ops_cmd = "mysql"
             query_arr = parse_mysql_query_si(query, False)
             query = ";".join(query_arr)
@@ -276,6 +283,8 @@ def matched(outputs, matches, fuzz, query_type):
         return mysql_matched(outputs, matches)
     elif query_type.is_ti_mysql_cop():
         return mysql_cop_matched(outputs, matches)
+    elif query_type.is_ti_mysql_ignore():
+        raise Exception("The result of sql begin with ti_mysql_ignore> should be ignored")
     else:
         raise Exception("Unknown query type", str(query_type))
 
@@ -321,6 +330,16 @@ class Matcher:
             self.outputs = self.executor_ops.exe(self.query_type, self.query)
             self.outputs = map(lambda x: x.strip(), self.outputs)
             self.outputs = filter(lambda x: len(x) != 0, self.outputs)
+            self.extra_outputs = None
+            self.matches = []
+        elif line.startswith(CMD_PREFIX_TI_MYSQL_IGNORE_OUTPUT):
+            if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
+                return False
+            self.query_line_number = line_number
+            self.query = line[len(CMD_PREFIX_TI_MYSQL_IGNORE_OUTPUT):]
+            self.query_type = QueryType.ti_mysql_ignore()
+            self.executor_ops.exe(self.query_type, self.query)
+            self.outputs = []
             self.extra_outputs = None
             self.matches = []
         elif line.startswith(CMD_PREFIX_TI_BEELINE):

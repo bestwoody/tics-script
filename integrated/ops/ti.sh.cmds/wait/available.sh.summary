@@ -18,7 +18,7 @@ function cmd_ti_wait_available()
 	local db="${1}"
 	local table="${2}"
 
-	local timeout='1200'
+	local timeout='600'
 	if [ ! -z "${3+x}" ]; then
 		local timeout="${3}"
 	fi
