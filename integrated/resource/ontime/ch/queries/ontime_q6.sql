@@ -1,0 +1,1 @@
+select carrier, c, c2, c*100/c2 as c3 from ( select carrier, count(*) as c from ontime where depdelay>10 and year>=2000 and year<=2008 group by carrier ) A any inner join ( select carrier, count(*) as c2 from ontime where year>=2000 and year<=2008 group by carrier ) B using (carrier) order by c3 desc;

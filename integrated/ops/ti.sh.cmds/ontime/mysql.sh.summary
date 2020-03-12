@@ -1,0 +1,9 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+source "${here}/_run.sh"
+# tidb-cbo
+cmd_ontime_run_query "mysql" "${integrated}/resource/ontime/ch/queries" "${@}"

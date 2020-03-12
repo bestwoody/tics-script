@@ -1,0 +1,9 @@
+#!/bin/bash
+
+here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+source "${here}/_env.sh"
+auto_error_handle
+
+source "${here}/_run.sh"
+# tidb-tiflash isolation read
+cmd_ontime_run_query "mysql/learner" "${integrated}/resource/ontime/ch/queries" "${@}"
