@@ -40,15 +40,15 @@ function get_and_upload_tiflash_separated()
 	binary2="libtiflash_proxy.tar.gz"
 	binary3="flash_cluster_manager.tgz"
 	tar -zcvf ${z_file} ${file} >/dev/null 2>&1
-	curl --upload-file ./${z_file} ${uplaod_server}/${z_file} ${uplaod_server}/${upload_secret}/${z_file}
+	curl --upload-file ./${z_file} ${upload_server}/${z_file} ${upload_server}/${upload_secret}/${z_file}
 	md5sum ${z_file}
 
 	tar -zcvf ${binary2} libtiflash_proxy.so >/dev/null 2>&1
-	curl --upload-file ./${binary2} ${uplaod_server}/${binary2} ${uplaod_server}/${upload_secret}/${binary2}
+	curl --upload-file ./${binary2} ${upload_server}/${binary2} ${upload_server}/${upload_secret}/${binary2}
 	md5sum "libtiflash_proxy.so"
 
 	tar -zcvf ${binary3} flash_cluster_manager >/dev/null 2>&1
-	curl --upload-file ./${binary3} ${uplaod_server}/${binary3} ${uplaod_server}/${upload_secret}/${binary3}
+	curl --upload-file ./${binary3} ${upload_server}/${binary3} ${upload_server}/${upload_secret}/${binary3}
 	md5sum ${binary3}
 }
 

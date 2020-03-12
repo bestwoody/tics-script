@@ -25,7 +25,7 @@ function get_and_upload_tiflash_merged()
 		exit 1
 	fi
 
-	curl --upload-file ./${z_file} ${uplaod_server}/${z_file} ${uplaod_server}/${upload_secret}/${z_file}
+	curl --upload-file ./${z_file} ${upload_server}/${z_file} ${upload_server}/${upload_secret}/${z_file}
 	md5sum ${z_file}
 }
 

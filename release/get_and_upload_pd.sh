@@ -43,7 +43,7 @@ function get_and_upload_pd()
 	tar -zcvf ${z_file} bin/ >/dev/null 2>&1
 	rm -rf bin
 
-	curl --upload-file ./${z_file} ${uplaod_server}/${z_file} ${uplaod_server}/${upload_secret}/${z_file}
+	curl --upload-file ./${z_file} ${upload_server}/${z_file} ${upload_server}/${upload_secret}/${z_file}
 	md5sum ${z_file}
 }
 

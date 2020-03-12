@@ -43,7 +43,7 @@ function get_and_upload_tidb()
 	rm -rf bin/
 	rm -rf tidb/
 
-	curl --upload-file ./${z_file} ${uplaod_server}/${z_file} ${uplaod_server}/${upload_secret}/${z_file}
+	curl --upload-file ./${z_file} ${upload_server}/${z_file} ${upload_server}/${upload_secret}/${z_file}
 	md5sum ${z_file}
 }
 
