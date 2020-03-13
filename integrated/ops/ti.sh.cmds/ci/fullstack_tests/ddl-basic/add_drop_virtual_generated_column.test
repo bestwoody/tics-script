@@ -1,0 +1,57 @@
+ti_mysql> drop table if exists test.t;
+ti_mysql> create table test.t (a int, b varchar(20), c int as (a * 2) virtual);
+ti_mysql> alter table test.t set tiflash replica 1;
+ti_func> wait_table test t
+
+ti_mysql> insert into test.t values(1, 'str1', default);
+ti_mysql> insert into test.t values(2, 'str2', default);
+
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ * from test.t;
++------+------+------+
+| a    | b    | c    |
++------+------+------+
+|    1 | str1 |    2 |
+|    2 | str2 |    4 |
++------+------+------+
+
+ti_mysql> alter table test.t drop column c;
+ti_func> wait_table test t
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ * from test.t;
++------+------+
+| a    | b    |
++------+------+
+|    1 | str1 |
+|    2 | str2 |
++------+------+
+
+ti_mysql> insert into test.t values(3, 'str3');
+
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ * from test.t;
++------+------+
+| a    | b    |
++------+------+
+|    1 | str1 |
+|    2 | str2 |
+|    3 | str3 |
++------+------+
+
+ti_mysql> alter table test.t add column c int as (a * 3) virtual;
+ti_func> wait_table test t
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ * from test.t;
++------+------+------+
+| a    | b    | c    |
++------+------+------+
+|    1 | str1 |    3 |
+|    2 | str2 |    6 |
+|    3 | str3 |    9 |
++------+------+------+
+
+ti_mysql> delete from test.t where a = 1;
+
+ti_mysql> select /*+ read_from_storage(tiflash[t]) */ * from test.t;
++------+------+------+
+| a    | b    | c    |
++------+------+------+
+|    2 | str2 |    6 |
+|    3 | str3 |    9 |
++------+------+------+
