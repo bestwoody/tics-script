@@ -15,10 +15,10 @@ tispark	4550e82433927cafecbcd3396daabeb6	tispark-assembly-2.3.0-SNAPSHOT.jar	htt
 
 tidb_lightning  5333479ace472c8032f77caca7bab539    tidb-lightning  http://139.219.11.38:8000/aoCNy/tidb-lightning.tar.gz    master  605760d1b2025d1e1a8b7d0c668c74863d7d1271
 tikv_importer   9bfd01af4254235c16417de62d0a27e1    tikv-importer   http://139.219.11.38:8000/13D9G1/tikv-importer.tar.gz    master  ad32bdcd951ae68cf1ea743a651e2bd47198d6df
-cluster_manager	601f35f46a3ae274ab7b02b7f6a253cd	flash_cluster_manager.tgz	http://139.219.11.38:8000/E4A04/flash_cluster_manager.tgz	master	84de6bf8bd0ddd9bccebb49461c81e363f401340
-tiflash	40da81f3c013941b2a87354e01d042de	tiflash	http://139.219.11.38:8000/L0sWZ/tiflash.tar.gz	master	84de6bf8bd0ddd9bccebb49461c81e363f401340
-tiflash_proxy	aa126f8ea92ba820c129b84797f44f14	libtiflash_proxy.so	http://139.219.11.38:8000/Uox3l/libtiflash_proxy.tar.gz	tiflash-proxy-master	faca85218b7320f94bed91d5704bd0d3cc670c66
+cluster_manager	589dc312da1fce825a6aaee6a76ac10c	flash_cluster_manager.tgz	http://139.219.11.38:8000/buUKY/flash_cluster_manager.tgz	master	aeb98b4f33651990d96563b1389bc73faa44567b
+tiflash	4705be79e3dc09af90d7b78506d98c18	tiflash	http://139.219.11.38:8000/5mpBK/tiflash.tar.gz	master	aeb98b4f33651990d96563b1389bc73faa44567b
+tiflash_proxy	a6a00a1c7ba686eb09df6eaafe7bbcd2	libtiflash_proxy.so	http://139.219.11.38:8000/OHIIL/libtiflash_proxy.tar.gz	tiflash-proxy-master	5885ec91490120b66c86fcb7d6aa7c1d4259c735
 
-pd	1abab778f0deb83fd9ad690a1bf79d76	pd-server	http://139.219.11.38:8000/BZFuR/pd-server.tar.gz	master	8ccbcd36d6e4210af69152672797ac716ba947d1
-tikv	6246f6522e975f2bf870044fe07d94d9	tikv-server	http://139.219.11.38:8000/Y7unO/tikv-server.tar.gz	master	5ee4322ce7b9fe375b77de80e4dfd244782e5eb5
-tidb	d9f07da1e878954b5d3ad9ef9104e705	tidb-server	http://139.219.11.38:8000/hEBRb/tidb-server.tar.gz	master	dcb8b3d5ddf091cd1d82616123c4cda9d01747ad
+tikv	1c135f3201b63b37bb2b5397bbe1b71d	tikv-server	http://139.219.11.38:8000/11DL8l/tikv-server.tar.gz	master	9dae1ea1143d74309beab135e7bda4c0a37b4a4a
+pd	7cff3dc36f31e7d32dad86e7f23f8150	pd-server	http://139.219.11.38:8000/dSqfb/pd-server.tar.gz	master	addf27a076dc6d98153389cffd719028b659d764
+tidb	cae17723da45e0bcc82f9ddd354a32fe	tidb-server	http://139.219.11.38:8000/VvF2W/tidb-server.tar.gz	master	cb3a6b86e8ed299e96380e5124a5343f52b535ec
