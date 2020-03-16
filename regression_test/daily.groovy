@@ -1,4 +1,8 @@
 def runDailyIntegrationTest(branch, version, notify) {
+  runDailyIntegrationTest2(branch, version, "", "", "", "", notify)
+}
+
+def runDailyIntegrationTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, notify) {
     taskStartTimeInMillis = System.currentTimeMillis()
 
     def label = "test-tiflash-regression-v11"
@@ -55,17 +59,31 @@ def runDailyIntegrationTest(branch, version, notify) {
                         if(version == "latest") {
                           dir("/home/jenkins/agent/git/tiflash/binary/") {
                               // tidb
-                              def tidb_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tidb/${TIDB_BRANCH}/sha1").trim()
+                              def tidb_sha1 = tidb_commit_hash
+                              if (tidb_sha1 == null || tidb_sha1 == "") {
+                                tidb_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tidb/${TIDB_BRANCH}/sha1").trim()
+                              }
                               sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tidb/${tidb_sha1}/centos7/tidb-server.tar.gz | tar xz"
+
                               // tikv
-                              def tikv_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tikv/${TIKV_BRANCH}/sha1").trim()
+                              def tikv_sha1 = tikv_commit_hash
+                              if (tikv_sha1 == null || tikv_sha1 == "") {
+                                tikv_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tikv/${TIKV_BRANCH}/sha1").trim()
+                              }
                               sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tikv/${tikv_sha1}/centos7/tikv-server.tar.gz | tar xz"
+
                               // pd
-                              def pd_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/pd/${PD_BRANCH}/sha1").trim()
+                              def pd_sha1 = pd_commit_hash
+                              if (pd_sha1 == null || pd_sha1 == "") {
+                                pd_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/pd/${PD_BRANCH}/sha1").trim()
+                              }
                               sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/pd/${pd_sha1}/centos7/pd-server.tar.gz | tar xz"
 
                               // tiflash
-                              def tiflash_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tiflash/${TIFLASH_BRANCH}/sha1").trim()
+                              def tiflash_sha1 = tiflash_commit_hash
+                              if (tiflash_sha1 == null || tiflash_sha1 == "") {
+                                tiflash_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tiflash/${TIFLASH_BRANCH}/sha1").trim()
+                              }
                               sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tiflash/${TIFLASH_BRANCH}/${tiflash_sha1}/centos7/tiflash.tar.gz | tar xz"
 
                               sh """

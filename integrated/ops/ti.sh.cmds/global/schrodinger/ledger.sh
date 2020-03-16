@@ -34,7 +34,7 @@ function cmd_ti_global_schrodinger_ledger()
 	else
 		local dir="${4}"
 	fi
-	
+
 	local ti="${integrated}/ops/ti.sh"
 
 	mkdir -p "${dir}"
@@ -45,6 +45,7 @@ function cmd_ti_global_schrodinger_ledger()
 
 	"${ti}" "${file}" must burn
 	"${ti}" "${file}" run
+	"${ti}" "${file}" ver
 
 	if [ "${enable_region_merge}" == 'true' ]; then
 		"${ti}" "${file}" 'pd/ctl_raw' 'scheduler' 'add' 'random-merge-scheduler' 1>/dev/null 2>&1
