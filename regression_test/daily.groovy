@@ -108,9 +108,19 @@ def runDailyIntegrationTest2(branch, version, tidb_commit_hash, tikv_commit_hash
                                 }
                             } catch (err) {
                                 sh "for f in \$(find /tmp/ti/ci -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
-                                sh "curl --upload-file /tmp/ti/ci/release/pd/pd.log http://139.219.11.38:8000/pd.log http://139.219.11.38:8000/66nb8/pd.log"
-                                sh "curl --upload-file /tmp/ti/ci/release/tikv0/tikv.log http://139.219.11.38:8000/tikv0.log http://139.219.11.38:8000/66nb8/tikv0.log"
-                                sh "curl --upload-file /tmp/ti/ci/release/tikv1/tikv.log http://139.219.11.38:8000/tikv1.log http://139.219.11.38:8000/66nb8/tikv1.log"
+
+                                def filename = "tiflash-daily-test-log-${env.BUILD_NUMBER}"
+                                def filepath = "logs/pingcap/tiflash/${filename}.tar.gz"
+
+                                sh """
+                                  mkdir $filename
+                                  for f in \$(find /tmp/ti/ci -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; cp \$f ${filename}/\${f//\\//_}; done
+                                  ls -all "${filename}"
+                                  tar zcf "${filename}.tar.gz" "${filename}"
+                                  curl -F ${filepath}=@${filename}.tar.gz ${FILE_SERVER_URL}/upload
+                                  echo "Download log file from http://fileserver.pingcap.net/download/${filepath}"
+                                """
+
                                 throw err
                             }
                         }
