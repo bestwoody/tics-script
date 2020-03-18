@@ -4,7 +4,7 @@ function cmd_ti_global_region_leader_transfer()
 {
 	local ti="${integrated}/ops/ti.sh"
 
-	local dir='/tmp/ti/region/transfer'
+	local dir='/tmp/ti/region/leader_transfer'
 	mkdir -p "${dir}"
 	local file="${dir}/transfer.ti"
 	rm -f "${file}"
