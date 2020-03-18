@@ -3,7 +3,7 @@
 # master - 6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 chspark	f983c70d2a09880df5fbd4d61e6bb0dc	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/rZiST/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
 
-pd_ctl	3f762a0e4ff02441db5a71c4fb5b9621	pd-ctl	http://139.219.11.38:8000/10zs84/pd-ctl.tar.gz
+pd_ctl	5efa3d330d0c35bf4ca7fafe6b0036d5	pd-ctl	http://139.219.11.38:8000/uZznk/pd-ctl.tar.gz
 tikv_ctl	eb9f21f34575d6a93ae99bbf57bfec62	tikv-ctl	http://139.219.11.38:8000/ZzOgG/tikv-ctl.tar.gz
 spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
