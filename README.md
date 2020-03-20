@@ -18,8 +18,6 @@ tiflash/integrated> ops/ti.sh my.ti up
 25581
 => tiflash #0 (nodes/4/tiflash)
 25961
-=> rngine #0 (nodes/4/rngine)
-26180
 => spark_m #0 (nodes/4/spark_m)
 26535
 => spark_w #0 (nodes/4/spark_w)
@@ -33,7 +31,6 @@ OK     pd #0 (nodes/4/pd)
 OK     tikv #0 (nodes/4/tikv)
 OK     tidb #0 (nodes/4/tidb)
 OK     tiflash #0 (nodes/4/tiflash)
-OK     rngine #0 (nodes/4/rngine)
 OK     spark_m #0 (nodes/4/spark_m)
 OK     spark_w #0 (nodes/4/spark_w)
 ```

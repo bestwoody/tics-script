@@ -1,2 +1,5 @@
 # name \t bin_name \t path1:path2:...
 #tiflash	tiflash	{integrated}/../storage/build/dbms/src/Server/tiflash:{integrated}/../storage/build_clang/dbms/src/Server/tiflash
+#tikv	tikv-server	[path_to_tikv_binary]
+#pd	pd-server	[path_to_pd_binary]
+#tidb	tidb-server	[path_to_tidb_binary]
