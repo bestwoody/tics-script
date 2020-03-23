@@ -1,0 +1,2 @@
+set txn mode
+usage: <cmd> pessimistic|optimistic

@@ -39,7 +39,15 @@ function ti_cmd_tpcc_run()
 	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
 
 	local ti="${integrated}/ops/ti.sh"
+
 	local sql="set @@global.tidb_txn_mode = '${txn_mode}';"
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" "mysql" "${sql}" 'test' 'false'
+
+	local sql="set @@global.tidb_auto_analyze_start_time = \"00:00 +0000\";"
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" "mysql" "${sql}" 'test' 'false'
+	local sql="set @@global.tidb_auto_analyze_end_time = \"00:01 +0000\";"
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
 		"${ti_file}" "mysql" "${sql}" 'test' 'false'
 

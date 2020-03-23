@@ -10,7 +10,6 @@ function cmd_ti_prop()
 
 	shift 5
 
-
 	echo "${mod_name} #${index} (${dir})"
 	if [ -f "${dir}/proc.info" ]; then
 		cat "${dir}/proc.info" | awk -F '\t' '{print "    "$1": "$2}'

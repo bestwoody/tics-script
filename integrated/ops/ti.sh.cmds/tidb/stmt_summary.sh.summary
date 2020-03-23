@@ -1,0 +1,52 @@
+#!/bin/bash
+
+function cmd_ti_stmt_summary()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd tidb/stmt_summary] usage: <cmd> true|false" >&2
+		return 1
+	fi
+
+	local enabled="${1}"
+	if [ "${enabled}" != 'true' ] && [ "${enabled}" != 'false' ]; then
+		echo "[cmd tidb/stmt_summary] usage: <cmd> true|false" >&2
+		return 1
+	fi
+
+	local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${mod}" ]; then
+		echo "[cmd tidb/stmt_summary] no selected tidb" >&2
+		return 1
+	fi
+
+	if [ "${enabled}" != 'true' ]; then
+		local sql="set @@global.tidb_auto_analyze_start_time = \"00:00 +0000\";"
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${sql}" 'test' 'false'
+		local sql="set @@global.tidb_auto_analyze_end_time = \"00:01 +0000\";"
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${sql}" 'test' 'false'
+	else
+		local sql="set @@global.tidb_auto_analyze_start_time = \"00:01 +0000\";"
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${sql}" 'test' 'false'
+		local sql="set @@global.tidb_auto_analyze_end_time = \"00:00 +0000\";"
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${sql}" 'test' 'false'
+	fi
+
+	local sql="show variables like \"%tidb_auto_analyze_%_time\";"
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${sql}" 'test' 'false' | grep 'auto_analyze' | trim_host
+}
+
+set -euo pipefail
+cmd_ti_stmt_summary "${@}"

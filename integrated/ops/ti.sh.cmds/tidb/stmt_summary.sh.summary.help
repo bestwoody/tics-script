@@ -1,0 +1,2 @@
+enable/disable stmt summary in tidb
+usage: <cmd> true|false

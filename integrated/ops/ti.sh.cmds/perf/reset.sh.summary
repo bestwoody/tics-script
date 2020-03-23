@@ -1,0 +1,20 @@
+#!/bin/bash
+
+function cmd_ti_perf_ready()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'burn'
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'perf/ready'
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+cmd_ti_perf_ready "${@}"

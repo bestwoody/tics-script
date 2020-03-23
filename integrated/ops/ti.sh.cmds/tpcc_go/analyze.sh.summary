@@ -1,0 +1,60 @@
+#!/bin/bash
+
+function cmd_ti_tpcc_analyze()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd tpcc/run] usage: <cmd> [tables=all]" >&2
+		return 1
+	fi
+
+	local table='all'
+	if [ ! -z "${1+x}" ]; then
+		local table="${1}"
+	fi
+
+	local ti="${integrated}/ops/ti.sh"
+	local db="test"
+
+	if [ "${table}" == 'all' ]; then
+		tables=(
+			customer
+			district
+			history
+			item
+			new_order
+			orders
+			order_line
+			stock
+			warehouse
+		)
+		for table in ${tables[@]}; do
+		{
+			echo "=> ${db}.${table} analyze begin"
+			local sql="analyze table ${db}.${table}"
+			"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+				"${ti_file}" "mysql" "${sql}" 'test' 'false' | trim_host
+			echo "=> ${db}.${table} analyze done"
+		} &
+		done
+		wait
+	else
+		echo "=> ${db}.${table} analyze begin"
+		local sql="analyze table ${db}.${table}"
+		"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+			"${ti_file}" "mysql" "${sql}" 'test' 'false' | trim_host
+		echo "=> ${db}.${table} analyze done"
+	fi
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+cmd_ti_tpcc_analyze "${@}"

@@ -82,12 +82,12 @@ function from_mods_get_mod()
 	local index_base_1=$((index + 1))
 	local mod=`echo "${instances}" | head -n "${index_base_1}" | tail -n 1`
 	# TODO: check the meaning of the following fix
-	# "${mod_index}" is mod's index in ti_file 
+	# "${mod_index}" is mod's index in ti_file
 	# "${index}" is mod's index in "${mods}"
 	# So "${mod_index}" cannot be compared with "${index}"
 	# local mod_index=`echo "${mod}" | awk '{print $1}'`
-	# if [ "${mod_index}" == "${index}" ]; then	
-	# 	echo "${mod}"	
+	# if [ "${mod_index}" == "${index}" ]; then
+	# 	echo "${mod}"
 	# fi
 	echo "${mod}"
 }

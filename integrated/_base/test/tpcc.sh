@@ -33,9 +33,11 @@ function _gen_tpcc_prop()
 	local db="tpcc_${warehouses}"
 	local prop_file="${benchmark_dir}/props_${warehouses}.mysql"
 
+	local tidb_addr="${tidb_host}:${tidb_port}"
+
 	echo "db=mysql" > "${prop_file}"
 	echo "driver=com.mysql.jdbc.Driver" >> "${prop_file}"
-	echo "conn=jdbc:mysql://${tidb_host}:${tidb_port}/${db}?useSSL=false&useServerPrepStmts=true&useConfigs=maxPerformance" >> \
+	echo "conn=jdbc:mysql://${tidb_addr}/${db}?useSSL=false&useServerPrepStmts=true&useConfigs=maxPerformance" >> \
 		"${prop_file}"
 	echo "user=root" >> "${prop_file}"
 	echo "password=" >> "${prop_file}"
@@ -46,11 +48,13 @@ function _gen_tpcc_prop()
 	echo "runMins=${minutes}" >> "${prop_file}"
 	echo "limitTxnsPerMin=0" >> "${prop_file}"
 	echo "terminalWarehouseFixed=true" >> "${prop_file}"
+
 	echo "newOrderWeight=45" >> "${prop_file}"
 	echo "paymentWeight=43" >> "${prop_file}"
 	echo "orderStatusWeight=4" >> "${prop_file}"
 	echo "deliveryWeight=4" >> "${prop_file}"
 	echo "stockLevelWeight=4" >> "${prop_file}"
+
 	echo "resultDirectory=my_result_%tY-%tm-%td_%tH%tM%tS" >> "${prop_file}"
 }
 export -f _gen_tpcc_prop
@@ -68,7 +72,8 @@ function _run_tpcc()
 
 	(
 		cd "${benchmark_dir}"
-		./runBenchmark.sh "${prop_file}" 2>&1 | grep -v 'This is deprecated' 1>"./test.log"
+		echo "TPCC-BEGIN ${start_time}" >> ./all.log
+		./runBenchmark.sh "${prop_file}" 2>&1 | grep -v 'This is deprecated' | tee -a ./all.log >"./test.log"
 	)
 	wait
 
@@ -223,6 +228,7 @@ function tpcc_run()
 		local tag='-'
 	fi
 
+	_fetch_tpcc_repo "${entry_dir}"
 	local benchmark_dir="${entry_dir}/benchmarksql/run"
 	_gen_tpcc_prop "${tidb_host}" "${tidb_port}" "${benchmark_dir}" "${warehouses}" "${minutes}" "${terminals}" "${load_workers}"
 

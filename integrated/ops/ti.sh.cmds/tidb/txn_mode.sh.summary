@@ -1,0 +1,40 @@
+#!/bin/bash
+
+function cmd_ti_txn_mode()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd tidb/txn_mode] usage: <cmd> optimistic|pessimistic" >&2
+		return 1
+	fi
+
+	local mode="${1}"
+	if [ "${mode}" != 'pessimistic' ] && [ "${mode}" != 'optimistic' ]; then
+		echo "[cmd tidb/txn_mode] usage: <cmd> optimistic|pessimistic" >&2
+		return 1
+	fi
+
+	local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${mod}" ]; then
+		echo "[cmd tidb/txn_mode] no selected tidb" >&2
+		return 1
+	fi
+
+	local sql="set @@global.tidb_txn_mode = '${mode}';"
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${sql}" 'test' 'false'
+
+	local sql="show variables like \"tidb_txn_mode\";"
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${sql}" 'test' 'false' | grep 'txn_mode' | trim_host
+}
+
+set -euo pipefail
+cmd_ti_txn_mode "${@}"

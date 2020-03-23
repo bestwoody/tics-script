@@ -1,0 +1,2 @@
+set gc interval of tidb
+usage: <cmd> interval-string(eg: 3s, 10m)

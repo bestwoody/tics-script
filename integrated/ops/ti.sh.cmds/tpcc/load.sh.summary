@@ -33,7 +33,7 @@ function ti_cmd_tpcc_load()
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
 		"${ti_file}" "mysql" "drop database if exists ${db}" 'test' 'false'
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		"${ti_file}" "mysql" "create database ${db}" 'test' 'false'
+		"${ti_file}" "mysql" "create database if not exists ${db}" 'test' 'false'
 
 	tpcc_load "${entry_dir}" "${tidb_host}" "${tidb_port}" "${db}" "${warehouses}" "${minutes}" "${terminals}" "${load_workers}"
 }

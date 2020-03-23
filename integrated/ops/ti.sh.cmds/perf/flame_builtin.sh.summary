@@ -1,0 +1,63 @@
+#!/bin/bash
+
+function cmd_ti_flame_builtin()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local sampling_sec="${1}"
+	local result_dir="${2}"
+
+	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
+	source "${here}"/_env.sh
+	auto_error_handle
+
+	if [ -z "${sampling_sec}" ]; then
+		local sampling_sec='20'
+	fi
+	if [ -z "${result_dir}" ]; then
+		local result_dir="${ti_file}.data/flame_builtin"
+	fi
+	mkdir -p "${result_dir}"
+
+	local tidbs=`from_mods_by_type "${mods}" 'tidb'`
+	echo "${tidbs}" | while read mod; do
+	{
+		local name='tidb'
+		local index=`from_mod_get_index "${mod}"`
+		local host=`from_mod_get_host "${mod}"`
+		local dir=`from_mod_get_dir "${mod}"`
+		local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'status_port'`
+
+		local file="${result_dir}/${name}_${index}.cpu.pb.gz"
+		echo "=> sampling: ${name} #${index} ${dir}"
+		curl -s "http://${host}:${port}/debug/pprof/profile?seconds=${sampling_sec}" > "${file}"
+		echo "   ${name} #${index} result: ${file}"
+	}
+	done
+
+	local tikvs=`from_mods_by_type "${mods}" 'tikv'`
+	echo "${tikvs}" | while read mod; do
+	{
+		local name='tikv'
+		local index=`from_mod_get_index "${mod}"`
+		local host=`from_mod_get_host "${mod}"`
+		local dir=`from_mod_get_dir "${mod}"`
+		local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'status_port'`
+
+		local file="${result_dir}/${name}_${index}.cpu.pb.gz"
+		echo "=> sampling: ${name} #${index} ${dir}"
+		curl -s -H "Content-Type: application/protobuf" \
+				"http://${host}:${port}/debug/pprof/profile?seconds=${sampling_sec}" > "${file}"
+		echo "   ${name} #${index} result: ${file}"
+	}
+	done
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+cmd_ti_flame_builtin "${@}"
