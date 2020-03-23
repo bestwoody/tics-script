@@ -30,9 +30,18 @@ function cmd_ti_global_schrodinger_ledger()
 		fi
 	fi
 	if [ -z "${4+x}" ] || [ -z "${4}" ]; then
+		local pessimistic='false'
+	else
+		local pessimistic="${4}"
+		if [ "${pessimistic}" != 'false' ] && [ "${pessimistic}" != 'true' ]; then
+			echo "[cmd schrodinger/bank] value of pessimistic should be true or false" >&2
+			return 1
+		fi
+	fi
+	if [ -z "${5+x}" ] || [ -z "${5}" ]; then
 		local dir='/tmp/ti/schrodinger/ledger'
 	else
-		local dir="${4}"
+		local dir="${5}"
 	fi
 
 	local ti="${integrated}/ops/ti.sh"
@@ -60,8 +69,9 @@ function cmd_ti_global_schrodinger_ledger()
 	echo "Enable region merge: ${enable_region_merge}"
 	echo "Enable shuffle region: ${enable_shuffle_region}"
 	echo "Enable shuffle leader: ${enable_shuffle_leader}"
+	echo "Pessimistic: ${pessimistic}"
 
-	"${ti}" "${file}" schrodinger/ledger
+	"${ti}" "${file}" schrodinger/ledger "" "" "" "${pessimistic}"
 
 	print_hhr
 	echo 'schrodinger/ledger FINISHED'

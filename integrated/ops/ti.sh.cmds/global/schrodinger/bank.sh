@@ -30,9 +30,27 @@ function cmd_ti_global_schrodinger_bank()
 		fi
 	fi
 	if [ -z "${4+x}" ] || [ -z "${4}" ]; then
+		local pessimistic='false'
+	else
+		local pessimistic="${4}"
+		if [ "${pessimistic}" != 'false' ] && [ "${pessimistic}" != 'true' ]; then
+			echo "[cmd schrodinger/bank] value of pessimistic should be true or false" >&2
+			return 1
+		fi
+	fi
+	if [ -z "${5+x}" ] || [ -z "${5}" ]; then
+		local enable_follower_read='false'
+	else
+		local enable_follower_read="${5}"
+		if [ "${enable_follower_read}" != 'false' ] && [ "${enable_follower_read}" != 'true' ]; then
+			echo "[cmd schrodinger/bank] value of enable_follower_read should be true or false" >&2
+			return 1
+		fi
+	fi
+	if [ -z "${6+x}" ] || [ -z "${6}" ]; then
 		local dir='/tmp/ti/schrodinger/bank'
 	else
-		local dir="${4}"
+		local dir="${6}"
 	fi
 
 	local ti="${integrated}/ops/ti.sh"
@@ -60,8 +78,10 @@ function cmd_ti_global_schrodinger_bank()
 	echo "Enable region merge: ${enable_region_merge}"
 	echo "Enable shuffle region: ${enable_shuffle_region}"
 	echo "Enable shuffle leader: ${enable_shuffle_leader}"
+	echo "Pessimistic: ${pessimistic}"
+	echo "Enable follower read: ${enable_follower_read}"
 
-	"${ti}" "${file}" schrodinger/bank
+	"${ti}" "${file}" schrodinger/bank "" "" "" "" "" "${pessimistic}" "${enable_follower_read}"
 
 	print_hhr
 	echo 'schrodinger/bank FINISHED'
