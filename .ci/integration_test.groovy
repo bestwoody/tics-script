@@ -18,6 +18,15 @@ catchError {
         return params.tidbBranch ?: params.ghprbTargetBranch ?: 'master'
     }).call()
 
+    def storageEngine = ({
+        def m = params.ghprbCommentBody =~ /storage_engine\s*=\s*([^\s\\]+)(\s|\\|$)/
+        if (m) {
+            return "${m.group(1)}"
+        } else {
+            return ""
+        }
+    }).call()
+
     echo "ticsTag=${ticsTag} tidbBranch=${tidbBranch} ghprbTargetBranch=${params.ghprbTargetBranch} ghprbCommentBody=${params.ghprbCommentBody}"
 
     def tasks = {}
@@ -58,6 +67,13 @@ catchError {
                     dir("tiflash/integrated") {
                         stage("OPS TI Test") {
                             container("docker-ops-ci") {
+                              if(storageEngine != null && storageEngine != "") {
+                                  sh "ls -all"
+
+                                  sh "sed -i 's/storage_engine = \\\"dt\\\"/storage_engine = \\\"${storageEngine}\\\"/' conf/tiflash/config.toml"
+
+                                  sh "cat conf/tiflash/config.toml"
+                                }
                                 try {
                                     timeout(120) {
                                         sh "tests/ci/jenkins.sh"
@@ -104,7 +120,6 @@ catchError {
                     dir("tiflash/tests/maven") {
                         stage("Test") {
                             container("docker") {
-
                                 def firstTrial = true
                                 retry(20) {
                                     if (firstTrial) {
@@ -115,6 +130,10 @@ catchError {
                                     sh "docker pull hub.pingcap.net/tiflash/tics:$ticsTag"
                                 }
 
+                                if(storageEngine != null && storageEngine != "") {
+                                  sh "sed -i 's/\\\tstorage_engine = \\\"dt\\\"/\\\tstorage_engine = \\\"${storageEngine}\\\"/' config/tics.toml"
+                                  sh "cat config/tics.toml"
+                                }
                                 try {
                                     sh "TAG=$ticsTag BRANCH=$tidbBranch sh -xe run.sh"
                                 } catch(e) {

@@ -41,5 +41,5 @@ runAsDaemon = true
 kvstore_path = "{tiflash_dir}/kvstore"
 pd_addr = "{tiflash_pd_addr}"
 ignore_databases = "system,default"
-storage_engine = "tmt"
+storage_engine = "dt"
 

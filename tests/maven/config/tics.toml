@@ -17,3 +17,4 @@ interserver_http_port = 9009
 [application]
 	runAsDaemon = true
 [raft]
+	storage_engine = "dt"
