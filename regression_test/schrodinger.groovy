@@ -111,10 +111,12 @@ def runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_
                             } catch (err) {
                                 def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(0, BigDecimal.ROUND_HALF_UP)
                                 if (duration < Integer.parseInt(maxRunTime)) {
-                                    sh "for f in \$(find . -name '*.log'); do echo \"LOG: \$f\"; tail -500 \$f; done"
                                     throw err
                                 }
                             }
+
+                            sh "for f in \$(find . -name '*.log'); do echo \"LOG: \$f\"; tail -500 \$f; done"
+                            sh "for f in \$(find /tmp/ti/schrodinger -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
                         }
                     }
                 }
