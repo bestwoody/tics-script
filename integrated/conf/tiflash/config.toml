@@ -28,7 +28,7 @@ config = "{tiflash_dir}/conf/proxy.toml"
 log-file = "{tiflash_dir}/log/proxy.log"
 
 [logger]
-level = "trace"
+level = "debug"
 log = "{tiflash_dir}/log/server.log"
 errorlog = "{tiflash_dir}/log/error.log"
 size = "500M"
