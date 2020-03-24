@@ -1,0 +1,2 @@
+sqllogic test(from tidb-test)
+usage: <cmd> (no args)

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+function download_test_file()
+{
+	local conf_file="${1}"
+	local url_name="${2}"
+	local target_dir="${3}"
+	if [ -z "${conf_file}" ] || [ -z "${url_name}" ] || [ -z "${target_dir}" ]; then
+		echo "[func download_test_file] usage: <func> conf_file url_name target_dir" >&2
+		return 1
+	fi
+	local file_url=`cross_platform_get_value "${conf_file}" "${url_name}"`
+
+	mkdir -p "${target_dir}"
+	local download_path="${target_dir}/randgen_file.`date +%s`.${RANDOM}"
+	if [ ! -f "${target_dir}/randgen_file.tar.gz" ]; then
+		wget --quiet -nd "${file_url}" -O "${download_path}"
+		mv "${download_path}" "${target_dir}/randgen_file.tar.gz"
+	fi
+	if [ ! -d "${target_dir}/randgen_file" ]; then
+		tar -zxf "${target_dir}/randgen_file.tar.gz" -C "${target_dir}"
+	fi
+}
+
+function cmd_ti_tidb_test_randgen()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${tidb_mod}" ]; then
+		echo "[cmd tidb/test/randgen] no selected tidb" >&2
+		return 1
+	fi
+
+	local host=`from_mod_get_host "${tidb_mod}"`
+	local dir=`from_mod_get_dir "${tidb_mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tidb_port'`
+
+	local bin_dir="/tmp/ti/master/bins"
+	local test_file_path="${integrated}/resource/tidb_test"
+	# TODO: remove hardcode file path
+	local conf_file="${integrated}/conf/tools.kv"
+	local binary_url=`cross_platform_get_value "${conf_file}" "randgen_url"`
+	echo "Downloading test binary..."
+	download_test_binary "${binary_url}" "randgen_test" "${bin_dir}"
+	echo "Downloading test file..."
+	download_test_file "${conf_file}" "randgen_file_url" "${test_file_path}"
+	echo "Start to run randgen test..."
+	"${bin_dir}/randgen_test" \
+		--host="${host}" \
+		--port="${port}" \
+		--log-level=info \
+		--test-file-dir="${test_file_path}/randgen_file" \
+		1>randgen.log 2>&1	
+}
+
+set -euo pipefail
+cmd_ti_tidb_test_randgen "${@}"

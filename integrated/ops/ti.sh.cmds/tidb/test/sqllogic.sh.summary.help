@@ -1,0 +1,2 @@
+run sqllogic test(from tidb-test) on tiflash cluster
+usage: <cmd>
