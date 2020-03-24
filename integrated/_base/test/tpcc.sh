@@ -132,16 +132,16 @@ function tpcc_load()
 	local tidb_host="${2}"
 	local tidb_port="${3}"
 
-	if [ ! -z "${5+x}" ]; then
-		local warehouses="${5}"
-	else
-		local warehouses='1'
-	fi
-
 	if [ ! -z "${4+x}" ]; then
 		local db="${4}"
 	else
 		local db="tpcc_${warehouses}"
+	fi
+
+	if [ ! -z "${5+x}" ]; then
+		local warehouses="${5}"
+	else
+		local warehouses='1'
 	fi
 
 	if [ ! -z "${6+x}" ]; then

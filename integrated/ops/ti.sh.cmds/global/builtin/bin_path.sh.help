@@ -1,0 +1,3 @@
+setup ti.sh builtin var DEFAULT_BIN_PATH, this could override the path in conf/bin.paths
+without any args, the cmd shows current path
+usage: <cmd> [path]

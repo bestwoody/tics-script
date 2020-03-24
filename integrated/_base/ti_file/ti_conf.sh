@@ -57,6 +57,13 @@ function cp_bin_to_dir_from_paths()
 	local entry_str=`cat "${bin_paths_file}" | { grep "^${name}[[:blank:]]" || test $? = 1; }`
 
 	local bin_name=`echo "${entry_str}" | awk '{print $2}'`
+	if [ ! -z "${DEFAULT_BIN_PATH+x}" ] && [ -f "${DEFAULT_BIN_PATH}/${bin_name}" ]; then
+		cp_when_diff "${DEFAULT_BIN_PATH}/${bin_name}" "${cache_dir}/${bin_name}"
+		cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+		echo 'true'
+		return
+	fi
+
 	local paths_str=`echo "${entry_str}" | awk '{print $3}'`
 	local found="false"
 	if [ ! -z "${paths_str}" ]; then

@@ -11,11 +11,12 @@ function cmd_ti_tpcc_count()
 	shift 6
 
 	if [ -z "${1+x}" ]; then
-		echo "[cmd tpcc/run] usage: <cmd> warehouses [tables=all]" >&2
+		echo "[cmd tpcc/count] usage: <cmd> warehouses [tables=all]" >&2
 		return 1
 	fi
 
 	local warehouses="${1}"
+
 	local table='all'
 	if [ ! -z "${2+x}" ]; then
 		local table="${2}"

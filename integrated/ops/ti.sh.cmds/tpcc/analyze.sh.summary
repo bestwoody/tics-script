@@ -11,7 +11,7 @@ function cmd_ti_tpcc_analyze()
 	shift 6
 
 	if [ -z "${1+x}" ]; then
-		echo "[cmd tpcc/run] usage: <cmd> warehouses [tables=all]" >&2
+		echo "[cmd tpcc/analyze] usage: <cmd> warehouses [tables=all]" >&2
 		return 1
 	fi
 

@@ -10,11 +10,6 @@ function cmd_ti_tpcc_analyze()
 	local mods="${6}"
 	shift 6
 
-	if [ -z "${1+x}" ]; then
-		echo "[cmd tpcc/run] usage: <cmd> [tables=all]" >&2
-		return 1
-	fi
-
 	local table='all'
 	if [ ! -z "${1+x}" ]; then
 		local table="${1}"

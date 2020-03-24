@@ -23,3 +23,11 @@ function trim_space()
 	sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]]*$//'
 }
 export -f trim_space
+
+function log_ts()
+{
+	while read line; do
+		echo "[`date +%d-%T`] ${line}"
+	done
+}
+export -f log_ts

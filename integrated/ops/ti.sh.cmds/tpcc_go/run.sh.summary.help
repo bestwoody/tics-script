@@ -1,0 +1,2 @@
+run tpcc benchmark in tidb using go-tpc
+usage: <cmd> warehouses threads

@@ -1,0 +1,2 @@
+load tpcc data to tidb using go-tpc
+usage: <cmd> warehouses threads
