@@ -1,0 +1,33 @@
+ti_mysql> drop table if exists test.t
+ti_func> reload_config tidb alter-primary-key false
+ti_mysql> create table test.t (a int primary key, b varchar(10))
+ti_func> reload_config tidb alter-primary-key true
+ti_mysql> alter table test.t set tiflash replica 1
+ti_mysql> insert into test.t values(1, 'b1')
+ti_mysql> insert into test.t values(2, 'b2')
+
+ti_func> wait_table test t
+
+ti_mysql> select * from test.t
++---+------+
+| a | b    |
++---+------+
+| 1 | b1   |
+| 2 | b2   |
++---+------+
+
+ti_mysql> alter table test.t drop primary key
+ERROR 8200 (HY000) at line 1: Unsupported drop primary key when the table's pkIsHandle is true
+
+ti_mysql> insert into test.t values(3, 'b3')
+
+ti_func> wait_table test t
+
+ti_mysql> select * from test.t
++---+------+
+| a | b    |
++---+------+
+| 1 | b1   |
+| 2 | b2   |
+| 3 | b3   |
++---+------+

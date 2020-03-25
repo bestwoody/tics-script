@@ -28,6 +28,17 @@ function wait_table()
 }
 export -f wait_table
 
+function reload_config()
+{
+	local module="${1}"
+	local key="${2}"
+	local value="${3}"
+	local ti_file="${4}"
+	sed -i "s/^\(${key} =\).*$/\1 ${value}/g" "${integrated}/conf/${module}.toml" 
+	"${integrated}/ops/ti.sh" -m "${module}" "${ti_file}" stop ":" up
+}
+export -f reload_config
+
 function run_file()
 {
 	local target="${1}"
