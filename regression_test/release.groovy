@@ -67,7 +67,7 @@ def runReleaseIntegrationTest(branch, version, tidb_commit_hash, tikv_commit_has
                 "schrodinger/ledger Test": {
                     schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/ledger", maxRunTime, notify)
                 },
-                "schrodinger/ledger Test": {
+                "schrodinger/sqllogic Test": {
                     schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/sqllogic", maxRunTime, notify)
                 },
                 "schrodinger/ddl Test": {
