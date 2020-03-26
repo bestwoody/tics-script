@@ -15,8 +15,7 @@ ti_mysql> SELECT * FROM test.person WHERE city = 'Beijing';
 
 ti_mysql> alter table test.person set tiflash replica 1
 ti_func> wait_table test person
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
-ti_mysql> SELECT * FROM test.person WHERE city = 'Beijing';
+ti_mysql> tiflash SELECT * FROM test.person WHERE city = 'Beijing';
 +-------+---------------------+---------+
 | name  | address_info        | city    |
 +-------+---------------------+---------+

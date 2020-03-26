@@ -20,8 +20,6 @@ ti_mysql> select available from information_schema.tiflash_replica where table_s
 |         1 |
 +-----------+
 
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
-
 ti_mysql> insert into test.employees(fname, lname, store_id, department_id) values
 	('Bob', 'Taylor', 3, 2), ('Frank', 'Williams', 1, 2),
 	('Ellen', 'Johnson', 3, 4), ('Jim', 'Smith', 2, 4),
@@ -33,7 +31,7 @@ ti_mysql> insert into test.employees(fname, lname, store_id, department_id) valu
 	('Barbara', 'Brown', 2, 3), ('Alice', 'Rogers', 2, 2),
 	('Mark', 'Morgan', 3, 3), ('Karen', 'Cole', 3, 2)
 
-ti_mysql> select * from test.employees
+ti_mysql> tiflash select * from test.employees
 +------+---------+----------+----------+---------------+
 | id   | fname   | lname    | store_id | department_id |
 +------+---------+----------+----------+---------------+
@@ -57,9 +55,9 @@ ti_mysql> select * from test.employees
 | NULL | Karen   | Cole     |        3 |             2 |
 +------+---------+----------+----------+---------------+
 
-ti_mysql> select * from test.employees partition (p0);
+ti_mysql> tiflash select * from test.employees partition (p0);
 
-ti_mysql> select * from test.employees partition (p1);
+ti_mysql> tiflash select * from test.employees partition (p1);
 +------+--------+----------+----------+---------------+
 | id   | fname  | lname    | store_id | department_id |
 +------+--------+----------+----------+---------------+
@@ -70,7 +68,7 @@ ti_mysql> select * from test.employees partition (p1);
 | NULL | Howard | Andrews  |        1 |             2 |
 +------+--------+----------+----------+---------------+
 
-ti_mysql> select * from test.employees partition (p2);
+ti_mysql> tiflash select * from test.employees partition (p2);
 +------+---------+--------+----------+---------------+
 | id   | fname   | lname  | store_id | department_id |
 +------+---------+--------+----------+---------------+
@@ -82,7 +80,7 @@ ti_mysql> select * from test.employees partition (p2);
 | NULL | Alice   | Rogers |        2 |             2 |
 +------+---------+--------+----------+---------------+
 
-ti_mysql> select * from test.employees partition (p3);
+ti_mysql> tiflash select * from test.employees partition (p3);
 +------+-------+----------+----------+---------------+
 | id   | fname | lname    | store_id | department_id |
 +------+-------+----------+----------+---------------+

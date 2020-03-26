@@ -8,7 +8,7 @@ ti_mysql> insert into test.t values(2, 'b2')
 
 ti_func> wait_table test t
 
-ti_mysql> select * from test.t
+ti_mysql> tiflash select * from test.t
 +---+------+
 | a | b    |
 +---+------+
@@ -23,7 +23,7 @@ ti_mysql> insert into test.t values(3, 'b3')
 
 ti_func> wait_table test t
 
-ti_mysql> select * from test.t
+ti_mysql> tiflash select * from test.t
 +---+------+
 | a | b    |
 +---+------+

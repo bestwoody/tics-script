@@ -18,8 +18,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 |             1 |
 +---------------+
 
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
-ti_mysql> select count(*) from tpch_1.customer
+ti_mysql> tiflash select count(*) from tpch_1.customer
 +----------+
 | count(*) |
 +----------+
@@ -44,8 +43,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 |             1 |
 +---------------+
 
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
-ti_mysql> select count(*) from tpch_1.customer
+ti_mysql> tiflash select count(*) from tpch_1.customer
 +----------+
 | count(*) |
 +----------+
@@ -67,8 +65,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 +---------------+
 |             1 |
 +---------------+
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
-ti_mysql> select count(*) from tpch_1.customer
+ti_mysql> tiflash select count(*) from tpch_1.customer
 +----------+
 | count(*) |
 +----------+
@@ -83,8 +80,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 +---------------+
 |             1 |
 +---------------+
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
-ti_mysql> select count(*) from tpch_1.customer
+ti_mysql> tiflash select count(*) from tpch_1.customer
 +----------+
 | count(*) |
 +----------+
@@ -104,8 +100,7 @@ ti_mysql> SELECT REPLICA_COUNT FROM information_schema.tiflash_replica where TAB
 +---------------+
 |             1 |
 +---------------+
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
-ti_mysql> select count(*) from tpch_1.customer
+ti_mysql> tiflash select count(*) from tpch_1.customer
 +----------+
 | count(*) |
 +----------+

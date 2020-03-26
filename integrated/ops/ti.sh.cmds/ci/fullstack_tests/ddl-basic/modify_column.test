@@ -1,12 +1,11 @@
 ti_mysql> drop table if exists test.t
 ti_mysql> create table if not exists test.t(c1 varchar(256), c2 int)
 ti_mysql> alter table test.t set tiflash replica 1
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 ti_mysql> insert into test.t values('Hello world', 666)
 ti_mysql> insert into test.t values('Hello world', 666)
 ti_func> wait_table test t
 
-ti_mysql> select c1, c2 from test.t
+ti_mysql> tiflash select c1, c2 from test.t
 +-------------+------+
 | c1          | c2   |
 +-------------+------+
@@ -16,7 +15,7 @@ ti_mysql> select c1, c2 from test.t
 
 ti_mysql> alter table test.t modify column c2 bigint;
 
-ti_mysql> select c1, c2 from test.t
+ti_mysql> tiflash select c1, c2 from test.t
 +-------------+------+
 | c1          | c2   |
 +-------------+------+
@@ -27,7 +26,7 @@ ti_mysql> select c1, c2 from test.t
 ti_mysql> insert into test.t values('Hello world', 4611686018427387904)
 ti_mysql> insert into test.t values('Hello world', -4611686018427387904)
 
-ti_mysql> select c1, c2 from test.t
+ti_mysql> tiflash select c1, c2 from test.t
 +-------------+----------------------+
 | c1          | c2                   |
 +-------------+----------------------+

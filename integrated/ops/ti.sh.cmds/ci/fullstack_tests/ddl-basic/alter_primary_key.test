@@ -10,7 +10,7 @@ ERROR 1062 (23000) at line 1: Duplicate entry '1' for key 'PRIMARY'
 
 ti_func> wait_table test t
 
-ti_mysql> select * from test.t
+ti_mysql> tiflash select * from test.t
 +---+------+
 | a | b    |
 +---+------+
@@ -23,7 +23,7 @@ ti_mysql> insert into test.t values(1, 'abc3')
 
 ti_func> wait_table test t
 
-ti_mysql> select * from test.t
+ti_mysql> tiflash select * from test.t
 +---+------+
 | a | b    |
 +---+------+
@@ -45,7 +45,7 @@ ERROR 1062 (23000) at line 1: Duplicate entry '1' for key 'PRIMARY'
 
 ti_func> wait_table test t
 
-ti_mysql> select * from test.t
+ti_mysql> tiflash select * from test.t
 +---+------+
 | a | b    |
 +---+------+

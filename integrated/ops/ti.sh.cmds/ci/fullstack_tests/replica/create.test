@@ -43,8 +43,7 @@ ti_mysql> select available from information_schema.tiflash_replica where table_s
 |         1 |
 +-----------+
 
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
-ti_mysql> select count(*) from test.t
+ti_mysql> tiflash select count(*) from test.t
 +----------+
 | count(*) |
 +----------+

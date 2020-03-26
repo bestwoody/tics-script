@@ -34,7 +34,11 @@ function reload_config()
 	local key="${2}"
 	local value="${3}"
 	local ti_file="${4}"
-	sed -i "s/^\(${key} =\).*$/\1 ${value}/g" "${integrated}/conf/${module}.toml" 
+	if [ `uname` == "Darwin" ]; then
+		sed -i '' "s/^\(${key} =\).*$/\1 ${value}/g" "${integrated}/conf/${module}.toml"
+	else
+		sed -i "s/^\(${key} =\).*$/\1 ${value}/g" "${integrated}/conf/${module}.toml"
+	fi
 	"${integrated}/ops/ti.sh" -m "${module}" "${ti_file}" stop ":" up
 }
 export -f reload_config

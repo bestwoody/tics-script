@@ -517,7 +517,6 @@ ti_mysql> create table if not exists test.t (
     )
 
 ti_mysql> alter table test.t set tiflash replica 1
-ti_mysql> set @@session.tidb_isolation_read_engines='tiflash'
 
 ti_mysql> insert into test.t(i) values(1)
 ti_mysql> insert into test.t values(2,
@@ -1036,7 +1035,7 @@ ti_mysql> insert into test.t values(2,
 
 ti_func> wait_table test t
 
-ti_mysql> select count(*) from test.t
+ti_mysql> tiflash select count(*) from test.t
 +----------+
 | count(*) |
 +----------+
