@@ -127,7 +127,7 @@ catchError {
                                     } else {
                                         sleep time: 5, unit: "SECONDS"
                                     }
-                                    sh "docker pull hub.pingcap.net/tiflash/tics:$ticsTag"
+                                    sh "docker pull hub.pingcap.net/tiflash/tiflash:$ticsTag"
                                 }
 
                                 if(storageEngine != null && storageEngine != "") {

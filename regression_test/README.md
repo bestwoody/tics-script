@@ -30,7 +30,7 @@ mkdir binary
 cd binary
 
 # download latest tiflash
-ID=$(docker create hub.pingcap.net/tiflash/tics:master)
+ID=$(docker create hub.pingcap.net/tiflash/tiflash:master)
 docker cp ${ID}:/tics ./
 docker rm ${ID}
 
