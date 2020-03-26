@@ -136,6 +136,19 @@ def parse_mod(obj, line, origin):
             if len(kv) != 2 or kv[0].strip() != 'mem':
                 error('bad mem prop: ' + origin)
             setattr(obj, 'mem', kv[1].strip())
+        elif field.startswith('standalone'):
+            if obj.name != 'tiflash':
+                error('standalone is only supported for tiflash now.')
+            setattr(obj, 'standalone', True)
+        elif field.startswith('engine') or field.startswith('storage_engine'):
+            # storage engine for tiflash
+            if obj.name != 'tiflash':
+                error('engine is only supported for tiflash now.')
+            kv = field.split('=')
+            if len(kv) != 2 or kv[0].strip() not in ('engine', 'storage_engine') \
+                or kv[1].strip() not in ('tmt', 'dt'):
+                error('bad engine prop:' + origin)
+            setattr(obj, 'storage_engine', kv[1].strip())
         else:
             old_dir = str(getattr(obj, 'dir'))
             if len(old_dir) != 0:
@@ -407,23 +420,34 @@ def render_tiflashs(res, conf, hosts, indexes):
             continue
         if len(indexes) != 0 and (i not in indexes):
             continue
+        if hasattr(tiflash, "standalone"):
+            if tiflash.standalone and (len(res.pds) != 0 or len(res.tidbs) != 0 or len(res.tikvs) != 0):
+                error("deploy standalone tiflash with pd/tidb/tikv is not supported.")
+        # storage_engine is empty by default, keep the storage_engine in "config.toml"
+        storage_engine = ''
+        if hasattr(tiflash, "storage_engine"):
+            storage_engine = tiflash.storage_engine
         print_mod_header(tiflash)
 
-        def print_run_cmd(ssh, conf_templ_dir):
-            print '# tiflash_safe_run dir conf_templ_dir daemon_mode pd_addr tidb_addr ports_delta listen_host cluster_id'
+        def print_run_cmd(ssh, conf_templ_dir, storage_engine):
+            print '# tiflash_safe_run dir conf_templ_dir daemon_mode pd_addr tidb_addr ports_delta listen_host cluster_id standalone storage_engine'
             print (ssh + 'tiflash_safe_run "%s" \\') % tiflash.dir
             print '\t"%s" \\' % conf_templ_dir
             pd_addr = tiflash.pd and tiflash.pd or ','.join(res.pd_addr)
             tidb_addr = '' if len(res.tidbs) <= 0 else ','.join(map(lambda x: x.host + ':' + x.ports, res.tidbs))
-            print '\t"true" "%s" "%s" "%s" "%s" "${id}"' % (pd_addr, tidb_addr, tiflash.ports, tiflash.host)
+            standalone = 'false'
+            if hasattr(tiflash, "standalone") and tiflash.standalone:
+                standalone = 'true'
+            print '\t"true" "%s" "%s" "%s" "%s" "${id}" \\' % (pd_addr, tidb_addr, tiflash.ports, tiflash.host)
+            print '\t"%s" "%s"' % (standalone, storage_engine)
 
         if tiflash.is_local():
             print_cp_bin(tiflash, conf)
-            print_run_cmd('', conf.conf_templ_dir)
+            print_run_cmd('', conf.conf_templ_dir, storage_engine)
         else:
             env_dir = conf.cache_dir + '/worker/integrated'
             print_ssh_prepare(tiflash, conf, env_dir)
-            print_run_cmd('call_remote_func "%s" "%s" ' % (tiflash.host, env_dir), env_dir + '/conf')
+            print_run_cmd('call_remote_func "%s" "%s" ' % (tiflash.host, env_dir), env_dir + '/conf', storage_engine)
 
 def render_spark_master(res, conf, hosts, indexes, is_chspark=False):
     if is_chspark:

@@ -100,10 +100,32 @@ function run_query_through_ch_client()
 }
 export -f run_query_through_ch_client
 
+function get_storage_engine_in_config()
+{
+	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
+		echo "[func get_storage_engine_in_config] usage: <func> config_file" >&2
+		return 1
+	fi
+
+	local config_file="${1}"
+	if [ ! -f "${config_file}" ];then
+		echo "[func replace_storage_engine_in_config] file not exist: \"${config_file}\"" >&2
+		return 1
+	fi
+
+	local engine=$(cat "${config_file}" | grep -v '^#' | grep 'storage_engine' | awk -F= '{print $2}' | awk -F'"' '{print $2}')
+	if [ -z "${engine}" ]; then
+		echo "[func get_storage_engine_in_config] can not get storage_engine in \"${config_file}\"!" >&2
+		return 1
+	else
+		echo "${engine}"
+	fi
+}
+
 function tiflash_run()
 {
 	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func tiflash_run] usage: <func> tiflash_dir conf_templ_dir [daemon_mode] [pd_addr] [tidb_addr] [ports_delta] [listen_host] [cluster_id]" >&2
+		echo "[func tiflash_run] usage: <func> tiflash_dir conf_templ_dir [daemon_mode] [pd_addr] [tidb_addr] [ports_delta] [listen_host] [cluster_id] [standalone] [storage_engine]" >&2
 		return 1
 	fi
 
@@ -148,7 +170,41 @@ function tiflash_run()
 		local cluster_id="${8}"
 	fi
 
-	echo "=> run tiflash: ${tiflash_dir}"
+	if [ -z "${9+x}" ]; then
+		local standalone="false"
+	else
+		local standalone="${9}"
+	fi
+
+	# print a warning if try to set up tiflash without pd/tidb and not running with standalone mode.
+	# tiflash may not run normally in this situation.
+	if [ -z "${tidb_addr}" ] || [ -z "${pd_addr}" ] && [ "${standalone}" != 'true'  ]; then
+		echo "[warn] If you want to run a standalone tiflash without pd/tidb/tikv, consider to add 'standalone' at the end for tiflash."
+	fi
+
+	# for standalone mode, we remove proxy from config file
+	if [ "${standalone}" != "true" ]; then
+		local tiflash_config_template="${conf_templ_dir}/tiflash/config.toml"
+	else
+		local tiflash_config_template="${conf_templ_dir}/tiflash/standalone.toml"
+	fi
+
+	if [ -z "${10+x}" ] || [ -z "${10}" ] ; then
+		# by default, keep the storage_engine in "config.toml"
+		local storage_engine=$(get_storage_engine_in_config "${tiflash_config_template}")
+		if [ -z ${storage_engine} ]; then
+			echo "[func tiflash_run] please set storage_engine in ${tiflash_config_template} or set engine=(dt|tmt) for tiflash in your .ti file" >&2
+			return 1
+		fi
+	else
+		local storage_engine="${10}"
+	fi
+
+	if [ "${standalone}" != 'true' ]; then
+		echo "=> run tiflash(${storage_engine}): ${tiflash_dir}"
+	else
+		echo "=> run tiflash(${storage_engine})(standalone): ${tiflash_dir}"
+	fi
 
 	local default_ports="${conf_templ_dir}/default.ports"
 
@@ -243,15 +299,18 @@ function tiflash_run()
 		echo "   tiflash raft and cop port: ${tiflash_raft_and_cop_port} is occupied" >&2
 		return 1
 	fi
-	local proxy_port_occupied=`print_port_occupied "${proxy_port}"`
-	if [ "${proxy_port_occupied}" == "true" ]; then
-		echo "   proxy port: ${proxy_port} is occupied" >&2
-		return 1
-	fi
-	local proxy_status_port_occupied=`print_port_occupied "${proxy_status_port}"`
-	if [ "${proxy_status_port_occupied}" == "true" ]; then
-		echo "   proxy status port: ${proxy_status_port} is occupied" >&2
-		return 1
+	# if running with standalone == false, we need to check proxy's ports are not occupied
+	if [ "${standalone}" != "true" ]; then
+		local proxy_port_occupied=`print_port_occupied "${proxy_port}"`
+		if [ "${proxy_port_occupied}" == "true" ]; then
+			echo "   proxy port: ${proxy_port} is occupied" >&2
+			return 1
+		fi
+		local proxy_status_port_occupied=`print_port_occupied "${proxy_status_port}"`
+		if [ "${proxy_status_port_occupied}" == "true" ]; then
+			echo "   proxy status port: ${proxy_status_port} is occupied" >&2
+			return 1
+		fi
 	fi
 
 	local disk_avail=`df -k "${tiflash_dir}" | tail -n 1 | awk '{print $4}'`
@@ -273,8 +332,14 @@ function tiflash_run()
 	local render_str="${render_str}#proxy_status_port=${proxy_status_port}"
 	local render_str="${render_str}#disk_avail=${disk_avail}"
 
-	render_templ "${conf_templ_dir}/tiflash/config.toml" "${conf_file}" "${render_str}"
-	render_templ "${conf_templ_dir}/tiflash/proxy.toml" "${proxy_conf_file}" "${render_str}"
+	if [ "${standalone}" != "true" ]; then
+		render_templ "${tiflash_config_template}" "${conf_file}" "${render_str}"
+		render_templ "${conf_templ_dir}/tiflash/proxy.toml" "${proxy_conf_file}" "${render_str}"
+	else
+		render_templ "${tiflash_config_template}" "${conf_file}" "${render_str}"
+	fi
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	python "${here}/replace_storage_engine.py" "${conf_file}" "${storage_engine}"
 	cp_when_diff "${conf_templ_dir}/tiflash/users.toml" "${tiflash_dir}/conf/users.toml"
 
 	# TODO: remove hard code file name from this func
@@ -308,6 +373,8 @@ function tiflash_run()
 	echo "proxy_port	${proxy_port}" >> "${info}"
 	echo "pd_addr	${pd_addr}" >> "${info}"
 	echo "cluster_id	${cluster_id}" >> "${info}"
+	echo "standalone	${standalone}" >> "${info}"
+	echo "storage_engine	${storage_engine}" >> "${info}"
 
 	if [ ! -f "${tiflash_dir}/extra_str_to_find_proc" ]; then
 		echo "config-file" > "${tiflash_dir}/extra_str_to_find_proc"

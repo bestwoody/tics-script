@@ -117,6 +117,14 @@ cores=10        <- only used by spark_w module,
 mem=10G         <- only used by spark_w module,
                    total amount of memory to allow spark applications to use on the machine
                    (default: your machine's total RAM minus 1 GB)
+ 
+standalone      <- only used by tiflash module,
+                    add this if you want to deploy a standalone tiflash process without pd/tidb/tikv
+
+engine=(dt|tmt) <- only used by tiflash module,
+                    set storage engine (DeltaTree or TxnMergeTree) for tiflash process
+                    (default: will use "storage_engine" in conf/tiflash/config.toml)
+                    (if this property is set, will replace the storage_engine for that tiflash's config)
 ```
 
 A little more complex case:
@@ -133,6 +141,15 @@ tiflash: node2/tiflash ports+2
 spark_m: node1/spark_m ports+1
 spark_w: node1/spark_w ports+1 cores=10 mem=10G
 spark_w: node2/spark_w ports+2 cores=10 mem=10G
+```
+
+A standalone tiflash process without pd/tidb/tikv:
+```
+# standalone.ti
+dir=nodes/standalone
+p=+22
+h0=127.0.0.1
+tiflash: {dir}/tiflash ports{p} host={h0} standalone engine=dt
 ```
 
 ## Vars supporting

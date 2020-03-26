@@ -115,7 +115,7 @@ export -f tidb_safe_run
 function tiflash_safe_run()
 {
 	if [ -z "${2+x}" ] || [ -z "${1}" ] || [ -z "${2}" ]; then
-		echo "[func tiflash_safe_run] usage: <func> tiflash_dir conf_templ_dir [daemon_mode] [pd_addr] [ports_delta] [listen_host] [cluster_id]" >&2
+		echo "[func tiflash_safe_run] usage: <func> tiflash_dir conf_templ_dir [daemon_mode] [pd_addr] [ports_delta] [listen_host] [cluster_id] [standalone] [storage_engine]" >&2
 		return 1
 	fi
 
@@ -157,7 +157,21 @@ function tiflash_safe_run()
 	else
 		local cluster_id="${8}"
 	fi
-	tiflash_run "${tiflash_dir}" "${conf_templ_dir}" "${daemon_mode}" "${pd_addr}" "${tidb_addr}" "${ports_delta}" "${listen_host}" "${cluster_id}"
+
+	if [ -z "${9+x}" ]; then
+		local standalone="false"
+	else
+		local standalone="${9}"
+	fi
+
+	# storage_engine is empty by default, keep the storage_engine in "config.toml"
+	if [ -z "${10+x}" ]; then
+		local storage_engine=""
+	else
+		local storage_engine="${10}"
+	fi
+
+	tiflash_run "${tiflash_dir}" "${conf_templ_dir}" "${daemon_mode}" "${pd_addr}" "${tidb_addr}" "${ports_delta}" "${listen_host}" "${cluster_id}" "${standalone}" "${storage_engine}"
 	wait_for_tiflash_local "${tiflash_dir}" | awk '{print "   "$0}'
 }
 export -f tiflash_safe_run
