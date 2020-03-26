@@ -37,6 +37,7 @@ def runReleaseIntegrationTest(branch, version, tidb_commit_hash, tikv_commit_has
                             ]
 
                             dailyTest = load 'regression_test/daily.groovy'
+                            tidbTest = load 'regression_test/tidb_test.groovy'
                             schrodingerTest = load 'regression_test/schrodinger.groovy'
                         }
                     }
@@ -45,9 +46,15 @@ def runReleaseIntegrationTest(branch, version, tidb_commit_hash, tikv_commit_has
         }
 
         parallel(
+                // Daily Test
                 "Daily Test": {
                     dailyTest.runDailyIntegrationTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, notify)
                 },
+                // TiDB Test
+                "TiDB Test": {
+                    tidbTest.runTiDBTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, notify)
+                },
+                // Schrodinger
                 "schrodinger/bank Test": {
                     schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank", maxRunTime, notify)
                 },
@@ -60,8 +67,41 @@ def runReleaseIntegrationTest(branch, version, tidb_commit_hash, tikv_commit_has
                 "schrodinger/ledger Test": {
                     schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/ledger", maxRunTime, notify)
                 },
+                "schrodinger/ledger Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/sqllogic", maxRunTime, notify)
+                },
                 "schrodinger/ddl Test": {
                     schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/ddl", maxRunTime, notify)
+                },
+                // Region Merge
+                "schrodinger/bank Region Merge Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank true", maxRunTime, notify)
+                },
+                "schrodinger/bank2 Region Merge Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank2 true", maxRunTime, notify)
+                },
+                "schrodinger/crud Region Merge Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/crud true", maxRunTime, notify)
+                },
+                "schrodinger/ledger Region Merge Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/ledger true", maxRunTime, notify)
+                },
+                // Pessimistic
+                "schrodinger/bank Pessimistic Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank false false false true", maxRunTime, notify)
+                },
+                "schrodinger/bank2 Pessimistic Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank2 false false false true", maxRunTime, notify)
+                },
+                "schrodinger/crud Pessimistic Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/crud false false false true", maxRunTime, notify)
+                },
+                "schrodinger/ledger Pessimistic Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/ledger false false false true", maxRunTime, notify)
+                },
+                // Follower Read
+                "schrodinger/bank Follower Read Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank false false false false true", maxRunTime, notify)
                 }
         )
     }
