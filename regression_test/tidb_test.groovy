@@ -103,13 +103,13 @@ def runTiDBTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_
                               sh "cp regression_test/conf/bin.paths integrated/conf/"
                             }
                             try {
-                                timeout(720) {
+                                timeout(360) {
                                     sh "regression_test/tidb_test.sh"
                                 }
                             } catch (err) {
                                 sh "for f in \$(find /tmp/ti/tidb/test/sqllogic -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
 
-                                def filename = "tiflash-tidb_test-test-log-${env.BUILD_NUMBER}"
+                                def filename = "tiflash-jenkins-test-log-${env.JOB_NAME}-${env.BUILD_NUMBER}"
                                 def filepath = "logs/pingcap/tiflash/${filename}.tar.gz"
 
                                 sh """

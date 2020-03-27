@@ -109,7 +109,7 @@ def runDailyIntegrationTest2(branch, version, tidb_commit_hash, tikv_commit_hash
                             } catch (err) {
                                 sh "for f in \$(find /tmp/ti/ci -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
 
-                                def filename = "tiflash-daily-test-log-${env.BUILD_NUMBER}"
+                                def filename = "tiflash-jenkins-test-log-${env.JOB_NAME}-${env.BUILD_NUMBER}"
                                 def filepath = "logs/pingcap/tiflash/${filename}.tar.gz"
 
                                 sh """
