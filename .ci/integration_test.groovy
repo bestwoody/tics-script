@@ -79,7 +79,7 @@ catchError {
                                         sh "tests/ci/jenkins.sh"
                                     }
                                 } catch (err) {
-                                    sh "for f in \$(find /tmp/ti/ci -name '*.log' | grep -v 'data' | grep -v 'db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
+                                    sh "for f in \$(find /tmp/ti -name '*.log' | grep -v 'data' | grep -v 'tiflash/db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
                                     throw err
                                 }
                             }
