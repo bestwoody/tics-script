@@ -80,6 +80,19 @@ catchError {
                                     }
                                 } catch (err) {
                                     sh "for f in \$(find /tmp/ti -name '*.log' | grep -v 'data' | grep -v 'tiflash/db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
+
+                                    def filename = "tiflash-jenkins-test-log-${env.JOB_NAME}-${env.BUILD_NUMBER}"
+                                    def filepath = "logs/pingcap/tiflash/${filename}.tar.gz"
+
+                                    sh """
+                                      mkdir $filename
+                                      for f in \$(find /tmp/ti -name '*.log' | grep -v 'data' | grep -v 'tiflash/db'); do echo \"LOG: \$f\"; cp \$f ${filename}/\${f//\\//_}; done
+                                      ls -all "${filename}"
+                                      tar zcf "${filename}.tar.gz" "${filename}"
+                                      curl -F ${filepath}=@${filename}.tar.gz ${FILE_SERVER_URL}/upload
+                                      echo "Download log file from http://fileserver.pingcap.net/download/${filepath}"
+                                    """
+
                                     throw err
                                 }
                             }
