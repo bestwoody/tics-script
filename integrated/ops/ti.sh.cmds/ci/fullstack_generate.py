@@ -19,7 +19,6 @@ delete_stmt = Template("ti_mysql> delete from $database.$table $condition\n")
 select_stmt = Template("ti_ch> select $columns from $database.$table\n")
 refresh_schema_stmt = "\nti_ch> DBGInvoke __refresh_schemas()\n\n"
 wait_stmt = Template("ti_func> wait_table $database $table\n")
-isolation_stmt = "\nti_mysql> set @@global.tidb_isolation_read_engines='tiflash'\n\n"
 
 
 INSERT = "insert"
@@ -169,7 +168,6 @@ def generate_cases_inner(database, table, column_names, types, sample_data,
             file.write(create_stmt.substitute({"database": database, "table": table, "schema": schema}))
             file.write(sync_stmt.substitute({"database": database, "table": table}))
             file.write(refresh_schema_stmt)
-            file.write(isolation_stmt)
 
             for op in case:
                 if op == INSERT:
