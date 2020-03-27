@@ -46,6 +46,16 @@ function cmd_ti_schrodinger_bank2()
 		local pessimistic="${5}"
 	fi
 
+	if [ "${pessimistic}" == "true" ]; then
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_txn_mode = 'pessimistic'"
+	else
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_txn_mode = 'optimistic'"
+	fi
+	# wait for txn mode setting take effect
+	sleep 3
+
 	local host=`from_mod_get_host "${tidb_mod}"`
 	local dir=`from_mod_get_dir "${tidb_mod}"`
 

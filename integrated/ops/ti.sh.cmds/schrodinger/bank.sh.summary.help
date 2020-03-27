@@ -1,2 +1,2 @@
 run bank test on tiflash cluster
-usage: <cmd> [accounts=1000000] [interval=2s] [tables=1] [concurrency=100] [longTxn=true] [pessimistic=false] [enableFollowerRead=false]
+usage: <cmd> [accounts=1000000] [interval=2s] [tables=1] [concurrency=100] [longTxn=true] [pessimistic=true] [enableFollowerRead=false]

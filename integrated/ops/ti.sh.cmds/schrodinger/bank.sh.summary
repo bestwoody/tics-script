@@ -47,7 +47,7 @@ function cmd_ti_schrodinger_bank()
 	fi
 
 	if [ -z "${6+x}" ] || [ -z "${6}" ]; then
-		local pessimistic="false"
+		local pessimistic="true"
 	else
 		local pessimistic="${6}"
 	fi
@@ -57,6 +57,16 @@ function cmd_ti_schrodinger_bank()
 	else
 		local enable_follower_read="${7}"
 	fi
+
+	if [ "${pessimistic}" == "true" ]; then
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_txn_mode = 'pessimistic'"
+	else
+		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_txn_mode = 'optimistic'"
+	fi
+	# wait for txn mode setting take effect
+	sleep 3
 
 	local host=`from_mod_get_host "${tidb_mod}"`
 	local dir=`from_mod_get_dir "${tidb_mod}"`

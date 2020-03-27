@@ -86,22 +86,22 @@ def runReleaseIntegrationTest(branch, version, tidb_commit_hash, tikv_commit_has
                 "schrodinger/ledger Region Merge Test": {
                     schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/ledger true", maxRunTime, notify)
                 },
-                // Pessimistic
-                "schrodinger/bank Pessimistic Test": {
-                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank false false false true", maxRunTime, notify)
+                // Optimistic
+                "schrodinger/bank Optimistic Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank false false false false", maxRunTime, notify)
                 },
-                "schrodinger/bank2 Pessimistic Test": {
-                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank2 false false false true", maxRunTime, notify)
+                "schrodinger/bank2 Optimistic Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank2 false false false false", maxRunTime, notify)
                 },
-                "schrodinger/crud Pessimistic Test": {
-                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/crud false false false true", maxRunTime, notify)
+                "schrodinger/crud Optimistic Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/crud false false false false", maxRunTime, notify)
                 },
-                "schrodinger/ledger Pessimistic Test": {
-                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/ledger false false false true", maxRunTime, notify)
+                "schrodinger/ledger Optimistic Test": {
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/ledger false false false false", maxRunTime, notify)
                 },
                 // Follower Read
                 "schrodinger/bank Follower Read Test": {
-                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank false false false false true", maxRunTime, notify)
+                    schrodingerTest.runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "schrodinger/bank false false false true true", maxRunTime, notify)
                 }
         )
     }

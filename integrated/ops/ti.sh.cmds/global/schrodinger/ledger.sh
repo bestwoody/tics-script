@@ -30,7 +30,7 @@ function cmd_ti_global_schrodinger_ledger()
 		fi
 	fi
 	if [ -z "${4+x}" ] || [ -z "${4}" ]; then
-		local pessimistic='false'
+		local pessimistic='true'
 	else
 		local pessimistic="${4}"
 		if [ "${pessimistic}" != 'false' ] && [ "${pessimistic}" != 'true' ]; then
