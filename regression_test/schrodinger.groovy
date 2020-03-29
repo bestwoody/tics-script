@@ -127,7 +127,7 @@ def runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_
 
                                 sh """
                                   mkdir $filename
-                                  for f in \$(find . -name '*.log'); do echo \"LOG: \$f\"; tail -500 \$f; cp \$f ${filename}/; done
+                                  for f in \$(find . -name '*.log'); do echo \"LOG: \$f\"; cp \$f ${filename}/; done
                                   for f in \$(find /tmp/ti -name '*.log' | grep -v 'data' | grep -v 'tiflash/db'); do echo \"LOG: \$f\"; cp \$f ${filename}/\${f//\\//_}; done
                                   ls -all "${filename}"
                                   tar zcf "${filename}.tar.gz" "${filename}"
