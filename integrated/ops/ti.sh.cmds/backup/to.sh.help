@@ -1,0 +1,2 @@
+save cluster data to a backup, the cluster must stop first
+usage: <cmd> backup_name

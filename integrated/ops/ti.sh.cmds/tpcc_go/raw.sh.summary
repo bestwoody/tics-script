@@ -1,0 +1,33 @@
+#!/bin/bash
+
+function ti_cmd_tpcc_go_raw()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd tpcc_go/raw] usage: <cmd> [go-tpc args except -P and -H]" >&2
+		return 1
+	fi
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	local tidb_host=`from_mod_get_host "${tidb_mod}"`
+	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
+	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
+
+	local entry_dir="${ti_file}.data"
+	_fetch_go_tpc_repo "${entry_dir}"
+
+	local tpc_bin="${entry_dir}/go-tpc/bin/go-tpc"
+	${tpc_bin} -P "${tidb_port}" -H "${tidb_host}" "${@}"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+ti_cmd_tpcc_go_raw "${@}"

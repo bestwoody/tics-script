@@ -1,0 +1,2 @@
+restore cluster from backup, the cluster must be empty (burned)
+usage: <cmd> backup_name

@@ -11,12 +11,22 @@ function ti_cmd_tpcc_go_run()
 	shift 6
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd tpcc/load] usage: <cmd> warehouses threads" >&2
+		echo "[cmd tpcc/load] usage: <cmd> warehouses threads [duration=20m] [log_detail_info=true]" >&2
 		return 1
 	fi
 
 	local warehouses="${1}"
 	local threads="${2}"
+
+	local duration='20m'
+	if [ ! -z "${3+x}" ]; then
+		local duration="${3}"
+	fi
+
+	local log_detail_info='true'
+	if [ ! -z "${4+x}" ]; then
+		local log_detail_info="${4}"
+	fi
 
 	local entry_dir="${ti_file}.data"
 
@@ -27,25 +37,50 @@ function ti_cmd_tpcc_go_run()
 
 	local ti="${integrated}/ops/ti.sh"
 
-	local title="=> `date +%D-%T`"
-	local log="${entry_dir}/tpcc/run.log"
-	local last_log="${entry_dir}/tpcc/last_run.log"
-	local count="${entry_dir}/tpcc/count"
+	local ts=`date +%Y%m%d_%H%M%S`
+	local work_dir="${entry_dir}/tpcc/${ts}"
+	mkdir -p "${work_dir}"
 
-	mkdir -p "${entry_dir}/tpcc"
+	if [ "${log_detail_info}" == 'true' ]; then
+		"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+			"${ti_file}" tpcc_go/count | tee "${work_dir}/count"
+		echo
 
-	# TODO:
-	#echo "==> SHOW STATS_BUCKETS"
-	#echo "==> SHOW STATS_HISTOGRAMS"
-	#echo "==> SHOW STATS_HEALTHY"
-	#echo "==> SHOW STATS_META"
+		"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+			"${ti_file}" ver full | tee "${work_dir}/version"
+		echo
 
-	echo "${title}" >> "${log}"
-	echo "${title}" > "${last_log}"
-	tpcc_go_run "${entry_dir}" "${tidb_host}" "${tidb_port}" "${warehouses}" "${threads}" | tee -a "${log}" | tee -a "${last_log}"
+		"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+			"${ti_file}" config | tee "${work_dir}/config"
+		echo
+
+		#local sql="SHOW STATS_BUCKETS"
+		#"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		#	"${ti_file}" "mysql" "${sql}" 'test' 'false' | trim_host | tee "${work_dir}/buckets"
+		#echo
+
+		local sql="SHOW STATS_HISTOGRAMS"
+		"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+			"${ti_file}" "mysql" "${sql}" 'test' 'false' | trim_host | tee "${work_dir}/buckets"
+		echo
+
+		local sql="SHOW STATS_HEALTHY"
+		"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+			"${ti_file}" "mysql" "${sql}" 'test' 'false' | trim_host | tee "${work_dir}/healthy"
+		echo
+
+		local sql="SHOW STATS_META"
+		"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+			"${ti_file}" "mysql" "${sql}" 'test' 'false' | trim_host | tee "${work_dir}/meta"
+		echo
+	fi
+
+	echo "=> ${ts}" >> "${entry_dir}/tpcc/run.log"
+
+	tpcc_go_run "${entry_dir}" "${tidb_host}" "${tidb_port}" "${warehouses}" "${threads}" "${duration}" | \
+		tee "${work_dir}/run.log" | tee -a "${entry_dir}/tpcc/run.log"
 }
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
-
 ti_cmd_tpcc_go_run "${@}"

@@ -70,7 +70,16 @@ function call_remote_func()
 	fi
 
 	local host="${1}"
-	call_remote_func_raw "${@}" | awk '{print "['${host}'] " $0}'
+	local ext=`print_file_ext "${host}"`
+	local ext_len=`echo ${#ext}`
+	local prefix="[${host}] "
+	if [ "${ext_len}" == '2' ]; then
+		local prefix="[${host}_] "
+	fi
+	if [ "${ext_len}" == '1' ]; then
+		local prefix="[${host}__] "
+	fi
+	call_remote_func_raw "${@}" | awk '{print "'"${prefix}"'"$0}'
 }
 export -f call_remote_func
 
