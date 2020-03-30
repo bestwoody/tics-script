@@ -41,7 +41,7 @@ function cmd_ti_schrodinger_bank2()
 	fi
 
 	if [ -z "${5+x}" ] || [ -z "${5}" ]; then
-		local pessimistic="false"
+		local pessimistic="true"
 	else
 		local pessimistic="${5}"
 	fi
