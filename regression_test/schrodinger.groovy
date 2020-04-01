@@ -3,6 +3,10 @@ def runSchrodingerTest(branch, version, testcase, maxRunTime, notify) {
 }
 
 def runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, testcase, maxRunTime, notify) {
+  runSchrodingerTest3("kubernetes", branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, testcase, maxRunTime, notify)
+}
+
+def runSchrodingerTest3(cloud, branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, testcase, maxRunTime, notify) {
     taskStartTimeInMillis = System.currentTimeMillis()
 
     def label = "test-tiflash-Schrodinger-v11"
@@ -12,7 +16,7 @@ def runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_
     def PD_BRANCH = "master"
     def TIFLASH_BRANCH = "master"
 
-    podTemplate(name: label, label: label, instanceCap: 20, idleMinutes: 5, containers: [
+    podTemplate(cloud: cloud, name: label, label: label, instanceCap: 20, idleMinutes: 5, containers: [
             containerTemplate(name: 'tiflash-docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
                     envVars: [
                             envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375'),
