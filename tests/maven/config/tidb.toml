@@ -21,7 +21,6 @@ query-log-max-len = 2048
 slow-threshold = 6000
 
 [log.file]
-log-rotate = true
 max-backups = 0
 max-days = 0
 max-size = 300
@@ -76,17 +75,11 @@ type = "const"
 
 [tikv-client]
 batch-wait-size = 16
-batch-wait-time = 3000000
 commit-timeout = "60s"
 grpc-connection-count = 4
 grpc-keepalive-time = 10
 grpc-keepalive-timeout = 3
 max-batch-size = 128
-tikv-heavy-load-to-batch = 30
-
-[txn-local-latches]
-capacity = 20480000
-enabled = false
 
 [binlog]
 ignore-error = false
