@@ -1,0 +1,120 @@
+#!/bin/bash
+
+function _get_tpcc_results()
+{
+	local cluster="${1}"
+	local filter=''
+	if [ ! -z "${2+x}" ]; then
+		local filter="${2}"
+	fi
+
+	local results="${cluster}.data/tpcc"
+
+	ls "${results}" | while read dir; do
+		if [ ! -d "${results}/${dir}" ]; then
+			continue
+		fi
+
+		if [ "${#dir}" -lt 16 ]; then
+			continue
+		fi
+		local name="${dir:16}"
+
+		if [ ! -f "${results}/${dir}/tags" ]; then
+			continue
+		fi
+		local tags=`cat "${results}/${dir}/tags"`
+		local is_filter=`echo "${tags}" | grep "${filter}"`
+		if [ -z "${is_filter}" ]; then
+			continue
+		fi
+
+		if [ ! -f "${results}/${dir}/run.log" ]; then
+			continue
+		fi
+
+		if [ ! -f "${results}/${dir}/start" ]; then
+			continue
+		fi
+		local start_ts=`cat ${results}/${dir}/start`
+
+		local end_ts="none"
+		if [ ! -f "${results}/${dir}/end" ]; then
+			local name="${name}(UNFINISHED)"
+		else
+			local end_ts=`cat ${results}/${dir}/end`
+		fi
+
+		#local result=`cat "${results}/${dir}/run.log" | grep NEW | grep SUM | grep -v ERR | tail -n 1 | \
+		#	awk -F ', Sum' '{print $1}' | \
+		#	awk '{print $NF}' | awk -F '.' '{print $1}'`
+		#if [ -z "${result}" ]; then
+		#	continue
+		#fi
+
+		local lines=`cat "${results}/${dir}/run.log" | python _report_parse_go_tpc.py`
+		if [ -z "${lines}" ]; then
+			continue
+		fi
+		#echo "=> ${results}/${dir}" >&2
+		echo "${lines}" | while read line; do
+			local dur=`echo "${line}" | awk '{print $1}'`
+			local result=`echo "${line}" | awk '{print $2}'`
+			#echo "   ${result} start:${start_ts},end:${end_ts},${tags},dur:${dur},tag:${name}" >&2
+			echo "${result} start:${start_ts},end:${end_ts},${tags},dur:${dur},tag:${name}"
+		done
+	done
+}
+export -f _get_tpcc_results
+
+function _gen_tpcc_report()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func _gen_tpcc_report] usage: <func> entry_dir data_file" >&2
+		return 1
+	fi
+
+	local entry_dir="${1}"
+	local data_file="${2}"
+
+	local report="${entry_dir}/report"
+	local title='<tpcc performance>'
+
+	rm -f "${report}.tmp"
+
+	if [ -f "${entry_dir}/${data_file}" ]; then
+		to_table "${title}" 'wh=warehouses; t=threads; cols:wh,t,dur; rows:setting,tag|notag; cell:limit(20)|avg|~|cnt' 9999 "${entry_dir}/${data_file}" > "${report}.tmp"
+	fi
+
+	if [ -f "${report}.tmp" ]; then
+		mv -f "${report}.tmp" "${report}"
+	fi
+
+	if [ -f "${report}" ]; then
+		cat "${report}"
+	fi
+}
+export -f _gen_tpcc_report
+
+function cmd_ti_tpcc_go_report()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local filter=''
+	if [ ! -z "${1+x}" ]; then
+		local filter="${1}"
+	fi
+
+	_get_tpcc_results "${ti_file}" "${filter}" > "${ti_file}.data/tpcc/results.data"
+	_gen_tpcc_report "${ti_file}.data/tpcc" 'results.data'
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+cmd_ti_tpcc_go_report "${@}"

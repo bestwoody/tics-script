@@ -42,7 +42,7 @@ export -f tpcc_go_load
 function tpcc_go_run()
 {
 	if [ -z "${4+x}" ]; then
-		echo "[func tpcc_go_run] usage: <func> work_dir host port warehouses threads [time=8h]" >&2
+		echo "[func tpcc_go_run] usage: <func> work_dir host port warehouses threads [time=20m]" >&2
 		return 1
 	fi
 
@@ -52,13 +52,13 @@ function tpcc_go_run()
 	local warehouses="${4}"
 	local threads="${5}"
 
-	local dur='8h'
+	local dur='20m'
 	if [ ! -z "${6+x}" ]; then
 		local dur="${6}"
 	fi
 
 	_fetch_go_tpc_repo "${work_dir}"
-	local tpc_bin="${entry_dir}/go-tpc/bin/go-tpc"
+	local tpc_bin="${work_dir}/go-tpc/bin/go-tpc"
 	${tpc_bin} -T "${threads}" -P "${port}" -H "${host}" tpcc --warehouses "${warehouses}" --time "${dur}" run | log_ts
 }
 export -f tpcc_go_run

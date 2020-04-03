@@ -467,7 +467,7 @@ def padding_table(table, cols_notitle):
         cols = table[i]
         for j in range(0, len(cols)):
             cell = cols[j]
-            left_pad = (j != 0 and ' ' or '')
+            left_pad = (j != 0 and '' or '')
             if i == 0 and j == 0:
                 cols[j] = cell + ' ' * (widths[j] - len(cell)) + ' '
             else:
@@ -477,17 +477,28 @@ def align_cells(table):
     for i in range(0, len(table)):
         cols = table[i]
         for j in range(0, len(cols)):
-            if i == 0 and j == j:
+            if i == 0:
+                if j != 0:
+                    cols[j] = ' ' + cols[j]
+                else:
+                    cols[j] = cols[j] + ' '
                 continue
             cell = cols[j]
             width = len(cell)
             fields = cell.split()
-            if len(fields) <= 1:
+            if len(fields) == 1:
                 continue
+
+            # Something wrong here, this is a workaroud, need further fix
+            if len(fields) == 0:
+                cols[j] = ' ' + cols[j]
+                continue
+
             aligned = ' '.join(fields[0:-1])
-            padding = width - len(aligned) - len(fields[-1]) - 2
-            if padding <= 0:
-                continue
+            padding = width - len(aligned) - len(fields[-1]) - 2 + 1
+            j0_pad = ' '
+            if j == 0:
+                j0_pad = ''
             cols[j] = ' ' + aligned + ' ' * padding + fields[-1] + ' '
 
 def to_table(table_title, render_str, tail_cnt, paths):
@@ -495,12 +506,16 @@ def to_table(table_title, render_str, tail_cnt, paths):
     render = Render(render_str)
     for line in lines:
         render.add_line(line)
-    render.render()
-    table = render.get_table().output(table_title)
-    padding_table(table, render._cols.notitle)
-    align_cells(table)
-    for cols in table:
-        print '|'.join(cols + [''])
+    try:
+        render.render()
+        table = render.get_table().output(table_title)
+        padding_table(table, render._cols.notitle)
+        align_cells(table)
+        for cols in table:
+            print '|'.join(cols + [''])
+    except Exception, e:
+        print '{\n' + str(lines) + '}\n'
+        raise e
 
 # TODO: tag sorting: asc/desc
 if __name__ == '__main__':

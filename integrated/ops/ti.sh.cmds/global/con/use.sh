@@ -13,10 +13,16 @@ function cp_to_conf()
 {
 	local path="${1}"
 	local name="${2}"
-	local files=`ls "${path}"/$name 2>/dev/null`
+
+	if [ -d "${path}/${name}" ]; then
+		local files="${path}/${name}"
+	else
+		local files=`ls "${path}/"${name} 2>/dev/null`
+	fi
 	if [ -z "${files}" ]; then
 		return
 	fi
+
 	local self_path=`ti.sh builtin/self_path`
 	echo "${files}" | while read file; do
 		echo cp -r "${file}" "${self_path}/conf/"

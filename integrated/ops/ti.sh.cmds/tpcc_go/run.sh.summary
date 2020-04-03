@@ -11,7 +11,7 @@ function ti_cmd_tpcc_go_run()
 	shift 6
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd tpcc/load] usage: <cmd> warehouses threads [duration=20m] [log_detail_info=true]" >&2
+		echo "[cmd tpcc/load] usage: <cmd> warehouses threads [duration=20m] [tag] [benchmark_name=''] [tags=''] [log_detail_info=true]" >&2
 		return 1
 	fi
 
@@ -23,9 +23,25 @@ function ti_cmd_tpcc_go_run()
 		local duration="${3}"
 	fi
 
-	local log_detail_info='true'
+	local name=''
 	if [ ! -z "${4+x}" ]; then
-		local log_detail_info="${4}"
+		local name="${4}"
+	fi
+
+	local tags=''
+	if [ ! -z "${5+x}" ]; then
+		local tags="${5}"
+	fi
+	local log_detail_info='true'
+	if [ ! -z "${6+x}" ]; then
+		local log_detail_info="${6}"
+	fi
+
+	local base_tags="warehouses:${warehouses},threads:${threads},dur:${duration}"
+	if [ ! -z "${tags}" ]; then
+		local tags="${base_tags},${tags},tag:${name}"
+	else
+		local tags="${base_tags},tag:${name}"
 	fi
 
 	local entry_dir="${ti_file}.data"
@@ -38,8 +54,15 @@ function ti_cmd_tpcc_go_run()
 	local ti="${integrated}/ops/ti.sh"
 
 	local ts=`date +%Y%m%d_%H%M%S`
-	local work_dir="${entry_dir}/tpcc/${ts}"
+	if [ ! -z "${name}" ]; then
+		local name="_${name}"
+	fi
+	local work_dir="${entry_dir}/tpcc/${ts}${name}"
 	mkdir -p "${work_dir}"
+
+	echo "${tags}" > "${work_dir}/tags"
+
+	date +%s > "${work_dir}/start"
 
 	if [ "${log_detail_info}" == 'true' ]; then
 		"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
@@ -79,6 +102,8 @@ function ti_cmd_tpcc_go_run()
 
 	tpcc_go_run "${entry_dir}" "${tidb_host}" "${tidb_port}" "${warehouses}" "${threads}" "${duration}" | \
 		tee "${work_dir}/run.log" | tee -a "${entry_dir}/tpcc/run.log"
+
+	date +%s > "${work_dir}/end"
 }
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
