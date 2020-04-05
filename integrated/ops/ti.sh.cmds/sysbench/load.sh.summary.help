@@ -1,0 +1,2 @@
+load sysbench data to cluster
+usage: <cmd> threads [tables=16] [table_size=10000000]

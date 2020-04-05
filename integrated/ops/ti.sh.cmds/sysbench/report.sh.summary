@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function _get_tpcc_results()
+function _get_sysbench_results()
 {
 	local cluster="${1}"
 	local filter=''
@@ -8,7 +8,7 @@ function _get_tpcc_results()
 		local filter="${2}"
 	fi
 
-	local results="${cluster}.data/tpcc"
+	local results="${cluster}.data/sysbench"
 
 	ls "${results}" | while read dir; do
 		if [ ! -d "${results}/${dir}" ]; then
@@ -18,7 +18,9 @@ function _get_tpcc_results()
 		if [ "${#dir}" -lt 16 ]; then
 			continue
 		fi
-		local name="${dir:16}"
+		local name_and_ext="${dir:16}"
+		local name=`echo "${name_and_ext}" | awk -F '.' '{print $1}'`
+		local workload=`echo "${name_and_ext}" | awk -F '.' '{print $2}'`
 
 		if [ ! -f "${results}/${dir}/tags" ]; then
 			continue
@@ -51,33 +53,21 @@ function _get_tpcc_results()
 			local end_ts=`cat ${results}/${dir}/end`
 		fi
 
-		#local result=`cat "${results}/${dir}/run.log" | grep NEW | grep SUM | grep -v ERR | tail -n 1 | \
-		#	awk -F ', Sum' '{print $1}' | \
-		#	awk '{print $NF}' | awk -F '.' '{print $1}'`
-		#if [ -z "${result}" ]; then
-		#	continue
-		#fi
-
-		local here="$(dirname ${BASH_SOURCE[0]})"
-		local lines=`cat "${results}/${dir}/run.log" | python "${here}/_report_parse_go_tpc.py"`
-		if [ -z "${lines}" ]; then
+		local lag95=`cat "${results}/${dir}/run.log" | grep '95th percentile:' | awk '{print $3}' | awk -F '.' '{print $1}'`
+		local qps=`cat "${results}/${dir}/run.log" | grep ' queries:' | awk '{print $3}' | awk -F '.' '{print $1}' | awk -F '(' '{print $2}'`
+		if [ -z "${lag95}" ] || [ -z "${qps}" ]; then
 			continue
 		fi
-		#echo "=> ${results}/${dir}" >&2
-		echo "${lines}" | while read line; do
-			local dur=`echo "${line}" | awk '{print $1}'`
-			local result=`echo "${line}" | awk '{print $2}'`
-			#echo "   ${result} start:${start_ts},end:${end_ts},${tags},dur:${dur}" >&2
-			echo "${result} start:${start_ts},end:${end_ts},${tags},dur:${dur}"
-		done
+		echo "${qps} start:${start_ts},end:${end_ts},${tags},data:qps"
+		echo "${lag95} start:${start_ts},end:${end_ts},${tags},data:95%latency"
 	done
 }
-export -f _get_tpcc_results
+export -f _get_sysbench_results
 
-function _gen_tpcc_report()
+function _gen_sysbench_report()
 {
 	if [ -z "${2+x}" ]; then
-		echo "[func _gen_tpcc_report] usage: <func> entry_dir data_file" >&2
+		echo "[func _gen_sysbench_report] usage: <func> entry_dir data_file" >&2
 		return 1
 	fi
 
@@ -85,12 +75,13 @@ function _gen_tpcc_report()
 	local data_file="${2}"
 
 	local report="${entry_dir}/report"
-	local title='<tpcc performance>'
+	local title='<sysbench performance>'
 
 	rm -f "${report}.tmp"
 
 	if [ -f "${entry_dir}/${data_file}" ]; then
-		to_table "${title}" 'wh=warehouses; t=threads; cols:wh,t,dur; rows:setting,tag|notag; cell:limit(20)|avg|~|cnt' 9999 "${entry_dir}/${data_file}" > "${report}.tmp"
+		#to_table "${title}" 'wh=warehouses; t=threads; cols:wh,t,dur; rows:setting,tag|notag; cell:limit(20)|avg|~|cnt' 9999 "${entry_dir}/${data_file}" > "${report}.tmp"
+		to_table "${title}" 't=threads; size=table_size; cols:data|notag; rows:tables,size,t,dur,setting,tag,workload; cell:limit(20)|avg|~|cnt' 9999 "${entry_dir}/${data_file}" > "${report}.tmp"
 	fi
 
 	if [ -f "${report}.tmp" ]; then
@@ -101,9 +92,9 @@ function _gen_tpcc_report()
 		cat "${report}"
 	fi
 }
-export -f _gen_tpcc_report
+export -f _gen_sysbench_report
 
-function cmd_ti_tpcc_go_report()
+function cmd_ti_sysbench_report()
 {
 	local ti_file="${1}"
 	local ti_args="${2}"
@@ -118,10 +109,10 @@ function cmd_ti_tpcc_go_report()
 		local filter="${1}"
 	fi
 
-	_get_tpcc_results "${ti_file}" "${filter}" > "${ti_file}.data/tpcc/results.data"
-	_gen_tpcc_report "${ti_file}.data/tpcc" 'results.data'
+	_get_sysbench_results "${ti_file}" "${filter}" > "${ti_file}.data/sysbench/results.data"
+	_gen_sysbench_report "${ti_file}.data/sysbench" 'results.data'
 }
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
 auto_error_handle
-cmd_ti_tpcc_go_report "${@}"
+cmd_ti_sysbench_report "${@}"

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+function cmd_ti_sysbench_count()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local ti="${integrated}/ops/ti.sh"
+	local db="sbtest"
+
+	local tables=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" "mysql" "show tables" "${db}" 'false' | trim_host | grep -v 'Tables_in_'`
+
+	echo "${tables}" | while read table; do
+		echo "=> ${db}.${table}"
+		local sql="select count(*) from ${db}.${table}"
+		"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+			"${ti_file}" "mysql" "${sql}" "${db}" 'false' | trim_host | grep -v 'count'
+	done
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+cmd_ti_sysbench_count "${@}"

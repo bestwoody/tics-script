@@ -16,6 +16,7 @@ function cmd_ti_builtin_bin_path()
 		fi
 		local path=`abs_path "${path}"`
 		bash_conf_write "${integrated}/ops/conf.sh" 'DEFAULT_BIN_PATH' "${path}"
+		echo "using bins in ${path}"
 	fi
 }
 

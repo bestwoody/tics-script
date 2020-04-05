@@ -1,0 +1,58 @@
+#!/bin/bash
+
+function ti_cmd_sysbench_load()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd sysbench/load] usage: <cmd> threads [tables=16] [table_size=10000000]" >&2
+		return 1
+	fi
+
+	local threads="${1}"
+	local tables='16'
+	if [ ! -z "${2+x}" ]; then
+		local tables="${2}"
+	fi
+	local table_size='10000000'
+	if [ ! -z "${3+x}" ]; then
+		local table_size="${3}"
+	fi
+
+	local entry_dir="${ti_file}.data"
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	local tidb_host=`from_mod_get_host "${tidb_mod}"`
+	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
+	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
+
+	local ti="${integrated}/ops/ti.sh"
+
+	local title="=> `date +%D-%T`"
+	local sub_dir="sysbench"
+	local log="${entry_dir}/${sub_dir}/load.log"
+	local count="${entry_dir}/${sub_dir}/count"
+
+	echo "=> creating database sbtest"
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" "mysql" "create database if not exists sbtest" 'test' 'false'
+
+	mkdir -p "${entry_dir}/${sub_dir}"
+
+	echo "=> loading data"
+	echo "${title}" >> "${log}"
+
+	sysbench_load "${entry_dir}" "${tidb_host}" "${tidb_port}" \
+		"${tables}" "${table_size}" "${threads}" | tee -a "${log}"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+ti_cmd_sysbench_load "${@}"

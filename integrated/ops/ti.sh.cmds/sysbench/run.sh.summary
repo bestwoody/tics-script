@@ -1,0 +1,86 @@
+#!/bin/bash
+
+function ti_cmd_sysbench_run()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${3+x}" ]; then
+		echo "[cmd sysbench/run] usage: <cmd> table_size threads duration_sec workload [benchmark_name=''] [tags='']" >&2
+		return 1
+	fi
+
+	local table_size="${1}"
+	local threads="${2}"
+	local dur="${3}"
+	local workload="${4}"
+
+	local name=''
+	if [ ! -z "${5+x}" ]; then
+		local name="${5}"
+	fi
+
+	local tags=''
+	if [ ! -z "${6+x}" ]; then
+		local tags="${6}"
+	fi
+
+	local db='sbtest'
+
+	local ti="${integrated}/ops/ti.sh"
+	local tables=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" "mysql" "show tables" "${db}" 'false' | trim_host | grep -v 'Tables_in_' | wc -l | awk '{print $1}'`
+	#local table_size=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+	#	"${ti_file}" "mysql" "select count(*) from sbtest1" "${db}" 'false' | trim_host | grep -v 'count'`
+
+	local base_tags="tables:${tables},table_size:${table_size},threads:${threads},dur:${dur},workload:${workload}"
+	if [ ! -z "${tags}" ]; then
+		local tags="${base_tags},${tags},tag:${name}"
+	else
+		local tags="${base_tags},tag:${name}"
+	fi
+
+	local ts=`date +%Y%m%d_%H%M%S`
+	if [ ! -z "${name}" ]; then
+		local name="_${name}"
+	fi
+	local entry_dir="${ti_file}.data"
+	local sub_dir="sysbench"
+	local work_dir="${entry_dir}/${sub_dir}/${ts}${name}.${workload}"
+	mkdir -p "${work_dir}"
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	local tidb_host=`from_mod_get_host "${tidb_mod}"`
+	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
+	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
+
+	mkdir -p "${entry_dir}/${sub_dir}"
+
+	echo "${tags}" > "${work_dir}/tags"
+
+	date +%s > "${work_dir}/start"
+
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" ver full | tee "${work_dir}/version"
+	echo
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" config | tee "${work_dir}/config"
+	echo
+
+	echo "=> ${ts}"
+
+	sysbench_run "${entry_dir}" "${tidb_host}" "${tidb_port}" \
+		"${tables}" "${table_size}" "${threads}" "${dur}" "${workload}" | tee -a "${work_dir}/run.log"
+
+	date +%s > "${work_dir}/end"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+ti_cmd_sysbench_run "${@}"

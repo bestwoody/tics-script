@@ -11,31 +11,35 @@ function ti_cmd_tpcc_go_run()
 	shift 6
 
 	if [ -z "${2+x}" ]; then
-		echo "[cmd tpcc/load] usage: <cmd> warehouses threads [duration=20m] [tag] [benchmark_name=''] [tags=''] [log_detail_info=true]" >&2
+		echo "[cmd tpcc/load] usage: <cmd> threads [duration=20m] [benchmark_name=''] [tags=''] [log_detail_info=true]" >&2
 		return 1
 	fi
 
-	local warehouses="${1}"
-	local threads="${2}"
+	local threads="${1}"
 
 	local duration='20m'
-	if [ ! -z "${3+x}" ]; then
-		local duration="${3}"
+	if [ ! -z "${2+x}" ]; then
+		local duration="${2}"
 	fi
 
 	local name=''
-	if [ ! -z "${4+x}" ]; then
-		local name="${4}"
+	if [ ! -z "${3+x}" ]; then
+		local name="${3}"
 	fi
 
 	local tags=''
-	if [ ! -z "${5+x}" ]; then
-		local tags="${5}"
+	if [ ! -z "${4+x}" ]; then
+		local tags="${4}"
 	fi
+
 	local log_detail_info='true'
-	if [ ! -z "${6+x}" ]; then
-		local log_detail_info="${6}"
+	if [ ! -z "${5+x}" ]; then
+		local log_detail_info="${5}"
 	fi
+
+	local ti="${integrated}/ops/ti.sh"
+	local warehouses=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" "mysql" "select count(*) from warehouse" 'test' 'false' | trim_host | grep -v 'count'`
 
 	local base_tags="warehouses:${warehouses},threads:${threads},dur:${duration}"
 	if [ ! -z "${tags}" ]; then
@@ -44,19 +48,17 @@ function ti_cmd_tpcc_go_run()
 		local tags="${base_tags},tag:${name}"
 	fi
 
-	local entry_dir="${ti_file}.data"
-
 	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
 	local tidb_host=`from_mod_get_host "${tidb_mod}"`
 	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
 	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
 
-	local ti="${integrated}/ops/ti.sh"
-
 	local ts=`date +%Y%m%d_%H%M%S`
 	if [ ! -z "${name}" ]; then
 		local name="_${name}"
 	fi
+	local entry_dir="${ti_file}.data"
+
 	local work_dir="${entry_dir}/tpcc/${ts}${name}"
 	mkdir -p "${work_dir}"
 
@@ -98,7 +100,7 @@ function ti_cmd_tpcc_go_run()
 		echo
 	fi
 
-	echo "=> ${ts}" >> "${entry_dir}/tpcc/run.log"
+	echo "=> ${ts}" | tee -a "${entry_dir}/tpcc/run.log"
 
 	tpcc_go_run "${entry_dir}" "${tidb_host}" "${tidb_port}" "${warehouses}" "${threads}" "${duration}" | \
 		tee "${work_dir}/run.log" | tee -a "${entry_dir}/tpcc/run.log"

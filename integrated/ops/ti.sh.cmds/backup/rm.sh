@@ -19,11 +19,11 @@ function cmd_ti_backup_rm()
 	echo "=> ${mod_name} #${index} (${dir})"
 
 	if [ ! -d "${dir}.${tag}" ]; then
-		echo "   ${dir}.${tag} not exists, exit..." >&2
-		return 1
+		echo "   ignore: ${dir}.${tag} not exists" >&2
+		return
 	fi
 
-	echo "   delete ${tag}"
+	echo "   deleting ${tag}"
 	rm -rf "${dir}.${tag}"
 	echo "   done"
 }
