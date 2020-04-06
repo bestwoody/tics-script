@@ -225,9 +225,9 @@ ops/ti.sh my.ti flags
 tikv_importer: {dir}/importer ports{p}
 ```
 2. Create corresponding database and table for import.
-3. Generate data CSVs in a folder and name them as ${db_name}.${tbl_name}.*.csv
+3. Generate data CSVs in a folder and name them as `${db_name}.${tbl_name}.*.csv`
 4. Use lightning command to import `lightning/load_csv ${db_name} ${tbl_name} ${path_to_dir} ${check_checksum} ${with_header}`
-For example, to import data to ontime.ontime from data folder /path/table_data/load/splited.
+For example, to import data to ontime.ontime from data folder `/path/table_data/load/splited`.
 ```
 ./ops/ti.sh x.ti lightning/load_csv ontime ontime /path/table_data/load/splited false false
 ```
