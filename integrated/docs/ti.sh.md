@@ -218,3 +218,16 @@ ops/ti.sh my.ti flags
 * Working in progress: support multi-node-cluster, remote deployment and other ops.
 * Support integration test and benchmark test, maybe POC deployment in this year.
 * Step down when it's most features can be covered by ansible (or other tools).
+
+## How to import data as CSV
+1. Add tikv_importer to your cluster.
+```
+tikv_importer: {dir}/importer ports{p}
+```
+2. Create corresponding database and table for import.
+3. Generate data CSVs in a folder and name them as ${db_name}.${tbl_name}.*.csv
+4. Use lightning command to import `lightning/load_csv ${db_name} ${tbl_name} ${path_to_dir} ${check_checksum} ${with_header}`
+For example, to import data to ontime.ontime from data folder /path/table_data/load/splited.
+```
+./ops/ti.sh x.ti lightning/load_csv ontime ontime /path/table_data/load/splited false false
+```
