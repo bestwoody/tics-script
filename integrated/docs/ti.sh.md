@@ -229,5 +229,5 @@ tikv_importer: {dir}/importer ports{p}
 4. Use lightning command to import `lightning/load_csv ${db_name} ${tbl_name} ${path_to_dir} ${check_checksum} ${with_header}`
 For example, to import data to ontime.ontime from data folder `/path/table_data/load/splited`.
 ```
-./ops/ti.sh x.ti lightning/load_csv ontime ontime /path/table_data/load/splited false false
+./ops/ti.sh x.ti lightning/load_csv dbname tablename /path/table_data/load/splited false false
 ```
