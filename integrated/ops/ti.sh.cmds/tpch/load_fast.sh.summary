@@ -93,6 +93,25 @@ function ti_cmd_tpch_load_fast()
 		echo "=> [${host}] creating ${db}.${table}"
 		create_tpch_table_to_mysql "${host}" "${port}" "${schema_dir}" "${db}" "${table}"
 
+		# turn on sync to tiflash 
+		if [ "${sync_to_tiflash}" == 'true' ]; then
+			echo "   syncing to tiflash"
+			local start_time=`date +%s`
+			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+				"${ti_file}" 'syncing/set' "${db}" "${table}" | awk '{print "   "$0}'
+
+			# wait for tiflash become avaliable
+			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
+				"${ti_file}" "wait/available" "${db}" "${table}" | awk '{print "   "$0}'
+
+			local finish_time=`date +%s`
+			local duration=$((finish_time-start_time))
+			echo "   sync to tiflash in ${duration}s"
+		elif [ "${sync_to_tiflash}" != 'false' ]; then
+			echo "[cmd tpch/load] arg 'sync_to_tiflash' only can be true|false, got ${sync_to_tiflash}" >&2
+			return 1
+		fi
+
 		echo "=> [${host}] loading data to ${db}.${table} by tidb-lightning"
 		# clean and create dir for lighting to load
 		local import_dir="${table_dir}/.import.${db}.${table}.`date +%s`.${RANDOM}"
@@ -123,26 +142,6 @@ function ti_cmd_tpch_load_fast()
 		local duration=$((finish_time-start_time))
 		echo "   lightning loaded in ${duration}s"
 		rm -rf "${import_dir}"
-
-		# turn on sync to tiflash 
-		if [ "${sync_to_tiflash}" == 'true' ]; then
-			echo "   syncing to tiflash"
-			local start_time=`date +%s`
-			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-				"${ti_file}" 'syncing/set' "${db}" "${table}" | awk '{print "   "$0}'
-
-			# wait for tiflash become avaliable
-			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
-				"${ti_file}" "wait/available" "${db}" "${table}" | awk '{print "   "$0}'
-
-			local finish_time=`date +%s`
-			local duration=$((finish_time-start_time))
-			echo "   sync to tiflash in ${duration}s"
-		elif [ "${sync_to_tiflash}" != 'false' ]; then
-			echo "[cmd tpch/load] arg 'sync_to_tiflash' only can be true|false, got ${sync_to_tiflash}" >&2
-			return 1
-		fi
-
 	done
 }
 
