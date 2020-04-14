@@ -31,3 +31,9 @@ function log_ts()
 	done
 }
 export -f log_ts
+
+function std_ev()
+{
+	awk '{x[NR]=$0; s+=$0; n++} END{a=s/n; for (i in x){ss += (x[i]-a)^2} sd = sqrt(ss/n); print sd}'
+}
+export -f std_ev

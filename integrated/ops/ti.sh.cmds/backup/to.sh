@@ -19,8 +19,13 @@ function cmd_ti_backup_to()
 	echo "=> ${mod_name} #${index} (${dir})"
 
 	if [ ! -f "${dir}/proc.info" ]; then
-		echo "   missed, exit..." >&2
-		return 1
+		if [ "${mod_name}" == 'tidb' ]; then
+			echo "   missed, ignore"
+			return
+		else
+			echo "   missed, exit..." >&2
+			return 1
+		fi
 	fi
 
 	local up_status=`ti_file_mod_status "${dir}" "${conf_rel_path}"`

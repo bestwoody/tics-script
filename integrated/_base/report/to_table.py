@@ -3,6 +3,9 @@
 import os
 import sys
 
+def warn(msg):
+    sys.stderr.write('[to_table.py] ' + msg + '\n')
+
 def error(msg):
     sys.stderr.write('[to_table.py] ' + msg + '\n')
     sys.exit(1)
@@ -208,6 +211,18 @@ class Line:
         if self.tags.has_key(old_tag):
             self.tags[new_tag] = self.tags[old_tag]
 
+    def map_val(self, tag, old_val, new_val):
+        if self.tags.has_key(tag):
+            val = self.tags[tag]
+            if val.strip() == old_val.strip():
+                val = new_val
+            self.tags[tag] = val
+
+    def map_tag_val(self, old_tag, old_val, new_tag, new_val):
+        self.map_tag(old_tag, new_tag)
+        self.map_val(old_tag, old_val, new_val)
+        self.map_val(new_tag, old_val, new_val)
+
 class PreExe:
     def __init__(self, op):
         if len(op) == 0:
@@ -216,7 +231,18 @@ class PreExe:
         if len(tag_mapper) == 2:
             new_tag = tag_mapper[0].strip()
             old_tag = tag_mapper[1].strip()
-            self.__call__ = lambda line: (line.map_tag(old_tag, new_tag) and None)
+            new_tag_val = new_tag.split('.')
+            if len(new_tag_val) == 1:
+                if len(old_tag.split('.')) != 1:
+                    error('uneven pre-calculating op: ' + op)
+                self.__call__ = lambda line: (line.map_tag(old_tag, new_tag) and None)
+            else:
+                if len(new_tag_val) != 2:
+                    error('unknown pre-calculating op: ' + op)
+                old_tag_val = old_tag.split('.')
+                if len(old_tag_val) != 2:
+                    error('uneven pre-calculating op: ' + op)
+                self.__call__ = lambda line: (line.map_tag_val(old_tag_val[0], old_tag_val[1], new_tag_val[0], new_tag_val[1]) and None)
         else:
             error('unknown pre-calculating op: ' + op)
 
@@ -509,6 +535,8 @@ def to_table(table_title, render_str, tail_cnt, paths):
     try:
         render.render()
         table = render.get_table().output(table_title)
+        if len(table) == 1:
+            return
         padding_table(table, render._cols.notitle)
         align_cells(table)
         for cols in table:

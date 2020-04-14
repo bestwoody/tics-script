@@ -1,2 +1,2 @@
 report detail io performance of each module dir
-usage: <cmd> (no args)
+usage: <cmd> [each_test_sec=10] [test_file_size=1000m] [threads=8]

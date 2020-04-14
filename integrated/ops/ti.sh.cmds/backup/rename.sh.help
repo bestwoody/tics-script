@@ -1,0 +1,2 @@
+rename the tag of a backup to another tag
+usage: <cmd> src_tag dest_tag

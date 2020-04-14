@@ -19,8 +19,13 @@ function cmd_ti_backup_restore()
 	echo "=> ${mod_name} #${index} (${dir})"
 
 	if [ ! -d "${dir}.${tag}" ]; then
-		echo "   ${dir}.${tag} not exists, exit..." >&2
-		return 1
+		if [ "${mod_name}" == 'tidb' ]; then
+			echo "   ${dir}.${tag} not exists, ignore"
+			return
+		else
+			echo "   ${dir}.${tag} not exists, exit..." >&2
+			return 1
+		fi
 	fi
 
 	if [ -d "${dir}" ]; then

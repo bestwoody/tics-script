@@ -1,2 +1,3 @@
 report all results
-usage: <cmd> [filter_str='']
+default table format string: "thd=threads; size=table_size; cols:data|notag; rows:tables,size,txn,thd,dur,setting,tag,workload; cell:limit(20)|avg|~|cnt"
+usage: <cmd> [filter_str=''] [table_format]

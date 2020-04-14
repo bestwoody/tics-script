@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function cmd_ti_stmt_summary()
+function cmd_ti_auto_analyze()
 {
 	local ti_file="${1}"
 	local ti_args="${2}"
@@ -11,19 +11,19 @@ function cmd_ti_stmt_summary()
 	shift 6
 
 	if [ -z "${1+x}" ]; then
-		echo "[cmd tidb/stmt_summary] usage: <cmd> true|false" >&2
+		echo "[cmd tidb/auto_analyze] usage: <cmd> true|false" >&2
 		return 1
 	fi
 
 	local enabled="${1}"
 	if [ "${enabled}" != 'true' ] && [ "${enabled}" != 'false' ]; then
-		echo "[cmd tidb/stmt_summary] usage: <cmd> true|false" >&2
+		echo "[cmd tidb/auto_analyze] usage: <cmd> true|false" >&2
 		return 1
 	fi
 
 	local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
 	if [ -z "${mod}" ]; then
-		echo "[cmd tidb/stmt_summary] no selected tidb" >&2
+		echo "[cmd tidb/auto_analyze] no selected tidb" >&2
 		return 1
 	fi
 
@@ -49,4 +49,4 @@ function cmd_ti_stmt_summary()
 }
 
 set -euo pipefail
-cmd_ti_stmt_summary "${@}"
+cmd_ti_auto_analyze "${@}"

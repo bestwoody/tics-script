@@ -11,7 +11,7 @@ function ti_cmd_sysbench_run()
 	shift 6
 
 	if [ -z "${3+x}" ]; then
-		echo "[cmd sysbench/run] usage: <cmd> table_size threads duration_sec workload [benchmark_name=''] [tags='']" >&2
+		echo "[cmd sysbench/run] usage: <cmd> table_size threads duration_sec workload [benchmark_name=''] [tags=''] [tidb_host=auto] [tidb_port=auto]" >&2
 		return 1
 	fi
 
@@ -29,11 +29,21 @@ function ti_cmd_sysbench_run()
 	if [ ! -z "${6+x}" ]; then
 		local tags="${6}"
 	fi
+	shift 6
+
+	local tidb_host=''
+	if [ ! -z "${1+x}" ]; then
+		local tidb_host="${1}"
+	fi
+	local tidb_port=''
+	if [ ! -z "${2+x}" ]; then
+		local tidb_port="${2}"
+	fi
 
 	local db='sbtest'
 
 	local ti="${integrated}/ops/ti.sh"
-	local tables=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+	local tables=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i 0 \
 		"${ti_file}" "mysql" "show tables" "${db}" 'false' | trim_host | grep -v 'Tables_in_' | wc -l | awk '{print $1}'`
 	#local table_size=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
 	#	"${ti_file}" "mysql" "select count(*) from sbtest1" "${db}" 'false' | trim_host | grep -v 'count'`
@@ -54,10 +64,16 @@ function ti_cmd_sysbench_run()
 	local work_dir="${entry_dir}/${sub_dir}/${ts}${name}.${workload}"
 	mkdir -p "${work_dir}"
 
-	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
-	local tidb_host=`from_mod_get_host "${tidb_mod}"`
-	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
-	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
+	if [ -z "${tidb_host}" ]; then
+		if [ ! -z "${tidb_port}" ]; then
+			echo "[cmd sysbench/run] tidb_host and tidb_port should be both auto or both not" >&2
+			return 1
+		fi
+		local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+		local tidb_host=`from_mod_get_host "${tidb_mod}"`
+		local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
+		local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
+	fi
 
 	mkdir -p "${entry_dir}/${sub_dir}"
 

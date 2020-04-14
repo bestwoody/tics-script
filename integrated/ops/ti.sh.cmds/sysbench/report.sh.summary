@@ -32,11 +32,6 @@ function _get_sysbench_results()
 			local tags="${tags},setting:-"
 		fi
 
-		local is_filter=`echo "${tags}" | grep "${filter}"`
-		if [ -z "${is_filter}" ]; then
-			continue
-		fi
-
 		if [ ! -f "${results}/${dir}/run.log" ]; then
 			continue
 		fi
@@ -49,30 +44,54 @@ function _get_sysbench_results()
 		local end_ts="none"
 		if [ ! -f "${results}/${dir}/end" ]; then
 			local name="${name}(UNFINISHED)"
+			local tags="${tags},tag:${name}"
 		else
 			local end_ts=`cat ${results}/${dir}/end`
 		fi
 
-		local lag95=`cat "${results}/${dir}/run.log" | grep '95th percentile:' | awk '{print $3}' | awk -F '.' '{print $1}'`
-		local qps=`cat "${results}/${dir}/run.log" | grep ' queries:' | awk '{print $3}' | awk -F '.' '{print $1}' | awk -F '(' '{print $2}'`
+		local run_log="${results}/${dir}/run.log"
+		local lag95=`cat "${run_log}" | grep '95th percentile:' | awk '{print $3}' | awk -F '.' '{print $1}'`
+		local qps=`cat "${run_log}" | grep ' queries:' | awk '{print $3}' | awk -F '.' '{print $1}' | awk -F '(' '{print $2}'`
 		if [ -z "${lag95}" ] || [ -z "${qps}" ]; then
 			continue
 		fi
+
+		local qps_lines=`cat "${run_log}" | grep 'qps: ' | awk -F 'qps: ' '{print $2}' | awk '{print $1}'`
+		local qps_std_ev=`echo "${qps_lines}" | std_ev | awk -F '.' '{print $1}'`
+		local sd_percent=$((qps_std_ev * 100 / qps))
+		if [ "${sd_percent}" -gt 15 ]; then
+			local name="${name}(unstable)"
+			local tags="${tags},tag:${name}"
+		fi
+
+		local is_filter=`echo "${tags}" | grep "${filter}"`
+		if [ -z "${is_filter}" ]; then
+			continue
+		fi
+
 		echo "${qps} start:${start_ts},end:${end_ts},${tags},data:qps"
-		echo "${lag95} start:${start_ts},end:${end_ts},${tags},data:95%latency"
+		echo "${sd_percent} start:${start_ts},end:${end_ts},${tags},data:qps_sd%"
+		echo "${lag95} start:${start_ts},end:${end_ts},${tags},data:95%latency(ms)"
 	done
 }
 export -f _get_sysbench_results
 
 function _gen_sysbench_report()
 {
-	if [ -z "${2+x}" ]; then
-		echo "[func _gen_sysbench_report] usage: <func> entry_dir data_file" >&2
+	if [ -z "${3+x}" ]; then
+		echo "[func _gen_sysbench_report] usage: <func> entry_dir data_file [table_format]" >&2
 		return 1
 	fi
 
 	local entry_dir="${1}"
 	local data_file="${2}"
+	local table_format=''
+	if [ ! -z "${3+x}" ]; then
+		local table_format="${3}"
+	fi
+	if [ -z "${table_format}" ]; then
+		local table_format="thd=threads; size=table_size; cols:data|notag; rows:tables,size,txn,thd,dur,setting,tag,workload; cell:limit(20)|avg|~|cnt"
+	fi
 
 	local report="${entry_dir}/report"
 	local title='<sysbench performance>'
@@ -80,8 +99,7 @@ function _gen_sysbench_report()
 	rm -f "${report}.tmp"
 
 	if [ -f "${entry_dir}/${data_file}" ]; then
-		#to_table "${title}" 'wh=warehouses; t=threads; cols:wh,t,dur; rows:setting,tag|notag; cell:limit(20)|avg|~|cnt' 9999 "${entry_dir}/${data_file}" > "${report}.tmp"
-		to_table "${title}" 't=threads; size=table_size; cols:data|notag; rows:tables,size,t,dur,setting,tag,workload; cell:limit(20)|avg|~|cnt' 9999 "${entry_dir}/${data_file}" > "${report}.tmp"
+		to_table "${title}" "${table_format}" 99999 "${entry_dir}/${data_file}" > "${report}.tmp"
 	fi
 
 	if [ -f "${report}.tmp" ]; then
@@ -104,13 +122,18 @@ function cmd_ti_sysbench_report()
 	local mods="${6}"
 	shift 6
 
-	local filter=''
+	local table_format=''
 	if [ ! -z "${1+x}" ]; then
-		local filter="${1}"
+		local table_format="${1}"
+	fi
+
+	local filter=''
+	if [ ! -z "${2+x}" ]; then
+		local filter="${2}"
 	fi
 
 	_get_sysbench_results "${ti_file}" "${filter}" > "${ti_file}.data/sysbench/results.data"
-	_gen_sysbench_report "${ti_file}.data/sysbench" 'results.data'
+	_gen_sysbench_report "${ti_file}.data/sysbench" 'results.data' "${table_format}"
 }
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"

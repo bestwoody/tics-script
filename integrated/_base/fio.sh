@@ -2,12 +2,14 @@ function _fio_test()
 {
 	local rw="${1}"
 	local bs="${2}"
-	local rt="${3}"
+	local sec="${3}"
 	local jobs="${4}"
 	local file="${5}"
 	local log="${6}"
+	local size="${7}"
 
-	fio -filename="${file}" -direct=1 -rw="${rw}" -size 1000m -numjobs="${jobs}" -bs="${bs}" -runtime="${rt}" -group_reporting -name=pc | \
+	fio -filename="${file}" -direct=1 -rw="${rw}" -size "${size}" -numjobs="${jobs}" \
+		-bs="${bs}" -runtime="${sec}" -group_reporting -name=pc | \
 		tee -a ${log} | { grep IOPS || test $? == 1; } | awk -F ': ' '{print $2}'
 }
 export -f _fio_test
@@ -17,9 +19,11 @@ function _fio_standard()
 	local threads="$1"
 	local file="${2}"
 	local log="${3}"
+	local sec="${4}"
+	local size="${5}"
 
-	local wl_w=`_fio_test 'write' 64k 5 "${threads}" "${file}" "${log}"`
-	local wl_r=`_fio_test 'read' 64k 5 "${threads}" "${file}" "${log}"`
+	local wl_w=`_fio_test 'write' 64k "${sec}" "${threads}" "${file}" "${log}" "${size}"`
+	local wl_r=`_fio_test 'read'  64k "${sec}" "${threads}" "${file}" "${log}" "${size}"`
 	local wl_iops_w=`echo "${wl_w}" | awk -F ',' '{print $1}'`
 	local wl_iops_r=`echo "${wl_r}" | awk -F ',' '{print $1}'`
 	local wl_iotp_w=`echo "${wl_w}" | awk '{print $2}'`
@@ -30,29 +34,41 @@ export -f _fio_standard
 
 function fio_report()
 {
-	iops_w=`_fio_test randwrite 4k 5 16 "${file}" "${log}" | awk -F ',' '{print $1}'`
-	iops_r=`_fio_test randread 4k 5 16 "${file}" "${log}" | awk -F ',' '{print $1}'`
-	iotp_w=`_fio_test randwrite 4m 5 16 "${file}" "${log}" | awk '{print $2}'`
-	iotp_r=`_fio_test randread 4m 5 16 "${file}" "${log}" | awk '{print $2}'`
+	if [ -z "${2+x}" ]; then
+		echo "[func fio_report] usage: <func> test_file test_log each_test_sec test_file_size" >&2
+		return 1
+	fi
+
+	local file="${1}"
+	local log="${2}"
+	local sec="${3}"
+	local size="${4}"
+	local threads="${5}"
+
+	local iops_w=`_fio_test randwrite 4k "${sec}" "${threads}" "${file}" "${log}" "${size}" | awk -F ',' '{print $1}'`
+	local iops_r=`_fio_test randread  4k "${sec}" "${threads}" "${file}" "${log}" "${size}" | awk -F ',' '{print $1}'`
+	local iotp_w=`_fio_test randwrite 4m "${sec}" "${threads}" "${file}" "${log}" "${size}" | awk '{print $2}'`
+	local iotp_r=`_fio_test randread  4m "${sec}" "${threads}" "${file}" "${log}" "${size}" | awk '{print $2}'`
 
 	echo "Max: RandWrite: (4K)${iops_w} (4M)${iotp_w}, RandRead: (4K)${iops_r} (4M)${iotp_r}"
 
-	_fio_standard " 8" "${file}" "${log}"
-	_fio_standard "16" "${file}" "${log}"
-	_fio_standard "32" "${file}" "${log}"
+	_fio_standard " 4" "${file}" "${log}" "${sec}" "${size}"
+	_fio_standard " 8" "${file}" "${log}" "${sec}" "${size}"
+	_fio_standard "16" "${file}" "${log}" "${sec}" "${size}"
+	_fio_standard "32" "${file}" "${log}" "${sec}" "${size}"
 
 	rm -f "$log.w.stable"
 	for ((i = 0; i < 5; i++)); do
-		_fio_test randwrite 64k 5 16 "${file}" "${log}" >> "$log.w.stable"
+		_fio_test randwrite 64k "${sec}" "${threads}" "${file}" "${log}" "${size}" >> "$log.w.stable"
 	done
-	w_stable=(`cat "$log.w.stable" | awk -F 'BW=' '{print $2}' | awk '{print $1}'`)
-	echo "RandWrite stable test: ["${w_stable[@]}"]"
+	local w_stable=(`cat "$log.w.stable" | awk -F 'BW=' '{print $2}' | awk '{print $1}'`)
+	echo "RandWrite stable test: (64K 8t) ["${w_stable[@]}"]"
 
 	rm -f "$log.r.stable"
 	for ((i = 0; i < 5; i++)); do
-		_fio_test randread 64k 5 16 "${file}" "${log}" >> "$log.r.stable"
+		_fio_test randread 64k "${sec}" "${threads}" "${file}" "${log}" "${size}" >> "$log.r.stable"
 	done
-	r_stable=(`cat "$log.r.stable" | awk -F 'BW=' '{print $2}' | awk '{print $1}'`)
-	echo "RandRead stable test: ["${r_stable[@]}"]"
+	local r_stable=(`cat "$log.r.stable" | awk -F 'BW=' '{print $2}' | awk '{print $1}'`)
+	echo "RandRead stable test: (64K 8t) ["${r_stable[@]}"]"
 }
 export -f fio_report

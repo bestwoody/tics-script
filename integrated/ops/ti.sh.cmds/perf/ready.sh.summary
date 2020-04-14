@@ -12,7 +12,7 @@ function cmd_ti_perf_ready()
 
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" \
-		'up' : 'tidb/txn_mode' 'pessimistic' : 'tidb/stmt_summary' 'false' : 'tidb/gc_interval' '3s'
+		'up' : 'tidb/txn_mode' 'pessimistic' : 'tidb/auto_analyze' 'false' : 'tidb/gc_interval' '3s'
 }
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
