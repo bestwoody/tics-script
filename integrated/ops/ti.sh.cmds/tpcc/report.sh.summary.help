@@ -1,2 +1,2 @@
-update and print tpcc benchmark report
-usage: <cmd> (no arg)
+report all results
+usage: <cmd> [filter_str='']

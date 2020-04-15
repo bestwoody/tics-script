@@ -1,2 +1,2 @@
-run tpcc benchmark after loading data
-usage: <cmd> warehouses load_workers terminals tag [txn_mode=pessimistic|optimistic]
+run tpcc benchmark in tidb using go-tpc
+usage: <cmd> threads [duration=20m] [benchmark_name=''] [tags=''] [log_detail_info=true] [tidb_host=auto] [tidb_port=auto]

@@ -1,2 +1,2 @@
 run sysbench to cluster
-usage: <cmd> table_size threads duration_sec workload [benchmark_name=''] [tags='']
+usage: <cmd> table_size threads duration_sec workload [benchmark_name=''] [tags=''] [tidb_host=auto] [tidb_port=auto]

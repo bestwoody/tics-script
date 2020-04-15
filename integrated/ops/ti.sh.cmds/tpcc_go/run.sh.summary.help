@@ -1,2 +1,0 @@
-run tpcc benchmark in tidb using go-tpc
-usage: <cmd> threads [duration=20m] [benchmark_name=''] [tags=''] [log_detail_info=true]

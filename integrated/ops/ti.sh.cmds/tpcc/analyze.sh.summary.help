@@ -1,2 +1,2 @@
 analyze tpcc tables
-usage: <cmd> warehouses [table=all]
+usage: <cmd> [table=all]

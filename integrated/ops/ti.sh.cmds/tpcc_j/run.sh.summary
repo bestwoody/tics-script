@@ -1,0 +1,47 @@
+#!/bin/bash
+
+function ti_cmd_tpcc_run()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${4+x}" ]; then
+		echo "[cmd tpcc_j/run] usage: <cmd> warehouses minutes terminals tag [txn_mode=pessimistic|optimistic]" >&2
+		return 1
+	fi
+
+	local warehouses="${1}"
+	local minutes="${2}"
+	local terminals="${3}"
+	local tag="${4}"
+
+	local txn_mode='pessimistic'
+	if [ ! -z "${5+x}" ]; then
+		local txn_mode='${5}'
+	fi
+	if [ "${txn_mode}" != 'optimistic' ] && [ "${txn_mode}" != 'pessimistic' ]; then
+		echo "bad txn_mode: ${txn_mode}, should be pessimistic or optimistic" >&2
+		return 1
+	fi
+
+	local load_workers='1'
+	local db="tpcc_${warehouses}"
+	local entry_dir="${ti_file}.data"
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	local tidb_host=`from_mod_get_host "${tidb_mod}"`
+	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
+	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
+
+	tpcc_run "${entry_dir}" "${tidb_host}" "${tidb_port}" "${db}" "${warehouses}" "${minutes}" "${terminals}" "${load_workers}" "${tag}"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+ti_cmd_tpcc_run "${@}"

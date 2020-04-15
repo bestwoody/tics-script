@@ -11,7 +11,7 @@ function ti_cmd_tpcc_go_raw()
 	shift 6
 
 	if [ -z "${1+x}" ]; then
-		echo "[cmd tpcc_go/raw] usage: <cmd> [go-tpc args except -P and -H]" >&2
+		echo "[cmd tpcc/raw] usage: <cmd> [go-tpc args except -P and -H]" >&2
 		return 1
 	fi
 

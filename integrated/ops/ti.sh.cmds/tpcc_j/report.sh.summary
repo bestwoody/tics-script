@@ -1,0 +1,19 @@
+#!/bin/bash
+
+function ti_cmd_tpcc_report()
+{
+	local ti_file="${1}"
+		local ti_args="${2}"
+		local cmd_mod_names="${3}"
+		local cmd_hosts="${4}"
+		local cmd_indexes="${5}"
+		local mods="${6}"
+		shift 6
+
+		tpcc_report "${ti_file}.data"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+ti_cmd_tpcc_report "${@}"

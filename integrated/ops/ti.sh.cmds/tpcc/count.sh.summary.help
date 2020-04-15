@@ -1,2 +1,2 @@
 show tpcc tables' count
-usage: <cmd> warehouses [table=all]
+usage: <cmd> [table=all]

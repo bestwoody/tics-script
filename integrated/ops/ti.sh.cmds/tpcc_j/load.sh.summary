@@ -1,0 +1,44 @@
+#!/bin/bash
+
+function ti_cmd_tpcc_load()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${3+x}" ]; then
+		echo "[cmd tpcc_j/load] usage: <cmd> warehouses load_workers terminals" >&2
+		return 1
+	fi
+
+	local warehouses="${1}"
+	local load_workers="${2}"
+	local terminals="${3}"
+
+	local minutes='1'
+	local entry_dir="${ti_file}.data"
+	local db="tpcc_${warehouses}"
+
+	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	local tidb_host=`from_mod_get_host "${tidb_mod}"`
+	local tidb_dir=`from_mod_get_dir "${tidb_mod}"`
+	local tidb_port=`ssh_get_value_from_proc_info "${tidb_host}" "${tidb_dir}" 'tidb_port'`
+
+	local ti="${integrated}/ops/ti.sh"
+
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" "mysql" "drop database if exists ${db}" 'test' 'false'
+	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		"${ti_file}" "mysql" "create database if not exists ${db}" 'test' 'false'
+
+	tpcc_load "${entry_dir}" "${tidb_host}" "${tidb_port}" "${db}" "${warehouses}" "${minutes}" "${terminals}" "${load_workers}"
+}
+
+source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
+auto_error_handle
+
+ti_cmd_tpcc_load "${@}"
