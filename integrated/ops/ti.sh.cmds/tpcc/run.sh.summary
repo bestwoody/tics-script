@@ -36,15 +36,14 @@ function ti_cmd_tpcc_go_run()
 	if [ ! -z "${5+x}" ]; then
 		local log_detail_info="${5}"
 	fi
-	shift 5
 
 	local tidb_host=''
-	if [ ! -z "${1+x}" ]; then
-		local tidb_host="${1}"
+	if [ ! -z "${6+x}" ]; then
+		local tidb_host="${6}"
 	fi
 	local tidb_port=''
-	if [ ! -z "${2+x}" ]; then
-		local tidb_port="${2}"
+	if [ ! -z "${7+x}" ]; then
+		local tidb_port="${7}"
 	fi
 
 	local ti="${integrated}/ops/ti.sh"

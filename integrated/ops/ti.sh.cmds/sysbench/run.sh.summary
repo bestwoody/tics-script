@@ -29,15 +29,14 @@ function ti_cmd_sysbench_run()
 	if [ ! -z "${6+x}" ]; then
 		local tags="${6}"
 	fi
-	shift 6
 
 	local tidb_host=''
-	if [ ! -z "${1+x}" ]; then
-		local tidb_host="${1}"
+	if [ ! -z "${7+x}" ]; then
+		local tidb_host="${7}"
 	fi
 	local tidb_port=''
-	if [ ! -z "${2+x}" ]; then
-		local tidb_port="${2}"
+	if [ ! -z "${8+x}" ]; then
+		local tidb_port="${8}"
 	fi
 
 	local db='sbtest'
