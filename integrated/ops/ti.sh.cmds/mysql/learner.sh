@@ -45,7 +45,7 @@ function cmd_ti_mysql()
 	fi
 
 	if [ -f "${query}" ]; then
-		local query=`cat "${query}" | tr -s "\n" " "`
+		local query=`cat "${query}" | grep -v "^--" | tr -s "\n" " "`
 	fi
 
 	if [ "${show_elapsed}" == 'true' ]; then

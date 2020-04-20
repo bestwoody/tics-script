@@ -42,7 +42,7 @@ function cmd_ti_learner()
 	fi
 
 	if [ -f "${query}" ]; then
-		local query=`cat "${query}" | tr -s "\n" " "`
+		local query=`cat "${query}" | grep -v "^--" | tr -s "\n" " "`
 	fi
 
 	local here=`cd $(dirname ${BASH_SOURCE[0]}) && pwd`
