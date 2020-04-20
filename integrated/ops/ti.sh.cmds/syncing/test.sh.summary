@@ -41,7 +41,6 @@ function verify_raft_sync()
 		return 1
 	fi
 
-	local read_sql="select col from ${table}"
 	local drop_sql="drop table if exists ${db}.${table}"
 
 	local drop_err=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
@@ -66,6 +65,7 @@ function verify_raft_sync()
 		return 1
 	fi
 
+	local read_sql="select col from ${table}"
 	local insert_sql="insert into ${db}.${table} (col) values ('world')"
 	"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
 		"${ti_file}" 'mysql' "${insert_sql}" "${db}" 'false'
@@ -103,16 +103,21 @@ function verify_raft_sync()
 		echo "OK     tiflash over tidb: ${read_sql}"
 	fi
 
+	local mapped_db=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		-k "${ti_args}" "${ti_file}" 'ch/mapped_database' "${db}"`
+	local mapped_table=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+		-k "${ti_args}" "${ti_file}" 'ch/mapped_table' "${db}" "${table}" "false"`
+	local tiflash_read_sql="select col from ${mapped_table}"
 	local read_res=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" 'ch' "${read_sql}" "${db}" 'TabSeparated' 2>&1`
+		-k "${ti_args}" "${ti_file}" 'ch' "${tiflash_read_sql}" "${mapped_db}" 'TabSeparated' 2>&1`
 	local read_err=`echo "${read_res}" | grep 'Exception'`
 	local read_ok=`echo "${read_res}" | grep 'world'`
 	if [ ! -z "${read_err}" ]; then
-		echo "WARN   tiflash: ${read_sql}: ${read_err}"
+		echo "WARN   tiflash: ${tiflash_read_sql}: ${read_err}"
 	elif [ -z "${read_ok}" ]; then
-		echo "WARN   tiflash: ${read_sql}: result=\"${read_res}\""
+		echo "WARN   tiflash: ${tiflash_read_sql}: result=\"${read_res}\""
 	else
-		echo "OK     tiflash: ${read_sql}"
+		echo "OK     tiflash: ${tiflash_read_sql}"
 	fi
 
 	local drop_err=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \

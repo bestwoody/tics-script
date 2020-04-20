@@ -5,7 +5,7 @@ ti_mysql> insert into test.t values('Hello world', 666)
 ti_mysql> insert into test.t values('Hello world', 666)
 ti_func> wait_table test t
 
-ti_ch> select c1, c2 from test.t --schema_version 10000
+ti_ch> DBGInvoke query_mapped('select c1, c2 from \$d.\$t', test, t) --schema_version 10000
 ┌─c1──────────┬──c2─┐
 │ Hello world │ 666 │
 │ Hello world │ 666 │
@@ -13,7 +13,7 @@ ti_ch> select c1, c2 from test.t --schema_version 10000
 
 ti_mysql> alter table test.t drop column c2
 
-ti_ch> select c1 from test.t --schema_version 10000
+ti_ch> DBGInvoke query_mapped('select c1 from \$d.\$t', test, t) --schema_version 10000
 ┌─c1──────────┐
 │ Hello world │
 │ Hello world │
@@ -22,7 +22,7 @@ ti_ch> select c1 from test.t --schema_version 10000
 ti_mysql> insert into test.t values('Hello world2')
 ti_mysql> insert into test.t values('Hello world2')
 
-ti_ch> select c1 from test.t
+ti_ch> DBGInvoke query_mapped('select c1 from \$d.\$t', test, t)
 ┌─c1───────────┐
 │ Hello world  │
 │ Hello world  │

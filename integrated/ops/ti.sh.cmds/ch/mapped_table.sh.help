@@ -1,0 +1,2 @@
+Get the mapped underlying table name of a TiDB table.
+usage: <cmd> database table [qualify=true]

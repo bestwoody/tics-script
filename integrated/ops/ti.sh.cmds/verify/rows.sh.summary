@@ -16,9 +16,10 @@ function cmd_ti_verify_rows()
 	fi
 
 	local table="${1}.${2}"
+	local mapped_table=$("${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" "${ti_file}" ch/mapped_table "${1}" "${2}")
 
 	local tiflash_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" "${ti_file}" 'ch' \
-		"select count(1) from ${table}" 'default' 'TabSeparated' 'false' | trim_host | awk '{sum+=$1}END{print sum}'`
+		"select count(1) from ${mapped_table}" 'default' 'TabSeparated' 'false' | trim_host | awk '{sum+=$1}END{print sum}'`
 
 	local tidb_idx=`from_mods_random_mod "${mods}" 'tidb'`
 	local tikv_rows=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m tidb -i "${tidb_idx}" -k \

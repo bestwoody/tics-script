@@ -1,0 +1,2 @@
+Get the mapped underlying database name of a TiDB database.
+usage: <cmd> database

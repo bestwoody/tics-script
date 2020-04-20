@@ -16,7 +16,7 @@ sync_stmt = Template("ti_mysql> alter table $database.$table set tiflash replica
 insert_stmt = Template("ti_mysql> insert into $database.$table($columns) values($data)\n")
 update_stmt = Template("ti_mysql> update $database.$table set $exprs $condition\n")
 delete_stmt = Template("ti_mysql> delete from $database.$table $condition\n")
-select_stmt = Template("ti_ch> select $columns from $database.$table\n")
+select_stmt = Template("ti_ch> DBGInvoke query_mapped('select $columns from \\$$d.\\$$t', $database, $table)\n")
 refresh_schema_stmt = "\nti_ch> DBGInvoke __refresh_schemas()\n\n"
 wait_stmt = Template("ti_func> wait_table $database $table\n")
 
