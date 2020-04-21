@@ -17,7 +17,7 @@ tiflash_proxy	6d6b35dec96e39f2c50d2b7bdc151bd2	libtiflash_proxy.dylib	http://139
 
 tidb_lightning  aa8a75a79dabe78219b5978e91b447a0    tidb-lightning  http://139.219.11.38:8000/p6f8F/tidb-lightning.tar.gz    master  605760d1b2025d1e1a8b7d0c668c74863d7d1271
 tikv_importer   834005a83cb63943238cb4b644ee0684    tikv-importer   http://139.219.11.38:8000/Gx4Ze/tikv-importer.tar.gz     master  ad32bdcd951ae68cf1ea743a651e2bd47198d6df
-tiflash	61ef84186545a9984a5a55578c79e5f9	tiflash	http://139.219.11.38:8000/Okfsf/tiflash.tar.gz	master	ac514f6efcb0f379bc5f7042d40fec1e0a41e1d2
+tiflash 1714ddc160d642380907fb166b4ec88b    tiflash http://139.219.11.38:8000/Bxmig/tiflash.tar.gz  master  ea3c39dc12832a28d77af8132490c4baf47af821
 cluster_manager	f9d66326f81885534ecbc651f8648482	flash_cluster_manager.tgz	http://139.219.11.38:8000/MPPge/flash_cluster_manager.tgz	master	040fb122ca3305ed37ec30d7f07a91a93ad2f6d6
 tikv	45cc1a0de2859280b6399bf069aa6b19	tikv-server	http://139.219.11.38:8000/10WBmJ/tikv-server.tar.gz	master	b91cece533ad8105292d503c9401227aaa2c6aa1
 pd	d18396d96377e4d2c03dc23567611b14	pd-server	http://139.219.11.38:8000/oYqG9/pd-server.tar.gz	master	9c709cfc9cc5ec5a56d72b4ea1e83b136259797a

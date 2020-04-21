@@ -17,7 +17,7 @@ tidb_lightning	89d11caabf3c3b9ac5532cee05635e05	tidb-lightning	http://139.219.11
 tikv_importer	425d438e52b27479d606938e2ce7cce1	tikv-importer	http://139.219.11.38:8000/IXdAF/tikv-importer.tar.gz	master	825ed6a78305a5e7aba4df4e621bf54391685ced
 
 cluster_manager	c9ffabef9fc3738a52725b239aa91e64	flash_cluster_manager.tgz	http://139.219.11.38:8000/Vgqxk/flash_cluster_manager.tgz master	040fb122ca3305ed37ec30d7f07a91a93ad2f6d6
-tiflash	8d90842d547a8b67d4f5836c800d2cdd	tiflash	http://139.219.11.38:8000/WAyW7/tiflash.tar.gz	master	ac514f6efcb0f379bc5f7042d40fec1e0a41e1d2
+tiflash 717bccc78f7735faf0936685cbb06e20    tiflash http://139.219.11.38:8000/13SJGs/tiflash.tar.gz master  ea3c39dc12832a28d77af8132490c4baf47af821
 tiflash_proxy	fd70c341841a3e08af783711c14e20ed	libtiflash_proxy.so	http://139.219.11.38:8000/oq0ZX/libtiflash_proxy.tar.gz	tiflash-proxy-master	7752f6573e5091ca5110ed377afe322e97b22e94
 
 tikv	668f1dd5be9edaed671e2354b0e8769a	tikv-server	http://139.219.11.38:8000/13wjac/tikv-server.tar.gz	master	b91cece533ad8105292d503c9401227aaa2c6aa1

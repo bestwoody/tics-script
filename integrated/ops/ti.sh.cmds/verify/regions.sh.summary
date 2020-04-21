@@ -61,7 +61,7 @@ function cmd_ti_verify_regions()
 
 	# get table region from ch
 	local table_regions_from_ch=`"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" 'ch' "DBGInvoke dump_all_region($table_id, true)" 'default' 'tab' 'false' | \
+		-k "${ti_args}" "${ti_file}" 'ch' "DBGInvoke dump_all_region($table_id, true)" '' 'tab' 'false' | \
 		trim_host | grep "\[region" | cut -f 2 -d " " | sed 's/.$//' | sort -n`
 
 	# get all region Info from pd

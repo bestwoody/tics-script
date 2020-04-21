@@ -1,2 +1,2 @@
 load tpch data into tiflash-storage directly
-usage: <cmd> scale table(all|lineitem|...) engine(tmt|dm) [data_dir={integrated}/data/tpch] [threads=4]
+usage: <cmd> scale table(all|lineitem|...) engine(tmt|dt|mt) [data_dir={integrated}/data/tpch] [threads=4]

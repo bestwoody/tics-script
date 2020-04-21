@@ -24,14 +24,12 @@ function cmd_ti_ch()
 
 	if [ ! -z "${1+x}" ] && [ ! -z "${1}" ]; then
 		local db="${1}"
-		shift 1
 	else
-		local db='default'
+		local db='db_1'
 	fi
 
-	if [ ! -z "${1+x}" ] && [ ! -z "${1}" ]; then
-		local format="${1}"
-		shift 1
+	if [ ! -z "${2+x}" ] && [ ! -z "${2}" ]; then
+		local format="${2}"
 	else
 		local format='TabSeparatedWithNames'
 	fi
@@ -43,9 +41,8 @@ function cmd_ti_ch()
 		local format='TabSeparatedWithNames'
 	fi
 
-	if [ ! -z "${1+x}" ] && [ ! -z "${1}" ]; then
-		local show_elapsed="${1}"
-		shift 1
+	if [ ! -z "${3+x}" ] && [ ! -z "${3}" ]; then
+		local show_elapsed="${3}"
 	else
 		local show_elapsed='true'
 	fi

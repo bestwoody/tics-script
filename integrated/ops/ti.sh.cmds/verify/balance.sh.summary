@@ -28,7 +28,7 @@ function cmd_ti_verify_balance()
 	fi
 
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -k "${ti_args}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		"${ti_file}" 'ch' "${select} count(1) from ${table}" 'default' 'TabSeparated' 'false' | sort -rnk 1
+		"${ti_file}" 'ch' "${select} count(1) from ${table}" '' 'TabSeparated' 'false' | sort -rnk 1
 }
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"

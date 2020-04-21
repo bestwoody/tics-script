@@ -24,12 +24,12 @@ function cmd_ti_ci_self()
 	"${ti}" -k "${args}" "${file}" perf/fio --help 1>/dev/null
 
 	"${ti}" -k "${args}" "${file}" ch "show databases" 1>/dev/null
-	"${ti}" -k "${args}" "${file}" ch "show databases" 'default' 1>/dev/null
-	"${ti}" -k "${args}" "${file}" ch "show databases" 'default' 'tab' 1>/dev/null
-	"${ti}" -k "${args}" "${file}" ch "show databases" 'default' 'title' 1>/dev/null
-	"${ti}" -k "${args}" "${file}" ch "show databases" 'default' 'pretty' 1>/dev/null
-	"${ti}" -k "${args}" "${file}" ch 'show databases' 'default' 'pretty' 'true' 1>/dev/null
-	"${ti}" -k "${args}" "${file}" ch 'show databases' 'default' 'pretty' 'false' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch "show databases" '' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch "show databases" '' 'tab' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch "show databases" '' 'title' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch "show databases" '' 'pretty' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch 'show databases' '' 'pretty' 'true' 1>/dev/null
+	"${ti}" -k "${args}" "${file}" ch 'show databases' '' 'pretty' 'false' 1>/dev/null
 
 	"${ti}" -k "${args}" "${file}" mysql 'show databases' 1>/dev/null
 	"${ti}" -k "${args}" "${file}" mysql 'show databases' 'test' 1>/dev/null

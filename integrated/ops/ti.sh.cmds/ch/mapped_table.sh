@@ -33,7 +33,7 @@ function cmd_ti_mapped_table()
 		return 1
 	fi
 
-	run_query_through_ch_client "${dir}/tiflash" --host="${host}" --port="${port}" -d "default" \
+	run_query_through_ch_client "${dir}/tiflash" --host="${host}" --port="${port}" \
 		-f "TabSeparated" --query="${query_str}"
 }
 

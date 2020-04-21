@@ -73,7 +73,7 @@ function cmd_ti_verify_consistency()
 	local min_max_tso=`"${ti}" -h "${cmd_hosts}" -k "${ti_args}" -m "${cmd_mod_names}" \
 		-i '0' "${ti_file}" 'ch' \
 		"selraw min(_INTERNAL_VERSION), max(_INTERNAL_VERSION) from ${mapped_table}" \
-		'default' 'tab' 'false' 2>&1 | trim_host`
+		'' 'tab' 'false' 2>&1 | trim_host`
 	if [ -z "${min_max_tso}" ]; then
 		echo "[cmd verify/consistency] getting min-max ts failed" >&2
 		return 1

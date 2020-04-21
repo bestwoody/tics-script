@@ -104,7 +104,7 @@ class OpsExecutor:
             padding_args = ['"test"', 'false', 'true', 'true']
         elif cmd_type.is_ti_ch():
             ops_cmd = "ch"
-            padding_args = ['default', 'pretty', 'false']
+            padding_args = ['""', 'pretty', 'false']
         else:
             raise Exception("Unknown command type", str(cmd_type))
         args = map(lambda x: "--" + x.strip(), cmd_arr[1:])

@@ -33,7 +33,7 @@ function verify_raft_sync()
 	fi
 
 	local tiflash_ok=`"${ti}" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
-		-k "${ti_args}" "${ti_file}" 'ch' "${show_sql}" | grep 'default'`
+		-k "${ti_args}" "${ti_file}" 'ch' "${show_sql}" | grep ''`
 	if [ ! -z "${tiflash_ok}" ]; then
 		echo "OK     tiflash: ${show_sql}"
 	else
