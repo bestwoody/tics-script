@@ -1,2 +1,4 @@
+nodes
 nodes/
 resource/tpch/mysql/schema_double/
+*.ti
