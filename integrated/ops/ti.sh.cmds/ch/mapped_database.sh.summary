@@ -1,0 +1,48 @@
+#!/bin/bash
+
+function cmd_ti_mapped_database()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local mod=`from_mods_random_mod "${mods}" 'tiflash' 'false'`
+	if [ -z "${mod}" ]; then
+		echo "[cmd ch/mapped_database] no tiflash selected" >&2
+		return 1
+	fi
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd ch/mapped_database] usage: <cmd> database" >&2
+		return 1
+	fi
+	
+	local db_name="${1}"
+
+	local dir=`from_mod_get_dir "${mod}"`
+	local host=`from_mod_get_host "${mod}"`
+	local port=`from_mod_get_proc_info "${mod}" "tcp_port"`
+	if [ -z "${port}" ]; then
+		echo "[cmd ch/queries] getting port from proc.info failed" >&2
+		return 1
+	fi
+
+	local query_str="DBGInvoke mapped_database(${db_name})"
+	local result=`run_query_through_ch_client "${dir}/tiflash" --host="${host}" --port="${port}" \
+		-f "TabSeparated" --query="${query_str}"`
+	echo $result
+
+	# Check if we can get mapped name
+	if [ -z "`echo $result | grep -i '^Database .* not found.$'`" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+set -euo pipefail
+cmd_ti_mapped_database "${@}"

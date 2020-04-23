@@ -22,7 +22,7 @@ function ti_cmd_tpch_wait_syncing()
 			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'tpch/db' | trim_host`
 	fi
 	if [ -z "${db}" ]; then
-		echo "[cmd tpch/rows] auto select tpch database failed" >&2
+		echo "[cmd tpch/wait] auto select tpch database failed" >&2
 		return 1
 	fi
 
@@ -34,6 +34,10 @@ function ti_cmd_tpch_wait_syncing()
 		else
 			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 				-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'wait/syncing' "${db}" "${table}" "${@}"
+		fi
+		if [ $? -ne 0 ]; then
+			echo "[cmd tpch/wait] wait/syncing failed for ${db} ${table} " >&2
+			return 1
 		fi
 	done
 }

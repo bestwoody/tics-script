@@ -18,10 +18,23 @@ function cmd_ti_wait_syncing()
 	local db="${1}"
 	local table="${2}"
 
-	local mapped_db=$("${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+	# https://unix.stackexchange.com/questions/346878/can-i-get-the-exit-code-from-a-sub-shell-launched-with-command
+	# we need to separate local declaration from the assignment into two separate steps
+	# to get return exit code of subshell
+	local mapped_db=""
+	mapped_db=$("${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'ch/mapped_database' "${db}")
-	local mapped_table=$("${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+	if [ $? -ne 0 ]; then
+		echo "[cmd wait/table] can not get mapped name for database ${db}, got: ${mapped_db}" >&2
+		return 1
+	fi
+	local mapped_table=""
+	mapped_table=$("${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'ch/mapped_table' "${db}" "${table}" 'false')
+	if [ $? -ne 0 ]; then
+		echo "[cmd wait/table] can not get mapped name for table ${db}.${table}, got: ${mapped_db}.${mapped_table}" >&2
+		return 1
+	fi
 
 	local wait_for_available='true'
 	if [ ! -z "${3+x}" ]; then
@@ -83,6 +96,7 @@ function cmd_ti_wait_syncing()
 			echo "   syncing and available"
 		else
 			echo "   syncing but not available yet"
+			return 1
 		fi
 	fi
 }
