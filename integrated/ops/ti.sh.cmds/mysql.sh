@@ -78,13 +78,11 @@ function cmd_ti_mysql()
 		local show_warnings_opt=' --show-warnings'
 	fi
 
-	local mysql_cmd="mysql -h ${host} -P ${port} -u ${user} --database=${db} --comments${pretty_opt}${show_warnings_opt}"
-
 	if [ -f "${query}" ]; then
-		${mysql_cmd} < "${query}"
-	else
-		${mysql_cmd} -e "${query}"
+		local query=`cat "${query}" | grep -v "^--" | tr -s "\n" " "`
 	fi
+
+	mysql -h ${host} -P ${port} -u ${user} --database=${db} --comments${pretty_opt}${show_warnings_opt} -e "${query}"
 
 	if [ "${show_elapsed}" == 'true' ]; then
 		local elapsed=`timer_end "${start_time}"`

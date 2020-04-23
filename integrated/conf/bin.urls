@@ -16,10 +16,10 @@ tispark	4550e82433927cafecbcd3396daabeb6	tispark-assembly-2.3.0-SNAPSHOT.jar	htt
 tidb_lightning	89d11caabf3c3b9ac5532cee05635e05	tidb-lightning	http://139.219.11.38:8000/LfROf/tidb-lightning.tar.gz	master	98bc8495f3fd2e74da20ffd623786f3839469d20
 tikv_importer	425d438e52b27479d606938e2ce7cce1	tikv-importer	http://139.219.11.38:8000/IXdAF/tikv-importer.tar.gz	master	825ed6a78305a5e7aba4df4e621bf54391685ced
 
-cluster_manager	c9ffabef9fc3738a52725b239aa91e64	flash_cluster_manager.tgz	http://139.219.11.38:8000/Vgqxk/flash_cluster_manager.tgz master	040fb122ca3305ed37ec30d7f07a91a93ad2f6d6
-tiflash 717bccc78f7735faf0936685cbb06e20    tiflash http://139.219.11.38:8000/13SJGs/tiflash.tar.gz master  ea3c39dc12832a28d77af8132490c4baf47af821
-tiflash_proxy	fd70c341841a3e08af783711c14e20ed	libtiflash_proxy.so	http://139.219.11.38:8000/oq0ZX/libtiflash_proxy.tar.gz	tiflash-proxy-master	7752f6573e5091ca5110ed377afe322e97b22e94
+cluster_manager	0201a786fdcfafa0171c6eef356ca2e8	flash_cluster_manager.tgz	http://42.159.80.36:8000/13AKTd/flash_cluster_manager.tgz master	9ad823cc6ac6c7ab983414da4e815c93e0da5661
+tiflash a982892f405d9d517d7ce2d74a7bffac    tiflash http://42.159.80.36:8000/vbDop/tiflash.tar.gz master  9ad823cc6ac6c7ab983414da4e815c93e0da5661
+tiflash_proxy	8b4f839ebb8b2658277d2fe3c39049e9	libtiflash_proxy.so	http://42.159.80.36:8000/81QaY/libtiflash_proxy.tar.gz	tiflash-proxy-master	7752f6573e5091ca5110ed377afe322e97b22e94
 
-tikv	668f1dd5be9edaed671e2354b0e8769a	tikv-server	http://139.219.11.38:8000/13wjac/tikv-server.tar.gz	master	b91cece533ad8105292d503c9401227aaa2c6aa1
-pd	89ada948b3b5314ac9063077765f95bd	pd-server	http://139.219.11.38:8000/142oOH/pd-server.tar.gz	master	9c709cfc9cc5ec5a56d72b4ea1e83b136259797a
-tidb	31919b26a00891e1838bedd3cb8e02fa	tidb-server	http://139.219.11.38:8000/TWk7W/tidb-server.tar.gz	master	78ac21914fe851c7eab7e1dfa01df7d45cf6df05
+tikv	a9ffb04ed76233ab534eaea352cf77f7	tikv-server	http://42.159.80.36:8000/6oEGy/tikv-server.tar.gz	master	4eeb23e12bd5082180c31eb5dbf71afc078ded17
+pd	43f696cb0c1e286ee9e3a0d8374da78f	pd-server	http://42.159.80.36:8000/A5Age/pd-server.tar.gz	master	428acd53eba296af4b49a65bc0c7eabac7430aeb
+tidb	79d59b54715343d220265ddead7a16da	tidb-server	http://42.159.80.36:8000/12aolX/tidb-server.tar.gz	master	080bcf2ac5edbc6bffff4b847bb4e4c830a1f408
