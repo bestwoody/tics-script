@@ -3,8 +3,6 @@
 # master - 6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 chspark	f983c70d2a09880df5fbd4d61e6bb0dc	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/rZiST/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
 
-pd_ctl	5efa3d330d0c35bf4ca7fafe6b0036d5	pd-ctl	http://139.219.11.38:8000/uZznk/pd-ctl.tar.gz
-tikv_ctl	eb9f21f34575d6a93ae99bbf57bfec62	tikv-ctl	http://139.219.11.38:8000/ZzOgG/tikv-ctl.tar.gz
 spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 chspark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
@@ -16,10 +14,13 @@ tispark	4550e82433927cafecbcd3396daabeb6	tispark-assembly-2.3.0-SNAPSHOT.jar	htt
 tidb_lightning	89d11caabf3c3b9ac5532cee05635e05	tidb-lightning	http://139.219.11.38:8000/LfROf/tidb-lightning.tar.gz	master	98bc8495f3fd2e74da20ffd623786f3839469d20
 tikv_importer	425d438e52b27479d606938e2ce7cce1	tikv-importer	http://139.219.11.38:8000/IXdAF/tikv-importer.tar.gz	master	825ed6a78305a5e7aba4df4e621bf54391685ced
 
-cluster_manager	0201a786fdcfafa0171c6eef356ca2e8	flash_cluster_manager.tgz	http://42.159.80.36:8000/13AKTd/flash_cluster_manager.tgz master	9ad823cc6ac6c7ab983414da4e815c93e0da5661
-tiflash a982892f405d9d517d7ce2d74a7bffac    tiflash http://42.159.80.36:8000/vbDop/tiflash.tar.gz master  9ad823cc6ac6c7ab983414da4e815c93e0da5661
-tiflash_proxy	8b4f839ebb8b2658277d2fe3c39049e9	libtiflash_proxy.so	http://42.159.80.36:8000/81QaY/libtiflash_proxy.tar.gz	tiflash-proxy-master	7752f6573e5091ca5110ed377afe322e97b22e94
+pd_ctl	d14878257a518fad108b55b8063823fd	pd-ctl	https://download.pingcap.org/pd-ctl-tiflash-master-20200425.tar.gz
+tikv_ctl	b2f482499506022708d8d2259334a180	tikv-ctl	https://download.pingcap.org/tikv-ctl-tiflash-master-20200425.tar.gz
 
-tikv	a9ffb04ed76233ab534eaea352cf77f7	tikv-server	http://42.159.80.36:8000/6oEGy/tikv-server.tar.gz	master	4eeb23e12bd5082180c31eb5dbf71afc078ded17
-pd	43f696cb0c1e286ee9e3a0d8374da78f	pd-server	http://42.159.80.36:8000/A5Age/pd-server.tar.gz	master	428acd53eba296af4b49a65bc0c7eabac7430aeb
-tidb	79d59b54715343d220265ddead7a16da	tidb-server	http://42.159.80.36:8000/12aolX/tidb-server.tar.gz	master	080bcf2ac5edbc6bffff4b847bb4e4c830a1f408
+cluster_manager	67d939a58294804376c0091cb26974dd	flash_cluster_manager.tgz	https://download.pingcap.org/flash_cluster_manager-master-20200425.tgz master	8a3ed1eea703793679c22925860a8d9dfff434c4
+tiflash 16d1fc57296c304376957f31873a6613    tiflash https://download.pingcap.org/tiflash-master-20200425.tar.gz master  8a3ed1eea703793679c22925860a8d9dfff434c4
+tiflash_proxy	b1ef48a79c1659197bd7fea46eda20e1	libtiflash_proxy.so	https://download.pingcap.org/tiflash_proxy-master-20200425.tar.gz	tiflash-proxy-master	3b0917ef6237e7321cf202b9c586139c9a4061d9
+
+tikv	f776031ac252853cce8b48cf0369908c	tikv-server	https://download.pingcap.org/tikv-server-tiflash-master-20200425.tar.gz	master	66feb3862ceb1c7eb3a29c13644ffce51a112be1
+pd	89d9a9b6ceef3ffcb8f7d1c1e1745857	pd-server	https://download.pingcap.org/pd-server-tiflash-master-20200425.tar.gz	master	e89fa2ed34f89823181fccbd92aea94648f7a2ca
+tidb	35f4cfbb81471464812a48d7a37e12e1	tidb-server	https://download.pingcap.org/tidb-server-tiflash-master-20200425.tar.gz	master	5ede18f10eedfe2e3690d7728dec3ffa4b0af2d5
