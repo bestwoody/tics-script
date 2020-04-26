@@ -7,9 +7,9 @@ spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://d
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 chspark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
-tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
+tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	https://download.pingcap.org/tiflash_lib.tgz
 
-tispark	4550e82433927cafecbcd3396daabeb6	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/NN6iU/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	e5701e987a6efdd7a8734666590c0baba36d12f5
+tispark	f0b94f1180fee5c03a2810ff601de7c9	tispark-assembly-2.3.0-SNAPSHOT.jar	https://download.pingcap.org/tispark-assembly-2.3.0-SNAPSHOT.jar-0426.tar.gz	master	6f9c8b46c926c6749e3543b0fe45056488af1fef
 
 tidb_lightning	89d11caabf3c3b9ac5532cee05635e05	tidb-lightning	http://139.219.11.38:8000/LfROf/tidb-lightning.tar.gz	master	98bc8495f3fd2e74da20ffd623786f3839469d20
 tikv_importer	425d438e52b27479d606938e2ce7cce1	tikv-importer	http://139.219.11.38:8000/IXdAF/tikv-importer.tar.gz	master	825ed6a78305a5e7aba4df4e621bf54391685ced
