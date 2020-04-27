@@ -1,0 +1,32 @@
+# ti.sh my.ti ci/fullstack ddl-basic/recover.test false
+ti_mysql> drop table if exists test.t
+
+ti_mysql> create table test.t (c1 int, c2 varchar(64))
+
+ti_mysql> ALTER TABLE test.t SET TIFLASH REPLICA 1
+
+ti_func> wait_table test t
+
+ti_mysql> insert into test.t values(1, 'abc')
+
+ti_mysql> drop table test.t
+
+ti_func> sleep 10
+
+ti_mysql> recover table test.t
+
+ti_mysql> tiflash select * from test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | abc  |
++------+------+
+
+ti_mysql> tikv select * from test.t
++------+------+
+| c1   | c2   |
++------+------+
+|    1 | abc  |
++------+------+
+
+ti_mysql> drop table if exists test.t
