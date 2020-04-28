@@ -2,23 +2,26 @@
 
 chspark	689954d70cd1e7d385f639518dcc0c77	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/btq5X/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz	master	6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 
-pd_ctl	2dbb87e4bbea4a68409cfb8debabbbfc	pd-ctl	http://139.219.11.38:8000/VKwpv/pd-ctl.tar.gz
-tikv_ctl	f858021402608024367ea6fd5054e5d7	tikv-ctl	http://139.219.11.38:8000/47bkL/tikv-ctl.tar.gz
+pd_ctl	5d24e2711ef5c6345c336f5b2add19bc	pd-ctl	https://download.pingcap.org/pd-ctl-mac-master.tar.gz
+tikv_ctl	2186df52b1f146c2dc7dd7e971f556db	tikv-ctl	https://download.pingcap.org/tikv-ctl-mac-master.tar.gz
+
 spark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 spark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 chspark_m	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https://download.pingcap.org/spark-2.3.4-bin-hadoop2.7.tgz
 
-tispark	4550e82433927cafecbcd3396daabeb6	tispark-assembly-2.3.0-SNAPSHOT.jar	http://139.219.11.38:8000/NN6iU/tispark-assembly-2.3.0-SNAPSHOT.jar.tar.gz	master	e5701e987a6efdd7a8734666590c0baba36d12f5
+tispark	f0b94f1180fee5c03a2810ff601de7c9	tispark-assembly-2.3.0-SNAPSHOT.jar	https://download.pingcap.org/tispark-assembly-2.3.0-SNAPSHOT.jar-0426.tar.gz	master	6f9c8b46c926c6749e3543b0fe45056488af1fef
 
 # TODO: fake lib file, remove it later
-tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	http://139.219.11.38:8000/xJ2pk/tiflash_lib.tgz
-tiflash_proxy	6d6b35dec96e39f2c50d2b7bdc151bd2	libtiflash_proxy.dylib	http://139.219.11.38:8000/11aBsC/libtiflash_proxy.tar.gz	tiflash-proxy-master	7752f6573e5091ca5110ed377afe322e97b22e94
+tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	https://download.pingcap.org/tiflash_lib.tgz
 
 tidb_lightning  aa8a75a79dabe78219b5978e91b447a0    tidb-lightning  http://139.219.11.38:8000/p6f8F/tidb-lightning.tar.gz    master  605760d1b2025d1e1a8b7d0c668c74863d7d1271
 tikv_importer   834005a83cb63943238cb4b644ee0684    tikv-importer   http://139.219.11.38:8000/Gx4Ze/tikv-importer.tar.gz     master  ad32bdcd951ae68cf1ea743a651e2bd47198d6df
-tiflash 1714ddc160d642380907fb166b4ec88b    tiflash http://139.219.11.38:8000/Bxmig/tiflash.tar.gz  master  ea3c39dc12832a28d77af8132490c4baf47af821
-cluster_manager	f9d66326f81885534ecbc651f8648482	flash_cluster_manager.tgz	http://139.219.11.38:8000/MPPge/flash_cluster_manager.tgz	master	040fb122ca3305ed37ec30d7f07a91a93ad2f6d6
-tikv	45cc1a0de2859280b6399bf069aa6b19	tikv-server	http://139.219.11.38:8000/10WBmJ/tikv-server.tar.gz	master	b91cece533ad8105292d503c9401227aaa2c6aa1
-pd	d18396d96377e4d2c03dc23567611b14	pd-server	http://139.219.11.38:8000/oYqG9/pd-server.tar.gz	master	9c709cfc9cc5ec5a56d72b4ea1e83b136259797a
-tidb	e327354b805acccd348169d55ede4536	tidb-server	http://139.219.11.38:8000/DijFW/tidb-server.tar.gz	master	78ac21914fe851c7eab7e1dfa01df7d45cf6df05
+
+pd	a139426e7ead7d0a8708a1debc8cfe81	pd-server	https://download.pingcap.org/pd-server-mac-master.tar.gz	master	e73bc59735901776d3e1ee1543d0db13653af634
+tikv	fa4b688fb67b5a99dcd1e7df3116bc51	tikv-server	https://download.pingcap.org/tikv-server-mac-master.tar.gz	master	782bb0203c3e39b2517bbb5ac0ceeef3dd76e60d
+tidb	9b29905befb1dc4ee05f6f7d9b359846	tidb-server	https://download.pingcap.org/tidb-server-mac-master.tar.gz	master	2ecf66bdf17eed91c6bbd0ff2f3f84ece4ebe32d
+
+cluster_manager	07b50971bc3f073c2ed0a50756ccd322	flash_cluster_manager.tgz	https://download.pingcap.org/flash_cluster_manager-mac-master.tgz	master	90b2d9d27c306fba60c62c048b2f856b1e21e32b
+tiflash	6aa01f8c6ba89110c8d1383a63e82052	tiflash	https://download.pingcap.org/tiflash-mac-master.tar.gz	master	90b2d9d27c306fba60c62c048b2f856b1e21e32b
+tiflash_proxy	cfa4bfa8e5e65d720d7e9e0a8ead3af9	libtiflash_proxy.dylib	https://download.pingcap.org/libtiflash_proxy-mac-master.tar.gz	tiflash-proxy-master	146b2b417dd15b9ad6ae877fca3e0469b3a91829
