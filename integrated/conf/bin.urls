@@ -11,8 +11,8 @@ tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	https://download.pi
 
 tispark	f0b94f1180fee5c03a2810ff601de7c9	tispark-assembly-2.3.0-SNAPSHOT.jar	https://download.pingcap.org/tispark-assembly-2.3.0-SNAPSHOT.jar-0426.tar.gz	master	6f9c8b46c926c6749e3543b0fe45056488af1fef
 
-tidb_lightning	89d11caabf3c3b9ac5532cee05635e05	tidb-lightning	http://139.219.11.38:8000/LfROf/tidb-lightning.tar.gz	master	98bc8495f3fd2e74da20ffd623786f3839469d20
-tikv_importer	425d438e52b27479d606938e2ce7cce1	tikv-importer	http://139.219.11.38:8000/IXdAF/tikv-importer.tar.gz	master	825ed6a78305a5e7aba4df4e621bf54391685ced
+tidb_lightning	ec6168846dfb0f38c6dca3f614de77c7	tidb-lightning	https://download.pingcap.org/tidb-lightning-master0428.tar.gz	master	b21f9edc86d2e35ae0543e7b95b2b019ceea4478
+tikv_importer	1355b035ba5ac3487c170a5ebe789f8e	tikv-importer	https://download.pingcap.org/tikv-importer-master0428.tar.gz	master	3d3bfd28f828818c145b2a12cf4f2059d959285f
 
 pd_ctl	d14878257a518fad108b55b8063823fd	pd-ctl	https://download.pingcap.org/pd-ctl-tiflash-master-20200425.tar.gz
 tikv_ctl	b2f482499506022708d8d2259334a180	tikv-ctl	https://download.pingcap.org/tikv-ctl-tiflash-master-20200425.tar.gz
