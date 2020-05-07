@@ -4,18 +4,23 @@ function cmd_ti_global_region_leader_transfer()
 {
 	local ti="${integrated}/ops/ti.sh"
 
+	local scale='1'
+	if [ ! -z "${1+x}" ]; then
+		local scale="${1}"
+	fi
+
 	local dir='/tmp/ti/region/leader_transfer'
 	mkdir -p "${dir}"
 	local file="${dir}/transfer.ti"
 	rm -f "${file}"
 
 	"${ti}" new "${file}" 'delta=-9' 'tikv=3' 'tiflash=3' "dir=${dir}"
-	"${ti}" "${file}" burn : up : sleep 60
+	"${ti}" "${file}" burn : up : sleep 10
+	"${ti}" "${file}" pd/ctl scheduler add shuffle-leader-scheduler
 	"${ti}" "${file}" parallel \
-		GO: wait/available tpch_1 lineitem : pd/ctl scheduler add shuffle-leader-scheduler : sleep 120 \
-		GO: tpch/load 1 lineitem true \
-		GO: wait/available tpch_1 lineitem \
-			LOOP: verify/consistency tpch_1 lineitem
+		GO: tpch/load ${scale} lineitem true \
+		GO: wait/available tpch_${scale} lineitem \
+			LOOP: verify/consistency tpch_${scale} lineitem
 	"${ti}" "${file}" must burn
 
 	rm -f "${file}"
@@ -24,5 +29,8 @@ function cmd_ti_global_region_leader_transfer()
 }
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
-auto_error_handle
-cmd_ti_global_region_leader_transfer
+error_handle="$-"
+set +eu
+cmd_args=("${@}")
+restore_error_handle_flags "${error_handle}"
+cmd_ti_global_region_leader_transfer "${cmd_args[@]}"

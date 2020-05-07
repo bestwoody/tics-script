@@ -4,6 +4,11 @@ function cmd_ti_global_region_merge()
 {
 	local ti="${integrated}/ops/ti.sh"
 
+	local scale='1'
+	if [ ! -z "${1+x}" ]; then
+		local scale="${1}"
+	fi
+
 	local dir='/tmp/ti/region/merge'
 	mkdir -p "${dir}"
 	local file="${dir}/merge.ti"
@@ -16,9 +21,9 @@ function cmd_ti_global_region_merge()
 	"${ti}" "${file}" pd/ctl_raw config set merge-schedule-limit 8
 
 	"${ti}" "${file}" parallel \
-		GO: tpch/load 1 lineitem true : sleep 60 \
-		GO: sleep 60 : wait/available tpch_1 lineitem \
-			LOOP: verify/consistency tpch_1 lineitem
+		GO: tpch/load ${scale} lineitem true : sleep 60 \
+		GO: sleep 60 : wait/available tpch_${scale} lineitem \
+			LOOP: verify/consistency tpch_${scale} lineitem
 
 	"${ti}" "${file}" must burn
 
@@ -28,5 +33,8 @@ function cmd_ti_global_region_merge()
 }
 
 source "`cd $(dirname ${BASH_SOURCE[0]}) && pwd`/_env.sh"
-auto_error_handle
-cmd_ti_global_region_merge
+error_handle="$-"
+set +eu
+cmd_args=("${@}")
+restore_error_handle_flags "${error_handle}"
+cmd_ti_global_region_merge "${cmd_args[@]}"

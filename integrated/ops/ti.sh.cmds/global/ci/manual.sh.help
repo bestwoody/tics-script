@@ -1,0 +1,2 @@
+run manual tests of ops/ti.sh
+usage: <cmd> [ti_file_dir=/tmp/ti/ci/manual]

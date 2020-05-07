@@ -3,10 +3,11 @@
 function cmd_ti_cases_consistency_rebalance()
 {
 	local ti_file="${1}"
+	local ti_args="${2}"
 	local mods="${6}"
 	shift 6
 
-	local tiflashs=`from_mods_by_type "${mods}" 'tiflash'`
+	local tiflash=`from_mods_by_type "${mods}" 'tiflash'`
 	if [ -z "${tiflash}" ]; then
 		echo "[ci ti_cases_consistency_rebalance] no selected tiflash" >&2
 		return 1

@@ -11,7 +11,6 @@ create_stmt = "create table test.t (a int) shard_row_id_bits = 4;"
 insert_stmt = "insert into test.%s values %s;"
 
 def cmdMustRun(cmd):
-    print "cmd: ", cmd
     result = subprocess.check_output("bash " + cmd, shell=True)
     if "Exception" in result:
         sys.exit(1)
@@ -34,6 +33,8 @@ for k in range(insert_num):
         if j != batch - 1:
             values += ','
     insert = insert_stmt % ("t",values)
+    if k % 100 == 0 and k != 0:
+        print "stmt ", insert
     sqlRun(insert, "mysql")
 
 query1 = "select /*+ read_from_storage(tiflash[test.t]) */ count(*) from test.t"
