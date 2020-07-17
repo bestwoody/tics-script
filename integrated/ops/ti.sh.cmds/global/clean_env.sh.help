@@ -1,0 +1,2 @@
+clean the residual process(pd/tikv/tidb/tiflash) in the environment
+usage: <cmd> process-hint
