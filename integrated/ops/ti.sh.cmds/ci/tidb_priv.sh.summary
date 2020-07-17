@@ -51,7 +51,7 @@ function cmd_ti_tidb_privilege()
   fi
 
   # Update using u_up.
-  local r_up_u_up=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; update test.t set col_1='OK 2' where col_1='OK'" "u_up" 2>&1)
+  local r_up_u_up=$(cust_mysql "set @@session.tidb_isolation_read_engines='tikv'; update test.t set col_1='OK 2' where col_1='OK'" "u_up" 2>&1)
   echo "Result of update using u_up: ${r_up_u_up}"
   if [[ "${r_up_u_up}" == *"ERROR"* ]]; then
     echo "Result of update using u_up shouldn't error"
@@ -59,7 +59,7 @@ function cmd_ti_tidb_privilege()
   fi
 
   # Update using u_ins.
-  local r_up_u_ins=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; update test.t set col_1='OK 2' where col_1='OK'" "u_ins" 2>&1)
+  local r_up_u_ins=$(cust_mysql "set @@session.tidb_isolation_read_engines='tikv'; update test.t set col_1='OK 2' where col_1='OK'" "u_ins" 2>&1)
   echo "Result of update using u_ins: ${r_up_u_ins}"
   if [[ "${r_up_u_ins}" != *"ERROR"* ]]; then
     echo "Result of update using u_ins should error"
