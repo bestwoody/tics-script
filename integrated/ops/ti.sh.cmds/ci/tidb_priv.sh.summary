@@ -67,7 +67,7 @@ function cmd_ti_tidb_privilege()
   fi
 
   # Delete using u_del.
-  local r_del_u_del=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; delete from test.t where col_1='OK'" "u_del" 2>&1)
+  local r_del_u_del=$(cust_mysql "set @@session.tidb_isolation_read_engines='tikv'; delete from test.t where col_1='OK'" "u_del" 2>&1)
   echo "Result of delete using u_del: ${r_del_u_del}"
   if [[ "${r_del_u_del}" == *"ERROR"* ]]; then
     echo "Result of delete using u_del shouldn't error"
@@ -75,7 +75,7 @@ function cmd_ti_tidb_privilege()
   fi
 
   # Delete using u_up.
-  local r_del_u_up=$(cust_mysql "set @@session.tidb_isolation_read_engines='tiflash'; delete from test.t where col_1='OK'" "u_up" 2>&1)
+  local r_del_u_up=$(cust_mysql "set @@session.tidb_isolation_read_engines='tikv'; delete from test.t where col_1='OK'" "u_up" 2>&1)
   echo "Result of delete using u_up: ${r_del_u_up}"
   if [[ "${r_del_u_up}" != *"ERROR"* ]]; then
     echo "Result of delete using u_up should error"
