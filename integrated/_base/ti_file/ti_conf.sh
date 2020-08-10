@@ -321,7 +321,8 @@ function cp_bin_to_dir_from_tiup_urls()
 			cp -r "${target_dir}/tiflash/flash_cluster_manager" "${dest_dir}/flash_cluster_manager"
 		elif [[ ${name} == "tiflash_lib" ]]; then
 			if [[ "${os}" == "linux" ]]; then
-				echo "[func cp_bin_to_dir_from_tiup_urls] TODO: support copying ${name}" >&2
+				# Let it fallback to download from other resources.
+				return 1
 			fi
 		else
 			echo "[func cp_bin_to_dir_from_tiup_urls] TODO: support copying ${name}" >&2
