@@ -134,7 +134,7 @@ function cp_bin_to_dir_from_urls()
 	local error_handle="$-"
 	set +e
 	#wget -nv -nd --show-progress --progress=bar:force:noscroll -P "${cache_dir}" "${url}" -O "${download_path}" 2>&1
-	wget --quiet -nd -P "${cache_dir}" "${url}" -O "${download_path}"
+	wget --quiet -nd -P "${cache_dir}" "${url}" --no-check-certificate -O "${download_path}"
 	local code="$?"
 	restore_error_handle_flags "${error_handle}"
 
@@ -182,10 +182,166 @@ function cp_bin_to_dir_from_urls()
 }
 export -f cp_bin_to_dir_from_urls
 
+function copy_when_checksum_not_match()
+{
+	if [ -z "${2+x}" ]; then
+		echo "[func replace_when_checksum_not_match] usage: <func> src_file_path dest_file_path" >&2
+		return 1
+	fi
+
+	local src="${1}"
+	local dest="${2}"
+	# replace when binary checksum is not match
+	if [ -f "${dest}" ]; then
+		local new_bin_sha1=`file_md5 "${src}"`
+		local old_bin_sha1=`file_md5 "${dest}"`
+		if [ "${new_bin_sha1}" == "${old_bin_sha1}" ]; then
+			return 0
+		else
+			mv -f "${dest}" "${dest}.prev"
+		fi
+	fi
+	chmod +x "${src}"
+	mkdir -p "`dirname ${dest}`"
+	cp "${src}" "${dest}"
+}
+
+function cp_bin_to_dir_from_tiup_urls()
+{
+	# https://tiup-mirrors.pingcap.com/pd-v4.0.2-darwin-amd64.tar.gz
+	if [ -z "${4+x}" ]; then
+		echo "[func cp_bin_to_dir_from_tiup_urls] usage: <func> name_of_bin_module dest_dir bin_urls_file cache_dir version" >&2
+		return 1
+	fi
+
+	local name="${1}"
+	local dest_dir="${2}"
+	local bin_urls_file="${3}"
+	local cache_dir="${4}"
+	local version="${5}"
+
+	if [[ -z "${version}" ]]; then
+		return 1
+	fi
+
+	if [[ ${name} == "tidb" || ${name} == "tikv" || ${name} == "pd" ]]; then
+		local entry_str=`cat "${bin_urls_file}" | { grep "^${name}[[:blank:]]" || test $? = 1; }`
+		if [ -z "$entry_str" ]; then
+			echo "[func cp_bin_to_dir_from_tiup_urls] ${name} not found in ${bin_paths_file} or in ${bin_urls_file}" >&2
+			echo "false"
+			return 1
+		fi
+		local bin_name=`echo "${entry_str}" | awk '{print $3}'`
+		local tiup_name="${name}"
+	elif [[ ${name} == "tiflash" || ${name} == "tiflash_lib" || ${name} == "cluster_manager" || ${name} == "tiflash_proxy" ]]; then
+		local entry_str=`cat "${bin_urls_file}" | { grep "^${name}[[:blank:]]" || test $? = 1; }`
+		if [ -z "$entry_str" ]; then
+			echo "[func cp_bin_to_dir_from_tiup_urls] ${name} not found in ${bin_paths_file} or in ${bin_urls_file}" >&2
+			echo "false"
+			return 1
+		fi
+		local bin_name=`echo "${entry_str}" | awk '{print $3}'`
+		local tiup_name="tiflash"
+	elif [[ ${name} == "tikv_ctl" || ${name} == "pd_ctl" ]]; then
+		local bin_name=`echo ${name} | tr '_' '-'`
+		local tiup_name="ctl"
+	else
+		echo "[func cp_bin_to_dir_from_tiup_urls] ${name} can not download from tiup urls now" >&2
+		return 1
+	fi
+
+	local os=`uname | tr 'A-Z' 'a-z'`
+	local arch="amd64" # TODO: detect other arch
+	local domain="https://tiup-mirrors.pingcap.com"
+	local comp="${domain}/${tiup_name}-${version}-${os}-${arch}"
+
+	local url="${comp}.tar.gz"
+	local download_dir="/tmp/ti/cache/download"
+	mkdir -p "${download_dir}"
+	local download_name="`basename ${url}`"
+	local download_path="${download_dir}/${download_name}"
+
+	# sha1 in tiup is the checksum of gzipped file
+	# check whether we have download the right gzipped file or not
+	local need_download="true"
+	local sha1=`curl -s ${comp}.sha1`
+	if [ -f "${download_path}" ]; then
+		local old_sha1=`file_sha1 "${download_path}"`
+		if [ "${old_sha1}" == "${sha1}" ]; then
+			need_download="false"
+		else
+			rm "${download_path}" # remove old file
+		fi
+	fi
+
+	if [ x"${need_download}" == x"true" ]; then
+		local error_handle="$-"
+		set +e
+		wget --quiet -nd -P "${cache_dir}" "${url}" --no-check-certificate -O "${download_path}"
+		local code="$?"
+		restore_error_handle_flags "${error_handle}"
+
+		if [ "${code}" != "0" ]; then
+			echo "[func cp_bin_to_dir_from_tiup_urls] wget --quiet -nd -P '${cache_dir}' '${url}' -O '${download_path}' failed, name=\"${name}\"" >&2
+			rm -f "${download_path}"
+			return 1
+		fi
+		if [ ! -f "${download_path}" ]; then
+			echo "[func cp_bin_to_dir_from_tiup_urls] '${url}': wget to '${download_path}' file not found" >&2
+			return 1
+		fi
+	fi
+	
+	local download_is_tar=`echo "${download_name}" | { grep '.tar.gz' || test $? = 1; }`
+	if [ -z "${download_is_tar}" ]; then
+		echo "[func cp_bin_to_dir_from_tiup_urls] TODO: support extra ${download_name} file from tiup" >&2
+		return 1
+	fi
+
+	local target_dir="${download_dir}/${tiup_name}-${version}-${os}-${arch}"
+	if [[ ! -d "${target_dir}"  || -z "$(ls -A ${target_dir})" ]]; then
+		local target_tmp_path="${download_dir}/${tiup_name}-${version}-${os}-${arch}.`date +%s`.${RANDOM}"
+		mkdir -p "${target_tmp_path}"
+		tar -zxf "${download_path}" -C "${target_tmp_path}"
+		mv "${target_tmp_path}" "${target_dir}"
+	fi
+	if [[ ${name} == "tidb" || ${name} == "tikv" || ${name} == "pd" ]]; then
+		copy_when_checksum_not_match "${target_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+		return 0
+	elif [[ ${name} == "tiflash" || ${name} == "tiflash_lib" || ${name} == "cluster_manager" || ${name} == "tiflash_proxy" ]]; then
+		if [[ ${name} == "tiflash" ]]; then
+			copy_when_checksum_not_match "${target_dir}/tiflash/tiflash" "${dest_dir}/${bin_name}"
+		elif [[ ${name} == "tiflash_proxy" ]]; then
+			copy_when_checksum_not_match "${target_dir}/tiflash/${bin_name}" "${dest_dir}/${bin_name}"
+		elif [[ ${name} == "cluster_manager" ]]; then
+			# always replace for cluster manager
+			if [[ -d "${dest_dir}/flash_cluster_manager" ]]; then
+				rm -r "${dest_dir}/flash_cluster_manager"
+			fi
+			cp -r "${target_dir}/tiflash/flash_cluster_manager" "${dest_dir}/flash_cluster_manager"
+		elif [[ ${name} == "tiflash_lib" ]]; then
+			if [[ "${os}" == "linux" ]]; then
+				echo "[func cp_bin_to_dir_from_tiup_urls] TODO: support copying ${name}" >&2
+			fi
+		else
+			echo "[func cp_bin_to_dir_from_tiup_urls] TODO: support copying ${name}" >&2
+			return 1
+		fi
+		return 0
+	elif [[ ${name} == "tikv_ctl" || ${name} == "pd_ctl" ]]; then
+		copy_when_checksum_not_match "${target_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+		return 0
+	else
+		echo "[func cp_bin_to_dir_from_tiup_urls] TODO: support copying ${name}" >&2
+		return 1
+	fi
+	return 1
+}
+
 function cp_bin_to_dir()
 {
-	if [ -z "${5+x}" ]; then
-		echo "[func cp_bin_to_dir] usage: <func> name_of_bin_module dest_dir bin_paths_file bin_urls_file cache_dir [check_os_type]" >&2
+	if [ -z "${6+x}" ]; then
+		echo "[func cp_bin_to_dir] usage: <func> name_of_bin_module dest_dir bin_paths_file bin_urls_file cache_dir version [check_os_type]" >&2
 		return 1
 	fi
 
@@ -194,20 +350,34 @@ function cp_bin_to_dir()
 	local bin_paths_file="${3}"
 	local bin_urls_file="${4}"
 	local cache_dir="${5}"
+	local version="${6}"
 
-	if [ -z "${6+x}" ]; then
+	if [ -z "${7+x}" ]; then
 		local check_os_type='true'
 	else
-		local check_os_type="${6}"
+		local check_os_type="${7}"
 	fi
 
 	if [ "${check_os_type}" == 'true' ] && [ `uname` == 'Darwin' ]; then
 		local bin_urls_file="${bin_urls_file}.mac"
 	fi
 
+	# 1. Find by bin.paths
+	# 2. Download from tiup mirror if version is not empty
+	# 3. Download from bin.urls / bin.urls.mac
 	local found=`cp_bin_to_dir_from_paths "${name}" "${dest_dir}" "${bin_paths_file}" "${cache_dir}"`
 	if [ "${found}" != 'true' ]; then
-		cp_bin_to_dir_from_urls "${name}" "${dest_dir}" "${bin_urls_file}" "${cache_dir}"
+		# From tiup mirror
+		local error_handle="$-"
+		set +e
+		`cp_bin_to_dir_from_tiup_urls "${name}" "${dest_dir}" "${bin_urls_file}" "${cache_dir}" "${version}"`
+		local download_from_tiup=$?
+		restore_error_handle_flags "${error_handle}"
+
+		# From bin.urls / bin.urls.mac
+		if [[ "${download_from_tiup}" != 0 ]]; then
+			cp_bin_to_dir_from_urls "${name}" "${dest_dir}" "${bin_urls_file}" "${cache_dir}"
+		fi
 	fi
 }
 export -f cp_bin_to_dir

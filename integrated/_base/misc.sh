@@ -274,7 +274,7 @@ function ensure_bin_in_local_dir()
 	local bin_urls_file="${conf_templ_dir}/bin.urls"
 	local cache_dir="/tmp/ti/master/bins"
 
-	cp_bin_to_dir "${bin_name}" "${target_bin_dir}" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" 'true'
+	cp_bin_to_dir "${bin_name}" "${target_bin_dir}" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" "" 'true'
 }
 export -f ensure_bin_in_local_dir
 

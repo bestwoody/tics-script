@@ -84,6 +84,18 @@ function file_md5()
 }
 export -f file_md5
 
+function file_sha1()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func file_sha1] usage: <func> src_path" >&2
+		return 1
+	fi
+
+	local file="$1"
+	sha1sum "${file}" 2>/dev/null | awk '{print $1}'
+}
+export -f file_sha1
+
 function file_mtime()
 {
 	if [ -z "${1+x}" ]; then

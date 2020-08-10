@@ -147,8 +147,16 @@ def parse_mod(obj, line, origin):
             kv = field.split('=')
             if len(kv) != 2 or kv[0].strip() not in ('engine', 'storage_engine') \
                 or kv[1].strip() not in ('tmt', 'dt'):
-                error('bad engine prop:' + origin)
+                error('bad engine prop: ' + origin)
             setattr(obj, 'storage_engine', kv[1].strip())
+        elif field.startswith('ver') or field.startswith('version'):
+            # tiup version
+            kv = field.split('=')
+            if len(kv) != 2 or kv[0].strip() not in ('ver', 'version') or len(kv[1].strip()) == 0:
+                error('bad version prop: ' + origin)
+            version = kv[1].strip()
+            if not version.startswith('v'): version = 'v' + version
+            setattr(obj, 'version', version)
         else:
             old_dir = str(getattr(obj, 'dir'))
             if len(old_dir) != 0:
@@ -289,19 +297,21 @@ def print_mod_header(mod):
     print_sep()
 
 def print_cp_bin(mod, conf):
-    line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "%s/master/bins"'
-    print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
+    line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "%s/master/bins" "%s"'
+    version = getattr(mod, "version", "")
+    print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir, version)
     print ''
     for bin_name in mod.extra_tools:
-        print line % (bin_name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir)
+        print line % (bin_name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir, version)
         print ''
 
 def print_ssh_prepare(mod, conf, env_dir):
-    prepare = 'ssh_prepare_run "%s" ' + mod.name + ' "%s" "%s" "%s" "%s"'
-    print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir)
+    version = getattr(mod, "version", "")
+    prepare = 'ssh_prepare_run "%s" ' + mod.name + ' "%s" "%s" "%s" "%s" "%s"'
+    print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir, version)
     for bin_name in mod.extra_tools:
-        prepare = 'ssh_prepare_run "%s" ' + bin_name + ' "%s" "%s" "%s" "%s"'
-        print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir)
+        prepare = 'ssh_prepare_run "%s" ' + bin_name + ' "%s" "%s" "%s" "%s" "%s"'
+        print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir, version)
         print ''
 
 def render_pds(res, conf, hosts, indexes):

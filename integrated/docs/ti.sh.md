@@ -118,6 +118,15 @@ mem=10G         <- only used by spark_w module,
                    total amount of memory to allow spark applications to use on the machine
                    (default: your machine's total RAM minus 1 GB)
  
+ver             <- specify binary version.
+                    If this property is set, then ti.sh will try to download specify version
+                    of binary using tiup mirror.
+                    The priority for finding binary is:
+                      * Find by `conf/bin.paths`
+	                  * Download from tiup mirror if version is not empty
+	                  * Download from bin.urls / bin.urls.mac
+                    Only support for tidb/tikv/tiflash/pd_ctl/tikv_ctl now.
+
 standalone      <- only used by tiflash module,
                     add this if you want to deploy a standalone tiflash process without pd/tidb/tikv
 
@@ -129,18 +138,23 @@ engine=(dt|tmt) <- only used by tiflash module,
 
 A little more complex case:
 ```
-pd: node1/pd ports+1
-pd: node2/pd ports+2
-pd: node3/pd ports+3
-tikv: node1/tikv ports+1
-tikv: node2/tikv ports+2
-tidb: node1/tidb ports+1
-tidb: node2/tidb ports+2
-tiflash: node1/tiflash ports+1
-tiflash: node2/tiflash ports+2
-spark_m: node1/spark_m ports+1
-spark_w: node1/spark_w ports+1 cores=10 mem=10G
-spark_w: node2/spark_w ports+2 cores=10 mem=10G
+p1=+1
+p2=+2
+p3=+3
+v=v4.0.4
+
+pd:      node1/pd      ports{p1} ver={v}
+pd:      node2/pd      ports{p2} ver={v}
+pd:      node3/pd      ports{p3} ver={v}
+tikv:    node1/tikv    ports{p1} ver={v}
+tikv:    node2/tikv    ports{p2} ver={v}
+tidb:    node1/tidb    ports{p1} ver={v}
+tidb:    node2/tidb    ports{p2} ver={v}
+tiflash: node1/tiflash ports{p1} ver={v}
+tiflash: node2/tiflash ports{p2} ver={v}
+spark_m: node1/spark_m ports{p1}
+spark_w: node1/spark_w ports{p1} cores=10 mem=10G
+spark_w: node2/spark_w ports{p2} cores=10 mem=10G
 ```
 
 A standalone tiflash process without pd/tidb/tikv:
