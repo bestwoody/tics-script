@@ -13,7 +13,8 @@ log-level = "info"
 
 [server]
 engine-addr = "{tiflash_listen_host}:{tiflash_raft_and_cop_port}"
-status-addr = "{tiflash_listen_host}:{proxy_status_port}"
+status-addr = "0.0.0.0:{proxy_status_port}"
+advertise-status-addr = "{tiflash_listen_host}:{proxy_status_port}"
 
 [storage]
 
@@ -61,3 +62,14 @@ cert-path = ""
 key-path = ""
 
 [import]
+
+#[security.encryption]
+#data-encryption-method = "aes256-ctr"
+#data-key-rotation-period = "14d"
+
+#[security.encryption.master-key]
+#type = "file"
+#path = "{integrated}/cipher-file-256"
+
+#[security.encryption.previous-master-key]
+#type = "plaintext"

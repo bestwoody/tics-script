@@ -3,6 +3,7 @@ display_name = "TiFlash"
 default_profile = "default"
 users_config = "users.toml"
 path = "{tiflash_dir}/db"
+capacity = "10737418240"
 mark_cache_size = 5368709120
 listen_host = "{tiflash_listen_host}"
 tcp_port = {tiflash_tcp_port}
@@ -42,4 +43,3 @@ kvstore_path = "{tiflash_dir}/kvstore"
 pd_addr = "{tiflash_pd_addr}"
 ignore_databases = "system,default"
 storage_engine = "dt"
-
