@@ -57,6 +57,7 @@ function cp_bin_to_dir_from_paths()
 	local entry_str=`cat "${bin_paths_file}" | { grep "^${name}[[:blank:]]" || test $? = 1; }`
 
 	local bin_name=`echo "${entry_str}" | awk '{print $2}'`
+	# Check whether DEFAULT_BIN_PATH is overrided in `ops/conf.sh` and try to copy binary
 	if [ ! -z "${DEFAULT_BIN_PATH+x}" ] && [ -f "${DEFAULT_BIN_PATH}/${bin_name}" ]; then
 		cp_when_diff "${DEFAULT_BIN_PATH}/${bin_name}" "${cache_dir}/${bin_name}"
 		cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
@@ -64,6 +65,7 @@ function cp_bin_to_dir_from_paths()
 		return
 	fi
 
+	# Check bin.paths and try to copy binary
 	local paths_str=`echo "${entry_str}" | awk '{print $3}'`
 	local found="false"
 	if [ ! -z "${paths_str}" ]; then
@@ -193,9 +195,9 @@ function copy_when_checksum_not_match()
 	local dest="${2}"
 	# replace when binary checksum is not match
 	if [ -f "${dest}" ]; then
-		local new_bin_sha1=`file_md5 "${src}"`
-		local old_bin_sha1=`file_md5 "${dest}"`
-		if [ "${new_bin_sha1}" == "${old_bin_sha1}" ]; then
+		local new_bin_hash=`file_md5 "${src}"`
+		local old_bin_hash=`file_md5 "${dest}"`
+		if [ "${new_bin_hash}" == "${old_bin_hash}" ]; then
 			return 0
 		else
 			mv -f "${dest}" "${dest}.prev"
@@ -205,6 +207,29 @@ function copy_when_checksum_not_match()
 	mkdir -p "`dirname ${dest}`"
 	cp "${src}" "${dest}"
 }
+
+function get_urls_from_tiup()
+{
+	if [ -z "${4+x}" ]; then
+		echo "[func get_urls_from_tiup] usage: <func> os arch tiup_component version" >&2
+		return 1
+	fi
+
+	local os="${1}"
+	local arch="${2}"
+	local tiup_name="${3}"
+	local version="${4}"
+
+	local error_handle="$-"
+	set +e
+	local here="`cd $(dirname ${BASH_SOURCE[0]}) && pwd`"
+	local tiup_urls=`python "${here}/get_url_from_tiup.py" "${os}" "${arch}" "${tiup_name}" "${version}"`
+	local code="$?"
+	restore_error_handle_flags "${error_handle}"
+	echo "${tiup_urls}"
+	return ${code}
+}
+export -f get_urls_from_tiup
 
 function cp_bin_to_dir_from_tiup_urls()
 {
@@ -252,10 +277,11 @@ function cp_bin_to_dir_from_tiup_urls()
 
 	local os=`uname | tr 'A-Z' 'a-z'`
 	local arch="amd64" # TODO: detect other arch
-	local domain="https://tiup-mirrors.pingcap.com"
-	local comp="${domain}/${tiup_name}-${version}-${os}-${arch}"
 
-	local url="${comp}.tar.gz"
+	local tiup_urls=`get_urls_from_tiup "${os}" "${arch}" "${tiup_name}" "${version}"`
+	local url=`echo ${tiup_urls} | awk '{print $1}'`
+	local sha1_url=`echo ${tiup_urls} | awk '{print $2}'`
+
 	local download_dir="/tmp/ti/cache/download"
 	mkdir -p "${download_dir}"
 	local download_name="`basename ${url}`"
@@ -264,7 +290,7 @@ function cp_bin_to_dir_from_tiup_urls()
 	# sha1 in tiup is the checksum of gzipped file
 	# check whether we have download the right gzipped file or not
 	local need_download="true"
-	local sha1=`curl -s ${comp}.sha1`
+	local sha1=`curl -s ${sha1_url}`
 	if [ -f "${download_path}" ]; then
 		local old_sha1=`file_sha1 "${download_path}"`
 		if [ "${old_sha1}" == "${sha1}" ]; then
@@ -275,6 +301,7 @@ function cp_bin_to_dir_from_tiup_urls()
 	fi
 
 	if [ x"${need_download}" == x"true" ]; then
+		echo "[downloading from tiup mirror \"${url}\" ...]" >&2
 		local error_handle="$-"
 		set +e
 		wget --quiet -nd -P "${cache_dir}" "${url}" --no-check-certificate -O "${download_path}"
@@ -298,6 +325,7 @@ function cp_bin_to_dir_from_tiup_urls()
 		return 1
 	fi
 
+	# if target_dir not exists or empty, clean it and extra from zipped file again
 	local target_dir="${download_dir}/${tiup_name}-${version}-${os}-${arch}"
 	if [[ ! -d "${target_dir}"  || -z "$(ls -A ${target_dir})" ]]; then
 		local target_tmp_path="${download_dir}/${tiup_name}-${version}-${os}-${arch}.`date +%s`.${RANDOM}"
@@ -338,6 +366,7 @@ function cp_bin_to_dir_from_tiup_urls()
 	fi
 	return 1
 }
+export -f cp_bin_to_dir_from_tiup_urls
 
 function cp_bin_to_dir()
 {

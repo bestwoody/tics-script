@@ -1,0 +1,2 @@
+List the failpoint information in tidb. If failpoint-name is empty or not set, list all the failpoints.
+usage: <cmd> [failpoint-name]

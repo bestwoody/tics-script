@@ -1,0 +1,45 @@
+#!/bin/bash
+
+function cmd_ti_tidb_failpoint_is_api_enabled()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${mod}" ]; then
+		echo "[cmd tidb/failpoint/is_api_enabled] no tidb selected" >&2
+		return 1
+	fi
+
+	local dir=`from_mod_get_dir "${mod}"`
+	local host=`from_mod_get_host "${mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'status_port'`
+	if [ -z "${host}" ]; then
+		local host=`must_print_ip`
+	fi
+
+	if [ -z "${port}" ]; then
+		echo "[cmd tidb/failpoint/is_api_enabled] getting tidb port failed from ${host}:${dir}" >&2
+		return 1
+	fi
+
+	local error_handle="$-"
+	local output=$(curl -s -w '%{http_code}' "http://${host}:${port}/fail/")
+	restore_error_handle_flags "${error_handle}"
+
+	local code=$(echo "$output" | tail -n 1)
+	if [ "${code}" == "200" ]; then 
+		echo "Http failpoint API is [enabled]"
+	else
+		echo "Http failpoint API is [disabled]"
+	fi
+}
+
+set -euo pipefail
+cmd_ti_tidb_failpoint_is_api_enabled "${@}"

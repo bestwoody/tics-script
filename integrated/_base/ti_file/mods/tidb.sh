@@ -93,7 +93,9 @@ function tidb_run()
 	echo "pd_addr	${pd_addr}" >> "${info}"
 	echo "cluster_id	${cluster_id}" >> "${info}"
 
-	echo "nohup \"${tidb_dir}/tidb-server\" \\" > "${tidb_dir}/run.sh"
+	# Enable http api for triggling TiDB's failpoints
+	echo "export GO_FAILPOINTS=\"github.com/pingcap/tidb/server/enableTestAPI=return\"" > "${tidb_dir}/run.sh"
+	echo "nohup \"${tidb_dir}/tidb-server\" \\" >> "${tidb_dir}/run.sh"
 	echo "	-P \"${tidb_port}\" \\" >> "${tidb_dir}/run.sh"
 	echo "	--status=\"${status_port}\" \\" >> "${tidb_dir}/run.sh"
 	echo "	--advertise-address=\"${advertise_host}\" \\" >> "${tidb_dir}/run.sh"

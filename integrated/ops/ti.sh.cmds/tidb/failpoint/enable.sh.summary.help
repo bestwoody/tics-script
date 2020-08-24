@@ -1,0 +1,4 @@
+enable specify failpoint in tidb
+usage: <cmd> failpoint-name action
+      eg. <cmd> "github.com/pingcap/tidb/ddl/mockDelayWhenColumnStateChanged" 'pause'
+          <cmd> "github.com/pingcap/tidb/ddl/errorBeforeDecodeArgs" 'return(true)'

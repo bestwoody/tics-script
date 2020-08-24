@@ -1,0 +1,4 @@
+check whether http failpoint API is enabled in tidb
+usage: <cmd> 
+output:   "Http failpoint API is [enabled]"
+       OR "Http failpoint API is [disabled]"

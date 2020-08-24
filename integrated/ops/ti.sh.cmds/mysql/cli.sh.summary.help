@@ -1,0 +1,2 @@
+connect to tidb in interactive mode by using mycli(https://www.mycli.net/)
+usage: <cmd> [mysql_connecting_args_without_host_or_port_or_user]

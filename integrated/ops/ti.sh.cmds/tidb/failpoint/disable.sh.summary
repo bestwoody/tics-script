@@ -1,0 +1,43 @@
+#!/bin/bash
+
+function cmd_ti_tidb_failpoint_disable()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${mod}" ]; then
+		echo "[cmd tidb/failpoint/disable] no tidb selected" >&2
+		return 1
+	fi
+
+	local dir=`from_mod_get_dir "${mod}"`
+	local host=`from_mod_get_host "${mod}"`
+
+	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'status_port'`
+	if [ -z "${host}" ]; then
+		local host=`must_print_ip`
+	fi
+
+	if [ -z "${port}" ]; then
+		echo "[cmd tidb/failpoint/disable] getting tidb port failed from ${host}:${dir}" >&2
+		return 1
+	fi
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd tidb/failpoint/disable] usage: <cmd> <failpoint>" >&2
+		echo "              e.g. tidb/failpoint/disable \"ddl/mockDelayWhenColumnStateChanged\"  " >&2
+		return 1
+	fi
+
+	local failpoint="${1}"
+	curl -X DELETE "http://${host}:${port}/fail/${failpoint}"
+}
+
+set -euo pipefail
+cmd_ti_tidb_failpoint_disable "${@}"

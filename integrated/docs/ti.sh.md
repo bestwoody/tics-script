@@ -121,6 +121,9 @@ mem=10G         <- only used by spark_w module,
 ver             <- specify binary version.
                     If this property is set, then ti.sh will try to download specify version
                     of binary using tiup mirror.
+                    Version format:
+                      * "4.0.4" -- download specify version
+                      * "4.0.x" -- download the latest release version of branch 4.0
                     The priority for finding binary is:
                       * Find by `conf/bin.paths`
 	                  * Download from tiup mirror if version is not empty
