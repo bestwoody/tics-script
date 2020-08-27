@@ -24,6 +24,11 @@ function cmd_ti_perf_io_report()
 		local threads="${3}"
 	fi
 
+	local aio='false'
+	if [ ! -z "${4+x}" ]; then
+		local aio="${4}"
+	fi
+
 	mkdir -p "${dir}/tmp"
 	local file="${dir}/tmp/fio.tmp"
 
@@ -31,7 +36,7 @@ function cmd_ti_perf_io_report()
 	rm -f "${log}"
 
 	echo "=> ${mod_name} #${index} ${dir}"
-	fio_report "${file}" "${log}" "${sec}" "${size}" "${threads}" | awk '{print "   "$0}'
+	fio_report "${file}" "${log}" "${sec}" "${size}" "${threads}" "${aio}" | awk '{print "   "$0}'
 }
 
 set -euo pipefail

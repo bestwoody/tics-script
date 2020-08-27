@@ -51,7 +51,7 @@ function _get_tpcc_results()
 			local end_ts=`cat ${results}/${dir}/end`
 		fi
 
-		#local result=`cat "${results}/${dir}/run.log" | grep NEW | grep SUM | grep -v ERR | tail -n 1 | \
+		#local result=`cat "${results}/${dir}/run.log" | grep NEW | grep Summary | grep -v ERR | tail -n 1 | \
 		#	awk -F ', Sum' '{print $1}' | \
 		#	awk '{print $NF}' | awk -F '.' '{print $1}'`
 		#if [ -z "${result}" ]; then

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+function cmd_ti_clustered_index()
+{
+	local ti_file="${1}"
+	local ti_args="${2}"
+	local cmd_mod_names="${3}"
+	local cmd_hosts="${4}"
+	local cmd_indexes="${5}"
+	local mods="${6}"
+	shift 6
+
+	if [ -z "${1+x}" ]; then
+		echo "[cmd tidb/cluster_index] usage: <cmd> 0|1" >&2
+		return 1
+	fi
+
+	local mode="${1}"
+	if [ "${mode}" != '0' ] && [ "${mode}" != '1' ]; then
+		echo "[cmd tidb/cluster_index] usage: <cmd> 0|1" >&2
+		return 1
+	fi
+
+	local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
+	if [ -z "${mod}" ]; then
+		echo "[cmd tidb/cluster_index] no selected tidb" >&2
+		return 1
+	fi
+
+	local sql="set @@global.tidb_enable_clustered_index = '${mode}';"
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${sql}" 'test' 'false'
+
+	local sql="show variables like \"tidb_enable_clustered_index\";"
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+		-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${sql}" 'test' 'false' | grep 'tidb_enable_clustered_index' | trim_host
+}
+
+set -euo pipefail
+cmd_ti_clustered_index "${@}"

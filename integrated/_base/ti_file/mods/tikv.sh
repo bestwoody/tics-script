@@ -107,7 +107,7 @@ function tikv_run()
 	echo "pd_addr	${pd_addr}" >> "${info}"
 	echo "cluster_id	${cluster_id}" >> "${info}"
 
-	echo "nohup \"${tikv_dir}/tikv-server\" \\" > "${tikv_dir}/run.sh"
+	echo "RUST_BACKTRACE=1 nohup \"${tikv_dir}/tikv-server\" \\" > "${tikv_dir}/run.sh"
 	echo "	--addr \"${listen_host}:${tikv_port}\" \\" >> "${tikv_dir}/run.sh"
 	echo "	--status-addr=\"${advertise_host}:${status_port}\" \\" >> "${tikv_dir}/run.sh"
 	echo "	--advertise-addr \"${advertise_host}:${tikv_port}\" \\" >> "${tikv_dir}/run.sh"

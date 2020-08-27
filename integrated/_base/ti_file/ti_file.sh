@@ -138,14 +138,14 @@ function ti_file_exe()
 	fi
 
 	local do_deploy='true'
-	if [ "${local}" == 'true' ] || [ "${cmd}" == 'dry' ]; then
+	if [ "${cmd}" != 'predeploy' ] && [ "${cmd}" != 'run' ] && [ "${cmd}" != 'up' ]; then
+		local do_deploy='false'
+	fi
+	if [ "${local}" == 'true' ]; then
 		local do_deploy='false'
 	fi
 	if [ -z "${script}" ] && [ ! -z "${summary}" ]; then
 		local do_deploy='false'
-	fi
-	if [ "${cmd}" == 'predeploy' ]; then
-		local do_deploy='true'
 	fi
 
 	if [ "${do_deploy}" == 'true' ]; then
