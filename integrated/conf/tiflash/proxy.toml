@@ -34,6 +34,9 @@ capacity = {disk_avail}
 #abnormal-leader-missing-duration = "21s"
 #peer-stale-state-check-interval = "20s"
 hibernate-regions = false
+# Normally the number of TiFlash nodes is smaller than TiKV nodes, and we need more raft threads to match the write speed of TiKV.
+apply-pool-size = 4
+store-pool-size = 4
 
 [coprocessor]
 
