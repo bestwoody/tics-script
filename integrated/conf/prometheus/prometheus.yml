@@ -1,0 +1,21 @@
+---
+global:
+  scrape_interval:     15s # By default, scrape targets every 15 seconds.
+  evaluation_interval: 15s # By default, scrape targets every 15 seconds.
+  # scrape_timeout is set to the global default (10s).
+  external_labels:
+    cluster: '{cluster_name}'
+    monitor: "prometheus"
+
+# Load and evaluate rules in this file every 'evaluation_interval' seconds.
+rule_files:
+  - 'node.rules.yml'
+  - 'bypass.rules.yml'
+  - 'pd.rules.yml'
+  - 'tidb.rules.yml'
+  - 'tikv.rules.yml'
+  - 'tikv.accelerate.rules.yml'
+  - 'tiflash.rules.yml'
+
+scrape_configs:
+  [scrape_configs]

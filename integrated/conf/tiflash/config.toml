@@ -43,3 +43,6 @@ kvstore_path = "{tiflash_dir}/kvstore"
 pd_addr = "{tiflash_pd_addr}"
 ignore_databases = "system,default"
 storage_engine = "dt"
+
+[status]
+metrics_port = "{tiflash_listen_host}:{tiflash_status_port}"

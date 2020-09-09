@@ -158,6 +158,9 @@ tiflash: node2/tiflash ports{p2} ver={v}
 spark_m: node1/spark_m ports{p1}
 spark_w: node1/spark_w ports{p1} cores=10 mem=10G
 spark_w: node2/spark_w ports{p2} cores=10 mem=10G
+node_exporter: node1/node_exporter ports{p1}
+prometheus: node1/prometheus ports{p1}
+grafana: node1/grafana ports{p1}
 ```
 
 A standalone tiflash process without pd/tidb/tikv:

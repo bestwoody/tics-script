@@ -24,3 +24,9 @@ tiflash_proxy	b1ef48a79c1659197bd7fea46eda20e1	libtiflash_proxy.so	https://downl
 tikv	f776031ac252853cce8b48cf0369908c	tikv-server	https://download.pingcap.org/tikv-server-tiflash-master-20200425.tar.gz	master	66feb3862ceb1c7eb3a29c13644ffce51a112be1
 pd	89d9a9b6ceef3ffcb8f7d1c1e1745857	pd-server	https://download.pingcap.org/pd-server-tiflash-master-20200425.tar.gz	master	e89fa2ed34f89823181fccbd92aea94648f7a2ca
 tidb	35f4cfbb81471464812a48d7a37e12e1	tidb-server	https://download.pingcap.org/tidb-server-tiflash-master-20200425.tar.gz	master	5ede18f10eedfe2e3690d7728dec3ffa4b0af2d5
+
+
+node_exporter 743b00de9e6bc01851c669bbfa66de02 node_exporter	https://download.pingcap.org/node_exporter-tiflash.tar.gz
+prometheus cbe781959d9bcedb03662d19bef4a040 prometheus	https://download.pingcap.org/prometheus-tiflash.tar.gz
+grafana 0e48a3efc1256cf01245cd9e608ad587 grafana-server	https://download.pingcap.org/grafana-server-tiflash.tar.gz
+grafana_scripts 31f83174fbc057f36fda67440b17c8e3 grafana_scripts.tgz	https://download.pingcap.org/grafana_scripts-tiflash.tgz

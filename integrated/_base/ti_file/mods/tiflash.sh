@@ -238,6 +238,11 @@ function tiflash_run()
 		echo "   get default tiflash_raft_and_cop_port from ${default_ports} failed" >&2
 		return 1
 	fi
+	local default_tiflash_status_port=`get_value "${default_ports}" 'tiflash_status_port'`
+	if [ -z "${default_tiflash_status_port}" ]; then
+		echo "   get default tiflash_status_port from ${default_ports} failed" >&2
+		return 1
+	fi
 	local default_proxy_port=`get_value "${default_ports}" 'proxy_port'`
 	if [ -z "${default_proxy_port}" ]; then
 		echo "   get default proxy_port from ${default_ports} failed" >&2
@@ -276,6 +281,7 @@ function tiflash_run()
 	local tcp_port=$((${ports_delta} + ${default_tiflash_tcp_port}))
 	local interserver_http_port=$((${ports_delta} + ${default_tiflash_interserver_http_port}))
 	local tiflash_raft_and_cop_port=$((${ports_delta} + ${default_tiflash_raft_and_cop_port}))
+	local tiflash_status_port=$((${ports_delta} + ${default_tiflash_status_port}))
 	local proxy_port=$((${ports_delta} + ${default_proxy_port}))
 	local proxy_status_port=$((${ports_delta} + ${default_proxy_status_port}))
 
@@ -297,6 +303,11 @@ function tiflash_run()
 	local raft_and_cop_port_occupied=`print_port_occupied "${tiflash_raft_and_cop_port}"`
 	if [ "${raft_and_cop_port_occupied}" == "true" ]; then
 		echo "   tiflash raft and cop port: ${tiflash_raft_and_cop_port} is occupied" >&2
+		return 1
+	fi
+	local tiflash_status_port_occupied=`print_port_occupied "${tiflash_status_port}"`
+	if [ "${tiflash_status_port_occupied}" == "true" ]; then
+		echo "   tiflash status port: ${tiflash_status_port} is occupied" >&2
 		return 1
 	fi
 	# if running with standalone == false, we need to check proxy's ports are not occupied
@@ -328,6 +339,7 @@ function tiflash_run()
 	local render_str="${render_str}#tiflash_tcp_port=${tcp_port}"
 	local render_str="${render_str}#tiflash_interserver_http_port=${interserver_http_port}"
 	local render_str="${render_str}#tiflash_raft_and_cop_port=${tiflash_raft_and_cop_port}"
+	local render_str="${render_str}#tiflash_status_port=${tiflash_status_port}"
 	local render_str="${render_str}#proxy_port=${proxy_port}"
 	local render_str="${render_str}#proxy_status_port=${proxy_status_port}"
 	local render_str="${render_str}#disk_avail=${disk_avail}"

@@ -32,3 +32,10 @@ tikv_importer_port  16000
 
 tikv_status_port	16500
 proxy_status_port	17000
+
+tiflash_status_port	17500
+
+prometheus_port	18000
+node_exporter_port    18500
+
+grafana_port 19000

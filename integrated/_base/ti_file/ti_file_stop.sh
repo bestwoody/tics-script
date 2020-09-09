@@ -41,6 +41,12 @@ function ti_file_mod_stop()
 		spark_worker_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	elif [ "${name}" == "tikv_importer" ]; then
 		tikv_importer_stop "${dir}" "${fast}" | awk '{print "   "$0}'
+	elif [ "${name}" == "node_exporter" ]; then
+		node_exporter_stop "${dir}" "${fast}" | awk '{print "   "$0}'
+	elif [ "${name}" == "prometheus" ]; then
+		prometheus_stop "${dir}" "${fast}" | awk '{print "   "$0}'
+	elif [ "${name}" == "grafana" ]; then
+		grafana_stop "${dir}" "${fast}" | awk '{print "   "$0}'
 	else
 		echo "   unknown mod to stop."
 		return 1

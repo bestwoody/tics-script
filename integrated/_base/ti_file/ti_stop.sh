@@ -17,7 +17,11 @@ function _ti_stop()
 	fi
 
 	local ti_dir=`abs_path "${ti_dir}"`
-	local conf_file="${ti_dir}/${conf_rel_path}"
+	if [ -z "${conf_rel_path}" ]; then
+	    local conf_file="${ti_dir}"
+	else
+	    local conf_file="${ti_dir}/${conf_rel_path}"
+	fi
 
 	local extra_str_to_find_proc="\-\-config"
 	if [ -f "${ti_dir}/extra_str_to_find_proc" ]; then
@@ -35,7 +39,7 @@ function _ti_stop()
 		return 1
 	fi
 
-	stop_procs "${conf_file}" "\-\-config" "${fast}"
+	stop_procs "${conf_file}" "${extra_str_to_find_proc}" "${fast}"
 }
 export -f _ti_stop
 
@@ -155,3 +159,45 @@ function tikv_importer_stop()
 	_ti_stop "${1}" "tikv-importer.toml" "${fast}"
 }
 export -f tikv_importer_stop
+
+function node_exporter_stop()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func node_exporter_stop] usage: <func> node_exporter_dir [fast_mode=false]" >&2
+		return 1
+	fi
+	local fast="false"
+	if [ ! -z "${2+x}" ]; then
+		local fast="${2}"
+	fi
+	_ti_stop "${1}" "" "${fast}"
+}
+export -f node_exporter_stop
+
+function prometheus_stop()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func prometheus_stop] usage: <func> prometheus_dir [fast_mode=false]" >&2
+		return 1
+	fi
+	local fast="false"
+	if [ ! -z "${2+x}" ]; then
+		local fast="${2}"
+	fi
+	_ti_stop "${1}" "conf/prometheus.yml" "${fast}"
+}
+export -f prometheus_stop
+
+function grafana_stop()
+{
+	if [ -z "${1+x}" ]; then
+		echo "[func grafana_stop] usage: <func> grafana_dir [fast_mode=false]" >&2
+		return 1
+	fi
+	local fast="false"
+	if [ ! -z "${2+x}" ]; then
+		local fast="${2}"
+	fi
+	_ti_stop "${1}" "conf/grafana.ini" "${fast}"
+}
+export -f grafana_stop
