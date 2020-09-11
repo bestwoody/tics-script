@@ -82,7 +82,7 @@ export -f cp_env_to_host
 function cp_bin_to_host()
 {
 	if [ -z "${8+x}" ]; then
-		echo "[func cp_bin_to_host] usage: <func> name_of_bin_module host remote_env_dir remote_dest_dir bin_paths_file bin_urls_file cache_dir version" >&2
+		echo "[func cp_bin_to_host] usage: <func> name_of_bin_module host remote_env_dir remote_dest_dir bin_paths_file bin_urls_file cache_dir version branch hash" >&2
 		return 1
 	fi
 
@@ -94,6 +94,8 @@ function cp_bin_to_host()
 	local bin_urls_file="${6}"
 	local cache_dir="${7}"
 	local version="${8}"
+	local branch="${9}"
+	local hash="${10}"
 
 	local host_os_type=`ssh_exe "${host}" "uname"`
 	if [ "${host_os_type}" == 'Darwin' ]; then
@@ -108,7 +110,7 @@ function cp_bin_to_host()
 
 	local cache_bin_path="${cache_dir}/${bin_name}"
 
-	cp_bin_to_dir "${name}" "${cache_dir}" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" "${version}" false
+	cp_bin_to_dir "${name}" "${cache_dir}" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" "${version}" "${branch}" "${hash}" false
 
 	ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
 	rsync -qa "${cache_bin_path}" "${host}:${remote_dest_dir}/${bin_name}" >/dev/null

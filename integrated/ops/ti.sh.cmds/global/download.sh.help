@@ -1,0 +1,3 @@
+download binaries to a specify directory
+usage: <cmd> x.ti download_dir [dry] [cache_dir=/tmp/ti]
+    when "dry" is not empty, will output a download script instead of downloading binaries

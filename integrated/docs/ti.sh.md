@@ -124,11 +124,22 @@ ver             <- specify binary version.
                     Version format:
                       * "4.0.4" -- download specify version
                       * "4.0.x" -- download the latest release version of branch 4.0
+
+branch & hash   <- specify binary branch & hash.
+                    If these two property are set, then ti.sh will try to download specify version
+                    of binary using PingCAP internal mirror.
+                    * branch should be "master" / "release-x.x"
+                    * hash should be "latest" or the commit hash
+
+More about ver, branch & hash
+                    Note that you can not set `ver` and `barnch`:`hash` at the same time. If you don't
+                    need it, set it to a empty string for the sake of convenience.
                     The priority for finding binary is:
                       * Find by `conf/bin.paths`
-	                  * Download from tiup mirror if version is not empty
-	                  * Download from bin.urls / bin.urls.mac
-                    Only support for tidb/tikv/tiflash/pd_ctl/tikv_ctl now.
+                      * Download from tiup mirror if version is not empty
+                      * Download from PingCAP internal mirror if branch and hash is not empty
+                      * Download from bin.urls / bin.urls.mac
+                    Only support for pd/tidb/tikv/tiflash/pd_ctl/tikv_ctl now.
 
 standalone      <- only used by tiflash module,
                     add this if you want to deploy a standalone tiflash process without pd/tidb/tikv
@@ -146,6 +157,12 @@ p2=+2
 p3=+3
 v=v4.0.4
 
+b=""
+hash=""
+# or 
+# b="release-4.0"
+# hash="latest"
+
 pd:      node1/pd      ports{p1} ver={v}
 pd:      node2/pd      ports{p2} ver={v}
 pd:      node3/pd      ports{p3} ver={v}
@@ -153,7 +170,7 @@ tikv:    node1/tikv    ports{p1} ver={v}
 tikv:    node2/tikv    ports{p2} ver={v}
 tidb:    node1/tidb    ports{p1} ver={v}
 tidb:    node2/tidb    ports{p2} ver={v}
-tiflash: node1/tiflash ports{p1} ver={v}
+tiflash: node1/tiflash ports{p1} ver={v}  branch={b} hash={hash}
 tiflash: node2/tiflash ports{p2} ver={v}
 spark_m: node1/spark_m ports{p1}
 spark_w: node1/spark_w ports{p1} cores=10 mem=10G

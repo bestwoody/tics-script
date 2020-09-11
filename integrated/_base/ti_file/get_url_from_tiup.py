@@ -5,7 +5,7 @@ import json
 import urllib2
 
 def exit_with_unrecognized_version(version):
-    print('[get_url_from_tiup.py] unrecognized version:' + version, file=sys.stderr)
+    print('[get_url_from_tiup.py] unrecognized version:`{}`'.format(version), file=sys.stderr)
     sys.exit(1)
 
 def is_version_match_major_minor(lhs, rhs):
@@ -61,6 +61,7 @@ def print_latest_version_url(domain, os, arch, component, version):
         print('[get_url_from_tiup.py] unsupported platform:' + platform, file=sys.stderr)
         sys.exit(1)
     
+    # from pprint import pprint; pprint(support_platforms)
     # version should be in this format: v3.1.x, we should pick the latest version from specified platform
     version = version.strip().lstrip('v')
     available_versions = filter(
@@ -70,7 +71,8 @@ def print_latest_version_url(domain, os, arch, component, version):
     available_versions = sorted(available_versions, cmp=compare_version)
     # print(available_versions)
     max_version = available_versions[-1]
-    print("{domain}/{comp}-{version}-{os}-{arch}.tar.gz\t{domain}/{comp}-{version}-{os}-{arch}.sha1".format(
+    max_version = 'v' + max_version # prepend a 'v' in front of version
+    print("{version}\t{domain}/{comp}-{version}-{os}-{arch}.tar.gz\t{domain}/{comp}-{version}-{os}-{arch}.sha1".format(
         domain=domain, comp=component, os=os, arch=arch, version=max_version
     ))
 
@@ -96,7 +98,7 @@ if __name__ == '__main__':
     else:
         try:
             patch = dot_splitted[-1]
-            print("{domain}/{comp}-{version}-{os}-{arch}.tar.gz\t{domain}/{comp}-{version}-{os}-{arch}.sha1".format(
+            print("{version}\t{domain}/{comp}-{version}-{os}-{arch}.tar.gz\t{domain}/{comp}-{version}-{os}-{arch}.sha1".format(
                 domain=domain, comp=component, os=os, arch=arch, version=version
             ))
         except ValueError as e:

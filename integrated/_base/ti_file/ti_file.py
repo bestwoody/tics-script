@@ -10,6 +10,9 @@ class Conf:
         self.integrated_dir = "-"
         self.conf_templ_dir = "-"
         self.cache_dir = "/tmp/ti"
+        # Only download binary resources
+        self.only_download = False
+        self.download_path = ''
 
 class Ti:
     def __init__(self):
@@ -153,6 +156,10 @@ def parse_mod(obj, line, origin):
             if len(kv) != 2 or kv[0].strip() != 'mem':
                 error('bad mem prop: ' + origin)
             setattr(obj, 'mem', kv[1].strip())
+        elif field.startswith('failpoint'):
+            if obj.name != 'tidb':
+                error('failpoint is only supported for tidb now.')
+            setattr(obj, 'failpoint', True)
         elif field.startswith('standalone'):
             if obj.name != 'tiflash':
                 error('standalone is only supported for tiflash now.')
@@ -171,14 +178,30 @@ def parse_mod(obj, line, origin):
             kv = field.split('=')
             if len(kv) != 2 or kv[0].strip() not in ('ver', 'version') or len(kv[1].strip()) == 0:
                 error('bad version prop: ' + origin)
-            version = kv[1].strip()
-            if not version.startswith('v'): version = 'v' + version
+            version = kv[1].strip().strip("'").strip('"') # trip ' or "
+            if not version.startswith('v') and len(version) != 0: version = 'v' + version
             setattr(obj, 'version', version)
+        elif field.startswith('branch'):
+            # PingCAP internal mirror
+            kv = field.split('=')
+            if len(kv) != 2 or kv[0].strip() != 'branch':
+                error('bad branch prop: ' + origin)
+            branch = kv[1].strip().strip("'").strip('"')
+            setattr(obj, 'branch', branch)
+        elif field.startswith('hash'):
+            kv = field.split('=')
+            if len(kv) != 2 or kv[0].strip() != 'hash':
+                error('bad hash prop: ' + origin)
+            hash = kv[1].strip().strip("'").strip('"')
+            setattr(obj, 'hash', hash)
         else:
             old_dir = str(getattr(obj, 'dir'))
             if len(old_dir) != 0:
                 error('bad line: may be two dir prop: ' + old_dir + ', ' + field + '. line: ' + origin)
             setattr(obj, 'dir', field)
+    if (hasattr(obj, 'version') and obj.version != '') \
+        and ( (hasattr(obj, 'branch') and obj.branch != '') or (hasattr(obj, 'hash') and obj.hash != '') ):
+        error('bad line: can not set both "version" and "branch:hash": ' + origin)
     return obj
 
 def pd(res, line, origin):
@@ -324,21 +347,43 @@ def print_mod_header(mod):
     print_sep()
 
 def print_cp_bin(mod, conf):
-    line = 'cp_bin_to_dir "%s" "%s" "%s/bin.paths" "%s/bin.urls" "%s/master/bins" "%s"'
-    version = getattr(mod, "version", "")
-    print line % (mod.name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir, version)
-    print ''
+    # <func> name_of_bin_module dest_dir bin_paths_file bin_urls_file cache_dir version branch hash [check_os_type] [failpoint]
+    line = 'cp_bin_to_dir "{name}" "{dest_dir}" "{templ_dir}/bin.paths" "{templ_dir}/bin.urls" "{cache_dir}/master/bins" "{version}" "{branch}" "{hash}" "{check_os_type}" "{failpoint}"'
+    format_attrs = {
+        "name": mod.name, "dest_dir": mod.dir, "templ_dir": conf.conf_templ_dir, "cache_dir": conf.cache_dir,
+        "version": getattr(mod, "version", ""), "branch": getattr(mod, "branch", ""), "hash": getattr(mod, "hash", ""),
+        "check_os_type": str(True).lower(),
+        "failpoint": str(getattr(mod, "failpoint", "")).lower()
+    }
+
+    # if we only download package, rewrite the dest_dir with download_path
+    if conf.only_download:
+        if len(conf.download_path) == 0:
+            error('Running with cmd [download] but no download_path specified')
+        format_attrs["dest_dir"] = conf.download_path + "/" + mod.name
+
+    print line.format(**format_attrs) + '\n'
     for bin_name in mod.extra_tools:
-        print line % (bin_name, mod.dir, conf.conf_templ_dir, conf.conf_templ_dir, conf.cache_dir, version)
-        print ''
+        format_attrs["name"] = bin_name
+        print line.format(**format_attrs) + '\n'
+
+        # cluster manager should be a zipped file
+        if conf.only_download and mod.name == 'tiflash' and bin_name == 'cluster_manager':
+            print ' [ -d {dest_dir}/tiflash/flash_cluster_manager ] && tar czf {dest_dir}/flash_cluster_manager.tgz {dest_dir}/flash_cluster_manager'.format(dest_dir=format_attrs["dest_dir"]) + '\n'
 
 def print_ssh_prepare(mod, conf, env_dir):
-    version = getattr(mod, "version", "")
-    prepare = 'ssh_prepare_run "%s" ' + mod.name + ' "%s" "%s" "%s" "%s" "%s"'
-    print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir, version)
+    # <func> host mod_name dir conf_templ_dir cache_dir remote_env version branch hash
+    format_attrs = {
+        "host": mod.host, "name": mod.name,
+        "dest_dir": mod.dir, "templ_dir": conf.conf_templ_dir, "cache_dir": conf.cache_dir, "remote_env": env_dir,
+        "version": getattr(mod, "version", ""), "branch": getattr(mod, "branch", ""), "hash": getattr(mod, "hash", "")
+    }
+
+    prepare = 'ssh_prepare_run "{host}" {name} "{dest_dir}" "{templ_dir}" "{cache_dir}" "{remote_env}" "{version}" "{branch}" "{hash}"'
+    print prepare.format(**format_attrs)
     for bin_name in mod.extra_tools:
-        prepare = 'ssh_prepare_run "%s" ' + bin_name + ' "%s" "%s" "%s" "%s" "%s"'
-        print prepare % (mod.host, mod.dir, conf.conf_templ_dir, conf.cache_dir, env_dir, version)
+        format_attrs["name"] = bin_name
+        print prepare.format(**format_attrs)
         print ''
 
 def render_pds(res, conf, hosts, indexes):
@@ -721,6 +766,18 @@ def render(res, conf, kvs, mod_names, hosts, indexes):
     if should_render('grafana'):
         render_grafanas(res, conf, hosts, indexes)
 
+def download(res, conf, kvs):
+    print_sh_header(conf, kvs)
+    if len(res.pds) > 0:
+        print_cp_bin(res.pds[0], conf)
+    if len(res.tikvs) > 0:
+        print_cp_bin(res.tikvs[0], conf)
+    if len(res.tidbs) > 0:
+        print_cp_bin(res.tidbs[0], conf)
+    if len(res.tiflashs) > 0:
+        print_cp_bin(res.tiflashs[0], conf)
+    # TODO: support download other components
+
 def get_mods(res, mod_names, hosts, indexes):
     confs = {
         'pd' : 'pd.toml',
@@ -795,7 +852,7 @@ def get_hosts(res, mod_names, hosts, indexes):
 
 if __name__ == '__main__':
     if len(sys.argv) < 6:
-        error('usage: <bin> file cmd(render|mods|hosts) integrated_dir conf_templ_dir cache_dir [mod_nams] [hosts] [indexes] [args_str(k=v#k=v#..)]')
+        error('usage: <bin> file cmd(render|mods|hosts|download) integrated_dir conf_templ_dir cache_dir [mod_nams] [hosts] [indexes] [args_str(k=v#k=v#..)]')
 
     cmd = sys.argv[1]
     path = sys.argv[2]
@@ -807,23 +864,26 @@ if __name__ == '__main__':
     conf.cache_dir = sys.argv[5]
 
     mod_names = set()
-    if len(sys.argv) >= 6 and len(sys.argv[6]) != 0:
+    if len(sys.argv) > 6 and len(sys.argv[6]) != 0:
         mod_names = set(sys.argv[6].split(','))
     for name in mod_names:
         if not mods.has_key(name):
             error(name + ' is not a valid module name')
 
     hosts = set()
-    if len(sys.argv) >= 7 and len(sys.argv[7]) != 0:
+    if len(sys.argv) > 7 and len(sys.argv[7]) != 0:
         hosts = set(sys.argv[7].split(','))
 
     indexes = set()
-    if len(sys.argv) >= 8 and len(sys.argv[8]) != 0:
+    if len(sys.argv) > 8 and len(sys.argv[8]) != 0:
         indexes = set(map(lambda x: int(x), sys.argv[8].split(',')))
-
+    
     kvs_str = ""
-    if len(sys.argv) >= 9:
+    if len(sys.argv) > 9:
         kvs_str = sys.argv[9]
+
+    if len(sys.argv) > 10 and len(sys.argv[10]) != 0:
+        conf.download_path = sys.argv[10]
 
     res = Ti()
     kvs = parse_kvs(kvs_str)
@@ -832,6 +892,9 @@ if __name__ == '__main__':
 
     if cmd == 'render':
         render(res, conf, kvs, mod_names, hosts, indexes)
+    elif cmd == 'download':
+        conf.only_download = True
+        download(res, conf, kvs)
     elif cmd == 'mods':
         get_mods(res, mod_names, hosts, indexes)
     elif cmd == 'hosts':
