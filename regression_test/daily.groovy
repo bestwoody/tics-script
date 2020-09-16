@@ -3,18 +3,13 @@ def runDailyIntegrationTest(branch, version, notify) {
 }
 
 def runDailyIntegrationTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, notify) {
-  runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, notify, 5)
+  runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "", notify, 5)
 }
 
-def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, notify, idleMinutes) {
+def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, checkout_name, notify, idleMinutes) {
     taskStartTimeInMillis = System.currentTimeMillis()
 
     def label = "test-tiflash-regression-v11"
-
-    def TIDB_BRANCH = "master"
-    def TIKV_BRANCH = "master"
-    def PD_BRANCH = "master"
-    def TIFLASH_BRANCH = "master"
 
     podTemplate(name: label, label: label, instanceCap: 10, idleMinutes: idleMinutes, containers: [
             containerTemplate(name: 'tiflash-docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
@@ -44,7 +39,7 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
                     }
                 }
 
-                stage("Download Resources") {
+                stage("Fetch version of components") {
                     container("tiflash-docker") {
                         dir("/home/jenkins/agent/git/tiflash/") {
                             sh "chown -R 1000:1000 ./"
@@ -54,47 +49,71 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
 
                             checkout changelog: false, poll: false, scm: [
                                     $class                           : 'GitSCM',
-                                    branches                         : [[name: branch]],
+                                    branches                         : [[name: checkout_name]],
                                     doGenerateSubmoduleConfigurations: false,
                                     userRemoteConfigs                : [[credentialsId: 'github-sre-bot-ssh', url: 'git@github.com:pingcap/tiflash.git']]
                             ]
-                        }
 
-                        if(version == "latest") {
-                          dir("/home/jenkins/agent/git/tiflash/binary/") {
-                              // tidb
-                              def tidb_sha1 = tidb_commit_hash
-                              if (tidb_sha1 == null || tidb_sha1 == "") {
-                                tidb_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tidb/${TIDB_BRANCH}/sha1").trim()
-                              }
-                              sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tidb/${tidb_sha1}/centos7/tidb-server.tar.gz | tar xz"
+                            def TIDB_BRANCH = branch
+                            def TIKV_BRANCH = branch
+                            def PD_BRANCH = branch
+                            def TIFLASH_BRANCH = branch
 
-                              // tikv
-                              def tikv_sha1 = tikv_commit_hash
-                              if (tikv_sha1 == null || tikv_sha1 == "") {
-                                tikv_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tikv/${TIKV_BRANCH}/sha1").trim()
-                              }
-                              sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tikv/${tikv_sha1}/centos7/tikv-server.tar.gz | tar xz"
+                            def ver_file = "regression_test/download_ver.ti"
+                            sh "rm $ver_file"
+                            if (version == "latest") {
+                                // tidb
+                                def tidb_sha1 = tidb_commit_hash
+                                if (tidb_sha1 == null || tidb_sha1 == "") {
+                                    tidb_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tidb/${TIDB_BRANCH}/sha1").trim()
+                                }
 
-                              // pd
-                              def pd_sha1 = pd_commit_hash
-                              if (pd_sha1 == null || pd_sha1 == "") {
-                                pd_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/pd/${PD_BRANCH}/sha1").trim()
-                              }
-                              sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/pd/${pd_sha1}/centos7/pd-server.tar.gz | tar xz"
+                                // tikv
+                                def tikv_sha1 = tikv_commit_hash
+                                if (tikv_sha1 == null || tikv_sha1 == "") {
+                                    tikv_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tikv/${TIKV_BRANCH}/sha1").trim()
+                                }
 
-                              // tiflash
-                              def tiflash_sha1 = tiflash_commit_hash
-                              if (tiflash_sha1 == null || tiflash_sha1 == "") {
-                                tiflash_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tiflash/${TIFLASH_BRANCH}/sha1").trim()
-                              }
-                              sh "curl ${FILE_SERVER_URL}/download/builds/pingcap/tiflash/${TIFLASH_BRANCH}/${tiflash_sha1}/centos7/tiflash.tar.gz | tar xz"
+                                // pd
+                                def pd_sha1 = pd_commit_hash
+                                if (pd_sha1 == null || pd_sha1 == "") {
+                                    pd_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/pd/${PD_BRANCH}/sha1").trim()
+                                }
 
-                              sh """
-                              cd tiflash
-                              tar -zcvf flash_cluster_manager.tgz flash_cluster_manager/
-                              """
-                          }
+                                // tiflash
+                                def tiflash_sha1 = tiflash_commit_hash
+                                if (tiflash_sha1 == null || tiflash_sha1 == "") {
+                                    tiflash_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tiflash/${TIFLASH_BRANCH}/sha1").trim()
+                                }
+                                sh """
+                                echo \"ver=''\"                          > $ver_file
+                                echo \"tidb_branch=$TIDB_BRANCH\"       >> $ver_file
+                                echo \"tidb_hash=$tidb_sha1\"           >> $ver_file
+                                echo \"tikv_branch=$TIKV_BRANCH\"       >> $ver_file
+                                echo \"tikv_hash=$tikv_sha1\"           >> $ver_file
+                                echo \"pd_branch=$PD_BRANCH\"           >> $ver_file
+                                echo \"pd_hash=$pd_sha1\"               >> $ver_file
+                                echo \"tiflash_branch=$TIFLASH_BRANCH\" >> $ver_file
+                                echo \"tiflash_hash=$tiflash_sha1\"     >> $ver_file
+                                """
+                            } else if (version == "stable") {
+                                // Use the latest public release version in tiup mirror
+                                sh """
+                                v=\$(echo $branch | sed 's/release-\\(.*\\)/v\\1.x/g')
+                                echo \"ver=\$v\"          > $ver_file
+                                echo \"tidb_branch=\"    >> $ver_file
+                                echo \"tidb_hash=\"      >> $ver_file
+                                echo \"tikv_branch=\"    >> $ver_file
+                                echo \"tikv_hash=\"      >> $ver_file
+                                echo \"pd_branch=\"      >> $ver_file
+                                echo \"pd_hash=\"        >> $ver_file
+                                echo \"tiflash_branch=\" >> $ver_file
+                                echo \"tiflash_hash=\"   >> $ver_file
+                                """
+                            }
+                            sh """
+                            cat $ver_file
+                            """
                         }
                     }
                 }
@@ -102,10 +121,20 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
                 stage("Test_" + branch + "_" + version) {
                     container("docker-ops-ci") {
                         dir("/home/jenkins/agent/git/tiflash") {
-                            if(version == "latest") {
-                              sh "rm -f integrated/conf/bin.paths"
-                              sh "cp regression_test/conf/bin.paths integrated/conf/"
-                            }
+                            // container("tiflash-docker") does not have python, run download binaries in this docker
+                            def ver_file = "regression_test/download_ver.ti"
+                            def binaries_dir = "/home/jenkins/agent/git/tiflash/binary/"
+                            sh """
+                            set -x
+                            cat $ver_file
+                            set +x
+                            /home/jenkins/agent/git/tiflash/integrated/ops/ti.sh download /home/jenkins/agent/git/tiflash/regression_test/download.ti $binaries_dir
+                            # Replace binaries using bin.paths
+                            rm -f integrated/conf/bin.paths
+                            cp regression_test/conf/bin.paths integrated/conf/
+                            # show versions
+                            /home/jenkins/agent/git/tiflash/integrated/ops/ti.sh /home/jenkins/agent/git/tiflash/regression_test/download.ti burn : up : ver : burn
+                            """
                             try {
                                 timeout(720) {
                                     sh "regression_test/daily.sh"

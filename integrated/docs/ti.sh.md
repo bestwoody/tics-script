@@ -133,7 +133,7 @@ branch & hash   <- specify binary branch & hash.
 
 More about ver, branch & hash
                     Note that you can not set `ver` and `barnch`:`hash` at the same time. If you don't
-                    need it, set it to a empty string for the sake of convenience.
+                    need it, set it to an empty string for the sake of convenience.
                     The priority for finding binary is:
                       * Find by `conf/bin.paths`
                       * Download from tiup mirror if version is not empty

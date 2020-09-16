@@ -23,7 +23,7 @@ function ssh_prepare_run()
 	local bin_name=`get_bin_name_from_conf "${name}" "${bin_paths_file}" "${bin_urls_file}"`
 
 	# TODO: Tidy up these paths
-	cp_bin_to_host "${name}" "${host}" "${remote_env}" "${cache_dir}/worker/bins" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}/master/bins" "${version}" "${branch}" "${hash}"
+	cp_bin_to_host "${name}" "${host}" "${remote_env}" "${cache_dir}/worker/bins" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" "${version}" "${branch}" "${hash}"
 	call_remote_func "${host}" "${remote_env}" cp_when_diff "${cache_dir}/worker/bins/${bin_name}" "${dir}/${bin_name}"
 }
 export -f ssh_prepare_run

@@ -272,7 +272,7 @@ function ensure_bin_in_local_dir()
 	local conf_templ_dir="${integrated}/conf"
 	local bin_paths_file="${conf_templ_dir}/bin.paths"
 	local bin_urls_file="${conf_templ_dir}/bin.urls"
-	local cache_dir="/tmp/ti/master/bins"
+	local cache_dir="/tmp/ti"
 
 	cp_bin_to_dir "${bin_name}" "${target_bin_dir}" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" "" "" "" 'true'
 }

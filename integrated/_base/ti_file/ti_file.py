@@ -348,7 +348,7 @@ def print_mod_header(mod):
 
 def print_cp_bin(mod, conf):
     # <func> name_of_bin_module dest_dir bin_paths_file bin_urls_file cache_dir version branch hash [check_os_type] [failpoint]
-    line = 'cp_bin_to_dir "{name}" "{dest_dir}" "{templ_dir}/bin.paths" "{templ_dir}/bin.urls" "{cache_dir}/master/bins" "{version}" "{branch}" "{hash}" "{check_os_type}" "{failpoint}"'
+    line = 'cp_bin_to_dir "{name}" "{dest_dir}" "{templ_dir}/bin.paths" "{templ_dir}/bin.urls" "{cache_dir}" "{version}" "{branch}" "{hash}" "{check_os_type}" "{failpoint}"'
     format_attrs = {
         "name": mod.name, "dest_dir": mod.dir, "templ_dir": conf.conf_templ_dir, "cache_dir": conf.cache_dir,
         "version": getattr(mod, "version", ""), "branch": getattr(mod, "branch", ""), "hash": getattr(mod, "hash", ""),
@@ -369,7 +369,7 @@ def print_cp_bin(mod, conf):
 
         # cluster manager should be a zipped file
         if conf.only_download and mod.name == 'tiflash' and bin_name == 'cluster_manager':
-            print ' [ -d {dest_dir}/tiflash/flash_cluster_manager ] && tar czf {dest_dir}/flash_cluster_manager.tgz {dest_dir}/flash_cluster_manager'.format(dest_dir=format_attrs["dest_dir"]) + '\n'
+            print ' [ -d {dest_dir}/flash_cluster_manager ] && cd {dest_dir} && tar czf flash_cluster_manager.tgz ./flash_cluster_manager && cd -'.format(dest_dir=format_attrs["dest_dir"]) + '\n'
 
 def print_ssh_prepare(mod, conf, env_dir):
     # <func> host mod_name dir conf_templ_dir cache_dir remote_env version branch hash

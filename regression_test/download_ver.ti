@@ -1,0 +1,9 @@
+ver=v4.0.x
+tidb_branch=''
+tidb_hash=''
+tikv_branch=''
+tikv_hash=''
+pd_branch=''
+pd_hash=''
+tiflash_branch=''
+tiflash_hash=''

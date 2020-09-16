@@ -11,6 +11,12 @@ function is_the_same_file()
 }
 export -f is_the_same_file
 
+function normalize_path()
+{
+	echo "$(dirname $1)/$(basename $1)"
+}
+export -f normalize_path
+
 function cp_when_diff()
 {
 	if [ -z "${2+x}" ]; then
@@ -18,8 +24,8 @@ function cp_when_diff()
 		return 1
 	fi
 
-	local src="${1}"
-	local dest="${2}"
+	local src="$(normalize_path ${1})"
+	local dest="$(normalize_path ${2})"
 
 	local same=`is_the_same_file "${src}" "${dest}"`
 	if [ "${same}" == "true" ]; then

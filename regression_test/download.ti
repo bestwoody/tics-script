@@ -1,0 +1,10 @@
+dir=/tmp/download
+p=+20
+
+import download_ver.ti
+
+
+tidb:    {dir}/tidb    ports{p} ver={ver} branch={tidb_branch}    hash={tidb_hash}
+tikv:    {dir}/tikv    ports{p} ver={ver} branch={tikv_branch}    hash={tikv_hash}
+pd:      {dir}/pd      ports{p} ver={ver} branch={pd_branch}      hash={pd_hash}
+tiflash: {dir}/tiflash ports{p} ver={ver} branch={tiflash_branch} hash={tiflash_hash}

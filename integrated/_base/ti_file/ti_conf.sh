@@ -53,14 +53,15 @@ function cp_bin_to_dir_from_paths()
 	local dest_dir="${2}"
 	local bin_paths_file="${3}"
 	local cache_dir="${4}"
+	local bin_cache_dir="${cache_dir}/master/bins"
 
 	local entry_str=`cat "${bin_paths_file}" | { grep "^${name}[[:blank:]]" || test $? = 1; }`
 
 	local bin_name=`echo "${entry_str}" | awk '{print $2}'`
 	# Check whether DEFAULT_BIN_PATH is overrided in `ops/conf.sh` and try to copy binary
 	if [ ! -z "${DEFAULT_BIN_PATH+x}" ] && [ -f "${DEFAULT_BIN_PATH}/${bin_name}" ]; then
-		cp_when_diff "${DEFAULT_BIN_PATH}/${bin_name}" "${cache_dir}/${bin_name}"
-		cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+		cp_when_diff "${DEFAULT_BIN_PATH}/${bin_name}" "${bin_cache_dir}/${bin_name}"
+		cp_when_diff "${bin_cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
 		echo 'true'
 		return
 	fi
@@ -74,8 +75,8 @@ function cp_bin_to_dir_from_paths()
 			# TODO: Pass integrated dir from args
 			local path=`replace_substr "${path}" '{integrated}' "${integrated}"`
 			if [ -f "${path}" ]; then
-				cp_when_diff "${path}" "${cache_dir}/${bin_name}"
-				cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+				cp_when_diff "${path}" "${bin_cache_dir}/${bin_name}"
+				cp_when_diff "${bin_cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
 				local found="true"
 				break
 			fi
@@ -98,6 +99,7 @@ function cp_bin_to_dir_from_urls()
 	local dest_dir="${2}"
 	local bin_urls_file="${3}"
 	local cache_dir="${4}"
+	local bin_cache_dir="${cache_dir}/master/bins"
 
 	local entry_str=`cat "${bin_urls_file}" | { grep "^${name}[[:blank:]]" || test $? = 1; }`
 	if [ -z "$entry_str" ]; then
@@ -119,30 +121,30 @@ function cp_bin_to_dir_from_urls()
 		fi
 	fi
 
-	mkdir -p "${cache_dir}"
-	if [ -f "${cache_dir}/${bin_name}" ]; then
-		local old_md5=`file_md5 "${cache_dir}/${bin_name}"`
+	mkdir -p "${bin_cache_dir}"
+	if [ -f "${bin_cache_dir}/${bin_name}" ]; then
+		local old_md5=`file_md5 "${bin_cache_dir}/${bin_name}"`
 		if [ "${old_md5}" == "${md5}" ]; then
-			cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+			cp_when_diff "${bin_cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
 			return 0
 		fi
 	fi
 
 	local download_name="`basename ${url}`"
-	local download_dir="/tmp/ti/cache/download"
+	local download_dir="${cache_dir}/cache/download"
 	mkdir -p "${download_dir}"
 	local download_path="${download_dir}/${download_name}.`date +%s`.${RANDOM}"
 
 	local error_handle="$-"
 	set +e
-	#wget -nv -nd --show-progress --progress=bar:force:noscroll -P "${cache_dir}" "${url}" -O "${download_path}" 2>&1
+	#wget -nv -nd --show-progress --progress=bar:force:noscroll -P "${bin_cache_dir}" "${url}" -O "${download_path}" 2>&1
 	echo "[downloading ${name} using url in file \"${url}\" ...]" >&2
-	wget --quiet -nd -P "${cache_dir}" "${url}" --no-check-certificate -O "${download_path}"
+	wget --quiet -nd -P "${bin_cache_dir}" "${url}" --no-check-certificate -O "${download_path}"
 	local code="$?"
 	restore_error_handle_flags "${error_handle}"
 
 	if [ "${code}" != "0" ]; then
-		echo "[func cp_bin_to_dir_from_urls] wget --quiet -nd -P '${cache_dir}' '${url}' -O '${download_path}' failed" >&2
+		echo "[func cp_bin_to_dir_from_urls] wget --quiet -nd -P '${bin_cache_dir}' '${url}' -O '${download_path}' failed" >&2
 		rm -f "${download_path}"
 		return 1
 	fi
@@ -156,25 +158,25 @@ function cp_bin_to_dir_from_urls()
 	local download_is_tgz=`echo "${download_name}" | { grep '.tgz$' || test $? = 1; }`
 
 	if [ ! -z "${download_is_tar}" ]; then
-		local target_tmp_path="${cache_dir}/${bin_name}.`date +%s`.${RANDOM}"
+		local target_tmp_path="${bin_cache_dir}/${bin_name}.`date +%s`.${RANDOM}"
 		tar -O -zxf "${download_path}" > "${target_tmp_path}"
 		rm -f "${download_path}"
-		mv -f "${target_tmp_path}" "${cache_dir}/${bin_name}"
-		chmod +x "${cache_dir}/${bin_name}"
+		mv -f "${target_tmp_path}" "${bin_cache_dir}/${bin_name}"
+		chmod +x "${bin_cache_dir}/${bin_name}"
 		mkdir -p "${dest_dir}"
-		cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+		cp_when_diff "${bin_cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
 		return 0
 	fi
 
 	# TODO: extract tgz is cache dir
 	if [ -z "${download_ext}" ] || [ ! -z "${download_is_tgz}" ]; then
-		mv -f "${download_path}" "${cache_dir}/${bin_name}"
-		local new_md5=`file_md5 "${cache_dir}/${bin_name}"`
+		mv -f "${download_path}" "${bin_cache_dir}/${bin_name}"
+		local new_md5=`file_md5 "${bin_cache_dir}/${bin_name}"`
 		if [ "${new_md5}" == "${md5}" ]; then
-			cp_when_diff "${cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+			cp_when_diff "${bin_cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
 			return 0
 		else
-			echo "[func cp_bin_to_dir_from_urls] ${md5}(${bin_urls_file}) != ${new_md5}(${cache_dir}/${bin_name}) md5 not matched" >&2
+			echo "[func cp_bin_to_dir_from_urls] ${md5}(${bin_urls_file}) != ${new_md5}(${bin_cache_dir}/${bin_name}) md5 not matched" >&2
 			return 1
 		fi
 	fi
@@ -244,6 +246,7 @@ function cp_bin_to_dir_from_tiup_urls()
 	local dest_dir="${2}"
 	local bin_urls_file="${3}"
 	local cache_dir="${4}"
+	local bin_cache_dir="${cache_dir}/master/bins"
 	local version="${5}"
 
 	if [[ -z "${version}" ]]; then
@@ -291,7 +294,7 @@ function cp_bin_to_dir_from_tiup_urls()
 	local url=`echo ${tiup_urls} | awk '{print $2}'`
 	local sha1_url=`echo ${tiup_urls} | awk '{print $3}'`
 
-	local download_dir="/tmp/ti/cache/download"
+	local download_dir="${cache_dir}/cache/download"
 	mkdir -p "${download_dir}"
 	local download_name="`basename ${url}`"
 	local download_path="${download_dir}/${download_name}"
@@ -314,11 +317,11 @@ function cp_bin_to_dir_from_tiup_urls()
 		local download_path_tmp="${download_path}.`date +%s`.${RANDOM}"
 		local error_handle="$-"
 		set +e
-		wget --quiet -nd -P "${cache_dir}" "${url}" --no-check-certificate -O "${download_path_tmp}"
+		wget --quiet -nd -P "${bin_cache_dir}" "${url}" --no-check-certificate -O "${download_path_tmp}"
 		local code="$?"
 		restore_error_handle_flags "${error_handle}"
 		if [ "${code}" != "0" ]; then
-			echo "[func cp_bin_to_dir_from_tiup_urls] wget --quiet -nd -P '${cache_dir}' '${url}' -O '${download_path}' failed, name=\"${name}\"" >&2
+			echo "[func cp_bin_to_dir_from_tiup_urls] wget --quiet -nd -P '${bin_cache_dir}' '${url}' -O '${download_path}' failed, name=\"${name}\"" >&2
 			rm -f "${download_path_tmp}"
 			return 1
 		fi
@@ -399,6 +402,7 @@ function cp_bin_to_dir_from_pingcap_internal()
 	local dest_dir="${2}"
 	local bin_urls_file="${3}"
 	local cache_dir="${4}"
+	local bin_cache_dir="${cache_dir}/master/bins"
 	local branch="${5}"
 	local hash="${6}"
 	local failpoint="${7}"
@@ -470,7 +474,7 @@ function cp_bin_to_dir_from_pingcap_internal()
 		local hash=`curl -s "${file_server}/download/refs/pingcap/${component_name}/${branch}/sha1"`
 	fi
 
-	local download_dir="/tmp/ti/cache/download"
+	local download_dir="${cache_dir}/cache/download"
 	mkdir -p "${download_dir}"
 	local download_name="${component_name}.${hash}.tar.gz"
 	local download_path="${download_dir}/${download_name}"
@@ -490,10 +494,10 @@ function cp_bin_to_dir_from_pingcap_internal()
 		fi
 		echo "[downloading from internal mirror \"${url}\" ...]" >&2
 		local download_path_tmp="${download_path}.`date +%s`.${RANDOM}"
-		wget --quiet -nd -P "${cache_dir}" "${url}" --no-check-certificate -O "${download_path_tmp}"
+		wget --quiet -nd -P "${bin_cache_dir}" "${url}" --no-check-certificate -O "${download_path_tmp}"
 		local code="$?"
 		if [ "${code}" != "0" ]; then
-			echo "[func cp_bin_to_dir_from_pingcap_internal] wget --quiet -nd -P '${cache_dir}' '${url}' -O '${download_path}' failed, name=\"${name}\"" >&2
+			echo "[func cp_bin_to_dir_from_pingcap_internal] wget --quiet -nd -P '${bin_cache_dir}' '${url}' -O '${download_path}' failed, name=\"${name}\"" >&2
 			rm -f "${download_path_tmp}"
 			return 1
 		fi
@@ -547,7 +551,7 @@ function cp_bin_to_dir()
 	local dest_dir="${2}"
 	local bin_paths_file="${3}"
 	local bin_urls_file="${4}"
-	local cache_dir="${5}"
+	local cache_dir="${5}" # "/tmp/ti" by default
 	local version="${6}"
 	local branch="${7}"
 	local hash="${8}"

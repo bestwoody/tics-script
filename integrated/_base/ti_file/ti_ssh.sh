@@ -108,9 +108,9 @@ function cp_bin_to_host()
 	local bin_name=`get_bin_name_from_conf "${name}" "${bin_paths_file}" "${bin_urls_file}"`
 	local md5=`get_bin_md5_from_conf "${name}" "${bin_urls_file}"`
 
-	local cache_bin_path="${cache_dir}/${bin_name}"
+	local cache_bin_path="${cache_dir}/master/bins/${bin_name}"
 
-	cp_bin_to_dir "${name}" "${cache_dir}" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" "${version}" "${branch}" "${hash}" false
+	cp_bin_to_dir "${name}" "${cache_dir}/master/bins" "${bin_paths_file}" "${bin_urls_file}" "${cache_dir}" "${version}" "${branch}" "${hash}" false
 
 	ssh_exe "${host}" "mkdir -p \"${remote_dest_dir}\""
 	rsync -qa "${cache_bin_path}" "${host}:${remote_dest_dir}/${bin_name}" >/dev/null
