@@ -1,4 +1,4 @@
-# name \t md5sum \t bin_name \t url
+# name \t md5sum \t bin_name \t url \t branch \t commit-hash
 
 # master - 6f9e46e073aa5e2d8beead0d80063fb02a84e73b
 chspark	f983c70d2a09880df5fbd4d61e6bb0dc	tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar	http://139.219.11.38:8000/rZiST/tiflashspark-0.1.0-SNAPSHOT-jar-with-dependencies.jar.tar.gz
@@ -17,13 +17,14 @@ tikv_importer	1355b035ba5ac3487c170a5ebe789f8e	tikv-importer	https://download.pi
 pd_ctl	d14878257a518fad108b55b8063823fd	pd-ctl	https://download.pingcap.org/pd-ctl-tiflash-master-20200425.tar.gz
 tikv_ctl	b2f482499506022708d8d2259334a180	tikv-ctl	https://download.pingcap.org/tikv-ctl-tiflash-master-20200425.tar.gz
 
-cluster_manager	67d939a58294804376c0091cb26974dd	flash_cluster_manager.tgz	https://download.pingcap.org/flash_cluster_manager-master-20200425.tgz master	8a3ed1eea703793679c22925860a8d9dfff434c4
-tiflash 16d1fc57296c304376957f31873a6613    tiflash https://download.pingcap.org/tiflash-master-20200425.tar.gz master  8a3ed1eea703793679c22925860a8d9dfff434c4
-tiflash_proxy	b1ef48a79c1659197bd7fea46eda20e1	libtiflash_proxy.so	https://download.pingcap.org/tiflash_proxy-master-20200425.tar.gz	tiflash-proxy-master	3b0917ef6237e7321cf202b9c586139c9a4061d9
+cluster_manager	1c69e4646ca575ebaafabb1042f96e89	flash_cluster_manager.tgz	https://download.pingcap.org/flash_cluster_manager-master-20200921.tgz	master	e68bb98802c193b020e61008a8dafa2171d2afd8
+tiflash	98feccefd925b1e3acfab22ccd8d52f7	tiflash	https://download.pingcap.org/tiflash-master-20200921-stripped.tar.gz	master	e68bb98802c193b020e61008a8dafa2171d2afd8
+tiflash_proxy	5359e8c038017808b8a27e80624e9220	libtiflash_proxy.so	https://download.pingcap.org/tiflash_proxy-master-20200921.tar.gz	tiflash-proxy-master	e68bb98802c193b020e61008a8dafa2171d2afd8
 
-tikv	f776031ac252853cce8b48cf0369908c	tikv-server	https://download.pingcap.org/tikv-server-tiflash-master-20200425.tar.gz	master	66feb3862ceb1c7eb3a29c13644ffce51a112be1
-pd	89d9a9b6ceef3ffcb8f7d1c1e1745857	pd-server	https://download.pingcap.org/pd-server-tiflash-master-20200425.tar.gz	master	e89fa2ed34f89823181fccbd92aea94648f7a2ca
-tidb	35f4cfbb81471464812a48d7a37e12e1	tidb-server	https://download.pingcap.org/tidb-server-tiflash-master-20200425.tar.gz	master	5ede18f10eedfe2e3690d7728dec3ffa4b0af2d5
+tikv	263d29dbc34a8bd970229e5220ddf233	tikv-server	https://download.pingcap.org/tikv-server-tiflash-master-20200921.tar.gz	master	2a4223098af9480d3998237eb963d76823af0f0b
+pd	5f7482543f7d3ade3411ad6e406df775	pd-server	https://download.pingcap.org/pd-server-tiflash-master-20200921.tar.gz   master  4a95bcaabea3bffff0aa75840a4cbf8ec210abb3
+# build by make failpoint-enable && make server
+tidb	e63acd57d63d349e56c6f37d899cc501	tidb-server	https://download.pingcap.org/tidb-server-tiflash-master-20200921-failpoint.tar.gz	master	501466fb690d03a21fe95befc22fcaf8c9c6f9b1
 
 
 node_exporter 743b00de9e6bc01851c669bbfa66de02 node_exporter	https://download.pingcap.org/node_exporter-tiflash.tar.gz
