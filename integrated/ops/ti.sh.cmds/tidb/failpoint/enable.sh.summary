@@ -35,7 +35,6 @@ function cmd_ti_tidb_failpoint_enable()
 		return 1
 	fi
 
-	set -x
 	local failpoint="${1}"
 	local action="${2}"
 	curl -X PUT -d "${action}" "http://${host}:${port}/fail/${failpoint}"

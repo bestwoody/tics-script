@@ -28,6 +28,23 @@ function wait_table()
 }
 export -f wait_table
 
+function enable_failpoint()
+{
+	local failpoint="${1}"
+	local action="${2}"
+	local ti_file="${3}"
+	"${integrated}/ops/ti.sh" "${ti_file}" tidb/failpoint/enable "${failpoint}" "${action}"
+}
+export -f enable_failpoint
+
+function disable_failpoint()
+{
+	local failpoint="${1}"
+	local ti_file="${2}"
+	"${integrated}/ops/ti.sh" "${ti_file}" tidb/failpoint/disable "${failpoint}"
+}
+export -f disable_failpoint
+
 function reload_config()
 {
 	local module="${1}"
@@ -49,8 +66,9 @@ function run_file()
 	local ti_file="${2}"
 	local run_test_entry="${3}"
 	local ti="${4}"
+	local verbose="${5}"
 
-	python "${run_test_entry}" "${target}" "${ti}" "${ti_file}" "true"
+	python "${run_test_entry}" "${target}" "${ti}" "${ti_file}" "true" "${verbose}"
 	echo "${target}": OK
 }
 
@@ -60,16 +78,17 @@ function run_dir()
 	local ti_file="${2}"
 	local run_test_entry="${3}"
 	local ti="${4}"
+	local verbose="${5}"
 
 	find "${target}" -maxdepth 1 -name "*.test" -type f | sort | while read file; do
 		if [ -f "${file}" ]; then
-			run_file "${file}" "${ti_file}" "${run_test_entry}" "${ti}"
+			run_file "${file}" "${ti_file}" "${run_test_entry}" "${ti}" "${verbose}"
 		fi
 	done
 
 	find "${target}" -maxdepth 1 -type d | sort -r | while read dir; do
 		if [ -d "${dir}" ] && [ "${dir}" != "${target}" ]; then
-			run_dir "${dir}" "${ti_file}" "${run_test_entry}" "${ti}"
+			run_dir "${dir}" "${ti_file}" "${run_test_entry}" "${ti}" "${verbose}"
 		fi
 	done
 }
@@ -86,16 +105,13 @@ function cmd_ti_fullstatck_run()
 	else
 		local test_cases="${here}/fullstack_tests/${1}"
 	fi
-	if [ -z "${2+x}" ]; then
-		local gen_tests="true"
-	else
-		local gen_tests="${2}"
-	fi
+	local gen_tests="${2:-"true"}"
+	local verbose="${3:-"false"}"
 
 	if [ -d "${test_cases}" ]; then
-		run_dir "${test_cases}" "${file}" "${here}/fullstack_run.py" "${ti}"
+		run_dir "${test_cases}" "${file}" "${here}/fullstack_run.py" "${ti}" "${verbose}"
 	elif [ -f "${test_cases}" ]; then
-		run_file "${test_cases}" "${file}" "${here}/fullstack_run.py" "${ti}"
+		run_file "${test_cases}" "${file}" "${here}/fullstack_run.py" "${ti}" "${verbose}"
 	else
 		echo "${test_cases} not found" >&2
 		return 1
@@ -107,7 +123,7 @@ function cmd_ti_fullstatck_run()
 		python "${here}/fullstack_generate.py" "test" "t" "${temp_gen_tests_dir}"
 		rm -rf "${gen_tests_dir}"
 		mv "${temp_gen_tests_dir}" "${gen_tests_dir}"
-		run_dir "${gen_tests_dir}" "${file}" "${here}/fullstack_run.py" "${ti}"
+		run_dir "${gen_tests_dir}" "${file}" "${here}/fullstack_run.py" "${ti}" "${verbose}"
 	fi
 }
 

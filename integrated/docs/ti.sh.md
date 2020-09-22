@@ -141,6 +141,12 @@ More about ver, branch & hash
                       * Download from bin.urls / bin.urls.mac
                     Only support for pd/tidb/tikv/tiflash/pd_ctl/tikv_ctl now.
 
+failpoint       <- only used by tidb module,
+                    add this if you want to deploy a failpoint-enabled version of tidb.
+                    Note that it only take effect when downloading from PingCAP internal mirror
+                    (see branch & hash for more details). Otherwise you need to build tidb using
+                    `make failpoint-enable && make server`
+
 standalone      <- only used by tiflash module,
                     add this if you want to deploy a standalone tiflash process without pd/tidb/tikv
 

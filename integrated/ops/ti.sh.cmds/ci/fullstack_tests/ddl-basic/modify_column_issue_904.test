@@ -1,0 +1,217 @@
+#TODO enable these column type change tests
+
+# First enable feature
+ti_mysql> set global tidb_enable_change_column_type = 1;
+
+##################
+# 1. Test downcast from int -> tinyint, and TiFlash works well after that
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 varchar(256), c2 int)
+ti_mysql> alter table test.t set tiflash replica 1
+ti_mysql> insert into test.t values('Hello world', 1),('abc', 2),('xyz', 10);
+ti_func> wait_table test t
+
+ti_mysql> tiflash select c1, c2 from test.t
++-------------+------+
+| c1          | c2   |
++-------------+------+
+| Hello world |    1 |
+| abc         |    2 |
+| xyz         |   10 |
++-------------+------+
+
+## From int to tinyint. this will block till all row are converted from bigint to int.
+ti_mysql> alter table test.t modify column c2 tinyint;
+
+ti_mysql> desc test.t
++-------+--------------+------+------+---------+-------+
+| Field | Type         | Null | Key  | Default | Extra |
++-------+--------------+------+------+---------+-------+
+| c1    | varchar(256) | YES  |      | NULL    |       |
+| c2    | tinyint(4)   | YES  |      | NULL    |       |
++-------+--------------+------+------+---------+-------+
+
+ti_mysql> tiflash select c1, c2 from test.t
++-------------+------+
+| c1          | c2   |
++-------------+------+
+| Hello world |    1 |
+| abc         |    2 |
+| xyz         |   10 |
++-------------+------+
+
+ti_mysql> drop table if exists test.t
+
+##################
+# 2. Test downcast from int -> tinyint, but rollback, TiFlash works well
+ti_mysql> drop table if exists test.t
+ti_mysql> create table if not exists test.t(c1 varchar(256), c2 int)
+ti_mysql> alter table test.t set tiflash replica 1
+ti_mysql> insert into test.t values('Hello world', 1),('abc', 2),('xyz', 65535);
+ti_func> wait_table test t
+
+ti_mysql> tiflash select c1, c2 from test.t
++-------------+-------+
+| c1          | c2    |
++-------------+-------+
+| Hello world |     1 |
+| abc         |     2 |
+| xyz         | 65535 |
++-------------+-------+
+
+## From int to tinyint. aborted and rollback
+ti_mysql> alter table test.t modify column c2 tinyint;
+ERROR {#WORD} ({#WORD}) at line {#WORD} constant 65535 overflows tinyint
+
+ti_mysql> desc test.t
++-------+--------------+------+------+---------+-------+
+| Field | Type         | Null | Key  | Default | Extra |
++-------+--------------+------+------+---------+-------+
+| c1    | varchar(256) | YES  |      | NULL    |       |
+| c2    | int(11)      | YES  |      | NULL    |       |
++-------+--------------+------+------+---------+-------+
+ti_mysql> tiflash select c1, c2 from test.t
++-------------+-------+
+| c1          | c2    |
++-------------+-------+
+| Hello world |     1 |
+| abc         |     2 |
+| xyz         | 65535 |
++-------------+-------+
+
+ti_mysql> drop table if exists test.t
+
+###################
+## 3. Test downcast from int -> tinyint, but block for a while to reorg, TiFlash sync the temporary column during reorg
+#ti_mysql> drop table if exists test.t
+#ti_mysql> create table if not exists test.t(c1 varchar(256), c2 int)
+#ti_mysql> alter table test.t set tiflash replica 1
+#ti_mysql> insert into test.t values('Hello world', 1),('abc', 2),('xyz', 10);
+#ti_func> wait_table test t
+#
+#ti_mysql> tiflash select c1, c2 from test.t
+#+-------------+------+
+#| c1          | c2   |
+#+-------------+------+
+#| Hello world |    1 |
+#| abc         |    2 |
+#| xyz         |   10 |
+#+-------------+------+
+#
+### From int to tinyint in background. this will block
+#ti_func> enable_failpoint github.com/pingcap/tidb/ddl/mockDelayRunReorgJobInModifyColumnData pause
+#bg %1 ti_mysql> alter table test.t modify column c2 tinyint;
+#
+### temporary column
+#ti_ch> DBGInvoke __refresh_schemas()
+#ti_ch> DBGInvoke query_mapped('select name, type from system.columns where database = \'\$d\' and table = \'\$t\' and name not in (\'_tidb_rowid\', \'_INTERNAL_VERSION\', \'_INTERNAL_DELMARK\') ', test, t)
+#┌─name─────┬─type─────────────┐
+#│ c1       │ Nullable(String) │
+#│ c2       │ Nullable(Int32)  │
+#│ _col$_c2 │ Nullable(Int8)   │
+#└──────────┴──────────────────┘
+#
+### disable failpoint and wait till DDL finish
+#ti_func> disable_failpoint github.com/pingcap/tidb/ddl/mockDelayRunReorgJobInModifyColumnData
+#wait %1
+#
+### temporary renamed
+#ti_ch> DBGInvoke __refresh_schemas()
+#ti_ch> DBGInvoke query_mapped('select name, type from system.columns where database = \'\$d\' and table = \'\$t\' and name not in (\'_tidb_rowid\', \'_INTERNAL_VERSION\', \'_INTERNAL_DELMARK\') ', test, t)
+#┌─name─────┬─type─────────────┐
+#│ c1       │ Nullable(String) │
+#│ c2       │ Nullable(Int8)   │
+#└──────────┴──────────────────┘
+#
+#ti_mysql> drop table if exists test.t
+
+
+################### temporary disabled
+## 4. The DDL rollbacked, then apply DDL again
+#ti_mysql> drop table if exists test.t
+#ti_mysql> create table if not exists test.t(c1 varchar(256), c2 bigint)
+#ti_mysql> alter table test.t set tiflash replica 1
+#ti_mysql> insert into test.t values('Hello world', 1),('abc', 2),('xyz', 10);
+#ti_func> wait_table test t
+#
+#ti_mysql> tiflash select c1, c2 from test.t
+#+-------------+------+
+#| c1          | c2   |
+#+-------------+------+
+#| Hello world |    1 |
+#| abc         |    2 |
+#| xyz         |   10 |
+#+-------------+------+
+#
+### From int to tinyint in background. this will block
+#ti_func> enable_failpoint github.com/pingcap/tidb/ddl/mockDelayRunReorgJobInModifyColumnData pause
+#bg %1 ti_mysql> alter table test.t modify column c2 tinyint;
+#
+#ti_mysql> insert into test.t values('a',65535);
+#
+### temporary column
+#ti_ch> DBGInvoke __refresh_schemas()
+#ti_ch> DBGInvoke query_mapped('select name, type from system.columns where database = \'\$d\' and table = \'\$t\' and name not in (\'_tidb_rowid\', \'_INTERNAL_VERSION\', \'_INTERNAL_DELMARK\') ', test, t)
+#┌─name─────┬─type─────────────┐
+#│ c1       │ Nullable(String) │
+#│ c2       │ Nullable(Int64)  │
+#│ _col$_c2 │ Nullable(Int8)   │
+#└──────────┴──────────────────┘
+#
+### disable failpoint and wait till DDL finish, DDL will be rollbacked
+#ti_func> disable_failpoint github.com/pingcap/tidb/ddl/mockDelayRunReorgJobInModifyColumnData
+#wait %1
+#ERROR {#WORD} ({#WORD}) at line {#WORD} constant 65535 overflows tinyint
+#
+#ti_mysql> alter table test.t modify column c2 int;
+#ti_mysql> tiflash select c1, c2 from test.t
+#+-------------+-------+
+#| c1          | c2    |
+#+-------------+-------+
+#| Hello world |     1 |
+#| abc         |     2 |
+#| xyz         |    10 |
+#| a           | 65535 |
+#+-------------+-------+
+#
+#ti_mysql> drop table if exists test.t
+
+################## temporary disabled
+## 5. The temporary hidden column name exists
+#ti_mysql> drop table if exists test.t
+#ti_mysql> create table if not exists test.t(c1 varchar(256), c2 bigint, \`_col\$_c2\` varchar(10))
+#ti_mysql> alter table test.t set tiflash replica 1
+#ti_mysql> insert into test.t(c1, c2) values('Hello world', 1),('abc', 2),('xyz', 10);
+#ti_func> wait_table test t
+#
+#ti_mysql> tiflash select * from test.t
+#+-------------+------+----------+
+#| c1          | c2   | _col$_c2 |
+#+-------------+------+----------+
+#| Hello world |    1 | NULL     |
+#| abc         |    2 | NULL     |
+#| xyz         |   10 | NULL     |
+#+-------------+------+----------+
+#
+### From int to tinyint. this will block till all row are converted from bigint to int.
+#ti_mysql> alter table test.t modify column c2 tinyint;
+#
+#ti_mysql> desc test.t
+#+----------+--------------+------+------+---------+-------+
+#| Field    | Type         | Null | Key  | Default | Extra |
+#+----------+--------------+------+------+---------+-------+
+#| c1       | varchar(256) | YES  |      | NULL    |       |
+#| c2       | tinyint(4)   | YES  |      | NULL    |       |
+#| _col$_c2 | varchar(10)  | YES  |      | NULL    |       |
+#+----------+--------------+------+------+---------+-------+
+#
+#ti_mysql> tiflash select * from test.t
+#+-------------+------+
+#| c1          | c2   |
+#+-------------+------+
+#| Hello world |    1 |
+#| abc         |    2 |
+#| xyz         |   10 |
+#+-------------+------+
+#
+#ti_mysql> drop table if exists test.t

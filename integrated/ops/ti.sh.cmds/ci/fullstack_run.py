@@ -1,14 +1,19 @@
 # -*- coding:utf-8 -*-
 
+from __future__ import print_function
+
 import os
 import sys
 import time
+import re
 
 CMD_PREFIX_TI_MYSQL = 'ti_mysql> '
 CMD_PREFIX_TI_MYSQL_COP = 'ti_mysql_cop> '
 CMD_PREFIX_TI_MYSQL_IGNORE_OUTPUT = 'ti_mysql_ignore> '
 CMD_PREFIX_TI_BEELINE = 'ti_beeline> '
 CMD_PREFIX_TI_CH = 'ti_ch> '
+CMD_PREFIX_BACKGROUND_PUSH = re.compile(r'^bg %([0-9]+)')
+CMD_PREFIX_BACKGROUND_WAIT = re.compile(r'^wait %([0-9]+)')
 CMD_SHELL_FUNC = 'ti_func> '
 RETURN_PREFIX = '#RETURN'
 SLEEP_PREFIX = 'SLEEP '
@@ -17,6 +22,8 @@ COMMENT_PREFIX = '#'
 UNFINISHED_1_PREFIX = '\t'
 UNFINISHED_2_PREFIX = '   '
 WORD_PH = '{#WORD}'
+
+verbose = False
 
 class QueryType:
     ti_beeline_tag = "ti_beeline"
@@ -59,12 +66,16 @@ class QueryType:
         return self.query_type == self.func_tag
     def __str__(self):
         return self.query_type
+    def __repr__(self):
+        return str(self)
 
-class ShellFuncExecutor:
-    def __init__(self, test_ti_file):
-        self.test_ti_file = test_ti_file
-    def exe(self, cmd):
-        return os.popen((cmd + ' ' + self.test_ti_file + ' 2>&1').strip()).readlines()
+class BackgroundExecutor:
+    '''save fd to read the outputs of background task'''
+    def __init__(self, cmd_type, pipe):
+        self.cmd_type = cmd_type
+        self.pipe = pipe
+    def exe(self):
+        return OutputFormatter.format(self.cmd_type, self.pipe.readlines())
 
 # A mysql or mysql_cop query statement could specify an optional session isolation engine (tikv, tiflash, or both - concatenated by comma and no space) at head.
 # If specified, this method prepends an individual session isolation engine setting statement to overcome the limitation that we use separate mysql sessions for different statements.
@@ -83,7 +94,19 @@ class OpsExecutor:
     def __init__(self, ti_sh, test_ti_file):
         self.ti_sh = ti_sh
         self.test_ti_file = test_ti_file
-    def exe(self, cmd_type, cmd):
+    
+    def exe_func(self, cmd_type, cmd, bg_job_id):
+        cmd = cmd + ' ' + self.test_ti_file + ' 2>&1'
+        pipe = os.popen(cmd.strip())
+        if bg_job_id is None:
+            return OutputFormatter.format(cmd_type, pipe.readlines())
+        else:
+            return BackgroundExecutor(cmd_type, pipe)
+
+    def exe(self, cmd_type, cmd, bg_job_id=None):
+        if cmd_type.is_func():
+            return self.exe_func(cmd_type, cmd, bg_job_id)
+
         ops_cmd = ""
         cmd_arr = cmd.split("--")
         if len(cmd_arr) <= 0:
@@ -116,7 +139,43 @@ class OpsExecutor:
         cmd += ' ' + " ".join(padding_args)
         cmd += ' ' + " ".join(args)
         cmd += ' 2>&1'
-        return os.popen(cmd.strip()).readlines()
+        pipe = os.popen(cmd.strip())
+        if bg_job_id is None:
+            return OutputFormatter.format(cmd_type, pipe.readlines())
+        else:
+            return BackgroundExecutor(cmd_type, pipe)
+
+class OutputFormatter:
+    @staticmethod
+    def format(cmd_type, lines):
+        '''
+        format output lines according `to cmd_type`
+        return outputs, extra_outputs
+        '''
+        def tidy_lines(lines):
+            return filter(lambda x: len(x) != 0, map(lambda x: x.strip(), lines))
+
+        if cmd_type.is_ti_mysql() or cmd_type.is_ti_mysql_cop():
+            return (list(tidy_lines(lines)), None)
+        elif cmd_type.is_ti_mysql_ignore():
+            return [], None
+        elif cmd_type.is_func():
+            return (None, None)
+        elif cmd_type.is_ti_ch():
+            outputs = tidy_lines(lines)
+            outputs = map(lambda x: x.split(' ', 1)[1] if x.startswith('[') else x, outputs)
+            return (list(outputs), None)
+        elif cmd_type.is_ti_beeline():
+            outputs = tidy_lines(lines)
+            def is_beeline_table_parts(x):
+                return x.find('|') != -1 or x.find('+') != -1
+            extra_outputs = filter(lambda x: not is_beeline_table_parts(x), outputs)
+            outputs = filter(is_beeline_table_parts, outputs)
+            outputs = map(lambda x: x.split(' ', 1)[1] if x.startswith('[') else x, outputs)
+            return (list(outputs), list(extra_outputs))
+        else:
+            raise Exception("Unknown command type", str(cmd_type))
+
 
 def parse_line(line):
     words = [w.strip() for w in line.split("│") if w.strip() != ""]
@@ -289,8 +348,7 @@ def matched(outputs, matches, fuzz, query_type):
         raise Exception("Unknown query type", str(query_type))
 
 class Matcher:
-    def __init__(self, executor_func, executor_ops, fuzz):
-        self.executor_func = executor_func
+    def __init__(self, executor_ops, fuzz):
         self.executor_ops = executor_ops
         self.fuzz = fuzz
         self.query = None
@@ -299,91 +357,133 @@ class Matcher:
         self.outputs = None
         self.extra_outputs = None
         self.matches = []
+        # bg_id -> {
+        #    "exec": an instance of BackgroundExecutor,
+        #    "lineno": the line number of background task,
+        #    "query": the query of background task,
+        # }
+        self.bg_pipes = {}
 
+    def push_background_job(self, job_id, bg_executor):
+        job = {
+            "exec": bg_executor,
+            "lineno": self.query_line_number,
+            "query": self.query,
+            "type": self.query_type,
+        }
+        self.bg_pipes[job_id] = job
+
+    def parse_background_jobs(self, line):
+        """ match and strip background prefix from line """
+        bg_push_r = CMD_PREFIX_BACKGROUND_PUSH.match(line)
+        if bg_push_r is not None:
+            bg_job_id = bg_push_r.group(1)
+            line = line[bg_push_r.end():].strip()
+        else:
+            bg_job_id = None
+
+        bg_wait_r = CMD_PREFIX_BACKGROUND_WAIT.match(line)
+        if bg_wait_r is not None:
+            wait_job_id = bg_wait_r.group(1)
+            line = line[:bg_wait_r.end():].strip()
+        else:
+            wait_job_id = None
+        return (line, bg_job_id, wait_job_id)
+    
     def on_line(self, line, line_number):
+        if verbose:
+            print('on_line({}):{}'.format(line_number, line))
+
+        line, bg_jobid, wait_job = self.parse_background_jobs(line)
+
+        # Whether we need to move advance to next query action
+        need_advance = False
         if line.startswith(SLEEP_PREFIX):
             time.sleep(float(line[len(SLEEP_PREFIX):]))
         elif line.startswith(CMD_SHELL_FUNC):
             if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
                 return False
-            self.executor_func.exe(line[len(CMD_SHELL_FUNC):])
             self.query_type = QueryType.func()
-            self.outputs = None
-            self.extra_outputs = None
+            self.query = line[len(CMD_SHELL_FUNC):]
+            need_advance = True
         elif line.startswith(CMD_PREFIX_TI_MYSQL):
             if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
                 return False
             self.query_line_number = line_number
             self.query = line[len(CMD_PREFIX_TI_MYSQL):]
             self.query_type = QueryType.ti_mysql()
-            self.outputs = self.executor_ops.exe(self.query_type, self.query)
-            self.outputs = map(lambda x: x.strip(), self.outputs)
-            self.outputs = filter(lambda x: len(x) != 0, self.outputs)
-            self.extra_outputs = None
-            self.matches = []
+            need_advance = True
         elif line.startswith(CMD_PREFIX_TI_MYSQL_COP):
             if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
                 return False
             self.query_line_number = line_number
             self.query = line[len(CMD_PREFIX_TI_MYSQL_COP):]
             self.query_type = QueryType.ti_mysql_cop()
-            self.outputs = self.executor_ops.exe(self.query_type, self.query)
-            self.outputs = map(lambda x: x.strip(), self.outputs)
-            self.outputs = filter(lambda x: len(x) != 0, self.outputs)
-            self.extra_outputs = None
-            self.matches = []
+            need_advance = True
         elif line.startswith(CMD_PREFIX_TI_MYSQL_IGNORE_OUTPUT):
             if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
                 return False
             self.query_line_number = line_number
             self.query = line[len(CMD_PREFIX_TI_MYSQL_IGNORE_OUTPUT):]
             self.query_type = QueryType.ti_mysql_ignore()
-            self.executor_ops.exe(self.query_type, self.query)
-            self.outputs = []
-            self.extra_outputs = None
-            self.matches = []
+            need_advance = True
         elif line.startswith(CMD_PREFIX_TI_BEELINE):
             if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
                 return False
             self.query_line_number = line_number
             self.query = line[len(CMD_PREFIX_TI_BEELINE):]
             self.query_type = QueryType.ti_beeline()
-            self.outputs = self.executor_ops.exe(self.query_type, self.query)
-            self.outputs = map(lambda x: x.strip(), self.outputs)
-            self.outputs = filter(lambda x: len(x) != 0, self.outputs)
-            def is_beeline_table_parts(x):
-                return x.find('|') != -1 or x.find('+') != -1
-            self.extra_outputs = filter(lambda x: not is_beeline_table_parts(x), self.outputs)
-            self.outputs = filter(is_beeline_table_parts, self.outputs)
-            self.outputs = map(lambda x: x.split(' ', 1)[1] if x.startswith('[') else x, self.outputs)
-            self.matches = []
+            need_advance = True
         elif line.startswith(CMD_PREFIX_TI_CH):
             if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
                 return False
             self.query_line_number = line_number
             self.query = line[len(CMD_PREFIX_TI_CH):]
             self.query_type = QueryType.ti_ch()
-            self.outputs = self.executor_ops.exe(self.query_type, self.query)
-            self.outputs = map(lambda x: x.strip(), self.outputs)
-            self.outputs = filter(lambda x: len(x) != 0, self.outputs)
-            self.outputs = map(lambda x: x.split(' ', 1)[1] if x.startswith('[') else x, self.outputs)
-            self.extra_outputs = None
+            need_advance = True
+
+        # clear matches and execute
+        if need_advance:
             self.matches = []
+            if bg_jobid is not None:
+                # Push a job to background
+                e = self.executor_ops.exe(self.query_type, self.query, bg_jobid)
+                self.push_background_job(bg_jobid, e)
+            else:
+                self.outputs, self.extra_outputs = self.executor_ops.exe(self.query_type, self.query, bg_jobid)
+            return True
+
+        if wait_job is not None:
+            if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
+                return False
+            
+            # Pop a job from background
+            self.query_line_number = line_number
+            if wait_job not in self.bg_pipes:
+                raise Exception("Error line: " + str(line_number) +", no background job with id: " + wait_job)
+            bg_job = self.bg_pipes[wait_job]
+            del self.bg_pipes[wait_job]
+            self.query = line + " (job from line {}: {})".format(bg_job["lineno"], bg_job["query"])
+            self.query_type = bg_job["type"]
+            self.matches = []
+            self.outputs, self.extra_outputs = bg_job["exec"].exe()
         else:
             self.matches.append(line)
         return True
 
     def on_finish(self):
+        if len(self.bg_pipes) != 0:
+            raise Exception("Some background jobs have not been collected: [" + ','.join(self.bg_pipes.keys()) + "]")
         if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
             return False
         return True
 
-def parse_exe_match(path, executor_func, executor_ops, fuzz):
+def parse_exe_match(path, executor_ops, fuzz):
     todos = []
     line_number = 0
     line_number_cached = 0
     with open(path) as file:
-        matcher = Matcher(executor_func, executor_ops, fuzz)
+        matcher = Matcher(executor_ops, fuzz)
         cached = None
         for origin in file:
             line_number += 1
@@ -409,8 +509,8 @@ def parse_exe_match(path, executor_func, executor_ops, fuzz):
         return True, matcher, todos
 
 def run():
-    if len(sys.argv) != 5:
-        print 'usage: <bin> tiflash_client_cmd test_file_path ti_sh ti_file fuzz_check'
+    if len(sys.argv) < 5:
+        print('usage: <bin> tiflash_client_cmd test_file_path ti_sh ti_file fuzz_check')
         sys.exit(1)
 
     test_file_path = sys.argv[1]
@@ -418,38 +518,42 @@ def run():
     ti_file = sys.argv[3]
     fuzz = (sys.argv[4] == 'true')
 
-    matched, matcher, todos = parse_exe_match(test_file_path, ShellFuncExecutor(ti_file),
+    global verbose
+    if len(sys.argv) >= 6:
+        verbose = (sys.argv[5] == 'true') 
+
+    matched, matcher, todos = parse_exe_match(test_file_path,
                                               OpsExecutor(ti_sh, ti_file), fuzz)
 
     def display(lines):
         if len(lines) == 0:
-            print ' ' * 4 + '<nothing>'
+            print(' ' * 4 + '<nothing>')
         else:
             for it in lines:
-                print ' ' * 4 + it
+                print(' ' * 4 + it)
 
     if not matched:
-        print '  File:', test_file_path
-        print '  Error line:', matcher.query_line_number
-        print '  Error:', matcher.query
-        print '  Result:'
+        print('  File:', test_file_path)
+        print('  Error line:', matcher.query_line_number)
+        print('  Error:', matcher.query)
+        print('  Result:')
         display(matcher.outputs)
-        print '  Expected:'
+        print('  Expected:')
         display(matcher.matches)
         if matcher.extra_outputs is not None:
-            print ' Extra Result:'
+            print(' Extra Result:')
             display(matcher.extra_outputs)
         sys.exit(1)
     if len(todos) != 0:
-        print '  TODO:'
+        print('  TODO:')
         for it in todos:
-            print ' ' * 4 + it
+            print(' ' * 4 + it)
 
 def main():
     try:
         run()
     except KeyboardInterrupt:
-        print 'KeyboardInterrupted'
+        print('KeyboardInterrupted')
         sys.exit(1)
 
 main()
