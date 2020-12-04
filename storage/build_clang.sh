@@ -22,7 +22,7 @@ else
 fi
 
 cd $FLASH_HOME/storage/ch/contrib/kvproto
-./generate_cpp.sh
+./scripts/generate_cpp.sh
 
 cd $FLASH_HOME/storage
 source ./_build.sh
