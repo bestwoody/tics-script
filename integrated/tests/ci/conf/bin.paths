@@ -1,0 +1,7 @@
+# name \t bin_name \t path1:path2:...
+tidb             tidb-server               {integrated}/binary/tidb/tidb-server
+tikv             tikv-server               {integrated}/binary/tikv/tikv-server
+pd               pd-server                 {integrated}/binary/pd/pd-server
+tiflash          tiflash                   {integrated}/binary/tiflash/tiflash
+tiflash_proxy    libtiflash_proxy.so       {integrated}/binary/tiflash/libtiflash_proxy.so
+cluster_manager  flash_cluster_manager.tgz {integrated}/binary/tiflash/flash_cluster_manager.tgz

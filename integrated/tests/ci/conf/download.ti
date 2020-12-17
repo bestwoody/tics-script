@@ -1,0 +1,17 @@
+dir=/tmp/download
+p=+20
+
+ver=''
+tidb_branch='master'
+tidb_hash='latest'
+tikv_branch='master'
+tikv_hash='latest'
+pd_branch='master'
+pd_hash='latest'
+tiflash_branch='master'
+tiflash_hash='latest'
+
+tidb:    {dir}/tidb    ports{p} ver={ver} branch={tidb_branch}    hash={tidb_hash}  failpoint
+tikv:    {dir}/tikv    ports{p} ver={ver} branch={tikv_branch}    hash={tikv_hash}
+pd:      {dir}/pd      ports{p} ver={ver} branch={pd_branch}      hash={pd_hash}
+tiflash: {dir}/tiflash ports{p} ver={ver} branch={tiflash_branch} hash={tiflash_hash}
