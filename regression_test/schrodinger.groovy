@@ -66,42 +66,41 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                             def ver_file = "regression_test/download_ver.ti"
                             sh "rm $ver_file"
                             if(version == "latest") {
-                                dir("/home/jenkins/agent/git/tiflash/binary/") {
-                                    // tidb
-                                    def tidb_sha1 = tidb_commit_hash
-                                    if (tidb_sha1 == null || tidb_sha1 == "") {
-                                        tidb_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tidb/${TIDB_BRANCH}/sha1").trim()
-                                    }
-
-                                    // tikv
-                                    def tikv_sha1 = tikv_commit_hash
-                                    if (tikv_sha1 == null || tikv_sha1 == "") {
-                                        tikv_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tikv/${TIKV_BRANCH}/sha1").trim()
-                                    }
-
-                                    // pd
-                                    def pd_sha1 = pd_commit_hash
-                                    if (pd_sha1 == null || pd_sha1 == "") {
-                                        pd_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/pd/${PD_BRANCH}/sha1").trim()
-                                    }
-
-                                    // tiflash
-                                    def tiflash_sha1 = tiflash_commit_hash
-                                    if (tiflash_sha1 == null || tiflash_sha1 == "") {
-                                        tiflash_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tiflash/${TIFLASH_BRANCH}/sha1").trim()
-                                    }
-                                    sh """
-                                    echo \"ver=''\"                          > $ver_file
-                                    echo \"tidb_branch=$TIDB_BRANCH\"       >> $ver_file
-                                    echo \"tidb_hash=$tidb_sha1\"           >> $ver_file
-                                    echo \"tikv_branch=$TIKV_BRANCH\"       >> $ver_file
-                                    echo \"tikv_hash=$tikv_sha1\"           >> $ver_file
-                                    echo \"pd_branch=$PD_BRANCH\"           >> $ver_file
-                                    echo \"pd_hash=$pd_sha1\"               >> $ver_file
-                                    echo \"tiflash_branch=$TIFLASH_BRANCH\" >> $ver_file
-                                    echo \"tiflash_hash=$tiflash_sha1\"     >> $ver_file
-                                    """
+                                // tidb
+                                def tidb_sha1 = tidb_commit_hash
+                                if (tidb_sha1 == null || tidb_sha1 == "") {
+                                    tidb_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tidb/${TIDB_BRANCH}/sha1").trim()
                                 }
+
+                                // tikv
+                                def tikv_sha1 = tikv_commit_hash
+                                if (tikv_sha1 == null || tikv_sha1 == "") {
+                                    tikv_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tikv/${TIKV_BRANCH}/sha1").trim()
+                                }
+
+                                // pd
+                                def pd_sha1 = pd_commit_hash
+                                if (pd_sha1 == null || pd_sha1 == "") {
+                                    pd_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/pd/${PD_BRANCH}/sha1").trim()
+                                }
+
+                                // tiflash
+                                def tiflash_sha1 = tiflash_commit_hash
+                                if (tiflash_sha1 == null || tiflash_sha1 == "") {
+                                    tiflash_sha1 = sh(returnStdout: true, script: "curl ${FILE_SERVER_URL}/download/refs/pingcap/tiflash/${TIFLASH_BRANCH}/sha1").trim()
+                                }
+                                sh "ls -la"
+                                sh """
+                                echo \"ver=''\"                          > $ver_file
+                                echo \"tidb_branch=$TIDB_BRANCH\"       >> $ver_file
+                                echo \"tidb_hash=$tidb_sha1\"           >> $ver_file
+                                echo \"tikv_branch=$TIKV_BRANCH\"       >> $ver_file
+                                echo \"tikv_hash=$tikv_sha1\"           >> $ver_file
+                                echo \"pd_branch=$PD_BRANCH\"           >> $ver_file
+                                echo \"pd_hash=$pd_sha1\"               >> $ver_file
+                                echo \"tiflash_branch=$TIFLASH_BRANCH\" >> $ver_file
+                                echo \"tiflash_hash=$tiflash_sha1\"     >> $ver_file
+                                """
                             } else if (version == "stable") {
                                 // Use the latest public release version in tiup mirror
                                 sh """
