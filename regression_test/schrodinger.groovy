@@ -2,6 +2,7 @@ def runSchrodingerTest(branch, version, testcase, maxRunTime, notify) {
   runSchrodingerTest2(branch, version, "", "", "", "", testcase, maxRunTime, notify)
 }
 
+// Keep for release.groovy
 def runSchrodingerTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, testcase, maxRunTime, notify) {
   runSchrodingerTest3("kubernetes", branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, testcase, maxRunTime, notify)
 }

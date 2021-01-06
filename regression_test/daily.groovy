@@ -2,6 +2,7 @@ def runDailyIntegrationTest(branch, version, notify) {
   runDailyIntegrationTest2(branch, version, "", "", "", "", notify)
 }
 
+// Keep for release.groovy
 def runDailyIntegrationTest2(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, notify) {
   runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, "", notify, 5)
 }
