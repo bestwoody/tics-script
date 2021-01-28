@@ -17,6 +17,7 @@ status-addr = "0.0.0.0:{proxy_status_port}"
 advertise-status-addr = "{tiflash_listen_host}:{proxy_status_port}"
 
 [storage]
+reserve-space = "0"
 
 [pd]
 # This section will be overwritten by command line parameters

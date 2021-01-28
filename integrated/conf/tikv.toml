@@ -15,6 +15,7 @@ log-level = "info"
 labels = {  }
 
 [storage]
+reserve-space = "0"
 
 [pd]
 # This section will be overwritten by command line parameters
