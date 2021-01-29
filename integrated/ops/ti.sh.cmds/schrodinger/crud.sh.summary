@@ -52,6 +52,12 @@ function cmd_ti_schrodinger_crud()
 		local pessimistic="${6}"
 	fi
 
+	if [ -z "${7+x}" ] || [ -z "${7}" ] || [ "${enable_async_commit}" != "0" ]; then
+		local enable_async_commit="1"
+	else
+		local enable_async_commit="0"
+	fi
+
 	if [ "${pessimistic}" == "true" ]; then
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_txn_mode = 'pessimistic'"
@@ -59,6 +65,10 @@ function cmd_ti_schrodinger_crud()
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_txn_mode = 'optimistic'"
 	fi
+
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+	  -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_enable_async_commit=${enable_async_commit}"
+
 	# wait for txn mode setting take effect
 	sleep 3
 
@@ -80,6 +90,7 @@ function cmd_ti_schrodinger_crud()
 	echo "Number of post updated: ${update_posts}"
 	echo "Concurrency worker count: ${concurrency}"
 	echo "Use pessimistic transaction: ${pessimistic}"
+	echo "Enable async commit: ${enable_async_commit}"
 	export TIDB_SERVICE="${host}:${port}"
 	"${bin_dir}/crud" \
 		-user-count="${user_count}" \

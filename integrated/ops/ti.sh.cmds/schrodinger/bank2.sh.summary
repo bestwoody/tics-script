@@ -46,6 +46,12 @@ function cmd_ti_schrodinger_bank2()
 		local pessimistic="${5}"
 	fi
 
+	if [ -z "${6+x}" ] || [ -z "${6}" ] || [ "${enable_async_commit}" != "0" ]; then
+		local enable_async_commit="1"
+	else
+		local enable_async_commit="0"
+	fi
+
 	if [ "${pessimistic}" == "true" ]; then
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_txn_mode = 'pessimistic'"
@@ -53,6 +59,10 @@ function cmd_ti_schrodinger_bank2()
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \
 			-i "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_txn_mode = 'optimistic'"
 	fi
+
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+	  -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_enable_async_commit=${enable_async_commit}"
+
 	# wait for txn mode setting take effect
 	sleep 3
 
@@ -73,6 +83,7 @@ function cmd_ti_schrodinger_bank2()
 	echo "Concurrency worker count: ${concurrency}"
 	echo "Contention level: ${contention}"
 	echo "Use pessimistic transaction: ${pessimistic}"
+	echo "Enable async commit: ${enable_async_commit}"
 	export TIDB_SERVICE="${host}:${port}"
 	"${bin_dir}/bank2" \
 		-accounts="${accounts}" \
