@@ -1,0 +1,2 @@
+diff the results of all tpch queries between running on TiKV and in MPP
+usage: <cmd> [database]

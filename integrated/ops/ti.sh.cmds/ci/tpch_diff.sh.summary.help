@@ -1,0 +1,2 @@
+run tpch diff results from tikv or mpp
+usage: <cmd> (no args)

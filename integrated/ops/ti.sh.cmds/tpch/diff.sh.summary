@@ -1,0 +1,84 @@
+#!/bin/bash
+
+function diff_tpch_results_tikv_mpp()
+{
+	local  tidb_mem="set @@tidb_mem_quota_query = 10 << 30;"
+	local  mpp="set @@tidb_allow_mpp=1;"
+	local  query_dir="${integrated}/resource/tpch/mysql/queries"
+	local  query_tiflash_dir="${integrated}/resource/tpch/mysql/queries_tiflash_hint"
+
+	local  ti_file="${1}"
+	local  ti_args="${2}"
+	local  cmd_mod_names="${3}"
+	local  cmd_hosts="${4}"
+	local  cmd_indexes="${5}"
+	local  mods="${6}"
+
+	shift  6
+	local  db=''
+	if  [ ! -z "${1+x}" ]; then
+		local   db="${1}"
+	fi
+
+	local  tidb=$(from_mods_random_mod "${mods}" 'tidb')
+	if  [ -z "${tidb}" ]; then
+		echo   "[cmd tpch/diff] tidb not found in cluster" >&2
+		return   1
+	fi
+
+	if  [ -z "${db}" ] || [ "${db}" == 'auto' ]; then
+		local   db=$("${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m 'tidb' -i "${tidb}" -k "${ti_args}" \
+			"${ti_file}"    'mysql' "show databases" | grep 'tpch' | trim_host)
+		if   [ -z "${db}" ]; then
+			echo    "[cmd tpch/diff] database with 'tpch' prefix not found" >&2
+			return    1
+		fi
+		local   db_cnt=$(echo "${db}" | wc -l | awk '{print $1}')
+		if   [ "${db_cnt}" != '1' ]; then
+			echo    "[cmd tpch/diff] more than one database with 'tpch' prefix in cluster, need to specify in args:" >&2
+			echo    "${db}" | awk '{print "  "$0}' >&2
+			echo    "[cmd tpch/diff] usage: <cmd> [database=auto]" >&2
+			return    1
+		fi
+	fi
+	local  ti="${integrated}/ops/ti.sh"
+	local  dir='/tmp/ti/ci/diff/'$(date +%F-%R-%S)
+	mkdir  -p "${dir}"
+	local  tpch_sql="${dir}/tpch_sql"
+	local  result_tikv="${dir}/result_tikv"
+	local  result_mpp="${dir}/result_mpp"
+
+	# run each sql and diff its results between running on TiKV or running in MPP
+	for ((i = 1; i <= 22; i++)); do
+		# run on TiKV
+		echo   ${tidb_mem} > "${tpch_sql}"
+		echo   "$(cat ${query_dir}/${i}.sql)" >> "${tpch_sql}"
+		"${ti}"   -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i    "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${tpch_sql}" "${db}" true > "${result_tikv}" 2>&1
+		sed_inplace '$d' "${result_tikv}"
+		sort   "${result_tikv}" -o "${result_tikv}"
+		# run in MPP
+		echo   ${tidb_mem} > "${tpch_sql}"
+		echo   ${mpp} >> "${tpch_sql}"
+		echo   "$(cat ${query_tiflash_dir}/${i}.sql)" >> "${tpch_sql}"
+		"${ti}"   -h "${cmd_hosts}" -m "${cmd_mod_names}" \
+			-i    "${cmd_indexes}" -k "${ti_args}" "${ti_file}" 'mysql' "${tpch_sql}" "${db}" true > "${result_mpp}" 2>&1
+		sed_inplace '$d' "${result_mpp}"
+		sort   "${result_mpp}" -o "${result_mpp}"
+		# diff results
+		if   cmp -s "${result_mpp}" "${result_tikv}"; then
+			echo    ${i}"-th query runs correctly"
+		else
+			echo    ${i}"-th query runs resulting into wrong results"
+			return 1
+		fi
+	done
+
+	rm  -rf "${dir}"
+	print_hhr
+	echo  ${db}" all query results are the same between running on TiKV and in MPP!"
+}
+
+source "$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)/_env.sh"
+auto_error_handle
+diff_tpch_results_tikv_mpp "${@}"
