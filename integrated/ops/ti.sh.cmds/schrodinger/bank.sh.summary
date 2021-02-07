@@ -58,10 +58,16 @@ function cmd_ti_schrodinger_bank()
 		local enable_follower_read="${7}"
 	fi
 
-	if [ -z "${8+x}" ] || [ -z "${8}" ] || [ "${enable_async_commit}" != "0" ]; then
+	if [ -z "${8+x}" ] || [ -z "${8}" ]; then
 		local enable_async_commit="1"
 	else
-		local enable_async_commit="0"
+		local enable_async_commit="${8}"
+	fi
+
+	if [ -z "${9+x}" ] || [ -z "${9}" ]; then
+		local allow_batch_cop="2"
+	else
+		local allow_batch_cop="${9}"
 	fi
 
 	if [ "${pessimistic}" == "true" ]; then
@@ -74,6 +80,9 @@ function cmd_ti_schrodinger_bank()
 
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
 	  -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_enable_async_commit=${enable_async_commit}"
+
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+	  -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_allow_batch_cop=${allow_batch_cop}"
 
 	# wait for txn mode setting take effect
 	sleep 3
@@ -98,6 +107,7 @@ function cmd_ti_schrodinger_bank()
 	echo "Use pessimistic transaction: ${pessimistic}"
 	echo "Enable follower read: ${enable_follower_read}"
 	echo "Enable async commit: ${enable_async_commit}"
+	echo "Allow batch cop: ${allow_batch_cop}"
 	export TIDB_SERVICE="${host}:${port}"
 	"${bin_dir}/bank" \
 		-accounts="${accounts}" \

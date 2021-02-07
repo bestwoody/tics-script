@@ -40,10 +40,16 @@ function cmd_ti_schrodinger_ledger()
 		local pessimistic="${4}"
 	fi
 
-	if [ -z "${5+x}" ] || [ -z "${5}" ] || [ "${enable_async_commit}" != "0" ]; then
+	if [ -z "${5+x}" ] || [ -z "${5}" ]; then
 		local enable_async_commit="1"
 	else
-		local enable_async_commit="0"
+		local enable_async_commit="${5}"
+	fi
+
+	if [ -z "${6+x}" ] || [ -z "${6}" ]; then
+		local allow_batch_cop="2"
+	else
+		local allow_batch_cop="${6}"
 	fi
 
 	if [ "${pessimistic}" == "true" ]; then
@@ -56,6 +62,9 @@ function cmd_ti_schrodinger_ledger()
 
 	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
 	  -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_enable_async_commit=${enable_async_commit}"
+
+	"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" \
+	  -k "${ti_args}" "${ti_file}" 'mysql' "set @@global.tidb_allow_batch_cop=${allow_batch_cop}"
 
 	# wait for txn mode setting take effect
 	sleep 3
@@ -77,6 +86,7 @@ function cmd_ti_schrodinger_ledger()
 	echo "Concurrency worker count: ${concurrency}"
 	echo "Use pessimistic transaction: ${pessimistic}"
 	echo "Enable async commit: ${enable_async_commit}"
+	echo "Allow batch cop: ${allow_batch_cop}"
 	export TIDB_SERVICE="${host}:${port}"
 	"${bin_dir}/ledger" \
 		-accounts="${accounts}" \
