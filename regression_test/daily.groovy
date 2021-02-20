@@ -1,3 +1,10 @@
+import groovy.transform.Field
+
+@Field config = [
+    cloud: 'kubernetes',
+    label: 'test-tiflash-regression-v11',
+]
+
 def runDailyIntegrationTest(branch, version, notify) {
   runDailyIntegrationTest2(branch, version, "", "", "", "", notify)
 }
@@ -10,9 +17,9 @@ def runDailyIntegrationTest2(branch, version, tidb_commit_hash, tikv_commit_hash
 def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, checkout_name, notify, idleMinutes) {
     taskStartTimeInMillis = System.currentTimeMillis()
 
-    def label = "test-tiflash-regression-v11"
+    def label = this.config.label
 
-    podTemplate(name: label, label: label, instanceCap: 10, idleMinutes: idleMinutes, containers: [
+    podTemplate(cloud: this.config.cloud, name: label, label: label, instanceCap: 10, idleMinutes: idleMinutes, containers: [
             containerTemplate(name: 'tiflash-docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
                     envVars: [
                             envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375'),
