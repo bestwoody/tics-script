@@ -1,2 +1,2 @@
 run sqllogic test on tiflash cluster
-usage: <cmd> [parallel=1] [skip_error=false]
+usage: <cmd> [parallel=40] [skip_error=true]
