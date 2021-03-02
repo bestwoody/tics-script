@@ -8,7 +8,7 @@ select /**/
 	sum(volume) as revenue
 from
 	(
-		select /*+ read_from_storage(tiflash[supplier,lineitem,orders,customer,nation]) */
+		select /*+ read_from_storage(tiflash[supplier,lineitem,orders,customer,n1,n2]) */
 			n1.n_name as supp_nation,
 			n2.n_name as cust_nation,
 			extract(year from l_shipdate) as l_year,

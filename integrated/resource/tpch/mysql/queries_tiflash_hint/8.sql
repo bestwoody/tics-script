@@ -9,7 +9,7 @@ select /**/
 	end) / sum(volume) as mkt_share
 from
 	(
-		select /*+ read_from_storage(tiflash[part,supplier,lineitem,orders,customer,nation,region]) */
+		select /*+ read_from_storage(tiflash[part,supplier,lineitem,orders,customer,n1,n2,region]) */
 			extract(year from o_orderdate) as o_year,
 			l_extendedprice * (1 - l_discount) as volume,
 			n2.n_name as nation
