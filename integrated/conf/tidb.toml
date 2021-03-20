@@ -11,6 +11,7 @@ socket = ""
 split-table = true
 store = "tikv"
 token-limit = 10000
+enable-batch-dml = true
 
 [log]
 disable-timestamp = false

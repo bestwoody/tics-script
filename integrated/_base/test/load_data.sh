@@ -104,7 +104,7 @@ function load_tpch_data_to_mysql()
 				return 1
 			fi
 			mysql -u root -P "${mysql_port}" -h "${mysql_host}" -D "${db}" --local-infile=1 \
-				-e "load data local infile '${data_file}' into table ${table} fields terminated by '|' lines terminated by '|\n';" &
+				-e "set tidb_batch_insert = 1;set tidb_dml_batch_size = 20000; load data local infile '${data_file}' into table ${table} fields terminated by '|' lines terminated by '|\n';" &
 		done
 		wait
 	fi
