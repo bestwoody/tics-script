@@ -5,67 +5,19 @@
 #   Time(based on ms): ms, s, m, h
 #    e.g.: 78_000 = "1.3m"
 
-log-level = "info"
-
-[readpool.storage]
-
-[readpool.coprocessor]
-
-[server]
-engine-addr = "{tiflash_listen_host}:{tiflash_raft_and_cop_port}"
-status-addr = "0.0.0.0:{proxy_status_port}"
-advertise-status-addr = "{tiflash_listen_host}:{proxy_status_port}"
-
 [storage]
 reserve-space = "0"
 
-[pd]
-# This section will be overwritten by command line parameters
-
-[metric]
-#address = "127.0.0.1:9531"
-#interval = "15s"
-#job = "tikv"
-
 [raftstore]
-raftdb-path = ""
-sync-log = true
 capacity = {disk_avail}
-#max-leader-missing-duration = "22s"
-#abnormal-leader-missing-duration = "21s"
-#peer-stale-state-check-interval = "20s"
-hibernate-regions = false
-# Normally the number of TiFlash nodes is smaller than TiKV nodes, and we need more raft threads to match the write speed of TiKV.
 apply-pool-size = 4
 store-pool-size = 4
 
-[coprocessor]
-
 [rocksdb]
-wal-dir = ""
 max-open-files = 1000
-
-[rocksdb.defaultcf]
-block-cache-size = "10GB"
-
-[rocksdb.lockcf]
-block-cache-size = "4GB"
-
-[rocksdb.writecf]
-block-cache-size = "4GB"
 
 [raftdb]
 max-open-files = 1000
-
-[raftdb.defaultcf]
-block-cache-size = "1GB"
-
-[security]
-ca-path = ""
-cert-path = ""
-key-path = ""
-
-[import]
 
 #[security.encryption]
 #data-encryption-method = "aes256-ctr"

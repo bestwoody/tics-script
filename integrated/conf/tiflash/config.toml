@@ -13,7 +13,6 @@ interserver_http_port = {tiflash_interserver_http_port}
 [flash]
 tidb_status_addr = "{tiflash_tidb_addr}"
 service_addr = "{tiflash_listen_host}:{tiflash_raft_and_cop_port}"
-overlap_threshold = 0.6
 
 [flash.flash_cluster]
 master_ttl = 60
@@ -22,11 +21,14 @@ update_rule_interval = 5
 cluster_manager_path = "{tiflash_dir}/flash_cluster_manager"
 
 [flash.proxy]
-addr = "{tiflash_listen_host}:{proxy_port}"
+addr = "0.0.0.0:{proxy_port}"
 advertise-addr = "{tiflash_listen_host}:{proxy_port}"
+status-addr = "0.0.0.0:{proxy_status_port}"
+advertise-status-addr = "{tiflash_listen_host}:{proxy_status_port}"
 data-dir = "{tiflash_dir}/db/proxy"
 config = "{tiflash_dir}/conf/proxy.toml"
 log-file = "{tiflash_dir}/log/proxy.log"
+log-level = "info"
 
 [logger]
 level = "debug"

@@ -5,66 +5,18 @@
 #   Time(based on ms): ms, s, m, h
 #    e.g.: 78_000 = "1.3m"
 
-log-level = "info"
-
-[readpool.storage]
-
-[readpool.coprocessor]
-
-[server]
-labels = {  }
-
 [storage]
 reserve-space = "0"
 
-[pd]
-# This section will be overwritten by command line parameters
-
-[metric]
-#address = "127.0.0.1:9531"
-#interval = "15s"
-#job = "tikv"
+[storage.block-cache]
+capacity = "15GB"
 
 [raftstore]
-raftdb-path = ""
-sync-log = true
 capacity = {disk_avail}
-consistency-check-interval = "0s"
-#raft-log-gc-count-limit = 256
 hibernate-regions = false
 
-[coprocessor]
-region-max-keys = 144000
-region-split-keys = 96000
-region-max-size = "144MB"
-region-split-size = "96MB"
-
 [rocksdb]
-wal-dir = ""
 max-open-files = 1000
-
-[rocksdb.defaultcf]
-# TODO: check the meaning of this config
-force-consistency-checks = false
-block-cache-size = "10GB"
-
-[rocksdb.lockcf]
-force-consistency-checks = false
-block-cache-size = "4GB"
-
-[rocksdb.writecf]
-force-consistency-checks = false
-block-cache-size = "4GB"
 
 [raftdb]
 max-open-files = 1000
-
-[raftdb.defaultcf]
-block-cache-size = "1GB"
-
-[security]
-ca-path = ""
-cert-path = ""
-key-path = ""
-
-[import]

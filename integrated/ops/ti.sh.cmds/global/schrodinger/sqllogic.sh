@@ -57,7 +57,7 @@ function cmd_ti_global_schrodinger_sqllogic()
 	if [ "${enable_shuffle_leader}" == 'true' ]; then
 		"${ti}" "${file}" 'pd/ctl_raw' 'scheduler' 'add' 'shuffle-leader-scheduler' 1>/dev/null 2>&1
 	fi
-	echo "Enable region merge: ${enable_region_merge}"
+	echo "Enable region random merge: ${enable_region_merge}"
 	echo "Enable shuffle region: ${enable_shuffle_region}"
 	echo "Enable shuffle leader: ${enable_shuffle_leader}"
 
