@@ -142,25 +142,50 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                             /home/jenkins/agent/git/tiflash/integrated/ops/ti.sh /home/jenkins/agent/git/tiflash/regression_test/download.ti burn : up : ver : burn
                             """
 
-                            def startTime = System.currentTimeMillis()
-                            try {
-                                timeout(maxRunTime) {
-                                    sh "regression_test/schrodinger.sh " + testcase
-                                }
-                            } catch (err) {
-                                def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(0, BigDecimal.ROUND_HALF_UP)
-                                if (duration < Integer.parseInt(maxRunTime)) {
+                            // most tests run indefinitely except `schrodinger/sqllogic` test
+                            if (testcase == "schrodinger/sqllogic") {
+                                try {
+                                    // if sqllogic test doesn't finished in two days, there must be something wrong happened.
+                                    timeout(2 * 24 * 60) {
+                                        def exitValue = sh(script: "regression_test/schrodinger.sh " + testcase, returnStatus: true)
+                                        if(exitValue != 0){
+                                            currentBuild.result = "FAILURE"
+                                        } else {
+                                            currentBuild.result = "SUCCESS"
+                                        }
+                                    }
+                                } catch (err) {
+                                    currentBuild.result = "FAILURE"
                                     throw err
+                                }
+                            } else {
+                                def startTime = System.currentTimeMillis()
+                                try {
+                                    timeout(maxRunTime) {
+                                        sh "regression_test/schrodinger.sh " + testcase
+                                    }
+                                } catch (err) {
+                                    def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(0, BigDecimal.ROUND_HALF_UP)
+                                    if (duration < Integer.parseInt(maxRunTime)) {
+                                        currentBuild.result = "FAILURE"
+                                        throw err
+                                    }
                                 }
                             }
 
                             sh "for f in \$(find . -name '*.log'); do echo \"LOG: \$f\"; tail -500 \$f; done"
                             sh "for f in \$(find /tmp/ti -name '*.log' | grep -v 'data' | grep -v 'tiflash/db'); do echo \"LOG: \$f\"; tail -500 \$f; done"
 
-                            def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(0, BigDecimal.ROUND_HALF_UP)
-                            if (duration < Integer.parseInt(maxRunTime)) {
-                                currentBuild.result = "FAILURE"
+                            if (testcase != "schrodinger/sqllogic") {
+                                def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(0, BigDecimal.ROUND_HALF_UP)
+                                if (duration < Integer.parseInt(maxRunTime)) {
+                                    currentBuild.result = "FAILURE"
+                                } else {
+                                    currentBuild.result = "SUCCESS"
+                                }
+                            }
 
+                            if (currentBuild.result == "FAILURE") {
                                 def filename = "tiflash-jenkins-test-log-${env.JOB_NAME}-${env.BUILD_NUMBER}"
                                 def filepath = "logs/pingcap/tiflash/${filename}.tar.gz"
 

@@ -62,6 +62,9 @@ function cmd_ti_global_schrodinger_sqllogic()
 	echo "Enable shuffle leader: ${enable_shuffle_leader}"
 
 	"${ti}" "${file}" schrodinger/sqllogic
+	if [ ${?} != 0 ]; then
+		exit 1
+	fi
 
 	print_hhr
 	echo 'schrodinger/sqllogic FINISHED'
