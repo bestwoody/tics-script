@@ -34,15 +34,16 @@ ti_func> wait_table test t
 ## CBO cases.
 
 
+# TODO: This case is temporarily disabled by bug https://github.com/pingcap/tics/issues/1681.
 # CBO, goes tikv.
-ti_mysql_cop> select min(col_2) from test.t
-tikv
-ti_mysql> select min(col_2) from test.t
-+------------+
-| min(col_2) |
-+------------+
-|        555 |
-+------------+
+# ti_mysql_cop> select min(col_2) from test.t
+# tikv
+# ti_mysql> select min(col_2) from test.t
+# +------------+
+# | min(col_2) |
+# +------------+
+# |        555 |
+# +------------+
 
 # CBO, goes tiflash.
 ti_mysql_cop> select count(*) from test.t
@@ -78,15 +79,16 @@ ti_mysql> tiflash select min(col_2) from test.t
 |        555 |
 +------------+
 
+# TODO: This case is temporarily disabled by bug https://github.com/pingcap/tics/issues/1681.
 # Session isolation both, same as CBO, goes tikv.
-ti_mysql_cop> tikv,tiflash select min(col_2) from test.t
-tikv
-ti_mysql> tikv,tiflash select min(col_2) from test.t
-+------------+
-| min(col_2) |
-+------------+
-|        555 |
-+------------+
+# ti_mysql_cop> tikv,tiflash select min(col_2) from test.t
+# tikv
+# ti_mysql> tikv,tiflash select min(col_2) from test.t
+# +------------+
+# | min(col_2) |
+# +------------+
+# |        555 |
+# +------------+
 
 # Session isolation both, same as CBO, goes tiflash.
 ti_mysql_cop> tikv,tiflash select count(*) from test.t
@@ -155,9 +157,10 @@ ti_mysql> tikv select /*+ read_from_storage(tiflash[t]) */ min(col_2) from test.
 |        555 |
 +------------+
 
+# TODO: This case is temporarily disabled by bug https://github.com/pingcap/tics/issues/1681.
 # Hint tiflash with wrong table name, session isolation both, goes tikv and warning.
-ti_mysql_cop> tikv,tiflash select /*+ read_from_storage(tiflash[xxx]) */ min(col_2) from test.t
-tikv
+# ti_mysql_cop> tikv,tiflash select /*+ read_from_storage(tiflash[xxx]) */ min(col_2) from test.t
+# tikv
 # TODO: TiDB doesn't report warning for this case, which it should complain about table name 'xxx'.
 ti_mysql> tikv,tiflash select /*+ read_from_storage(tiflash[xxx]) */ min(col_2) from test.t
 +------------+
