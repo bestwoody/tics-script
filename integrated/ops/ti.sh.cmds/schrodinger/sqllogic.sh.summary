@@ -28,6 +28,18 @@ function cmd_ti_schrodinger_sqllogic()
 		local skip_error="${2}"
 	fi
 
+	if [ -z "${3+x}" ] || [ -z "${3}" ]; then
+		local test_path=""
+	else
+		local test_path="${3}"
+	fi
+
+	if [ -z "${4+x}" ] || [ -z "${4}" ]; then
+		local enable_mpp="true"
+	else
+		local enable_mpp="${4}"
+	fi
+
 	local host=`from_mod_get_host "${tidb_mod}"`
 	local dir=`from_mod_get_dir "${tidb_mod}"`
 
@@ -42,11 +54,18 @@ function cmd_ti_schrodinger_sqllogic()
 	echo "Start to run sqllogic test..."
 	echo "Parallel count: ${parallel}"
 	echo "Skip error: ${skip_error}"
-	export TIDB_SERVICE="${host}:${port}" 
-	"${bin_dir}/sqllogic" \
-		-parallel="${parallel}" \
-		-skip-error="${skip_error}" \
-		1>sqllogic.log 2>&1	
+	if [ ! -z "${test_path}" ]; then
+		echo "Test path: ${test_path}"
+	fi
+	echo "Enable mpp: ${enable_mpp}"
+	export TIDB_SERVICE="${host}:${port}"
+	local args=" -parallel=${parallel}"     \
+	           " -skip-error=${skip_error}" \
+	           " -enable-mpp=${enable_mpp}"
+	if [ ! -z "${test_path}" ]; then
+		local args="${args} -test-path=${test_path}"
+	fi
+	"${bin_dir}/sqllogic" ${args} 1>sqllogic.log 2>&1
 }
 
 set -euo pipefail
