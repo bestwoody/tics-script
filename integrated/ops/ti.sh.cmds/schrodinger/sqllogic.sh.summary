@@ -59,9 +59,7 @@ function cmd_ti_schrodinger_sqllogic()
 	fi
 	echo "Enable mpp: ${enable_mpp}"
 	export TIDB_SERVICE="${host}:${port}"
-	local args=" -parallel=${parallel}"     \
-	           " -skip-error=${skip_error}" \
-	           " -enable-mpp=${enable_mpp}"
+	local args=" -parallel=${parallel} -skip-error=${skip_error} -enable-mpp=${enable_mpp}"
 	if [ ! -z "${test_path}" ]; then
 		local args="${args} -test-path=${test_path}"
 	fi
