@@ -1,2 +1,2 @@
 run ddl test on tiflash cluster
-usage: <cmd> [concurrency=20] [mysql_compatible=false]
+usage: <cmd> [concurrency=20] [mysql_compatible=false] [allow_varchar_to_char=false]

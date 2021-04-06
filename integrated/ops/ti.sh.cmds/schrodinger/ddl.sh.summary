@@ -28,6 +28,12 @@ function cmd_ti_schrodinger_ddl()
 		local mysql_compatible="${2}"
 	fi
 
+	if [ -z "${3+x}" ] || [ -z "${3}"]; then
+		local allow_varchar_to_char="false"
+	else
+		local allow_varchar_to_char="${3}"
+	fi
+
 	local host=`from_mod_get_host "${tidb_mod}"`
 	local dir=`from_mod_get_dir "${tidb_mod}"`
 
@@ -42,10 +48,12 @@ function cmd_ti_schrodinger_ddl()
 	echo "Start to run ddl test..."
 	echo "Concurrency worker count: ${concurrency}"
 	echo "Mysql compatible: ${mysql_compatible}"
+	echo "Allow varchar to char: ${allow_varchar_to_char}"
 	export TIDB_SERVICE="${host}:${port}"; 
 	"${bin_dir}/ddl" \
 		-concurrency="${concurrency}" \
 		-mysql-compatible="${mysql_compatible}" \
+		-allow-varchar-to-char="${allow_varchar_to_char}" \
 		1>ddl.log 2>&1	
 }
 
