@@ -1,0 +1,13 @@
+this folder contains all yy and zz files, and they should have the same prefix, like abc.yy abc.zz.
+if some yy files share the same zz file, please comment the used zz file in the yy file so that we can reuse them later.
+
+for each generated file from yy and zz, we use gen_fullstack_test_file.sh to generate fullstack test file.
+usage:
+1. gen_fullstack_test_file.sh tidb_ip tidb_port randgen_file output_file
+2. move output_file to integrated/ops/ti.sh.cmds/ci/fullstack_tests/randgen-mpp/
+3. ti.sh my.ti ci/fullstack randgen-mpp/output_file false to test whether the output_file runs ok within proper execution time
+4. force adding output_file into the repo (git add -f -- output_file) if the output_file has .test suffix
+
+NOTE:
+1. we should guarantee the randgen file creates enough valid queries.
+2. yy/zz and output_file should have the same prefix name, like abc.yy abc.zz abc_##.test where ## is the query num.
