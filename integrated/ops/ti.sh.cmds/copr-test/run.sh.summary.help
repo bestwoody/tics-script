@@ -1,0 +1,3 @@
+run copr-test(port from TiKV)
+usage: <cmd> x.ti test_cases
+    an example: copr-test/run 1_arith_1.sql,1_arith_2.sql
