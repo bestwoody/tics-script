@@ -34,9 +34,11 @@ function cmd_ti_tidb_test_copr_test()
 
 	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
 	if [ -z "${tidb_mod}" ]; then
-		echo "[cmd tidb/test/randgen] no selected tidb" >&2
+		echo "[cmd copr-test/run] no selected tidb" >&2
 		return 1
 	fi
+
+	local include_files="${1}"
 
 	local host=`from_mod_get_host "${tidb_mod}"`
 	local dir=`from_mod_get_dir "${tidb_mod}"`
@@ -56,6 +58,7 @@ function cmd_ti_tidb_test_copr_test()
 		--port="${port}" \
 		--test_case_dir="${test_file_path}/sql" \
 		--prepare_dir="${test_file_path}/prepare" \
+		--include="${include_files}" \
 		1>copr-test.log 2>&1	
 }
 
