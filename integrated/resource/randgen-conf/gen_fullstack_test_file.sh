@@ -10,7 +10,7 @@ sql_mode="set @@global.sql_mode ='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,ERROR_F
 cmd="set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;"
 
 function test_a_file() {
-    i=0
+    total_queries=0
     touch tmp
     touch $output_file
     create_table=""
@@ -19,20 +19,34 @@ function test_a_file() {
     use=""
     tbls=()
     insert=""
+    lineID=0
+    query_num=0
     while read -r line; do
+        lineID=$((lineID + 1))
         if [[ $line == SELECT* ]]; then
-        	if [[ $i == 0 ]]; then
+        	if [[ $total_queries == 0 ]]; then
         		for tbl in "${tbls[@]}"
 				do
 					echo ${pre_func}"wait_table "${db_name}" "${tbl} >> $output_file
 				done
-        		i=$((i + 1))
         	fi
-        	mysql --silent -h $tidb_ip -P $tidb_port -u root -f -D $db_name -BNe "${use}${cmd}$line" &>/dev/null
+        	total_queries=$((total_queries + 1))
+        	res=$(mysql --silent -h $tidb_ip -P $tidb_port -u root -f -D $db_name -BNe "${use}${cmd}$line" 2>&1)
         	if [ $? -eq "0" ]; then
-				echo ${pre_tiflash}${use}${cmd}${line} >> $output_file
-				echo "${use}${cmd}$line" | mysql -t -h $tidb_ip -P $tidb_port -u root -f -D $db_name >> $output_file 2>&1
-				echo "" >> $output_file
+        		count=${#res[@]}
+        		if [[ ${count} -lt 1000 ]]; then
+					echo "${pre_tiflash}${use}${cmd}${line}" >> $output_file
+					echo "${use}${cmd}$line" | mysql -t -h $tidb_ip -P $tidb_port -u root -f -D $db_name >> $output_file 2>&1
+					echo "" >> $output_file
+					query_num=$((query_num + 1))
+				else
+					echo "${lineID} query is IGNORED due to too many rows [${count}]."
+				fi
+			else
+				echo "${lineID} query $res"
+            fi
+            if [[ $((${total_queries}%400)) -eq 0 ]]; then
+            	echo "${total_queries} queries have been processed."
             fi
         elif [[ $line == CREATE\ TABLE* ]]; then
 			create_table=${create_table}" "${line}
@@ -73,7 +87,7 @@ function test_a_file() {
     echo "">> $output_file
     echo ${pre_mysql}"drop database if exists "$db_name";" >> $output_file
     sed -i "s/\`//g" $output_file
-    echo "$test_data DONE!!!!"
+    echo "$test_data is DONE, ${query_num} queries of total ${total_queries} are recored!!"
 }
 
 if [ $# -eq 4 ]; then

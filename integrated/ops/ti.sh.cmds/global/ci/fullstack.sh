@@ -9,10 +9,10 @@ function cmd_ti_ci_fullstack()
 	local file="${dir}/fullstack.ti"
 	rm -f "${file}"
 
-	"${ti}" new "${file}" 'delta=-10' "dir=${dir}" 1>/dev/null
+	"${ti}" new "${file}" 'delta=-10' 'tiflash=3' "dir=${dir}" 1>/dev/null
 	"${ti}" "${file}" must burn
 	"${ti}" "${file}" run
-	"${ti}" "${file}" ci/fullstack
+	"${ti}" "${file}" ci/fullstack ci
 	"${ti}" "${file}" must burn
 
 	rm -f "${file}"
