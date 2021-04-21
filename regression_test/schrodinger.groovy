@@ -192,7 +192,7 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                                 sh """
                                   mkdir $filename
                                   for f in \$(find . -name '*.log'); do echo \"LOG: \$f\"; cp \$f ${filename}/; done
-                                  for f in \$(find /tmp/ti -name '*.log' | grep -v 'data' | grep -v 'tiflash/db'); do echo \"LOG: \$f\"; cp \$f ${filename}/\${f//\\//_}; done
+                                  for f in \$(find /tmp/ti -name '*.log*' | grep -v 'data' | grep -v 'tiflash/db'); do echo \"LOG: \$f\"; cp \$f ${filename}/\${f//\\//_}; done
                                   ls -all "${filename}"
                                   tar zcf "${filename}.tar.gz" "${filename}"
                                   curl -F ${filepath}=@${filename}.tar.gz ${FILE_SERVER_URL}/upload
