@@ -117,31 +117,35 @@ function ti_cmd_tpch_load_fast()
 		local import_dir="${table_dir}/.import.${db}.${table}.`date +%s`.${RANDOM}"
 		rm -rf ${import_dir}
 		mkdir -p "${import_dir}"
-		(
-			cd "${import_dir}"
-			if [ -f "${table_dir}/${table}.tbl" ]; then
-				# single blocks
-				ln -sf "../${table}.tbl" "${db}.${table}.csv"
-			else
-				# multiple blocks
-				for f in `ls "${table_dir}" | grep "${table}.tbl." `; do
-					local num=`echo ${f} | awk -F. '{print $3}'`
-					ln -sf "../${f}" "${db}.${table}.${num}.csv"
-				done
-			fi
-		)
-		wait
+		pushd "${import_dir}"
+		if [ -f "${table_dir}/${table}.tbl" ]; then
+			# single blocks
+			ln -sf "../${table}.tbl" "${db}.${table}.csv"
+		else
+			# multiple blocks
+			for f in `ls "${table_dir}" | grep "${table}.tbl." `; do
+				local num=`echo ${f} | awk -F. '{printf("%04d", $3)}'`
+				ln -sf "../${f}" "${db}.${table}.${num}.csv"
+			done
+		fi
+		popd
+
 		# load data using lightning
 		"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" -i "${cmd_indexes}" -k "${ti_args}" \
 			"${ti_file}" 'lightning/load' "${db}" "${table}" "${import_dir}" "${check_checksum}" | awk '{print "   "$0}'
-		echo "=> [${host}] analyze table ..."
-		# analyze table after data loaded.
-		local si='set @@session.tidb_build_stats_concurrency=10; set @@session.tidb_distsql_scan_concurrency=40;'
-		mysql -u root -P "${port}" -h "${host}" -D "${db}" -e "analyze table ${table};"
+		rm -rf "${import_dir}"
 		local finish_time=`date +%s`
 		local duration=$((finish_time-start_time))
 		echo "   lightning loaded in ${duration}s"
-		rm -rf "${import_dir}"
+
+		# analyze table after data loaded.
+		echo "=> [${host}] analyze table ..."
+		local start_time="${finish_time}"
+		local si='set @@session.tidb_build_stats_concurrency=10; set @@session.tidb_distsql_scan_concurrency=40;'
+		mysql -u root -P "${port}" -h "${host}" -D "${db}" -e "${si};analyze table ${table};"
+		local finish_time=`date +%s`
+		local duration=$((finish_time-start_time))
+		echo "   analyze done in ${duration}s"
 	done
 }
 

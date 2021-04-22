@@ -5,26 +5,29 @@ source "${here}/_env.sh"
 
 function _lightning_conf_template_setup()
 {
-	if [ -z "${12+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ] || [ -z "${6}" ] || [ -z "${7}" ] ; then
-		echo "[func _lightning_conf_template_setup] usage: <func> lightning_dir conf_file mods data_source check_checksum" >&2
+	if [ -z "${12+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [ -z "${4}" ] || [ -z "${5}" ] || [ -z "${6}" ] || [ -z "${7}" ] || [ -z "${8}" ] ; then
+		echo "[func _lightning_conf_template_setup] usage: <func> lightning_dir conf_file log_file mods data_source check_checksum" >&2
 		echo "                                            header separator delimiter not_null null backslash_escape trim_last_separator" >&2
 		return 1
 	fi
 
 	local lightning_dir="${1}"
 	local conf_file="${2}"
+	local log_file="${3}"
 	local conf_templ_dir="${integrated}/conf" # TODO: fix the hardcode ${integrated}
-	local mods="${3}"
-	local data_source="${4}"
-	local check_checksum="${5}"
+	local mods="${4}"
+	local data_source="${5}"
+	local check_checksum="${6}"
 
-	local header="${6}"
-	local separator="${7}"
-	local delimiter="${8}"
-	local not_null="${9}"
-	local null="${10}"
-	local backslash_escape="${11}"
-	local trim_last_separator="${12}"
+	local header="${7}"
+	local separator="${8}"
+	local delimiter="${9}"
+	local not_null="${10}"
+	local null="${11}"
+	local backslash_escape="${12}"
+	local trim_last_separator="${13}"
+	# Generate random suffix if empty
+	local suffix="${14:-"${RANDOM}"}"
 
 	local tidb_mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
 	local tidb_host=`from_mod_get_host "${tidb_mod}"`
@@ -43,17 +46,29 @@ function _lightning_conf_template_setup()
 		return 1
 	fi
 
+	local importer_backend="importer"
+	local importer_sorted_dir=""
 	local importer_mod=`from_mods_random_mod "${mods}" 'tikv_importer' 'false'`
 	local importer_host=`from_mod_get_host "${importer_mod}"`
 	local importer_port=`from_mod_get_proc_info "${importer_mod}" "listen_port"`
 	if [ -z "${importer_mod}" ] || [ -z "${importer_host}" ] || [ -z "${importer_port}" ]; then
-		echo "[cmd lightning/load] getting tikv-importer address from random instance failed" >&2
-		return 1
+		local importer_backend="local"
+		local tikv_mod=`from_mods_random_mod "${mods}" 'tikv' 'false'`
+		local importer_sorted_dir="`from_mod_get_dir "${tikv_mod}"`/ti.sh.lightning.${suffix}"
+		mkdir -p "${importer_sorted_dir}"
 	fi
 
 	# render str for config template
-	local render_str="importer_listen_host=${importer_host}"
-	local render_str="${render_str}#importer_listen_port=${importer_port}"
+	local render_str="importer_backend=${importer_backend}"
+	if [ "${importer_backend}" == "local" ]; then
+		local render_str="${render_str}#importer_addr="
+		local render_str="${render_str}#importer_sorted_dir=${importer_sorted_dir}"
+	else
+		local render_str="${render_str}#importer_addr=${importer_host}:${importer_port}"
+		local render_str="${render_str}#importer_sorted_dir="""
+	fi
+	local render_str="${render_str}#lightning_log=${log_file}"
+	local render_str="${render_str}#suffix=${suffix}"
 	local render_str="${render_str}#tidb_listen_host=${tidb_host}"
 	local render_str="${render_str}#tidb_listen_port=${tidb_port}"
 	local render_str="${render_str}#tidb_status_port=${tidb_status_port}"
@@ -129,10 +144,18 @@ function ti_cmd_lightning_load()
 
 	echo "Loading ${num_files_to_load} files by tidb-lightning..."
 	mkdir -p "${lightning_dir}/tasks"
-	local conf_file="${lightning_dir}/tasks/tidb-lightning.${db}.${table}.`date +%s`.${RANDOM}.toml"
-	_lightning_conf_template_setup "${lightning_dir}" "${conf_file}" "${mods}" \
+	mkdir -p "${lightning_dir}/logs"
+	local suffix="${RANDOM}"  # A random suffix for this task
+	local conf_file="${lightning_dir}/tasks/tidb-lightning.${db}.${table}.`date +%s`.${suffix}.toml"
+	local log_file="${lightning_dir}/logs/tidb-lightning.${suffix}.log"
+	_lightning_conf_template_setup "${lightning_dir}" "${conf_file}" "${log_file}" "${mods}" \
 		"${data_source}" "${check_checksum}" \
-		"${header}" "${separator}" "${delimiter}" "${not_null}" "${null}" "${backslash_escape}" "${trim_last_separator}"
+		"${header}" "${separator}" "${delimiter}" "${not_null}" "${null}" "${backslash_escape}" "${trim_last_separator}" \
+		"${suffix}"
+	if [ $? != 0 ]; then
+		echo "[func ti_cmd_lightning_load] Fail to generate configuration file for lightning" >&2
+		return 1
+	fi
 
 	# submit a job configured by ${conf_file}
 	local bin_dir="${tmp_dir}/master/bins"
@@ -141,7 +164,8 @@ function ti_cmd_lightning_load()
 	error_handle="$-"
 	set +e
 
-	"${bin_dir}/tidb-lightning" --config "${conf_file}"
+	echo "Start tidb-lightning with conf: ${conf_file}, log: ${log_file}"
+	"${bin_dir}/tidb-lightning" --config "${conf_file}" > /dev/null
 	# if tidb-lightning exit with status != 0, we should tell user to check log in ${lightning_dir}/tidb-lightning.log
 	local lightning_result=$?
 	if [ ${lightning_result} -ne 0 ]; then

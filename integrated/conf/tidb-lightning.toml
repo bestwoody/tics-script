@@ -23,7 +23,7 @@ table-concurrency = 6
 io-concurrency = 5
 # logging
 level = "info"
-file = "{lightning_dir}/tidb-lightning.log"
+file = "{lightning_log}"
 max-size = 128 # MB
 max-days = 28
 max-backups = 14
@@ -32,11 +32,13 @@ max-backups = 14
 enable = true
 schema = "tidb_lightning_checkpoint"
 driver = "file"
-dsn = "/tmp/tidb_lightning_checkpoint.pb"
+dsn = "/tmp/tidb_lightning_checkpoint.pb.{suffix}"
 # keep-after-success = false
 
 [tikv-importer]
-addr = "{importer_listen_host}:{importer_listen_port}"
+backend = "{importer_backend}"
+addr = "{importer_addr}"
+sorted-kv-dir = "{importer_sorted_dir}"
 
 [mydumper]
 read-block-size = 65536 # byte (64 KB by default)
