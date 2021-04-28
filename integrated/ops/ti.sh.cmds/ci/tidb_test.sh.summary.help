@@ -1,0 +1,2 @@
+run tidb-test/sqllogic and tidb-test/randgen for regression test.
+usage: <cmd> (no args)

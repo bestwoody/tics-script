@@ -1,0 +1,20 @@
+#!/bin/bash
+
+function cmd_ti_ci_tidb_test()
+{
+	local file="${1}"
+	local args="${2}"
+	shift 6
+
+	local ti="${integrated}/ops/ti.sh"
+
+	"${ti}" -k "${args}" "${file}" stop : fstop : up : sleep 5
+
+	"${ti}" -k "${args}" "${file}" tidb/test/sqllogic
+	"${ti}" -k "${args}" "${file}" tidb/test/randgen
+
+	"${ti}" -k "${args}" "${file}" fstop : up
+}
+
+set -euo pipefail
+cmd_ti_ci_tidb_test "${@}"
