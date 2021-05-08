@@ -5,6 +5,9 @@ ti_mysql> insert into test.t values('Hello world', 666)
 ti_mysql> insert into test.t values('Hello world', 666)
 ti_func> wait_table test t
 
+# Make sure table is created in tiflash so that the subsequent query_mapped() calls won't error 'table not found'.
+ti_ch> DBGInvoke __refresh_schemas()
+
 ti_ch> DBGInvoke query_mapped('select c1, c2 from \$d.\$t', test, t) --schema_version 10000
 ┌─c1──────────┬──c2─┐
 │ Hello world │ 666 │
