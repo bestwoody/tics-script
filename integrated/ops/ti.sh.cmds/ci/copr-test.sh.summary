@@ -1,0 +1,17 @@
+#!/bin/bash
+
+function cmd_ti_ci_copr_test()
+{
+	local file="${1}"
+	local args="${2}"
+	shift 6
+
+	local ti="${integrated}/ops/ti.sh"
+
+	"${ti}" -k "${args}" "${file}" up
+
+	"${ti}" -k "${args}" "${file}" copr-test/run
+}
+
+set -euo pipefail
+cmd_ti_ci_copr_test "${@}"

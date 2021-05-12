@@ -1,0 +1,2 @@
+run copr-test/run for regression test.
+usage: <cmd> (no args)

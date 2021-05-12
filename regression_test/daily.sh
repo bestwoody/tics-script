@@ -11,3 +11,4 @@ ti.sh ci/jenkins
 ti.sh ci/release
 ti.sh ci/tpch_diff
 ti.sh ci/tidb_test
+ti.sh ci/copr-test

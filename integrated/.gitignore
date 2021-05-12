@@ -1,4 +1,8 @@
 nodes
 nodes/
+cluster
+cluster/
+tidb_test
+tidb_test/
 resource/tpch/mysql/schema_double/
 *.ti
