@@ -227,13 +227,13 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
 
         }
 
-        def feishumsg = "${JOB_NAME}/${testcase}\n" +
-                "Build Number: ${BUILD_NUMBER}\n" +
-                "Result: ${currentBuild.result}\n" +
-                "Branch: ${branch}\n" +
-                "Version: ${version}\n" +
-                "Elapsed Time: ${duration} Mins\n" +
-                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/detail/tiflash_schrodinger_test/${BUILD_NUMBER}/pipeline\n" +
+        def feishumsg = "${JOB_NAME}/${testcase}\\n" +
+                "Build Number: ${BUILD_NUMBER}\\n" +
+                "Result: ${currentBuild.result}\\n" +
+                "Branch: ${branch}\\n" +
+                "Version: ${version}\\n" +
+                "Elapsed Time: ${duration} Mins\\n" +
+                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/detail/tiflash_schrodinger_test/${BUILD_NUMBER}/pipeline\\n" +
                 "Job Page: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/activity"
         print feishumsg
         node {

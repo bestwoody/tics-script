@@ -191,13 +191,13 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
             }
         }
 
-        def feishumsg = "${JOB_NAME}\n" +
-                "Build Number: ${BUILD_NUMBER}\n" +
-                "Result: ${currentBuild.result}\n" +
-                "Branch: ${branch}\n" +
-                "Version: ${version}\n" +
-                "Elapsed Time: ${duration} Mins\n" +
-                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily/detail/tiflash_regression_test_daily/${BUILD_NUMBER}/pipeline\n" +
+        def feishumsg = "${JOB_NAME}\\n" +
+                "Build Number: ${BUILD_NUMBER}\\n" +
+                "Result: ${currentBuild.result}\\n" +
+                "Branch: ${branch}\\n" +
+                "Version: ${version}\\n" +
+                "Elapsed Time: ${duration} Mins\\n" +
+                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily/detail/tiflash_regression_test_daily/${BUILD_NUMBER}/pipeline\\n" +
                 "Job Page: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily"
         print feishumsg
         node {
