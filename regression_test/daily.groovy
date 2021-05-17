@@ -180,7 +180,7 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
                 "Branch: `${branch}`\n" +
                 "Version: `${version}`\n" +
                 "Elapsed Time: `${duration}` Mins\n" +
-                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily/detail/tiflash_regression_test_daily/${BUILD_NUMBER}/pipeline" +
+                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily/detail/tiflash_regression_test_daily/${BUILD_NUMBER}/pipeline\n" +
                 "Job Page: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily"
         print slackmsg
         if (notify == "true" || notify == true) {
@@ -197,7 +197,7 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
                 "Branch: ${branch}\n" +
                 "Version: ${version}\n" +
                 "Elapsed Time: ${duration} Mins\n" +
-                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily/detail/tiflash_regression_test_daily/${BUILD_NUMBER}/pipeline" +
+                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily/detail/tiflash_regression_test_daily/${BUILD_NUMBER}/pipeline\n" +
                 "Job Page: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily"
         print feishumsg
         if (notify == "true" || notify == true) {

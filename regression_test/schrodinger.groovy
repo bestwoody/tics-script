@@ -215,7 +215,7 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                 "Branch: `${branch}`\n" +
                 "Version: `${version}`\n" +
                 "Elapsed Time: `${duration}` Mins\n" +
-                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/detail/tiflash_schrodinger_test/${BUILD_NUMBER}/pipeline" +
+                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/detail/tiflash_schrodinger_test/${BUILD_NUMBER}/pipeline\n" +
                 "Job Page: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/activity"
         print slackmsg
         if (notify == "true" || notify == true) {
@@ -233,7 +233,7 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                 "Branch: ${branch}\n" +
                 "Version: ${version}\n" +
                 "Elapsed Time: ${duration} Mins\n" +
-                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/detail/tiflash_schrodinger_test/${BUILD_NUMBER}/pipeline" +
+                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/detail/tiflash_schrodinger_test/${BUILD_NUMBER}/pipeline\n" +
                 "Job Page: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/activity"
         print feishumsg
         if (notify == "true" || notify == true) {
