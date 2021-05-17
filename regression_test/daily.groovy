@@ -200,16 +200,18 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
                 "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily/detail/tiflash_regression_test_daily/${BUILD_NUMBER}/pipeline\n" +
                 "Job Page: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_regression_test_daily"
         print feishumsg
-        if (notify == "true" || notify == true) {
-            sh """
-              curl -X POST https://open.feishu.cn/open-apis/bot/v2/hook/ea22c6ca-afc8-4b8b-a196-025e5b96fccf -H 'Content-Type: application/json' \
-              -d '{
-                "msg_type": "text",
-                "content": {
-                  "text": "$feishumsg"
-                }
-              }'
-            """
+        node {
+            if (notify == "true" || notify == true) {
+                sh """
+                  curl -X POST https://open.feishu.cn/open-apis/bot/v2/hook/ea22c6ca-afc8-4b8b-a196-025e5b96fccf -H 'Content-Type: application/json' \
+                  -d '{
+                    "msg_type": "text",
+                    "content": {
+                      "text": "$feishumsg"
+                    }
+                  }'
+                """
+            }
         }
     }
 }
