@@ -208,15 +208,15 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
     }
 
     stage('Summary') {
-      def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(2, BigDecimal.ROUND_HALF_UP)
-      def slackmsg = "TiFlash Schrodinger Test\n" +
-              "Branch: `${branch}`\n" +
-              "Version: `${version}`\n" +
-              "Testcase: `${testcase}`\n" +
-              "Result: `${currentBuild.result}`\n" +
-              "Elapsed Time: `${duration}` Mins\n" +
-              "https://internal.pingcap.net/idc-jenkins/blue/organizations/jenkins/tiflash_schrodinger_test/activity\n" +
-              "https://internal.pingcap.net/idc-jenkins/job/tiflash_schrodinger_test/"
+        def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(2, BigDecimal.ROUND_HALF_UP)
+        def slackmsg = "`${JOB_NAME}/${testcase}`\n" +
+                "Build Number: `${BUILD_NUMBER}`\n" +
+                "Result: `${currentBuild.result}`\n" +
+                "Branch: `${branch}`\n" +
+                "Version: `${version}`\n" +
+                "Elapsed Time: `${duration}` Mins\n" +
+                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/detail/tiflash_schrodinger_test/${BUILD_NUMBER}/pipeline" +
+                "Job Page: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/activity"
         print slackmsg
         if (notify == "true" || notify == true) {
             if (currentBuild.result != "SUCCESS") {
@@ -225,6 +225,27 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                 slackSend channel: '#tiflash-daily-test', color: 'good', teamDomain: 'pingcap', tokenCredentialId: 'slack-pingcap-token', message: "${slackmsg}"
             }
 
+        }
+
+        def feishumsg = "${JOB_NAME}/${testcase}\n" +
+                "Build Number: ${BUILD_NUMBER}\n" +
+                "Result: ${currentBuild.result}\n" +
+                "Branch: ${branch}\n" +
+                "Version: ${version}\n" +
+                "Elapsed Time: ${duration} Mins\n" +
+                "Build Link: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/detail/tiflash_schrodinger_test/${BUILD_NUMBER}/pipeline" +
+                "Job Page: https://ci.pingcap.net/blue/organizations/jenkins/tiflash_schrodinger_test/activity"
+        print feishumsg
+        if (notify == "true" || notify == true) {
+            sh """
+              curl -X POST https://open.feishu.cn/open-apis/bot/v2/hook/ea22c6ca-afc8-4b8b-a196-025e5b96fccf -H 'Content-Type: application/json' \
+              -d '{
+                "msg_type": "text",
+                "content": {
+                  "text": "$feishumsg"
+                }
+              }'
+            """
         }
     }
 }
