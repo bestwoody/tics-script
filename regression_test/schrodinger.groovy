@@ -227,9 +227,14 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
 
         }
 
+        def result_mark = "❌"
+        if (currentBuild.result == "SUCCESS") {
+            result_mark = "✅"
+        }
+
         def feishumsg = "${JOB_NAME}/${testcase}\\n" +
                 "Build Number: ${BUILD_NUMBER}\\n" +
-                "Result: ${currentBuild.result}\\n" +
+                "Result: ${currentBuild.result} ${result_mark}\\n" +
                 "Branch: ${branch}\\n" +
                 "Version: ${version}\\n" +
                 "Elapsed Time: ${duration} Mins\\n" +

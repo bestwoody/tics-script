@@ -191,9 +191,14 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
             }
         }
 
+        def result_mark = "❌"
+        if (currentBuild.result == "SUCCESS") {
+            result_mark = "✅"
+        }
+
         def feishumsg = "${JOB_NAME}\\n" +
                 "Build Number: ${BUILD_NUMBER}\\n" +
-                "Result: ${currentBuild.result}\\n" +
+                "Result: ${currentBuild.result} ${result_mark}\\n" +
                 "Branch: ${branch}\\n" +
                 "Version: ${version}\\n" +
                 "Elapsed Time: ${duration} Mins\\n" +
