@@ -1,27 +1,5 @@
 #!/bin/bash
 
-function download_test_file()
-{
-	local conf_file="${1}"
-	local url_name="${2}"
-	local target_dir="${3}"
-	if [ -z "${conf_file}" ] || [ -z "${url_name}" ] || [ -z "${target_dir}" ]; then
-		echo "[func download_test_file] usage: <func> conf_file url_name target_dir" >&2
-		return 1
-	fi
-	local file_url=`cross_platform_get_value "${conf_file}" "${url_name}"`
-
-	mkdir -p "${target_dir}"
-	local download_path="${target_dir}/copr_test.`date +%s`.${RANDOM}"
-	if [ ! -f "${target_dir}/copr_test.tar.gz" ]; then
-		wget --quiet -nd "${file_url}" -O "${download_path}"
-		mv "${download_path}" "${target_dir}/copr_test.tar.gz"
-	fi
-	if [ ! -d "${target_dir}/copr_test" ]; then
-		tar -zxf "${target_dir}/copr_test.tar.gz" -C "${target_dir}"
-	fi
-}
-
 function cmd_ti_tidb_test_copr_test()
 {
 	local ti_file="${1}"
@@ -55,8 +33,7 @@ function cmd_ti_tidb_test_copr_test()
 		--host="${host}" \
 		--port="${port}" \
 		--test_case_dir="${test_file_path}/sql" \
-		--prepare_dir="${test_file_path}/prepare" \
-		2>&1 >copr-test.log 
+		--prepare_dir="${test_file_path}/prepare"
 }
 
 set -euo pipefail

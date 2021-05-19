@@ -749,7 +749,6 @@
  SELECT CONVERT( `col_double_unsigned` USING utf8 ) AS field1 FROM `table1_int_autoinc` WHERE BINARY `col_blob` /* QNO 791 CON_ID 104 */ ;
  SELECT BINARY ( CONVERT( 0 USING latin1 ) ) AS field1 FROM `table20_int_autoinc` WHERE BINARY ( CONVERT( `col_bit_key`, SIGNED ) ) /* QNO 792 CON_ID 104 */ ;
  SELECT CONVERT( `col_varchar_64` USING utf8 ) AS field1, CONVERT( 'h', DATE ) AS field2, CONVERT( 0, CHAR(0) ) AS field3 FROM `table0_int_autoinc` WHERE CAST( '2005-11-11' AS DECIMAL ) /* QNO 793 CON_ID 104 */ ;
- SELECT CONVERT( `col_year`, DATE ) AS field1 FROM `table20_int_autoinc` WHERE CAST( `col_char_255_key` AS UNSIGNED ) /* QNO 794 CON_ID 104 */ ;
  SELECT CONVERT( ( CONVERT( `col_double_unsigned` USING utf8 ) ) USING utf8 ) AS field1 FROM `table1_int_autoinc` WHERE CONVERT( ( BINARY ( CAST( `col_tinyint` AS TIME ) ) ) USING utf8 ) /* QNO 795 CON_ID 104 */ ;
  SELECT CONVERT( `col_double_unsigned_key`, UNSIGNED ) AS field1 FROM `table1000_int_autoinc`  /* QNO 796 CON_ID 104 */ ;
  SELECT CAST( `col_varchar_1` AS SIGNED ) AS field1 FROM `table20_int_autoinc` WHERE CONVERT( '2012-10-21' USING utf8 ) /* QNO 797 CON_ID 104 */ ;
