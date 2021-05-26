@@ -96,7 +96,7 @@ Here's an example to replace `tiflash` binary in a `running` cluster:
    ```
    # name \t bin_name \t path1:path2:...
    tiflash	tiflash	/home/you/path_to_tics/build/dbms/src/Server/tiflash
-   libtiflash-proxy libtiflash_proxy.so /home/you/path_to_tics/libs/libtiflash-proxy/libtiflash_proxy.so
+   tiflash_proxy libtiflash_proxy.so /home/you/path_to_tics/libs/libtiflash-proxy/libtiflash_proxy.so
    #tikv	tikv-server	[path_to_tikv_binary]
    #pd	pd-server	[path_to_pd_binary]
    #tidb	tidb-server	[path_to_tidb_binary]
