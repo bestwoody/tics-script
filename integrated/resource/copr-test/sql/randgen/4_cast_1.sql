@@ -465,7 +465,6 @@
  SELECT CONVERT( 12469 USING utf8 ) AS field1 FROM `table1_int_autoinc` WHERE CONVERT( `col_int_unsigned` USING utf8 ) /* QNO 491 CON_ID 104 */ ;
  SELECT CONVERT( `col_bit` USING latin1 ) AS field1 FROM `table1000_int_autoinc` WHERE BINARY ( CONVERT( ( BINARY `col_int_unsigned` ) USING latin1 ) ) /* QNO 492 CON_ID 104 */ ;
  SELECT CONVERT( `col_year_key`, CHAR(4) ) AS field1, BINARY `col_timestamp` AS field2 FROM `table0_int_autoinc` WHERE CONVERT( ( CAST( `col_timestamp` AS BINARY(9) ) ) USING utf8 ) /* QNO 493 CON_ID 104 */ ;
- SELECT BINARY `col_set_key` AS field1, BINARY ( BINARY ( BINARY `col_float` ) ) AS field2 FROM `table1000_int_autoinc` WHERE CAST( ( CAST( `col_decimal_unsigned` AS DECIMAL ) ) AS TIME ) /* QNO 494 CON_ID 104 */ ;
  SELECT CAST( `col_bigint_unsigned_key` AS DECIMAL(53) ) AS field1 FROM `table20_int_autoinc`  /* QNO 495 CON_ID 104 */ ;
  SELECT CAST( ( BINARY `col_int` ) AS SIGNED ) AS field1 FROM `table0_int_autoinc` WHERE CONVERT( ( CONVERT( `col_double_key`, SIGNED ) ) USING utf8 ) /* QNO 496 CON_ID 104 */ ;
  SELECT CONVERT( -748441963073634304, DATE ) AS field1, BINARY ( CONVERT( ( BINARY ( CONVERT( `col_smallint_unsigned_key` USING latin1 ) ) ) USING utf8 ) ) AS field2, CONVERT( ( CONVERT( ( CONVERT( '02:07:08.030761', DECIMAL(33) ) ), SIGNED ) ) USING latin1 ) AS field3 FROM `table1_int_autoinc` WHERE CONVERT( '1977-12-21 08:13:35.000575' USING utf8 ) /* QNO 497 CON_ID 104 */ ;
