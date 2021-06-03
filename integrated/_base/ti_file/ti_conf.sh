@@ -499,7 +499,19 @@ function cp_bin_to_dir_from_pingcap_internal()
 		if [ "${code}" != "0" ]; then
 			echo "[func cp_bin_to_dir_from_pingcap_internal] wget --quiet -nd -P '${bin_cache_dir}' '${url}' -O '${download_path}' failed, name=\"${name}\"" >&2
 			rm -f "${download_path_tmp}"
-			return 1
+
+			# Retry for the commit in tikv bump version pr
+			# curl ${FILE_SERVER_URL}/download/builds/pingcap/tikv/optimization/${hash}/centos7/tikv-server.tar.gz
+			local url="${file_server}/download/builds/pingcap/${component_name}/optimization/${hash}/centos7/${zipped_binary_name}"
+			echo "[Retry downloading from internal mirror \"${url}\" ...]" >&2
+			local download_path_tmp="${download_path}.`date +%s`.${RANDOM}"
+			wget --quiet -nd -P "${bin_cache_dir}" "${url}" --no-check-certificate -O "${download_path_tmp}"
+			local code="$?"
+			if [ "${code}" != "0" ]; then
+				echo "[func cp_bin_to_dir_from_pingcap_internal] wget --quiet -nd -P '${bin_cache_dir}' '${url}' -O '${download_path}' failed, name=\"${name}\"" >&2
+				rm -f "${download_path_tmp}"
+				return 1
+			fi
 		fi
 		mv "${download_path_tmp}" "${download_path}"
 		if [ ! -f "${download_path}" ]; then
