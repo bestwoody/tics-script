@@ -303,8 +303,6 @@ ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='ti
 | 0 |
 +---+
 
-ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT AVG( OUTR . col_datetime_not_null ) AS X FROM C AS OUTR2 RIGHT JOIN B AS OUTR ON ( OUTR2 . col_datetime_not_null = OUTR . col_datetime_not_null AND OUTR2 . col_int = OUTR . col_int_not_null ) WHERE OUTR . col_datetime NOT IN ( SELECT INNR . col_datetime AS Y FROM CC AS INNR WHERE INNR . col_datetime BETWEEN '2001-04-06' AND '2007-01-12' ) GROUP BY OUTR . col_int HAVING X = '00:21:38';
-
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT MAX( OUTR . col_varchar_10 ) AS X FROM A AS OUTR2 RIGHT JOIN D AS OUTR ON ( OUTR2 . col_int = OUTR . col_int_not_null AND OUTR2 . col_decimal > OUTR . col_decimal ) WHERE OUTR . col_int_not_null NOT IN ( SELECT INNR . col_int_not_null AS Y FROM CC AS INNR WHERE INNR . col_int_not_null <> INNR . pk OR NOT INNR . col_varchar_10_not_null >= INNR . col_varchar_10 ) ;
 +------+
 | X    |
@@ -639,8 +637,6 @@ ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='ti
 +---+
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT OUTR . pk AS X FROM A AS OUTR2 INNER JOIN A AS OUTR ON ( OUTR2 . col_int_not_null = OUTR . col_int AND OUTR2 . col_decimal_not_null = OUTR . col_decimal ) WHERE OUTR . col_decimal NOT IN ( SELECT INNR . pk + 1 AS Y FROM AA AS INNR WHERE INNR . col_varchar_10 < 'q' ORDER BY INNR . col_datetime ) GROUP BY OUTR . pk HAVING X = '2006-12-07';
-
-ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT AVG( OUTR . col_datetime_not_null ) AS X FROM D AS OUTR2 LEFT JOIN A AS OUTR ON ( OUTR2 . col_int_not_null = OUTR . pk AND OUTR2 . col_varchar_10_not_null > OUTR . col_varchar_10 ) WHERE OUTR . col_decimal NOT IN ( SELECT INNR . pk + 1 AS Y FROM BB AS INNR WHERE INNR . col_int_not_null IS NOT NULL ) GROUP BY OUTR . col_datetime ;
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT MIN( OUTR . col_datetime_not_null ) AS X FROM D AS OUTR2 RIGHT JOIN D AS OUTR ON ( OUTR2 . col_varchar_10_not_null = OUTR . col_varchar_10_not_null AND OUTR2 . col_decimal > OUTR . col_decimal_not_null ) WHERE OUTR . col_int_not_null NOT IN ( SELECT INNR . col_int + 1 AS Y FROM BB AS INNR WHERE INNR . col_datetime_not_null = INNR . col_datetime_not_null AND INNR . col_varchar_10_not_null >= INNR . col_varchar_10_not_null ORDER BY INNR . col_varchar_10 ) ;
 +---+
@@ -2678,8 +2674,6 @@ ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='ti
 | 0.0000 |
 +--------+
 
-ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT SUM( OUTR . col_datetime ) AS X FROM A AS OUTR2 RIGHT JOIN C AS OUTR ON ( OUTR2 . col_varchar_10 = OUTR . col_varchar_10 AND OUTR2 . col_decimal > OUTR . col_decimal_not_null ) WHERE OUTR . col_varchar_10 NOT IN ( SELECT INNR . col_varchar_10 AS Y FROM DD AS INNR WHERE INNR . col_datetime_not_null >= '2004-07-21' ) GROUP BY OUTR . col_decimal HAVING X = 1;
-
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT COUNT( OUTR . col_varchar_10 ) AS X FROM D AS OUTR2 LEFT JOIN A AS OUTR ON ( OUTR2 . col_int = OUTR . col_int_not_null AND OUTR2 . col_datetime = OUTR . col_datetime ) WHERE OUTR . col_datetime NOT IN ( SELECT INNR . pk AS Y FROM CC AS INNR WHERE INNR . col_int_not_null <> INNR . pk OR INNR . col_varchar_10 > INNR . col_varchar_10_not_null ) GROUP BY OUTR . col_datetime_not_null HAVING X <= '2007-10-10 03:06:08';
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT OUTR . col_varchar_10_not_null AS X FROM B AS OUTR2 RIGHT JOIN B AS OUTR ON ( OUTR2 . col_datetime_not_null = OUTR . col_datetime AND OUTR2 . col_datetime = OUTR . col_datetime_not_null ) WHERE OUTR . pk IN ( SELECT INNR . pk + 1 AS Y FROM DD AS INNR WHERE INNR . col_int > 2 AND INNR . col_decimal_not_null <> INNR . col_decimal ) ;
@@ -2734,8 +2728,6 @@ ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='ti
 +------------+
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT SUM( OUTR . col_varchar_10_not_null ) AS X FROM A AS OUTR2 RIGHT JOIN C AS OUTR ON ( OUTR2 . col_datetime = OUTR . col_datetime AND OUTR2 . col_varchar_10 < OUTR . col_varchar_10_not_null ) WHERE OUTR . col_decimal_not_null IN ( SELECT INNR . col_int_not_null + 1 AS Y FROM DD AS INNR WHERE INNR . col_int_not_null < 5 ORDER BY INNR . col_int_not_null ) HAVING X >= '02:53:58';
-
-ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT AVG( OUTR . col_datetime ) AS X FROM C AS OUTR2 INNER JOIN B AS OUTR ON ( OUTR2 . col_datetime_not_null = OUTR . col_datetime AND OUTR2 . col_decimal = OUTR . col_decimal ) WHERE OUTR . col_varchar_10 NOT IN ( SELECT INNR . col_datetime_not_null AS Y FROM AA AS INNR WHERE INNR . col_varchar_10 IS NULL ) GROUP BY OUTR . col_varchar_10_not_null ;
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT MIN( OUTR . col_int ) AS X FROM C AS OUTR2 INNER JOIN C AS OUTR ON ( OUTR2 . col_int_not_null = OUTR . col_int_not_null AND OUTR2 . col_decimal <= OUTR . col_decimal_not_null ) WHERE OUTR . col_varchar_10_not_null IN ( SELECT INNR . col_varchar_10 AS Y FROM CC AS INNR WHERE INNR . col_decimal IS NULL ) GROUP BY OUTR . col_int_not_null ;
 
@@ -3319,8 +3311,6 @@ ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='ti
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT OUTR . col_datetime AS X FROM C AS OUTR2 RIGHT JOIN D AS OUTR ON ( OUTR2 . col_decimal_not_null = OUTR . col_decimal_not_null AND OUTR2 . col_int <= OUTR . pk ) WHERE OUTR . col_varchar_10_not_null IN ( SELECT INNR . col_int + 1 AS Y FROM AA AS INNR WHERE INNR . col_varchar_10 = 'm' ORDER BY INNR . col_decimal_not_null ) ;
 
-ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT AVG( OUTR . col_datetime_not_null ) AS X FROM C AS OUTR2 RIGHT JOIN B AS OUTR ON ( OUTR2 . col_varchar_10_not_null = OUTR . col_varchar_10_not_null AND OUTR2 . col_varchar_10_not_null <= OUTR . col_varchar_10 ) WHERE OUTR . col_datetime NOT IN ( SELECT INNR . col_datetime_not_null AS Y FROM CC AS INNR WHERE INNR . col_datetime BETWEEN '2007-01-18' AND '2003-01-10' ) GROUP BY OUTR . col_datetime HAVING X < '2006-02-20';
-
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT MIN( OUTR . col_datetime_not_null ) AS X FROM D AS OUTR2 RIGHT JOIN A AS OUTR ON ( OUTR2 . col_int = OUTR . col_int AND OUTR2 . pk = OUTR . col_int_not_null ) WHERE OUTR . col_varchar_10_not_null NOT IN ( SELECT INNR . col_varchar_10_not_null AS Y FROM CC AS INNR WHERE INNR . col_datetime IS NOT NULL ) HAVING X < 4;
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT SUM( OUTR . col_datetime_not_null ) AS X FROM B AS OUTR2 RIGHT JOIN B AS OUTR ON ( OUTR2 . col_datetime = OUTR . col_datetime_not_null AND OUTR2 . col_datetime >= OUTR . col_datetime_not_null ) WHERE OUTR . pk IN ( SELECT INNR . col_int AS Y FROM AA AS INNR WHERE INNR . col_datetime > INNR . col_datetime_not_null OR NOT INNR . col_decimal < INNR . col_decimal_not_null ) ;
@@ -3593,13 +3583,9 @@ ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='ti
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT MAX( OUTR . col_decimal ) AS X FROM C AS OUTR2 LEFT JOIN B AS OUTR ON ( OUTR2 . col_int_not_null = OUTR . col_int_not_null AND OUTR2 . col_varchar_10 > OUTR . col_varchar_10 ) WHERE OUTR . col_varchar_10 NOT IN ( SELECT INNR . col_decimal_not_null AS Y FROM AA AS INNR WHERE INNR . col_varchar_10_not_null <= INNR . col_varchar_10 OR NOT INNR . col_datetime_not_null < INNR . col_datetime_not_null ORDER BY INNR . col_int_not_null ) GROUP BY OUTR . pk ;
 
-ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT SUM( OUTR . col_datetime ) AS X FROM D AS OUTR2 RIGHT JOIN D AS OUTR ON ( OUTR2 . col_decimal_not_null = OUTR . col_decimal AND OUTR2 . col_varchar_10_not_null > OUTR . col_varchar_10_not_null ) WHERE OUTR . col_int IN ( SELECT INNR . col_varchar_10 AS Y FROM CC AS INNR WHERE INNR . col_decimal > INNR . col_decimal_not_null OR NOT INNR . pk >= INNR . col_int ) GROUP BY OUTR . col_decimal ;
-
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT AVG( OUTR . col_datetime_not_null ) AS X FROM B AS OUTR2 INNER JOIN C AS OUTR ON ( OUTR2 . col_datetime_not_null = OUTR . col_datetime_not_null AND OUTR2 . col_int < OUTR . col_int_not_null ) WHERE OUTR . col_decimal_not_null IN ( SELECT INNR . pk + 1 AS Y FROM DD AS INNR WHERE INNR . col_varchar_10 = INNR . col_varchar_10_not_null OR INNR . col_varchar_10_not_null >= INNR . col_varchar_10_not_null ORDER BY INNR . col_varchar_10 ) GROUP BY OUTR . col_varchar_10 HAVING X = NULL;
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT OUTR . col_varchar_10_not_null AS X FROM B AS OUTR2 INNER JOIN B AS OUTR ON ( OUTR2 . col_decimal_not_null = OUTR . col_decimal AND OUTR2 . col_varchar_10_not_null > OUTR . col_varchar_10 ) WHERE OUTR . col_varchar_10 NOT IN ( SELECT INNR . col_varchar_10 AS Y FROM DD AS INNR WHERE INNR . col_varchar_10 = 's' ORDER BY INNR . col_datetime ) HAVING X <> '2008-01-22';
-
-ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT SUM( OUTR . col_datetime ) AS X FROM B AS OUTR2 INNER JOIN B AS OUTR ON ( OUTR2 . col_datetime_not_null = OUTR . col_datetime_not_null AND OUTR2 . col_varchar_10 <> OUTR . col_varchar_10_not_null ) WHERE OUTR . col_varchar_10_not_null IN ( SELECT INNR . pk + 1 AS Y FROM CC AS INNR WHERE INNR . col_varchar_10 = 'c' ) GROUP BY OUTR . col_varchar_10 HAVING X <= '23:28:12';
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT AVG( OUTR . col_datetime_not_null ) AS X FROM C AS OUTR2 INNER JOIN B AS OUTR ON ( OUTR2 . col_int_not_null = OUTR . col_int AND OUTR2 . col_varchar_10 <> OUTR . col_varchar_10_not_null ) WHERE OUTR . col_varchar_10_not_null IN ( SELECT INNR . col_varchar_10_not_null AS Y FROM DD AS INNR WHERE INNR . col_decimal_not_null IS NOT NULL ORDER BY INNR . col_datetime ) GROUP BY OUTR . col_varchar_10 ;
 
@@ -3986,13 +3972,6 @@ ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='ti
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT MIN( OUTR . col_varchar_10 ) AS X FROM A AS OUTR2 LEFT JOIN C AS OUTR ON ( OUTR2 . col_decimal = OUTR . col_decimal AND OUTR2 . col_varchar_10_not_null > OUTR . col_varchar_10_not_null ) WHERE OUTR . pk NOT IN ( SELECT INNR . col_decimal AS Y FROM AA AS INNR WHERE INNR . col_int < INNR . col_int_not_null OR INNR . col_int_not_null <> 8 ) GROUP BY OUTR . col_decimal_not_null ;
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT COUNT( OUTR . col_int ) AS X FROM B AS OUTR2 LEFT JOIN D AS OUTR ON ( OUTR2 . col_decimal = OUTR . col_decimal_not_null AND OUTR2 . col_decimal_not_null > OUTR . col_decimal_not_null ) WHERE OUTR . col_decimal NOT IN ( SELECT INNR . col_int_not_null + 1 AS Y FROM DD AS INNR WHERE INNR . col_decimal <= INNR . col_decimal_not_null OR INNR . col_varchar_10_not_null <= 'r' ) GROUP BY OUTR . col_decimal_not_null HAVING X = '2002-07-07 22:57:47';
-
-ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT SUM( OUTR . col_datetime_not_null ) AS X FROM D AS OUTR2 LEFT JOIN D AS OUTR ON ( OUTR2 . col_varchar_10_not_null = OUTR . col_varchar_10 AND OUTR2 . col_datetime_not_null = OUTR . col_datetime ) WHERE OUTR . col_decimal NOT IN ( SELECT INNR . col_int_not_null + 1 AS Y FROM AA AS INNR WHERE INNR . col_decimal > INNR . col_decimal_not_null AND INNR . col_decimal_not_null > INNR . col_decimal ) GROUP BY OUTR . col_int_not_null ;
-+---+
-| X |
-+---+
-| NULL |
-+---+
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT SUM( OUTR . col_decimal ) AS X FROM A AS OUTR2 LEFT JOIN A AS OUTR ON ( OUTR2 . col_decimal_not_null = OUTR . col_decimal_not_null AND OUTR2 . col_datetime <> OUTR . col_datetime ) WHERE OUTR . col_decimal IN ( SELECT INNR . pk + 1 AS Y FROM BB AS INNR WHERE INNR . col_decimal IS NULL OR NOT INNR . col_varchar_10 <= 'r' ORDER BY INNR . col_varchar_10_not_null ) GROUP BY OUTR . col_decimal HAVING X < 8;
 
@@ -5067,8 +5046,6 @@ ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='ti
 +-------------+
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT OUTR . col_varchar_10_not_null AS X FROM A AS OUTR2 LEFT JOIN C AS OUTR ON ( OUTR2 . col_varchar_10 = OUTR . col_varchar_10_not_null AND OUTR2 . col_varchar_10 >= OUTR . col_varchar_10 ) WHERE OUTR . col_varchar_10_not_null IN ( SELECT INNR . col_int + 1 AS Y FROM BB AS INNR WHERE INNR . col_varchar_10_not_null > INNR . col_varchar_10 OR NOT INNR . col_datetime < INNR . col_datetime ORDER BY INNR . col_datetime_not_null ) ;
-
-ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT AVG( OUTR . col_datetime ) AS X FROM B AS OUTR2 INNER JOIN B AS OUTR ON ( OUTR2 . col_varchar_10_not_null = OUTR . col_varchar_10 AND OUTR2 . col_varchar_10 >= OUTR . col_varchar_10_not_null ) WHERE OUTR . col_int IN ( SELECT INNR . col_int + 1 AS Y FROM DD AS INNR WHERE INNR . col_int <> 3 ) HAVING X >= 's';
 
 ti_mysql> tiflash use mpp_complex_sql1000; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT AVG( OUTR . col_datetime_not_null ) AS X FROM B AS OUTR2 LEFT JOIN D AS OUTR ON ( OUTR2 . col_datetime = OUTR . col_datetime_not_null AND OUTR2 . pk <= OUTR . col_int_not_null ) WHERE OUTR . col_decimal IN ( SELECT INNR . pk + 1 AS Y FROM AA AS INNR WHERE INNR . col_int_not_null <> 1 ORDER BY INNR . col_varchar_10_not_null ) GROUP BY OUTR . col_int HAVING X <> '2000-11-01 14:03:50';
 
