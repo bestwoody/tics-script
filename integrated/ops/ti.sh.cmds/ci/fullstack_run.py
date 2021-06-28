@@ -99,7 +99,12 @@ class OpsExecutor:
         cmd = cmd + ' ' + self.test_ti_file + ' 2>&1'
         pipe = os.popen(cmd.strip())
         if bg_job_id is None:
-            return OutputFormatter.format(cmd_type, pipe.readlines())
+            lines = pipe.readlines()
+            # test whether func cmd run successfully
+            if pipe.close() is not None:
+                print("exe_func run command: " + cmd + " meet error: " + ",".join(lines))
+                sys.exit(1)
+            return OutputFormatter.format(cmd_type, lines)
         else:
             return BackgroundExecutor(cmd_type, pipe)
 
@@ -400,6 +405,7 @@ class Matcher:
         need_advance = False
         if line.startswith(SLEEP_PREFIX):
             time.sleep(float(line[len(SLEEP_PREFIX):]))
+            return True
         elif line.startswith(CMD_SHELL_FUNC):
             if self.outputs != None and not matched(self.outputs, self.matches, self.fuzz, self.query_type):
                 return False

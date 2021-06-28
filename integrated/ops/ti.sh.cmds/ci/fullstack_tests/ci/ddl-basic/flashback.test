@@ -12,7 +12,7 @@ ti_mysql> insert into test.t values(1, 'abc')
 
 ti_mysql> drop table test.t
 
-ti_func> sleep 10
+SLEEP 10
 
 ti_mysql> flashback table test.t to t2
 
@@ -43,7 +43,7 @@ ti_mysql> insert into test.t values(1, 'abc')
 
 ti_mysql> truncate table test.t
 
-ti_func> sleep 10
+SLEEP 10
 
 ti_mysql> flashback table test.t to t2
 

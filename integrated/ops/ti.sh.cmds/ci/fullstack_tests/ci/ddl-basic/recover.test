@@ -11,7 +11,7 @@ ti_mysql> insert into test.t values(1, 'abc')
 
 ti_mysql> drop table test.t
 
-ti_func> sleep 10
+SLEEP 10
 
 ti_mysql> recover table test.t
 
