@@ -1,2 +1,2 @@
 ledger test used by jenkins
-usage: <cmd> [enable_region_merge=false] [enable_shuffle_region=false] [enable_shuffle_leader=false] [pessimistic=true] [test_bin_dir=/tmp/ti/schrodinger/ledger]
+usage: <cmd> [enable_region_merge=false] [enable_shuffle_region=true] [enable_shuffle_leader=false] [pessimistic=true] [test_bin_dir=/tmp/ti/schrodinger/ledger]

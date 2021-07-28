@@ -12,7 +12,7 @@ function cmd_ti_global_schrodinger_sqllogic()
 		fi
 	fi
 	if [ -z "${2+x}" ] || [ -z "${2}" ]; then
-		local enable_shuffle_region='false'
+		local enable_shuffle_region='true'
 	else
 		local enable_shuffle_region="${2}"
 		if [ "${enable_shuffle_region}" != 'false' ] && [ "${enable_shuffle_region}" != 'true' ]; then
@@ -41,7 +41,7 @@ function cmd_ti_global_schrodinger_sqllogic()
 	local file="${dir}/sqllogic.ti"
 	rm -f "${file}"
 
-	"${ti}" new "${file}" 'delta=+18' "dir=${dir}" 1>/dev/null
+	"${ti}" new "${file}" 'delta=+18' "dir=${dir}" tikv=3 tiflash=3 1>/dev/null
 
 	"${ti}" "${file}" must burn
 	"${ti}" "${file}" run
