@@ -144,7 +144,7 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
                             /home/jenkins/agent/git/tiflash/integrated/ops/ti.sh /home/jenkins/agent/git/tiflash/regression_test/download.ti burn : up : ver : burn
                             """
                             try {
-                                timeout(720) {
+                                timeout(1080) {
                                     sh "regression_test/daily.sh"
                                 }
                             } catch (err) {
