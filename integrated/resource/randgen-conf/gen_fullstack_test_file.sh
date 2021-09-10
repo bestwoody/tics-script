@@ -7,7 +7,7 @@ pre_mysql="ti_mysql> "
 pre_func="ti_func> "
 pre_tiflash="ti_mysql> tiflash "
 sql_mode="set @@global.sql_mode ='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';"
-cmd="set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;"
+cmd="set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1; set @@tidb_enforce_mpp=1;"
 
 function test_a_file() {
     total_queries=0
