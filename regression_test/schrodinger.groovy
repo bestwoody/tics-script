@@ -22,8 +22,8 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                             envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375'),
                     ], alwaysPullImage: true, ttyEnabled: true, command: 'cat'),
             containerTemplate(name: 'docker-ops-ci', image: 'hub.pingcap.net/tiflash/ops-ci:v11',
-                    resourceRequestCpu: '5000m',
-                    resourceRequestMemory: '10Gi',
+                    resourceRequestCpu: '20000m',
+                    resourceRequestMemory: '20Gi',
                     envVars: [
                             envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375'),
                     ], alwaysPullImage: true, ttyEnabled: true, command: 'cat'),
