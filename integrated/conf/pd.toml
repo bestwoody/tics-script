@@ -7,6 +7,10 @@ namespace-classifier = "table"
 tso-save-interval = "3s"
 quota-backend-bytes = "8G"
 
+[pd-server]
+## Disable dashboard
+dashboard-address = "none"
+
 [security]
 cacert-path = ""
 cert-path = ""
@@ -50,3 +54,7 @@ low-space-ratio = 0.99
 location-labels = []
 max-replicas = 1
 enable-placement-rules = true
+
+[dashboard]
+## When enabled, usage data will be sent to PingCAP for improving user experience.
+enable-telemetry = false
