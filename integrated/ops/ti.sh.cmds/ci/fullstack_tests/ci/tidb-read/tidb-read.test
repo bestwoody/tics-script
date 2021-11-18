@@ -13,7 +13,7 @@ ti_mysql> analyze table test.t
 
 # Session isolation tiflash and no tiflash replica, error.
 ti_mysql_cop> tiflash select min(col_2) from test.t
-Can not find access path
+ERROR 1815 (HY000) at line 1: Internal : No access path for table 't' is found with 'tidb_isolation_read_engines' = 'tiflash', valid values can be 'tikv'. Please check tiflash replica or ensure the query is readonly.
 
 # Hint tiflash and no tiflash replica, goes tikv and warning.
 ti_mysql_cop> select /*+ read_from_storage(tiflash[t]) */ min(col_2) from test.t
