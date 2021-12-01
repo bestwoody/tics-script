@@ -36,7 +36,7 @@ function cmd_ti_compaction()
 	local data_path=`grep '<path>' "${config}" | awk -F '>' '{print $2}' | awk -F '<' '{print $1}'`
 	local table_path="${dir}/db/data/${table}"
 	if [ ! -d "${table_path}" ]; then
-		echo "   error: table ${db_name}.${table} table data path missed"
+		echo "   error: table ${db_name}.${table} table data path missed, \"${table_path}\" should exist"
 		return 1
 	fi
 

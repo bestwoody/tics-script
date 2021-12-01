@@ -17,16 +17,13 @@ function cmd_ti_ci_cluster()
 	local mapped_db=$("${ti}" -k "${args}" "${file}" ch/mapped_database tpch_0_01)
 	local mapped_table=$("${ti}" -k "${args}" "${file}" ch/mapped_table tpch_0_01 lineitem 'false')
 
-	"${ti}" -k "${args}" "${file}" tpch/ch all tpch_0_01 : tpch/db : ch/compaction "${mapped_db}" "${mapped_table}"
+	"${ti}" -k "${args}" "${file}" tpch/ch all tpch_0_01 : tpch/db
 
 	"${ti}" -k "${args}" "${file}" verify/rows tpch_0_01 lineitem : tpch/rows
 	"${ti}" -k "${args}" "${file}" verify/regions tpch_0_01 lineitem false : verify/consistency tpch_0_01 lineitem
 	"${ti}" -k "${args}" "${file}" verify/regions tpch_0_01 lineitem true : verify/consistency tpch_0_01 lineitem
 
 	"${ti}" -k "${args}" "${file}" syncing/test : sleep 3 : syncing/show : ch/queries : ch/kill_queries
-
-	"${ti}" -k "${args}" "${file}" fstop : up : tpch/load_no_raft 0.01 lineitem tmt
-	"${ti}" -k "${args}" -i 0 "${file}" sleep 1 : verify/balance tpch_0_01_tmt_no_raft lineitem
 
 	"${ti}" -k "${args}" "${file}" fstop : up : tpch/load_no_raft 0.01 lineitem dt
 	"${ti}" -k "${args}" -i 0 "${file}" sleep 1 : verify/balance tpch_0_01_dt_no_raft lineitem
