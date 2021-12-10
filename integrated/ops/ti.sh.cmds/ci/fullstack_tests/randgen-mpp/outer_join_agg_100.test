@@ -822,4 +822,701 @@ ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb
 ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_int_not_null AS field1 , max( table2 . col_int_not_null_key ) AS field2 FROM M AS table1 LEFT JOIN C AS table2 ON table1 . col_datetime = table2 . col_date WHERE table2 . col_tinyint_not_null IS NULL GROUP BY field1 HAVING field2 <= 3 ORDER BY field1 DESC , field1 ;
 
 
+# FULL COMPACT MODE
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, a)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, a)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, aa)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, aa)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, b)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, b)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, bb)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, bb)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, c)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, c)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, cc)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, cc)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, d)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, d)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, dd)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, dd)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, e)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, e)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, f)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, f)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, g)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, g)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, h)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, h)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, i)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, i)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, j)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, j)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, k)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, k)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, l)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, l)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, m)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, m)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, n)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, n)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, o)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, o)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, p)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, p)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, q)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, q)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, r)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, r)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, s)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, s)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, t)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, t)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, u)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, u)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, v)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, v)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, w)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, w)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, x)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, x)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, y)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, y)
+
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t flush', oj_agg100, z)
+ti_ch> DBGInvoke query_mapped('manage table \$d.\$t merge delta', oj_agg100, z)
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT COUNT( DISTINCT table2 . col_date_not_null ) AS field1 , max( table1 . col_char_64_not_null ) AS field2 , table1 . col_decimal_40_key AS field3 , MIN( DISTINCT table1 . col_char_64_not_null ) AS field4 FROM O AS table1 LEFT JOIN Y AS table2 LEFT JOIN Q AS table3 ON table2 . col_char_64_not_null = table3 . col_varchar_64_key ON table1 . col_decimal_30_10_key = table3 . col_int_key WHERE table2 . col_decimal_40 <> table2 . col_int_not_null_key GROUP BY field3 ORDER BY field1, field2, field3, field4 ;
++--------+--------+--------+--------+
+| field1 | field2 | field3 | field4 |
++--------+--------+--------+--------+
+|     31 | v      |      1 | v      |
+|     38 | q      |      8 | q      |
+|     38 | v      |      0 | v      |
+|     42 | p      |      4 | p      |
+|     72 | b      |      5 | b      |
+|     92 | d      |      2 | d      |
++--------+--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MIN( DISTINCT table1 . col_decimal_not_null_key ) AS field1, MAX( DISTINCT table2 . pk ) AS field2 , min( table2 . col_date_not_null ) AS field3 FROM E AS table1 LEFT JOIN A AS table2 ON table1 . col_bigint_not_null = table2 . col_decimal_30_10_key WHERE table1 . col_tinyint IS NULL HAVING (field2 = 1 OR field2 <= 2) ORDER BY field2 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT COUNT( DISTINCT table2 . col_datetime ) AS field1 , table1 . col_bigint_not_null AS field2 , count( table1 . col_date ) AS field3 , min( table1 . col_char_64 ) AS field4 , count( table1 . col_datetime ) AS field5 FROM H AS table1 LEFT JOIN G AS table2 ON table1 . col_char_64 = table2 . col_varchar_10_key WHERE table2 . col_decimal_40 NOT BETWEEN 3 AND ( 3 + 1 ) GROUP BY field2 HAVING field2 <= 9 ORDER BY field1, field2, field3, field4, field5 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT count( table1 . col_decimal_not_null_key ) AS field1 , max( table4 . col_decimal_40_not_null_key ) AS field2 FROM I AS table1 LEFT JOIN N AS table2 RIGHT JOIN T AS table3 ON table2 . col_int = table3 . col_decimal_40_key ON table1 . col_date_key = table3 . col_date LEFT JOIN S AS table4 ON table2 . col_datetime_not_null = table4 . col_date_key LEFT JOIN A AS table5 ON table4 . col_int_key = table5 . col_tinyint LEFT JOIN M AS table6 ON table4 . col_datetime_not_null = table6 . col_date_not_null WHERE table1 . pk <> table3 . col_decimal_40 ORDER BY field2 DESC ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|    107 |   NULL |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_bigint AS field1 , count( table1 . col_decimal_not_null_key ) AS field2 FROM A AS table1 LEFT JOIN P AS table2 LEFT JOIN M AS table3 ON table2 . col_char_64_not_null = table3 . col_varchar_64 ON table1 . col_varchar_10_key = table3 . col_varchar_64_not_null WHERE ( table2 . col_decimal_30_10 BETWEEN 3 AND ( 3 + 7 ) OR table2 . pk IS NULL ) GROUP BY field1 HAVING (field2 = 3 AND field2 != 5) ORDER BY field1, field2 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MAX( DISTINCT table1 . col_char_64 ) AS field1 , MAX( DISTINCT table1 . col_decimal ) AS field2 FROM H AS table1 RIGHT OUTER JOIN CC AS table2 ON table1 . col_datetime_not_null = table2 . col_datetime_key WHERE table2 . col_int_not_null_key IS NULL HAVING field1 <> 2 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT max( table1 . col_char_64_not_null ) AS field1 , COUNT( DISTINCT table2 . col_decimal_40_not_null_key ) AS field2 FROM P AS table1 LEFT JOIN C AS table2 RIGHT JOIN G AS table3 ON table2 . col_decimal_30_10_key = table3 . col_decimal_40_key ON table1 . col_varchar_64_key = table3 . col_char_64 WHERE ( table3 . pk > 5 AND table1 . col_decimal_40_not_null_key IS NULL ) HAVING field2 <= 9 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+| NULL   |      0 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT max( table2 . col_datetime_key ) AS field1, SUM( DISTINCT table2 . col_decimal_key ) AS field2 , count( table1 . col_decimal ) AS field3 FROM E AS table1 LEFT JOIN F AS table2 LEFT JOIN X AS table3 ON table2 . col_varchar_64_not_null = table3 . col_char_64_not_null RIGHT JOIN L AS table4 ON table2 . col_datetime = table4 . col_date_not_null ON table1 . col_varchar_64_key = table3 . col_char_64_not_null WHERE table3 . col_decimal_30_10_not_null NOT BETWEEN 6 AND ( 6 + 6 ) ORDER BY field1 ;
++--------+--------+--------+
+| field1 | field2 | field3 |
++--------+--------+--------+
+| NULL   |   NULL |      0 |
++--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_int_not_null AS field1 , MIN( DISTINCT table2 . col_varchar_64_not_null ) AS field2 FROM H AS table1 LEFT JOIN L AS table2 LEFT JOIN J AS table3 RIGHT JOIN V AS table4 RIGHT JOIN H AS table5 ON table4 . col_double = table5 . col_int_not_null LEFT OUTER JOIN N AS table6 ON table4 . col_decimal_key = table6 . col_decimal_key ON table3 . col_decimal_key = table4 . col_int_not_null_key ON table2 . col_decimal_40 = table4 . pk ON table1 . col_decimal_key = table6 . col_decimal_40 WHERE table6 . pk = table4 . col_int_not_null GROUP BY field1 HAVING field2 <= 9 ORDER BY field1 DESC , field2 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT avg( table1 . col_tinyint ) AS field1 , count( table2 . col_varchar_64 ) AS field2 FROM AA AS table1 LEFT JOIN T AS table2 LEFT JOIN W AS table3 ON table2 . col_datetime_key = table3 . col_date_key ON table1 . col_int_key = table3 . col_decimal_40 WHERE table1 . pk <> table3 . col_int HAVING ((field2 != 8 AND field1 != 6) OR field2 >= 7) ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+| 4.0000 |    399 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT min( table2 . col_datetime_key ) AS field1 , count( table1 . col_date_not_null ) AS field2 FROM O AS table1 RIGHT JOIN G AS table2 ON table1 . col_varchar_64 = table2 . col_char_64_not_null WHERE ( table2 . pk > table1 . col_bigint_not_null AND table1 . col_decimal_key NOT IN (2) ) HAVING (field2 <> 5 AND field2 <> 6) ORDER BY field1, field2 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+| NULL   |      0 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_int_not_null AS field1 , table2 . col_bigint AS field2 , MAX( DISTINCT table1 . col_decimal_40 ) AS field3 FROM A AS table1 RIGHT JOIN BB AS table2 ON table1 . col_varchar_64_key = table2 . col_varchar_64 WHERE ( table2 . pk <> 4 AND table1 . col_tinyint_not_null IN (6) ) GROUP BY field1, field2 ORDER BY field1 ;
++--------+--------+--------+
+| field1 | field2 | field3 |
++--------+--------+--------+
+|      0 |      6 |      8 |
+|      0 |      5 |      3 |
+|      0 |   NULL |      7 |
+|      0 |      1 |      7 |
+|      0 |      2 |      8 |
+|      0 |      0 |      3 |
+|      0 |      4 |      3 |
+|      1 |      8 |      3 |
+|      1 |      6 |      3 |
+|      1 |   NULL |      2 |
+|      2 |   NULL |      3 |
+|      3 |   NULL |      3 |
+|      3 |      4 |      2 |
+|      4 |      6 |      3 |
+|      4 |      4 |      3 |
+|      4 |      2 |      3 |
+|      4 |      7 |      8 |
+|      5 |      5 |      8 |
+|      5 |      4 |      7 |
+|      5 |      9 |      3 |
+|      5 |      7 |      2 |
+|      6 |      9 |      8 |
+|      6 |      4 |      2 |
+|      6 |      1 |      3 |
+|      6 |   NULL |      7 |
+|      7 |   NULL |      3 |
+|      7 |      7 |      3 |
+|      7 |      3 |      3 |
+|      7 |      8 |      0 |
+|      8 |      2 |      3 |
+|      8 |      3 |      0 |
+|      8 |      9 |      3 |
+|      8 |      5 |      3 |
+|      9 |   NULL |      3 |
+|      9 |      8 |      3 |
+|      9 |      5 |      3 |
+|      9 |      4 |      0 |
+|      9 |      7 |      3 |
++--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . pk AS field1 , count( table2 . col_date_not_null ) AS field2 FROM T AS table1 LEFT JOIN F AS table2 ON table1 . col_date = table2 . col_date_key WHERE table2 . pk >= 6 GROUP BY field1 HAVING ((field1 < 9 OR field1 = 1) OR field1 <> 3) ORDER BY field2 , field2 DESC ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT min( table2 . col_date ) AS field1 , avg( DISTINCT table2 . col_decimal_40_key ) AS field2 , table1 . col_int_key AS field3 , table1 . col_int_not_null_key AS field4 , table1 . col_decimal_key AS field5 , table1 . col_decimal_40_not_null_key AS field6 , MIN( DISTINCT table1 . col_decimal_key ) AS field7 FROM W AS table1 LEFT JOIN C AS table2 ON table1 . col_varchar_64_not_null = table2 . col_char_64 WHERE table1 . col_tinyint_not_null IN (7, 4, 6, 3, 3, 2) GROUP BY field3, field4, field5, field6 ;
++------------+--------+--------+--------+--------+--------+--------+
+| field1     | field2 | field3 | field4 | field5 | field6 | field7 |
++------------+--------+--------+--------+--------+--------+--------+
+| NULL       |   NULL |      3 |      1 |      4 |      4 |      4 |
+| NULL       |   NULL |      2 |      1 |      7 |      5 |      7 |
+| NULL       |   NULL |      0 |      4 |      5 |      6 |      5 |
+| NULL       |   NULL |      7 |      5 |   NULL |      2 |   NULL |
+| 2004-02-17 | 4.0000 |      7 |      2 |      6 |      8 |      6 |
+| NULL       |   NULL |      2 |      0 |      5 |      4 |      5 |
+| NULL       |   NULL |      4 |      9 |      9 |      8 |      9 |
+| NULL       |   NULL |   NULL |      0 |      2 |      1 |      2 |
++------------+--------+--------+--------+--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_decimal_30_10_not_null AS field1 , table1 . pk AS field2 , table2 . col_decimal_40_not_null_key AS field3 , MAX( DISTINCT table1 . col_varchar_64 ) AS field4 , SUM( DISTINCT table2 . col_int_key ) AS field5 , count( table2 . col_varchar_64 ) AS field6 FROM A AS table1 RIGHT JOIN DD AS table2 ON table1 . col_double = table2 . pk WHERE ( table1 . pk = table1 . col_decimal_40_key OR table1 . col_float_not_null IS NOT NULL ) GROUP BY field1, field2, field3 HAVING (field6 <> 6 AND field6 <= 7) ;
++--------------+--------+--------+--------+--------+--------+
+| field1       | field2 | field3 | field4 | field5 | field6 |
++--------------+--------+--------+--------+--------+--------+
+| 6.0000000000 |      1 |      2 | v      |   NULL |      1 |
+| 0.0000000000 |      2 |      7 | u      |   NULL |      1 |
+| 0.0000000000 |      3 |      8 | h      |   NULL |      1 |
+| 5.0000000000 |      5 |      2 | NULL   |      1 |      1 |
+| 8.0000000000 |      6 |      8 | d      |   NULL |      1 |
+| 4.0000000000 |      7 |      0 | k      |      1 |      1 |
+| 3.0000000000 |      8 |      9 | r      |      7 |      1 |
+| 5.0000000000 |      9 |      2 | NULL   |      1 |      1 |
+| 4.0000000000 |     12 |      0 | g      |      1 |      1 |
+| 6.0000000000 |     14 |      2 | f      |   NULL |      1 |
+| 3.0000000000 |     15 |      7 | s      |      1 |      0 |
+| 5.0000000000 |     18 |      2 | i      |      1 |      1 |
+| 4.0000000000 |     19 |      0 | NULL   |      1 |      1 |
+| 4.0000000000 |     21 |      0 | a      |      1 |      1 |
+| 3.0000000000 |     22 |      2 | z      |      7 |      1 |
+| 6.0000000000 |     23 |      2 | n      |   NULL |      1 |
+| 0.0000000000 |     24 |      8 | y      |   NULL |      1 |
+| 3.0000000000 |     25 |      7 | b      |      1 |      0 |
+| 3.0000000000 |     26 |      9 | r      |      7 |      1 |
+| 5.0000000000 |     27 |      2 | q      |      1 |      1 |
+| 3.0000000000 |     29 |      9 | v      |      7 |      1 |
+| 6.0000000000 |     30 |      2 | t      |   NULL |      1 |
+| 4.0000000000 |     31 |      0 | c      |      1 |      1 |
+| 4.0000000000 |     32 |      0 | p      |      1 |      1 |
+| 0.0000000000 |     33 |      7 | NULL   |   NULL |      1 |
+| 6.0000000000 |     35 |      2 | j      |   NULL |      1 |
+| 5.0000000000 |     36 |      2 | n      |      1 |      1 |
+| 5.0000000000 |     37 |      2 | g      |      1 |      1 |
+| 4.0000000000 |     38 |      0 | r      |      1 |      1 |
+| 0.0000000000 |     39 |      8 | NULL   |   NULL |      1 |
+| 3.0000000000 |     40 |      9 | NULL   |      7 |      1 |
+| 3.0000000000 |     41 |      9 | NULL   |      7 |      1 |
+| 0.0000000000 |     42 |      8 | r      |   NULL |      1 |
+| 3.0000000000 |     44 |      7 | j      |      1 |      0 |
+| 0.0000000000 |     45 |      8 | w      |   NULL |      1 |
+| 3.0000000000 |     46 |      2 | f      |      7 |      1 |
+| 5.0000000000 |     48 |      2 | c      |      1 |      1 |
+| 3.0000000000 |     49 |      9 | o      |      7 |      1 |
+| 3.0000000000 |     51 |      2 | g      |      7 |      1 |
+| 8.0000000000 |     52 |      8 | g      |   NULL |      1 |
+| 4.0000000000 |     53 |      0 | s      |      1 |      1 |
+| 5.0000000000 |     54 |      2 | p      |      1 |      1 |
+| 4.0000000000 |     55 |      0 | h      |      1 |      1 |
+| 0.0000000000 |     56 |      7 | c      |   NULL |      1 |
+| 3.0000000000 |     57 |      9 | b      |      7 |      1 |
+| 0.0000000000 |     58 |      8 | w      |   NULL |      1 |
+| 8.0000000000 |     59 |      8 | NULL   |   NULL |      1 |
+| 3.0000000000 |     60 |      7 | a      |      1 |      0 |
+| 3.0000000000 |     61 |      7 | NULL   |      1 |      0 |
+| 3.0000000000 |     63 |      2 | NULL   |      7 |      1 |
+| 0.0000000000 |     64 |      7 | b      |   NULL |      1 |
+| 6.0000000000 |     67 |      2 | NULL   |   NULL |      1 |
+| 3.0000000000 |     68 |      2 | b      |      7 |      1 |
+| 3.0000000000 |     69 |      9 | q      |      7 |      1 |
+| 3.0000000000 |     72 |      7 | m      |      1 |      0 |
+| 3.0000000000 |     73 |      9 | q      |      7 |      1 |
+| 3.0000000000 |     75 |      2 | b      |      7 |      1 |
+| 3.0000000000 |     76 |      7 | x      |      1 |      0 |
+| 5.0000000000 |     77 |      2 | t      |      1 |      1 |
+| 3.0000000000 |     78 |      9 | m      |      7 |      1 |
+| 8.0000000000 |     79 |      8 | i      |   NULL |      1 |
+| 4.0000000000 |     81 |      0 | m      |      1 |      1 |
+| 3.0000000000 |     82 |      7 | NULL   |      1 |      0 |
+| 5.0000000000 |     83 |      2 | w      |      1 |      1 |
+| 6.0000000000 |     86 |      2 | NULL   |   NULL |      1 |
+| 0.0000000000 |     87 |      7 | k      |   NULL |      1 |
+| 3.0000000000 |     88 |      2 | o      |      7 |      1 |
+| 0.0000000000 |     89 |      8 | c      |   NULL |      1 |
+| 5.0000000000 |     91 |      2 | p      |      1 |      1 |
+| 3.0000000000 |     93 |      9 | s      |      7 |      1 |
+| 5.0000000000 |     94 |      2 | o      |      1 |      1 |
+| 6.0000000000 |     95 |      2 | w      |   NULL |      1 |
+| 0.0000000000 |     96 |      8 | l      |   NULL |      1 |
+| 3.0000000000 |     98 |      9 | q      |      7 |      1 |
+| 3.0000000000 |     99 |      7 | f      |      1 |      0 |
+| 3.0000000000 |    100 |      7 | r      |      1 |      0 |
++--------------+--------+--------+--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_decimal_30_10 AS field1 , table2 . pk AS field2 , SUM( DISTINCT table2 . pk ) AS field3 , MAX( DISTINCT table2 . col_varchar_64_not_null ) AS field4 FROM E AS table1 LEFT JOIN L AS table2 RIGHT JOIN Z AS table3 ON table2 . col_varchar_64_not_null = table3 . col_varchar_64_key RIGHT JOIN E AS table4 ON table3 . col_varchar_64 = table4 . col_varchar_10_key ON table1 . col_date_key = table2 . col_datetime_key WHERE table2 . col_int_not_null = table1 . col_decimal_40_not_null_key GROUP BY field1, field2 ORDER BY field4 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_int_not_null AS field1 , MIN( DISTINCT table2 . col_date_key ) AS field2 FROM R AS table1 LEFT JOIN N AS table2 ON table1 . col_date = table2 . col_datetime_not_null WHERE table2 . col_decimal_40 IN (2) GROUP BY field1 ORDER BY field1 , field1 ASC ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_tinyint AS field1 , count( table2 . col_decimal_30_10_not_null ) AS field2 , avg( DISTINCT table1 . col_decimal_not_null_key ) AS field3 FROM DD AS table1 LEFT JOIN Z AS table2 ON table1 . col_varchar_64_not_null = table2 . col_char_64 RIGHT JOIN Z AS table3 ON table2 . col_int_key = table3 . col_int_key LEFT OUTER JOIN D AS table4 ON table2 . col_date_not_null = table4 . col_datetime_key WHERE table3 . col_float_not_null IS NULL GROUP BY field1 HAVING field1 <= 5 ORDER BY field1, field2, field3 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT count( table2 . col_int_not_null ) AS field1 , MAX( DISTINCT table2 . col_datetime_not_null ) AS field2 FROM I AS table1 RIGHT JOIN A AS table2 ON table1 . col_int_not_null = table2 . col_bigint_not_null WHERE table1 . pk IS NULL HAVING field2 != 9 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT COUNT( DISTINCT table2 . col_tinyint_not_null ) AS field1 , min( table2 . col_datetime ) AS field2 FROM W AS table1 LEFT JOIN N AS table2 ON table1 . col_float_not_null = table2 . col_float_not_null WHERE ( table1 . col_float_not_null IS NULL AND table2 . col_decimal_30_10_not_null > table2 . col_decimal_40 ) HAVING (field2 >= 3 OR field2 <= 6) ORDER BY field1, field2 DESC ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_decimal_key AS field1 , count( table1 . col_datetime_key ) AS field2 FROM I AS table1 LEFT JOIN W AS table2 ON table1 . col_decimal_30_10_key = table2 . pk LEFT JOIN U AS table3 ON table2 . col_char_64 = table3 . col_varchar_64_key WHERE ( table3 . col_float IS NULL AND table3 . col_decimal_30_10_not_null IN (1, 7) ) GROUP BY field1 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT COUNT( DISTINCT table1 . col_varchar_64 ) AS field1 , COUNT( DISTINCT table1 . col_char_64_not_null ) AS field2 FROM F AS table1 LEFT OUTER JOIN C AS table2 LEFT JOIN P AS table3 ON table2 . col_varchar_10_key = table3 . col_varchar_64 ON table1 . col_date = table3 . col_date_key LEFT JOIN N AS table4 ON table3 . col_varchar_64_key = table4 . col_varchar_64 WHERE table1 . pk <= table4 . col_decimal ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|      0 |      0 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT STRAIGHT_JOIN MIN( DISTINCT table2 . col_char_64 ) AS field1 , COUNT( DISTINCT table1 . col_varchar_64 ) AS field2 FROM V AS table1 RIGHT OUTER JOIN R AS table2 ON table1 . col_decimal_30_10_key = table2 . col_tinyint WHERE ( ( ( table2 . col_decimal_40_not_null_key IS NULL OR table2 . col_tinyint_not_null IN (3, 8, 9) ) AND table2 . col_decimal_30_10 <= 2 ) AND table2 . pk >= table1 . col_decimal_40 ) ORDER BY field1, field2 ASC ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+| g      |      4 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_decimal_30_10_not_null AS field1 , min( table2 . col_varchar_64_not_null ) AS field2 , table1 . pk AS field3 , max( table1 . col_int_not_null_key ) AS field4 , MAX( DISTINCT table2 . col_datetime_key ) AS field5 , COUNT( DISTINCT table1 . col_date_key ) AS field6 FROM E AS table1 RIGHT JOIN Z AS table2 ON table1 . col_float_not_null = table2 . col_float_not_null WHERE table1 . col_tinyint IS NULL GROUP BY field1, field3 HAVING field6 <= 8 ;
++--------------+--------+--------+--------+---------------------+--------+
+| field1       | field2 | field3 | field4 | field5              | field6 |
++--------------+--------+--------+--------+---------------------+--------+
+|         NULL | a      |   NULL |   NULL | 2020-00-22 00:00:00 |      0 |
+| 9.0000000000 | a      |      2 |      3 | 2009-10-04 06:49:25 |      1 |
++--------------+--------+--------+--------+---------------------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MAX( DISTINCT table2 . col_varchar_64_not_null ) AS field1, count( table2 . col_date_not_null ) AS field2, min( table2 . col_decimal_30_10_not_null ) AS field3, COUNT( DISTINCT table2 . col_date_key ) AS field4 , MAX( DISTINCT table2 . col_decimal ) AS field5 FROM T AS table1 LEFT JOIN D AS table2 LEFT JOIN I AS table3 ON table2 . col_date_key = table3 . col_datetime_key ON table1 . col_datetime_key = table2 . col_datetime_not_null WHERE table1 . pk >= table3 . col_int HAVING field3 < 6 ORDER BY field1, field2, field3, field4, field5 ASC ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_decimal_key AS field1 , SUM( DISTINCT table1 . col_decimal_40_key ) AS field2 FROM V AS table1 LEFT JOIN N AS table2 LEFT JOIN V AS table3 ON table2 . col_int_not_null = table3 . pk ON table1 . col_double = table3 . col_decimal_40 WHERE table1 . pk <= 8 GROUP BY field1 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|   NULL |     27 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT max( table2 . col_decimal_30_10_not_null ) AS field1 , COUNT( DISTINCT table2 . col_varchar_64 ) AS field2 FROM U AS table1 RIGHT JOIN H AS table2 LEFT JOIN Z AS table3 ON table2 . col_date = table3 . col_datetime_not_null ON table1 . col_decimal_key = table2 . col_bigint_not_null WHERE ( ( table3 . col_decimal_40_key IN (1) AND table1 . col_int_key > 9 ) AND table2 . col_decimal_40_not_null_key IN (5, 3, 8, 9) ) HAVING ((field2 > 4 AND field1 < 3) AND field2 = 1) ORDER BY field2 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT SUM( DISTINCT table1 . col_int_not_null ) AS field1 , avg( DISTINCT table2 . col_bigint ) AS field2 FROM V AS table1 LEFT JOIN M AS table2 ON table1 . col_varchar_64_key = table2 . col_char_64_not_null WHERE table2 . col_decimal NOT IN (6, 2, 1) ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|   NULL |   NULL |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT STRAIGHT_JOIN count( table2 . col_varchar_64 ) AS field1 , count( table1 . col_int ) AS field2 FROM L AS table1 LEFT JOIN L AS table2 ON table1 . col_char_64_not_null = table2 . col_varchar_10_key WHERE table1 . pk > 8 HAVING (field1 <> 7 OR field2 = 8) ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|     68 |     89 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_int AS field1 , MAX( DISTINCT table1 . col_varchar_64 ) AS field2 FROM S AS table1 RIGHT JOIN S AS table2 ON table1 . col_date_not_null = table2 . col_datetime_not_null WHERE table2 . col_int BETWEEN 5 AND ( 5 + 9 ) GROUP BY field1 ORDER BY field1 , field1 ASC , field1 DESC ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|      5 | NULL   |
+|      6 | t      |
+|      7 | t      |
+|      8 | t      |
+|      9 | NULL   |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT min( table2 . col_varchar_64 ) AS field1, sum( table2 . col_decimal_40_key ) AS field2 , min( table2 . col_datetime_not_null ) AS field3 FROM D AS table1 LEFT JOIN W AS table2 ON table1 . col_double = table2 . col_double_not_null WHERE ( table2 . pk != 1 OR table2 . col_int_not_null_key = table2 . col_decimal_30_10_not_null ) HAVING field1 >= 7 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MIN( DISTINCT table2 . col_decimal_key ) AS field1, min( table1 . col_decimal_30_10 ) AS field2 , MIN( DISTINCT table1 . col_date ) AS field3 FROM V AS table1 LEFT JOIN G AS table2 ON table1 . col_varchar_64 = table2 . col_varchar_64_key WHERE table2 . col_bigint_not_null IS NULL ORDER BY field1, field2, field3 DESC ;
++--------+--------------+------------+
+| field1 | field2       | field3     |
++--------+--------------+------------+
+|   NULL | 0.0000000000 | 0000-00-00 |
++--------+--------------+------------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_decimal_30_10_not_null AS field1 , COUNT( DISTINCT table1 . col_decimal_40_not_null_key ) AS field2 FROM U AS table1 LEFT JOIN Y AS table2 ON table1 . col_varchar_64 = table2 . col_char_64_not_null WHERE table1 . pk <> table1 . col_decimal_30_10_not_null GROUP BY field1 HAVING field1 > 8 ;
++--------------+--------+
+| field1       | field2 |
++--------------+--------+
+| 9.0000000000 |      2 |
++--------------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT min( table1 . col_tinyint ) AS field1 , table1 . col_decimal_40_not_null_key AS field2 , MIN( DISTINCT table1 . col_varchar_64_not_null ) AS field3 FROM M AS table1 LEFT JOIN B AS table2 LEFT OUTER JOIN P AS table3 ON table2 . col_float = table3 . col_float ON table1 . col_char_64 = table2 . col_varchar_64_not_null LEFT JOIN Y AS table4 ON table2 . col_decimal_key = table4 . col_bigint_not_null WHERE ( ( ( table1 . col_int_not_null_key NOT BETWEEN 4 AND ( 4 + 62 ) AND table2 . col_double IS NULL ) AND table4 . col_decimal_30_10 >= table3 . col_decimal_30_10_not_null ) OR table1 . col_decimal_key IS NULL ) GROUP BY field2 HAVING field2 <= 9 ORDER BY field2 DESC ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT COUNT( DISTINCT table1 . col_date_key ) AS field1, MAX( DISTINCT table1 . col_varchar_64_not_null ) AS field2 , count( table1 . col_decimal_30_10_not_null ) AS field3 FROM D AS table1 LEFT JOIN M AS table2 ON table1 . col_char_64_not_null = table2 . col_char_64 WHERE table2 . col_decimal_not_null_key IS NOT NULL HAVING field1 = 8 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT STRAIGHT_JOIN table2 . col_decimal_key AS field1 , min( table1 . col_date_not_null ) AS field2 , max( table2 . col_int ) AS field3 FROM H AS table1 LEFT JOIN BB AS table2 ON table1 . col_float = table2 . col_float_not_null WHERE table2 . col_int_not_null_key IS NOT NULL GROUP BY field1 HAVING field2 > 7 ORDER BY field1, field2, field3 LIMIT 10 OFFSET 5 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_int_not_null AS field1 , table2 . col_decimal_40_key AS field2 , SUM( DISTINCT table1 . col_decimal_key ) AS field3 FROM A AS table1 LEFT OUTER JOIN CC AS table2 RIGHT JOIN N AS table3 ON table2 . col_int_key = table3 . col_decimal_40_key ON table1 . col_int_key = table2 . col_int_key WHERE table3 . col_tinyint_not_null IN (9, 1) GROUP BY field1, field2 HAVING (field1 < 9 AND field1 != 1) ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT min( table1 . col_datetime_not_null ) AS field1, COUNT( DISTINCT table1 . col_datetime ) AS field2, MAX( DISTINCT table1 . col_varchar_64_not_null ) AS field3, sum( table2 . col_tinyint_not_null ) AS field4 , SUM( DISTINCT table1 . col_tinyint_not_null ) AS field5 FROM T AS table1 LEFT JOIN P AS table2 ON table1 . col_decimal_40 = table2 . col_int_key WHERE ( table2 . col_float IS NULL OR table1 . col_double IS NULL ) HAVING (field2 <= 3 AND field1 <> 4) ORDER BY field1, field2, field3, field4, field5 DESC ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT max( table1 . col_decimal_40_key ) AS field1 , avg( DISTINCT table2 . col_bigint ) AS field2 FROM CC AS table1 LEFT JOIN K AS table2 ON table1 . col_char_64_not_null = table2 . col_char_64_not_null WHERE table2 . col_decimal_key = table2 . col_bigint ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|      8 | 5.0000 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MAX( DISTINCT table2 . col_datetime ) AS field1 , table2 . col_bigint_not_null AS field2 , MIN( DISTINCT table2 . col_int ) AS field3 FROM S AS table1 LEFT OUTER JOIN L AS table2 ON table1 . col_float_not_null = table2 . col_int RIGHT OUTER JOIN E AS table3 ON table1 . col_double_not_null = table3 . col_double_not_null LEFT JOIN T AS table4 RIGHT JOIN F AS table5 ON table4 . col_datetime = table5 . col_datetime_key ON table1 . col_char_64 = table5 . col_char_64_not_null WHERE ( table2 . col_decimal_40_key IS NULL AND table3 . pk != 6 ) GROUP BY field2 HAVING field3 > 3 ;
++---------------------+--------+--------+
+| field1              | field2 | field3 |
++---------------------+--------+--------+
+| 2002-11-16 00:00:00 |      9 |      9 |
++---------------------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT STRAIGHT_JOIN table2 . col_tinyint_not_null AS field1 , COUNT( DISTINCT table1 . col_decimal_40_key ) AS field2 FROM D AS table1 LEFT JOIN F AS table2 ON table1 . col_int = table2 . col_decimal LEFT JOIN X AS table3 ON table1 . col_varchar_10_key = table3 . col_char_64 WHERE ( table3 . col_decimal_30_10 IS NULL OR table1 . col_bigint <> 2 ) GROUP BY field1 ORDER BY field1 , field2 , field1 DESC ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|   NULL |      1 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_bigint AS field1 , table2 . col_decimal_30_10 AS field2 , avg( table1 . col_decimal_40 ) AS field3 , table1 . col_decimal_40 AS field4 , MAX( DISTINCT table1 . col_decimal_not_null_key ) AS field5 FROM P AS table1 LEFT JOIN P AS table2 ON table1 . col_datetime_key = table2 . col_date WHERE ( ( ( ( table2 . col_decimal_40 IS NULL AND table1 . col_float IS NOT NULL ) AND table1 . pk IN (1) ) OR table1 . pk >= table2 . col_decimal_40 ) OR table1 . col_decimal_not_null_key < 6 ) GROUP BY field1, field2, field4 HAVING field1 < 8 ORDER BY field1, field2, field3, field4, field5 ;
++--------+--------------+--------+--------+--------+
+| field1 | field2       | field3 | field4 | field5 |
++--------+--------------+--------+--------+--------+
+|      1 |         NULL | 5.0000 |      5 |      4 |
+|      3 |         NULL | 7.0000 |      7 |      1 |
+|      6 |         NULL |   NULL |   NULL |      0 |
+|      6 |         NULL | 9.0000 |      9 |      1 |
+|      6 | 1.0000000000 |   NULL |   NULL |      3 |
+|      6 | 3.0000000000 |   NULL |   NULL |      3 |
+|      6 | 7.0000000000 |   NULL |   NULL |      3 |
+|      7 |         NULL |   NULL |   NULL |      2 |
+|      7 |         NULL | 0.0000 |      0 |      2 |
++--------+--------------+--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MAX( DISTINCT table1 . col_datetime ) AS field1 , MAX( DISTINCT table2 . col_date_not_null ) AS field2 FROM O AS table1 RIGHT JOIN F AS table2 LEFT JOIN CC AS table3 ON table2 . pk = table3 . col_int_not_null_key LEFT JOIN U AS table4 ON table2 . col_date_not_null = table4 . col_datetime_key ON table1 . col_datetime_key = table3 . col_date_key WHERE table4 . col_double IS NOT NULL HAVING (field2 <= 8 OR field1 >= 5) ORDER BY field1, field2 LIMIT 1 OFFSET 2 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . pk AS field1 , SUM( DISTINCT table1 . col_int_not_null ) AS field2 FROM O AS table1 RIGHT JOIN H AS table2 ON table1 . col_date_not_null = table2 . col_datetime RIGHT JOIN V AS table3 ON table1 . col_date_not_null = table3 . col_date_not_null WHERE table1 . col_tinyint_not_null BETWEEN 0 AND ( 0 + 4 ) GROUP BY field1 HAVING (field2 != 160 AND field2 <= 8) ORDER BY field2 DESC , field1 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|      1 |      3 |
+|      2 |      3 |
+|      5 |      3 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MAX( DISTINCT table1 . col_bigint_not_null ) AS field1 , count( table1 . col_date_not_null ) AS field2 FROM C AS table1 LEFT OUTER JOIN Q AS table2 ON table1 . col_double = table2 . col_double WHERE table1 . pk = 3 HAVING field1 != 8 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_tinyint AS field1 , min( table2 . col_date ) AS field2 FROM X AS table1 LEFT JOIN R AS table2 ON table1 . col_date_not_null = table2 . col_date_key WHERE table1 . pk >= table2 . col_decimal_key GROUP BY field1 ORDER BY field1, field2 ASC ;
++--------+------------+
+| field1 | field2     |
++--------+------------+
+|   NULL | 0000-00-00 |
+|      0 | 0000-00-00 |
+|      2 | 0000-00-00 |
+|      3 | 0000-00-00 |
+|      4 | 0000-00-00 |
+|      5 | 0000-00-00 |
+|      6 | 0000-00-00 |
+|      9 | 0000-00-00 |
++--------+------------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT count( table1 . col_varchar_64 ) AS field1 , max( table2 . col_date ) AS field2 FROM BB AS table1 LEFT JOIN W AS table2 ON table1 . col_varchar_64_not_null = table2 . col_varchar_10_key LEFT JOIN Z AS table3 ON table2 . col_date_not_null = table3 . col_datetime_not_null LEFT JOIN B AS table4 ON table2 . col_double_not_null = table4 . col_decimal_30_10_not_null WHERE table1 . col_decimal_40 IS NULL ORDER BY field2 , field1 ;
++--------+------------+
+| field1 | field2     |
++--------+------------+
+|  29135 | 2009-10-25 |
++--------+------------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT avg( table2 . pk ) AS field1 , MAX( DISTINCT table1 . col_int_not_null_key ) AS field2 FROM I AS table1 RIGHT JOIN G AS table2 ON table1 . col_date_key = table2 . col_datetime_not_null WHERE table2 . col_bigint_not_null < table2 . col_decimal_40_not_null_key ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+| 2.0000 |      9 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MIN( DISTINCT table2 . col_decimal_40_not_null_key ) AS field1 , MAX( DISTINCT table1 . col_varchar_64_not_null ) AS field2 FROM V AS table1 RIGHT JOIN L AS table2 ON table1 . col_varchar_10_key = table2 . col_char_64_not_null LEFT JOIN C AS table3 ON table1 . col_date_key = table3 . col_date_key WHERE table3 . col_float IS NULL ORDER BY field2 ASC , field2 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|      0 | z      |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_decimal_key AS field1 , table3 . col_decimal_40_key AS field2 , min( table1 . col_decimal_key ) AS field3 , MIN( DISTINCT table2 . col_bigint ) AS field4 , SUM( DISTINCT table2 . col_int_not_null_key ) AS field5 , min( table1 . col_datetime_not_null ) AS field6 , table2 . col_decimal_key AS field7 , COUNT( DISTINCT table1 . col_decimal_key ) AS field8 FROM B AS table1 LEFT JOIN DD AS table2 ON table1 . col_decimal_40_not_null_key = table2 . col_decimal_30_10_not_null LEFT JOIN D AS table3 ON table1 . col_float_not_null = table3 . col_float WHERE ( table2 . col_bigint IN (4, 1, 4, 2, 6, 7, 6) AND table2 . col_decimal BETWEEN 9 AND ( 9 + 5 ) ) GROUP BY field1, field2, field7 ;
++--------+--------+--------+--------+--------+---------------------+--------+--------+
+| field1 | field2 | field3 | field4 | field5 | field6              | field7 | field8 |
++--------+--------+--------+--------+--------+---------------------+--------+--------+
+|   NULL |   NULL |      1 |      1 |      8 | 0000-00-00 00:00:00 |   NULL |      6 |
+|   NULL |      7 |   NULL |      1 |      8 | 0000-00-00 00:00:00 |   NULL |      0 |
++--------+--------+--------+--------+--------+---------------------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_decimal_30_10 AS field1 , max( table1 . col_char_64 ) AS field2 FROM G AS table1 LEFT JOIN W AS table2 ON table1 . col_char_64 = table2 . col_varchar_10_key RIGHT JOIN M AS table3 ON table2 . col_int_not_null = table3 . col_float_not_null WHERE table1 . pk IS NULL GROUP BY field1 ORDER BY field1, field2 LIMIT 1 OFFSET 4 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MAX( DISTINCT table1 . col_datetime ) AS field1 , count( table2 . col_date_key ) AS field2 FROM Y AS table1 RIGHT JOIN P AS table2 ON table1 . col_char_64_not_null = table2 . col_varchar_10_key WHERE table1 . col_int_key = 3 HAVING field1 != 3 ;
++---------------------+--------+
+| field1              | field2 |
++---------------------+--------+
+| 2008-03-31 00:00:00 |      9 |
++---------------------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_bigint AS field1 , table1 . col_int_not_null_key AS field2 , table2 . col_decimal_40 AS field3 , max( table2 . col_int_not_null ) AS field4 FROM C AS table1 RIGHT JOIN AA AS table2 ON table1 . col_varchar_64 = table2 . col_varchar_64_key WHERE ( table2 . col_decimal_40 IN (3) AND table1 . col_decimal_40 <= 3 ) GROUP BY field1, field2, field3 ORDER BY field4 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_decimal_40 AS field1 , count( table1 . col_decimal_40 ) AS field2 FROM B AS table1 LEFT JOIN X AS table2 ON table1 . col_datetime = table2 . col_date_key WHERE ( table2 . col_int_key IN (3, 2, 2, 6) AND table1 . col_decimal_40_key IS NOT NULL ) GROUP BY field1 HAVING field2 = 2 ORDER BY field1, field2 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|      1 |      2 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT SUM( DISTINCT table2 . pk ) AS field1 , MIN( DISTINCT table2 . col_decimal_30_10_not_null ) AS field2 FROM P AS table1 LEFT JOIN K AS table2 ON table1 . col_float_not_null = table2 . col_float_not_null WHERE table2 . col_decimal_30_10_not_null BETWEEN 1 AND ( 1 + 5 ) ;
++--------+--------------+
+| field1 | field2       |
++--------+--------------+
+|    920 | 1.0000000000 |
++--------+--------------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_int AS field1 , table2 . col_int_key AS field2 , min( table4 . col_decimal_key ) AS field3 FROM A AS table1 RIGHT JOIN G AS table2 ON table1 . col_decimal_30_10 = table2 . col_decimal_40_key LEFT JOIN A AS table3 RIGHT JOIN G AS table4 ON table3 . col_tinyint_not_null = table4 . col_double LEFT JOIN J AS table5 ON table3 . col_date_key = table5 . col_date ON table1 . col_date_key = table5 . col_date_key LEFT JOIN AA AS table6 ON table3 . col_datetime = table6 . col_date_not_null RIGHT JOIN S AS table7 ON table6 . col_datetime_not_null = table7 . col_date_key LEFT JOIN AA AS table8 ON table3 . col_datetime_not_null = table8 . col_date_key WHERE table2 . pk IS NULL GROUP BY field1, field2 ORDER BY field1, field2, field3 ;
++--------+--------+--------+
+| field1 | field2 | field3 |
++--------+--------+--------+
+|   NULL |   NULL |   NULL |
++--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_decimal_key AS field1 , min( table1 . col_char_64 ) AS field2 FROM O AS table1 LEFT JOIN R AS table2 ON table1 . col_date = table2 . col_date_not_null WHERE ( table1 . col_int BETWEEN 1 AND ( 1 + 3 ) OR table2 . col_decimal_40_key IN (1) ) GROUP BY field1 ORDER BY field1, field2 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|   NULL | j      |
+|      4 | NULL   |
+|      5 | NULL   |
+|      8 | r      |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MIN( DISTINCT table1 . col_bigint ) AS field1 , count( table1 . col_bigint_not_null ) AS field2 FROM S AS table1 LEFT JOIN L AS table2 ON table1 . col_varchar_10_key = table2 . col_char_64 WHERE table2 . col_decimal_30_10_not_null IS NULL HAVING field1 = 6 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_int AS field1 , table1 . col_decimal_key AS field2 , max( table1 . col_tinyint ) AS field3 FROM J AS table1 LEFT OUTER JOIN AA AS table2 ON table1 . col_float = table2 . col_float WHERE table2 . col_bigint_not_null IS NOT NULL GROUP BY field1, field2 ;
++--------+--------+--------+
+| field1 | field2 | field3 |
++--------+--------+--------+
+|   NULL |      4 |      0 |
+|      0 |   NULL |      7 |
+|      0 |      8 |      5 |
+|   NULL |      3 |      9 |
+|      2 |      2 |      5 |
+|      9 |      1 |      8 |
+|      9 |      9 |      8 |
+|      0 |      5 |      6 |
+|      7 |   NULL |      3 |
+|      8 |      4 |      7 |
+|   NULL |      5 |      3 |
+|      4 |      1 |      6 |
+|      1 |   NULL |   NULL |
+|   NULL |      2 |      0 |
+|      3 |      1 |      7 |
+|      4 |      4 |      7 |
+|      6 |      8 |      5 |
+|      9 |      0 |   NULL |
+|      9 |   NULL |   NULL |
+|      0 |      7 |      9 |
+|      0 |      4 |      9 |
+|      2 |   NULL |      9 |
+|      9 |      3 |      1 |
+|   NULL |      1 |   NULL |
+|      0 |      2 |      2 |
+|      5 |      8 |      1 |
+|      0 |      9 |      5 |
+|   NULL |      7 |      2 |
+|      8 |      8 |      1 |
+|      1 |      7 |      3 |
+|      3 |   NULL |      6 |
+|      1 |      4 |      8 |
+|      4 |      5 |      1 |
+|      3 |      0 |      2 |
+|      3 |      6 |      1 |
+|   NULL |      0 |      3 |
+|      4 |      8 |      5 |
+|      1 |      1 |      9 |
+|      1 |      9 |      4 |
++--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT max( table1 . col_datetime_key ) AS field1 , avg( table1 . col_decimal_key ) AS field2 FROM Y AS table1 LEFT JOIN DD AS table2 LEFT JOIN U AS table3 ON table2 . col_decimal = table3 . pk LEFT JOIN Y AS table4 ON table3 . col_char_64_not_null = table4 . col_varchar_64_key ON table1 . col_date_not_null = table4 . col_datetime_not_null WHERE table1 . col_decimal_40_key IS NULL ORDER BY field1, field2 LIMIT 100 ;
++---------------------+--------+
+| field1              | field2 |
++---------------------+--------+
+| 2009-06-20 11:32:11 | 5.3837 |
++---------------------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT count( table1 . col_int_not_null ) AS field1 , count( table1 . col_varchar_64_not_null ) AS field2 , MIN( DISTINCT table1 . col_varchar_64_not_null ) AS field3 , MIN( DISTINCT table2 . col_int_not_null ) AS field4 FROM M AS table1 RIGHT JOIN T AS table2 ON table1 . col_varchar_64_not_null = table2 . col_varchar_64_not_null WHERE table2 . col_int IS NULL ;
++--------+--------+--------+--------+
+| field1 | field2 | field3 | field4 |
++--------+--------+--------+--------+
+|      0 |      0 | NULL   |      0 |
++--------+--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_decimal_30_10_not_null AS field1 , count( table2 . pk ) AS field2 FROM O AS table1 LEFT JOIN M AS table2 LEFT JOIN AA AS table3 ON table2 . col_double = table3 . col_tinyint ON table1 . col_int_key = table2 . pk LEFT JOIN G AS table4 LEFT OUTER JOIN I AS table5 ON table4 . col_varchar_10_key = table5 . col_varchar_64_not_null ON table2 . col_decimal_key = table5 . col_float LEFT JOIN O AS table6 ON table1 . col_datetime_not_null = table6 . col_date_not_null WHERE ( table1 . col_decimal_not_null_key IS NULL AND table5 . col_float IS NOT NULL ) GROUP BY field1 HAVING field1 <> 2 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT max( table2 . col_datetime ) AS field1, max( table1 . col_datetime ) AS field2, MIN( DISTINCT table1 . col_date_not_null ) AS field3, MIN( DISTINCT table2 . col_decimal_40_not_null_key ) AS field4 , avg( table1 . col_decimal_not_null_key ) AS field5 FROM E AS table1 LEFT JOIN C AS table2 LEFT OUTER JOIN M AS table3 LEFT JOIN CC AS table4 ON table3 . col_double_not_null = table4 . col_double_not_null ON table2 . col_date_key = table4 . col_date_key ON table1 . col_decimal_40_key = table4 . col_decimal_30_10_key WHERE table1 . pk > table3 . col_decimal_not_null_key ORDER BY field2 ;
++--------+--------+--------+--------+--------+
+| field1 | field2 | field3 | field4 | field5 |
++--------+--------+--------+--------+--------+
+| NULL   | NULL   | NULL   |   NULL |   NULL |
++--------+--------+--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT STRAIGHT_JOIN table1 . col_int AS field1 , SUM( DISTINCT table1 . col_int_key ) AS field2 FROM BB AS table1 RIGHT JOIN I AS table2 LEFT JOIN M AS table3 ON table2 . col_float_not_null = table3 . col_float_not_null ON table1 . col_int_key = table3 . col_decimal WHERE table2 . col_bigint_not_null BETWEEN 3 AND ( 3 + 8 ) GROUP BY field1 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|   NULL |   NULL |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT max( table2 . col_varchar_64_not_null ) AS field1 , MAX( DISTINCT table1 . col_int ) AS field2 FROM D AS table1 LEFT JOIN S AS table2 RIGHT JOIN S AS table3 ON table2 . col_varchar_64_key = table3 . col_varchar_64_not_null ON table1 . col_int_not_null_key = table2 . col_decimal_not_null_key WHERE table1 . col_decimal_40_key IS NULL HAVING (field2 < 7 AND field2 > 4) ORDER BY field2 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_bigint_not_null AS field1 , table2 . col_decimal AS field2 , MAX( DISTINCT table2 . col_decimal ) AS field3 FROM R AS table1 LEFT JOIN W AS table2 ON table1 . col_varchar_10_key = table2 . col_char_64 LEFT JOIN X AS table3 ON table1 . col_double_not_null = table3 . col_double LEFT JOIN R AS table4 ON table3 . col_varchar_10_key = table4 . col_varchar_64 WHERE table2 . col_bigint_not_null > table4 . col_decimal_not_null_key GROUP BY field1, field2 HAVING field3 <> 1 ORDER BY field1, field2, field3 DESC LIMIT 1 OFFSET 7 ;
++--------+--------+--------+
+| field1 | field2 | field3 |
++--------+--------+--------+
+|      8 |      6 |      6 |
++--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_int_not_null AS field1 , COUNT( DISTINCT table2 . col_datetime_key ) AS field2 FROM DD AS table1 LEFT JOIN F AS table2 ON table1 . col_decimal = table2 . col_decimal WHERE ( table2 . col_int_not_null IS NULL OR table1 . col_decimal_key IN (5) ) GROUP BY field1 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|      0 |      0 |
+|      4 |      0 |
+|      3 |      0 |
+|      2 |      0 |
+|      5 |      0 |
+|      1 |      0 |
+|      6 |      0 |
+|      7 |      0 |
+|      9 |      0 |
+|      8 |      0 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT STRAIGHT_JOIN max( table1 . col_datetime_key ) AS field1 , SUM( DISTINCT table2 . col_bigint ) AS field2 FROM D AS table1 LEFT OUTER JOIN M AS table2 LEFT JOIN AA AS table3 ON table2 . col_varchar_64_not_null = table3 . col_varchar_64_not_null ON table1 . col_datetime_key = table3 . col_date_key WHERE table1 . col_bigint_not_null <> 2 ORDER BY field1 , field2 ;
++---------------------+--------+
+| field1              | field2 |
++---------------------+--------+
+| 0000-00-00 00:00:00 |   NULL |
++---------------------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MAX( DISTINCT table1 . col_decimal_40_not_null_key ) AS field1 , table1 . col_decimal AS field2 , MAX( DISTINCT table2 . col_date ) AS field3 FROM A AS table1 LEFT OUTER JOIN I AS table2 LEFT OUTER JOIN Q AS table3 LEFT JOIN V AS table4 ON table3 . col_decimal_30_10_key = table4 . col_decimal_40_key ON table2 . col_datetime_key = table4 . col_date ON table1 . col_datetime = table3 . col_datetime_key WHERE table4 . pk = 3 GROUP BY field2 ORDER BY field3 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_decimal AS field1 , table1 . col_bigint_not_null AS field2 , avg( DISTINCT table2 . col_decimal_40 ) AS field3 FROM M AS table1 LEFT JOIN R AS table2 ON table1 . col_datetime = table2 . col_date WHERE ( ( ( table1 . pk = 6 AND table2 . col_double IS NOT NULL ) AND table1 . col_decimal_not_null_key IS NULL ) OR table2 . pk >= table2 . col_int ) GROUP BY field1, field2 ORDER BY field1, field2, field3 LIMIT 100 OFFSET 7 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MIN( DISTINCT table1 . col_date ) AS field1 , table2 . col_int_key AS field2 , count( table1 . col_char_64_not_null ) AS field3 FROM L AS table1 LEFT JOIN I AS table2 ON table1 . col_decimal_30_10 = table2 . col_double WHERE ( ( table1 . col_double_not_null IS NOT NULL AND table2 . pk = 6 ) AND table1 . pk < 4 ) GROUP BY field2 ORDER BY field2 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT max( table1 . col_char_64 ) AS field1 , count( table1 . col_datetime_key ) AS field2 , table1 . col_int_key AS field3 , table2 . col_decimal_40_not_null_key AS field4 , COUNT( DISTINCT table2 . col_int_key ) AS field5 FROM AA AS table1 LEFT JOIN E AS table2 LEFT OUTER JOIN T AS table3 ON table2 . col_date = table3 . col_date ON table1 . col_datetime = table2 . col_date_key WHERE table2 . col_decimal_40_not_null_key IS NULL GROUP BY field3, field4 ;
++--------+--------+--------+--------+--------+
+| field1 | field2 | field3 | field4 | field5 |
++--------+--------+--------+--------+--------+
+| z      |      6 |      5 |   NULL |      0 |
+| y      |     13 |      8 |   NULL |      0 |
+| x      |      7 |      6 |   NULL |      0 |
+| w      |      9 |      3 |   NULL |      0 |
+| y      |     11 |      1 |   NULL |      0 |
+| v      |      8 |      4 |   NULL |      0 |
+| v      |      4 |      2 |   NULL |      0 |
+| y      |     22 |   NULL |   NULL |      0 |
+| y      |      6 |      7 |   NULL |      0 |
+| v      |     11 |      0 |   NULL |      0 |
+| x      |     10 |      9 |   NULL |      0 |
++--------+--------+--------+--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT count( table2 . col_datetime_key ) AS field1 , MIN( DISTINCT table2 . col_decimal_40_not_null_key ) AS field2 FROM E AS table1 LEFT OUTER JOIN Z AS table2 ON table1 . col_datetime_not_null = table2 . col_date_key WHERE table1 . col_int_not_null_key > 2 ORDER BY field1 DESC ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|    128 |      0 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT MAX( DISTINCT table1 . col_decimal_40 ) AS field1 , min( table1 . col_datetime_not_null ) AS field2 , MIN( DISTINCT table1 . col_bigint_not_null ) AS field3 FROM J AS table1 RIGHT JOIN A AS table2 ON table1 . col_decimal_key = table2 . col_float WHERE ( table1 . col_int_key <= 2 AND table2 . col_decimal IS NULL ) ;
++--------+---------------------+--------+
+| field1 | field2              | field3 |
++--------+---------------------+--------+
+|      7 | 0000-00-00 00:00:00 |      0 |
++--------+---------------------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT min( table1 . col_date_key ) AS field1 , COUNT( DISTINCT table1 . col_tinyint ) AS field2 FROM A AS table1 LEFT JOIN Q AS table2 ON table1 . col_date_key = table2 . col_datetime_key WHERE ( table2 . col_int_not_null IS NULL AND table2 . col_decimal BETWEEN 1 AND ( 1 + 180 ) ) HAVING field2 < 7 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+| NULL   |      0 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT COUNT( DISTINCT table2 . col_decimal_30_10_not_null ) AS field1 , max( table1 . col_decimal_30_10_not_null ) AS field2 FROM L AS table1 LEFT JOIN BB AS table2 LEFT OUTER JOIN T AS table3 LEFT JOIN L AS table4 ON table3 . col_varchar_64 = table4 . col_varchar_64_key ON table2 . col_int_not_null = table4 . col_double ON table1 . col_datetime_key = table4 . col_date_not_null WHERE table1 . col_tinyint_not_null IS NOT NULL ORDER BY field1 DESC , field2 , field1 ;
++--------+--------------+
+| field1 | field2       |
++--------+--------------+
+|     10 | 9.0000000000 |
++--------+--------------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT count( table2 . col_bigint ) AS field1, min( table2 . col_char_64_not_null ) AS field2, min( table2 . col_char_64_not_null ) AS field3 , avg( DISTINCT table2 . col_decimal_40_not_null_key ) AS field4 FROM DD AS table1 LEFT OUTER JOIN A AS table2 ON table1 . col_decimal_40_key = table2 . col_int_key WHERE table1 . col_decimal < 6 HAVING (((field4 > 161 AND field1 <> 5) AND field3 = 6) AND field1 < 7) ORDER BY field4 , field3 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_int_not_null_key AS field1 , count( table2 . col_varchar_64_not_null ) AS field2 FROM O AS table1 LEFT JOIN O AS table2 ON table1 . col_float = table2 . col_decimal_40_not_null_key WHERE table1 . col_decimal_key > 6 GROUP BY field1 HAVING field1 >= 9 ORDER BY field2 DESC , field1 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_tinyint AS field1 , table1 . col_decimal_40 AS field2 , table2 . col_decimal_30_10_not_null AS field3 , MIN( DISTINCT table2 . col_char_64 ) AS field4 FROM W AS table1 RIGHT JOIN DD AS table2 ON table1 . col_varchar_64_not_null = table2 . col_varchar_10_key WHERE table1 . pk < table1 . col_int_not_null_key GROUP BY field1, field2, field3 HAVING field1 <= 3 ORDER BY field1, field2, field3, field4 ;
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table1 . col_decimal_40_not_null_key AS field1 , max( table1 . col_tinyint_not_null ) AS field2 FROM E AS table1 RIGHT JOIN H AS table2 ON table1 . col_char_64_not_null = table2 . col_varchar_10_key LEFT OUTER JOIN M AS table3 LEFT JOIN AA AS table4 ON table3 . col_char_64_not_null = table4 . col_varchar_10_key ON table2 . col_decimal_not_null_key = table3 . col_bigint WHERE table4 . col_tinyint_not_null IS NULL GROUP BY field1 ORDER BY field2 , field1 , field1 , field1 ;
++--------+--------+
+| field1 | field2 |
++--------+--------+
+|   NULL |   NULL |
+|      7 |      7 |
++--------+--------+
+
+ti_mysql> tiflash use oj_agg100; set @@tidb_isolation_read_engines='tiflash,tidb'; set @@tidb_allow_mpp=1;SELECT DISTINCT table2 . col_int_not_null AS field1 , max( table2 . col_int_not_null_key ) AS field2 FROM M AS table1 LEFT JOIN C AS table2 ON table1 . col_datetime = table2 . col_date WHERE table2 . col_tinyint_not_null IS NULL GROUP BY field1 HAVING field2 <= 3 ORDER BY field1 DESC , field1 ;
+
+
 ti_mysql> drop database if exists oj_agg100;
