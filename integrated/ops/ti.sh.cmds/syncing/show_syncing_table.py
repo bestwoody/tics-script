@@ -92,7 +92,7 @@ def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
         return
     table_ids = parse_table_ids(f.read())
 
-    replica_status_request_url = "http://" + tidb_host + ":" + tidb_port + "/tiflash/replica"
+    replica_status_request_url = "http://" + tidb_host + ":" + tidb_port + "/tiflash/replica-deprecated"
     f = open_url(replica_status_request_url)
     if f == '' or not f:
         return
