@@ -21,7 +21,7 @@ function cmd_ti_ch_kill_queries()
 	fi
 
 	local query_str='kill query where 1'
-	run_query_through_ch_client "${dir}/tiflash" --host="${host}" --port="${port}" \
+	run_query_through_ch_client "${dir}/tiflash/tiflash" --host="${host}" --port="${port}" \
 		-f "PrettyCompactNoEscapes" --query="${query_str}"
 }
 

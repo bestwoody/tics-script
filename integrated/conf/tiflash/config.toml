@@ -18,7 +18,8 @@ service_addr = "{tiflash_listen_host}:{tiflash_raft_and_cop_port}"
 master_ttl = 60
 refresh_interval = 20
 update_rule_interval = 5
-cluster_manager_path = "{tiflash_dir}/flash_cluster_manager"
+# this config should be ignored by latest tiflash version
+cluster_manager_path = "{tiflash_dir}/tiflash/flash_cluster_manager"
 
 [flash.proxy]
 addr = "0.0.0.0:{proxy_port}"

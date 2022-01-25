@@ -56,9 +56,7 @@ function ti_cmd_tpch_load_no_raft
 	local dbgen_url=`cross_platform_get_value "${file}" "dbgen_url"`
 	local dists_dss_url=`cross_platform_get_value "${file}" "dists_dss_url"`
 
-	ensure_bin_in_local_dir "tiflash" "${bin_dir}"
-	ensure_bin_in_local_dir "tiflash_proxy" "${bin_dir}"
-	local ch_bin="${bin_dir}/tiflash"
+	local ch_bin="${dir}/tiflash/tiflash"
 
 	local port=`ssh_get_value_from_proc_info "${host}" "${dir}" 'tcp_port'`
 

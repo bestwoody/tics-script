@@ -156,15 +156,21 @@ function cp_bin_to_dir_from_urls()
 	local download_ext="`print_file_ext "${download_name}"`"
 	local download_is_tar=`echo "${download_name}" | { grep '.tar.gz' || test $? = 1; }`
 	local download_is_tgz=`echo "${download_name}" | { grep '.tgz$' || test $? = 1; }`
+	local bin_name_is_tar=`echo "${bin_name}" | { grep '.tar.gz' || test $? = 1; }`
 
 	if [ ! -z "${download_is_tar}" ]; then
 		local target_tmp_path="${bin_cache_dir}/${bin_name}.`date +%s`.${RANDOM}"
-		tar -O -zxf "${download_path}" > "${target_tmp_path}"
-		rm -f "${download_path}"
-		mv -f "${target_tmp_path}" "${bin_cache_dir}/${bin_name}"
-		chmod +x "${bin_cache_dir}/${bin_name}"
-		mkdir -p "${dest_dir}"
-		cp_when_diff "${bin_cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+		if [ -z "${bin_name_is_tar}" ]; then
+			tar -O -zxf "${download_path}" > "${target_tmp_path}"
+			rm -f "${download_path}"
+			mv -f "${target_tmp_path}" "${bin_cache_dir}/${bin_name}"
+			chmod +x "${bin_cache_dir}/${bin_name}"
+			mkdir -p "${dest_dir}"
+			cp_when_diff "${bin_cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+		else
+			mv "${download_path}" "${bin_cache_dir}/${bin_name}"
+			cp_when_diff "${bin_cache_dir}/${bin_name}" "${dest_dir}/${bin_name}"
+		fi
 		return 0
 	fi
 
@@ -261,7 +267,7 @@ function cp_bin_to_dir_from_tiup_urls()
 		fi
 		local bin_name=`echo "${entry_str}" | awk '{print $3}'`
 		local tiup_name="${name}"
-	elif [[ ${name} == "tiflash" || ${name} == "tiflash_lib" || ${name} == "cluster_manager" || ${name} == "tiflash_proxy" ]]; then
+	elif [[ ${name} == "tiflash" ]]; then
 		local entry_str=`cat "${bin_urls_file}" | { grep "^${name}[[:blank:]]" || test $? = 1; }`
 		if [ -z "$entry_str" ]; then
 			echo "[func cp_bin_to_dir_from_tiup_urls] ${name} not found in ${bin_paths_file} or in ${bin_urls_file}" >&2
@@ -331,7 +337,8 @@ function cp_bin_to_dir_from_tiup_urls()
 			return 1
 		fi
 	fi
-	
+
+	local bin_name_is_tar=`echo "${bin_name}" | { grep '.tar.gz' || test $? = 1; }`
 	local download_is_tar=`echo "${download_name}" | { grep '.tar.gz' || test $? = 1; }`
 	if [ -z "${download_is_tar}" ]; then
 		echo "[func cp_bin_to_dir_from_tiup_urls] TODO: support extra ${download_name} file from tiup" >&2
@@ -339,38 +346,19 @@ function cp_bin_to_dir_from_tiup_urls()
 	fi
 
 	# if target_dir not exists or empty, clean it and extra from zipped file again
+	# move the download file to the target dir and try to unpack the file if need
 	local target_dir="${download_dir}/${tiup_name}-${version}-${os}-${arch}"
 	if [[ ! -d "${target_dir}"  || -z "$(ls -A ${target_dir})" ]]; then
 		local target_tmp_path="${download_dir}/${tiup_name}-${version}-${os}-${arch}.`date +%s`.${RANDOM}"
 		mkdir -p "${target_tmp_path}"
-		tar -zxf "${download_path}" -C "${target_tmp_path}"
+		if [ -z "${bin_name_is_tar}" ]; then
+			tar -zxf "${download_path}" -C "${target_tmp_path}"
+		else
+			mv "${download_path}" "${target_tmp_path}/${bin_name}"
+		fi
 		mv "${target_tmp_path}" "${target_dir}"
 	fi
-	if [[ ${name} == "tidb" || ${name} == "tikv" || ${name} == "pd" ]]; then
-		copy_when_checksum_not_match "${target_dir}/${bin_name}" "${dest_dir}/${bin_name}"
-		return 0
-	elif [[ ${name} == "tiflash" || ${name} == "tiflash_lib" || ${name} == "cluster_manager" || ${name} == "tiflash_proxy" ]]; then
-		if [[ ${name} == "tiflash" ]]; then
-			copy_when_checksum_not_match "${target_dir}/tiflash/tiflash" "${dest_dir}/${bin_name}"
-		elif [[ ${name} == "tiflash_proxy" ]]; then
-			copy_when_checksum_not_match "${target_dir}/tiflash/${bin_name}" "${dest_dir}/${bin_name}"
-		elif [[ ${name} == "cluster_manager" ]]; then
-			# always replace for cluster manager
-			if [[ -d "${dest_dir}/flash_cluster_manager" ]]; then
-				rm -r "${dest_dir}/flash_cluster_manager"
-			fi
-			cp -r "${target_dir}/tiflash/flash_cluster_manager" "${dest_dir}/flash_cluster_manager"
-		elif [[ ${name} == "tiflash_lib" ]]; then
-			if [[ "${os}" == "linux" ]]; then
-				# Let it fallback to download from other resources.
-				return 1
-			fi
-		else
-			echo "[func cp_bin_to_dir_from_tiup_urls] TODO: support copying ${name}" >&2
-			return 1
-		fi
-		return 0
-	elif [[ ${name} == "tikv_ctl" || ${name} == "pd_ctl" || ${name} == "tikv_importer" || ${name} == "tidb_lightning" ]]; then
+	if [[ ${name} == "tidb" || ${name} == "tikv" || ${name} == "pd" || ${name} == "tiflash" || ${name} == "tikv_ctl" || ${name} == "pd_ctl" || ${name} == "tikv_importer" || ${name} == "tidb_lightning" ]]; then
 		copy_when_checksum_not_match "${target_dir}/${bin_name}" "${dest_dir}/${bin_name}"
 		return 0
 	else
@@ -433,7 +421,7 @@ function cp_bin_to_dir_from_pingcap_internal()
 		bin_name=`echo "${entry_str}" | awk '{print $3}'`
 		component_name="${name}"
 		zipped_binary_name="${name}-server.tar.gz"
-	elif [[ ${name} == "tiflash" || ${name} == "cluster_manager" || ${name} == "tiflash_proxy" ]]; then
+	elif [[ ${name} == "tiflash" ]]; then
 		#curl ${FILE_SERVER_URL}/download/builds/pingcap/tiflash/${TIFLASH_BRANCH}/${tiflash_sha1}/centos7/tiflash.tar.gz
 		local entry_str=`cat "${bin_urls_file}" | { grep "^${name}[[:blank:]]" || test $? = 1; }`
 		if [ -z "$entry_str" ]; then
@@ -443,9 +431,6 @@ function cp_bin_to_dir_from_pingcap_internal()
 		bin_name=`echo "${entry_str}" | awk '{print $3}'`
 		component_name="tiflash"
 		zipped_binary_name="tiflash.tar.gz"
-	elif [[ ${name} == "tiflash_lib" ]]; then
-		# Let it fallback to download from other resources.
-		return 1
 	elif [[ ${name} == "tikv_ctl" ]]; then 
 		local entry_str=`cat "${bin_urls_file}" | { grep "^${name}[[:blank:]]" || test $? = 1; }`
 		if [ -z "$entry_str" ]; then
@@ -522,10 +507,16 @@ function cp_bin_to_dir_from_pingcap_internal()
 
 	# if target_dir not exists or empty, clean it and extra from zipped file again
 	local target_dir="${download_dir}/${component_name}-${hash}"
+	local bin_name_is_tar=`echo "${bin_name}" | { grep '.tar.gz' || test $? = 1; }`
+
 	if [[ ! -d "${target_dir}" || -z "$(ls -A ${target_dir})" ]]; then
 		local target_tmp_path="${download_dir}/${component_name}-${hash}.`date +%s`.${RANDOM}"
 		mkdir -p "${target_tmp_path}"
-		tar -zxf "${download_path}" -C "${target_tmp_path}"
+		if [[ -z "${bin_name_is_tar}" ]]; then
+			tar -zxf "${download_path}" -C "${target_tmp_path}"
+		else
+			mv "${download_path}" "${target_tmp_path}/${bin_name}"
+		fi
 		mv "${target_tmp_path}" "${target_dir}"
 	fi
 	if [[ ${name} == "tidb" || ${name} == "tikv" || ${name} == "pd" || ${name} == "pd_ctl" || ${name} == "tikv_ctl" ]]; then
@@ -540,14 +531,8 @@ function cp_bin_to_dir_from_pingcap_internal()
 		else
 			copy_when_checksum_not_match "${target_dir}/bin/${bin_name}" "${dest_dir}/${bin_name}"
 		fi
-	elif [[ ${name} == "tiflash" || ${name} == "tiflash_proxy" ]]; then
-		copy_when_checksum_not_match "${target_dir}/tiflash/${bin_name}" "${dest_dir}/${bin_name}"
-	elif [[ ${name} == "cluster_manager" ]]; then
-		# always replace for cluster manager
-		if [[ -d "${dest_dir}/flash_cluster_manager" ]]; then
-			rm -r "${dest_dir}/flash_cluster_manager"
-		fi
-		cp -r "${target_dir}/tiflash/flash_cluster_manager" "${dest_dir}/flash_cluster_manager"
+	elif [[ ${name} == "tiflash" ]]; then
+		copy_when_checksum_not_match "${target_dir}/${bin_name}" "${dest_dir}/${bin_name}"
 	fi
 }
 export -f cp_bin_to_dir_from_pingcap_internal

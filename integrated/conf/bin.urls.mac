@@ -12,9 +12,6 @@ chspark_w	9977acdba12cbd1ada0913578e41ffb4	spark-2.3.4-bin-hadoop2.7.tgz	https:/
 
 tispark	f0b94f1180fee5c03a2810ff601de7c9	tispark-assembly-2.3.0-SNAPSHOT.jar	https://download.pingcap.org/tispark-assembly-2.3.0-SNAPSHOT.jar-0426.tar.gz	master	6f9c8b46c926c6749e3543b0fe45056488af1fef
 
-# TODO: fake lib file, remove it later
-tiflash_lib	1b65cb79f28bd28e823a8ae1b9014627	tiflash_lib.tgz	https://download.pingcap.org/tiflash_lib.tgz
-
 tidb_lightning  aa8a75a79dabe78219b5978e91b447a0    tidb-lightning  http://139.219.11.38:8000/p6f8F/tidb-lightning.tar.gz    master  605760d1b2025d1e1a8b7d0c668c74863d7d1271
 tikv_importer   834005a83cb63943238cb4b644ee0684    tikv-importer   http://139.219.11.38:8000/Gx4Ze/tikv-importer.tar.gz     master  ad32bdcd951ae68cf1ea743a651e2bd47198d6df
 
@@ -22,6 +19,5 @@ pd	a139426e7ead7d0a8708a1debc8cfe81	pd-server	https://download.pingcap.org/pd-se
 tikv	fa4b688fb67b5a99dcd1e7df3116bc51	tikv-server	https://download.pingcap.org/tikv-server-mac-master.tar.gz	master	782bb0203c3e39b2517bbb5ac0ceeef3dd76e60d
 tidb	9b29905befb1dc4ee05f6f7d9b359846	tidb-server	https://download.pingcap.org/tidb-server-mac-master.tar.gz	master	2ecf66bdf17eed91c6bbd0ff2f3f84ece4ebe32d
 
-cluster_manager	07b50971bc3f073c2ed0a50756ccd322	flash_cluster_manager.tgz	https://download.pingcap.org/flash_cluster_manager-mac-master.tgz	master	90b2d9d27c306fba60c62c048b2f856b1e21e32b
-tiflash	6aa01f8c6ba89110c8d1383a63e82052	tiflash	https://download.pingcap.org/tiflash-mac-master.tar.gz	master	90b2d9d27c306fba60c62c048b2f856b1e21e32b
-tiflash_proxy	cfa4bfa8e5e65d720d7e9e0a8ead3af9	libtiflash_proxy.dylib	https://download.pingcap.org/libtiflash_proxy-mac-master.tar.gz	tiflash-proxy-master	146b2b417dd15b9ad6ae877fca3e0469b3a91829
+# TODO: fix the following url
+tiflash	ea0bf695b61b4679c3b08481ecab2889	tiflash.tar.gz	http://fileserver.pingcap.net/download/builds/pingcap/tiflash/optimization/dc9261854a027ec5843d5d54c7554a638f5d8799/centos7/tiflash.tar.gz	master	dc9261854a027ec5843d5d54c7554a638f5d8799

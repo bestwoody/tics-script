@@ -17,9 +17,7 @@ tikv_importer	1355b035ba5ac3487c170a5ebe789f8e	tikv-importer	https://download.pi
 pd_ctl	d14878257a518fad108b55b8063823fd	pd-ctl	https://download.pingcap.org/pd-ctl-tiflash-master-20200425.tar.gz
 tikv_ctl	b2f482499506022708d8d2259334a180	tikv-ctl	https://download.pingcap.org/tikv-ctl-tiflash-master-20200425.tar.gz
 
-cluster_manager	1c69e4646ca575ebaafabb1042f96e89	flash_cluster_manager.tgz	https://download.pingcap.org/flash_cluster_manager-master-20200921.tgz	master	e68bb98802c193b020e61008a8dafa2171d2afd8
-tiflash	98feccefd925b1e3acfab22ccd8d52f7	tiflash	https://download.pingcap.org/tiflash-master-20200921-stripped.tar.gz	master	e68bb98802c193b020e61008a8dafa2171d2afd8
-tiflash_proxy	5359e8c038017808b8a27e80624e9220	libtiflash_proxy.so	https://download.pingcap.org/tiflash_proxy-master-20200921.tar.gz	tiflash-proxy-master	e68bb98802c193b020e61008a8dafa2171d2afd8
+tiflash	ea0bf695b61b4679c3b08481ecab2889	tiflash.tar.gz	http://fileserver.pingcap.net/download/builds/pingcap/tiflash/optimization/dc9261854a027ec5843d5d54c7554a638f5d8799/centos7/tiflash.tar.gz	master	dc9261854a027ec5843d5d54c7554a638f5d8799
 
 tikv	263d29dbc34a8bd970229e5220ddf233	tikv-server	https://download.pingcap.org/tikv-server-tiflash-master-20200921.tar.gz	master	2a4223098af9480d3998237eb963d76823af0f0b
 pd	5f7482543f7d3ade3411ad6e406df775	pd-server	https://download.pingcap.org/pd-server-tiflash-master-20200921.tar.gz   master  4a95bcaabea3bffff0aa75840a4cbf8ec210abb3

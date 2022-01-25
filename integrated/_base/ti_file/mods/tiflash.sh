@@ -49,23 +49,8 @@ function get_tiflash_lib_path_for_linux()
 		return
 	fi
 
-	# TODO: remove hard code file name from this func
-	local target_lib_dir='tiflash_lib'
-	if [ ! -d "${dir}/${target_lib_dir}" ]; then
-		if [ ! -f "${dir}/${target_lib_dir}.tgz" ]; then
-			echo "[func get_tiflash_lib_path_for_linux] can not find dir '${dir}/${target_lib_dir}' and related zfile." >&2
-			return 1
-		else
-			tar -zxf "${dir}/${target_lib_dir}.tgz" -C ${dir} 1>/dev/null
-		fi
-	fi
-	if [ ! -d "${dir}/${target_lib_dir}" ]; then
-		echo "[func get_tiflash_lib_path_for_linux] can not find dir ${dir}/${target_lib_dir}" >&2
-		return 1
-	fi
-
 	# TODO: check whether the following path exists before use it
-	local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${dir}/${target_lib_dir}:${dir}:."
+	local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${dir}:."
 	if [ -z "${LD_LIBRARY_PATH+x}" ]; then
 		echo "${lib_path}"
 	else
@@ -355,24 +340,23 @@ function tiflash_run()
 	cp_when_diff "${conf_templ_dir}/tiflash/users.toml" "${tiflash_dir}/conf/users.toml"
 
 	# TODO: remove hard code file name from this func
-	local cluster_manager_dir="flash_cluster_manager"
-	if [ ! -d "${tiflash_dir}/${cluster_manager_dir}" ]; then
-		local manager_file_name="flash_cluster_manager.tgz"
-		if [ ! -f "${tiflash_dir}/${manager_file_name}" ]; then
-			echo "   cannot find flash_cluster_manager file"
+	local tiflash_binary_dir="${tiflash_dir}/tiflash/"
+	if [ ! -d "${tiflash_binary_dir}" ]; then
+		local bin_tar_name="tiflash.tar.gz"
+		if [ ! -f "${tiflash_dir}/${bin_tar_name}" ]; then
+			echo "   cannot find tiflash.tar.gz at path ${tiflash_dir}/${bin_tar_name}"
 			return 1
 		fi
-		tar -zxf "${tiflash_dir}/${manager_file_name}" -C "${tiflash_dir}" 1>/dev/null
-		rm -f "${tiflash_dir}/${manager_file_name}"
+		tar -zxf "${tiflash_dir}/${bin_tar_name}" -C "${tiflash_dir}" 1>/dev/null
 	fi
 
 	if [ "${daemon_mode}" == "false" ]; then
 		if [ `uname` == "Darwin" ]; then
-			install_proxy_lib_on_mac "${tiflash_dir}"
+			install_proxy_lib_on_mac "${tiflash_binary_dir}"
 		else
-			export LD_LIBRARY_PATH="`get_tiflash_lib_path_for_linux ${tiflash_dir}`"
+			export LD_LIBRARY_PATH="`get_tiflash_lib_path_for_linux ${tiflash_binary_dir}`"
 		fi
-		"${tiflash_dir}/tiflash" server --config-file "${conf_file}"
+		"${tiflash_binary_dir}/tiflash" server --config-file "${conf_file}"
 		return ${?}
 	fi
 
@@ -394,16 +378,16 @@ function tiflash_run()
 
 	rm -f "${tiflash_dir}/run.sh"
 	if [ `uname` == "Darwin" ]; then
-		install_proxy_lib_on_mac "${tiflash_dir}"
+		install_proxy_lib_on_mac "${tiflash_binary_dir}"
 	else 
-		local lib_path="`get_tiflash_lib_path_for_linux ${tiflash_dir}`"
+		local lib_path="`get_tiflash_lib_path_for_linux ${tiflash_binary_dir}`"
 		if [ -z "${LD_LIBRARY_PATH+x}" ]; then
 			echo "export LD_LIBRARY_PATH=\"$lib_path\"" >> "${tiflash_dir}/run.sh"
 		else
 			echo "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$lib_path\"" >> "${tiflash_dir}/run.sh"
 		fi
 	fi
-	echo "nohup \"${tiflash_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" >> "${tiflash_dir}/run.sh"
+	echo "nohup \"${tiflash_binary_dir}/tiflash\" server --config-file \"${conf_file}\" 1>/dev/null 2>&1 &" >> "${tiflash_dir}/run.sh"
 
 	chmod +x "${tiflash_dir}/run.sh"
 	bash "${tiflash_dir}/run.sh"

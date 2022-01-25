@@ -63,12 +63,12 @@ function cmd_ti_ch()
 	fi
 
 	local start_time=`timer_start`
-
+	local tiflash_bin_dir="${dir}/tiflash"
 	if [ -z "${1+x}" ]; then
-		run_query_through_ch_client "${dir}/tiflash" --host="${host}" --port="${port}" -d "${db}" \
+		run_query_through_ch_client "${tiflash_bin_dir}/tiflash" --host="${host}" --port="${port}" -d "${db}" \
 			-f "${format}" --query="${query_str}"
 	else
-		run_query_through_ch_client "${dir}/tiflash" --host="${host}" --port="${port}" -d "${db}" \
+		run_query_through_ch_client "${tiflash_bin_dir}/tiflash" --host="${host}" --port="${port}" -d "${db}" \
 			-f "${format}" --query="${query_str}" "${@}"
 	fi
 	local elapsed=`timer_end "${start_time}"`

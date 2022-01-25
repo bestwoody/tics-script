@@ -85,6 +85,15 @@ def print_result(tables):
             padding = ' ' * (table_name_max_length - len(table) + 4)
             print '    ' + table + padding + status.lower()
 
+def get_replica_status(tidb_host, tidb_port):
+    replica_status_request_url = "http://" + tidb_host + ":" + tidb_port + "/tiflash/replica-deprecated"
+    f = open_url(replica_status_request_url)
+    if f.getcode() == 200:
+        return f
+    else:
+        replica_status_request_url = "http://" + tidb_host + ":" + tidb_port + "/tiflash/replica"
+        return open_url(replica_status_request_url)
+
 def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
     rules_request_url = "http://" + pd_host + ":" + pd_port + "/pd/api/v1/config/rules/group/tiflash"
     f = open_url(rules_request_url)
@@ -92,8 +101,7 @@ def run(pd_host, pd_port, tidb_host, tidb_port, target_db=""):
         return
     table_ids = parse_table_ids(f.read())
 
-    replica_status_request_url = "http://" + tidb_host + ":" + tidb_port + "/tiflash/replica-deprecated"
-    f = open_url(replica_status_request_url)
+    f = get_replica_status(tidb_host, tidb_port)
     if f == '' or not f:
         return
     all_table_status = parse_table_status(f.read())

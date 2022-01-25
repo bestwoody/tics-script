@@ -29,11 +29,8 @@ function cmd_ti_ch_raw()
 		return 1
 	fi
 
-	local bin_dir="/tmp/ti/master/bins"
-	ensure_bin_in_local_dir "tiflash" "${bin_dir}"
-	ensure_bin_in_local_dir "tiflash_proxy" "${bin_dir}"
-	ensure_bin_in_local_dir "tiflash_lib" "${bin_dir}"
-	run_query_through_ch_client "${bin_dir}/tiflash" --host="${host}" --port="${port}"
+	# FIXME: this may not work when tiflash is deployed on remote server
+	run_query_through_ch_client "${dir}/tiflash/tiflash" --host="${host}" --port="${port}"
 }
 
 cmd_ti_ch_raw "${@}"

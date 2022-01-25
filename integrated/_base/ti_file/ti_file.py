@@ -118,7 +118,6 @@ def parse_mod(obj, line, origin):
     mod_extra_tools = {
         'pd': ['pd_ctl'],
         'tikv': ['tikv_ctl'],
-        'tiflash': ['tiflash_lib', 'cluster_manager', 'tiflash_proxy'],
         'spark_m': ['tispark'],
         'spark_w': ['tispark'],
         'chspark_m': ['chspark'],

@@ -44,15 +44,16 @@ function cmd_ti_ver()
 			local res=`"${dir}"/tidb-server -V 2>/dev/null | { grep "${grep_str}" || test $? = 1; }`
 		fi
 	elif [ "${mod_name}" == 'tiflash' ]; then
-		if [ ! -f "${dir}/tiflash" ]; then
+		local tiflash_bin_dir="${dir}/tiflash"
+		if [ ! -f "${tiflash_bin_dir}/tiflash" ]; then
 			local res='MISSED'
 		else
 			if [ `uname` == "Darwin" ]; then
-				install_proxy_lib_on_mac "${dir}"
-				local res=`${dir}/tiflash version`
+				install_proxy_lib_on_mac "${tiflash_bin_dir}"
+				local res=`${tiflash_bin_dir}/tiflash version`
 			else
-				local tiflash_lib_path="`get_tiflash_lib_path_for_linux "${dir}"`"
-				local res=`LD_LIBRARY_PATH="${tiflash_lib_path}" "${dir}"/tiflash version`
+				local tiflash_lib_path="`get_tiflash_lib_path_for_linux "${tiflash_bin_dir}"`"
+				local res=`LD_LIBRARY_PATH="${tiflash_lib_path}" "${tiflash_bin_dir}"/tiflash version`
 			fi
 			local tiflash_and_proxy_ver=`echo "${res}" | { grep "Release Version" || test $? = 1; }`
 			local tiflash_ver=`echo "${tiflash_and_proxy_ver}" | head -n 1 | \
