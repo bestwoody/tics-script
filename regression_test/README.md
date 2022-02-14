@@ -1,8 +1,8 @@
-# The Flash regression test
+# The TiFlash regression test
 
-The Flash regression test is triggered by [this jenkins task](https://internal.pingcap.net/idc-jenkins/job/tiflash_regression_test_daily/) every night.
+The TiFlash regression test is triggered by [this jenkins task](https://internal.pingcap.net/idc-jenkins/job/tiflash_regression_test_daily/) every night.
 
-The result of the Flash regression test will be sent to this slack channel: [#tiflash-daily-test](https://pingcap.slack.com/messages/CQ3EL6Q95).
+The result of the TiFlash regression test will be sent to this slack channel: [#tiflash-daily-test](https://pingcap.slack.com/messages/CQ3EL6Q95).
 
 ## How to run regression on local environment?
 
@@ -19,9 +19,9 @@ docker run --rm -i -t -v `pwd`:/tiflash --name ops-ci hub.pingcap.net/tiflash/op
 /tiflash/regression_test/daily.sh
 ```
 
-## Test tiflash on master branch
+## Test TiFlash on master branch
 
-If you want to test tiflash on master branch, please download the binary first:
+If you want to test TiFlash on master branch, please download the binary first:
 
 ```
 # make binary dir
