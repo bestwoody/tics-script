@@ -56,7 +56,7 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                                     $class                           : 'GitSCM',
                                     branches                         : [[name: branch]],
                                     doGenerateSubmoduleConfigurations: false,
-                                    userRemoteConfigs                : [[credentialsId: 'github-sre-bot-ssh',refspec: '+refs/heads/*:refs/remotes/origin/* +refs/pull/*:refs/remotes/origin/pr/*', url: 'git@github.com:pingcap/tiflash.git']]
+                                    userRemoteConfigs                : [[credentialsId: 'github-sre-bot-ssh',refspec: '+refs/heads/*:refs/remotes/origin/* +refs/pull/*:refs/remotes/origin/pr/*', url: 'git@github.com:pingcap/tiflash-scripts.git']]
                             ]
 
                             def TIDB_BRANCH = branch

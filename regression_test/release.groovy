@@ -33,7 +33,7 @@ def runReleaseIntegrationTest(branch, version, tidb_commit_hash, tikv_commit_has
                                     $class                           : 'GitSCM',
                                     branches                         : [[name: branch]],
                                     doGenerateSubmoduleConfigurations: false,
-                                    userRemoteConfigs                : [[credentialsId: 'github-sre-bot-ssh', url: 'git@github.com:pingcap/tiflash.git']]
+                                    userRemoteConfigs                : [[credentialsId: 'github-sre-bot-ssh', url: 'git@github.com:pingcap/tiflash-scripts.git']]
                             ]
 
                             dailyTest = load 'regression_test/daily.groovy'

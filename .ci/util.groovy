@@ -6,7 +6,7 @@ def checkoutTiFlash(commit, pullId) {
             ],
             userRemoteConfigs: [
                     [
-                            url: "git@github.com:pingcap/tiflash.git",
+                            url: "git@github.com:pingcap/tiflash-scripts.git",
                             refspec: "+refs/pull/${pullId}/*:refs/remotes/origin/pr/${pullId}/*",
                             credentialsId: "github-sre-bot-ssh",
                     ]
