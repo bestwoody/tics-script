@@ -222,6 +222,15 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
                 }
                 if (currentBuild.result != "SUCCESS") {
                     sh """
+                      curl -X POST https://open.feishu.cn/open-apis/bot/v2/hook/ea22c6ca-afc8-4b8b-a196-025e5b96fccf -H 'Content-Type: application/json' \
+                      -d '{
+                        "msg_type": "text",
+                        "content": {
+                          "text": "$feishumsg"
+                        }
+                      }'
+                    """
+                    sh """
                       curl -X POST https://open.feishu.cn/open-apis/bot/v2/hook/573d5985-7c9e-4a4d-8e9f-a0e0b4bda9e2 -H 'Content-Type: application/json' \
                       -d '{
                         "msg_type": "text",
