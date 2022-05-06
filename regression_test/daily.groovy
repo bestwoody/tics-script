@@ -19,7 +19,7 @@ def runDailyIntegrationTest3(branch, version, tidb_commit_hash, tikv_commit_hash
 
     def label = this.config.label
 
-    podTemplate(cloud: this.config.cloud, name: label, label: label, instanceCap: 10, idleMinutes: idleMinutes, containers: [
+    podTemplate(cloud: this.config.cloud, name: label, label: label, namespace: "jenkins-tiflash", instanceCap: 10, idleMinutes: idleMinutes, containers: [
             containerTemplate(name: 'tiflash-docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
                     envVars: [
                             envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375'),

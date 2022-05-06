@@ -14,9 +14,9 @@ def runSchrodingerTest3(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
 def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_hash, pd_commit_hash, tiflash_commit_hash, testcase, maxRunTime, notify, idleMinutes) {
     taskStartTimeInMillis = System.currentTimeMillis()
 
-    def label = "test-tiflash-Schrodinger-v11"
+    def label = "test-tiflash-Schrodinger-v11-${BUILD_NUMBER}"
 
-    podTemplate(cloud: cloud, name: label, label: label, instanceCap: 20, idleMinutes: idleMinutes, containers: [
+    podTemplate(cloud: cloud, name: label, label: label, namespace: "jenkins-tiflash", instanceCap: 20, idleMinutes: idleMinutes, containers: [
             containerTemplate(name: 'tiflash-docker', image: 'hub.pingcap.net/tiflash/docker:build-essential-java',
                     envVars: [
                             envVar(key: 'DOCKER_HOST', value: 'tcp://localhost:2375'),
