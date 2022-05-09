@@ -50,7 +50,8 @@ function get_tiflash_lib_path_for_linux()
 	fi
 
 	# TODO: check whether the following path exists before use it
-	local lib_path="/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:${dir}:."
+	# use library in tiflash binary first
+	local lib_path="${dir}:.:/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib"
 	if [ -z "${LD_LIBRARY_PATH+x}" ]; then
 		echo "${lib_path}"
 	else
@@ -341,14 +342,14 @@ function tiflash_run()
 
 	# TODO: remove hard code file name from this func
 	local tiflash_binary_dir="${tiflash_dir}/tiflash/"
-	if [ ! -d "${tiflash_binary_dir}" ]; then
-		local bin_tar_name="tiflash.tar.gz"
-		if [ ! -f "${tiflash_dir}/${bin_tar_name}" ]; then
-			echo "   cannot find tiflash.tar.gz at path ${tiflash_dir}/${bin_tar_name}"
-			return 1
-		fi
-		tar -zxf "${tiflash_dir}/${bin_tar_name}" -C "${tiflash_dir}" 1>/dev/null
+	# it's hard to judge whether need to unpack tar.gz file, so always unpack it here.
+	rm -rf "${tiflash_binary_dir}"
+	local bin_tar_name="tiflash.tar.gz"
+	if [ ! -f "${tiflash_dir}/${bin_tar_name}" ]; then
+		echo "   cannot find tiflash.tar.gz at path ${tiflash_dir}/${bin_tar_name}"
+		return 1
 	fi
+	tar -zxf "${tiflash_dir}/${bin_tar_name}" -C "${tiflash_dir}" 1>/dev/null
 
 	if [ "${daemon_mode}" == "false" ]; then
 		if [ `uname` == "Darwin" ]; then
