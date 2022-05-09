@@ -3,36 +3,41 @@
 function cmd_ti_global_schrodinger_sqllogic()
 {
 	if [ -z "${1+x}" ] || [ -z "${1}" ]; then
+		local concurrency='40'
+	else
+		local concurrency="${1}"
+	fi
+	if [ -z "${2+x}" ] || [ -z "${2}" ]; then
 		local enable_region_merge='false'
 	else
-		local enable_region_merge="${1}"
+		local enable_region_merge="${2}"
 		if [ "${enable_region_merge}" != 'false' ] && [ "${enable_region_merge}" != 'true' ]; then
 			echo "[cmd schrodinger/bank] value of enable_region_merge should be true or false" >&2
 			return 1
 		fi
 	fi
-	if [ -z "${2+x}" ] || [ -z "${2}" ]; then
+	if [ -z "${3+x}" ] || [ -z "${3}" ]; then
 		local enable_shuffle_region='true'
 	else
-		local enable_shuffle_region="${2}"
+		local enable_shuffle_region="${3}"
 		if [ "${enable_shuffle_region}" != 'false' ] && [ "${enable_shuffle_region}" != 'true' ]; then
 			echo "[cmd schrodinger/bank] value of enable_shuffle_region should be true or false" >&2
 			return 1
 		fi
 	fi
-	if [ -z "${3+x}" ] || [ -z "${3}" ]; then
+	if [ -z "${4+x}" ] || [ -z "${4}" ]; then
 		local enable_shuffle_leader='false'
 	else
-		local enable_shuffle_leader="${3}"
+		local enable_shuffle_leader="${4}"
 		if [ "${enable_shuffle_leader}" != 'false' ] && [ "${enable_shuffle_leader}" != 'true' ]; then
 			echo "[cmd schrodinger/bank] value of enable_shuffle_leader should be true or false" >&2
 			return 1
 		fi
 	fi
-	if [ -z "${4+x}" ] || [ -z "${4}" ]; then
+	if [ -z "${5+x}" ] || [ -z "${5}" ]; then
 		local dir='/tmp/ti/schrodinger/sqllogic'
 	else
-		local dir="${4}"
+		local dir="${5}"
 	fi
 
 	local ti="${integrated}/ops/ti.sh"
@@ -61,7 +66,7 @@ function cmd_ti_global_schrodinger_sqllogic()
 	echo "Enable shuffle region: ${enable_shuffle_region}"
 	echo "Enable shuffle leader: ${enable_shuffle_leader}"
 
-	"${ti}" "${file}" schrodinger/sqllogic
+	"${ti}" "${file}" schrodinger/sqllogic ${concurrency}
 	if [ ${?} != 0 ]; then
 		exit 1
 	fi
