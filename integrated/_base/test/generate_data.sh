@@ -99,6 +99,7 @@ function generate_tpch_data()
 	fi
 
 	download_dbgen "${dbgen_url}" "${dbgen_bin_dir}"
+	echo "   dbgen download done"
 
 	if [ -d "${data_dir}" ]; then
 		return 0
@@ -109,6 +110,7 @@ function generate_tpch_data()
 	if [ ! -f "${temp_data_dir}/dists.dss" ]; then
 		wget --quiet -nd "${dists_dss_url}" -O "${temp_data_dir}/dists.dss"
 	fi
+	echo "   dists.dss download done"
 	generate_tpch_data_to_dir "${dbgen_bin_dir}" "${temp_data_dir}" "${scale}" "${table}" "${blocks}"
 	local data_file_count=`ls "${temp_data_dir}" | { grep "${table}" || test $? = 1; } | wc -l`
 	if [ "${data_file_count}" -le '0' ]; then
