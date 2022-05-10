@@ -143,7 +143,7 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                             """
 
                             // most tests run indefinitely except `schrodinger/sqllogic` test
-                            if (testcase == "schrodinger/sqllogic") {
+                            if (testcase.startsWith("schrodinger/sqllogic")) {
                                 try {
                                     // if sqllogic test doesn't finished in two days, there must be something wrong happened.
                                     timeout(2 * 24 * 60) {
@@ -176,7 +176,7 @@ def runSchrodingerTest4(cloud, branch, version, tidb_commit_hash, tikv_commit_ha
                             sh "for f in \$(find . -name '*.log'); do echo \"LOG: \$f\"; tail -500 \$f; done"
                             sh "for f in \$(find /tmp/ti -name '*.log' | grep -v 'data' | grep -v 'tiflash/db' | grep -v 'db/proxy'); do echo \"LOG: \$f\"; tail -500 \$f; done"
 
-                            if (testcase != "schrodinger/sqllogic") {
+                            if (!testcase.startsWith("schrodinger/sqllogic")) {
                                 def duration = ((System.currentTimeMillis() - taskStartTimeInMillis) / 1000 / 60).setScale(0, BigDecimal.ROUND_HALF_UP)
                                 if (duration < Integer.parseInt(maxRunTime)) {
                                     currentBuild.result = "FAILURE"
