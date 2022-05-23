@@ -72,7 +72,6 @@ function ti_cmd_tpch_load()
 	fi
 
 	local db=`echo "tpch_${scale}${db_suffix}" | tr '.' '_'`
-	local dbgen_bin_dir="/tmp/ti/master/bins"
 
 	if [ "${table}" != 'all' ]; then
 		local tables=("${table}")
@@ -81,8 +80,6 @@ function ti_cmd_tpch_load()
 	fi
 
 	local conf_file="${integrated}/conf/tools.kv"
-	local dbgen_url=`cross_platform_get_value "${conf_file}" "dbgen_url"`
-	local dists_dss_url=`cross_platform_get_value "${conf_file}" "dists_dss_url"`
 
 	for table in ${tables[@]}; do
 		local mod=`from_mods_random_mod "${mods}" 'tidb' 'false'`
@@ -99,7 +96,7 @@ function ti_cmd_tpch_load()
 
 		echo "=> [${host}] loading ${db}.${table}"
 		local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
-		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
+		generate_tpch_data "${table_dir}" "${scale}" "${table}" "${blocks}"
 		echo '   generated'
 
 		if [ "${sync_to_tiflash}" == 'true' ]; then

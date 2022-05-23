@@ -57,7 +57,6 @@ function ti_cmd_tpch_load_fast()
 	fi
 
 	local db=`echo "tpch_${scale}${db_suffix}" | scale_to_name`
-	local dbgen_bin_dir="/tmp/ti/master/bins"
 
 	if [ "${table}" != 'all' ]; then
 		local tables=("${table}")
@@ -66,8 +65,6 @@ function ti_cmd_tpch_load_fast()
 	fi
 
 	local conf_file="${integrated}/conf/tools.kv"
-	local dbgen_url=`cross_platform_get_value "${conf_file}" "dbgen_url"`
-	local dists_dss_url=`cross_platform_get_value "${conf_file}" "dists_dss_url"`
 
 	# adjust pd schedule threshold to let it fly
 	echo "=> speed up pd schedulers"
@@ -86,7 +83,7 @@ function ti_cmd_tpch_load_fast()
 		local start_time=`date +%s`
 		echo "=> [${host}] generating data of ${db}.${table}"
 		local table_dir="${data_dir}/tpch_s`echo ${scale} | scale_to_name`_b${blocks}/${table}"
-		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
+		generate_tpch_data "${table_dir}" "${scale}" "${table}" "${blocks}"
 		echo '   generated'
 
 		# create table in tidb

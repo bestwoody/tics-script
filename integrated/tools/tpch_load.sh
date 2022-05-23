@@ -56,8 +56,6 @@ function ti_tools_tpch_load()
 	fi
 
 	local db=`echo "tpch_${scale}${db_suffix}" | scale_to_name`
-	# TODO: Tidy up this path
-	local dbgen_bin_dir="/tmp/ti/master/bins"
 
 	if [ "${table}" != 'all' ]; then
 		local tables=("${table}")
@@ -66,8 +64,6 @@ function ti_tools_tpch_load()
 	fi
 
 	local conf_file="${integrated}/conf/tools.kv"
-	local dbgen_url=`cross_platform_get_value "${conf_file}" "dbgen_url"`
-	local dists_dss_url=`cross_platform_get_value "${conf_file}" "dists_dss_url"`
 
 	for table in ${tables[@]}; do
 		local start_time=`date +%s`
@@ -76,7 +72,7 @@ function ti_tools_tpch_load()
 
 		echo "=> [${host}] loading ${db}.${table}"
 		local table_dir="${data_dir}/tpch_s`echo ${scale} | scale_to_name`_b${blocks}/${table}"
-		generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
+		generate_tpch_data "${table_dir}" "${scale}" "${table}" "${blocks}"
 		echo '   generated'
 
 		load_tpch_data_to_mysql "${host}" "${port}" "${schema_dir}" "${table_dir}" "${db}" "${table}"

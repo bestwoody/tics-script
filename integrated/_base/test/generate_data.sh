@@ -56,16 +56,16 @@ export -f table_to_arguments
 
 function generate_tpch_data_to_dir()
 {
-	local dbgen_bin_dir="${1}"
-	local data_dir="${2}"
-	local scale="${3}"
-	local table="${4}"
-	local blocks="${5}"
-	if [ -z "${dbgen_bin_dir}" ] || [ -z "${data_dir}" ] || [ -z "${scale}" ] || [ -z "${table}" ] || [ -z "${blocks}" ]; then
-		echo "[func generate_tpch_data_to_dir] usage: <func> dbgen_bin_dir data_dir scale table blocks" >&2
+	local data_dir="${1}"
+	local scale="${2}"
+	local table="${3}"
+	local blocks="${4}"
+	if [ -z "${data_dir}" ] || [ -z "${scale}" ] || [ -z "${table}" ] || [ -z "${blocks}" ]; then
+		echo "[func generate_tpch_data_to_dir] usage: <func> data_dir scale table blocks" >&2
 		return 1
 	fi
 
+	local dbgen_bin_dir="${integrated}/resource/tpch/dbgen"
 	mkdir -p "${data_dir}"
 	(
 		cd "${data_dir}"
@@ -85,21 +85,15 @@ export -f generate_tpch_data_to_dir
 
 function generate_tpch_data()
 {
-	local dbgen_url="${1}"
-	local dbgen_bin_dir="${2}"
-	local data_dir="${3}"
-	local scale="${4}"
-	local table="${5}"
-	local blocks="${6}"
-	local dists_dss_url="${7}"
+	local data_dir="${1}"
+	local scale="${2}"
+	local table="${3}"
+	local blocks="${4}"
 
-	if [ -z "${dbgen_url}" ] || [ -z "${dbgen_bin_dir}" ] || [ -z "${data_dir}" ] || [ -z "${scale}" ] || [ -z "${table}" ] || [ -z "${blocks}" ] || [ -z "${dists_dss_url}" ]; then
-		echo "[func generate_tpch_data] usage: <func> dbgen_url dbgen_bin_dir data_dir scale table blocks dists_dss_url" >&2
+	if [ -z "${data_dir}" ] || [ -z "${scale}" ] || [ -z "${table}" ] || [ -z "${blocks}" ]; then
+		echo "[func generate_tpch_data] usage: <func> data_dir scale table blocks" >&2
 		return 1
 	fi
-
-	download_dbgen "${dbgen_url}" "${dbgen_bin_dir}"
-	echo "   dbgen download done"
 
 	if [ -d "${data_dir}" ]; then
 		return 0
@@ -107,11 +101,8 @@ function generate_tpch_data()
 
 	local temp_data_dir="${data_dir}_`date +%s`.${RANDOM}"
 	mkdir -p "${temp_data_dir}"
-	if [ ! -f "${temp_data_dir}/dists.dss" ]; then
-		wget --quiet -nd "${dists_dss_url}" -O "${temp_data_dir}/dists.dss"
-	fi
-	echo "   dists.dss download done"
-	generate_tpch_data_to_dir "${dbgen_bin_dir}" "${temp_data_dir}" "${scale}" "${table}" "${blocks}"
+	cp -r "${integrated}/resource/tpch/dbgen/dists.dss" "${temp_data_dir}"
+	generate_tpch_data_to_dir "${temp_data_dir}" "${scale}" "${table}" "${blocks}"
 	local data_file_count=`ls "${temp_data_dir}" | { grep "${table}" || test $? = 1; } | wc -l`
 	if [ "${data_file_count}" -le '0' ]; then
 		echo "[func generate_tpch_data] generate data file failed" >&2

@@ -17,14 +17,11 @@ function _test_cluster_gen_and_load_tpch_table()
 
 	local db=`_db_name_from_scale "${scale}"`
 	local schema_dir="${integrated}/resource/tpch/mysql/schema"
-	local dbgen_bin_dir="/tmp/ti/master/bins"
 
 	local file="${integrated}/conf/tools.kv"
-	local dbgen_url=`cross_platform_get_value "${file}" "dbgen_url"`
-	local dists_dss_url=`cross_platform_get_value "${file}" "dists_dss_url"`
 
 	local table_dir="${data_dir}/tpch_s`echo ${scale} | tr '.' '_'`_b${blocks}/${table}"
-	generate_tpch_data "${dbgen_url}" "${dbgen_bin_dir}" "${table_dir}" "${scale}" "${table}" "${blocks}" "${dists_dss_url}"
+	generate_tpch_data "${table_dir}" "${scale}" "${table}" "${blocks}"
 
 	local ti="${integrated}/ops/ti.sh"
 	local mysql_host=`"${ti}" "${test_ti_file}" 'mysql/host'`
