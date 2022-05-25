@@ -9,15 +9,15 @@ function cmd_ti_ci_release()
 	local ti="${integrated}/ops/ti.sh"
 
 	# TODO: testing, maybe unstable
-	"${ti}" -k "${args}" "${file}" repeat 20 store/rm : sleep 10 : up : sleep 60
+	"${ti}" -k "${args}" "${file}" repeat 5 store/rm : sleep 10 : up : sleep 60
 
 	# TODO: recover time is unstable
-	"${ti}" -k "${args}" "${file}" repeat 20 kill/random : kill/random : up : sleep 60
+	"${ti}" -k "${args}" "${file}" repeat 5 kill/random : kill/random : up : sleep 60
 
-	"${ti}" -k "${args}" "${file}" repeat 20 up : tpch/load 0.001 all : tpch/wait_syncing tpch_0_001 : \
+	"${ti}" -k "${args}" "${file}" repeat 5 up : tpch/load 0.001 all : tpch/wait_syncing tpch_0_001 : \
 		tpch/ch all tpch_0_001 : tpch/tikv all tpch_0_001
 
-	"${ti}" -k "${args}" "${file}" repeat 20 kill/storage : up : sleep 5 : \
+	"${ti}" -k "${args}" "${file}" repeat 5 kill/storage : up : sleep 5 : \
 		tpch/ch all tpch_0_001 : tpch/tikv all tpch_0_001
 
 	"${ti}" -k "${args}" "${file}" ci/cases/consistency/all
