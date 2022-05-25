@@ -1,7 +1,7 @@
 import groovy.transform.Field
 
 @Field config = [
-    cloud: 'kubernetes',
+    cloud: 'kubernetes-ng',
     label: 'test-tiflash-regression-v11',
 ]
 
