@@ -88,10 +88,9 @@ function cmd_ti_schrodinger_crud()
 
 	local bin_dir="/tmp/ti/master/bins"
 	# TODO: remove hardcode file path
-	local conf_file="${integrated}/conf/tools.kv"
-	local binary_url=`cross_platform_get_value "${conf_file}" "crud_url"`
-	echo "Downloading test binary..."
-	download_test_binary "${binary_url}" "crud" "${bin_dir}"
+	local conf_file="${integrated}/conf/tools_local.kv"
+	local binary_url=`local_package_get_value "${conf_file}" "crud_url" "${integrated}/resource"`
+	copy_test_binary "${binary_url}" "crud" "${bin_dir}"
 	echo "Start to run crud test..."
 	echo "Number of users: ${user_count}"
 	echo "Number of post: ${post_count}"

@@ -94,10 +94,9 @@ function cmd_ti_schrodinger_bank()
 
 	local bin_dir="/tmp/ti/master/bins"
 	# TODO: remove hardcode file path
-	local conf_file="${integrated}/conf/tools.kv"
-	local binary_url=`cross_platform_get_value "${conf_file}" "bank_url"`
-	echo "Downloading test binary..."
-	download_test_binary "${binary_url}" "bank" "${bin_dir}"
+	local conf_file="${integrated}/conf/tools_local.kv"
+	local binary_url=`local_package_get_value "${conf_file}" "bank_url" "${integrated}/resource"`
+	copy_test_binary "${binary_url}" "bank" "${bin_dir}"
 	echo "Start to run bank test..."
 	echo "Number of accounts: ${accounts}"
 	echo "Verify interval: ${interval}"

@@ -122,6 +122,34 @@ function cross_platform_get_value()
 }
 export -f cross_platform_get_value
 
+
+function local_package_get_value()
+{
+	if [ -z "${3+x}" ]; then
+		echo "[func local_package_get_value] usage: <func> file key archive_path"
+		return 1
+	fi
+
+	local file="${1}"
+	local key="${2}"
+	local archive_path="${3}"
+	if [ `uname` == "Darwin" ]; then
+		local key="${key}_mac"
+	fi
+
+	if [ ! -f "${file}" ]; then
+		echo "[func local_package_get_value] '${file}' not exists" >&2
+		return 1
+	fi
+
+	local value=`cat "${file}" | { grep "^${key}\b" || test $? = 1; } | awk '{print $2}'`
+	if [ -z "${value}" ]; then
+		return 1
+	fi
+	echo "${archive_path}/${value}"
+}
+export -f local_package_get_value
+
 function terminal_width()
 {
 	stty size | awk '{print $2}'
@@ -300,6 +328,27 @@ function download_test_binary()
 	fi
 }
 export -f download_test_binary
+
+function copy_test_binary()
+{
+	if [ -z "${3+x}" ] || [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ]; then
+		echo "[func copy_test_binary] usage: <func> binary_from_path binary_file_name bin_dir" >&2
+		return 1
+	fi
+	local binary_from_path="${1}"
+	local binary_file_name="${2}"
+	local bin_dir="${3}"
+
+	mkdir -p "${bin_dir}"
+	# TODO: refine all download process in ops to avoid multi-thread hazard
+	if [ ! -f "${bin_dir}/${binary_file_name}.tar.gz" ]; then
+		cp "${binary_from_path}" "${bin_dir}/${binary_file_name}.tar.gz"
+	fi
+	if [ ! -f "${bin_dir}/${binary_file_name}" ]; then
+		tar -zxf "${bin_dir}/${binary_file_name}.tar.gz" -C "${bin_dir}"
+	fi
+}
+export -f copy_test_binary
 
 function bash_conf_write()
 {

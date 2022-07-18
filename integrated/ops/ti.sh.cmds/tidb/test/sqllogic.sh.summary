@@ -1,27 +1,4 @@
 #!/bin/bash
-
-function download_test_file()
-{
-	local conf_file="${1}"
-	local url_name="${2}"
-	local target_dir="${3}"
-	if [ -z "${conf_file}" ] || [ -z "${url_name}" ] || [ -z "${target_dir}" ]; then
-		echo "[func download_test_file] usage: <func> conf_file url_name target_dir" >&2
-		return 1
-	fi
-	local file_url=`cross_platform_get_value "${conf_file}" "${url_name}"`
-
-	mkdir -p "${target_dir}"
-	local download_path="${target_dir}/sqllogic_file.`date +%s`.${RANDOM}"
-	if [ ! -f "${target_dir}/sqllogic_file.tar.gz" ]; then
-		wget --quiet -nd "${file_url}" -O "${download_path}"
-		mv "${download_path}" "${target_dir}/sqllogic_file.tar.gz"
-	fi
-	if [ ! -d "${target_dir}/sqllogic_file" ]; then
-		tar -zxf "${target_dir}/sqllogic_file.tar.gz" -C "${target_dir}"
-	fi
-}
-
 function cmd_ti_tidb_test_sqllogic()
 {
 	local ti_file="${1}"
@@ -46,12 +23,14 @@ function cmd_ti_tidb_test_sqllogic()
 	local bin_dir="/tmp/ti/master/bins"
 	local test_file_path="${integrated}/resource/tidb_test"
 	# TODO: remove hardcode file path
-	local conf_file="${integrated}/conf/tools.kv"
-	local binary_url=`cross_platform_get_value "${conf_file}" "tidb_test_sqllogic_url"`
-	echo "Downloading test binary..."
-	download_test_binary "${binary_url}" "sqllogic_test" "${bin_dir}"
-	echo "Downloading test file..."
-	download_test_file "${conf_file}" "sqllogic_file_url" "${test_file_path}"
+	local conf_file="${integrated}/conf/tools_local.kv"
+
+	local binary_url=`local_package_get_value "${conf_file}" "tidb_test_sqllogic_url" "${integrated}/resource"`
+	copy_test_binary "${binary_url}" "sqllogic_test" "${bin_dir}"
+
+	local test_file_origin_path=`local_package_get_value "${conf_file}" "sqllogic_file_url" "${integrated}/resource"`
+	copy_test_binary "${test_file_origin_path}" "sqllogic_file" "${test_file_path}"
+
 	echo "Start to run sqllogic test..."
 	export TIDB_HOST="${host}"
 	export TIDB_PORT="${port}"

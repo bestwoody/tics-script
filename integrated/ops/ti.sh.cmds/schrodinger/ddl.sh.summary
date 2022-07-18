@@ -41,10 +41,9 @@ function cmd_ti_schrodinger_ddl()
 
 	local bin_dir="/tmp/ti/master/bins"
 	# TODO: remove hardcode file path
-	local conf_file="${integrated}/conf/tools.kv"
-	local binary_url=`cross_platform_get_value "${conf_file}" "ddl_url"`
-	echo "Downloading test binary..."
-	download_test_binary "${binary_url}" "ddl" "${bin_dir}"
+	local conf_file="${integrated}/conf/tools_local.kv"
+	local binary_url=`local_package_get_value "${conf_file}" "ddl_url" "${integrated}/resource"`
+	copy_test_binary "${binary_url}" "ddl" "${bin_dir}"
 	echo "Start to run ddl test..."
 	echo "Concurrency worker count: ${concurrency}"
 	echo "Mysql compatible: ${mysql_compatible}"
