@@ -25,9 +25,6 @@ function cmd_ti_ci_cluster()
 
 	"${ti}" -k "${args}" "${file}" syncing/test : sleep 3 : syncing/show : ch/queries
 
-	"${ti}" -k "${args}" "${file}" fstop : up : tpch/load_no_raft 0.01 lineitem dt
-	"${ti}" -k "${args}" -i 0 "${file}" sleep 1 : verify/balance tpch_0_01_dt_no_raft lineitem
-
 	"${ti}" -k "${args}" "${file}" fstop : up
 }
 
