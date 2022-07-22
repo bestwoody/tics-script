@@ -44,6 +44,9 @@ function cmd_ti_wait_available()
 		fi
 		if [ $((${i} % 10)) = 0 ] && [ ${i} -ge 10 ]; then
 			echo "   #${i} waiting for ${db}.${table} learner storage available"
+			local current_progress = `"${ti}" -h "${cmd_hosts}" -m "tidb" -i "${tidb_index}" -k "${ti_args}" \
+			"${ti_file}" 'mysql' "${query}" "${db}" false`
+			echo "current replica progress: ${current_progress}"
 		fi
 		sleep 1
 	done
