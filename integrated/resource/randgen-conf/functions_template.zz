@@ -1,0 +1,38 @@
+
+################################################################################
+# functions_template.zz:  Random Data Generator setting for testing functions  #
+#                         with simple form, i.e., those only use functions in  #
+#                         select list and no 'where', 'group by', 'having',    #
+#                         'join' or 'order by' clause, also there should be no #
+#                         nested functions.                                    #
+#                                                                              #
+# NOTE:                                                                        #
+#       Following setting only serves as the template for writing function     #
+#       tests. For more details, please refer to                               #
+#       https://github.com/pingcap/tiflash-scripts/issues/1878.                #
+#                                                                              #
+#       Unfortunately, current tikv implementation has some trouble handling   #
+#       float, so we avoid using float field here.                             #
+#                                                                              #
+################################################################################
+
+$tables = {
+    names => ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z', 'AA', 'BB', 'CC', 'DD'],
+    rows => [10, 50, 100],
+    partitions => [ undef ],
+    pk => [ undef ],
+};
+
+$fields = {
+        types => [ 'tinyint', 'bigint', 'int', 'smallint', 'double', 'decimal', 'decimal(40)', 'decimal(30,10)', 'char(64)', 'varchar(64)', 'char(20)', 'date', 'datetime', 'time', 'year' ],
+        indexes => [undef, 'key' ],
+        null => [undef, 'not null'],
+        default => [undef, 'default null'],
+        charsets => ['binary', 'utf8', 'latin1'],
+};
+
+$data = {
+    numbers => [ undef, 'digit', 'null', 'tinyint','mediumint', 'bigint', 'bigint_unsigned', 'boolean' ],
+    strings => [ undef , 'letter', 'varchar(128)', 'english', 'null', 'empty'],
+    temporals => [ undef, 'time', 'datetime', 'year(2)', 'year(4)', 'timestamp' ],
+};
