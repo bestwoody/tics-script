@@ -2,7 +2,3 @@
 	path = benchmark/tpch-dbgen
 	url = http://github.com/electrum/tpch-dbgen
 	ignore = dirty
-[submodule "storage/ch"]
-	path = storage/ch
-	url = git@github.com:pingcap/tics.git
-	ignore = dirty
