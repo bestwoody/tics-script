@@ -5,7 +5,7 @@ ti_mysql> alter table test.t set tiflash replica 1;
 ti_mysql> insert into test.t values(1, 'abc1')
 ti_mysql> insert into test.t values(2, 'abc2')
 ti_mysql> insert into test.t values(1, 'abc3')
-ERROR 1062 (23000) at line 1: Duplicate entry '1' for key 'PRIMARY'
+ERROR 1062 (23000) at line 1: Duplicate entry '1' for key 't.PRIMARY'
 
 ti_func> wait_table test t
 
@@ -40,7 +40,7 @@ ti_mysql> alter table test.t add primary key (a)
 ti_mysql> insert into test.t values(1, 'abc1')
 ti_mysql> insert into test.t values(2, 'abc2')
 ti_mysql> insert into test.t values(1, 'abc3')
-ERROR 1062 (23000) at line 1: Duplicate entry '1' for key 'PRIMARY'
+ERROR 1062 (23000) at line 1: Duplicate entry '1' for key 't.PRIMARY'
 
 ti_func> wait_table test t
 
