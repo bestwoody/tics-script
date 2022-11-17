@@ -38,13 +38,13 @@ function cmd_ti_safe_point()
 	fi
 
 	if [ "${format}" != 'time' ]; then
-		local res_tz=${res:18}
+		local res_tz=${res:22}
 		local local_tz=`date +%z`
 		if [ "${res_tz}" != "${local_tz}" ]; then
 			echo "[cmd safe_point] local timezone not equal to tidb timezone: ${res_tz} != ${local_tz}"
 			return 1
 		fi
-		local res="${res:0:17}"
+		local res="${res:0:21}"
 		local res="${res:0:4}-${res:4:2}-${res:6:2} ${res:9}"
 		local res=`to_ts "${res}"`
 	fi
