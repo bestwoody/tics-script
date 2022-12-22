@@ -26,7 +26,7 @@ function ti_cmd_tpch_wait_syncing()
 		return 1
 	fi
 
-	local tables=(lineitem orders partsupp part customer supplier nation part region)
+	local tables=(nation lineitem orders partsupp part customer supplier part region)
 	for table in ${tables[@]}; do
 		if [ -z "${1+x}" ]; then
 			"${integrated}/ops/ti.sh" -h "${cmd_hosts}" -m "${cmd_mod_names}" \

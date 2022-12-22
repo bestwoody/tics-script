@@ -51,10 +51,10 @@ class TPCHQuerySuite extends BaseClickHouseSuite {
   )
 
   val tpchTables = Seq(
+    "nation",
     "lineitem",
     "orders",
     "customer",
-    "nation",
     "customer",
     "partsupp",
     "part",

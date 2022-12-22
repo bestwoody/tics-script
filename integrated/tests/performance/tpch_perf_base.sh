@@ -81,7 +81,7 @@ function test_cluster_load_tpch_data()
 	local log="${3}"
 	local tags="${4}"
 
-	local tables=(customer lineitem nation orders part region supplier partsupp)
+	local tables=(nation customer lineitem orders part region supplier partsupp)
 	local result=''
 	for table in ${tables[@]}; do
 		local elapsed=`test_cluster_load_tpch_table "${test_ti_file}" "${table}" "${scale}"`

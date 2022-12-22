@@ -1,5 +1,11 @@
 ti_mysql> drop database if exists tpch_0_002
 
+ti_func> load_tpch 0.002 nation true
+ti_func> load_tpch 0.002 customer true
+ti_func> load_tpch 0.002 supplier true
+ti_func> load_tpch 0.002 part true
+ti_func> load_tpch 0.002 partsupp true
+ti_func> load_tpch 0.002 orders true
 ti_func> load_tpch 0.002 lineitem true
 ti_func> wait_table tpch_0_002 lineitem
 ti_mysql> tiflash select count(*) from tpch_0_002.lineitem t

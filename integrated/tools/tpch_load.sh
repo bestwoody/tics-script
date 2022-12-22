@@ -60,7 +60,7 @@ function ti_tools_tpch_load()
 	if [ "${table}" != 'all' ]; then
 		local tables=("${table}")
 	else
-		local tables=(customer nation orders part region supplier partsupp lineitem)
+		local tables=(nation customer orders part region supplier partsupp lineitem)
 	fi
 
 	local conf_file="${integrated}/conf/tools.kv"

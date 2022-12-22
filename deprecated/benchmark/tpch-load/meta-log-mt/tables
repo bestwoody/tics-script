@@ -1,6 +1,5 @@
 -T c	customer
 -T L	lineitem
--T n	nation
 -T O	orders
 -T P	part
 -T r	region

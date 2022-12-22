@@ -58,7 +58,7 @@ function ti_cmd_tpch_create
 	if [ "${table}" != 'all' ]; then
 		local tables=("${table}")
 	else
-		local tables=(customer nation orders part region supplier partsupp lineitem)
+		local tables=(nation customer orders part region supplier partsupp lineitem)
 	fi
 
 	for table in ${tables[@]}; do
